@@ -16,6 +16,7 @@ sourceCompatibility = JavaVersion.VERSION_1_8
 targetCompatibility = JavaVersion.VERSION_1_8
 
 group = 'com.github.growthbook'
+version = '0.0.0b-SNAPSHOT'
 
 repositories {
     // Use Maven Central for resolving dependencies.
