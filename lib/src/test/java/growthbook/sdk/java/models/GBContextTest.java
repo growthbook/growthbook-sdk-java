@@ -14,7 +14,6 @@ class GBContextTest {
         Context subject = new GBContext(isEnabled, url, isQaMode);
 
         assertNotNull(subject);
-        assertNotNull(null);
     }
 
     @Test
