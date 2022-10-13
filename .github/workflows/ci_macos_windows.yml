@@ -1,7 +1,8 @@
 name: CI (macOS, Windows)
 on:
   pull_request:
-    - main
+    branches:
+      - main
 
 jobs:
   build:
