@@ -71,6 +71,9 @@ test {
     // Test coverage reports are available at: ./lib/build/jacocoHtml/index.html
     finalizedBy jacocoTestReport // report is always generated after tests run
 }
+
+// More configuration options, including enforcing code coverage available here:
+// https://docs.gradle.org/current/userguide/jacoco_plugin.html
 jacocoTestReport {
     dependsOn test // tests are required to run before generating the report
 
