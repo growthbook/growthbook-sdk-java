@@ -32,6 +32,15 @@ dependencies {
 
     // This dependency is used internally, and not exposed to consumers on their own compile classpath.
     implementation 'com.google.guava:guava:31.0.1-jre'
+
+    // https://mvnrepository.com/artifact/com.google.code.gson/gson
+    implementation 'com.google.code.gson:gson:2.9.1'
+
+    // Adds getter, setter and builder boilerplate
+    // https://projectlombok.org/
+    // https://mvnrepository.com/artifact/org.projectlombok/lombok
+    compileOnly 'org.projectlombok:lombok:1.18.24'
+    annotationProcessor 'org.projectlombok:lombok:1.18.24'
 }
 
 publishing {
@@ -39,6 +48,14 @@ publishing {
         maven(MavenPublication) {
             from components.java
         }
+    }
+}
+
+// Generates documentation in ./lib/build/docs/javadoc
+// Note: These docs are pretty useless for the Lombok stuff
+// TODO: Have doc comments for Lombuk-annotated classes get picked up by JavaDoc
+javadoc {
+    build {
     }
 }
 

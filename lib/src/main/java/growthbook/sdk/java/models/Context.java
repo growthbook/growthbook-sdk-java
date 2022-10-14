@@ -1,17 +1,51 @@
 package growthbook.sdk.java.models;
 
-public interface Context {
-    Boolean getEnabled();
-    void setEnabled(Boolean isEnabled);
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
 
-    String getUrl();
-    void setUrl(String url);
+import javax.annotation.Nullable;
 
-    Boolean getIsQaMode();
-    void setIsQaMode(Boolean isQaMode);
+/**
+ * Context object passed into the GrowthBook constructor.
+ */
+@Data @Builder @AllArgsConstructor
+public class Context {
+    /**
+     * Switch to globally disable all experiments
+     */
+    @Builder.Default
+    Boolean enabled = true;
+
+    /**
+     * The URL of the current page
+     */
+    @Nullable String url;
+
+    /**
+     * If true, random assignment is disabled and only explicitly forced variations are used.
+     */
+    @Nullable @Builder.Default
+    Boolean isQaMode = false;
 
     // TODO: TrackingCallback
-    // TODO: Attributes
+//    /**
+//     * A function that takes `experiment` and `result` as arguments.
+//     */
+
+    /**
+     * Map of user attributes that are used to assign variations
+     */
+    @Nullable
+    UserAttributes attributes;
+
     // TODO: Features
+//    /**
+//     * Feature definitions (usually pulled from an API or cache)
+//     */
+
     // TODO: ForcedVariations
+//    /**
+//     * Force specific experiments to always assign a specific variation (used for QA)
+//     */
 }
