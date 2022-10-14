@@ -1,13 +1,32 @@
 package growthbook.sdk.java.models;
 
 import growthbook.sdk.java.TestHelpers.SampleUserAttributes;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mock;
+import org.mockito.MockitoAnnotations;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 
 class ContextTest {
+    private AutoCloseable closeable;
+    @Mock
+    private TrackingCallback<String> trackingCallback;
 
     SampleUserAttributes sampleUserAttributes = new SampleUserAttributes("android", "canada");
+
+    @BeforeEach
+    void setUp() {
+        closeable = MockitoAnnotations.openMocks(this);
+    }
+
+    @AfterEach
+    void tearDown() throws Exception {
+        closeable.close();
+    }
 
     @Test
     void canBeConstructed() {
@@ -15,7 +34,7 @@ class ContextTest {
         Boolean isQaMode = false;
         String url = "http://localhost:3000";
 
-        Context subject = new Context(isEnabled, url, isQaMode, sampleUserAttributes);
+        Context<String> subject = new Context<String>(isEnabled, url, isQaMode, trackingCallback, sampleUserAttributes);
 
         assertNotNull(subject);
     }
@@ -26,8 +45,8 @@ class ContextTest {
         Boolean isQaMode = false;
         String url = "http://localhost:3000";
 
-        Context subject = Context
-                .builder()
+        Context<String> subject = Context
+                .<String>builder()
                 .enabled(isEnabled)
                 .isQaMode(isQaMode)
                 .attributes(sampleUserAttributes)
@@ -43,8 +62,8 @@ class ContextTest {
         Boolean isQaMode = false;
         String url = "http://localhost:3000";
 
-        Context subject = Context
-                .builder()
+        Context<String> subject = Context
+                .<String>builder()
                 .enabled(isEnabled)
                 .isQaMode(isQaMode)
                 .attributes(sampleUserAttributes)
@@ -68,11 +87,28 @@ class ContextTest {
 
     @Test
     void serializableAttributes() {
-        Context subject = Context
-                .builder()
+        Context<String> subject = Context
+                .<String>builder()
                 .attributes(sampleUserAttributes)
                 .build();
 
         assertEquals("{\"device\":\"android\",\"country\":\"canada\"}", subject.attributes.toJson());
+    }
+
+    @Test
+    void canExecuteATrackingCallback() {
+        Context<String> subject = Context
+                .<String>builder()
+                .trackingCallback(trackingCallback)
+                .build();
+
+        Experiment experiment = Experiment.builder().build();
+        TrackingResult<String> result = TrackingResult
+                .<String>builder()
+                .value("Hello, world!")
+                .build();
+        subject.trackingCallback.onTrack(experiment, result);
+
+        verify(trackingCallback).onTrack(experiment, result);
     }
 }

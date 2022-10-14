@@ -10,7 +10,7 @@ import javax.annotation.Nullable;
  * Context object passed into the GrowthBook constructor.
  */
 @Data @Builder @AllArgsConstructor
-public class Context {
+public class Context<TrackingCallbackResultType> {
     /**
      * Switch to globally disable all experiments
      */
@@ -28,10 +28,10 @@ public class Context {
     @Nullable @Builder.Default
     Boolean isQaMode = false;
 
-    // TODO: TrackingCallback
-//    /**
-//     * A function that takes `experiment` and `result` as arguments.
-//     */
+    /**
+     * A function that takes `experiment` and `result` as arguments.
+     */
+    TrackingCallback<TrackingCallbackResultType> trackingCallback;
 
     /**
      * Map of user attributes that are used to assign variations

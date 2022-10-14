@@ -26,6 +26,7 @@ repositories {
 dependencies {
     // Use JUnit Jupiter for testing.
     testImplementation 'org.junit.jupiter:junit-jupiter:5.8.2'
+    testImplementation 'org.mockito:mockito-core:4.8.0'
 
     // This dependency is exported to consumers, that is to say found on their compile classpath.
     api 'org.apache.commons:commons-math3:3.6.1'
@@ -53,7 +54,7 @@ publishing {
 
 // Generates documentation in ./lib/build/docs/javadoc
 // Note: These docs are pretty useless for the Lombok stuff
-// TODO: Have doc comments for Lombuk-annotated classes get picked up by JavaDoc
+// TODO: Have doc comments for Lombuk-annotated classes get picked up by JavaDoc https://github.com/growthbook/growthbook-sdk-java/issues/4
 javadoc {
     build {
     }
