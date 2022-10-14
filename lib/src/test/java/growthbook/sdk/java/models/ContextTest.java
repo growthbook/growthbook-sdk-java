@@ -7,6 +7,8 @@ import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
+import java.util.HashMap;
+
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -33,8 +35,18 @@ class ContextTest {
         Boolean isEnabled = true;
         Boolean isQaMode = false;
         String url = "http://localhost:3000";
+        ForcedVariationsMap forcedVariations = new ForcedVariationsHashMap();
+        forcedVariations.put("my-test", 0);
+        forcedVariations.put("other-test", 1);
 
-        Context<String> subject = new Context<String>(isEnabled, url, isQaMode, trackingCallback, sampleUserAttributes);
+        Context<String> subject = new Context<String>(
+                isEnabled,
+                url,
+                isQaMode,
+                trackingCallback,
+                sampleUserAttributes,
+                forcedVariations
+        );
 
         assertNotNull(subject);
     }

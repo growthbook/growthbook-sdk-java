@@ -5,6 +5,7 @@ import lombok.Builder;
 import lombok.Data;
 
 import javax.annotation.Nullable;
+import java.util.Map;
 
 /**
  * Context object passed into the GrowthBook constructor.
@@ -44,8 +45,11 @@ public class Context<TrackingCallbackResultType> {
 //     * Feature definitions (usually pulled from an API or cache)
 //     */
 
-    // TODO: ForcedVariations
-//    /**
-//     * Force specific experiments to always assign a specific variation (used for QA)
-//     */
+    // TODO: Would this be more user-friendly as its own type ForcedVariationsMap or Map<String, Integer> ?
+    /**
+     * Force specific experiments to always assign a specific variation (used for QA)
+     */
+    @Nullable
+    Map<String, Integer> forcedVariationsMap;
+//    ForcedVariationsMap forcedVariationsMap;
 }
