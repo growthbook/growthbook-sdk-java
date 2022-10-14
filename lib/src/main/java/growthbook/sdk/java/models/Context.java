@@ -4,6 +4,8 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 
+import javax.annotation.Nullable;
+
 /**
  * Context object passed into the GrowthBook constructor.
  */
@@ -18,22 +20,24 @@ public class Context {
     /**
      * The URL of the current page
      */
-    String url;
+    @Nullable String url;
 
     /**
      * If true, random assignment is disabled and only explicitly forced variations are used.
      */
-    @Builder.Default
+    @Nullable @Builder.Default
     Boolean isQaMode = false;
 
     // TODO: TrackingCallback
 //    /**
 //     * A function that takes `experiment` and `result` as arguments.
 //     */
-    // TODO: Attributes
-//    /**
-//     * Map of user attributes that are used to assign variations
-//     */
+
+    /**
+     * Map of user attributes that are used to assign variations
+     */
+    @Nullable
+    UserAttributes attributes;
 
     // TODO: Features
 //    /**
