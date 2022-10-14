@@ -4,14 +4,30 @@ import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-class GBContextTest {
+class ContextTest {
     @Test
-    void canBeInitializedWithDefaultValues() {
+    void canBeConstructed() {
         Boolean isEnabled = true;
         Boolean isQaMode = false;
         String url = "http://localhost:3000";
 
-        Context subject = new GBContext(isEnabled, url, isQaMode);
+        Context subject = new Context(isEnabled, url, isQaMode);
+
+        assertNotNull(subject);
+    }
+
+    @Test
+    void canBeBuilt() {
+        Boolean isEnabled = true;
+        Boolean isQaMode = false;
+        String url = "http://localhost:3000";
+
+        Context subject = Context
+                .builder()
+                .enabled(isEnabled)
+                .isQaMode(isQaMode)
+                .url(url)
+                .build();
 
         assertNotNull(subject);
     }
@@ -22,7 +38,7 @@ class GBContextTest {
         Boolean isQaMode = false;
         String url = "http://localhost:3000";
 
-        Context subject = new GBContext(isEnabled, url, isQaMode);
+        Context subject = new Context(isEnabled, url, isQaMode);
 
         // Initial state OK
         assertTrue(subject.getEnabled());
