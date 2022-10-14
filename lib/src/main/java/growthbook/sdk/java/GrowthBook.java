@@ -1,4 +1,8 @@
 package growthbook.sdk.java;
 
-public interface GrowthBook {
+public class GrowthBook {
+    public boolean someLibraryMethod() {
+        System.out.println("Hello, world!");
+        return true;
+    }
 }

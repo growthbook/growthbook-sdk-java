@@ -6,9 +6,9 @@ package growthbook.sdk.java;
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.*;
 
-class LibraryTest {
+class GrowthBookTest {
     @Test void someLibraryMethodReturnsTrue() {
-        Library classUnderTest = new Library();
+        GrowthBook classUnderTest = new GrowthBook();
         assertTrue(classUnderTest.someLibraryMethod(), "someLibraryMethod should return 'true'");
     }
 }

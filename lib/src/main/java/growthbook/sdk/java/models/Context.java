@@ -4,6 +4,9 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 
+/**
+ * Context object passed into the GrowthBook constructor.
+ */
 @Data @Builder @AllArgsConstructor
 public class Context {
     /**
