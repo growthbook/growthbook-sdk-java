@@ -1,10 +1,12 @@
 package growthbook.sdk.java.models;
 
+import com.google.gson.annotations.SerializedName;
+
 public enum FeatureResultSource {
-    UNKNOWN_FEATURE("unknownFeature"),
-    DEFAULT_VALUE("defaultValue"),
-    FORCE("force"),
-    EXPERIMENT("experiment"),
+    @SerializedName("unknownFeature") UNKNOWN_FEATURE("unknownFeature"),
+    @SerializedName("defaultValue") DEFAULT_VALUE("defaultValue"),
+    @SerializedName("force") FORCE("force"),
+    @SerializedName("experiment") EXPERIMENT("experiment"),
     ;
     private final String rawValue;
 
@@ -14,6 +16,6 @@ public enum FeatureResultSource {
 
     @Override
     public String toString() {
-        return rawValue;
+        return this.rawValue;
     }
 }
