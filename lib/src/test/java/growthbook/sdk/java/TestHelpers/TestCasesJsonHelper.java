@@ -25,6 +25,11 @@ public class TestCasesJsonHelper implements ITestCasesJsonHelper {
         return this.testCases.get("hash").getAsJsonArray();
     }
 
+    @Override
+    public JsonArray getInNamespaceTestCases() {
+        return this.testCases.get("inNamespace").getAsJsonArray();
+    }
+
     // region Initialization
 
     private final JsonObject testCases;
