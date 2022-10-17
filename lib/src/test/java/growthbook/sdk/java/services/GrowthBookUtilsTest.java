@@ -13,6 +13,6 @@ class GrowthBookUtilsTest {
         assertEquals(0.946f, GrowthBookUtils.hash("ab"));
         assertEquals(0.652f, GrowthBookUtils.hash("def"));
         assertEquals(0.549f, GrowthBookUtils.hash("8952klfjas09ujkasdf"));
-        assertEquals(0.563f, GrowthBookUtils.hash("___)((*\\\":&"));
+        assertEquals(0.563f, GrowthBookUtils.hash("___)((*\":&"));
     }
 }
