@@ -2,6 +2,7 @@ package growthbook.sdk.java.services;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import growthbook.sdk.java.models.BucketRange;
 import growthbook.sdk.java.models.Namespace;
 
 /**
@@ -25,6 +26,10 @@ public class GrowthBookJsonUtils {
         // Namespaces
         gsonBuilder.registerTypeAdapter(Namespace.class, Namespace.getSerializer());
         gsonBuilder.registerTypeAdapter(Namespace.class, Namespace.getDeserializer());
+
+        // BucketRanges
+        gsonBuilder.registerTypeAdapter(BucketRange.class, BucketRange.getSerializer());
+        gsonBuilder.registerTypeAdapter(BucketRange.class, BucketRange.getDeserializer());
 
         gson = gsonBuilder.create();
     }

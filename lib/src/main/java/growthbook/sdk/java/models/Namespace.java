@@ -56,6 +56,11 @@ public class Namespace {
         return Namespace.getJson(this).toString();
     }
 
+    @Override
+    public String toString() {
+        return toJson();
+    }
+
     public static JsonDeserializer<Namespace> getDeserializer() {
         return new JsonDeserializer<Namespace>() {
             @Override

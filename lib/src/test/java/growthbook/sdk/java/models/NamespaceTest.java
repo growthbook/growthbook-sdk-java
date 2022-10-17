@@ -8,18 +8,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 class NamespaceTest {
     @Test
-    void implementsToJson() {
-        Namespace subject = Namespace
-                .builder()
-                .id("pricing")
-                .rangeStart(0.0f)
-                .rangeEnd(0.6f)
-                .build();
-
-        assertEquals("[\"pricing\",0.0,0.6]", subject.toJson());
-    }
-
-    @Test
     void isGsonSerializable() {
         Namespace subject = Namespace
                 .builder()
@@ -33,6 +21,8 @@ class NamespaceTest {
         Gson customGson = gsonBuilder.create();
 
         assertEquals("[\"pricing\",0.0,0.6]", customGson.toJson(subject));
+        assertEquals("[\"pricing\",0.0,0.6]", subject.toJson());
+        assertEquals("[\"pricing\",0.0,0.6]", subject.toString());
     }
 
     @Test

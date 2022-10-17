@@ -57,11 +57,16 @@ class ContextTest {
         Boolean isQaMode = false;
         String url = "http://localhost:3000";
 
+        ForcedVariationsMap forcedVariations = new ForcedVariationsHashMap();
+        forcedVariations.put("my-test", 0);
+        forcedVariations.put("other-test", 1);
+
         Context<String> subject = Context
                 .<String>builder()
                 .enabled(isEnabled)
                 .isQaMode(isQaMode)
                 .attributes(sampleUserAttributes)
+                .forcedVariationsMap(forcedVariations)
                 .url(url)
                 .build();
 
