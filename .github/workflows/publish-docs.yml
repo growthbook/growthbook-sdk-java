@@ -25,4 +25,4 @@ jobs:
         uses: peaceiris/actions-gh-pages@v3
         with:
           GITHUB_TOKEN: ${{ github.token }}
-          public_dir: 'lib/build/docs/javadoc'
+          publish_dir: 'lib/build/docs/javadoc'
