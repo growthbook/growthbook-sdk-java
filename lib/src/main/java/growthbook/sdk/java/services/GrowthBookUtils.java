@@ -15,8 +15,9 @@ public class GrowthBookUtils {
     /**
      * Hashes a string to a float between 0 and 1.
      * Uses the simple Fowler–Noll–Vo algorithm, specifically fnv32a.
-     * @param stringValue  Input string
-     * @return  hashed float value
+     *
+     * @param stringValue Input string
+     * @return hashed float value
      */
     public static Float hash(String stringValue) {
         BigInteger bigInt = MathUtils.fnv1a_32(stringValue.getBytes());
@@ -30,9 +31,10 @@ public class GrowthBookUtils {
 
     /**
      * This checks if a userId is within an experiment namespace or not.
-     * @param userId  The user identifier
-     * @param namespace  Namespace to check the user identifier against
-     * @return  whether the user is in the namespace
+     *
+     * @param userId    The user identifier
+     * @param namespace Namespace to check the user identifier against
+     * @return whether the user is in the namespace
      */
     public static Boolean inNameSpace(String userId, Namespace namespace) {
         Float n = hash(userId + "__" + namespace.getId());
@@ -42,9 +44,10 @@ public class GrowthBookUtils {
     /**
      * Given a hash and bucket ranges, assign one of the bucket ranges.
      * Returns -1 if none can be found
-     * @param n hash
-     * @param bucketRanges  list of {@link BucketRange}
-     * @return  index of the {@link BucketRange} list to assign
+     *
+     * @param n            hash
+     * @param bucketRanges list of {@link BucketRange}
+     * @return index of the {@link BucketRange} list to assign
      */
     public static Integer chooseVariation(Float n, ArrayList<BucketRange> bucketRanges) {
         for (int i = 0; i < bucketRanges.size(); i++) {
@@ -60,6 +63,7 @@ public class GrowthBookUtils {
     /**
      * Returns an array of floats with numVariations items that are all equal and sum to 1.
      * For example, getEqualWeights(2) would return [0.5, 0.5]
+     *
      * @param numberOfVariations The number of variations you would like
      * @return A list of variations
      */
@@ -77,10 +81,10 @@ public class GrowthBookUtils {
     /**
      * This checks if an experiment variation is being forced via a URL query string.
      * This may not be applicable for all SDKs (e.g. mobile).
-     *
+     * <p>
      * As an example, if the id is my-test and url is http://localhost/?my-test=1,
      * it would return 1.
-     *
+     * <p>
      * Returns null if any of these are true:
      *
      * <ul>
@@ -90,9 +94,9 @@ public class GrowthBookUtils {
      *     <li>The variation is less than 0 or greater than or equal to numVariations</li>
      * </ul>
      *
-     * @param id  the identifier
-     * @param urlString  the desired page URL as a string
-     * @param numberOfVariations  the number of variations
+     * @param id                 the identifier
+     * @param urlString          the desired page URL as a string
+     * @param numberOfVariations the number of variations
      * @return integer or null
      */
     @Nullable
@@ -108,10 +112,10 @@ public class GrowthBookUtils {
     /**
      * This checks if an experiment variation is being forced via a URL query string.
      * This may not be applicable for all SDKs (e.g. mobile).
-     *
+     * <p>
      * As an example, if the id is my-test and url is http://localhost/?my-test=1,
      * it would return 1.
-     *
+     * <p>
      * Returns null if any of these are true:
      *
      * <ul>
@@ -121,15 +125,15 @@ public class GrowthBookUtils {
      *     <li>The variation is less than 0 or greater than or equal to numVariations</li>
      * </ul>
      *
-     * @param id  the identifier
-     * @param url  the desired page URL
-     * @param numberOfVariations  the number of variations
+     * @param id                 the identifier
+     * @param url                the desired page URL
+     * @param numberOfVariations the number of variations
      * @return integer or null
      */
     @Nullable
     public static Integer getQueryStringOverride(String id, URL url, Integer numberOfVariations) {
         String query = url.getQuery();
-        Map<String, String> queryMap =  UrlUtils.parseQueryString(query);
+        Map<String, String> queryMap = UrlUtils.parseQueryString(query);
 
         String possibleValue = queryMap.get(id);
 
@@ -154,13 +158,15 @@ public class GrowthBookUtils {
     }
 
     // TODO: getBucketRanges
+
     /**
      * This converts and experiment's coverage and variation weights into an array of bucket ranges.
      * Defaults to equal weights if the sum of the weight is not equal to 1 (rounded).
+     *
      * @param numberOfVariations number of variations
-     * @param coverage  the amount that should be covered, e.g. 0.5 is 50%
-     * @param weights List of weights. If these do not sum to 1, equal weights will be applied.
-     * @return  list of {@link BucketRange}
+     * @param coverage           the amount that should be covered, e.g. 0.5 is 50%
+     * @param weights            List of weights. If these do not sum to 1, equal weights will be applied.
+     * @return list of {@link BucketRange}
      */
     public static ArrayList<BucketRange> getBucketRanges(
             Integer numberOfVariations,

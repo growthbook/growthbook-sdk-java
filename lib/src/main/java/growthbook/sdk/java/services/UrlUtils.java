@@ -9,6 +9,7 @@ import java.util.Objects;
 public class UrlUtils {
     /**
      * Parse a query string into a map of key/value pairs.
+     *
      * @param queryString the string to parse (without the '?')
      * @return key/value pairs mapping to the items in the query string
      */

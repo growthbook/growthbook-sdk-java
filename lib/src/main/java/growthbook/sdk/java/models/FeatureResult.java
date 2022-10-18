@@ -6,7 +6,9 @@ import lombok.Data;
 
 import javax.annotation.Nullable;
 
-@Data @Builder @AllArgsConstructor
+@Data
+@Builder
+@AllArgsConstructor
 public class FeatureResult<ValueType> {
     @Nullable
     ValueType value;
