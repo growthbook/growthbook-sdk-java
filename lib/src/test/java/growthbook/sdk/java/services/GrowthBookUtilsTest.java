@@ -98,7 +98,7 @@ class GrowthBookUtilsTest {
             // 1st arg
             int numberOfVariations = testCase.get(0).getAsInt();
 
-            // 2nd arg
+            // Expected
             JsonArray expectedArray = testCase.get(1).getAsJsonArray();
             Type floatListType = new TypeToken<List<Float>>() {}.getType();
             List<Float> expected = GrowthBookJsonUtils.getInstance().gson.fromJson(expectedArray, floatListType);
