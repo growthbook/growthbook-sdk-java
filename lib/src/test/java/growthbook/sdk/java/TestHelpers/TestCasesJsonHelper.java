@@ -30,6 +30,16 @@ public class TestCasesJsonHelper implements ITestCasesJsonHelper {
         return this.testCases.get("inNamespace").getAsJsonArray();
     }
 
+    @Override
+    public JsonArray getBucketRangeTestCases() {
+        return this.testCases.get("getBucketRange").getAsJsonArray();
+    }
+
+    @Override
+    public JsonArray getChooseVariationTestCases() {
+        return this.testCases.get("chooseVariation").getAsJsonArray();
+    }
+
     // region Initialization
 
     private final JsonObject testCases;

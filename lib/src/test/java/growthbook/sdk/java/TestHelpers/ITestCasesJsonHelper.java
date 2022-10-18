@@ -7,4 +7,6 @@ public interface ITestCasesJsonHelper {
     JsonObject getTestCases();
     JsonArray getHNVTestCases();
     JsonArray getInNamespaceTestCases();
+    JsonArray getBucketRangeTestCases();
+    JsonArray getChooseVariationTestCases();
 }

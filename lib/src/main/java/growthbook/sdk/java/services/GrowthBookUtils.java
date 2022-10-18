@@ -1,8 +1,11 @@
 package growthbook.sdk.java.services;
 
+import growthbook.sdk.java.models.BucketRange;
 import growthbook.sdk.java.models.Namespace;
 
 import java.math.BigInteger;
+import java.util.ArrayList;
+import java.util.List;
 
 public class GrowthBookUtils {
     /**
@@ -30,5 +33,16 @@ public class GrowthBookUtils {
     public static Boolean inNameSpace(String userId, Namespace namespace) {
         Float n = hash(userId + "__" + namespace.getId());
         return n >= namespace.getRangeStart() && n < namespace.getRangeEnd();
+    }
+
+    public static Integer chooseVariation(Float n, ArrayList<BucketRange> bucketRanges) {
+        for (int i = 0; i < bucketRanges.size(); i++) {
+            BucketRange range = bucketRanges.get(i);
+            if (n >= range.getRangeStart() && n < range.getRangeEnd()) {
+                return i;
+            }
+        }
+
+        return -1;
     }
 }
