@@ -4,14 +4,11 @@ import growthbook.sdk.java.models.BucketRange;
 import growthbook.sdk.java.models.Namespace;
 
 import javax.annotation.Nullable;
-import javax.management.Query;
 import java.math.BigInteger;
 import java.net.MalformedURLException;
-import java.net.URI;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.List;
 import java.util.Map;
 
 public class GrowthBookUtils {
@@ -154,5 +151,22 @@ public class GrowthBookUtils {
             exception.printStackTrace();
             return null;
         }
+    }
+
+    // TODO: getBucketRanges
+    /**
+     * This converts and experiment's coverage and variation weights into an array of bucket ranges.
+     * Defaults to equal weights if the sum of the weight is not equal to 1 (rounded).
+     * @param numberOfVariations number of variations
+     * @param coverage  the amount that should be covered, e.g. 0.5 is 50%
+     * @param weights List of weights. If these do not sum to 1, equal weights will be applied.
+     * @return  list of {@link BucketRange}
+     */
+    public static ArrayList<BucketRange> getBucketRanges(
+            Integer numberOfVariations,
+            Float coverage,
+            ArrayList<Float> weights
+    ) throws RuntimeException {
+        throw new RuntimeException("Not Implemented");
     }
 }
