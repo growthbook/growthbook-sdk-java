@@ -5,6 +5,7 @@ import growthbook.sdk.java.models.Namespace;
 
 import java.math.BigInteger;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 public class GrowthBookUtils {
@@ -44,5 +45,22 @@ public class GrowthBookUtils {
         }
 
         return -1;
+    }
+
+    /**
+     * Returns an array of floats with numVariations items that are all equal and sum to 1.
+     * For example, getEqualWeights(2) would return [0.5, 0.5]
+     * @param numberOfVariations The number of variations you would like
+     * @return A list of variations
+     */
+    public static ArrayList<Float> getEqualWeights(Integer numberOfVariations) {
+        // Accommodate -1 number of variations
+        int size = Math.max(0, numberOfVariations);
+        if (size == 0) {
+            return new ArrayList<>();
+        }
+
+        Float weight = 1f / numberOfVariations;
+        return new ArrayList<Float>(Collections.nCopies(size, weight));
     }
 }

@@ -1,7 +1,6 @@
 package growthbook.sdk.java.services;
 
 import com.google.gson.JsonArray;
-import com.google.gson.JsonElement;
 import com.google.gson.reflect.TypeToken;
 import growthbook.sdk.java.TestHelpers.TestCasesJsonHelper;
 import growthbook.sdk.java.models.BucketRange;
@@ -19,7 +18,13 @@ class GrowthBookUtilsTest {
     TestCasesJsonHelper helper = TestCasesJsonHelper.getInstance();
 
     @Test
-    void canHashUsingFowlerNollVoAlgo() {
+    void providesTestCaseData() {
+        System.out.printf("Providing test cases: %s", helper.getTestCases());
+        assertNotNull(helper.getTestCases());
+    }
+
+    @Test
+    void test_hashFowlerNollVoAlgo() {
         JsonArray hnvCases = helper.getHNVTestCases();
 
         hnvCases.forEach(jsonElement -> {
@@ -33,7 +38,7 @@ class GrowthBookUtilsTest {
     }
 
     @Test
-    void canVerifyAUserIsInANamespace() {
+    void test_inNameSpace() {
         JsonArray testCases = helper.getInNamespaceTestCases();
 
         testCases.forEach(jsonElement -> {
@@ -54,14 +59,10 @@ class GrowthBookUtilsTest {
         });
     }
 
-    @Test
-    void providesTestCaseData() {
-        System.out.printf("Providing test cases: %s", helper.getTestCases());
-        assertNotNull(helper.getTestCases());
-    }
+
 
     @Test
-    void canChooseVariation() {
+    void test_chooseVariation() {
         JsonArray testCases = helper.getChooseVariationTestCases();
 
         testCases.forEach(jsonElement -> {
@@ -84,6 +85,27 @@ class GrowthBookUtilsTest {
                     GrowthBookUtils.chooseVariation(input, bucketRanges),
                     String.format("canChooseVariation %s", testDescription)
             );
+        });
+    }
+
+    @Test
+    void test_getEqualWeights() {
+        JsonArray testCases = helper.getEqualWeightsTestCases();
+
+        testCases.forEach(jsonElement -> {
+            JsonArray testCase = (JsonArray) jsonElement;
+
+            // 1st arg
+            int numberOfVariations = testCase.get(0).getAsInt();
+
+            // 2nd arg
+            JsonArray expectedArray = testCase.get(1).getAsJsonArray();
+            Type floatListType = new TypeToken<List<Float>>() {}.getType();
+            List<Float> expected = GrowthBookJsonUtils.getInstance().gson.fromJson(expectedArray, floatListType);
+
+            ArrayList<Float> result = GrowthBookUtils.getEqualWeights(numberOfVariations);
+
+            assertEquals(expected, result);
         });
     }
 }

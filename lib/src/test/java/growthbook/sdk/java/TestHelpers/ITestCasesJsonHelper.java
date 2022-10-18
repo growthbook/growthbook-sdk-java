@@ -9,4 +9,5 @@ public interface ITestCasesJsonHelper {
     JsonArray getInNamespaceTestCases();
     JsonArray getBucketRangeTestCases();
     JsonArray getChooseVariationTestCases();
+    JsonArray getEqualWeightsTestCases();
 }
