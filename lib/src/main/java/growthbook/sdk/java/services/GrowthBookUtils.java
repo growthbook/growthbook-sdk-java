@@ -42,6 +42,13 @@ public class GrowthBookUtils {
         return n >= namespace.getRangeStart() && n < namespace.getRangeEnd();
     }
 
+    /**
+     * Given a hash and bucket ranges, assign one of the bucket ranges.
+     * Returns -1 if none can be found
+     * @param n hash
+     * @param bucketRanges  list of {@link BucketRange}
+     * @return  index of the {@link BucketRange} list to assign
+     */
     public static Integer chooseVariation(Float n, ArrayList<BucketRange> bucketRanges) {
         for (int i = 0; i < bucketRanges.size(); i++) {
             BucketRange range = bucketRanges.get(i);
@@ -75,14 +82,16 @@ public class GrowthBookUtils {
      * This may not be applicable for all SDKs (e.g. mobile).
      *
      * As an example, if the id is my-test and url is http://localhost/?my-test=1,
-     * you would return 1.
+     * it would return 1.
      *
      * Returns null if any of these are true:
      *
-     *  • There is no query string
-     *  • The id is not a key in the query string
-     *  • The variation is not an integer
-     *  • The variation is less than 0 or greater than or equal to numVariations
+     * <ul>
+     *     <li>There is no query string</li>
+     *     <li>The id is not a key in the query string</li>
+     *     <li>The variation is not an integer</li>
+     *     <li>The variation is less than 0 or greater than or equal to numVariations</li>
+     * </ul>
      *
      * @param id  the identifier
      * @param urlString  the desired page URL as a string
@@ -104,14 +113,16 @@ public class GrowthBookUtils {
      * This may not be applicable for all SDKs (e.g. mobile).
      *
      * As an example, if the id is my-test and url is http://localhost/?my-test=1,
-     * you would return 1.
+     * it would return 1.
      *
      * Returns null if any of these are true:
      *
-     *  • There is no query string
-     *  • The id is not a key in the query string
-     *  • The variation is not an integer
-     *  • The variation is less than 0 or greater than or equal to numVariations
+     * <ul>
+     *     <li>There is no query string</li>
+     *     <li>The id is not a key in the query string</li>
+     *     <li>The variation is not an integer</li>
+     *     <li>The variation is less than 0 or greater than or equal to numVariations</li>
+     * </ul>
      *
      * @param id  the identifier
      * @param url  the desired page URL
