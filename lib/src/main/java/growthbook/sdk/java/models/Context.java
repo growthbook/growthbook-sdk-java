@@ -5,12 +5,13 @@ import lombok.Builder;
 import lombok.Data;
 
 import javax.annotation.Nullable;
+import java.util.Map;
 
 /**
  * Context object passed into the GrowthBook constructor.
  */
 @Data @Builder @AllArgsConstructor
-public class Context {
+public class Context<TrackingCallbackResultType> {
     /**
      * Switch to globally disable all experiments
      */
@@ -28,10 +29,10 @@ public class Context {
     @Nullable @Builder.Default
     Boolean isQaMode = false;
 
-    // TODO: TrackingCallback
-//    /**
-//     * A function that takes `experiment` and `result` as arguments.
-//     */
+    /**
+     * A function that takes `experiment` and `result` as arguments.
+     */
+    TrackingCallback<TrackingCallbackResultType> trackingCallback;
 
     /**
      * Map of user attributes that are used to assign variations
@@ -44,8 +45,11 @@ public class Context {
 //     * Feature definitions (usually pulled from an API or cache)
 //     */
 
-    // TODO: ForcedVariations
-//    /**
-//     * Force specific experiments to always assign a specific variation (used for QA)
-//     */
+    // TODO: Would this be more user-friendly as its own type ForcedVariationsMap or Map<String, Integer> ?
+    /**
+     * Force specific experiments to always assign a specific variation (used for QA)
+     */
+    @Nullable
+    Map<String, Integer> forcedVariationsMap;
+//    ForcedVariationsMap forcedVariationsMap;
 }

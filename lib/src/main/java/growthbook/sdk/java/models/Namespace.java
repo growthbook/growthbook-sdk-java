@@ -38,11 +38,39 @@ public class Namespace {
         return array;
     }
 
+    static Namespace fromJson(JsonElement jsonElement) {
+        JsonArray namespaceArray = (JsonArray) jsonElement;
+        String id = namespaceArray.get(0).getAsString();
+        Float start = namespaceArray.get(1).getAsFloat();
+        Float end = namespaceArray.get(2).getAsFloat();
+
+        return Namespace
+                .builder()
+                .id(id)
+                .rangeStart(start)
+                .rangeEnd(end)
+                .build();
+    }
+
     public String toJson() {
         return Namespace.getJson(this).toString();
     }
 
-    static JsonSerializer<Namespace> getSerializer() {
+    @Override
+    public String toString() {
+        return toJson();
+    }
+
+    public static JsonDeserializer<Namespace> getDeserializer() {
+        return new JsonDeserializer<Namespace>() {
+            @Override
+            public Namespace deserialize(JsonElement json, Type typeOfT, JsonDeserializationContext context) throws JsonParseException {
+                return Namespace.fromJson(json);
+            }
+        };
+    }
+
+    public static JsonSerializer<Namespace> getSerializer() {
         return new JsonSerializer<Namespace>() {
             @Override
             public JsonElement serialize(Namespace src, Type typeOfSrc, JsonSerializationContext context) {
