@@ -10,4 +10,5 @@ public interface ITestCasesJsonHelper {
     JsonArray getBucketRangeTestCases();
     JsonArray getChooseVariationTestCases();
     JsonArray getEqualWeightsTestCases();
+    JsonArray getQueryStringOverrideTestCases();
 }

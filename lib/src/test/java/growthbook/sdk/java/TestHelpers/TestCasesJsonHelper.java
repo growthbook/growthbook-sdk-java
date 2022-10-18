@@ -45,6 +45,11 @@ public class TestCasesJsonHelper implements ITestCasesJsonHelper {
         return this.testCases.get("getEqualWeights").getAsJsonArray();
     }
 
+    @Override
+    public JsonArray getQueryStringOverrideTestCases() {
+        return this.testCases.get("getQueryStringOverride").getAsJsonArray();
+    }
+
     // region Initialization
 
     private final JsonObject testCases;

@@ -108,4 +108,33 @@ class GrowthBookUtilsTest {
             assertEquals(expected, result);
         });
     }
+
+    @Test
+    void test_getQueryStringOverride() {
+        JsonArray testCases = helper.getQueryStringOverrideTestCases();
+
+        testCases.forEach(jsonElement -> {
+            JsonArray testCase = (JsonArray) jsonElement;
+            String testDescription = testCase.get(0).getAsString();
+
+//            System.out.printf("----- Evaluating getQueryStringOverride test case: %s", testDescription);
+
+            // 1st arg -> id
+            String id = testCase.get(1).getAsString();
+
+            // 2nd arg -> URL
+            String urlString = testCase.get(2).getAsString();
+
+            // 3rd arg -> number of variations
+            Integer numberOfVariations = testCase.get(3).getAsInt();
+
+            Integer expected = testCase.get(4).isJsonNull() ? null : testCase.get(4).getAsInt();
+
+            assertEquals(
+                    expected,
+                    GrowthBookUtils.getQueryStringOverride(id, urlString, numberOfVariations),
+                    String.format("Failing test: getQueryStringOverride: %s", testDescription)
+            );
+        });
+    }
 }
