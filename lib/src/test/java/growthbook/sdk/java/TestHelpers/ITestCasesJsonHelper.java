@@ -5,10 +5,13 @@ import com.google.gson.JsonObject;
 
 public interface ITestCasesJsonHelper {
     JsonObject getTestCases();
+    JsonArray evalConditionTestCases();
     JsonArray getHNVTestCases();
-    JsonArray getInNamespaceTestCases();
     JsonArray getBucketRangeTestCases();
+    JsonArray featureTestCases();
+    JsonArray runTestCases();
     JsonArray getChooseVariationTestCases();
-    JsonArray getEqualWeightsTestCases();
     JsonArray getQueryStringOverrideTestCases();
+    JsonArray getInNamespaceTestCases();
+    JsonArray getEqualWeightsTestCases();
 }

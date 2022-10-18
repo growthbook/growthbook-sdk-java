@@ -21,6 +21,11 @@ public class TestCasesJsonHelper implements ITestCasesJsonHelper {
     }
 
     @Override
+    public JsonArray evalConditionTestCases() {
+        return this.testCases.get("evalCondition").getAsJsonArray();
+    }
+
+    @Override
     public JsonArray getHNVTestCases() {
         return this.testCases.get("hash").getAsJsonArray();
     }
@@ -33,6 +38,16 @@ public class TestCasesJsonHelper implements ITestCasesJsonHelper {
     @Override
     public JsonArray getBucketRangeTestCases() {
         return this.testCases.get("getBucketRange").getAsJsonArray();
+    }
+
+    @Override
+    public JsonArray featureTestCases() {
+        return this.testCases.get("feature").getAsJsonArray();
+    }
+
+    @Override
+    public JsonArray runTestCases() {
+        return this.testCases.get("run").getAsJsonArray();
     }
 
     @Override
