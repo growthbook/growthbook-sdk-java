@@ -1,11 +1,12 @@
 package growthbook.sdk.java.models;
 
 import com.google.gson.JsonArray;
+import com.google.gson.JsonObject;
 import growthbook.sdk.java.TestHelpers.TestCasesJsonHelper;
+import growthbook.sdk.java.services.GrowthBookJsonUtils;
 import org.junit.jupiter.api.Test;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.*;
 
 class ConditionEvaluatorTest {
 
@@ -44,5 +45,18 @@ class ConditionEvaluatorTest {
                     testDescription
             );
         });
+    }
+
+    @Test
+    void test_isOperator() {
+        ConditionEvaluator evaluator = new ConditionEvaluator();
+
+        JsonObject attributes = GrowthBookJsonUtils.getInstance().gson
+                .fromJson("{\"name\": \"world\"}", JsonObject.class);
+        JsonObject condition = GrowthBookJsonUtils.getInstance().gson
+                .fromJson("{\"$not\": { \"name\": \"hello\" }}", JsonObject.class);
+
+        assertTrue(evaluator.isOperator(condition));
+        assertFalse(evaluator.isOperator(attributes));
     }
 }

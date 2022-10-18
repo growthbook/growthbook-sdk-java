@@ -92,7 +92,7 @@ public class ConditionEvaluator {
      * @param object The object to evaluate
      * @return if all keys start with $
      */
-    private Boolean isOperator(JsonObject object) {
+    Boolean isOperator(JsonObject object) {
         Set<Map.Entry<String, JsonElement>> entries = object.entrySet();
 
         if (entries.size() == 0) {
