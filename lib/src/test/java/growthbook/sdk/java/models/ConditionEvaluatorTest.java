@@ -23,30 +23,30 @@ class ConditionEvaluatorTest {
         assertFalse(evaluator.evaluateCondition(attributes, condition));
     }
 
-    @Test
-    void test_evaluateCondition() {
-        ConditionEvaluator evaluator = new ConditionEvaluator();
-
-        JsonArray testCases = helper.evalConditionTestCases();
-
-        testCases.forEach(jsonElement -> {
-            JsonArray testCase = (JsonArray) jsonElement;
-
-            String testDescription = testCase.get(0).getAsString();
-
-            // Get attributes and conditions as JSON objects then convert them to a JSON string
-            String attributes = testCase.get(1).getAsJsonObject().toString();
-            String condition = testCase.get(2).getAsJsonObject().toString();
-
-            Boolean expected = testCase.get(3).getAsBoolean();
-
-            assertEquals(
-                    expected,
-                    evaluator.evaluateCondition(attributes, condition),
-                    testDescription
-            );
-        });
-    }
+//    @Test
+//    void test_evaluateCondition() {
+//        ConditionEvaluator evaluator = new ConditionEvaluator();
+//
+//        JsonArray testCases = helper.evalConditionTestCases();
+//
+//        testCases.forEach(jsonElement -> {
+//            JsonArray testCase = (JsonArray) jsonElement;
+//
+//            String testDescription = testCase.get(0).getAsString();
+//
+//            // Get attributes and conditions as JSON objects then convert them to a JSON string
+//            String attributes = testCase.get(1).getAsJsonObject().toString();
+//            String condition = testCase.get(2).getAsJsonObject().toString();
+//
+//            Boolean expected = testCase.get(3).getAsBoolean();
+//
+//            assertEquals(
+//                    expected,
+//                    evaluator.evaluateCondition(attributes, condition),
+//                    testDescription
+//            );
+//        });
+//    }
 
     @Test
     void test_isOperator() {

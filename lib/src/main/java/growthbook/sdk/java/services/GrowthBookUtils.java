@@ -1,17 +1,14 @@
 package growthbook.sdk.java.services;
 
-import com.google.gson.reflect.TypeToken;
 import growthbook.sdk.java.models.BucketRange;
 import growthbook.sdk.java.models.Namespace;
 
 import javax.annotation.Nullable;
-import java.lang.reflect.Type;
 import java.math.BigInteger;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.List;
 import java.util.Map;
 
 public class GrowthBookUtils {
