@@ -15,9 +15,6 @@ import java.util.ArrayList;
 public class Experiment {
     /**
      * The globally unique identifier for the experiment
-     *
-     * @param key
-     * @return
      */
     String key;
 
