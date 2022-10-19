@@ -1,6 +1,7 @@
 package growthbook.sdk.java.services;
 
 import com.google.gson.Gson;
+import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import growthbook.sdk.java.TestHelpers.TestCasesJsonHelper;
@@ -27,7 +28,7 @@ class ConditionEvaluatorTest {
     }
 
 //    @Test
-//    void test_evaluateCondition() {
+//    void test_evaluateCondition_testCases() {
 //        ConditionEvaluator evaluator = new ConditionEvaluator();
 //
 //        JsonArray testCases = helper.evalConditionTestCases();
@@ -90,10 +91,15 @@ class ConditionEvaluatorTest {
         assertEquals(ConditionEvaluator.DataType.STRING, evaluator.getType(gson.fromJson("\"hello\"", JsonElement.class)));
     }
 
-    @Test
-    void test_Operator_fromString() {
-        assertNull(ConditionEvaluator.Operator.fromString("$foo"));
-        assertEquals(ConditionEvaluator.Operator.NIN, ConditionEvaluator.Operator.fromString("$nin"));
-    }
-
+//    @Test
+//    void test_evalOperatorCondition() {
+//        ConditionEvaluator evaluator = new ConditionEvaluator();
+//        Gson gson = GrowthBookJsonUtils.getInstance().gson;
+//
+//
+////        JsonElement element = gson.fromJson("{ \"foo\": 2}", JsonElement.class);
+////        assertNull(element.toString());
+////        System.out.printf(ConditionEvaluator.Operator.ALL.toString());
+////        evaluator.evalOperatorCondition(ConditionEvaluator.Operator.ALL, null, null);
+//    }
 }
