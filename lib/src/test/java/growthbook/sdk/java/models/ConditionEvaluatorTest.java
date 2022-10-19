@@ -1,6 +1,7 @@
 package growthbook.sdk.java.models;
 
 import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import growthbook.sdk.java.TestHelpers.TestCasesJsonHelper;
 import growthbook.sdk.java.services.GrowthBookJsonUtils;
@@ -58,5 +59,17 @@ class ConditionEvaluatorTest {
 
         assertTrue(evaluator.isOperator(condition));
         assertFalse(evaluator.isOperator(attributes));
+    }
+
+    @Test
+    void test_getPath() {
+        ConditionEvaluator evaluator = new ConditionEvaluator();
+
+        JsonElement attributes = GrowthBookJsonUtils.getInstance().gson
+                .fromJson("{ \"name\": \"sarah\", \"job\": { \"title\": \"developer\" } }", JsonElement.class);
+
+        assertEquals("sarah", ((JsonElement) evaluator.getPath(attributes, "name")).getAsString());
+        assertEquals("developer", ((JsonElement) evaluator.getPath(attributes, "job.title")).getAsString());
+        assertNull(evaluator.getPath(attributes, "job.company"));
     }
 }

@@ -1,11 +1,12 @@
 package growthbook.sdk.java.models;
 
+import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import growthbook.sdk.java.services.GrowthBookJsonUtils;
 
-import java.util.Map;
-import java.util.Set;
+import javax.annotation.Nullable;
+import java.util.*;
 
 public class ConditionEvaluator {
 
@@ -105,5 +106,42 @@ public class ConditionEvaluator {
                 .count();
 
         return without$Prefix == 0;
+    }
+
+    /**
+     * Given attributes and a dot-separated path string,
+     * @return the value at that path (or null if the path doesn't exist)
+     *
+     * @param attributes User attributes
+     * @param path       String path, e.g. path.to.something
+     */
+    @Nullable
+    Object getPath(JsonElement attributes, String path) {
+        if (Objects.equals(path, "")) return null;
+
+        ArrayList<String> paths = new ArrayList<>();
+
+        if (path.contains(".")) {
+            String[] pathSegments = path.split("\\.");
+
+            Collections.addAll(paths, pathSegments);
+        } else {
+            paths.add(path);
+        }
+
+        JsonElement element = attributes;
+
+        for (String segment : paths) {
+            if (element == null || element instanceof JsonArray) {
+                return null;
+            }
+            if (element instanceof JsonObject) {
+                element = ((JsonObject) element).get(segment);
+            } else {
+                return null;
+            }
+        }
+
+        return element;
     }
 }
