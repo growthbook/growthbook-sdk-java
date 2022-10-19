@@ -35,10 +35,15 @@ public class ConditionEvaluator implements IConditionEvaluator {
         DataType(String rawValue) {
             this.rawValue = rawValue;
         }
+
+        @Override
+        public String toString() {
+            return this.rawValue;
+        }
     }
 
     // TODO: Operator
-    private enum Operator {
+    enum Operator {
         IN("$in"),
         NIN("$nin"),
         GT("$gt"),
@@ -60,6 +65,11 @@ public class ConditionEvaluator implements IConditionEvaluator {
 
         Operator(String rawValue) {
             this.rawValue = rawValue;
+        }
+
+        @Override
+        public String toString() {
+            return this.rawValue;
         }
     }
 
