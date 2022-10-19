@@ -89,4 +89,11 @@ class ConditionEvaluatorTest {
         assertEquals(ConditionEvaluator.DataType.NUMBER, evaluator.getType(gson.fromJson("1337", JsonElement.class)));
         assertEquals(ConditionEvaluator.DataType.STRING, evaluator.getType(gson.fromJson("\"hello\"", JsonElement.class)));
     }
+
+    @Test
+    void test_Operator_fromString() {
+        assertNull(ConditionEvaluator.Operator.fromString("$foo"));
+        assertEquals(ConditionEvaluator.Operator.NIN, ConditionEvaluator.Operator.fromString("$nin"));
+    }
+
 }

@@ -71,6 +71,16 @@ public class ConditionEvaluator implements IConditionEvaluator {
         public String toString() {
             return this.rawValue;
         }
+
+        public static @Nullable Operator fromString(String stringValue) {
+            for (Operator o : values()) {
+                if (o.rawValue.equals(stringValue)) {
+                    return o;
+                }
+            }
+
+            return null;
+        }
     }
 
     private final GrowthBookJsonUtils jsonUtils = GrowthBookJsonUtils.getInstance();
