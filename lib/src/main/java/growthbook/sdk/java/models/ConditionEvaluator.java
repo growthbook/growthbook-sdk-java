@@ -10,6 +10,7 @@ import java.util.*;
 
 public class ConditionEvaluator {
 
+    // TODO: ConditionType
     private enum ConditionType {
         OR_CONDITION,
         NOR_CONDITION,
@@ -18,6 +19,7 @@ public class ConditionEvaluator {
         OPERATION_CONDITION
     }
 
+    // TODO: Operator
     private enum Operator {
         IN("$in"),
         NIN("$nin"),
@@ -45,6 +47,7 @@ public class ConditionEvaluator {
 
     private final GrowthBookJsonUtils jsonUtils = GrowthBookJsonUtils.getInstance();
 
+    // TODO: evaluateCondition
     /**
      * Evaluate a condition for a set of user attributes based on the provided condition.
      * <p>
@@ -144,4 +147,16 @@ public class ConditionEvaluator {
 
         return element;
     }
+
+    // TODO: private getType(attributeValue): string
+
+    // TODO: private evalConditionValue(conditionValue, attributeValue): boolean
+
+    // TODO: private elemMatch(condition, attributeValue): boolean
+
+    // TODO: private evalOperatorCondition(operator, attributeValue, conditionValue)
+
+    // TODO: private evalAnd(attributes: Attributes, conditions: Condition[]): boolean
+
+    // TODO: private evalOr(attributes: Attributes, conditions: Condition[]): boolean
 }

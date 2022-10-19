@@ -157,7 +157,7 @@ public class GrowthBookUtils {
         }
     }
 
-    // TODO: getBucketRanges
+    // TODO: getBucketRanges(numVariations: integer, coverage: float, weights: float[]): BucketRange[]
 
     /**
      * This converts and experiment's coverage and variation weights into an array of bucket ranges.
