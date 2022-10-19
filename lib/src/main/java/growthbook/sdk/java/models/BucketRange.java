@@ -17,6 +17,9 @@ import java.util.Objects;
 @Builder
 @AllArgsConstructor
 public class BucketRange {
+
+    private static final int BUCKET_RANGE_FLOAT_PRECISION = 3;
+
     Float rangeStart;
     Float rangeEnd;
 
@@ -27,8 +30,8 @@ public class BucketRange {
 
         return BucketRange
                 .builder()
-                .rangeStart(Precision.round(start, 3))
-                .rangeEnd(Precision.round(end, 3))
+                .rangeStart(Precision.round(start, BUCKET_RANGE_FLOAT_PRECISION))
+                .rangeEnd(Precision.round(end, BUCKET_RANGE_FLOAT_PRECISION))
                 .build();
     }
 
@@ -48,11 +51,11 @@ public class BucketRange {
 
         BucketRange that = (BucketRange) o;
         return Objects.equals(
-                Precision.round(this.rangeStart, 3),
-                Precision.round(that.rangeStart, 3)
+                Precision.round(this.rangeStart, BUCKET_RANGE_FLOAT_PRECISION),
+                Precision.round(that.rangeStart, BUCKET_RANGE_FLOAT_PRECISION)
         ) && Objects.equals(
-                Precision.round(this.rangeEnd, 3),
-                Precision.round(that.rangeEnd, 3)
+                Precision.round(this.rangeEnd, BUCKET_RANGE_FLOAT_PRECISION),
+                Precision.round(that.rangeEnd, BUCKET_RANGE_FLOAT_PRECISION)
         );
     }
 
@@ -64,8 +67,8 @@ public class BucketRange {
     static JsonElement getJson(BucketRange object) {
         JsonArray array = new JsonArray();
 
-        array.add(Precision.round(object.rangeStart, 3));
-        array.add(Precision.round(object.rangeEnd, 3));
+        array.add(Precision.round(object.rangeStart, BUCKET_RANGE_FLOAT_PRECISION));
+        array.add(Precision.round(object.rangeEnd, BUCKET_RANGE_FLOAT_PRECISION));
 
         return array;
     }
