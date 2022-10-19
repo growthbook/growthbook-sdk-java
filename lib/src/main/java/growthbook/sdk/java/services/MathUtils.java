@@ -25,4 +25,18 @@ public class MathUtils {
 
         return hash;
     }
+
+    /**
+     * Given a value, ensures it's clamped between the range provided
+     *
+     * @param value      The number you want to make sure is between lowerRange and upperRange
+     * @param lowerRange The lowest value
+     * @param upperRange The highest value
+     * @return the clamped number
+     */
+    public static float clamp(float value, float lowerRange, float upperRange) {
+        if (value > upperRange) return upperRange;
+        if (value < lowerRange) return lowerRange;
+        return value;
+    }
 }
