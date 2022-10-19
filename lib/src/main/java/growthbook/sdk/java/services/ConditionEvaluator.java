@@ -42,47 +42,6 @@ public class ConditionEvaluator implements IConditionEvaluator {
         }
     }
 
-    // TODO: Operator
-    enum Operator {
-        IN("$in"),
-        NIN("$nin"),
-        GT("$gt"),
-        GTE("$gte"),
-        LT("$lt"),
-        LTE("$lte"),
-        REGEX("$regex"),
-        NE("$ne"),
-        EQ("$eq"),
-        SIZE("$size"),
-        ELEMENT_MATCH("$elemMatch"),
-        ALL("$all"),
-        NOT("$not"),
-        TYPE("$type"),
-        EXISTS("$exists"),
-        ;
-
-        private final String rawValue;
-
-        Operator(String rawValue) {
-            this.rawValue = rawValue;
-        }
-
-        @Override
-        public String toString() {
-            return this.rawValue;
-        }
-
-        public static @Nullable Operator fromString(String stringValue) {
-            for (Operator o : values()) {
-                if (o.rawValue.equals(stringValue)) {
-                    return o;
-                }
-            }
-
-            return null;
-        }
-    }
-
     private final GrowthBookJsonUtils jsonUtils = GrowthBookJsonUtils.getInstance();
 
     // TODO: evaluateCondition
