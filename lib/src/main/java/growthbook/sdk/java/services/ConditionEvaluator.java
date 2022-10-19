@@ -1,14 +1,15 @@
-package growthbook.sdk.java.models;
+package growthbook.sdk.java.services;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
-import growthbook.sdk.java.services.GrowthBookJsonUtils;
+import com.google.gson.JsonPrimitive;
+import growthbook.sdk.java.models.UserAttributes;
 
 import javax.annotation.Nullable;
 import java.util.*;
 
-public class ConditionEvaluator {
+public class ConditionEvaluator implements IConditionEvaluator {
 
     // TODO: ConditionType
     private enum ConditionType {
@@ -17,6 +18,23 @@ public class ConditionEvaluator {
         AND_CONDITION,
         NOT_CONDITION,
         OPERATION_CONDITION
+    }
+
+    enum DataType {
+        STRING("string"),
+        NUMBER("number"),
+        BOOLEAN("boolean"),
+        ARRAY("array"),
+        OBJECT("object"),
+        NULL("null"),
+        UNDEFINED("undefined"),
+        UNKNOWN("unknown"),
+        ;
+        private final String rawValue;
+
+        DataType(String rawValue) {
+            this.rawValue = rawValue;
+        }
     }
 
     // TODO: Operator
@@ -61,6 +79,7 @@ public class ConditionEvaluator {
      * @param conditionJsonString  A JSON string of the condition
      * @return Whether the condition should be true for the user
      */
+    @Override
     public Boolean evaluateCondition(String attributesJsonString, String conditionJsonString) {
         try {
             JsonObject attributesJson = jsonUtils.gson.fromJson(attributesJsonString, JsonObject.class);
@@ -71,7 +90,7 @@ public class ConditionEvaluator {
                 System.out.println(entry.getKey());
             }
 
-            Set<Map.Entry<String, JsonElement>> attributesEntries = attributesJson.entrySet();//will return members of your object
+            Set<Map.Entry<String, JsonElement>> attributesEntries = attributesJson.entrySet();
             for (Map.Entry<String, JsonElement> entry : attributesEntries) {
                 System.out.println(entry.getKey());
             }
@@ -148,7 +167,25 @@ public class ConditionEvaluator {
         return element;
     }
 
-    // TODO: private getType(attributeValue): string
+    DataType getType(@Nullable JsonElement element) {
+        try {
+            if (element == null) return DataType.UNDEFINED;
+            if (element.isJsonNull()) return DataType.NULL;
+            if (element.isJsonArray()) return DataType.ARRAY;
+            if (element.isJsonObject()) return DataType.OBJECT;
+            if (element.isJsonPrimitive()) {
+                JsonPrimitive primitive = element.getAsJsonPrimitive();
+                if (primitive.isBoolean()) return DataType.BOOLEAN;
+                if (primitive.isNumber()) return DataType.NUMBER;
+                if (primitive.isString()) return DataType.STRING;
+            }
+
+            return DataType.UNKNOWN;
+        } catch (RuntimeException e) {
+            e.printStackTrace();
+            return DataType.UNKNOWN;
+        }
+    }
 
     // TODO: private evalConditionValue(conditionValue, attributeValue): boolean
 
