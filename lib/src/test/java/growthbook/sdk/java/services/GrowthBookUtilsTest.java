@@ -59,8 +59,6 @@ class GrowthBookUtilsTest {
         });
     }
 
-
-
     @Test
     void test_chooseVariation() {
         JsonArray testCases = helper.getChooseVariationTestCases();

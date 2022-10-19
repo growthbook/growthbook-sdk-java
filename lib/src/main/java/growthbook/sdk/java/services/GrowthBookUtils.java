@@ -136,9 +136,6 @@ public class GrowthBookUtils {
         Map<String, String> queryMap = UrlUtils.parseQueryString(query);
 
         String possibleValue = queryMap.get(id);
-
-        System.out.printf("query map %s .. possible value %s", queryMap, possibleValue);
-
         if (possibleValue == null) {
             return null;
         }
@@ -146,7 +143,6 @@ public class GrowthBookUtils {
         try {
             int variationValue = Integer.parseInt(possibleValue);
             if (variationValue < 0 || variationValue >= numberOfVariations) {
-                System.out.printf("ln 133: %s - num of vars: %s", variationValue, numberOfVariations);
                 return null;
             }
 
