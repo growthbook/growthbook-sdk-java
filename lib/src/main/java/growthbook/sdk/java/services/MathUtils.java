@@ -1,6 +1,7 @@
 package growthbook.sdk.java.services;
 
 import java.math.BigInteger;
+import java.util.List;
 
 public class MathUtils {
     private static final BigInteger INIT32 = new BigInteger("811c9dc5", 16);
@@ -38,5 +39,21 @@ public class MathUtils {
         if (value > upperRange) return upperRange;
         if (value < lowerRange) return lowerRange;
         return value;
+    }
+
+    /**
+     * Add up all the numbers
+     *
+     * @param items Numbers to add
+     * @return total
+     */
+    public static float sum(List<Float> items) {
+        float total = 0;
+
+        for (float item : items) {
+            total += item;
+        }
+
+        return total;
     }
 }

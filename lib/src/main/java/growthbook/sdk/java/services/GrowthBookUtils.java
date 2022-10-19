@@ -1,14 +1,17 @@
 package growthbook.sdk.java.services;
 
+import com.google.gson.reflect.TypeToken;
 import growthbook.sdk.java.models.BucketRange;
 import growthbook.sdk.java.models.Namespace;
 
 import javax.annotation.Nullable;
+import java.lang.reflect.Type;
 import java.math.BigInteger;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 
 public class GrowthBookUtils {
@@ -153,8 +156,6 @@ public class GrowthBookUtils {
         }
     }
 
-    // TODO: getBucketRanges(numVariations: integer, coverage: float, weights: float[]): BucketRange[]
-
     /**
      * This converts and experiment's coverage and variation weights into an array of bucket ranges.
      * Defaults to equal weights if the sum of the weight is not equal to 1 (rounded).
@@ -167,8 +168,39 @@ public class GrowthBookUtils {
     public static ArrayList<BucketRange> getBucketRanges(
             Integer numberOfVariations,
             Float coverage,
-            ArrayList<Float> weights
-    ) throws RuntimeException {
-        throw new RuntimeException("Not Implemented");
+            @Nullable ArrayList<Float> weights
+    ) {
+        float clampedCoverage = MathUtils.clamp(coverage, 0.0f, 1.0f);
+
+        // When the number of variations doesn't match the weights provided, ignore the weights and get equal weights.
+        ArrayList<Float> adjustedWeights = weights;
+        if (weights == null || numberOfVariations != weights.size()) {
+            adjustedWeights = getEqualWeights(numberOfVariations);
+        }
+
+        // When the sums of the weights are not equal to 1, ignore the weights and get equal weights
+        float sumOfWeights = MathUtils.sum(adjustedWeights);
+        if (sumOfWeights < 0.99 || sumOfWeights > 1.01) {
+            adjustedWeights = getEqualWeights(numberOfVariations);
+        }
+
+        float start = 0.0f;
+        float cumulative = 0.0f;
+        ArrayList<BucketRange> bucketRanges = new ArrayList<>();
+
+        for (float weight : adjustedWeights) {
+            start = cumulative;
+            cumulative += weight;
+
+            BucketRange bucketRange = BucketRange
+                    .builder()
+                    .rangeStart(start)
+                    .rangeEnd(start + clampedCoverage * weight)
+                    .build();
+
+            bucketRanges.add(bucketRange);
+        }
+
+        return bucketRanges;
     }
 }
