@@ -1,5 +1,6 @@
 package growthbook.sdk.java.services;
 
+import growthbook.sdk.java.models.Operator;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.*;

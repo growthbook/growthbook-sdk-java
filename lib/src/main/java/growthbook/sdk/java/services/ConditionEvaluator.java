@@ -4,6 +4,7 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
+import growthbook.sdk.java.models.Operator;
 import growthbook.sdk.java.models.UserAttributes;
 
 import javax.annotation.Nullable;

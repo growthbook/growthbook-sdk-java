@@ -1,4 +1,4 @@
-package growthbook.sdk.java.services;
+package growthbook.sdk.java.models;
 
 import javax.annotation.Nullable;
 
