@@ -293,7 +293,26 @@ public class ConditionEvaluator implements IConditionEvaluator {
             }
 
             if (Operator.NIN == operator) {
-                // TODO: NIN
+                if (DataType.STRING == attributeDataType) {
+                    String value = attributeValue.getAsString();
+                    Type listType = new TypeToken<ArrayList<String>>() {}.getType();
+                    ArrayList<String> conditionsList = jsonUtils.gson.fromJson(conditionValue, listType);
+                    return !conditionsList.contains(value);
+                }
+
+                if (DataType.NUMBER == attributeDataType) {
+                    Float value = attributeValue.getAsFloat();
+                    Type listType = new TypeToken<ArrayList<Float>>() {}.getType();
+                    ArrayList<Float> conditionsList = jsonUtils.gson.fromJson(conditionValue, listType);
+                    return !conditionsList.contains(value);
+                }
+
+                if (DataType.BOOLEAN == attributeDataType) {
+                    Boolean value = attributeValue.getAsBoolean();
+                    Type listType = new TypeToken<ArrayList<Boolean>>() {}.getType();
+                    ArrayList<Boolean> conditionsList = jsonUtils.gson.fromJson(conditionValue, listType);
+                    return !conditionsList.contains(value);
+                }
             }
 
             if (Operator.ALL == operator) {
