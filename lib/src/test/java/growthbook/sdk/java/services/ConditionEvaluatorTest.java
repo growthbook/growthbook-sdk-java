@@ -30,32 +30,57 @@ class ConditionEvaluatorTest {
         ArrayList<String> passedTests = new ArrayList<>();
         ArrayList<String> failedTests = new ArrayList<>();
 
+        ArrayList<Integer> failingIndexes = new ArrayList<>();
+
         ConditionEvaluator evaluator = new ConditionEvaluator();
 
         JsonArray testCases = helper.evalConditionTestCases();
 
-        testCases.forEach(jsonElement -> {
-            JsonArray testCase = (JsonArray) jsonElement;
+        for (int i = 0; i < testCases.size(); i++) {
+            // Run only test at index i
+//            if (i > 15) break;
 
-            String testDescription = testCase.get(0).getAsString();
+            // Failing $type $elemMatch $all
+            // Failing: [17, 19, 39, 43, 45, 47, 49, 51, 53, 57, 67, 70, 76]
+            // Failing: 17 elemMatch, 19 missing attribute, 39 gt/lt alphabetical
 
-            // Get attributes and conditions as JSON objects then convert them to a JSON string
-            String condition = testCase.get(1).getAsJsonObject().toString();
-            String attributes = testCase.get(2).getAsJsonObject().toString();
+            // Run only test at index i
+//            if (i == 39) {
+                JsonElement jsonElement = testCases.get(i);
+                JsonArray testCase = (JsonArray) jsonElement;
 
-            boolean expected = testCase.get(3).getAsBoolean();
+                String testDescription = testCase.get(0).getAsString();
 
-            if (expected == evaluator.evaluateCondition(attributes, condition)) {
-                passedTests.add(testDescription);
-            } else {
-                failedTests.add(testDescription);
+                // Get attributes and conditions as JSON objects then convert them to a JSON string
+                String condition = testCase.get(1).getAsJsonObject().toString();
+                String attributes = testCase.get(2).getAsJsonObject().toString();
+
+                boolean expected = testCase.get(3).getAsBoolean();
+
+                if (expected == evaluator.evaluateCondition(attributes, condition)) {
+                    passedTests.add(testDescription);
+                } else {
+                    failingIndexes.add(i);
+                    failedTests.add(testDescription);
+                }
+
             }
-        });
+
+//        }
 
 //        System.out.printf("\n\nPassed tests: %s", passedTests);
-        System.out.printf("\n\n\nFailed tests: %s", failedTests);
+        System.out.printf("\n\n\nFailed tests = %s / %s . Failing = %s", failedTests.size(), testCases.size(), failedTests);
+        System.out.printf("\n\n\nFailing indexes = %s", failingIndexes);
 
         assertEquals(0, failedTests.size(), "There are failing tests");
+    }
+
+    @Test
+    void test_evalCondition_partialTests() {
+        ConditionEvaluator evaluator = new ConditionEvaluator();
+
+        // TODO: Make sure this passes
+//        assertTrue(evaluator.evaluateCondition("0", "{\"$gt\": 10}"));
     }
 
     @Test

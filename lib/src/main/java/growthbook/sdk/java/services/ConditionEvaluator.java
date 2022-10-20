@@ -345,7 +345,6 @@ public class ConditionEvaluator implements IConditionEvaluator {
 
         // TODO: private evalOperatorCondition(operator, attributeValue, conditionValue)
         if (attributeValue.isJsonPrimitive()) {
-            // TODO: HERE -> Evaluate primitives
             if (Operator.EQ == operator) {
                 return arePrimitivesEqual(attributeValue.getAsJsonPrimitive(), conditionValue.getAsJsonPrimitive(), attributeDataType);
             }
@@ -358,32 +357,36 @@ public class ConditionEvaluator implements IConditionEvaluator {
                 if (attributeValue.getAsJsonPrimitive().isNumber()) {
                     return attributeValue.getAsNumber().floatValue() < conditionValue.getAsNumber().floatValue();
                 }
-
-                // TODO: Handle strings
-//                if (attributeValue.getAsJsonPrimitive().isNumber()) {
-//                    return attributeValue.getAsNumber().floatValue() < conditionValue.getAsNumber().floatValue();
-//                }
+                if (attributeValue.getAsJsonPrimitive().isString()) {
+                    return attributeValue.getAsString().compareTo(conditionValue.getAsString()) < 0;
+                }
             }
 
             if (Operator.LTE == operator) {
                 if (attributeValue.getAsJsonPrimitive().isNumber()) {
                     return attributeValue.getAsNumber().floatValue() <= conditionValue.getAsNumber().floatValue();
                 }
-                // TODO: Handle strings
+                if (attributeValue.getAsJsonPrimitive().isString()) {
+                    return attributeValue.getAsString().compareTo(conditionValue.getAsString()) <= 0;
+                }
             }
 
             if (Operator.GT == operator) {
                 if (attributeValue.getAsJsonPrimitive().isNumber()) {
                     return attributeValue.getAsNumber().floatValue() > conditionValue.getAsNumber().floatValue();
                 }
-                // TODO: Handle strings
+                if (attributeValue.getAsJsonPrimitive().isString()) {
+                    return attributeValue.getAsString().compareTo(conditionValue.getAsString()) > 0;
+                }
             }
 
             if (Operator.GTE == operator) {
                 if (attributeValue.getAsJsonPrimitive().isNumber()) {
                     return attributeValue.getAsNumber().floatValue() >= conditionValue.getAsNumber().floatValue();
                 }
-                // TODO: Handle strings
+                if (attributeValue.getAsJsonPrimitive().isString()) {
+                    return attributeValue.getAsString().compareTo(conditionValue.getAsString()) >= 0;
+                }
             }
 
             if (Operator.REGEX == operator) {
