@@ -168,15 +168,16 @@ public class ConditionEvaluator implements IConditionEvaluator {
     DataType getType(@Nullable JsonElement element) {
         try {
             if (element == null) return DataType.UNDEFINED;
-            if (element.isJsonNull()) return DataType.NULL;
-            if (element.isJsonArray()) return DataType.ARRAY;
-            if (element.isJsonObject()) return DataType.OBJECT;
+
             if (element.isJsonPrimitive()) {
                 JsonPrimitive primitive = element.getAsJsonPrimitive();
                 if (primitive.isBoolean()) return DataType.BOOLEAN;
                 if (primitive.isNumber()) return DataType.NUMBER;
                 if (primitive.isString()) return DataType.STRING;
             }
+
+            if (element.isJsonArray()) return DataType.ARRAY;
+            if (element.isJsonObject()) return DataType.OBJECT;
 
             return DataType.UNKNOWN;
         } catch (RuntimeException e) {
@@ -244,7 +245,7 @@ public class ConditionEvaluator implements IConditionEvaluator {
         if (operator == null) return false;
 
         if (Operator.TYPE == operator) {
-            return getType(attributeValue).toString().equals(conditionValue.toString());
+            return getType(attributeValue).toString().equals(conditionValue.getAsString().toString());
         }
 
         if (Operator.NOT == operator) {

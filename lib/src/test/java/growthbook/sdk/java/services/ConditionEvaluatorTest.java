@@ -40,9 +40,9 @@ class ConditionEvaluatorTest {
             // Run only test at index i
 //            if (i > 15) break;
 
-            // Failing $type $elemMatch $all
-            // Failing: [17, 19, 39, 43, 45, 47, 49, 51, 53, 57, 67, 70, 76]
-            // Failing: 17 elemMatch, 19 missing attribute, 39 gt/lt alphabetical
+            // Failing $type=null, $regex=invalid fail, $elemMatch, $all
+            // Failing: [17, 19, 45, 57, 67, 70, 76]
+            // Failing: 17 elemMatch, 19 missing attribute
 
             // Run only test at index i
 //            if (i == 39) {
