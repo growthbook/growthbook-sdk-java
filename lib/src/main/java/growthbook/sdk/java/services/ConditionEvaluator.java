@@ -91,8 +91,12 @@ public class ConditionEvaluator implements IConditionEvaluator {
      * @param object The object to evaluate
      * @return if all keys start with $
      */
-    Boolean isOperator(JsonObject object) {
-        Set<Map.Entry<String, JsonElement>> entries = object.entrySet();
+    Boolean isOperatorObject(JsonElement object) {
+        if (!object.isJsonObject()) {
+            return false;
+        }
+
+        Set<Map.Entry<String, JsonElement>> entries = ((JsonObject) object).entrySet();
 
         if (entries.size() == 0) {
             return true;
@@ -256,7 +260,7 @@ public class ConditionEvaluator implements IConditionEvaluator {
         if (conditionValue.isJsonObject()) {
             JsonObject conditionValueObject = (JsonObject) conditionValue;
 
-            if (isOperator(conditionValueObject)) {
+            if (isOperatorObject(conditionValueObject)) {
                 Set<Map.Entry<String, JsonElement>> entries = conditionValueObject.entrySet();
 
                 for (Map.Entry<String, JsonElement> entry : entries) {
@@ -272,14 +276,34 @@ public class ConditionEvaluator implements IConditionEvaluator {
         return conditionValue.toString().equals(conditionValue.toString());
     }
 
-    // TODO: private elemMatch(condition, attributeValue): boolean (depends on isOperator, evalConditionValue, evalCondition)
+    Boolean elemMatch(JsonElement attributeValue, JsonElement condition) {
+        if (!attributeValue.isJsonArray()) {
+            return false;
+        }
+        // TODO: private elemMatch(condition, attributeValue): boolean (depends on isOperator, evalConditionValue, evalCondition)
+
+        JsonArray attributeValueArr = attributeValue.getAsJsonArray();
+
+        for (JsonElement element : attributeValueArr) {
+            if (isOperatorObject(element)) {
+                if (evalConditionValue(condition, element)) {
+                    return true;
+                }
+            }
+            else if (evaluateCondition(element.toString(), condition.toString())) {
+                return true;
+            }
+        }
+
+        return false;
+    }
 
     // TODO: private evalAnd(attributes: Attributes, conditions: Condition[]): boolean
 
     /**
      * @param attributes User attributes
      * @param conditions an array of condition objects
-     * @return if evaluates
+     * @return if matches
      */
     Boolean evalOr(JsonElement attributes, JsonArray conditions) {
         if (conditions.size() == 0) {
@@ -296,5 +320,23 @@ public class ConditionEvaluator implements IConditionEvaluator {
         }
 
         return false;
+    }
+
+    /**
+     * @param attributes User attributes
+     * @param conditions an array of condition objects
+     * @return if matches
+     */
+    Boolean evalAnd(JsonElement attributes, JsonArray conditions) {
+        for (JsonElement condition : conditions) {
+            String attributesString = attributes == null ? "{}" : attributes.toString();
+            Boolean matches = evaluateCondition(attributesString, condition.toString());
+
+            if (!matches) {
+                return false;
+            }
+        }
+
+        return true;
     }
 }

@@ -1,15 +1,10 @@
 package growthbook.sdk.java.services;
 
 import com.google.gson.Gson;
-import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import growthbook.sdk.java.TestHelpers.TestCasesJsonHelper;
 import org.junit.jupiter.api.Test;
-
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -61,8 +56,8 @@ class ConditionEvaluatorTest {
         JsonObject condition = GrowthBookJsonUtils.getInstance().gson
                 .fromJson("{\"$not\": { \"name\": \"hello\" }}", JsonObject.class);
 
-        assertTrue(evaluator.isOperator(condition));
-        assertFalse(evaluator.isOperator(attributes));
+        assertTrue(evaluator.isOperatorObject(condition));
+        assertFalse(evaluator.isOperatorObject(attributes));
     }
 
     @Test
