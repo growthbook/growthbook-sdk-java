@@ -291,6 +291,14 @@ public class ConditionEvaluator implements IConditionEvaluator {
                     return conditionsList.contains(value);
                 }
             }
+
+            if (Operator.NIN == operator) {
+                // TODO: NIN
+            }
+
+            if (Operator.ALL == operator) {
+                // TODO: ALL
+            }
         }
 
         // When attributeValue is an array
@@ -307,6 +315,7 @@ public class ConditionEvaluator implements IConditionEvaluator {
             }
         }
 
+        // TODO: Verify if this is a good spot for this.
         if (attributeValue == null) {
             return attributeDataType == DataType.UNDEFINED;
         }
@@ -438,7 +447,14 @@ public class ConditionEvaluator implements IConditionEvaluator {
             }
         }
 
-        return conditionValue.toString().equals(conditionValue.toString());
+        if (attributeValue == null) {
+            return false;
+        }
+
+        // TODO: conditionValue is a string, number or boolean
+        // TODO: conditionValue is an array -> do a deep equal check
+
+        return conditionValue.toString().equals(attributeValue.toString());
     }
 
     Boolean elemMatch(JsonElement attributeValue, JsonElement condition) {
