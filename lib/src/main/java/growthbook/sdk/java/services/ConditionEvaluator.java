@@ -13,6 +13,8 @@ import growthbook.sdk.java.models.UserAttributes;
 import javax.annotation.Nullable;
 import java.lang.reflect.Type;
 import java.util.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class ConditionEvaluator implements IConditionEvaluator {
 
@@ -265,7 +267,6 @@ public class ConditionEvaluator implements IConditionEvaluator {
 
         System.out.printf("Operator: %s - Attr type: %s - Attr value = %s", operator, attributeDataType, attributeValue);
 
-        // TODO: private evalOperatorCondition(operator, attributeValue, conditionValue)
         // When conditionValue is an array
         if (attributeValue != null && conditionValue.isJsonArray()) {
             if (Operator.IN == operator) {
@@ -304,9 +305,6 @@ public class ConditionEvaluator implements IConditionEvaluator {
                 JsonElement size = new JsonPrimitive(attributeValueArray.size());
                 return evalConditionValue(conditionValue, size);
             }
-
-            // TODO: Remove from here?
-            return false;
         }
 
         if (attributeValue == null) {
@@ -317,29 +315,96 @@ public class ConditionEvaluator implements IConditionEvaluator {
             return true;
         }
 
+        // TODO: private evalOperatorCondition(operator, attributeValue, conditionValue)
         if (attributeValue.isJsonPrimitive()) {
-            // Evaluate primitives
+            // TODO: HERE -> Evaluate primitives
             if (Operator.EQ == operator) {
+                return arePrimitivesEqual(attributeValue.getAsJsonPrimitive(), conditionValue.getAsJsonPrimitive(), attributeDataType);
             }
 
             if (Operator.NE == operator) {
+                return !arePrimitivesEqual(attributeValue.getAsJsonPrimitive(), conditionValue.getAsJsonPrimitive(), attributeDataType);
             }
 
             if (Operator.LT == operator) {
+                if (attributeValue.getAsJsonPrimitive().isNumber()) {
+                    return attributeValue.getAsNumber().floatValue() < conditionValue.getAsNumber().floatValue();
+                }
+
+                // TODO: Handle strings
+//                if (attributeValue.getAsJsonPrimitive().isNumber()) {
+//                    return attributeValue.getAsNumber().floatValue() < conditionValue.getAsNumber().floatValue();
+//                }
             }
 
             if (Operator.LTE == operator) {
+                if (attributeValue.getAsJsonPrimitive().isNumber()) {
+                    return attributeValue.getAsNumber().floatValue() <= conditionValue.getAsNumber().floatValue();
+                }
+                // TODO: Handle strings
             }
 
             if (Operator.GT == operator) {
+                if (attributeValue.getAsJsonPrimitive().isNumber()) {
+                    return attributeValue.getAsNumber().floatValue() > conditionValue.getAsNumber().floatValue();
+                }
+                // TODO: Handle strings
             }
 
             if (Operator.GTE == operator) {
+                if (attributeValue.getAsJsonPrimitive().isNumber()) {
+                    return attributeValue.getAsNumber().floatValue() >= conditionValue.getAsNumber().floatValue();
+                }
+                // TODO: Handle strings
             }
 
             if (Operator.REGEX == operator) {
+                Pattern pattern = Pattern.compile(conditionValue.getAsString());
+                Matcher matcher = pattern.matcher(attributeValue.getAsString());
+
+                boolean matches = false;
+
+                while (matcher.find()) {
+                    matches = true;
+                    System.out.print("Start index: " + matcher.start());
+                    System.out.print(" End index: " + matcher.end() + " ");
+                    System.out.println(matcher.group());
+                }
+
+                return matches;
             }
         }
+
+        return false;
+    }
+
+    /**
+     * Compares two primitives for equality.
+     * @param a
+     * @param b
+     * @param dataType The data type of the primitives
+     * @return
+     */
+    Boolean arePrimitivesEqual(JsonPrimitive a, JsonPrimitive b, DataType dataType) {
+        switch (dataType) {
+            case STRING:
+                return a.getAsString().equals(b.getAsString());
+
+            case NUMBER:
+                return Objects.equals(a.getAsNumber(), b.getAsNumber());
+
+            case BOOLEAN:
+                return a.getAsBoolean() == b.getAsBoolean();
+
+            case ARRAY:
+            case OBJECT:
+            case NULL:
+            case UNDEFINED:
+            case UNKNOWN:
+                //
+        }
+
+        System.out.printf("\nUnsupported data type %s", dataType);
 
         return false;
     }
