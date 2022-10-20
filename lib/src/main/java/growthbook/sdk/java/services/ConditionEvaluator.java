@@ -55,21 +55,44 @@ public class ConditionEvaluator implements IConditionEvaluator {
             JsonObject attributesJson = jsonUtils.gson.fromJson(attributesJsonString, JsonObject.class);
             JsonObject conditionJson = jsonUtils.gson.fromJson(conditionJsonString, JsonObject.class);
 
-            Set<Map.Entry<String, JsonElement>> conditionEntries = conditionJson.entrySet();
-            for (Map.Entry<String, JsonElement> entry : conditionEntries) {
-                System.out.println(entry.getKey());
+            if (conditionJson.has("$or")) {
+                JsonArray targetItems = conditionJson.get("$or").getAsJsonArray();
+                return evalOr(attributesJson, targetItems);
             }
 
-            Set<Map.Entry<String, JsonElement>> attributesEntries = attributesJson.entrySet();
-            for (Map.Entry<String, JsonElement> entry : attributesEntries) {
-                System.out.println(entry.getKey());
+            if (conditionJson.has("$nor")) {
+                JsonArray targetItems = conditionJson.get("$nor").getAsJsonArray();
+                return !evalOr(attributesJson, targetItems);
+            }
+
+            if (conditionJson.has("$and")) {
+                JsonArray targetItems = conditionJson.get("$and").getAsJsonArray();
+                return evalAnd(attributesJson, targetItems);
+            }
+
+            if (conditionJson.has("$not")) {
+                JsonElement targetItem = conditionJson.get("$not");
+                return !evaluateCondition(attributesJsonString, targetItem.toString());
+            }
+
+            // TODO: Loop through conditionJson key/value pairs
+
+            Set<Map.Entry<String, JsonElement>> conditionEntries = conditionJson.entrySet();
+            for (Map.Entry<String, JsonElement> entry : conditionEntries) {
+                JsonElement element = (JsonElement) getPath(attributesJson, entry.getKey());
+                if (entry.getValue() != null) {
+                    if (!evalConditionValue(entry.getValue(), element)) {
+                        return false;
+                    }
+                }
+
+//                System.out.println(entry.getKey());
             }
 
             // TODO: evaluateCondition
 
-            System.out.printf("JSON attr %s ... JSON condition %s", attributesJson, conditionJson);
-
-            return false;
+//            System.out.printf("JSON attr %s ... JSON condition %s", attributesJson, conditionJson);
+            return true;
         } catch (RuntimeException e) {
             e.printStackTrace();
             return false;
@@ -234,9 +257,9 @@ public class ConditionEvaluator implements IConditionEvaluator {
             }
         }
 
-        DataType attributeType = getType(attributeValue);
+        DataType attributeDataType = getType(attributeValue);
 
-        System.out.printf("Operator: %s - Attr type: %s - Attr value = %s", operator, attributeType, attributeValue);
+        System.out.printf("Operator: %s - Attr type: %s - Attr value = %s", operator, attributeDataType, attributeValue);
 
         // TODO: private evalOperatorCondition(operator, attributeValue, conditionValue)
         // When conditionValue is an array
@@ -264,7 +287,42 @@ public class ConditionEvaluator implements IConditionEvaluator {
 
         // When attributeValue is an array
         if (attributeValue != null && attributeValue.isJsonArray()) {
-            //
+            JsonArray attributeValueArray = (JsonArray) attributeValue;
+
+            if (operator == Operator.ELEMENT_MATCH) {
+                return elemMatch(attributeValue, conditionValue);
+            }
+
+            if (operator == Operator.SIZE) {
+                JsonElement size = new JsonPrimitive(attributeValueArray.size());
+                return evalConditionValue(conditionValue, size);
+            }
+
+            // TODO: Remove from here?
+            return false;
+        }
+
+        if (attributeValue == null) {
+            return attributeDataType == DataType.UNDEFINED;
+        }
+
+        if (attributeValue.isJsonNull() && attributeDataType == DataType.NULL) {
+            return true;
+        }
+
+        switch (attributeDataType) {
+            case STRING:
+                String value = attributeValue.getAsString();
+
+            case NUMBER:
+            case BOOLEAN:
+            case NULL:
+            case UNDEFINED:
+                break;
+            case ARRAY:
+            case OBJECT:
+            case UNKNOWN:
+                // Unhandled or handled above
         }
 
         return false;

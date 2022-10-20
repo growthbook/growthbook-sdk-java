@@ -1,10 +1,13 @@
 package growthbook.sdk.java.services;
 
 import com.google.gson.Gson;
+import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import growthbook.sdk.java.TestHelpers.TestCasesJsonHelper;
 import org.junit.jupiter.api.Test;
+
+import java.util.ArrayList;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -22,30 +25,38 @@ class ConditionEvaluatorTest {
         assertFalse(evaluator.evaluateCondition(attributes, condition));
     }
 
-//    @Test
-//    void test_evaluateCondition_testCases() {
-//        ConditionEvaluator evaluator = new ConditionEvaluator();
-//
-//        JsonArray testCases = helper.evalConditionTestCases();
-//
-//        testCases.forEach(jsonElement -> {
-//            JsonArray testCase = (JsonArray) jsonElement;
-//
-//            String testDescription = testCase.get(0).getAsString();
-//
-//            // Get attributes and conditions as JSON objects then convert them to a JSON string
-//            String attributes = testCase.get(1).getAsJsonObject().toString();
-//            String condition = testCase.get(2).getAsJsonObject().toString();
-//
-//            Boolean expected = testCase.get(3).getAsBoolean();
-//
-//            assertEquals(
-//                    expected,
-//                    evaluator.evaluateCondition(attributes, condition),
-//                    testDescription
-//            );
-//        });
-//    }
+    @Test
+    void test_evaluateCondition_testCases() {
+        ArrayList<String> passedTests = new ArrayList<>();
+        ArrayList<String> failedTests = new ArrayList<>();
+
+        ConditionEvaluator evaluator = new ConditionEvaluator();
+
+        JsonArray testCases = helper.evalConditionTestCases();
+
+        testCases.forEach(jsonElement -> {
+            JsonArray testCase = (JsonArray) jsonElement;
+
+            String testDescription = testCase.get(0).getAsString();
+
+            // Get attributes and conditions as JSON objects then convert them to a JSON string
+            String attributes = testCase.get(1).getAsJsonObject().toString();
+            String condition = testCase.get(2).getAsJsonObject().toString();
+
+            boolean expected = testCase.get(3).getAsBoolean();
+
+            if (expected == evaluator.evaluateCondition(attributes, condition)) {
+                passedTests.add(testDescription);
+            } else {
+                failedTests.add(testDescription);
+            }
+        });
+
+//        System.out.printf("\n\nPassed tests: %s", passedTests);
+        System.out.printf("\n\n\nFailed tests: %s", failedTests);
+
+        assertEquals(0, failedTests.size(), "There are failing tests");
+    }
 
     @Test
     void test_isOperator() {
