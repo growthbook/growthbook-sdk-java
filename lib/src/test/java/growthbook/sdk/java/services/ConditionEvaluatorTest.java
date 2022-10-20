@@ -40,7 +40,7 @@ class ConditionEvaluatorTest {
             // Failing: $elemMatch (71)
 
             // Run only test at index i
-//            if (i == 76) {
+//            if (i == 71) {
                 JsonElement jsonElement = testCases.get(i);
                 JsonArray testCase = (JsonArray) jsonElement;
 

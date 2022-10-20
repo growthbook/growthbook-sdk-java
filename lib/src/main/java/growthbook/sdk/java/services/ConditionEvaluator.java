@@ -648,9 +648,6 @@ public class ConditionEvaluator implements IConditionEvaluator {
             return false;
         }
 
-        // TODO: conditionValue is a string, number or boolean
-        // TODO: conditionValue is an array -> do a deep equal check
-
         return conditionValue.toString().equals(attributeValue.toString());
     }
 
@@ -670,10 +667,8 @@ public class ConditionEvaluator implements IConditionEvaluator {
                     return true;
                 }
             }
-            else {
-                if (evaluateCondition(actualElement.toString(), expected.getAsString())) {
-                    return true;
-                }
+            else if (evaluateCondition(actualElement.toString(), expected.toString())) {
+                return true;
             }
         }
 
