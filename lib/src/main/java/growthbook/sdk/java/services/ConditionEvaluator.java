@@ -169,6 +169,10 @@ public class ConditionEvaluator implements IConditionEvaluator {
         try {
             if (element == null) return DataType.UNDEFINED;
 
+            if (element.toString().equals("null")) {
+                return DataType.NULL;
+            }
+
             if (element.isJsonPrimitive()) {
                 JsonPrimitive primitive = element.getAsJsonPrimitive();
                 if (primitive.isBoolean()) return DataType.BOOLEAN;
