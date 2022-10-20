@@ -12,15 +12,6 @@ import java.util.*;
 
 public class ConditionEvaluator implements IConditionEvaluator {
 
-    // TODO: ConditionType
-    private enum ConditionType {
-        OR_CONDITION,
-        NOR_CONDITION,
-        AND_CONDITION,
-        NOT_CONDITION,
-        OPERATION_CONDITION
-    }
-
     enum DataType {
         STRING("string"),
         NUMBER("number"),
@@ -223,24 +214,59 @@ public class ConditionEvaluator implements IConditionEvaluator {
         Operator operator = Operator.fromString(operatorString);
         if (operator == null) return false;
 
-        // TODO: Verify this is the desired functionality
-        if (attributeValue == null) return false;
+        if (Operator.TYPE == operator) {
+            return getType(attributeValue).toString().equals(conditionValue.toString());
+        }
 
+        if (Operator.NOT == operator) {
+            return !evalConditionValue(conditionValue, attributeValue);
+        }
+
+        if (Operator.EXISTS == operator) {
+            boolean exists = conditionValue.getAsBoolean();
+
+            if (exists) {
+                // Ensure it's present
+                return attributeValue != null;
+            } else {
+                // Ensure it's not present
+                return attributeValue == null || attributeValue.isJsonNull();
+            }
+        }
+
+        DataType attributeType = getType(attributeValue);
+
+        System.out.printf("Operator: %s - Attr type: %s - Attr value = %s", operator, attributeType, attributeValue);
+
+        // TODO: private evalOperatorCondition(operator, attributeValue, conditionValue)
         // When conditionValue is an array
         if (conditionValue.isJsonArray()) {
-            //
+            switch (operator) {
+                case IN:
+                    break;
+
+                case NIN:
+                    break;
+                case ALL:
+                    break;
+                case GT:
+                case GTE:
+                case LT:
+                case LTE:
+                case REGEX:
+                case NE:
+                case EQ:
+                case SIZE:
+                case ELEMENT_MATCH:
+                    // Do nothing
+            }
         }
 
         // When attributeValue is an array
-        if (attributeValue.isJsonArray()) {
+        if (attributeValue != null && attributeValue.isJsonArray()) {
             //
         }
 
-        // TODO: private evalOperatorCondition(operator, attributeValue, conditionValue)
-//        String attributeType = getType(attributeValue).toString();
-//        System.out.printf("Attr type %s", attributeType);
-//        if (operator == Operator.TYPE) {
-//        }
         return false;
     }
 
@@ -280,7 +306,6 @@ public class ConditionEvaluator implements IConditionEvaluator {
         if (!attributeValue.isJsonArray()) {
             return false;
         }
-        // TODO: private elemMatch(condition, attributeValue): boolean (depends on isOperator, evalConditionValue, evalCondition)
 
         JsonArray attributeValueArr = attributeValue.getAsJsonArray();
 
@@ -298,7 +323,6 @@ public class ConditionEvaluator implements IConditionEvaluator {
         return false;
     }
 
-    // TODO: private evalAnd(attributes: Attributes, conditions: Condition[]): boolean
 
     /**
      * @param attributes User attributes
