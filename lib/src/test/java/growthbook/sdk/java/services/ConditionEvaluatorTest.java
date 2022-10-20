@@ -41,7 +41,7 @@ class ConditionEvaluatorTest {
 //            if (i > 15) break;
 
             // Failing $regex=invalid fail, $elemMatch, $all
-            // Failing: [17, 19, 57, 67, 70, 76]
+            // Failing: [17, 67, 70, 76]
             // Failing: 17 elemMatch, 19 missing attribute
 
             // Run only test at index i
