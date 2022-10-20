@@ -40,8 +40,8 @@ class ConditionEvaluatorTest {
             String testDescription = testCase.get(0).getAsString();
 
             // Get attributes and conditions as JSON objects then convert them to a JSON string
-            String attributes = testCase.get(1).getAsJsonObject().toString();
-            String condition = testCase.get(2).getAsJsonObject().toString();
+            String condition = testCase.get(1).getAsJsonObject().toString();
+            String attributes = testCase.get(2).getAsJsonObject().toString();
 
             boolean expected = testCase.get(3).getAsBoolean();
 

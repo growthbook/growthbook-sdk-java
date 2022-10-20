@@ -52,7 +52,12 @@ public class ConditionEvaluator implements IConditionEvaluator {
     @Override
     public Boolean evaluateCondition(String attributesJsonString, String conditionJsonString) {
         try {
-            JsonObject attributesJson = jsonUtils.gson.fromJson(attributesJsonString, JsonObject.class);
+            System.out.println("\n\n---------------------------------------------------------");
+            System.out.printf("\nEvaluating JSON %s", attributesJsonString);
+            System.out.printf("\n\nEvaluating condition %s", conditionJsonString);
+            System.out.println("\n\n---------------------------------------------------------");
+
+            JsonElement attributesJson = jsonUtils.gson.fromJson(attributesJsonString, JsonElement.class);
             JsonObject conditionJson = jsonUtils.gson.fromJson(conditionJsonString, JsonObject.class);
 
             if (conditionJson.has("$or")) {
@@ -75,8 +80,6 @@ public class ConditionEvaluator implements IConditionEvaluator {
                 return !evaluateCondition(attributesJsonString, targetItem.toString());
             }
 
-            // TODO: Loop through conditionJson key/value pairs
-
             Set<Map.Entry<String, JsonElement>> conditionEntries = conditionJson.entrySet();
             for (Map.Entry<String, JsonElement> entry : conditionEntries) {
                 JsonElement element = (JsonElement) getPath(attributesJson, entry.getKey());
@@ -85,13 +88,8 @@ public class ConditionEvaluator implements IConditionEvaluator {
                         return false;
                     }
                 }
-
-//                System.out.println(entry.getKey());
             }
 
-            // TODO: evaluateCondition
-
-//            System.out.printf("JSON attr %s ... JSON condition %s", attributesJson, conditionJson);
             return true;
         } catch (RuntimeException e) {
             e.printStackTrace();
