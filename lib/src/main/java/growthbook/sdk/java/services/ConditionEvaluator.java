@@ -4,10 +4,14 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
+import com.google.gson.reflect.TypeToken;
+import com.sun.org.apache.xpath.internal.operations.Bool;
+import growthbook.sdk.java.models.BucketRange;
 import growthbook.sdk.java.models.Operator;
 import growthbook.sdk.java.models.UserAttributes;
 
 import javax.annotation.Nullable;
+import java.lang.reflect.Type;
 import java.util.*;
 
 public class ConditionEvaluator implements IConditionEvaluator {
@@ -179,6 +183,8 @@ public class ConditionEvaluator implements IConditionEvaluator {
         }
     }
 
+
+
     /**
      * Evaluates the condition using the operator. For example, if you provide the following condition:
      *
@@ -261,25 +267,28 @@ public class ConditionEvaluator implements IConditionEvaluator {
 
         // TODO: private evalOperatorCondition(operator, attributeValue, conditionValue)
         // When conditionValue is an array
-        if (conditionValue.isJsonArray()) {
-            switch (operator) {
-                case IN:
-                    break;
+        if (attributeValue != null && conditionValue.isJsonArray()) {
+            if (Operator.IN == operator) {
+                if (DataType.STRING == attributeDataType) {
+                    String value = attributeValue.getAsString();
+                    Type listType = new TypeToken<ArrayList<String>>() {}.getType();
+                    ArrayList<String> conditionsList = jsonUtils.gson.fromJson(conditionValue, listType);
+                    return conditionsList.contains(value);
+                }
 
-                case NIN:
-                    break;
-                case ALL:
-                    break;
-                case GT:
-                case GTE:
-                case LT:
-                case LTE:
-                case REGEX:
-                case NE:
-                case EQ:
-                case SIZE:
-                case ELEMENT_MATCH:
-                    // Do nothing
+                if (DataType.NUMBER == attributeDataType) {
+                    Float value = attributeValue.getAsFloat();
+                    Type listType = new TypeToken<ArrayList<Float>>() {}.getType();
+                    ArrayList<Float> conditionsList = jsonUtils.gson.fromJson(conditionValue, listType);
+                    return conditionsList.contains(value);
+                }
+
+                if (DataType.BOOLEAN == attributeDataType) {
+                    Boolean value = attributeValue.getAsBoolean();
+                    Type listType = new TypeToken<ArrayList<Boolean>>() {}.getType();
+                    ArrayList<Boolean> conditionsList = jsonUtils.gson.fromJson(conditionValue, listType);
+                    return conditionsList.contains(value);
+                }
             }
         }
 
@@ -308,19 +317,28 @@ public class ConditionEvaluator implements IConditionEvaluator {
             return true;
         }
 
-        switch (attributeDataType) {
-            case STRING:
-                String value = attributeValue.getAsString();
+        if (attributeValue.isJsonPrimitive()) {
+            // Evaluate primitives
+            if (Operator.EQ == operator) {
+            }
 
-            case NUMBER:
-            case BOOLEAN:
-            case NULL:
-            case UNDEFINED:
-                break;
-            case ARRAY:
-            case OBJECT:
-            case UNKNOWN:
-                // Unhandled or handled above
+            if (Operator.NE == operator) {
+            }
+
+            if (Operator.LT == operator) {
+            }
+
+            if (Operator.LTE == operator) {
+            }
+
+            if (Operator.GT == operator) {
+            }
+
+            if (Operator.GTE == operator) {
+            }
+
+            if (Operator.REGEX == operator) {
+            }
         }
 
         return false;
