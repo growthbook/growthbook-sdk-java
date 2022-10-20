@@ -40,12 +40,12 @@ class ConditionEvaluatorTest {
             // Run only test at index i
 //            if (i > 15) break;
 
-            // Failing $type=null, $regex=invalid fail, $elemMatch, $all
-            // Failing: [17, 19, 45, 57, 67, 70, 76]
+            // Failing $regex=invalid fail, $elemMatch, $all
+            // Failing: [17, 19, 57, 67, 70, 76]
             // Failing: 17 elemMatch, 19 missing attribute
 
             // Run only test at index i
-//            if (i == 39) {
+//            if (i == 57) {
                 JsonElement jsonElement = testCases.get(i);
                 JsonArray testCase = (JsonArray) jsonElement;
 
@@ -64,9 +64,9 @@ class ConditionEvaluatorTest {
                     failedTests.add(testDescription);
                 }
 
-            }
+//            }
 
-//        }
+        }
 
 //        System.out.printf("\n\nPassed tests: %s", passedTests);
         System.out.printf("\n\n\nFailed tests = %s / %s . Failing = %s", failedTests.size(), testCases.size(), failedTests);

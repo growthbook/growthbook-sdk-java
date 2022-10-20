@@ -239,83 +239,89 @@ public class ConditionEvaluator implements IConditionEvaluator {
      * i.e. <code>$exists, $type, $not</code>
      * </p>
      *
-     * @param attributeValue Nullable JSON element
+     * @param actual Nullable JSON element
      * @param operatorString String value of the operator
-     * @param conditionValue The conditions to use to verify that the attributes match, based on the operator
+     * @param expected The conditions to use to verify that the attributes match, based on the operator
      * @return if it's a match
      */
-    Boolean evalOperatorCondition(String operatorString, @Nullable JsonElement attributeValue, JsonElement conditionValue) {
+    Boolean evalOperatorCondition(String operatorString, @Nullable JsonElement actual, JsonElement expected) {
         Operator operator = Operator.fromString(operatorString);
         if (operator == null) return false;
 
         if (Operator.TYPE == operator) {
-            return getType(attributeValue).toString().equals(conditionValue.getAsString().toString());
+            return getType(actual).toString().equals(expected.getAsString());
         }
 
         if (Operator.NOT == operator) {
-            return !evalConditionValue(conditionValue, attributeValue);
+            return !evalConditionValue(expected, actual);
         }
 
         if (Operator.EXISTS == operator) {
-            boolean exists = conditionValue.getAsBoolean();
+            boolean exists = expected.getAsBoolean();
 
             if (exists) {
                 // Ensure it's present
-                return attributeValue != null;
+                return actual != null;
             } else {
                 // Ensure it's not present
-                return attributeValue == null || attributeValue.isJsonNull();
+                return actual == null || actual.isJsonNull();
             }
         }
 
-        DataType attributeDataType = getType(attributeValue);
+        DataType attributeDataType = getType(actual);
 
-        System.out.printf("Operator: %s - Attr type: %s - Attr value = %s", operator, attributeDataType, attributeValue);
+        if (actual == null) {
+            if (attributeDataType == DataType.UNDEFINED) {
+                return true;
+            }
+        }
+
+        System.out.printf("Operator: %s - Attr type: %s - Attr value = %s", operator, attributeDataType, actual);
 
         // When conditionValue is an array
-        if (attributeValue != null && conditionValue.isJsonArray()) {
+        if (actual != null && expected.isJsonArray()) {
             if (Operator.IN == operator) {
                 if (DataType.STRING == attributeDataType) {
-                    String value = attributeValue.getAsString();
+                    String value = actual.getAsString();
                     Type listType = new TypeToken<ArrayList<String>>() {}.getType();
-                    ArrayList<String> conditionsList = jsonUtils.gson.fromJson(conditionValue, listType);
+                    ArrayList<String> conditionsList = jsonUtils.gson.fromJson(expected, listType);
                     return conditionsList.contains(value);
                 }
 
                 if (DataType.NUMBER == attributeDataType) {
-                    Float value = attributeValue.getAsFloat();
+                    Float value = actual.getAsFloat();
                     Type listType = new TypeToken<ArrayList<Float>>() {}.getType();
-                    ArrayList<Float> conditionsList = jsonUtils.gson.fromJson(conditionValue, listType);
+                    ArrayList<Float> conditionsList = jsonUtils.gson.fromJson(expected, listType);
                     return conditionsList.contains(value);
                 }
 
                 if (DataType.BOOLEAN == attributeDataType) {
-                    Boolean value = attributeValue.getAsBoolean();
+                    Boolean value = actual.getAsBoolean();
                     Type listType = new TypeToken<ArrayList<Boolean>>() {}.getType();
-                    ArrayList<Boolean> conditionsList = jsonUtils.gson.fromJson(conditionValue, listType);
+                    ArrayList<Boolean> conditionsList = jsonUtils.gson.fromJson(expected, listType);
                     return conditionsList.contains(value);
                 }
             }
 
             if (Operator.NIN == operator) {
                 if (DataType.STRING == attributeDataType) {
-                    String value = attributeValue.getAsString();
+                    String value = actual.getAsString();
                     Type listType = new TypeToken<ArrayList<String>>() {}.getType();
-                    ArrayList<String> conditionsList = jsonUtils.gson.fromJson(conditionValue, listType);
+                    ArrayList<String> conditionsList = jsonUtils.gson.fromJson(expected, listType);
                     return !conditionsList.contains(value);
                 }
 
                 if (DataType.NUMBER == attributeDataType) {
-                    Float value = attributeValue.getAsFloat();
+                    Float value = actual.getAsFloat();
                     Type listType = new TypeToken<ArrayList<Float>>() {}.getType();
-                    ArrayList<Float> conditionsList = jsonUtils.gson.fromJson(conditionValue, listType);
+                    ArrayList<Float> conditionsList = jsonUtils.gson.fromJson(expected, listType);
                     return !conditionsList.contains(value);
                 }
 
                 if (DataType.BOOLEAN == attributeDataType) {
-                    Boolean value = attributeValue.getAsBoolean();
+                    Boolean value = actual.getAsBoolean();
                     Type listType = new TypeToken<ArrayList<Boolean>>() {}.getType();
-                    ArrayList<Boolean> conditionsList = jsonUtils.gson.fromJson(conditionValue, listType);
+                    ArrayList<Boolean> conditionsList = jsonUtils.gson.fromJson(expected, listType);
                     return !conditionsList.contains(value);
                 }
             }
@@ -326,88 +332,88 @@ public class ConditionEvaluator implements IConditionEvaluator {
         }
 
         // When attributeValue is an array
-        if (attributeValue != null && attributeValue.isJsonArray()) {
-            JsonArray attributeValueArray = (JsonArray) attributeValue;
+        if (actual.isJsonArray()) {
+            JsonArray attributeValueArray = (JsonArray) actual;
 
             if (operator == Operator.ELEMENT_MATCH) {
-                return elemMatch(attributeValue, conditionValue);
+                return elemMatch(actual, expected);
             }
 
             if (operator == Operator.SIZE) {
                 JsonElement size = new JsonPrimitive(attributeValueArray.size());
-                return evalConditionValue(conditionValue, size);
+                return evalConditionValue(expected, size);
             }
         }
 
-        // TODO: Verify if this is a good spot for this.
-        if (attributeValue == null) {
-            return attributeDataType == DataType.UNDEFINED;
-        }
-
-        if (attributeValue.isJsonNull() && attributeDataType == DataType.NULL) {
+        if (actual.isJsonNull() && attributeDataType == DataType.NULL) {
             return true;
         }
 
         // TODO: private evalOperatorCondition(operator, attributeValue, conditionValue)
-        if (attributeValue.isJsonPrimitive()) {
+        if (actual.isJsonPrimitive()) {
             if (Operator.EQ == operator) {
-                return arePrimitivesEqual(attributeValue.getAsJsonPrimitive(), conditionValue.getAsJsonPrimitive(), attributeDataType);
+                return arePrimitivesEqual(actual.getAsJsonPrimitive(), expected.getAsJsonPrimitive(), attributeDataType);
             }
 
             if (Operator.NE == operator) {
-                return !arePrimitivesEqual(attributeValue.getAsJsonPrimitive(), conditionValue.getAsJsonPrimitive(), attributeDataType);
+                return !arePrimitivesEqual(actual.getAsJsonPrimitive(), expected.getAsJsonPrimitive(), attributeDataType);
             }
 
             if (Operator.LT == operator) {
-                if (attributeValue.getAsJsonPrimitive().isNumber()) {
-                    return attributeValue.getAsNumber().floatValue() < conditionValue.getAsNumber().floatValue();
+                if (actual.getAsJsonPrimitive().isNumber()) {
+                    return actual.getAsNumber().floatValue() < expected.getAsNumber().floatValue();
                 }
-                if (attributeValue.getAsJsonPrimitive().isString()) {
-                    return attributeValue.getAsString().compareTo(conditionValue.getAsString()) < 0;
+                if (actual.getAsJsonPrimitive().isString()) {
+                    return actual.getAsString().compareTo(expected.getAsString()) < 0;
                 }
             }
 
             if (Operator.LTE == operator) {
-                if (attributeValue.getAsJsonPrimitive().isNumber()) {
-                    return attributeValue.getAsNumber().floatValue() <= conditionValue.getAsNumber().floatValue();
+                if (actual.getAsJsonPrimitive().isNumber()) {
+                    return actual.getAsNumber().floatValue() <= expected.getAsNumber().floatValue();
                 }
-                if (attributeValue.getAsJsonPrimitive().isString()) {
-                    return attributeValue.getAsString().compareTo(conditionValue.getAsString()) <= 0;
+                if (actual.getAsJsonPrimitive().isString()) {
+                    return actual.getAsString().compareTo(expected.getAsString()) <= 0;
                 }
             }
 
             if (Operator.GT == operator) {
-                if (attributeValue.getAsJsonPrimitive().isNumber()) {
-                    return attributeValue.getAsNumber().floatValue() > conditionValue.getAsNumber().floatValue();
+                if (actual.getAsJsonPrimitive().isNumber()) {
+                    return actual.getAsNumber().floatValue() > expected.getAsNumber().floatValue();
                 }
-                if (attributeValue.getAsJsonPrimitive().isString()) {
-                    return attributeValue.getAsString().compareTo(conditionValue.getAsString()) > 0;
+                if (actual.getAsJsonPrimitive().isString()) {
+                    return actual.getAsString().compareTo(expected.getAsString()) > 0;
                 }
             }
 
             if (Operator.GTE == operator) {
-                if (attributeValue.getAsJsonPrimitive().isNumber()) {
-                    return attributeValue.getAsNumber().floatValue() >= conditionValue.getAsNumber().floatValue();
+                if (actual.getAsJsonPrimitive().isNumber()) {
+                    return actual.getAsNumber().floatValue() >= expected.getAsNumber().floatValue();
                 }
-                if (attributeValue.getAsJsonPrimitive().isString()) {
-                    return attributeValue.getAsString().compareTo(conditionValue.getAsString()) >= 0;
+                if (actual.getAsJsonPrimitive().isString()) {
+                    return actual.getAsString().compareTo(expected.getAsString()) >= 0;
                 }
             }
 
             if (Operator.REGEX == operator) {
-                Pattern pattern = Pattern.compile(conditionValue.getAsString());
-                Matcher matcher = pattern.matcher(attributeValue.getAsString());
+                try {
+                    Pattern pattern = Pattern.compile(expected.getAsString());
+                    Matcher matcher = pattern.matcher(actual.getAsString());
 
-                boolean matches = false;
+                    boolean matches = false;
 
-                while (matcher.find()) {
-                    matches = true;
-                    System.out.print("Start index: " + matcher.start());
-                    System.out.print(" End index: " + matcher.end() + " ");
-                    System.out.println(matcher.group());
+                    while (matcher.find()) {
+                        matches = true;
+                        System.out.print("Start index: " + matcher.start());
+                        System.out.print(" End index: " + matcher.end() + " ");
+                        System.out.println(matcher.group());
+                    }
+
+                    return matches;
+                } catch (Exception e) {
+                    e.printStackTrace();
+                    return false;
                 }
-
-                return matches;
             }
         }
 
