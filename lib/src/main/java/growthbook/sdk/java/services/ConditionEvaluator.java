@@ -348,8 +348,6 @@ public class ConditionEvaluator implements IConditionEvaluator {
 
                 while (matcher.find()) {
                     matches = true;
-                    System.out.print("Start index: " + matcher.start());
-                    System.out.print(" End index: " + matcher.end() + " ");
                     System.out.println(matcher.group());
                 }
 
@@ -365,17 +363,28 @@ public class ConditionEvaluator implements IConditionEvaluator {
 
             case SIZE:
                 if (actual == null || !actual.isJsonArray()) return false;
-                JsonArray attributeValueArray = (JsonArray) actual;
-                JsonElement size = new JsonPrimitive(attributeValueArray.size());
+                JsonArray attributeValueArrayForSize = (JsonArray) actual;
+                JsonElement size = new JsonPrimitive(attributeValueArrayForSize.size());
                 return evalConditionValue(expected, size);
 
             case ELEMENT_MATCH:
                 return elemMatch(actual, expected);
 
             case ALL:
-                // TODO: ALL
-                throw new RuntimeException("TODO: implement $all");
-//                break;
+                if (actual == null || !actual.isJsonArray()) return false;
+                JsonArray actualArrayForAll = (JsonArray) actual;
+                JsonArray expectedArrayForAll = (JsonArray) expected;
+
+                for (int i = 0; i < expectedArrayForAll.size(); i++) {
+                    boolean passed = false;
+                    for (int j = 0; j < actualArrayForAll.size(); j++) {
+                        if (evalConditionValue(expectedArrayForAll.get(i), actualArrayForAll.get(j))) {
+                            passed = true;
+                            break;
+                        }
+                    }
+                    if (!passed) return false;
+                }
 
             case NOT:
                 return !evalConditionValue(expected, actual);
