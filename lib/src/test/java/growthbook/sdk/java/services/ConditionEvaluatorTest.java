@@ -37,11 +37,7 @@ class ConditionEvaluatorTest {
         JsonArray testCases = helper.evalConditionTestCases();
 
         for (int i = 0; i < testCases.size(); i++) {
-            // Run only test at index i
-//            if (i > 15) break;
-
-            // Failing: $elemMatch (17, 67, 70)
-            // Failing: [17, 67, 70]
+            // Failing: $elemMatch (71)
 
             // Run only test at index i
 //            if (i == 76) {

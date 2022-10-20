@@ -654,22 +654,26 @@ public class ConditionEvaluator implements IConditionEvaluator {
         return conditionValue.toString().equals(attributeValue.toString());
     }
 
-    Boolean elemMatch(JsonElement attributeValue, JsonElement condition) {
-        System.out.printf("calling elemMatch with attrs %s and condition %s", attributeValue, condition);
-        if (!attributeValue.isJsonArray()) {
+    Boolean elemMatch(JsonElement actual, JsonElement expected) {
+        System.out.printf("calling elemMatch with attrs %s and condition %s", actual, expected);
+        if (!actual.isJsonArray()) {
             return false;
         }
 
-        JsonArray attributeValueArr = attributeValue.getAsJsonArray();
+        JsonArray actualArray = actual.getAsJsonArray();
 
-        for (JsonElement element : attributeValueArr) {
-            if (isOperatorObject(element)) {
-                if (evalConditionValue(condition, element)) {
+        boolean isOperator = isOperatorObject(expected);
+
+        for (JsonElement actualElement : actualArray) {
+            if (isOperator) {
+                if (evalConditionValue(expected, actualElement)) {
                     return true;
                 }
             }
-            else if (evaluateCondition(element.toString(), condition.toString())) {
-                return true;
+            else {
+                if (evaluateCondition(actualElement.toString(), expected.getAsString())) {
+                    return true;
+                }
             }
         }
 
