@@ -37,8 +37,6 @@ class ConditionEvaluatorTest {
         JsonArray testCases = helper.evalConditionTestCases();
 
         for (int i = 0; i < testCases.size(); i++) {
-            // Failing: $elemMatch (71)
-
             // Run only test at index i
 //            if (i == 71) {
                 JsonElement jsonElement = testCases.get(i);
@@ -68,14 +66,6 @@ class ConditionEvaluatorTest {
         System.out.printf("\n\n\nFailing indexes = %s", failingIndexes);
 
         assertEquals(0, failedTests.size(), "There are failing tests");
-    }
-
-    @Test
-    void test_evalCondition_partialTests() {
-        ConditionEvaluator evaluator = new ConditionEvaluator();
-
-        // TODO: Make sure this passes
-//        assertTrue(evaluator.evaluateCondition("0", "{\"$gt\": 10}"));
     }
 
     @Test
@@ -116,16 +106,4 @@ class ConditionEvaluatorTest {
         assertEquals(ConditionEvaluator.DataType.NUMBER, evaluator.getType(gson.fromJson("1337", JsonElement.class)));
         assertEquals(ConditionEvaluator.DataType.STRING, evaluator.getType(gson.fromJson("\"hello\"", JsonElement.class)));
     }
-
-//    @Test
-//    void test_evalOperatorCondition() {
-//        ConditionEvaluator evaluator = new ConditionEvaluator();
-//        Gson gson = GrowthBookJsonUtils.getInstance().gson;
-//
-//
-////        JsonElement element = gson.fromJson("{ \"foo\": 2}", JsonElement.class);
-////        assertNull(element.toString());
-////        System.out.printf(ConditionEvaluator.Operator.ALL.toString());
-////        evaluator.evalOperatorCondition(ConditionEvaluator.Operator.ALL, null, null);
-//    }
 }
