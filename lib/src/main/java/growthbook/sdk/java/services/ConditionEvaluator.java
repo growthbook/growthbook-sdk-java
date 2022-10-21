@@ -83,7 +83,6 @@ public class ConditionEvaluator implements IConditionEvaluator {
 
             Set<Map.Entry<String, JsonElement>> conditionEntries = conditionJson.entrySet();
             for (Map.Entry<String, JsonElement> entry : conditionEntries) {
-                // TODO: figure out what to do when getPath returns null
                 JsonElement element = (JsonElement) getPath(attributesJson, entry.getKey());
                 if (entry.getValue() != null) {
                     if (!evalConditionValue(entry.getValue(), element)) {
