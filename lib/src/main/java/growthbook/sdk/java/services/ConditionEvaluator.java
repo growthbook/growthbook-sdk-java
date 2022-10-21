@@ -58,11 +58,6 @@ public class ConditionEvaluator implements IConditionEvaluator {
     @Override
     public Boolean evaluateCondition(String attributesJsonString, String conditionJsonString) {
         try {
-            System.out.println("\n\n---------------------------------------------------------");
-            System.out.printf("\nEvaluating JSON %s", attributesJsonString);
-            System.out.printf("\n\nEvaluating condition %s", conditionJsonString);
-            System.out.println("\n\n---------------------------------------------------------");
-
             JsonElement attributesJson = jsonUtils.gson.fromJson(attributesJsonString, JsonElement.class);
             JsonObject conditionJson = jsonUtils.gson.fromJson(conditionJsonString, JsonObject.class);
 
@@ -138,8 +133,6 @@ public class ConditionEvaluator implements IConditionEvaluator {
      */
     @Nullable
     Object getPath(JsonElement attributes, String path) {
-        System.out.printf("Calling getPath with %s, %s", attributes, path);
-
         if (Objects.equals(path, "")) return null;
 
         ArrayList<String> paths = new ArrayList<>();
@@ -169,8 +162,6 @@ public class ConditionEvaluator implements IConditionEvaluator {
     }
 
     DataType getType(@Nullable JsonElement element) {
-        System.out.printf("\n\nCalling getType with element %s", element);
-
         try {
             if (element == null) return DataType.UNDEFINED;
 
@@ -348,7 +339,6 @@ public class ConditionEvaluator implements IConditionEvaluator {
 
                 while (matcher.find()) {
                     matches = true;
-                    System.out.println(matcher.group());
                 }
 
                 return matches;
@@ -404,186 +394,10 @@ public class ConditionEvaluator implements IConditionEvaluator {
                 }
 
             default:
-                System.out.println("!! evalOperatorCondition default condition");
                 return false;
         }
     }
-   /* Boolean evalOperatorCondition(String operatorString, @Nullable JsonElement actual, JsonElement expected) {
-        Operator operator = Operator.fromString(operatorString);
-        if (operator == null) return false;
 
-        if (Operator.TYPE == operator) {
-            return getType(actual).toString().equals(expected.getAsString());
-        }
-
-        if (Operator.NOT == operator) {
-            return !evalConditionValue(expected, actual);
-        }
-
-        if (Operator.EXISTS == operator) {
-            boolean exists = expected.getAsBoolean();
-
-            if (exists) {
-                // Ensure it's present
-                return actual != null;
-            } else {
-                // Ensure it's not present
-                return actual == null || actual.isJsonNull();
-            }
-        }
-
-        DataType attributeDataType = getType(actual);
-
-        if (actual == null) {
-            if (attributeDataType == DataType.UNDEFINED) {
-                return true;
-            }
-        }
-
-        System.out.printf("Operator: %s - Attr type: %s - Attr value = %s", operator, attributeDataType, actual);
-
-        // When conditionValue is an array
-        if (actual != null && expected.isJsonArray()) {
-            if (Operator.IN == operator) {
-                if (DataType.STRING == attributeDataType) {
-                    String value = actual.getAsString();
-                    Type listType = new TypeToken<ArrayList<String>>() {}.getType();
-                    ArrayList<String> conditionsList = jsonUtils.gson.fromJson(expected, listType);
-                    return conditionsList.contains(value);
-                }
-
-                if (DataType.NUMBER == attributeDataType) {
-                    Float value = actual.getAsFloat();
-                    Type listType = new TypeToken<ArrayList<Float>>() {}.getType();
-                    ArrayList<Float> conditionsList = jsonUtils.gson.fromJson(expected, listType);
-                    return conditionsList.contains(value);
-                }
-
-                if (DataType.BOOLEAN == attributeDataType) {
-                    Boolean value = actual.getAsBoolean();
-                    Type listType = new TypeToken<ArrayList<Boolean>>() {}.getType();
-                    ArrayList<Boolean> conditionsList = jsonUtils.gson.fromJson(expected, listType);
-                    return conditionsList.contains(value);
-                }
-            }
-
-            if (Operator.NIN == operator) {
-                if (DataType.STRING == attributeDataType) {
-                    String value = actual.getAsString();
-                    Type listType = new TypeToken<ArrayList<String>>() {}.getType();
-                    ArrayList<String> conditionsList = jsonUtils.gson.fromJson(expected, listType);
-                    return !conditionsList.contains(value);
-                }
-
-                if (DataType.NUMBER == attributeDataType) {
-                    Float value = actual.getAsFloat();
-                    Type listType = new TypeToken<ArrayList<Float>>() {}.getType();
-                    ArrayList<Float> conditionsList = jsonUtils.gson.fromJson(expected, listType);
-                    return !conditionsList.contains(value);
-                }
-
-                if (DataType.BOOLEAN == attributeDataType) {
-                    Boolean value = actual.getAsBoolean();
-                    Type listType = new TypeToken<ArrayList<Boolean>>() {}.getType();
-                    ArrayList<Boolean> conditionsList = jsonUtils.gson.fromJson(expected, listType);
-                    return !conditionsList.contains(value);
-                }
-            }
-
-            if (Operator.ALL == operator) {
-                // TODO: ALL
-            }
-        }
-
-        // When attributeValue is an array
-        if (actual.isJsonArray()) {
-            JsonArray attributeValueArray = (JsonArray) actual;
-
-            if (operator == Operator.ELEMENT_MATCH) {
-                return elemMatch(actual, expected);
-            }
-
-            if (operator == Operator.SIZE) {
-                JsonElement size = new JsonPrimitive(attributeValueArray.size());
-                return evalConditionValue(expected, size);
-            }
-        }
-
-        if (actual.isJsonNull() && attributeDataType == DataType.NULL) {
-            return true;
-        }
-
-        // TODO: private evalOperatorCondition(operator, attributeValue, conditionValue)
-        if (actual.isJsonPrimitive()) {
-            if (Operator.EQ == operator) {
-                return arePrimitivesEqual(actual.getAsJsonPrimitive(), expected.getAsJsonPrimitive(), attributeDataType);
-            }
-
-            if (Operator.NE == operator) {
-                return !arePrimitivesEqual(actual.getAsJsonPrimitive(), expected.getAsJsonPrimitive(), attributeDataType);
-            }
-
-            if (Operator.LT == operator) {
-                if (actual.getAsJsonPrimitive().isNumber()) {
-                    return actual.getAsNumber().floatValue() < expected.getAsNumber().floatValue();
-                }
-                if (actual.getAsJsonPrimitive().isString()) {
-                    return actual.getAsString().compareTo(expected.getAsString()) < 0;
-                }
-            }
-
-            if (Operator.LTE == operator) {
-                if (actual.getAsJsonPrimitive().isNumber()) {
-                    return actual.getAsNumber().floatValue() <= expected.getAsNumber().floatValue();
-                }
-                if (actual.getAsJsonPrimitive().isString()) {
-                    return actual.getAsString().compareTo(expected.getAsString()) <= 0;
-                }
-            }
-
-            if (Operator.GT == operator) {
-                if (actual.getAsJsonPrimitive().isNumber()) {
-                    return actual.getAsNumber().floatValue() > expected.getAsNumber().floatValue();
-                }
-                if (actual.getAsJsonPrimitive().isString()) {
-                    return actual.getAsString().compareTo(expected.getAsString()) > 0;
-                }
-            }
-
-            if (Operator.GTE == operator) {
-                if (actual.getAsJsonPrimitive().isNumber()) {
-                    return actual.getAsNumber().floatValue() >= expected.getAsNumber().floatValue();
-                }
-                if (actual.getAsJsonPrimitive().isString()) {
-                    return actual.getAsString().compareTo(expected.getAsString()) >= 0;
-                }
-            }
-
-            if (Operator.REGEX == operator) {
-                try {
-                    Pattern pattern = Pattern.compile(expected.getAsString());
-                    Matcher matcher = pattern.matcher(actual.getAsString());
-
-                    boolean matches = false;
-
-                    while (matcher.find()) {
-                        matches = true;
-                        System.out.print("Start index: " + matcher.start());
-                        System.out.print(" End index: " + matcher.end() + " ");
-                        System.out.println(matcher.group());
-                    }
-
-                    return matches;
-                } catch (Exception e) {
-                    e.printStackTrace();
-                    return false;
-                }
-            }
-        }
-
-        return false;
-    }
-*/
     /**
      * Compares two primitives for equality.
      * @param a
@@ -627,7 +441,6 @@ public class ConditionEvaluator implements IConditionEvaluator {
      * @return
      */
     Boolean evalConditionValue(JsonElement conditionValue, @Nullable JsonElement attributeValue) {
-        // conditionValue is an object
         if (conditionValue.isJsonObject()) {
             JsonObject conditionValueObject = (JsonObject) conditionValue;
 
@@ -652,7 +465,6 @@ public class ConditionEvaluator implements IConditionEvaluator {
     }
 
     Boolean elemMatch(JsonElement actual, JsonElement expected) {
-        System.out.printf("calling elemMatch with attrs %s and condition %s", actual, expected);
         if (!actual.isJsonArray()) {
             return false;
         }
