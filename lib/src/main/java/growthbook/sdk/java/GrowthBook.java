@@ -3,8 +3,16 @@ package growthbook.sdk.java;
 import growthbook.sdk.java.models.Experiment;
 import growthbook.sdk.java.models.ExperimentResult;
 import growthbook.sdk.java.models.ExperimentRunCallback;
+import growthbook.sdk.java.models.FeatureResult;
 
 public class GrowthBook implements IGrowthBook {
+
+    @Override
+    public <T> FeatureResult<T> evalFeature(String key) {
+        // TODO:
+        return null;
+    }
+
     @Override
     public ExperimentResult run(Experiment experiment) {
         // TODO:
