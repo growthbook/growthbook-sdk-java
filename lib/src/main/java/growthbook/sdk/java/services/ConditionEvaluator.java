@@ -5,8 +5,6 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
 import com.google.gson.reflect.TypeToken;
-import com.sun.org.apache.xpath.internal.operations.Bool;
-import growthbook.sdk.java.models.BucketRange;
 import growthbook.sdk.java.models.Operator;
 import growthbook.sdk.java.models.UserAttributes;
 
