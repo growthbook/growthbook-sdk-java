@@ -6,6 +6,7 @@ package growthbook.sdk.java.models;
 public interface UserAttributes {
     /**
      * JSON representation of the attributes
+     *
      * @return JSON string
      */
     String toJson();

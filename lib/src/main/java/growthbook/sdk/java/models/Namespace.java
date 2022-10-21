@@ -10,14 +10,18 @@ import java.lang.reflect.Type;
 
 /**
  * A tuple that specifies what part of a namespace an experiment includes. If two experiments are in the same namespace and their ranges don't overlap, they wil be mutually exclusive.
- *
+ * <p>
  * The tuple has 3 parts:
- *
- *      - The namespace id (string)
- *      - The beginning of the range (float, between 0 and 1)
- *      - The end of the range (float, between 0 and 1)
+ * <p>
+ * <ul>
+ *     <li>The namespace id (string)</li>
+ *     <li>The beginning of the range (float, between 0 and 1)</li>
+ *     <li>The end of the range (float, between 0 and 1)</li>
+ * </ul>
  */
-@Data @Builder @AllArgsConstructor
+@Data
+@Builder
+@AllArgsConstructor
 public class Namespace {
     @Expose(serialize = false)
     String id;

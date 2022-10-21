@@ -4,7 +4,9 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 
-@Data @Builder @AllArgsConstructor
+@Data
+@Builder
+@AllArgsConstructor
 public class TrackingResult<ValueType> {
     ValueType value;
 

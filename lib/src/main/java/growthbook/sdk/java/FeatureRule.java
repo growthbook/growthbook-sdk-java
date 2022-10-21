@@ -8,7 +8,9 @@ import lombok.Data;
 import javax.annotation.Nullable;
 import java.util.ArrayList;
 
-@Data @Builder @AllArgsConstructor
+@Data
+@Builder
+@AllArgsConstructor
 public class FeatureRule<ValueType> {
     // TODO: Condition
     // Optional targeting condition

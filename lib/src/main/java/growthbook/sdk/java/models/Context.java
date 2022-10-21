@@ -10,7 +10,9 @@ import java.util.Map;
 /**
  * Context object passed into the GrowthBook constructor.
  */
-@Data @Builder @AllArgsConstructor
+@Data
+@Builder
+@AllArgsConstructor
 public class Context<TrackingCallbackResultType> {
     /**
      * Switch to globally disable all experiments
@@ -21,12 +23,14 @@ public class Context<TrackingCallbackResultType> {
     /**
      * The URL of the current page
      */
-    @Nullable String url;
+    @Nullable
+    String url;
 
     /**
      * If true, random assignment is disabled and only explicitly forced variations are used.
      */
-    @Nullable @Builder.Default
+    @Nullable
+    @Builder.Default
     Boolean isQaMode = false;
 
     /**

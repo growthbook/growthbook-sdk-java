@@ -9,12 +9,12 @@ import java.util.ArrayList;
 /**
  * Defines a single Experiment
  */
-@Data @Builder @AllArgsConstructor
+@Data
+@Builder
+@AllArgsConstructor
 public class Experiment {
     /**
      * The globally unique identifier for the experiment
-     * @param key
-     * @return
      */
     String key;
 
