@@ -3,11 +3,10 @@ package growthbook.sdk.java;
 import growthbook.sdk.java.models.Experiment;
 import growthbook.sdk.java.models.ExperimentResult;
 import growthbook.sdk.java.models.ExperimentRunCallback;
+import growthbook.sdk.java.models.FeatureResult;
 
-public interface IGrowthBook {
-    // TODO: Maybe not make it generic
-//    public FeatureResult evalFeature(String key, );
-    // TODO: public evalFeature(key: string): FeatureResult
+interface IGrowthBook {
+    public <T> FeatureResult<T> evalFeature(String key);
 
     public ExperimentResult run(Experiment experiment);
     public Boolean isOn(String featureKey);

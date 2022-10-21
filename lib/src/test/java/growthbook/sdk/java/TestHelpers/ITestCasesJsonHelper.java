@@ -3,7 +3,7 @@ package growthbook.sdk.java.TestHelpers;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 
-public interface ITestCasesJsonHelper {
+interface ITestCasesJsonHelper {
     JsonObject getTestCases();
     JsonArray evalConditionTestCases();
     JsonArray getHNVTestCases();
