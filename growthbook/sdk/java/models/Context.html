@@ -40,13 +40,13 @@ loadScripts(document, 'script');</script>
 <ul class="sub-nav-list">
 <li>Summary:&nbsp;</li>
 <li>Nested&nbsp;|&nbsp;</li>
-<li>Field&nbsp;|&nbsp;</li>
+<li><a href="#field-summary">Field</a>&nbsp;|&nbsp;</li>
 <li><a href="#constructor-summary">Constr</a>&nbsp;|&nbsp;</li>
 <li><a href="#method-summary">Method</a></li>
 </ul>
 <ul class="sub-nav-list">
 <li>Detail:&nbsp;</li>
-<li>Field&nbsp;|&nbsp;</li>
+<li><a href="#field-detail">Field</a>&nbsp;|&nbsp;</li>
 <li><a href="#constructor-detail">Constr</a>&nbsp;|&nbsp;</li>
 <li>Method</li>
 </ul>
@@ -77,6 +77,48 @@ loadScripts(document, 'script');</script>
 </section>
 <section class="summary">
 <ul class="summary-list">
+<!-- =========== FIELD SUMMARY =========== -->
+<li>
+<section class="field-summary" id="field-summary">
+<h2>Field Summary</h2>
+<div class="caption"><span>Fields</span></div>
+<div class="summary-table three-column-summary">
+<div class="table-header col-first">Modifier and Type</div>
+<div class="table-header col-second">Field</div>
+<div class="table-header col-last">Description</div>
+<div class="col-first even-row-color"><code>(package private) <a href="UserAttributes.html" title="interface in growthbook.sdk.java.models">UserAttributes</a></code></div>
+<div class="col-second even-row-color"><code><a href="#attributes" class="member-name-link">attributes</a></code></div>
+<div class="col-last even-row-color">
+<div class="block">Map of user attributes that are used to assign variations</div>
+</div>
+<div class="col-first odd-row-color"><code>(package private) <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Boolean.html" title="class or interface in java.lang" class="external-link">Boolean</a></code></div>
+<div class="col-second odd-row-color"><code><a href="#enabled" class="member-name-link">enabled</a></code></div>
+<div class="col-last odd-row-color">
+<div class="block">Switch to globally disable all experiments</div>
+</div>
+<div class="col-first even-row-color"><code>(package private) <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/Map.html" title="class or interface in java.util" class="external-link">Map</a>&lt;<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>,<wbr><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Integer.html" title="class or interface in java.lang" class="external-link">Integer</a>&gt;</code></div>
+<div class="col-second even-row-color"><code><a href="#forcedVariationsMap" class="member-name-link">forcedVariationsMap</a></code></div>
+<div class="col-last even-row-color">
+<div class="block">Force specific experiments to always assign a specific variation (used for QA)</div>
+</div>
+<div class="col-first odd-row-color"><code>(package private) <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Boolean.html" title="class or interface in java.lang" class="external-link">Boolean</a></code></div>
+<div class="col-second odd-row-color"><code><a href="#isQaMode" class="member-name-link">isQaMode</a></code></div>
+<div class="col-last odd-row-color">
+<div class="block">If true, random assignment is disabled and only explicitly forced variations are used.</div>
+</div>
+<div class="col-first even-row-color"><code>(package private) <a href="TrackingCallback.html" title="interface in growthbook.sdk.java.models">TrackingCallback</a>&lt;<a href="Context.html" title="type parameter in Context">TrackingCallbackResultType</a>&gt;</code></div>
+<div class="col-second even-row-color"><code><a href="#trackingCallback" class="member-name-link">trackingCallback</a></code></div>
+<div class="col-last even-row-color">
+<div class="block">A function that takes `experiment` and `result` as arguments.</div>
+</div>
+<div class="col-first odd-row-color"><code>(package private) <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a></code></div>
+<div class="col-second odd-row-color"><code><a href="#url" class="member-name-link">url</a></code></div>
+<div class="col-last odd-row-color">
+<div class="block">The URL of the current page</div>
+</div>
+</div>
+</section>
+</li>
 <!-- ======== CONSTRUCTOR SUMMARY ======== -->
 <li>
 <section class="constructor-summary" id="constructor-summary">
@@ -103,6 +145,60 @@ loadScripts(document, 'script');</script>
 </section>
 <section class="details">
 <ul class="details-list">
+<!-- ============ FIELD DETAIL =========== -->
+<li>
+<section class="field-details" id="field-detail">
+<h2>Field Details</h2>
+<ul class="member-list">
+<li>
+<section class="detail" id="enabled">
+<h3>enabled</h3>
+<div class="member-signature"><span class="return-type"><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Boolean.html" title="class or interface in java.lang" class="external-link">Boolean</a></span>&nbsp;<span class="element-name">enabled</span></div>
+<div class="block">Switch to globally disable all experiments</div>
+</section>
+</li>
+<li>
+<section class="detail" id="url">
+<h3>url</h3>
+<div class="member-signature"><span class="annotations">@Nullable
+</span><span class="return-type"><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a></span>&nbsp;<span class="element-name">url</span></div>
+<div class="block">The URL of the current page</div>
+</section>
+</li>
+<li>
+<section class="detail" id="isQaMode">
+<h3>isQaMode</h3>
+<div class="member-signature"><span class="annotations">@Nullable
+</span><span class="return-type"><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Boolean.html" title="class or interface in java.lang" class="external-link">Boolean</a></span>&nbsp;<span class="element-name">isQaMode</span></div>
+<div class="block">If true, random assignment is disabled and only explicitly forced variations are used.</div>
+</section>
+</li>
+<li>
+<section class="detail" id="trackingCallback">
+<h3>trackingCallback</h3>
+<div class="member-signature"><span class="return-type"><a href="TrackingCallback.html" title="interface in growthbook.sdk.java.models">TrackingCallback</a>&lt;<a href="Context.html" title="type parameter in Context">TrackingCallbackResultType</a>&gt;</span>&nbsp;<span class="element-name">trackingCallback</span></div>
+<div class="block">A function that takes `experiment` and `result` as arguments.</div>
+</section>
+</li>
+<li>
+<section class="detail" id="attributes">
+<h3>attributes</h3>
+<div class="member-signature"><span class="annotations">@Nullable
+</span><span class="return-type"><a href="UserAttributes.html" title="interface in growthbook.sdk.java.models">UserAttributes</a></span>&nbsp;<span class="element-name">attributes</span></div>
+<div class="block">Map of user attributes that are used to assign variations</div>
+</section>
+</li>
+<li>
+<section class="detail" id="forcedVariationsMap">
+<h3>forcedVariationsMap</h3>
+<div class="member-signature"><span class="annotations">@Nullable
+</span><span class="return-type"><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/Map.html" title="class or interface in java.util" class="external-link">Map</a>&lt;<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>,<wbr><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Integer.html" title="class or interface in java.lang" class="external-link">Integer</a>&gt;</span>&nbsp;<span class="element-name">forcedVariationsMap</span></div>
+<div class="block">Force specific experiments to always assign a specific variation (used for QA)</div>
+</section>
+</li>
+</ul>
+</section>
+</li>
 <!-- ========= CONSTRUCTOR DETAIL ======== -->
 <li>
 <section class="constructor-details" id="constructor-detail">
