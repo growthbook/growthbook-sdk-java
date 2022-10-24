@@ -5,6 +5,7 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import growthbook.sdk.java.TestHelpers.TestCasesJsonHelper;
+import growthbook.sdk.java.models.DataType;
 import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
@@ -91,19 +92,5 @@ class ConditionEvaluatorTest {
         assertEquals("sarah", ((JsonElement) evaluator.getPath(attributes, "name")).getAsString());
         assertEquals("developer", ((JsonElement) evaluator.getPath(attributes, "job.title")).getAsString());
         assertNull(evaluator.getPath(attributes, "job.company"));
-    }
-
-    @Test
-    void test_getType() {
-        ConditionEvaluator evaluator = new ConditionEvaluator();
-
-        Gson gson = GrowthBookJsonUtils.getInstance().gson;
-
-        assertEquals(ConditionEvaluator.DataType.NULL, evaluator.getType(gson.fromJson("null", JsonElement.class)));
-        assertEquals(ConditionEvaluator.DataType.ARRAY, evaluator.getType(gson.fromJson("[1]", JsonElement.class)));
-        assertEquals(ConditionEvaluator.DataType.OBJECT, evaluator.getType(gson.fromJson("{ \"foo\": 2}", JsonElement.class)));
-        assertEquals(ConditionEvaluator.DataType.BOOLEAN, evaluator.getType(gson.fromJson("true", JsonElement.class)));
-        assertEquals(ConditionEvaluator.DataType.NUMBER, evaluator.getType(gson.fromJson("1337", JsonElement.class)));
-        assertEquals(ConditionEvaluator.DataType.STRING, evaluator.getType(gson.fromJson("\"hello\"", JsonElement.class)));
     }
 }

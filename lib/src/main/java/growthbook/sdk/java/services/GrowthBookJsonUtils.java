@@ -2,8 +2,13 @@ package growthbook.sdk.java.services;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonPrimitive;
 import growthbook.sdk.java.models.BucketRange;
+import growthbook.sdk.java.models.DataType;
 import growthbook.sdk.java.models.Namespace;
+
+import javax.annotation.Nullable;
 
 /**
  * This convenience class was created to help with the serialization and deserialization of custom types.
@@ -46,4 +51,29 @@ public class GrowthBookJsonUtils {
     }
 
     // endregion Initialization
+
+    public static DataType getElementType(@Nullable JsonElement element) {
+        try {
+            if (element == null) return DataType.UNDEFINED;
+
+            if (element.toString().equals("null")) {
+                return DataType.NULL;
+            }
+
+            if (element.isJsonPrimitive()) {
+                JsonPrimitive primitive = element.getAsJsonPrimitive();
+                if (primitive.isBoolean()) return DataType.BOOLEAN;
+                if (primitive.isNumber()) return DataType.NUMBER;
+                if (primitive.isString()) return DataType.STRING;
+            }
+
+            if (element.isJsonArray()) return DataType.ARRAY;
+            if (element.isJsonObject()) return DataType.OBJECT;
+
+            return DataType.UNKNOWN;
+        } catch (RuntimeException e) {
+            e.printStackTrace();
+            return DataType.UNKNOWN;
+        }
+    }
 }
