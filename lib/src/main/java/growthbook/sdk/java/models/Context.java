@@ -5,6 +5,7 @@ import lombok.Builder;
 import lombok.Data;
 
 import javax.annotation.Nullable;
+import java.util.HashMap;
 import java.util.Map;
 
 /**
@@ -36,6 +37,7 @@ public class Context<TrackingCallbackResultType> {
     /**
      * A function that takes `experiment` and `result` as arguments.
      */
+    @Nullable
     TrackingCallback<TrackingCallbackResultType> trackingCallback;
 
     /**
@@ -45,9 +47,12 @@ public class Context<TrackingCallbackResultType> {
     UserAttributes attributes;
 
     // TODO: Features
-//    /**
-//     * Feature definitions (usually pulled from an API or cache)
-//     */
+    /**
+     * Feature definitions
+     */
+    @Nullable
+    HashMap<String, Feature> features;
+//    HashMap<String, Feature<Object>> features;
 
     // TODO: Would this be more user-friendly as its own type ForcedVariationsMap or Map<String, Integer> ?
     /**
