@@ -48,7 +48,7 @@ public class Context {
      * Map of user attributes that are used to assign variations
      */
     @Nullable
-    UserAttributes attributes;
+    HashMap<String, String> attributes;
 
     // TODO: Features
     /**

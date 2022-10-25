@@ -7,7 +7,6 @@ import com.google.gson.JsonPrimitive;
 import com.google.gson.reflect.TypeToken;
 import growthbook.sdk.java.models.DataType;
 import growthbook.sdk.java.models.Operator;
-import growthbook.sdk.java.models.UserAttributes;
 
 import javax.annotation.Nullable;
 import java.lang.reflect.Type;
@@ -22,8 +21,6 @@ public class ConditionEvaluator implements IConditionEvaluator {
     /**
      * Evaluate a condition for a set of user attributes based on the provided condition.
      * <p>
-     * If you are using the {@link UserAttributes} interface, you can call <code>userAttributes.toJson()</code>
-     * before passing it to this method.
      * <p>
      * The condition syntax closely resembles MongoDB's syntax.
      * This is defined in the Feature's targeting conditions' Advanced settings.

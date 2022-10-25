@@ -1,10 +1,14 @@
 package growthbook.sdk.java.services;
 
+import com.google.gson.JsonObject;
 import growthbook.sdk.java.FeatureRule;
 import growthbook.sdk.java.models.*;
 
+import java.util.HashMap;
+
 public class FeatureEvaluator implements IFeatureEvaluator {
     private final ConditionEvaluator conditionEvaluator = new ConditionEvaluator();
+    private final ExperimentEvaluator experimentEvaluator = new ExperimentEvaluator();
 
     @Override
     public FeatureResult evaluateFeature(String key, Context context) {
@@ -30,17 +34,20 @@ public class FeatureEvaluator implements IFeatureEvaluator {
                         .build();
             }
 
+            HashMap<String, String> attributes = context.getAttributes();
+            if (attributes == null) {
+                attributes = new HashMap<>();
+            }
+            String attributesJson = GrowthBookJsonUtils.getInstance().gson.toJson(attributes);
+
             for (FeatureRule rule : feature.getRules()) {
                 // If the rule has a condition, and it evaluates to false, skip this rule and continue to the next one
                 if (rule.getCondition() != null) {
-                    UserAttributes attributes = context.getAttributes();
-                    String attributesString = attributes == null ? "{}" : attributes.toJson();
-                    if (!conditionEvaluator.evaluateCondition(attributesString, rule.getCondition().toString())) {
+                    if (!conditionEvaluator.evaluateCondition(attributesJson, rule.getCondition().toString())) {
                         continue;
                     }
                 }
 
-                // TODO: eval rule.force
                 if (rule.getForce() != null) {
                     if (rule.getCoverage() != null) {
                         String ruleKey = rule.getHashAttribute();
@@ -48,10 +55,15 @@ public class FeatureEvaluator implements IFeatureEvaluator {
                             ruleKey = "id";
                         }
 
-                        // TODO: context.attributes.get(ruleKey)
-                        // if empty, continue;
-                        // else check hash. if hash is greater than rule.coverage, continue;
-                        // continue;
+                        String attrValue = attributes.get(ruleKey);
+                        if (attrValue == null || attrValue.isEmpty()) {
+                            continue;
+                        }
+
+                        Float hashFnv = GrowthBookUtils.hash(attrValue + key);
+                        if (hashFnv > rule.getCoverage()) {
+                            continue;
+                        }
                     }
 
                     // Apply the force rule
@@ -62,12 +74,29 @@ public class FeatureEvaluator implements IFeatureEvaluator {
                             .build();
                 }
 
-
                 // Experiment rule
                 // TODO:
-            }
+                String experimentKey = rule.getKey();
+                if (experimentKey == null) {
+                    experimentKey = key;
+                }
 
-            // TODO: evaluate feature result
+                Experiment experiment = Experiment
+                        .builder()
+                        .key(experimentKey)
+                        .coverage(rule.getCoverage())
+                        .weights(rule.getWeights())
+                        .hashAttribute(rule.getHashAttribute())
+                        .namespace(rule.getNamespace())
+                        // TODO: Variations
+                        .build();
+
+                ExperimentResult result = experimentEvaluator.evaluateExperiment(experiment, context);
+
+                // TODO: evaluate feature result
+                // TODO: if result is in experiment, return a feature result of source experiment
+                // else, continue;
+            }
 
             return emptyFeature;
 

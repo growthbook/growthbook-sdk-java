@@ -4,6 +4,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 
+import javax.annotation.Nullable;
 import java.util.ArrayList;
 
 /**
@@ -43,10 +44,9 @@ public class Experiment {
 //    /**
 //     * Optional targeting condition
 //     */
-//    /**
-//     * Optional targeting condition
-//     */
-    // TODO: Namespace
+
+    @Nullable
+    Namespace namespace;
 
     /**
      * All users included in the experiment will be forced into the specific variation index

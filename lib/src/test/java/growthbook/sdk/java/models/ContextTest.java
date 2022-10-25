@@ -1,6 +1,6 @@
 package growthbook.sdk.java.models;
 
-import growthbook.sdk.java.TestHelpers.SampleUserAttributes;
+import growthbook.sdk.java.services.GrowthBookJsonUtils;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -17,10 +17,12 @@ class ContextTest {
     @Mock
     private TrackingCallback trackingCallback;
 
-    SampleUserAttributes sampleUserAttributes = new SampleUserAttributes("android", "canada");
+    HashMap<String, String> sampleUserAttributes = new HashMap<>();
 
     @BeforeEach
     void setUp() {
+        sampleUserAttributes.put("country", "canada");
+        sampleUserAttributes.put("device", "android");
         closeable = MockitoAnnotations.openMocks(this);
     }
 
@@ -111,8 +113,9 @@ class ContextTest {
                 .<String>builder()
                 .attributes(sampleUserAttributes)
                 .build();
+        String attributesJson = GrowthBookJsonUtils.getInstance().gson.toJson(subject.attributes);
 
-        assertEquals("{\"device\":\"android\",\"country\":\"canada\"}", subject.attributes.toJson());
+        assertEquals("{\"country\":\"canada\",\"device\":\"android\"}", attributesJson);
     }
 
     @Test
