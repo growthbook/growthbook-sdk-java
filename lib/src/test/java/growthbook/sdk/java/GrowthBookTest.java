@@ -3,6 +3,56 @@
  */
 package growthbook.sdk.java;
 
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import growthbook.sdk.java.TestHelpers.TestCasesJsonHelper;
+import growthbook.sdk.java.models.Context;
+import growthbook.sdk.java.models.Experiment;
+import growthbook.sdk.java.models.ExperimentRunCallback;
+import growthbook.sdk.java.services.GrowthBookJsonUtils;
+import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+
 class GrowthBookTest {
 
+    TestCasesJsonHelper helper = TestCasesJsonHelper.getInstance();
+    GrowthBookJsonUtils jsonUtils = GrowthBookJsonUtils.getInstance();
+
+    @Test
+    void test_evalFeature() {
+        JsonArray testCases = helper.getChooseVariationTestCases();
+
+        testCases.forEach(jsonElement -> {
+            JsonArray testCase = (JsonArray) jsonElement;
+
+            String testDescription = testCase.get(0).getAsString();
+            Context context = jsonUtils.gson.fromJson(testCase.get(1), Context.class);
+            String featureKey = testCase.get(2).getAsString();
+
+            JsonElement expected = testCase.get(3);
+
+            GrowthBook subject = new GrowthBook();
+
+            // TODO: test feature result
+//            assertEquals()
+        });
+
+    }
+    @Test
+    void run_executesExperimentResultCallbacks() {
+        GrowthBook subject = new GrowthBook();
+        ExperimentRunCallback mockCallback = mock(ExperimentRunCallback.class);
+        Experiment mockExperiment = Experiment.builder().build();
+
+        subject.run(mockExperiment);
+
+        // TODO: Update arg to the expect result, if possible?
+        verify(mockCallback).onRun(any());
+    }
 }

@@ -15,7 +15,7 @@ import static org.mockito.Mockito.verify;
 class ContextTest {
     private AutoCloseable closeable;
     @Mock
-    private TrackingCallback<String> trackingCallback;
+    private TrackingCallback trackingCallback;
 
     SampleUserAttributes sampleUserAttributes = new SampleUserAttributes("android", "canada");
 
@@ -38,14 +38,16 @@ class ContextTest {
         HashMap<String, Feature> features = new HashMap<>();
         forcedVariations.put("my-test", 0);
         forcedVariations.put("other-test", 1);
+        String featuresJson = "{}";
 
-        Context<String> subject = new Context<String>(
+        Context subject = new Context(
+                features,
                 isEnabled,
                 url,
                 isQaMode,
                 trackingCallback,
                 sampleUserAttributes,
-                features,
+                featuresJson,
                 forcedVariations
         );
 
@@ -62,7 +64,7 @@ class ContextTest {
         forcedVariations.put("my-test", 0);
         forcedVariations.put("other-test", 1);
 
-        Context<String> subject = Context
+        Context subject = Context
                 .<String>builder()
                 .enabled(isEnabled)
                 .isQaMode(isQaMode)
@@ -80,7 +82,7 @@ class ContextTest {
         Boolean isQaMode = false;
         String url = "http://localhost:3000";
 
-        Context<String> subject = Context
+        Context subject = Context
                 .<String>builder()
                 .enabled(isEnabled)
                 .isQaMode(isQaMode)
@@ -105,7 +107,7 @@ class ContextTest {
 
     @Test
     void serializableAttributes() {
-        Context<String> subject = Context
+        Context subject = Context
                 .<String>builder()
                 .attributes(sampleUserAttributes)
                 .build();
@@ -115,13 +117,13 @@ class ContextTest {
 
     @Test
     void canExecuteATrackingCallback() {
-        Context<String> subject = Context
+        Context subject = Context
                 .<String>builder()
                 .trackingCallback(trackingCallback)
                 .build();
 
         Experiment experiment = Experiment.builder().build();
-        TrackingResult<String> result = TrackingResult
+        TrackingResult result = TrackingResult
                 .<String>builder()
                 .value("Hello, world!")
                 .build();

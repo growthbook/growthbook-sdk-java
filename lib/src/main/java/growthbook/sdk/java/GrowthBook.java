@@ -1,21 +1,36 @@
 package growthbook.sdk.java;
 
-import growthbook.sdk.java.models.Experiment;
-import growthbook.sdk.java.models.ExperimentResult;
-import growthbook.sdk.java.models.ExperimentRunCallback;
-import growthbook.sdk.java.models.FeatureResult;
+import growthbook.sdk.java.models.*;
+import growthbook.sdk.java.services.FeatureEvaluator;
 
 import javax.annotation.Nullable;
 import java.util.ArrayList;
 
 public class GrowthBook implements IGrowthBook {
 
+    private Context context;
+
+    private FeatureEvaluator featureEvaluator = new FeatureEvaluator();
+
     private ArrayList<ExperimentRunCallback> callbacks = new ArrayList<>();
 
+    public GrowthBook(Context context) {
+        this.context = context;
+    }
+
+    public GrowthBook() {
+        this.context = Context.builder().build();
+    }
+
+    @Nullable
     @Override
-    public <T> FeatureResult<T> evalFeature(String key) {
-        // TODO:
-        return null;
+    public FeatureResult evalFeature(String key) {
+        return featureEvaluator.evaluateFeature(key, this.context);
+    }
+
+    @Override
+    public void setFeatures(String featuresJsonString) {
+        this.context.setFeatures(featuresJsonString);
     }
 
     @Override

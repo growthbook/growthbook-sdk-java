@@ -7,8 +7,8 @@ import lombok.Data;
 @Data
 @Builder
 @AllArgsConstructor
-public class TrackingResult<ValueType> {
-    ValueType value;
+public class TrackingResult {
+    Object value;
 
     Integer variationId;
 

@@ -16,7 +16,13 @@ interface IGrowthBook {
 
     // region Features
 
-    public <T> FeatureResult<T> evalFeature(String key);
+    public FeatureResult evalFeature(String key);
+
+    /**
+     * Call this with the JSON string returned from API.
+     * @param featuresJsonString features JSON from the GrowthBook API
+     */
+    public void setFeatures(String featuresJsonString);
 
     public Boolean isOn(String featureKey);
     public Boolean isOff(String featureKey);

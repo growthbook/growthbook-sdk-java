@@ -1,5 +1,5 @@
 package growthbook.sdk.java.models;
 
-public interface TrackingCallback<ValueType> {
-    void onTrack(Experiment experiment, TrackingResult<ValueType> trackingResult);
+public interface TrackingCallback {
+    void onTrack(Experiment experiment, TrackingResult trackingResult);
 }
