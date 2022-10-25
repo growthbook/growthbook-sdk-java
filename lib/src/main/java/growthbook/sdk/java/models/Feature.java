@@ -3,9 +3,13 @@ package growthbook.sdk.java.models;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import com.google.gson.reflect.TypeToken;
+import growthbook.sdk.java.FeatureRule;
 import growthbook.sdk.java.services.GrowthBookJsonUtils;
 
 import javax.annotation.Nullable;
+import java.lang.reflect.Type;
+import java.util.ArrayList;
 
 public class Feature {
 
@@ -15,7 +19,7 @@ public class Feature {
     private final DataType dataType;
 
     private final JsonObject featureJson;
-    private final JsonArray rules;
+    private final ArrayList<FeatureRule> rules;
 
     private final String defaultValue;
 
@@ -33,8 +37,8 @@ public class Feature {
         return this.defaultValue;
     }
 
-    public String getRulesJsonArray() {
-        return this.rules.toString();
+    public ArrayList<FeatureRule> getRules() {
+        return this.rules;
     }
 
     private static JsonObject getFeatureJsonFromRawValue(String rawValue) {
@@ -46,12 +50,15 @@ public class Feature {
         }
     }
 
-    private static JsonArray getRulesFromFeatureJson(JsonObject json) {
+    private static ArrayList<FeatureRule> getRulesFromFeatureJson(JsonObject json) {
         try {
-            return json.get("rules").getAsJsonArray();
+            Type featureRuleListType = new TypeToken<ArrayList<FeatureRule>>() {}.getType();
+            JsonArray rulesJson = json.get("rules").getAsJsonArray();
+
+            return GrowthBookJsonUtils.getInstance().gson.fromJson(rulesJson, featureRuleListType);
         } catch (Exception e) {
             e.printStackTrace();
-            return new JsonArray();
+            return new ArrayList<>();
         }
     }
 

@@ -22,7 +22,7 @@ public class FeatureEvaluator implements IFeatureEvaluator {
             }
 
             // If empty rule set, use the default value
-            if (feature.getRulesJsonArray().isEmpty()) {
+            if (feature.getRules().isEmpty()) {
                 return FeatureResult
                         .builder()
                         .source(FeatureResultSource.DEFAULT_VALUE)

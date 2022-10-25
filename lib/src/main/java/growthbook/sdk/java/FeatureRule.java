@@ -1,5 +1,7 @@
 package growthbook.sdk.java;
 
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
 import growthbook.sdk.java.models.Namespace;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -11,10 +13,9 @@ import java.util.ArrayList;
 @Data
 @Builder
 @AllArgsConstructor
-public class FeatureRule<ValueType> {
-    // TODO: Condition
-    // Optional targeting condition
-    // @Nullable
+public class FeatureRule {
+    @Nullable
+    String key;
 
     @Nullable
     Float coverage;
@@ -23,11 +24,12 @@ public class FeatureRule<ValueType> {
      * Immediately force a specific value (ignore every other option besides condition and coverage)
      */
     @Nullable
-    ValueType force;
+    String force;
 
     // TODO: Variations
     // Run an experiment (A/B test) and randomly choose between these variations
-    // @Nullable
+    @Nullable
+    JsonArray variations;
 
     /**
      * How to weight traffic between variations. Must add to 1.
@@ -46,4 +48,8 @@ public class FeatureRule<ValueType> {
      */
     @Builder.Default
     String hashAttribute = "id";
+
+    // TODO: Condition
+    @Nullable
+    JsonElement condition;
 }
