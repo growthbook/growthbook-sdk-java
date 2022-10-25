@@ -1,11 +1,11 @@
 package growthbook.sdk.java.services;
 
-import growthbook.sdk.java.models.Context;
-import growthbook.sdk.java.models.Feature;
-import growthbook.sdk.java.models.FeatureResult;
-import growthbook.sdk.java.models.FeatureResultSource;
+import growthbook.sdk.java.FeatureRule;
+import growthbook.sdk.java.models.*;
 
 public class FeatureEvaluator implements IFeatureEvaluator {
+    private final ConditionEvaluator conditionEvaluator = new ConditionEvaluator();
+
     @Override
     public FeatureResult evaluateFeature(String key, Context context) {
         FeatureResult emptyFeature = FeatureResult
@@ -28,6 +28,43 @@ public class FeatureEvaluator implements IFeatureEvaluator {
                         .source(FeatureResultSource.DEFAULT_VALUE)
                         .rawJsonValue(feature.getDefaultValue())
                         .build();
+            }
+
+            for (FeatureRule rule : feature.getRules()) {
+                // If the rule has a condition, and it evaluates to false, skip this rule and continue to the next one
+                if (rule.getCondition() != null) {
+                    UserAttributes attributes = context.getAttributes();
+                    String attributesString = attributes == null ? "{}" : attributes.toJson();
+                    if (!conditionEvaluator.evaluateCondition(attributesString, rule.getCondition().toString())) {
+                        continue;
+                    }
+                }
+
+                // TODO: eval rule.force
+                if (rule.getForce() != null) {
+                    if (rule.getCoverage() != null) {
+                        String ruleKey = rule.getHashAttribute();
+                        if (ruleKey == null) {
+                            ruleKey = "id";
+                        }
+
+                        // TODO: context.attributes.get(ruleKey)
+                        // if empty, continue;
+                        // else check hash. if hash is greater than rule.coverage, continue;
+                        // continue;
+                    }
+
+                    // Apply the force rule
+                    return FeatureResult
+                            .builder()
+                            .rawJsonValue(rule.getForce()) // TODO: Check this.
+                            .source(FeatureResultSource.FORCE)
+                            .build();
+                }
+
+
+                // Experiment rule
+                // TODO:
             }
 
             // TODO: evaluate feature result
