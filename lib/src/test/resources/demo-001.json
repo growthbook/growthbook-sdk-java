@@ -1,0 +1,301 @@
+{
+  "status": 200,
+  "features": {
+    "feature-usage-code": {
+      "defaultValue": false
+    },
+    "papercups-config": {
+      "defaultValue": {
+        "token": "bd385138-8fb9-49d7-a3e9-39ceec79c78f",
+        "inbox": "d23423a9-0fd2-405b-9a2f-2d708303ca2f",
+        "title": "Welcome to GrowthBook Cloud",
+        "subtitle": "How can we help?",
+        "primaryColor": "#4c0fa3",
+        "greeting": "Hello! Any questions I can help with?",
+        "newMessagePlaceholder": "Start typing...",
+        "showAgentAvailability": false,
+        "agentAvailableText": "We're online right now!",
+        "agentUnavailableText": "We're away at the moment. Leave your email and we'll get back to you.",
+        "requireEmailUpfront": false,
+        "iconVariant": "outlined",
+        "baseUrl": "https://app.papercups.io"
+      }
+    },
+    "new-feature": {
+      "defaultValue": false,
+      "rules": [
+        {
+          "condition": {
+            "user_group": "subscriber",
+            "beta_users": true
+          },
+          "force": true
+        },
+        {
+          "condition": {
+            "user_group": "subscriber"
+          },
+          "variations": [
+            false,
+            true
+          ],
+          "coverage": 1,
+          "weights": [
+            0.5,
+            0.5
+          ],
+          "key": "new-feature",
+          "hashAttribute": "id"
+        },
+        {
+          "force": true,
+          "coverage": 0.1,
+          "hashAttribute": "id"
+        }
+      ]
+    },
+    "covid-banner-text": {
+      "defaultValue": "We're safe",
+      "rules": [
+        {
+          "condition": {
+            "beta_users": true
+          },
+          "force": "Beta users"
+        },
+        {
+          "variations": [
+            "We're safe",
+            "Testing",
+            "Another value"
+          ],
+          "coverage": 0.6,
+          "weights": [
+            0.334,
+            0.333,
+            0.333
+          ],
+          "key": "covid-banner-text",
+          "hashAttribute": "id"
+        }
+      ]
+    },
+    "demo": {
+      "defaultValue": 0,
+      "rules": [
+        {
+          "condition": {
+            "admin": true
+          },
+          "force": 1
+        },
+        {
+          "condition": {
+            "beta_users": true
+          },
+          "variations": [
+            0,
+            1
+          ],
+          "coverage": 0.6,
+          "weights": [
+            0.5,
+            0.5
+          ],
+          "hashAttribute": "id"
+        }
+      ]
+    },
+    "index-title": {
+      "defaultValue": false,
+      "rules": [
+        {
+          "variations": [
+            false,
+            true
+          ],
+          "coverage": 1,
+          "weights": [
+            0.5,
+            0.5
+          ],
+          "key": "index-title",
+          "hashAttribute": "id"
+        }
+      ]
+    },
+    "new-banner": {
+      "defaultValue": false,
+      "rules": [
+        {
+          "variations": [
+            false,
+            true
+          ],
+          "coverage": 1,
+          "weights": [
+            0.5,
+            0.5
+          ],
+          "hashAttribute": "id"
+        }
+      ]
+    },
+    "redirect-test": {
+      "defaultValue": ""
+    },
+    "new-playlist": {
+      "defaultValue": false,
+      "rules": [
+        {
+          "variations": [
+            false,
+            true
+          ],
+          "coverage": 1,
+          "weights": [
+            0.5,
+            0.5
+          ],
+          "key": "new-playlist",
+          "hashAttribute": "id"
+        }
+      ]
+    },
+    "new-feature2": {
+      "defaultValue": true,
+      "rules": [
+        {
+          "variations": [
+            true,
+            false
+          ],
+          "coverage": 1,
+          "weights": [
+            0.5,
+            0.5
+          ],
+          "hashAttribute": "id"
+        }
+      ]
+    },
+    "new-widget2": {
+      "defaultValue": false,
+      "rules": [
+        {
+          "variations": [
+            false,
+            true
+          ],
+          "coverage": 1,
+          "weights": [
+            0.6,
+            0.4
+          ],
+          "key": "new-widget2",
+          "hashAttribute": "id"
+        }
+      ]
+    },
+    "price": {
+      "defaultValue": 10
+    },
+    "credentials-sharing": {
+      "defaultValue": false
+    },
+    "my-feature": {
+      "defaultValue": true,
+      "rules": [
+        {
+          "condition": {
+            "company": "123"
+          },
+          "force": false
+        }
+      ]
+    },
+    "show-h1": {
+      "defaultValue": false,
+      "rules": [
+        {
+          "variations": [
+            false,
+            true
+          ],
+          "coverage": 1,
+          "weights": [
+            0.5,
+            0.5
+          ],
+          "hashAttribute": "id"
+        }
+      ]
+    },
+    "h1-title": {
+      "defaultValue": "Welcome to our app!!!"
+    },
+    "purchase_cta": {
+      "defaultValue": false,
+      "rules": [
+        {
+          "variations": [
+            false,
+            true
+          ],
+          "coverage": 1,
+          "weights": [
+            0.5,
+            0.5
+          ],
+          "key": "purchase_cta",
+          "hashAttribute": "id"
+        }
+      ]
+    },
+    "book-now-button": {
+      "defaultValue": false,
+      "rules": [
+        {
+          "condition": {
+            "country": "us"
+          },
+          "variations": [
+            false,
+            true
+          ],
+          "coverage": 1,
+          "weights": [
+            0.5,
+            0.5
+          ],
+          "hashAttribute": "id"
+        },
+        {
+          "condition": {
+            "beta_users": true
+          },
+          "force": true
+        }
+      ]
+    },
+    "test": {
+      "defaultValue": false,
+      "rules": [
+        {
+          "variations": [
+            false,
+            true
+          ],
+          "coverage": 1,
+          "weights": [
+            0.5,
+            0.5
+          ],
+          "key": "test",
+          "hashAttribute": "id"
+        }
+      ]
+    }
+  },
+  "dateUpdated": "2022-10-24T21:38:07.539Z"
+}
