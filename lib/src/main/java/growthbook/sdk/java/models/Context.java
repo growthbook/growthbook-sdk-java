@@ -55,6 +55,7 @@ public class Context {
      * Feature definitions
      */
     @Nullable
+    @Builder.Default
     private String featuresJson = "{}";
 
     // TODO: Would this be more user-friendly as its own type ForcedVariationsMap or Map<String, Integer> ?
