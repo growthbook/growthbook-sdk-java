@@ -10,8 +10,8 @@ import javax.annotation.Nullable;
 @Data
 @Builder
 @AllArgsConstructor
-public class FeatureResult {
-//public class FeatureResult<ValueType> {
+//public class FeatureResult {
+public class FeatureResult<ValueType> {
 
     @Builder.Default
     Boolean on = false;
@@ -30,12 +30,12 @@ public class FeatureResult {
      * When source is "experiment", this will be an Experiment object
      */
     @Nullable
-    Experiment experiment;
+    Experiment<ValueType> experiment;
 
     // TODO: ExperimentResult experimentResult
     // When source is "experiment", this will be an ExperimentResult object
     @Nullable
-    ExperimentResult experimentResult;
+    ExperimentResult<ValueType> experimentResult;
 
     @Nullable
     String ruleId;

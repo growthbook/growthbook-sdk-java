@@ -1,6 +1,5 @@
 package growthbook.sdk.java;
 
-import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import growthbook.sdk.java.models.Namespace;
 import lombok.AllArgsConstructor;
@@ -13,7 +12,7 @@ import java.util.ArrayList;
 @Data
 @Builder
 @AllArgsConstructor
-public class FeatureRule {
+public class FeatureRule<ValueType> {
     @Nullable
     String key;
 
@@ -29,7 +28,7 @@ public class FeatureRule {
     // TODO: Variations
     // Run an experiment (A/B test) and randomly choose between these variations
     @Nullable
-    JsonArray variations;
+    ArrayList<ValueType> variations;
 
     /**
      * How to weight traffic between variations. Must add to 1.

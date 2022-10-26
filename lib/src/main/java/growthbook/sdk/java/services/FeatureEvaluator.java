@@ -1,6 +1,5 @@
 package growthbook.sdk.java.services;
 
-import com.google.gson.JsonObject;
 import growthbook.sdk.java.FeatureRule;
 import growthbook.sdk.java.models.*;
 
@@ -10,10 +9,11 @@ public class FeatureEvaluator implements IFeatureEvaluator {
     private final ConditionEvaluator conditionEvaluator = new ConditionEvaluator();
     private final ExperimentEvaluator experimentEvaluator = new ExperimentEvaluator();
 
+    @SuppressWarnings("unchecked")
     @Override
-    public FeatureResult evaluateFeature(String key, Context context) {
-        FeatureResult emptyFeature = FeatureResult
-                .builder()
+    public <ValueType> FeatureResult<ValueType> evaluateFeature(String key, Context context) throws ClassCastException {
+        FeatureResult<ValueType> emptyFeature = FeatureResult
+                .<ValueType>builder()
                 .rawJsonValue(null)
                 .on(false)
                 .source(FeatureResultSource.UNKNOWN_FEATURE)
@@ -28,7 +28,7 @@ public class FeatureEvaluator implements IFeatureEvaluator {
             // If empty rule set, use the default value
             if (feature.getRules().isEmpty()) {
                 return FeatureResult
-                        .builder()
+                        .<ValueType>builder()
                         .source(FeatureResultSource.DEFAULT_VALUE)
                         .rawJsonValue(feature.getDefaultValue())
                         .build();
@@ -40,7 +40,7 @@ public class FeatureEvaluator implements IFeatureEvaluator {
             }
             String attributesJson = GrowthBookJsonUtils.getInstance().gson.toJson(attributes);
 
-            for (FeatureRule rule : feature.getRules()) {
+            for (FeatureRule<ValueType> rule : feature.getRules()) {
                 // If the rule has a condition, and it evaluates to false, skip this rule and continue to the next one
                 if (rule.getCondition() != null) {
                     if (!conditionEvaluator.evaluateCondition(attributesJson, rule.getCondition().toString())) {
@@ -68,7 +68,7 @@ public class FeatureEvaluator implements IFeatureEvaluator {
 
                     // Apply the force rule
                     return FeatureResult
-                            .builder()
+                            .<ValueType>builder()
                             .rawJsonValue(rule.getForce()) // TODO: Check this.
                             .source(FeatureResultSource.FORCE)
                             .build();
@@ -81,8 +81,8 @@ public class FeatureEvaluator implements IFeatureEvaluator {
                     experimentKey = key;
                 }
 
-                Experiment experiment = Experiment
-                        .builder()
+                Experiment<ValueType> experiment = Experiment
+                        .<ValueType>builder()
                         .key(experimentKey)
                         .coverage(rule.getCoverage())
                         .weights(rule.getWeights())
@@ -91,7 +91,7 @@ public class FeatureEvaluator implements IFeatureEvaluator {
                         // TODO: Variations
                         .build();
 
-                ExperimentResult result = experimentEvaluator.evaluateExperiment(experiment, context);
+                ExperimentResult<ValueType> result = experimentEvaluator.evaluateExperiment(experiment, context);
 
                 // TODO: evaluate feature result
                 // TODO: if result is in experiment, return a feature result of source experiment

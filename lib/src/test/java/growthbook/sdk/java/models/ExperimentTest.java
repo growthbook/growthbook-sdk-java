@@ -3,7 +3,6 @@ package growthbook.sdk.java.models;
 import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
-import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -15,11 +14,17 @@ class ExperimentTest {
         weights.add(0.3f);
         weights.add(0.7f);
 
-        Experiment experiment = new Experiment(
+        ArrayList<Float> variations = new ArrayList<>();
+
+        Namespace namespace = Namespace.builder().build();
+
+        Experiment<Float> experiment = new Experiment<Float>(
                 "my_experiment",
+                variations,
                 weights,
                 true,
                 0.5f,
+                namespace,
                 0.2f,
                 "_id"
         );
@@ -43,8 +48,8 @@ class ExperimentTest {
         weights.add(0.3f);
         weights.add(0.7f);
 
-        Experiment experiment = Experiment
-                .builder()
+        Experiment<Integer> experiment = Experiment
+                .<Integer>builder()
                 .coverage(0.5f)
                 .force(0.2f)
                 .weights(weights)
@@ -69,8 +74,8 @@ class ExperimentTest {
 
     @Test
     void hasDefaultBuilderArguments() {
-        Experiment experiment = Experiment
-                .builder()
+        Experiment<String> experiment = Experiment
+                .<String>builder()
                 .build();
 
         assertNull(experiment.coverage);

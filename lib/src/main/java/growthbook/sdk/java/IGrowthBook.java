@@ -7,7 +7,7 @@ import growthbook.sdk.java.models.FeatureResult;
 
 interface IGrowthBook {
 
-    public ExperimentResult run(Experiment experiment);
+    public <ValueType>ExperimentResult<ValueType> run(Experiment<ValueType> experiment);
 
     public void subscribe(ExperimentRunCallback callback);
 
@@ -16,7 +16,7 @@ interface IGrowthBook {
 
     // region Features
 
-    public FeatureResult evalFeature(String key);
+    public <ValueType> FeatureResult<ValueType> evalFeature(String key);
 
     /**
      * Call this with the JSON string returned from API.

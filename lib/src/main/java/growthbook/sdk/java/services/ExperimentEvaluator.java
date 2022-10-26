@@ -6,7 +6,7 @@ import growthbook.sdk.java.models.ExperimentResult;
 
 public class ExperimentEvaluator implements IExperimentEvaluator {
     @Override
-    public ExperimentResult evaluateExperiment(Experiment experiment, Context context) {
+    public <ValueType> ExperimentResult<ValueType> evaluateExperiment(Experiment<ValueType> experiment, Context context) {
         // TODO: evaluateExperiment
         return null;
     }

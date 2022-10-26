@@ -24,7 +24,7 @@ public class GrowthBook implements IGrowthBook {
 
     @Nullable
     @Override
-    public FeatureResult evalFeature(String key) {
+    public <ValueType> FeatureResult<ValueType> evalFeature(String key) {
         return featureEvaluator.evaluateFeature(key, this.context);
     }
 
@@ -34,7 +34,7 @@ public class GrowthBook implements IGrowthBook {
     }
 
     @Override
-    public ExperimentResult run(Experiment experiment) {
+    public <ValueType>ExperimentResult<ValueType> run(Experiment<ValueType> experiment) {
         // TODO:
 //        ExperimentResult result = ExperimentResult
 

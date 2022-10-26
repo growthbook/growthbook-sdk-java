@@ -13,17 +13,18 @@ import java.util.ArrayList;
 @Data
 @Builder
 @AllArgsConstructor
-public class Experiment {
+public class Experiment<ValueType> {
     /**
      * The globally unique identifier for the experiment
      */
     String key;
 
 
-    // TODO: Variations
-//    /**
-//     * The different variations to choose between
-//     */
+    /**
+     * The different variations to choose between
+     */
+    @Nullable
+    ArrayList<ValueType> variations;
 
     /**
      * How to weight traffic between variations. Must add to 1.
@@ -51,6 +52,7 @@ public class Experiment {
     /**
      * All users included in the experiment will be forced into the specific variation index
      */
+    // TODO: Integer?
     Float force;
 
     /**

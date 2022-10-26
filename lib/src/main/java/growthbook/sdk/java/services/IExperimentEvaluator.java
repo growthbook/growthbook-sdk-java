@@ -5,5 +5,5 @@ import growthbook.sdk.java.models.Experiment;
 import growthbook.sdk.java.models.ExperimentResult;
 
 public interface IExperimentEvaluator {
-    ExperimentResult evaluateExperiment(Experiment experiment, Context context);
+    public <ValueType> ExperimentResult<ValueType> evaluateExperiment(Experiment<ValueType> experiment, Context context);
 }

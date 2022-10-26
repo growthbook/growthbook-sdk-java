@@ -1,12 +1,12 @@
 package growthbook.sdk.java;
 
-import com.google.gson.JsonArray;
 import growthbook.sdk.java.models.Namespace;
 import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
 class FeatureRuleTest {
 
@@ -16,7 +16,7 @@ class FeatureRuleTest {
         weights.add(0.3f);
         weights.add(0.7f);
 
-        JsonArray variations = new JsonArray();
+        ArrayList<Integer> variations = new ArrayList<>();
 
         Namespace namespace = Namespace
                 .builder()
@@ -25,7 +25,7 @@ class FeatureRuleTest {
                 .rangeEnd(0.6f)
                 .build();
 
-        FeatureRule subject = new FeatureRule(
+        FeatureRule<Integer> subject = new FeatureRule<Integer>(
                 "my-key",
                 0.5f,
                 "forced-value",
@@ -54,6 +54,8 @@ class FeatureRuleTest {
         weights.add(0.3f);
         weights.add(0.7f);
 
+        ArrayList<String> variations = new ArrayList<>();
+
         Namespace namespace = Namespace
                 .builder()
                 .id("pricing")
@@ -61,8 +63,8 @@ class FeatureRuleTest {
                 .rangeEnd(0.6f)
                 .build();
 
-        FeatureRule subject = FeatureRule
-                .builder()
+        FeatureRule<String> subject = FeatureRule
+                .<String>builder()
                 .coverage(0.5f)
                 .force("forced-value")
                 .namespace(namespace)
@@ -84,8 +86,8 @@ class FeatureRuleTest {
 
     @Test
     void defaultBuilderValues() {
-        FeatureRule subject = FeatureRule
-                .builder()
+        FeatureRule<String> subject = FeatureRule
+                .<String>builder()
                 .build();
 
         assertNull(subject.coverage);
