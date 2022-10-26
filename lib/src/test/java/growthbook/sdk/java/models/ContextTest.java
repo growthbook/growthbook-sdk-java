@@ -67,7 +67,7 @@ class ContextTest {
         forcedVariations.put("other-test", 1);
 
         Context subject = Context
-                .<String>builder()
+                .builder()
                 .enabled(isEnabled)
                 .isQaMode(isQaMode)
                 .attributes(sampleUserAttributes)
@@ -85,7 +85,7 @@ class ContextTest {
         String url = "http://localhost:3000";
 
         Context subject = Context
-                .<String>builder()
+                .builder()
                 .enabled(isEnabled)
                 .isQaMode(isQaMode)
                 .attributes(sampleUserAttributes)
@@ -110,7 +110,7 @@ class ContextTest {
     @Test
     void serializableAttributes() {
         Context subject = Context
-                .<String>builder()
+                .builder()
                 .attributes(sampleUserAttributes)
                 .build();
         String attributesJson = GrowthBookJsonUtils.getInstance().gson.toJson(subject.attributes);
@@ -121,13 +121,13 @@ class ContextTest {
     @Test
     void canExecuteATrackingCallback() {
         Context subject = Context
-                .<String>builder()
+                .builder()
                 .trackingCallback(trackingCallback)
                 .build();
 
-        Experiment experiment = Experiment.builder().build();
+        Experiment<String> experiment = Experiment.<String>builder().build();
         TrackingResult result = TrackingResult
-                .<String>builder()
+                .builder()
                 .value("Hello, world!")
                 .build();
         subject.trackingCallback.onTrack(experiment, result);
