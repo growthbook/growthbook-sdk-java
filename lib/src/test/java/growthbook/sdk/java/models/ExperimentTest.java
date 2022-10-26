@@ -17,6 +17,7 @@ class ExperimentTest {
         ArrayList<Float> variations = new ArrayList<>();
 
         Namespace namespace = Namespace.builder().build();
+        String conditionJson = "{}";
 
         Experiment<Float> experiment = new Experiment<Float>(
                 "my_experiment",
@@ -24,6 +25,7 @@ class ExperimentTest {
                 weights,
                 true,
                 0.5f,
+                conditionJson,
                 namespace,
                 1,
                 "_id"

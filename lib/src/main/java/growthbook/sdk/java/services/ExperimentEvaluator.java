@@ -16,7 +16,11 @@ public class ExperimentEvaluator implements IExperimentEvaluator {
     public <ValueType> ExperimentResult<ValueType> evaluateExperiment(Experiment<ValueType> experiment, Context context) {
         // If less than 2 variations, return immediately (not in experiment, variation 0)
         // If not enabled, return immediately (not in experiment, variation 0)
-        if (!context.getEnabled() || experiment.getVariations().size() < 2) {
+        ArrayList<ValueType> experimentVariations = experiment.getVariations();
+        if (experimentVariations == null) {
+            experimentVariations = new ArrayList<>();
+        }
+        if (!context.getEnabled() || experimentVariations.size() < 2) {
             return getExperimentResult(experiment, context, 0, false);
         }
 
@@ -130,12 +134,17 @@ public class ExperimentEvaluator implements IExperimentEvaluator {
         Integer targetVariationIndex = variationIndex;
         ValueType targetValue = null;
 
-        if (targetVariationIndex < 0 || targetVariationIndex >= experiment.getVariations().size()) {
+        ArrayList<ValueType> experimentVariations = experiment.getVariations();
+        if (experimentVariations == null) {
+            experimentVariations = new ArrayList<>();
+        }
+
+        if (targetVariationIndex < 0 || targetVariationIndex >= experimentVariations.size()) {
             // Set to 0
             targetVariationIndex = 0;
         }
 
-        if (!experiment.getVariations().isEmpty()) {
+        if (!experimentVariations.isEmpty()) {
             targetValue = experiment.getVariations().get(targetVariationIndex);
         }
 

@@ -70,13 +70,12 @@ public class FeatureEvaluator implements IFeatureEvaluator {
                     // Apply the force rule
                     return FeatureResult
                             .<ValueType>builder()
-                            .rawJsonValue(rule.getForce()) // TODO: Check this.
+                            .rawJsonValue(rule.getForce()) // TODO: Check this. - This is not right
                             .source(FeatureResultSource.FORCE)
                             .build();
                 }
 
                 // Experiment rule
-                // TODO:
                 String experimentKey = rule.getKey();
                 if (experimentKey == null) {
                     experimentKey = key;
@@ -89,7 +88,7 @@ public class FeatureEvaluator implements IFeatureEvaluator {
                         .weights(rule.getWeights())
                         .hashAttribute(rule.getHashAttribute())
                         .namespace(rule.getNamespace())
-                        // TODO: Variations
+                        .variations(rule.getVariations())
                         .build();
 
                 ExperimentResult<ValueType> result = experimentEvaluator.evaluateExperiment(experiment, context);
@@ -103,20 +102,19 @@ public class FeatureEvaluator implements IFeatureEvaluator {
                     return FeatureResult
                             .<ValueType>builder()
                             .rawJsonValue(jsonString)
+                            .ruleId(experimentKey) // todo: verify if this should be present
                             .source(FeatureResultSource.EXPERIMENT)
+                            .experiment(experiment)
+                            .experimentResult(result)
                             .build();
                 }
-                else {
-                    continue;
-                }
-
-                // TODO: evaluate feature result
-                // TODO: if result is in experiment, return a feature result of source experiment
-                // else, continue;
             }
 
-            return emptyFeature;
-
+            return FeatureResult
+                    .<ValueType>builder()
+                    .source(FeatureResultSource.DEFAULT_VALUE)
+                    .rawJsonValue(feature.getDefaultValue())
+                    .build();
         } catch (Exception e) {
             e.printStackTrace();
             return emptyFeature;

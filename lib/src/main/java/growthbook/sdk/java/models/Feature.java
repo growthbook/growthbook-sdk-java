@@ -27,7 +27,14 @@ public class Feature {
         this.rawValue = rawValue;
         this.dataType = Feature.getValueDataType(rawValue);
         this.featureJson = Feature.getFeatureJsonFromRawValue(rawValue);
-        this.defaultValue = featureJson.get("defaultValue").toString();
+
+        String possibleDefaultValue = "null";
+        if (featureJson.get("defaultValue") != null) {
+            possibleDefaultValue = featureJson.get("defaultValue").toString();
+        }
+//        this.defaultValue = featureJson.get("defaultValue").toString();
+        this.defaultValue = possibleDefaultValue;
+
         this.rules = Feature.getRulesFromFeatureJson(this.featureJson);
 
         // TODO: Transform other things??
@@ -53,7 +60,13 @@ public class Feature {
     private static ArrayList<FeatureRule> getRulesFromFeatureJson(JsonObject json) {
         try {
             Type featureRuleListType = new TypeToken<ArrayList<FeatureRule>>() {}.getType();
-            JsonArray rulesJson = json.get("rules").getAsJsonArray();
+            JsonElement rulesJsonElement = json.get("rules");
+            JsonArray rulesJson;
+            if (rulesJsonElement != null) {
+                rulesJson = rulesJsonElement.getAsJsonArray();
+            } else {
+                rulesJson = new JsonArray();
+            }
 
             return GrowthBookJsonUtils.getInstance().gson.fromJson(rulesJson, featureRuleListType);
         } catch (Exception e) {

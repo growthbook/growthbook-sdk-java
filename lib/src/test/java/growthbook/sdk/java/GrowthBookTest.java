@@ -7,12 +7,12 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import growthbook.sdk.java.TestHelpers.TestCasesJsonHelper;
-import growthbook.sdk.java.models.Context;
-import growthbook.sdk.java.models.Experiment;
-import growthbook.sdk.java.models.ExperimentRunCallback;
+import growthbook.sdk.java.models.*;
 import growthbook.sdk.java.services.GrowthBookJsonUtils;
 import org.junit.jupiter.api.Test;
-import org.mockito.Mockito;
+
+import java.util.ArrayList;
+import java.util.HashMap;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
@@ -26,29 +26,101 @@ class GrowthBookTest {
 
     @Test
     void test_evalFeature() {
-        JsonArray testCases = helper.getChooseVariationTestCases();
+        JsonArray testCases = helper.featureTestCases();
 
-        testCases.forEach(jsonElement -> {
+        ArrayList<String> passedTests = new ArrayList<>();
+        ArrayList<String> failedTests = new ArrayList<>();
+
+        ArrayList<Integer> failingIndexes = new ArrayList<>();
+
+//        GrowthBook
+
+        for (int i = 0; i < testCases.size(); i++) {
+            JsonElement jsonElement = testCases.get(i);
             JsonArray testCase = (JsonArray) jsonElement;
 
             String testDescription = testCase.get(0).getAsString();
-            Context context = jsonUtils.gson.fromJson(testCase.get(1), Context.class);
+            HashMap<String, String> attributes = new HashMap<>();
+            HashMap<String, Integer> forcedVariations = new HashMap<>();
+
+            // Build context
+            System.out.printf("\n\n Building context for index %s named %s", i, testDescription);
+
+            JsonObject contextJson = (JsonObject) testCase.get(1);
+            JsonElement features = contextJson.get("features");
+            String featuresJson = "{}";
+            if (features != null) {
+                featuresJson = features.toString();
+            }
+            Context context = new Context(
+                    true,
+                    attributes,
+                    null,
+                    featuresJson,
+                    forcedVariations,
+                    false,
+                    null
+            );
+//            Context context = Context
+//                    .builder()
+//                    .featuresJson()
+//                    .build();
+
+
+
+//            Context context = jsonUtils.gson.fromJson(testCase.get(1), Context.class);
+
             String featureKey = testCase.get(2).getAsString();
 
-            JsonElement expected = testCase.get(3);
+            GrowthBook subject = new GrowthBook(context);
+            FeatureResult<Object> result = subject.evalFeature(featureKey);
 
-            GrowthBook subject = new GrowthBook();
+            JsonObject expected = testCase.get(3).getAsJsonObject();
 
-            // TODO: test feature result
-//            assertEquals()
-        });
+            // TODO: value
+//            JsonPrimitive expectedValue = expected.get("value").getAsJsonPrimitive();
 
+            boolean expectedOn = expected.get("on").getAsBoolean();
+            FeatureResultSource expectedSource = FeatureResultSource.fromString(expected.get("source").getAsString());
+
+            // Verify:
+            //      value
+            // TODO: compare value
+//            if () {
+//
+//            }
+            //      on
+//            if (expectedOn == result.getOn()) {
+//                passedTests.add(testDescription);
+//            } else {
+//                failedTests.add(testDescription);
+//            }
+//
+//            //      source
+//            if (expectedSource == result.getSource()) {
+//                passedTests.add(testDescription);
+//            } else {
+//                failedTests.add(testDescription);
+//            }
+            boolean isPassing = expectedOn == result.getOn() && expectedSource == result.getSource();
+            if (isPassing) {
+                passedTests.add(testDescription);
+            } else {
+                failedTests.add(testDescription);
+            }
+        }
+
+        System.out.printf("\n\n✅ evalFeature - Passed tests: %s", passedTests);
+        System.out.printf("\n\n\n❗️ evalFeature - Failed tests = %s / %s . Failing = %s", failedTests.size(), testCases.size(), failedTests);
+        System.out.printf("\n\n\n evalFeature - Failing indexes = %s", failingIndexes);
+
+        assertEquals(0, failedTests.size(), "There are failing tests");
     }
     @Test
     void run_executesExperimentResultCallbacks() {
         GrowthBook subject = new GrowthBook();
         ExperimentRunCallback mockCallback = mock(ExperimentRunCallback.class);
-        Experiment mockExperiment = Experiment.builder().build();
+        Experiment<String> mockExperiment = Experiment.<String>builder().build();
 
         subject.run(mockExperiment);
 

@@ -34,7 +34,8 @@ public class Experiment<ValueType> {
     /**
      * If set to false, always return the control (first variation)
      */
-    Boolean isActive;
+    @Builder.Default
+    Boolean isActive = true;
 
     /**
      * What percent of users should be included in the experiment (between 0 and 1, inclusive)

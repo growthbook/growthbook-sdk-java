@@ -19,7 +19,7 @@ public class GrowthBook implements IGrowthBook {
     }
 
     public GrowthBook() {
-        this.context = Context.builder().build();
+        this.context = new Context(false, null, null, "{}", null, false, null);
     }
 
     @Nullable

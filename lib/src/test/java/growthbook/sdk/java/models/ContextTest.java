@@ -43,37 +43,14 @@ class ContextTest {
         String featuresJson = "{}";
 
         Context subject = new Context(
-                features,
                 isEnabled,
-                url,
-                isQaMode,
-                trackingCallback,
                 sampleUserAttributes,
+                url,
                 featuresJson,
-                forcedVariations
+                forcedVariations,
+                isQaMode,
+                trackingCallback
         );
-
-        assertNotNull(subject);
-    }
-
-    @Test
-    void canBeBuilt() {
-        Boolean isEnabled = true;
-        Boolean isQaMode = false;
-        String url = "http://localhost:3000";
-
-        HashMap<String, Integer> forcedVariations = new HashMap<String, Integer>();
-        forcedVariations.put("my-test", 0);
-        forcedVariations.put("other-test", 1);
-
-        Context subject = Context
-                .builder()
-                .enabled(isEnabled)
-                .isQaMode(isQaMode)
-                .attributes(sampleUserAttributes)
-                .forcedVariationsMap(forcedVariations)
-                .url(url)
-                .build();
 
         assertNotNull(subject);
     }
@@ -84,13 +61,15 @@ class ContextTest {
         Boolean isQaMode = false;
         String url = "http://localhost:3000";
 
-        Context subject = Context
-                .builder()
-                .enabled(isEnabled)
-                .isQaMode(isQaMode)
-                .attributes(sampleUserAttributes)
-                .url(url)
-                .build();
+        Context subject = new Context(
+                isEnabled,
+                sampleUserAttributes,
+                url,
+                "{}",
+                new HashMap<>(),
+                isQaMode,
+                trackingCallback
+        );
 
         // Initial state OK
         assertTrue(subject.getEnabled());
@@ -108,29 +87,23 @@ class ContextTest {
     }
 
     @Test
-    void serializableAttributes() {
-        Context subject = Context
-                .builder()
-                .attributes(sampleUserAttributes)
-                .build();
-        String attributesJson = GrowthBookJsonUtils.getInstance().gson.toJson(subject.attributes);
-
-        assertEquals("{\"country\":\"canada\",\"device\":\"android\"}", attributesJson);
-    }
-
-    @Test
     void canExecuteATrackingCallback() {
-        Context subject = Context
-                .builder()
-                .trackingCallback(trackingCallback)
-                .build();
+        Context subject = new Context(
+                true,
+                new HashMap<>(),
+                null,
+                "{}",
+                new HashMap<>(),
+                false,
+                trackingCallback
+        );
 
         Experiment<String> experiment = Experiment.<String>builder().build();
         ExperimentResult<String> result = ExperimentResult
                 .<String>builder()
                 .value("Hello, world!")
                 .build();
-        subject.trackingCallback.onTrack(experiment, result);
+        subject.getTrackingCallback().onTrack(experiment, result);
 
         verify(trackingCallback).onTrack(experiment, result);
     }
