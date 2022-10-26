@@ -23,8 +23,8 @@ public class Experiment<ValueType> {
     /**
      * The different variations to choose between
      */
-    @Nullable
-    ArrayList<ValueType> variations;
+    @Builder.Default
+    ArrayList<ValueType> variations = new ArrayList<>();
 
     /**
      * How to weight traffic between variations. Must add to 1.

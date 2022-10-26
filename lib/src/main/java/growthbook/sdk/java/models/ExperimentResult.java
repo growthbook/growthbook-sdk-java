@@ -20,7 +20,10 @@ public class ExperimentResult<ValueType> {
     Boolean inExperiment = false;
 
     @Nullable
-    Boolean hashUsed;
+    String hashAttribute;
+
+    @Nullable
+    String hashValue;
 
     @Nullable
     String featureId;
