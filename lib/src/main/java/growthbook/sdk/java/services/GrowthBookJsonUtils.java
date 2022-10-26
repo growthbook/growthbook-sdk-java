@@ -1,9 +1,6 @@
 package growthbook.sdk.java.services;
 
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonPrimitive;
+import com.google.gson.*;
 import growthbook.sdk.java.models.BucketRange;
 import growthbook.sdk.java.models.DataType;
 import growthbook.sdk.java.models.Namespace;
@@ -51,6 +48,31 @@ public class GrowthBookJsonUtils {
     }
 
     // endregion Initialization
+
+    @Nullable
+    public static JsonElement getJsonElement(Object o) {
+        try {
+            JsonElement element = null;
+
+            if (o instanceof Boolean) {
+                element = new JsonPrimitive((Boolean) o);
+            }
+            if (o instanceof Float) {
+                element = new JsonPrimitive((Float) o);
+            }
+            if (o instanceof Integer) {
+                element = new JsonPrimitive((Integer) o);
+            }
+            if (o instanceof String) {
+                element = new JsonPrimitive((String) o);
+            }
+
+            return element;
+        } catch (Exception e) {
+            e.printStackTrace();
+            return null;
+        }
+    }
 
     public static DataType getElementType(@Nullable JsonElement element) {
         try {

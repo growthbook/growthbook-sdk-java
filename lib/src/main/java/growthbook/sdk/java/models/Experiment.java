@@ -42,9 +42,10 @@ public class Experiment<ValueType> {
     Float coverage;
 
     // TODO: Condition
-//    /**
-//     * Optional targeting condition
-//     */
+    /**
+     * Optional targeting condition
+     */
+    String conditionJson;
 
     @Nullable
     Namespace namespace;

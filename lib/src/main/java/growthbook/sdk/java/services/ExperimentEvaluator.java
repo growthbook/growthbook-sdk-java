@@ -1,5 +1,6 @@
 package growthbook.sdk.java.services;
 
+import com.google.gson.JsonElement;
 import com.sun.org.apache.xpath.internal.operations.Bool;
 import growthbook.sdk.java.models.*;
 
@@ -8,6 +9,9 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class ExperimentEvaluator implements IExperimentEvaluator {
+
+    private ConditionEvaluator conditionEvaluator = new ConditionEvaluator();
+
     @Override
     public <ValueType> ExperimentResult<ValueType> evaluateExperiment(Experiment<ValueType> experiment, Context context) {
         // If less than 2 variations, return immediately (not in experiment, variation 0)
@@ -55,7 +59,15 @@ public class ExperimentEvaluator implements IExperimentEvaluator {
             }
         }
 
-        // TODO: Evaluate experiment condition
+        // Evaluate the condition JSON
+        String jsonStringCondition = experiment.getConditionJson();
+        if (jsonStringCondition != null) {
+            String attributesJson = GrowthBookJsonUtils.getInstance().gson.toJson(attributes);
+            Boolean shouldEvaluate = conditionEvaluator.evaluateCondition(attributesJson, jsonStringCondition);
+            if (!shouldEvaluate) {
+                return getExperimentResult(experiment, context, 0, false);
+            }
+        }
 
         // Set default variation weights and coverage if not set
         // Weights

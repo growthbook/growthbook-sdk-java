@@ -1,5 +1,6 @@
 package growthbook.sdk.java.services;
 
+import com.google.gson.JsonElement;
 import growthbook.sdk.java.FeatureRule;
 import growthbook.sdk.java.models.*;
 
@@ -92,6 +93,22 @@ public class FeatureEvaluator implements IFeatureEvaluator {
                         .build();
 
                 ExperimentResult<ValueType> result = experimentEvaluator.evaluateExperiment(experiment, context);
+                if (result.getInExperiment()) {
+                    JsonElement element = GrowthBookJsonUtils.getJsonElement(result.getValue());
+                    String jsonString = "null";
+                    if (element != null) {
+                        jsonString = element.toString();
+                    }
+
+                    return FeatureResult
+                            .<ValueType>builder()
+                            .rawJsonValue(jsonString)
+                            .source(FeatureResultSource.EXPERIMENT)
+                            .build();
+                }
+                else {
+                    continue;
+                }
 
                 // TODO: evaluate feature result
                 // TODO: if result is in experiment, return a feature result of source experiment
