@@ -36,7 +36,7 @@ class ContextTest {
         Boolean isEnabled = true;
         Boolean isQaMode = false;
         String url = "http://localhost:3000";
-        ForcedVariationsMap forcedVariations = new ForcedVariationsHashMap();
+        HashMap<String, Integer> forcedVariations = new HashMap<String, Integer>();
         HashMap<String, Feature> features = new HashMap<>();
         forcedVariations.put("my-test", 0);
         forcedVariations.put("other-test", 1);
@@ -62,7 +62,7 @@ class ContextTest {
         Boolean isQaMode = false;
         String url = "http://localhost:3000";
 
-        ForcedVariationsMap forcedVariations = new ForcedVariationsHashMap();
+        HashMap<String, Integer> forcedVariations = new HashMap<String, Integer>();
         forcedVariations.put("my-test", 0);
         forcedVariations.put("other-test", 1);
 

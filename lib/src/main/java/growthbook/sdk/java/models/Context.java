@@ -57,14 +57,12 @@ public class Context {
     @Builder.Default
     private String featuresJson = "{}";
 
-    // TODO: Would this be more user-friendly as its own type ForcedVariationsMap or Map<String, Integer> ?
     /**
      * Force specific experiments to always assign a specific variation (used for QA)
      */
     @Nullable
     @Builder.Default
     Map<String, Integer> forcedVariationsMap = new HashMap<>();
-//    ForcedVariationsMap forcedVariationsMap;
 
     public void setFeatures(String featuresJson) {
         this.featuresJson = featuresJson;
