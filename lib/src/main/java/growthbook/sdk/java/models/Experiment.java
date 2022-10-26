@@ -52,8 +52,7 @@ public class Experiment<ValueType> {
     /**
      * All users included in the experiment will be forced into the specific variation index
      */
-    // TODO: Integer?
-    Float force;
+    Integer force;
 
     /**
      * What user attribute should be used to assign variations (defaults to `id`)

@@ -10,7 +10,7 @@ class ExperimentTest {
 
     @Test
     void canBeConstructed() {
-        ArrayList<Float> weights = new ArrayList<Float>();
+        ArrayList<Float> weights = new ArrayList<>();
         weights.add(0.3f);
         weights.add(0.7f);
 
@@ -25,13 +25,13 @@ class ExperimentTest {
                 true,
                 0.5f,
                 namespace,
-                0.2f,
+                1,
                 "_id"
         );
         assertEquals(0.5f, experiment.coverage);
         assertEquals(0.5f, experiment.getCoverage());
-        assertEquals(0.2f, experiment.force);
-        assertEquals(0.2f, experiment.getForce());
+        assertEquals(1, experiment.force);
+        assertEquals(1, experiment.getForce());
         assertEquals("my_experiment", experiment.key);
         assertEquals("my_experiment", experiment.getKey());
         assertEquals("_id", experiment.hashAttribute);
@@ -44,14 +44,14 @@ class ExperimentTest {
 
     @Test
     void canBeBuilt() {
-        ArrayList<Float> weights = new ArrayList<Float>();
+        ArrayList<Float> weights = new ArrayList<>();
         weights.add(0.3f);
         weights.add(0.7f);
 
         Experiment<Integer> experiment = Experiment
                 .<Integer>builder()
                 .coverage(0.5f)
-                .force(0.2f)
+                .force(1)
                 .weights(weights)
                 .isActive(true)
                 .key("my_experiment")
@@ -60,8 +60,8 @@ class ExperimentTest {
 
         assertEquals(0.5f, experiment.coverage);
         assertEquals(0.5f, experiment.getCoverage());
-        assertEquals(0.2f, experiment.force);
-        assertEquals(0.2f, experiment.getForce());
+        assertEquals(1, experiment.force);
+        assertEquals(1, experiment.getForce());
         assertEquals(0.3f, experiment.weights.get(0));
         assertEquals(0.7f, experiment.weights.get(1));
         assertEquals("my_experiment", experiment.key);

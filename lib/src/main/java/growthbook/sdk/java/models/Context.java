@@ -34,7 +34,6 @@ public class Context {
     /**
      * If true, random assignment is disabled and only explicitly forced variations are used.
      */
-    @Nullable
     @Builder.Default
     Boolean isQaMode = false;
 

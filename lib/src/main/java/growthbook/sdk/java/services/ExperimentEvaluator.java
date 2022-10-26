@@ -1,11 +1,9 @@
 package growthbook.sdk.java.services;
 
 import com.sun.org.apache.xpath.internal.operations.Bool;
-import growthbook.sdk.java.models.Context;
-import growthbook.sdk.java.models.Experiment;
-import growthbook.sdk.java.models.ExperimentResult;
-import growthbook.sdk.java.models.Namespace;
+import growthbook.sdk.java.models.*;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -59,12 +57,56 @@ public class ExperimentEvaluator implements IExperimentEvaluator {
 
         // TODO: Evaluate experiment condition
 
-        // TODO: Variation weights and coverage
+        // Set default variation weights and coverage if not set
+        // Weights
+        ArrayList<Float> weights = experiment.getWeights();
+        if (weights == null) {
+            weights = GrowthBookUtils.getEqualWeights(experiment.getVariations().size());
+        }
+        experiment.setWeights(weights);
 
-        // TODO: Bucket ranges
+        // Coverage
+        Float coverage = experiment.getCoverage();
+        if (coverage == null) {
+            coverage = 1.0f;
+        }
+        experiment.setCoverage(coverage);
 
-        // TODO: evaluateExperiment
-        return null;
+        // Bucket ranges
+        ArrayList<BucketRange> bucketRanges = GrowthBookUtils.getBucketRanges(
+                experiment.getVariations().size(),
+                experiment.getCoverage(),
+                experiment.getWeights()
+        );
+
+        // Assigned variations
+        // If not assigned a variation (-1), not in experiment, variation 0
+        Float hash = GrowthBookUtils.hash(attributeValue + experiment.getKey());
+        Integer assignedVariation = GrowthBookUtils.chooseVariation(hash, bucketRanges);
+        if (assignedVariation == -1) {
+            return getExperimentResult(experiment, context, 0, false);
+        }
+
+        // If experiment has a forced index, not in experiment, variation is the forced experiment
+        Integer force = experiment.getForce();
+        if (force != null) {
+            return getExperimentResult(experiment, context, force, false);
+        }
+
+        // If QA mode is enabled, not in experiment, variation 0
+        if (context.getIsQaMode()) {
+            return getExperimentResult(experiment, context, 0, false);
+        }
+
+        // User is in an experiment.
+        // Call the tracking callback with the result.
+        ExperimentResult<ValueType> result = getExperimentResult(experiment, context, assignedVariation, true);
+        TrackingCallback trackingCallback = context.getTrackingCallback();
+        if (trackingCallback != null) {
+            trackingCallback.onTrack(experiment, result);
+        }
+
+        return result;
     }
 
     private <ValueType> ExperimentResult<ValueType> getExperimentResult(

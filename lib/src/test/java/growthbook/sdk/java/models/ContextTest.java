@@ -126,8 +126,8 @@ class ContextTest {
                 .build();
 
         Experiment<String> experiment = Experiment.<String>builder().build();
-        TrackingResult result = TrackingResult
-                .builder()
+        ExperimentResult<String> result = ExperimentResult
+                .<String>builder()
                 .value("Hello, world!")
                 .build();
         subject.trackingCallback.onTrack(experiment, result);

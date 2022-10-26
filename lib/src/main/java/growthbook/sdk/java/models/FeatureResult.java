@@ -10,7 +10,6 @@ import javax.annotation.Nullable;
 @Data
 @Builder
 @AllArgsConstructor
-//public class FeatureResult {
 public class FeatureResult<ValueType> {
 
     @Builder.Default
