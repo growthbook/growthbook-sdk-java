@@ -15,7 +15,7 @@ public class FeatureEvaluator implements IFeatureEvaluator {
     public <ValueType> FeatureResult<ValueType> evaluateFeature(String key, Context context) throws ClassCastException {
         FeatureResult<ValueType> emptyFeature = FeatureResult
                 .<ValueType>builder()
-                .rawJsonValue(null)
+                .rawJsonValue("null")
                 .on(false)
                 .source(FeatureResultSource.UNKNOWN_FEATURE)
                 .build();
@@ -67,6 +67,7 @@ public class FeatureEvaluator implements IFeatureEvaluator {
                         }
                     }
 
+                    System.out.printf("🎃 Creating FeatureResult with raw JSON value %s", rule.getForce());
                     // Apply the force rule
                     return FeatureResult
                             .<ValueType>builder()
@@ -80,6 +81,8 @@ public class FeatureEvaluator implements IFeatureEvaluator {
                 if (experimentKey == null) {
                     experimentKey = key;
                 }
+
+                System.out.printf("🎃 Creating FeatureResult with raw JSON value %s", feature.getDefaultValue());
 
                 Experiment<ValueType> experiment = Experiment
                         .<ValueType>builder()
@@ -99,6 +102,8 @@ public class FeatureEvaluator implements IFeatureEvaluator {
                         jsonString = element.toString();
                     }
 
+                    System.out.printf("🎃 Creating FeatureResult with raw JSON value %s", jsonString);
+
                     return FeatureResult
                             .<ValueType>builder()
                             .rawJsonValue(jsonString)
@@ -109,6 +114,8 @@ public class FeatureEvaluator implements IFeatureEvaluator {
                             .build();
                 }
             }
+
+            System.out.printf("🎃 Creating FeatureResult with raw JSON value %s", feature.getDefaultValue());
 
             return FeatureResult
                     .<ValueType>builder()

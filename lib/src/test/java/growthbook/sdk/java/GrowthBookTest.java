@@ -5,6 +5,7 @@ package growthbook.sdk.java;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
+import com.google.gson.JsonNull;
 import com.google.gson.JsonObject;
 import growthbook.sdk.java.TestHelpers.TestCasesJsonHelper;
 import growthbook.sdk.java.models.*;
@@ -13,6 +14,7 @@ import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Objects;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
@@ -34,6 +36,7 @@ class GrowthBookTest {
         ArrayList<Integer> failingIndexes = new ArrayList<>();
 
 //        GrowthBook
+        // Failing indexes: [2, 3, 4, 6, 7, 8, 9, 10, 12, 13, 14, 15, 16, 17, 19, 20, 21, 22, 23]
 
         for (int i = 0; i < testCases.size(); i++) {
             JsonElement jsonElement = testCases.get(i);
@@ -61,14 +64,6 @@ class GrowthBookTest {
                     false,
                     null
             );
-//            Context context = Context
-//                    .builder()
-//                    .featuresJson()
-//                    .build();
-
-
-
-//            Context context = jsonUtils.gson.fromJson(testCase.get(1), Context.class);
 
             String featureKey = testCase.get(2).getAsString();
 
@@ -78,34 +73,33 @@ class GrowthBookTest {
             JsonObject expected = testCase.get(3).getAsJsonObject();
 
             // TODO: value
+            JsonElement expectedValue;
+            if (expected.get("value") == null) {
+                expectedValue = JsonNull.INSTANCE;
+            } else {
+                expectedValue = expected.get("value");
+            }
+            String expectedValueJson = expectedValue.toString();
+            String resultValue = result.getRawJsonValue();
+
+
 //            JsonPrimitive expectedValue = expected.get("value").getAsJsonPrimitive();
 
             boolean expectedOn = expected.get("on").getAsBoolean();
             FeatureResultSource expectedSource = FeatureResultSource.fromString(expected.get("source").getAsString());
 
-            // Verify:
-            //      value
             // TODO: compare value
-//            if () {
-//
-//            }
-            //      on
-//            if (expectedOn == result.getOn()) {
-//                passedTests.add(testDescription);
-//            } else {
-//                failedTests.add(testDescription);
-//            }
-//
-//            //      source
-//            if (expectedSource == result.getSource()) {
-//                passedTests.add(testDescription);
-//            } else {
-//                failedTests.add(testDescription);
-//            }
-            boolean isPassing = expectedOn == result.getOn() && expectedSource == result.getSource();
+            boolean valueMatches = Objects.equals(expectedValueJson, resultValue);
+            boolean isPassing = expectedOn == result.getOn() &&
+                    expectedSource == result.getSource() &&
+                    valueMatches;
+
+            System.out.printf("\n\n🚚 evalFeature - Expected value: %s == Result value: %s - Value matches %s", expectedValueJson, resultValue, valueMatches);
+
             if (isPassing) {
                 passedTests.add(testDescription);
             } else {
+                failingIndexes.add(i);
                 failedTests.add(testDescription);
             }
         }
