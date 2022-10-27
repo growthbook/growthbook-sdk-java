@@ -10,7 +10,7 @@ class FeatureTest {
     void test_simpleStringRule() {
         Feature subject = new Feature("{\"defaultValue\": \"Hello!\"}");
 
-        assertEquals("\"Hello!\"", subject.getDefaultValue());
+        assertEquals("Hello!", subject.getDefaultValue());
         assertTrue(subject.getRules().isEmpty());
     }
 
