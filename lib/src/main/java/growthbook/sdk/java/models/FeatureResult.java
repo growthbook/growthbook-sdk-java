@@ -71,6 +71,10 @@ public class FeatureResult<ValueType> {
         jsonObject.add("on", isOn);
         jsonObject.add("off", isOff);
 
+        // TODO: value
+        // TODO: experiment
+        // TODO: experiment result
+
         FeatureResultSource source = object.getSource();
         if (source != null) {
             JsonPrimitive jsonSource = new JsonPrimitive(source.toString());

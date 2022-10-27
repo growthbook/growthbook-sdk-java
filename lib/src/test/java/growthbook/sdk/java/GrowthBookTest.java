@@ -19,7 +19,6 @@ import java.util.HashMap;
 import java.util.Objects;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
@@ -44,13 +43,19 @@ class GrowthBookTest {
         // Failing indexes: [4, 5, 6, 9, 12, 13, 14, 15, 16, 17, 19, 20, 21, 22, 23]
 
         for (int i = 0; i < testCases.size(); i++) {
-            if (i != 6) continue;
+//            if (i != 6) continue;
 
             JsonElement jsonElement = testCases.get(i);
             JsonArray testCase = (JsonArray) jsonElement;
 
+            JsonObject jsonAttributes = testCase.get(1).getAsJsonObject().get("attributes").getAsJsonObject();
+
             String testDescription = testCase.get(0).getAsString();
+
+            // TODO: use attributes from the context
             HashMap<String, String> attributes = new HashMap<>();
+            attributes.put("id", jsonAttributes.get("id").getAsString());
+
             HashMap<String, Integer> forcedVariations = new HashMap<>();
 
             // Build context
@@ -77,6 +82,8 @@ class GrowthBookTest {
 
             GrowthBook subject = new GrowthBook(context);
             FeatureResult<Object> result = subject.evalFeature(featureKey);
+
+            System.out.printf("\n\n Eval Feature result: %s", result);
 
             JsonObject expected = testCase.get(3).getAsJsonObject();
 
@@ -165,15 +172,22 @@ class GrowthBookTest {
             );
             GrowthBook subject = new GrowthBook(context);
 
-//            System.out.printf("\n\nTest: %s - Context: %s - Experiment: %s", testDescription, testContext, experiment);
+            System.out.printf("\n\nTest: %s - Attributes: %s - Experiment: %s", testDescription, testContext.getAttributes(), experiment);
 
             ExperimentResult<JsonElement> result = subject.run(experiment);
-//            System.out.printf("\n\nExperiment result: %s", result);
+            System.out.printf("\n\nExperiment result: %s", result);
 
             JsonElement expectedValue = testCase.get(3);
             String inExperimentValue = String.valueOf(testCase.get(4).getAsBoolean());
+
+            boolean expectedHashUsed = testCase.get(5).getAsBoolean();
+
+            // 3rd boolean is if the hash was used
             boolean passes = expectedValue.equals(result.getValue().toString()) &&
-                    inExperimentValue.equals(result.getInExperiment().toString());
+                    inExperimentValue.equals(result.getInExperiment().toString()) &&
+                    expectedHashUsed == result.getHashUsed();
+
+            System.out.printf("\n\n run - Comparisons: Expected values %s == %s , In experiment %s == %s, Hash used %s == %s", expectedValue, result.getValue(), inExperimentValue, result.getInExperiment(), expectedHashUsed, result.getHashUsed());
 
             if (passes) {
                 passedTests.add(testDescription);
