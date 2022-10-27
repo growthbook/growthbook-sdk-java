@@ -23,7 +23,7 @@ public class FeatureRule<ValueType> {
      * Immediately force a specific value (ignore every other option besides condition and coverage)
      */
     @Nullable
-    String force;
+    ValueType force;
 
     // TODO: Variations
     // Run an experiment (A/B test) and randomly choose between these variations

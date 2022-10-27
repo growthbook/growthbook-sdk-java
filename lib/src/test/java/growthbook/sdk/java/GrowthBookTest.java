@@ -78,12 +78,13 @@ class GrowthBookTest {
             JsonObject expected = testCase.get(3).getAsJsonObject();
 
             // TODO: value
+            // TODO: Fix unwrapping of numbers and strings. "1" != 1. We get string when we should get number.
+            // TODO: Fix unwrapping of booleans and strings. "true" != true. We get string when we should get booleans.
             Object expectedValue = GrowthBookJsonUtils.unwrap(expected.get("value"));
 
             boolean expectedOn = expected.get("on").getAsBoolean();
             FeatureResultSource expectedSource = FeatureResultSource.fromString(expected.get("source").getAsString());
 
-            // TODO: compare value
             Object unwrappedExpected = GrowthBookJsonUtils.unwrap(expectedValue);
             Object unwrappedResultValue = GrowthBookJsonUtils.unwrap(result.getValue());
             boolean valueMatches = Objects.equals(unwrappedResultValue, unwrappedExpected);

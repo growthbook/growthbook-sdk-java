@@ -29,8 +29,6 @@ public class Feature {
         this.featureJson = Feature.getFeatureJsonFromRawValue(rawValue);
         this.defaultValue = GrowthBookJsonUtils.unwrap(featureJson.get("defaultValue"));
         this.rules = Feature.getRulesFromFeatureJson(this.featureJson);
-
-        // TODO: Transform other things??
     }
 
     public Object getDefaultValue() {
@@ -52,6 +50,7 @@ public class Feature {
 
     private static ArrayList<FeatureRule> getRulesFromFeatureJson(JsonObject json) {
         try {
+            // TODO: Verify that these end up correct
             Type featureRuleListType = new TypeToken<ArrayList<FeatureRule>>() {}.getType();
             JsonElement rulesJsonElement = json.get("rules");
             JsonArray rulesJson;

@@ -28,7 +28,7 @@ class FeatureRuleTest {
         FeatureRule<Integer> subject = new FeatureRule<Integer>(
                 "my-key",
                 0.5f,
-                "forced-value",
+                100,
                 variations,
                 weights,
                 namespace,
