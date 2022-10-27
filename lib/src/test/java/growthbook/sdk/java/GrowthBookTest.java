@@ -115,13 +115,16 @@ class GrowthBookTest {
     @Test
     void run_executesExperimentResultCallbacks() {
         GrowthBook subject = new GrowthBook();
-        ExperimentRunCallback mockCallback = mock(ExperimentRunCallback.class);
+        ExperimentRunCallback mockCallback1 = mock(ExperimentRunCallback.class);
+        ExperimentRunCallback mockCallback2 = mock(ExperimentRunCallback.class);
         Experiment<String> mockExperiment = Experiment.<String>builder().build();
 
-        subject.run(mockExperiment);
+        subject.subscribe(mockCallback1);
+        subject.subscribe(mockCallback2);
+        ExperimentResult<String> result = subject.run(mockExperiment);
 
-        // TODO: Update arg to the expect result, if possible?
-        verify(mockCallback).onRun(any());
+        verify(mockCallback1).onRun(result);
+        verify(mockCallback2).onRun(result);
     }
 
     @Test
