@@ -65,15 +65,15 @@ class FeatureResultTest {
                 .build();
 
         // experiment
-        assertEquals("{\"on\":false,\"source\":\"experiment\"}", GrowthBookJsonUtils.getInstance().gson.toJson(subject));
+        assertEquals("{\"on\":false,\"off\":true,\"source\":\"experiment\"}", GrowthBookJsonUtils.getInstance().gson.toJson(subject));
         // Unknown
         subject.setSource(FeatureResultSource.UNKNOWN_FEATURE);
-        assertEquals("{\"on\":false,\"source\":\"unknownFeature\"}", GrowthBookJsonUtils.getInstance().gson.toJson(subject));
+        assertEquals("{\"on\":false,\"off\":true,\"source\":\"unknownFeature\"}", GrowthBookJsonUtils.getInstance().gson.toJson(subject));
         // force
         subject.setSource(FeatureResultSource.FORCE);
-        assertEquals("{\"on\":false,\"source\":\"force\"}", GrowthBookJsonUtils.getInstance().gson.toJson(subject));
+        assertEquals("{\"on\":false,\"off\":true,\"source\":\"force\"}", GrowthBookJsonUtils.getInstance().gson.toJson(subject));
         // defaultValue
         subject.setSource(FeatureResultSource.DEFAULT_VALUE);
-        assertEquals("{\"on\":false,\"source\":\"defaultValue\"}", GrowthBookJsonUtils.getInstance().gson.toJson(subject));
+        assertEquals("{\"on\":false,\"off\":true,\"source\":\"defaultValue\"}", GrowthBookJsonUtils.getInstance().gson.toJson(subject));
     }
 }
