@@ -38,8 +38,8 @@ class FeatureRuleTest {
 
         assertEquals(0.5f, subject.coverage);
         assertEquals(0.5f, subject.getCoverage());
-        assertEquals("forced-value", subject.force);
-        assertEquals("forced-value", subject.getForce());
+        assertEquals(100, subject.force);
+        assertEquals(100, subject.getForce());
         assertEquals(namespace, subject.namespace);
         assertEquals(namespace, subject.getNamespace());
         assertEquals("_id", subject.hashAttribute);
