@@ -21,26 +21,19 @@ public class Feature {
     private final JsonObject featureJson;
     private final ArrayList<FeatureRule> rules;
 
-    private final String defaultValue;
+    private final Object defaultValue;
 
     public Feature(String rawValue) {
         this.rawValue = rawValue;
         this.dataType = Feature.getValueDataType(rawValue);
         this.featureJson = Feature.getFeatureJsonFromRawValue(rawValue);
-
-        String possibleDefaultValue = "null";
-        if (featureJson.get("defaultValue") != null) {
-            possibleDefaultValue = featureJson.get("defaultValue").toString();
-        }
-//        this.defaultValue = featureJson.get("defaultValue").toString();
-        this.defaultValue = possibleDefaultValue;
-
+        this.defaultValue = GrowthBookJsonUtils.unwrap(featureJson.get("defaultValue"));
         this.rules = Feature.getRulesFromFeatureJson(this.featureJson);
 
         // TODO: Transform other things??
     }
 
-    public String getDefaultValue() {
+    public Object getDefaultValue() {
         return this.defaultValue;
     }
 

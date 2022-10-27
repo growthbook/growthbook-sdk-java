@@ -6,6 +6,8 @@ import growthbook.sdk.java.models.DataType;
 import growthbook.sdk.java.models.Namespace;
 
 import javax.annotation.Nullable;
+import java.math.BigDecimal;
+import java.math.BigInteger;
 
 /**
  * This convenience class was created to help with the serialization and deserialization of custom types.
@@ -72,6 +74,70 @@ public class GrowthBookJsonUtils {
             e.printStackTrace();
             return null;
         }
+    }
+
+    /**
+     * Unwrap an object. If it's not a JsonElement, you'll get the object right back
+     * @param o the JSON element to unwrap.
+     * @return unwrapped or original object
+     */
+    public static Object unwrap(final Object o) {
+        if (o == null) {
+            return null;
+        }
+        if (!(o instanceof JsonElement)) {
+            return o;
+        }
+        JsonElement e = (JsonElement) o;
+        if (e.isJsonNull()) {
+            return null;
+        } else if (e.isJsonPrimitive()) {
+            JsonPrimitive p = e.getAsJsonPrimitive();
+            if (p.isString()) {
+                return p.getAsString();
+            } else if (p.isBoolean()) {
+                return p.getAsBoolean();
+            } else if (p.isNumber()) {
+                return unwrapNumber(p.getAsNumber());
+            }
+        }
+        return o;
+    }
+
+    private static boolean isPrimitiveNumber(final Number n) {
+        return n instanceof Integer ||
+                n instanceof Float ||
+                n instanceof Double ||
+                n instanceof Long ||
+                n instanceof BigDecimal ||
+                n instanceof BigInteger;
+    }
+
+    private static Number unwrapNumber(final Number n) {
+        Number unwrapped;
+
+        if (!isPrimitiveNumber(n)) {
+            BigDecimal bigDecimal = new BigDecimal(n.toString());
+            if (bigDecimal.scale() <= 0) {
+                if (bigDecimal.abs().compareTo(new BigDecimal(Integer.MAX_VALUE)) <= 0) {
+                    unwrapped = bigDecimal.intValue();
+                } else if (bigDecimal.abs().compareTo(new BigDecimal(Long.MAX_VALUE)) <= 0){
+                    unwrapped = bigDecimal.longValue();
+                } else {
+                    unwrapped = bigDecimal;
+                }
+            } else {
+                final double doubleValue = bigDecimal.doubleValue();
+                if (BigDecimal.valueOf(doubleValue).compareTo(bigDecimal) != 0) {
+                    unwrapped = bigDecimal;
+                } else {
+                    unwrapped = doubleValue;
+                }
+            }
+        } else {
+            unwrapped = n;
+        }
+        return unwrapped;
     }
 
     public static DataType getElementType(@Nullable JsonElement element) {

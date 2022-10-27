@@ -1,6 +1,5 @@
 package growthbook.sdk.java.services;
 
-import com.google.gson.JsonElement;
 import growthbook.sdk.java.FeatureRule;
 import growthbook.sdk.java.models.*;
 
@@ -15,8 +14,7 @@ public class FeatureEvaluator implements IFeatureEvaluator {
     public <ValueType> FeatureResult<ValueType> evaluateFeature(String key, Context context) throws ClassCastException {
         FeatureResult<ValueType> emptyFeature = FeatureResult
                 .<ValueType>builder()
-                .rawJsonValue("null")
-                .on(false)
+                .value(null)
                 .source(FeatureResultSource.UNKNOWN_FEATURE)
                 .build();
 
@@ -28,10 +26,11 @@ public class FeatureEvaluator implements IFeatureEvaluator {
 
             // If empty rule set, use the default value
             if (feature.getRules().isEmpty()) {
+                Object value = GrowthBookJsonUtils.unwrap(feature.getDefaultValue());
                 return FeatureResult
                         .<ValueType>builder()
                         .source(FeatureResultSource.DEFAULT_VALUE)
-                        .rawJsonValue(feature.getDefaultValue())
+                        .value(value)
                         .build();
             }
 
@@ -67,11 +66,13 @@ public class FeatureEvaluator implements IFeatureEvaluator {
                         }
                     }
 
+                    Object value = GrowthBookJsonUtils.unwrap(rule.getForce());
+
                     System.out.printf("🎃 Creating FeatureResult with raw JSON value %s", rule.getForce());
                     // Apply the force rule
                     return FeatureResult
                             .<ValueType>builder()
-                            .rawJsonValue(rule.getForce()) // TODO: Check this. - This is not right
+                            .value(value) // TODO: Check this. - This is not right
                             .source(FeatureResultSource.FORCE)
                             .build();
                 }
@@ -96,17 +97,11 @@ public class FeatureEvaluator implements IFeatureEvaluator {
 
                 ExperimentResult<ValueType> result = experimentEvaluator.evaluateExperiment(experiment, context);
                 if (result.getInExperiment()) {
-                    JsonElement element = GrowthBookJsonUtils.getJsonElement(result.getValue());
-                    String jsonString = "null";
-                    if (element != null) {
-                        jsonString = element.toString();
-                    }
-
-                    System.out.printf("🎃 Creating FeatureResult with raw JSON value %s", jsonString);
+                    Object value = GrowthBookJsonUtils.unwrap(result.getValue());
 
                     return FeatureResult
                             .<ValueType>builder()
-                            .rawJsonValue(jsonString)
+                            .value(value)
                             .ruleId(experimentKey) // todo: verify if this should be present
                             .source(FeatureResultSource.EXPERIMENT)
                             .experiment(experiment)
@@ -117,10 +112,12 @@ public class FeatureEvaluator implements IFeatureEvaluator {
 
             System.out.printf("🎃 Creating FeatureResult with raw JSON value %s", feature.getDefaultValue());
 
+            Object value = GrowthBookJsonUtils.unwrap(feature.getDefaultValue());
+
             return FeatureResult
                     .<ValueType>builder()
                     .source(FeatureResultSource.DEFAULT_VALUE)
-                    .rawJsonValue(feature.getDefaultValue())
+                    .value(value)
                     .build();
         } catch (Exception e) {
             e.printStackTrace();

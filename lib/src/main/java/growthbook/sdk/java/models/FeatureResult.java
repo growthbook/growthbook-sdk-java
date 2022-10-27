@@ -12,12 +12,9 @@ import javax.annotation.Nullable;
 @AllArgsConstructor
 public class FeatureResult<ValueType> {
 
-    @Builder.Default
-    Boolean on = false;
-
     @Nullable
     @SerializedName("value")
-    String rawJsonValue;
+    Object value;
 
     /**
      * One of "unknownFeature", "defaultValue", "force", or "experiment"
@@ -40,10 +37,28 @@ public class FeatureResult<ValueType> {
     String ruleId;
 
     public Boolean isOn() {
-        return on;
+        if (value == null) return false;
+
+        if (value instanceof Boolean) {
+            return (Boolean) value;
+        }
+
+        if (value instanceof String) {
+            return !((String) value).isEmpty();
+        }
+
+        if (value instanceof Integer) {
+            return (Integer) value != 0;
+        }
+
+        if (value instanceof Float) {
+            return (Float) value != 0.0f;
+        }
+
+        return false;
     }
 
     public Boolean isOff() {
-        return !on;
+        return !isOn();
     }
 }

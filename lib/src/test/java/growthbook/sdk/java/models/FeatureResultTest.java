@@ -9,8 +9,7 @@ class FeatureResultTest {
     @Test
     void canBeConstructed() {
         FeatureResult subject = new FeatureResult(
-                true,
-                "100",
+                100,
                 FeatureResultSource.DEFAULT_VALUE,
                 null,
                 null,
@@ -18,15 +17,15 @@ class FeatureResultTest {
         );
 
         assertNull(subject.experiment);
-        assertEquals("100", subject.rawJsonValue);
+        assertEquals(100, subject.getValue());
     }
 
     @Test
     void canBeBuilt() {
         FeatureResult subject = FeatureResult
                 .<String>builder()
-                .rawJsonValue("\"hello\"")
-                .on(true)
+                .value("hello")
+//                .rawJsonValue("\"hello\"")
                 .experiment(null)
                 .experimentResult(null)
                 .ruleId("my-rule-id")
@@ -34,7 +33,7 @@ class FeatureResultTest {
                 .build();
 
         assertNull(subject.experiment);
-        assertEquals("\"hello\"", subject.rawJsonValue);
+        assertEquals("hello", subject.getValue());
     }
 //
 //    @Test
