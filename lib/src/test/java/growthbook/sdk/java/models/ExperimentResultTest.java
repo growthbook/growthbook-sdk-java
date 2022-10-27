@@ -1,0 +1,93 @@
+package growthbook.sdk.java.models;
+
+import growthbook.sdk.java.services.GrowthBookJsonUtils;
+import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.*;
+
+class ExperimentResultTest {
+    GrowthBookJsonUtils jsonUtils = GrowthBookJsonUtils.getInstance();
+
+    @Test
+    void test_canBeBuilt() {
+        ExperimentResult<String> subject = ExperimentResult
+                .<String>builder()
+                .value("c")
+                .variationId(2)
+                .inExperiment(true)
+                .hashAttribute("id")
+                .hashValue("123")
+                .featureId("my_feature")
+                .hashUsed(true)
+                .build();
+
+        assertEquals("c", subject.getValue());
+        assertEquals(2, subject.getVariationId());
+        assertEquals(true, subject.getInExperiment());
+        assertEquals("id", subject.getHashAttribute());
+        assertEquals("123", subject.getHashValue());
+        assertEquals("my_feature", subject.getFeatureId());
+        assertEquals(true, subject.getHashUsed());
+    }
+
+    @Test
+    void test_builderDefaultValues() {
+        ExperimentResult<String> subject = ExperimentResult
+                .<String>builder()
+                .build();
+
+        // null
+        assertNull(subject.getValue());
+        assertNull(subject.getHashValue());
+        assertEquals("id", subject.getHashAttribute());
+        assertNull(subject.getVariationId());
+        assertNull(subject.getFeatureId());
+        // false
+        assertFalse(subject.getInExperiment());
+        assertFalse(subject.getHashUsed());
+    }
+
+    @Test
+    void test_canBeConstructed() {
+        ExperimentResult<String> subject = new ExperimentResult<String>(
+                "c",
+                2,
+                true,
+                "id",
+                "123",
+                "my_feature",
+                true
+        );
+
+        assertEquals("c", subject.getValue());
+        assertEquals(2, subject.getVariationId());
+        assertEquals(true, subject.getInExperiment());
+        assertEquals("id", subject.getHashAttribute());
+        assertEquals("123", subject.getHashValue());
+        assertEquals("my_feature", subject.getFeatureId());
+        assertEquals(true, subject.getHashUsed());
+    }
+
+    @Test
+    void test_canBeSerialized() {
+        ExperimentResult<String> subject = ExperimentResult
+                .<String>builder()
+                .value("c")
+                .variationId(2)
+                .inExperiment(true)
+                .hashAttribute("id")
+                .hashValue("123")
+                .featureId("my_feature")
+                .hashUsed(true)
+                .build();
+
+        assertEquals(
+                "{\"featureId\":\"my_feature\",\"value\":\"c\",\"variationId\":2,\"inExperiment\":true,\"hashUsed\":true,\"hashAttribute\":\"id\",\"hashValue\":\"123\"}",
+                subject.toJson()
+        );
+        assertEquals(
+                "{\"featureId\":\"my_feature\",\"value\":\"c\",\"variationId\":2,\"inExperiment\":true,\"hashUsed\":true,\"hashAttribute\":\"id\",\"hashValue\":\"123\"}",
+                jsonUtils.gson.toJson(subject)
+        );
+    }
+}
