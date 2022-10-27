@@ -61,7 +61,10 @@ public class BucketRange {
 
     @Override
     public int hashCode() {
-        return Objects.hash(rangeStart, rangeEnd);
+        return Objects.hash(
+                Precision.round(this.rangeStart, BUCKET_RANGE_FLOAT_PRECISION),
+                Precision.round(this.rangeEnd, BUCKET_RANGE_FLOAT_PRECISION)
+        );
     }
 
     static JsonElement getJson(BucketRange object) {
