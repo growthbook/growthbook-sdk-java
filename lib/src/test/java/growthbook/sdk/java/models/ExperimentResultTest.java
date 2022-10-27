@@ -90,4 +90,31 @@ class ExperimentResultTest {
                 jsonUtils.gson.toJson(subject)
         );
     }
+
+    @Test
+    void test_canBeComparedForEquality() {
+        ExperimentResult<String> a = ExperimentResult
+                .<String>builder()
+                .value("c")
+                .variationId(2)
+                .inExperiment(true)
+                .hashAttribute("id")
+                .hashValue("123")
+                .featureId("my_feature")
+                .hashUsed(true)
+                .build();
+
+        ExperimentResult<String> b = ExperimentResult
+                .<String>builder()
+                .value("c")
+                .variationId(2)
+                .inExperiment(true)
+                .hashAttribute("id")
+                .hashValue("123")
+                .featureId("my_feature")
+                .hashUsed(true)
+                .build();
+
+        assertEquals(a, b);
+    }
 }
