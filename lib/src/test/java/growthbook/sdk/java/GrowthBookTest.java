@@ -13,6 +13,7 @@ import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Objects;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
@@ -36,11 +37,11 @@ class GrowthBookTest {
         // Failing results (response is wrong, not just data types)
         // [6, 9, 12, 13, 14, 15, 16, 17, 21, 23]
 
-//        GrowthBook (16/24) - equality check fails
-        // Failing indexes: [3, 4, 5, 6, 9, 12, 13, 14, 15, 16, 17, 19, 20, 21, 22, 23]
+//        GrowthBook (15/24) - equality check fails
+        // Failing indexes: [4, 5, 6, 9, 12, 13, 14, 15, 16, 17, 19, 20, 21, 22, 23]
 
         for (int i = 0; i < testCases.size(); i++) {
-//            if (i != 2) continue;
+//            if (i != 3) continue;
 
             JsonElement jsonElement = testCases.get(i);
             JsonArray testCase = (JsonArray) jsonElement;
@@ -83,7 +84,10 @@ class GrowthBookTest {
             FeatureResultSource expectedSource = FeatureResultSource.fromString(expected.get("source").getAsString());
 
             // TODO: compare value
-            boolean valueMatches = GrowthBookJsonUtils.unwrap(expectedValue) == GrowthBookJsonUtils.unwrap(result.getValue());
+            Object unwrappedExpected = GrowthBookJsonUtils.unwrap(expectedValue);
+            Object unwrappedResultValue = GrowthBookJsonUtils.unwrap(result.getValue());
+            boolean valueMatches = Objects.equals(unwrappedResultValue, unwrappedExpected);
+
             boolean isPassing = expectedOn == result.isOn() &&
                     expectedSource == result.getSource() &&
                     valueMatches;
