@@ -1,7 +1,11 @@
 package growthbook.sdk.java.models;
 
+import com.google.gson.reflect.TypeToken;
 import growthbook.sdk.java.services.GrowthBookJsonUtils;
 import org.junit.jupiter.api.Test;
+
+import java.lang.reflect.Type;
+import java.util.ArrayList;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -89,6 +93,20 @@ class ExperimentResultTest {
                 "{\"featureId\":\"my_feature\",\"value\":\"c\",\"variationId\":2,\"inExperiment\":true,\"hashUsed\":true,\"hashAttribute\":\"id\",\"hashValue\":\"123\"}",
                 jsonUtils.gson.toJson(subject)
         );
+    }
+
+    @Test
+    void test_canBeDeserialized() {
+        Type experimentResultType = new TypeToken<ExperimentResult<String>>() {}.getType();
+        ExperimentResult<String> subject = jsonUtils.gson.fromJson("{\"featureId\":\"my_feature\",\"value\":\"c\",\"variationId\":2,\"inExperiment\":true,\"hashUsed\":true,\"hashAttribute\":\"id\",\"hashValue\":\"123\"}", experimentResultType);
+
+        assertEquals("c", subject.getValue());
+        assertEquals(2, subject.getVariationId());
+        assertEquals(true, subject.getInExperiment());
+        assertEquals("id", subject.getHashAttribute());
+        assertEquals("123", subject.getHashValue());
+        assertEquals("my_feature", subject.getFeatureId());
+        assertEquals(true, subject.getHashUsed());
     }
 
     @Test

@@ -1,6 +1,9 @@
 package growthbook.sdk.java.models;
 
-import com.google.gson.*;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonSerializationContext;
+import com.google.gson.JsonSerializer;
 import growthbook.sdk.java.services.GrowthBookJsonUtils;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -35,7 +38,9 @@ public class ExperimentResult<ValueType> {
     @Builder.Default
     Boolean hashUsed = false;
 
+
     // region Serialization
+
     public String toJson() {
         return ExperimentResult.getJson(this).toString();
     }
