@@ -6,11 +6,14 @@ package growthbook.sdk.java;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import com.google.gson.reflect.TypeToken;
 import growthbook.sdk.java.TestHelpers.TestCasesJsonHelper;
+import growthbook.sdk.java.TestHelpers.TestContext;
 import growthbook.sdk.java.models.*;
 import growthbook.sdk.java.services.GrowthBookJsonUtils;
 import org.junit.jupiter.api.Test;
 
+import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Objects;
@@ -41,7 +44,7 @@ class GrowthBookTest {
         // Failing indexes: [4, 5, 6, 9, 12, 13, 14, 15, 16, 17, 19, 20, 21, 22, 23]
 
         for (int i = 0; i < testCases.size(); i++) {
-//            if (i != 3) continue;
+            if (i != 6) continue;
 
             JsonElement jsonElement = testCases.get(i);
             JsonArray testCase = (JsonArray) jsonElement;
@@ -119,5 +122,68 @@ class GrowthBookTest {
 
         // TODO: Update arg to the expect result, if possible?
         verify(mockCallback).onRun(any());
+    }
+
+    @Test
+    void test_runExperiment() {
+        JsonArray testCases = helper.runTestCases();
+
+        ArrayList<String> passedTests = new ArrayList<>();
+        ArrayList<String> failedTests = new ArrayList<>();
+        ArrayList<Integer> failingIndexes = new ArrayList<>();
+
+        for (int i = 0; i < testCases.size(); i++) {
+//            if (i != 0) continue;
+
+            JsonElement jsonElement = testCases.get(i);
+            JsonArray testCase = (JsonArray) jsonElement;
+            String testDescription = testCase.get(0).getAsString();
+            JsonObject experimentJson = testCase.get(2).getAsJsonObject();
+
+            Type testContextType = new TypeToken<TestContext>() {}.getType();
+            JsonElement testContextJson = testCase.get(1);
+            TestContext testContext = jsonUtils.gson.fromJson(testContextJson, testContextType);
+            Type experimentType = new TypeToken<Experiment<JsonElement>>() {}.getType();
+            Experiment<JsonElement> testExperiment = jsonUtils.gson.fromJson(experimentJson, experimentType);
+            Experiment<JsonElement> experiment = Experiment
+                    .<JsonElement>builder()
+                    .key(testExperiment.getKey())
+                    .variations(testExperiment.getVariations())
+                    .build();
+
+            Context context = new Context(
+                    true,
+                    testContext.getAttributes(),
+                    null,
+                    "{}",
+                    new HashMap<>(),
+                    false,
+                    null
+            );
+            GrowthBook subject = new GrowthBook(context);
+
+//            System.out.printf("\n\nTest: %s - Context: %s - Experiment: %s", testDescription, testContext, experiment);
+
+            ExperimentResult<JsonElement> result = subject.run(experiment);
+//            System.out.printf("\n\nExperiment result: %s", result);
+
+            JsonElement expectedValue = testCase.get(3);
+            String inExperimentValue = String.valueOf(testCase.get(4).getAsBoolean());
+            boolean passes = expectedValue.equals(result.getValue().toString()) &&
+                    inExperimentValue.equals(result.getInExperiment().toString());
+
+            if (passes) {
+                passedTests.add(testDescription);
+            } else {
+                failedTests.add(testDescription);
+                failingIndexes.add(i);
+            }
+        }
+
+        System.out.printf("\n\n✅ run - Passed tests: %s", passedTests);
+        System.out.printf("\n\n\n❗️ run - Failed tests = %s / %s . Failing = %s", failedTests.size(), testCases.size(), failedTests);
+        System.out.printf("\n\n\n run - Failing indexes = %s", failingIndexes);
+
+        assertEquals(0, failedTests.size(), "There are failing tests");
     }
 }

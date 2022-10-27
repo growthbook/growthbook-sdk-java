@@ -1,6 +1,7 @@
 package growthbook.sdk.java;
 
 import growthbook.sdk.java.models.*;
+import growthbook.sdk.java.services.ExperimentEvaluator;
 import growthbook.sdk.java.services.FeatureEvaluator;
 
 import javax.annotation.Nullable;
@@ -11,6 +12,7 @@ public class GrowthBook implements IGrowthBook {
     private Context context;
 
     private FeatureEvaluator featureEvaluator = new FeatureEvaluator();
+    private ExperimentEvaluator experimentEvaluatorEvaluator = new ExperimentEvaluator();
 
     private ArrayList<ExperimentRunCallback> callbacks = new ArrayList<>();
 
@@ -35,10 +37,13 @@ public class GrowthBook implements IGrowthBook {
 
     @Override
     public <ValueType>ExperimentResult<ValueType> run(Experiment<ValueType> experiment) {
-        // TODO:
-//        ExperimentResult result = ExperimentResult
+        ExperimentResult<ValueType> result = experimentEvaluatorEvaluator.evaluateExperiment(experiment, this.context);
 
-        return null;
+        this.callbacks.forEach( callback -> {
+            callback.onRun(result);
+        });
+
+        return result;
     }
 
     @Override
