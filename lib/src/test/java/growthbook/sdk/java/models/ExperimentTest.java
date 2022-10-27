@@ -87,4 +87,37 @@ class ExperimentTest {
         assertEquals("id", experiment.hashAttribute);
         assertEquals("id", experiment.getHashAttribute());
     }
+
+    @Test
+    void test_canBeSerialized() {
+        ArrayList<Float> weights = new ArrayList<>();
+        weights.add(0.3f);
+        weights.add(0.7f);
+
+        ArrayList<Integer> variations = new ArrayList<>();
+        variations.add(100);
+        variations.add(200);
+
+        Namespace namespace = Namespace
+                .builder()
+                .id("pricing")
+                .rangeStart(0.0f)
+                .rangeEnd(1.0f)
+                .build();
+
+        Experiment<Integer> subject = Experiment
+                .<Integer>builder()
+                .key("my_experiment")
+                .variations(variations)
+                .weights(weights)
+                .isActive(true)
+                .coverage(0.5f)
+                .conditionJson("{}")
+                .namespace(namespace)
+                .force(1)
+                .hashAttribute("_id")
+                .build();
+
+        assertEquals("{\"key\":\"my_experiment\",\"variations\":[100,200],\"weights\":[0.3,0.7],\"isActive\":true,\"coverage\":0.5,\"namespace\":[\"pricing\",0.0,1.0],\"force\":1,\"hashAttribute\":\"_id\"}", subject.toJson());
+    }
 }
