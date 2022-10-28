@@ -76,12 +76,20 @@ public class FeatureResult<ValueType> {
         jsonObject.add("on", isOn);
         jsonObject.add("off", isOff);
 
+        // TODO: Write test for value
         Object value = object.getValue();
         JsonElement valueElement = GrowthBookJsonUtils.getInstance().gson.toJsonTree(value);
         jsonObject.add("value", valueElement);
 
-        // TODO: experiment
-        // TODO: experiment result
+        // TODO: Write test experiment
+        Experiment<ValueType> experiment = object.getExperiment();
+        JsonElement experimentElement = GrowthBookJsonUtils.getInstance().gson.toJsonTree(experiment);
+        jsonObject.add("experiment", experimentElement);
+
+        // TODO: Write test for experiment result
+        ExperimentResult<ValueType> experimentResult = object.getExperimentResult();
+        JsonElement experimentResultElement = GrowthBookJsonUtils.getInstance().gson.toJsonTree(experimentResult);
+        jsonObject.add("experimentResult", experimentResultElement);
 
         FeatureResultSource source = object.getSource();
         if (source != null) {
