@@ -278,7 +278,7 @@
         "url": null
       },
       "experiment": "{\"key\":\"my-test\",\"variations\":[0,1]}",
-      "result": {"variationId": 1, "inExperiment": true, "hashUsed": true}
+      "result": {"value": 1, "inExperiment": true, "hashUsed": true}
     },
     {
       "name": "default weights - 2",
@@ -291,7 +291,7 @@
         "url": null
       },
       "experiment": "{\"key\":\"my-test\",\"variations\":[0,1]}",
-      "result": {"variationId": 0, "inExperiment": true, "hashUsed": true}
+      "result": {"value": 0, "inExperiment": true, "hashUsed": true}
     },
     {
       "name": "default weights - 3",
@@ -304,7 +304,7 @@
         "url": null
       },
       "experiment": "{\"key\":\"my-test\",\"variations\":[0,1]}",
-      "result": {"variationId": 0, "inExperiment": true, "hashUsed": true}
+      "result": {"value": 0, "inExperiment": true, "hashUsed": true}
     },
     {
       "name": "default weights - 4",
@@ -317,7 +317,7 @@
         "url": null
       },
       "experiment": "{\"key\":\"my-test\",\"variations\":[0,1]}",
-      "result": {"variationId": 1, "inExperiment": true, "hashUsed": true}
+      "result": {"value": 1, "inExperiment": true, "hashUsed": true}
     },
     {
       "name": "default weights - 5",
@@ -330,7 +330,7 @@
         "url": null
       },
       "experiment": "{\"key\":\"my-test\",\"variations\":[0,1]}",
-      "result": {"variationId": 1, "inExperiment": true, "hashUsed": true}
+      "result": {"value": 1, "inExperiment": true, "hashUsed": true}
     },
     {
       "name": "default weights - 6",
@@ -343,7 +343,7 @@
         "url": null
       },
       "experiment": "{\"key\":\"my-test\",\"variations\":[0,1]}",
-      "result": {"variationId": 1, "inExperiment": true, "hashUsed": true}
+      "result": {"value": 1, "inExperiment": true, "hashUsed": true}
     },
     {
       "name": "default weights - 7",
@@ -356,7 +356,7 @@
         "url": null
       },
       "experiment": "{\"key\":\"my-test\",\"variations\":[0,1]}",
-      "result": {"variationId": 0, "inExperiment": true, "hashUsed": true}
+      "result": {"value": 0, "inExperiment": true, "hashUsed": true}
     },
     {
       "name": "default weights - 8",
@@ -369,7 +369,7 @@
         "url": null
       },
       "experiment": "{\"key\":\"my-test\",\"variations\":[0,1]}",
-      "result": {"variationId": 1, "inExperiment": true, "hashUsed": true}
+      "result": {"value": 1, "inExperiment": true, "hashUsed": true}
     },
     {
       "name": "default weights - 9",
@@ -382,7 +382,7 @@
         "url": null
       },
       "experiment": "{\"key\":\"my-test\",\"variations\":[0,1]}",
-      "result": {"variationId": 0, "inExperiment": true, "hashUsed": true}
+      "result": {"value": 0, "inExperiment": true, "hashUsed": true}
     },
     {
       "name": "uneven weights - 1",
@@ -395,7 +395,7 @@
         "url": null
       },
       "experiment": "{\"key\":\"my-test\",\"variations\":[0,1],\"weights\":[0.1,0.9]}",
-      "result": {"variationId": 1, "inExperiment": true, "hashUsed": true}
+      "result": {"value": 1, "inExperiment": true, "hashUsed": true}
     },
     {
       "name": "uneven weights - 2",
@@ -408,7 +408,7 @@
         "url": null
       },
       "experiment": "{\"key\":\"my-test\",\"variations\":[0,1],\"weights\":[0.1,0.9]}",
-      "result": {"variationId": 1, "inExperiment": true, "hashUsed": true}
+      "result": {"value": 1, "inExperiment": true, "hashUsed": true}
     },
     {
       "name": "uneven weights - 3",
@@ -421,7 +421,7 @@
         "url": null
       },
       "experiment": "{\"key\":\"my-test\",\"variations\":[0,1],\"weights\":[0.1,0.9]}",
-      "result": {"variationId": 0, "inExperiment": true, "hashUsed": true}
+      "result": {"value": 0, "inExperiment": true, "hashUsed": true}
     },
     {
       "name": "uneven weights - 4",
@@ -434,7 +434,7 @@
         "url": null
       },
       "experiment": "{\"key\":\"my-test\",\"variations\":[0,1],\"weights\":[0.1,0.9]}",
-      "result": {"variationId": 1, "inExperiment": true, "hashUsed": true}
+      "result": {"value": 1, "inExperiment": true, "hashUsed": true}
     },
     {
       "name": "uneven weights - 5",
@@ -447,7 +447,7 @@
         "url": null
       },
       "experiment": "{\"key\":\"my-test\",\"variations\":[0,1],\"weights\":[0.1,0.9]}",
-      "result": {"variationId": 1, "inExperiment": true, "hashUsed": true}
+      "result": {"value": 1, "inExperiment": true, "hashUsed": true}
     },
     {
       "name": "uneven weights - 6",
@@ -460,7 +460,7 @@
         "url": null
       },
       "experiment": "{\"key\":\"my-test\",\"variations\":[0,1],\"weights\":[0.1,0.9]}",
-      "result": {"variationId": 1, "inExperiment": true, "hashUsed": true}
+      "result": {"value": 1, "inExperiment": true, "hashUsed": true}
     },
     {
       "name": "uneven weights - 7",
@@ -473,7 +473,7 @@
         "url": null
       },
       "experiment": "{\"key\":\"my-test\",\"variations\":[0,1],\"weights\":[0.1,0.9]}",
-      "result": {"variationId": 0, "inExperiment": true, "hashUsed": true}
+      "result": {"value": 0, "inExperiment": true, "hashUsed": true}
     },
     {
       "name": "uneven weights - 8",
@@ -486,7 +486,7 @@
         "url": null
       },
       "experiment": "{\"key\":\"my-test\",\"variations\":[0,1],\"weights\":[0.1,0.9]}",
-      "result": {"variationId": 1, "inExperiment": true, "hashUsed": true}
+      "result": {"value": 1, "inExperiment": true, "hashUsed": true}
     },
     {
       "name": "uneven weights - 9",
@@ -499,7 +499,7 @@
         "url": null
       },
       "experiment": "{\"key\":\"my-test\",\"variations\":[0,1],\"weights\":[0.1,0.9]}",
-      "result": {"variationId": 1, "inExperiment": true, "hashUsed": true}
+      "result": {"value": 1, "inExperiment": true, "hashUsed": true}
     },
     {
       "name": "coverage - 1",
@@ -512,7 +512,7 @@
         "url": null
       },
       "experiment": "{\"key\":\"my-test\",\"variations\":[0,1],\"coverage\":0.4}",
-      "result": {"variationId": 0, "inExperiment": false, "hashUsed": false}
+      "result": {"value": 0, "inExperiment": false, "hashUsed": false}
     },
     {
       "name": "coverage - 2",
@@ -525,7 +525,7 @@
         "url": null
       },
       "experiment": "{\"key\":\"my-test\",\"variations\":[0,1],\"coverage\":0.4}",
-      "result": {"variationId": 0, "inExperiment": true, "hashUsed": true}
+      "result": {"value": 0, "inExperiment": true, "hashUsed": true}
     },
     {
       "name": "coverage - 3",
@@ -538,7 +538,7 @@
         "url": null
       },
       "experiment": "{\"key\":\"my-test\",\"variations\":[0,1],\"coverage\":0.4}",
-      "result": {"variationId": 0, "inExperiment": true, "hashUsed": true}
+      "result": {"value": 0, "inExperiment": true, "hashUsed": true}
     },
     {
       "name": "coverage - 4",
@@ -551,7 +551,7 @@
         "url": null
       },
       "experiment": "{\"key\":\"my-test\",\"variations\":[0,1],\"coverage\":0.4}",
-      "result": {"variationId": 0, "inExperiment": false, "hashUsed": false}
+      "result": {"value": 0, "inExperiment": false, "hashUsed": false}
     },
     {
       "name": "coverage - 5",
@@ -564,7 +564,7 @@
         "url": null
       },
       "experiment": "{\"key\":\"my-test\",\"variations\":[0,1],\"coverage\":0.4}",
-      "result": {"variationId": 1, "inExperiment": true, "hashUsed": true}
+      "result": {"value": 1, "inExperiment": true, "hashUsed": true}
     },
     {
       "name": "coverage - 6",
@@ -577,7 +577,7 @@
         "url": null
       },
       "experiment": "{\"key\":\"my-test\",\"variations\":[0,1],\"coverage\":0.4}",
-      "result": {"variationId": 0, "inExperiment": false, "hashUsed": false}
+      "result": {"value": 0, "inExperiment": false, "hashUsed": false}
     },
     {
       "name": "coverage - 7",
@@ -590,7 +590,7 @@
         "url": null
       },
       "experiment": "{\"key\":\"my-test\",\"variations\":[0,1],\"coverage\":0.4}",
-      "result": {"variationId": 0, "inExperiment": true, "hashUsed": true}
+      "result": {"value": 0, "inExperiment": true, "hashUsed": true}
     },
     {
       "name": "coverage - 8",
@@ -603,7 +603,7 @@
         "url": null
       },
       "experiment": "{\"key\":\"my-test\",\"variations\":[0,1],\"coverage\":0.4}",
-      "result": {"variationId": 1, "inExperiment": true, "hashUsed": true}
+      "result": {"value": 1, "inExperiment": true, "hashUsed": true}
     },
     {
       "name": "coverage - 9",
@@ -616,7 +616,7 @@
         "url": null
       },
       "experiment": "{\"key\":\"my-test\",\"variations\":[0,1],\"coverage\":0.4}",
-      "result": {"variationId": 0, "inExperiment": false, "hashUsed": false}
+      "result": {"value": 0, "inExperiment": false, "hashUsed": false}
     },
     {
       "name": "three way test - 1",
@@ -629,7 +629,7 @@
         "url": null
       },
       "experiment": "{\"key\":\"my-test\",\"variations\":[0,1,2]}",
-      "result": {"variationId": 2, "inExperiment": true, "hashUsed": true}
+      "result": {"value": 2, "inExperiment": true, "hashUsed": true}
     },
     {
       "name": "three way test - 2",
@@ -642,7 +642,7 @@
         "url": null
       },
       "experiment": "{\"key\":\"my-test\",\"variations\":[0,1,2]}",
-      "result": {"variationId": 0, "inExperiment": true, "hashUsed": true}
+      "result": {"value": 0, "inExperiment": true, "hashUsed": true}
     },
     {
       "name": "three way test - 3",
@@ -655,7 +655,7 @@
         "url": null
       },
       "experiment": "{\"key\":\"my-test\",\"variations\":[0,1,2]}",
-      "result": {"variationId": 0, "inExperiment": true, "hashUsed": true}
+      "result": {"value": 0, "inExperiment": true, "hashUsed": true}
     },
     {
       "name": "three way test - 4",
@@ -668,7 +668,7 @@
         "url": null
       },
       "experiment": "{\"key\":\"my-test\",\"variations\":[0,1,2]}",
-      "result": {"variationId": 2, "inExperiment": true, "hashUsed": true}
+      "result": {"value": 2, "inExperiment": true, "hashUsed": true}
     },
     {
       "name": "three way test - 5",
@@ -681,7 +681,7 @@
         "url": null
       },
       "experiment": "{\"key\":\"my-test\",\"variations\":[0,1,2]}",
-      "result": {"variationId": 1, "inExperiment": true, "hashUsed": true}
+      "result": {"value": 1, "inExperiment": true, "hashUsed": true}
     },
     {
       "name": "three way test - 6",
@@ -694,7 +694,7 @@
         "url": null
       },
       "experiment": "{\"key\":\"my-test\",\"variations\":[0,1,2]}",
-      "result": {"variationId": 2, "inExperiment": true, "hashUsed": true}
+      "result": {"value": 2, "inExperiment": true, "hashUsed": true}
     },
     {
       "name": "three way test - 7",
@@ -707,7 +707,7 @@
         "url": null
       },
       "experiment": "{\"key\":\"my-test\",\"variations\":[0,1,2]}",
-      "result": {"variationId": 0, "inExperiment": true, "hashUsed": true}
+      "result": {"value": 0, "inExperiment": true, "hashUsed": true}
     },
     {
       "name": "three way test - 8",
@@ -720,7 +720,7 @@
         "url": null
       },
       "experiment": "{\"key\":\"my-test\",\"variations\":[0,1,2]}",
-      "result": {"variationId": 1, "inExperiment": true, "hashUsed": true}
+      "result": {"value": 1, "inExperiment": true, "hashUsed": true}
     },
     {
       "name": "three way test - 9",
@@ -733,7 +733,7 @@
         "url": null
       },
       "experiment": "{\"key\":\"my-test\",\"variations\":[0,1,2]}",
-      "result": {"variationId": 0, "inExperiment": true, "hashUsed": true}
+      "result": {"value": 0, "inExperiment": true, "hashUsed": true}
     },
     {
       "name": "test name - my-test",
@@ -746,7 +746,7 @@
         "url": null
       },
       "experiment": "{\"key\":\"my-test\",\"variations\":[0,1]}",
-      "result": {"variationId": 1, "inExperiment": true, "hashUsed": true}
+      "result": {"value": 1, "inExperiment": true, "hashUsed": true}
     },
     {
       "name": "test name - my-test-3",
@@ -759,7 +759,7 @@
         "url": null
       },
       "experiment": "{\"key\":\"my-test-3\",\"variations\":[0,1]}",
-      "result": {"variationId": 0, "inExperiment": true, "hashUsed": true}
+      "result": {"value": 0, "inExperiment": true, "hashUsed": true}
     },
     {
       "name": "empty id",
@@ -772,7 +772,7 @@
         "url": null
       },
       "experiment": "{\"key\":\"my-test\",\"variations\":[0,1]}",
-      "result": {"variationId": 0, "inExperiment": false, "hashUsed": false}
+      "result": {"value": 0, "inExperiment": false, "hashUsed": false}
     },
     {
       "name": "null id",
@@ -785,7 +785,7 @@
         "url": null
       },
       "experiment": "{\"key\":\"my-test\",\"variations\":[0,1]}",
-      "result": {"variationId": 0, "inExperiment": false, "hashUsed": false}
+      "result": {"value": 0, "inExperiment": false, "hashUsed": false}
     },
     {
       "name": "missing id",
@@ -798,7 +798,7 @@
         "url": null
       },
       "experiment": "{\"key\":\"my-test\",\"variations\":[0,1]}",
-      "result": {"variationId": 0, "inExperiment": false, "hashUsed": false}
+      "result": {"value": 0, "inExperiment": false, "hashUsed": false}
     },
     {
       "name": "missing attributes",
@@ -811,7 +811,7 @@
         "url": null
       },
       "experiment": "{\"key\":\"my-test\",\"variations\":[0,1]}",
-      "result": {"variationId": 0, "inExperiment": false, "hashUsed": false}
+      "result": {"value": 0, "inExperiment": false, "hashUsed": false}
     },
     {
       "name": "single variation",
@@ -824,7 +824,7 @@
         "url": null
       },
       "experiment": "{\"key\":\"my-test\",\"variations\":[0]}",
-      "result": {"variationId": 0, "inExperiment": false, "hashUsed": false}
+      "result": {"value": 0, "inExperiment": false, "hashUsed": false}
     },
     {
       "name": "negative forced variation",
@@ -837,7 +837,7 @@
         "url": null
       },
       "experiment": "{\"key\":\"my-test\",\"variations\":[0,1],\"force\":-8}",
-      "result": {"variationId": 0, "inExperiment": false, "hashUsed": false}
+      "result": {"value": 0, "inExperiment": false, "hashUsed": false}
     },
     {
       "name": "high forced variation",
@@ -850,7 +850,7 @@
         "url": null
       },
       "experiment": "{\"key\":\"my-test\",\"variations\":[0,1],\"force\":25}",
-      "result": {"variationId": 0, "inExperiment": false, "hashUsed": false}
+      "result": {"value": 0, "inExperiment": false, "hashUsed": false}
     },
     {
       "name": "evaluates conditions - pass",
@@ -863,7 +863,7 @@
         "url": null
       },
       "experiment": "{\"key\":\"my-test\",\"variations\":[0,1],\"condition\":{\"browser\":\"firefox\"}}",
-      "result": {"variationId": 1, "inExperiment": true, "hashUsed": true}
+      "result": {"value": 1, "inExperiment": true, "hashUsed": true}
     },
     {
       "name": "evaluates conditions - fail",
@@ -876,7 +876,7 @@
         "url": null
       },
       "experiment": "{\"key\":\"my-test\",\"variations\":[0,1],\"condition\":{\"browser\":\"firefox\"}}",
-      "result": {"variationId": 0, "inExperiment": false, "hashUsed": false}
+      "result": {"value": 0, "inExperiment": false, "hashUsed": false}
     },
     {
       "name": "custom hashAttribute",
@@ -889,7 +889,7 @@
         "url": null
       },
       "experiment": "{\"key\":\"my-test\",\"variations\":[0,1],\"hashAttribute\":\"companyId\"}",
-      "result": {"variationId": 1, "inExperiment": true, "hashUsed": true}
+      "result": {"value": 1, "inExperiment": true, "hashUsed": true}
     },
     {
       "name": "globally disabled",
@@ -902,7 +902,7 @@
         "url": null
       },
       "experiment": "{\"key\":\"my-test\",\"variations\":[0,1]}",
-      "result": {"variationId": 0, "inExperiment": false, "hashUsed": false}
+      "result": {"value": 0, "inExperiment": false, "hashUsed": false}
     },
     {
       "name": "querystring force",
@@ -915,7 +915,7 @@
         "url": "http://example.com?forced-test-qs=1#someanchor"
       },
       "experiment": "{\"key\":\"forced-test-qs\",\"variations\":[0,1]}",
-      "result": {"variationId": 1, "inExperiment": true, "hashUsed": false}
+      "result": {"value": 1, "inExperiment": true, "hashUsed": false}
     },
     {
       "name": "run active experiments",
@@ -928,7 +928,7 @@
         "url": null
       },
       "experiment": "{\"key\":\"my-test\",\"active\":true,\"variations\":[0,1]}",
-      "result": {"variationId": 1, "inExperiment": true, "hashUsed": true}
+      "result": {"value": 1, "inExperiment": true, "hashUsed": true}
     },
     {
       "name": "skip inactive experiments",
@@ -941,7 +941,7 @@
         "url": null
       },
       "experiment": "{\"key\":\"my-test\",\"active\":false,\"variations\":[0,1]}",
-      "result": {"variationId": 0, "inExperiment": false, "hashUsed": false}
+      "result": {"value": 0, "inExperiment": false, "hashUsed": false}
     },
     {
       "name": "querystring force with inactive",
@@ -954,7 +954,7 @@
         "url": "http://example.com/?my-test=1"
       },
       "experiment": "{\"key\":\"my-test\",\"active\":false,\"variations\":[0,1]}",
-      "result": {"variationId": 1, "inExperiment": true, "hashUsed": false}
+      "result": {"value": 1, "inExperiment": true, "hashUsed": false}
     },
     {
       "name": "coverage take precendence over forced",
@@ -967,11 +967,11 @@
         "url": null
       },
       "experiment": "{\"key\":\"my-test\",\"force\":1,\"coverage\":0.01,\"variations\":[0,1]}",
-      "result": {"variationId": 0, "inExperiment": false, "hashUsed": false}
+      "result": {"value": 0, "inExperiment": false, "hashUsed": false}
     },
     {
       "name": "JSON values for experiments",
-      "type": "string",
+      "type": "obj_color_size",
       "context": {
         "attributes": "{\"id\":\"1\"}",
         "enabled": null,
@@ -981,7 +981,7 @@
       },
       "experiment": "{\"key\":\"my-test\",\"variations\":[{\"color\":\"blue\",\"size\":\"small\"},{\"color\":\"green\",\"size\":\"large\"}]}",
       "result": {
-        "variationId": {"color": "green", "size": "large"},
+        "value": {"color": "green", "size": "large"},
         "inExperiment": true,
         "hashUsed": true
       }
@@ -997,7 +997,7 @@
         "url": null
       },
       "experiment": "{\"key\":\"my-test\",\"variations\":[0,1]}",
-      "result": {"variationId": 0, "inExperiment": true, "hashUsed": false}
+      "result": {"value": 0, "inExperiment": true, "hashUsed": false}
     },
     {
       "name": "Skips experiments in QA mode",
@@ -1010,7 +1010,7 @@
         "url": null
       },
       "experiment": "{\"key\":\"my-test\",\"variations\":[0,1]}",
-      "result": {"variationId": 0, "inExperiment": false, "hashUsed": false}
+      "result": {"value": 0, "inExperiment": false, "hashUsed": false}
     },
     {
       "name": "Works in QA mode if forced in context",
@@ -1023,7 +1023,7 @@
         "url": null
       },
       "experiment": "{\"key\":\"my-test\",\"variations\":[0,1]}",
-      "result": {"variationId": 1, "inExperiment": true, "hashUsed": false}
+      "result": {"value": 1, "inExperiment": true, "hashUsed": false}
     },
     {
       "name": "Works in QA mode if forced in experiment",
@@ -1036,7 +1036,7 @@
         "url": null
       },
       "experiment": "{\"key\":\"my-test\",\"variations\":[0,1],\"force\":1}",
-      "result": {"variationId": 1, "inExperiment": true, "hashUsed": false}
+      "result": {"value": 1, "inExperiment": true, "hashUsed": false}
     },
     {
       "name": "Experiment namespace - pass",
@@ -1049,7 +1049,7 @@
         "url": null
       },
       "experiment": "{\"key\":\"my-test\",\"variations\":[0,1],\"namespace\":[\"namespace\",0.1,1]}",
-      "result": {"variationId": 1, "inExperiment": true, "hashUsed": true}
+      "result": {"value": 1, "inExperiment": true, "hashUsed": true}
     },
     {
       "name": "Experiment namespace - fail",
@@ -1062,7 +1062,7 @@
         "url": null
       },
       "experiment": "{\"key\":\"my-test\",\"variations\":[0,1],\"namespace\":[\"namespace\",0,0.1]}",
-      "result": {"variationId": 0, "inExperiment": false, "hashUsed": false}
+      "result": {"value": 0, "inExperiment": false, "hashUsed": false}
     }
   ],
   "evalCondition": [

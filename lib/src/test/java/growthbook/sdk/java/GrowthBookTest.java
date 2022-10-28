@@ -115,7 +115,6 @@ class GrowthBookTest {
         for (int i = 0; i < testCases.size(); i++) {
             // 54 crashes with JSON values for experiments
 //            if (i != 0) continue;
-            if (i == 54) continue;
 
             JsonObject testCase = (JsonObject) testCases.get(i);
             String testDescription = testCase.get("name").getAsString();
@@ -138,11 +137,11 @@ class GrowthBookTest {
             GrowthBook subject = new GrowthBook(context);
             ExperimentResult result = subject.run(experiment);
 
-            boolean variationIdMatches = Objects.equals(result.getVariationId(), expectedResult.getVariationId());
+            boolean valueMatches = Objects.equals(result.getValue(), expectedResult.getValue());
             boolean inExperimentMatches = Objects.equals(result.getInExperiment(), expectedResult.getInExperiment());
             boolean hashUsed = Objects.equals(result.getHashUsed(), expectedResult.getHashUsed());
 
-            boolean passes = variationIdMatches && inExperimentMatches && hashUsed;
+            boolean passes = valueMatches && inExperimentMatches && hashUsed;
 
             if (passes) {
                 passedTests.add(testDescription);
