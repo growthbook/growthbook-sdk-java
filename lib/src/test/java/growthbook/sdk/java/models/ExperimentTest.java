@@ -88,7 +88,7 @@ class ExperimentTest {
         assertNull(experiment.coverage);
         assertNull(experiment.force);
         assertNull(experiment.key);
-        assertTrue(experiment.isActive);
+        assertNull(experiment.isActive);
         assertEquals("id", experiment.hashAttribute);
         assertEquals("id", experiment.getHashAttribute());
     }

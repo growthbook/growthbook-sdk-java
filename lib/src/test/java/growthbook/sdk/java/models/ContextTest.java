@@ -17,12 +17,10 @@ class ContextTest {
     @Mock
     private TrackingCallback trackingCallback;
 
-    HashMap<String, Object> sampleUserAttributes = new HashMap<>();
+    String sampleUserAttributes = "{\"country\": \"canada\", \"device\": \"android\"}";
 
     @BeforeEach
     void setUp() {
-        sampleUserAttributes.put("country", "canada");
-        sampleUserAttributes.put("device", "android");
         closeable = MockitoAnnotations.openMocks(this);
     }
 
@@ -37,7 +35,6 @@ class ContextTest {
         Boolean isQaMode = false;
         String url = "http://localhost:3000";
         HashMap<String, Integer> forcedVariations = new HashMap<String, Integer>();
-        HashMap<String, Feature> features = new HashMap<>();
         forcedVariations.put("my-test", 0);
         forcedVariations.put("other-test", 1);
         String featuresJson = "{}";
@@ -45,7 +42,7 @@ class ContextTest {
         Context subject = Context
                 .builder()
                 .enabled(isEnabled)
-                .attributes(sampleUserAttributes)
+                .attributesJson(sampleUserAttributes)
                 .url(url)
                 .featuresJson(featuresJson)
                 .forcedVariationsMap(forcedVariations)
@@ -74,7 +71,7 @@ class ContextTest {
         Context subject = Context
                 .builder()
                 .enabled(isEnabled)
-                .attributes(sampleUserAttributes)
+                .attributesJson(sampleUserAttributes)
                 .url(url)
                 .featuresJson("{}")
                 .forcedVariationsMap(new HashMap<>())

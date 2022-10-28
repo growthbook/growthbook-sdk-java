@@ -25,14 +25,9 @@ public class FeatureEvaluator implements IFeatureEvaluator {
         try {
             // Unknown key, return empty feature
             JsonObject featuresJson = context.getFeatures();
-            System.out.printf("\n\nLooking for key %s in JSON %s", key, featuresJson);
-
             if (featuresJson == null || !featuresJson.has(key)) {
-                System.out.printf("\n\nKey %s not found in JSON %s", key, featuresJson);
                 return emptyFeature;
             }
-
-            System.out.printf("\n\nKey %s exists in JSON %s", key, featuresJson);
 
             // The key exists
             JsonElement featureJson = featuresJson.get(key);
@@ -66,13 +61,15 @@ public class FeatureEvaluator implements IFeatureEvaluator {
                         .build();
             }
 
-            HashMap<String, Object> attributes = context.getAttributes();
-            System.out.printf("\n\nAttributes = %s", attributes);
-
-            if (attributes == null) {
-                attributes = new HashMap<>();
+            String attributesJson = context.getAttributesJson();
+            if (attributesJson == null) {
+                attributesJson = "{}";
             }
-            String attributesJson = GrowthBookJsonUtils.getInstance().gson.toJson(attributes);
+            JsonObject attributes = context.getAttributes();
+            if (attributes == null) {
+                attributes = new JsonObject();
+            }
+//            System.out.printf("\n\nAttributes = %s", attributes);
 
             // region Rules
 
@@ -91,11 +88,26 @@ public class FeatureEvaluator implements IFeatureEvaluator {
                             ruleKey = "id";
                         }
 
-                        String attrValue = (String) attributes.get(ruleKey);
-                        if (attrValue == null || attrValue.isEmpty()) {
+                        JsonElement attrValueElement = attributes.get(ruleKey);
+
+                        if (attrValueElement == null || attrValueElement.isJsonNull()) {
                             continue;
                         }
 
+                        boolean isEmpty = false;
+                        if (attrValueElement.isJsonObject()) {
+                            isEmpty = attrValueElement.getAsJsonObject().entrySet().size() == 0;
+                        } else if (attrValueElement.isJsonArray()) {
+                            isEmpty = attrValueElement.getAsJsonArray().size() == 0;
+                        } else if (attrValueElement.isJsonPrimitive() && attrValueElement.getAsJsonPrimitive().isString()) {
+                            isEmpty = attrValueElement.getAsString().isEmpty();
+                        }
+
+                        if (isEmpty) {
+                            continue;
+                        }
+
+                        String attrValue = attrValueElement.getAsString();
                         Float hashFnv = GrowthBookUtils.hash(attrValue + key);
                         if (hashFnv > rule.getCoverage()) {
                             continue;
@@ -104,7 +116,6 @@ public class FeatureEvaluator implements IFeatureEvaluator {
 
                     Object value = GrowthBookJsonUtils.unwrap(rule.getForce());
 
-                    System.out.printf("🎃 Creating FeatureResult with raw JSON value %s", rule.getForce());
                     // Apply the force rule
                     return FeatureResult
                             .<ValueType>builder()

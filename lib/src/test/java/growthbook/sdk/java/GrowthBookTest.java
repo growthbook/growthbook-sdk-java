@@ -33,8 +33,6 @@ class GrowthBookTest {
         ArrayList<Integer> failingIndexes = new ArrayList<>();
 
         for (int i = 0; i < testCases.size(); i++) {
-//            if (i != 23) continue;
-
             JsonObject testCase = (JsonObject) testCases.get(i);
             String testDescription = testCase.get("name").getAsString();
 
@@ -42,33 +40,26 @@ class GrowthBookTest {
 
             String featuresJson = testCase.get("context").getAsJsonObject().get("features").getAsString();
 
-            // TODO: Fix serialization??
             String attributesJson = testCase.get("context").getAsJsonObject().get("attributes").getAsString();
-            HashMap<String, Object> attributes = jsonUtils.gson.fromJson(attributesJson, attributesType);
 
             Type forcedVariationsType = new TypeToken<HashMap<String, Integer>>() {}.getType();
             HashMap<String, Integer> forcedVariations = jsonUtils.gson.fromJson(testCase.get("context").getAsJsonObject().get("forcedVariations"), forcedVariationsType);
 
-            System.out.println("\n\n--------------------------");
-            System.out.printf("evalFeature test: %s (index = %s)", testDescription, i);
-            System.out.printf("\nfeatures: %s", featuresJson);
-            System.out.printf("\nattributesJson: %s", attributesJson);
-
-            // TODO: Convert attributes to attributesJson and use JsonElement internally
+//            System.out.println("\n\n--------------------------");
+//            System.out.printf("evalFeature test: %s (index = %s)", testDescription, i);
+//            System.out.printf("\nfeatures: %s", featuresJson);
+//            System.out.printf("\nattributesJson: %s", attributesJson);
 
             Context context = Context
                     .builder()
                     .featuresJson(featuresJson)
-                    .attributes(attributes)
+                    .attributesJson(attributesJson)
                     .forcedVariationsMap(forcedVariations)
                     .build();
 
-            System.out.printf("\ncontext: %s", context);
-
+//            System.out.printf("\ncontext: %s", context);
             String featureKey = testCase.get("feature").getAsString();
-
-            // TODO: Use this??
-            String type = testCase.get("type").getAsString();
+//            String type = testCase.get("type").getAsString();
 
             GrowthBook subject = new GrowthBook(context);
             String expectedString = testCase.get("result").getAsString();
@@ -78,7 +69,6 @@ class GrowthBookTest {
 //            System.out.printf("\n\n Eval Feature result: %s - JSON: %s", result, result.toJson());
 
             boolean passes = expectedResult.equals(result);
-//            boolean passes = expectedString.equals(result.toJson());
 
             if (passes) {
                 passedTests.add(testDescription);
@@ -89,8 +79,6 @@ class GrowthBookTest {
                 failedTests.add(testDescription);
                 failingIndexes.add(i);
             }
-
-//            JsonArray testCase = (JsonArray) jsonElement;
         }
 
         System.out.printf("\n\n✅ evalFeature - Passed tests: %s", passedTests);

@@ -1,5 +1,7 @@
 package growthbook.sdk.java.services;
 
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
 import growthbook.sdk.java.models.*;
 
 import javax.annotation.Nullable;
@@ -40,18 +42,22 @@ public class ExperimentEvaluator implements IExperimentEvaluator {
         }
 
         // Get the user hash attribute and the value. If empty, not in experiment, variation 0
-        HashMap<String, Object> attributes = context.getAttributes();
+        JsonObject attributes = context.getAttributes();
         if (attributes == null) {
-            attributes = new HashMap<>();
+            attributes = new JsonObject();
         }
+
         String hashAttribute = experiment.getHashAttribute();
         if (hashAttribute == null) {
             hashAttribute = "id";
         }
-        String attributeValue = (String) attributes.get(hashAttribute);
-        if (attributeValue == null || attributeValue.isEmpty()) {
+        JsonElement attributeValueElement = attributes.get(hashAttribute);
+
+        if (attributeValueElement == null || attributeValueElement.isJsonNull()) {
             return getExperimentResult(experiment, context, 0, false, false, featureId);
         }
+
+        String attributeValue = attributeValueElement.getAsString();
 
         // If experiment namespace is set, check if the hash value is included in the range, and if not
         // user is not in the experiment, variation 0.
@@ -153,12 +159,14 @@ public class ExperimentEvaluator implements IExperimentEvaluator {
             hashAttribute = "id";
         }
 
-        HashMap<String, Object> attributes = context.getAttributes();
         String hashValue = "";
-        if (attributes != null) {
-            hashValue = (String) attributes.get(hashAttribute);
-            if (hashValue == null) {
-                hashValue = "";
+        JsonObject attributes = context.getAttributes();
+        if (attributes == null) {
+            attributes = new JsonObject();
+        } else {
+            JsonElement hashAttributeElement = attributes.get(hashAttribute);
+            if (hashAttributeElement != null && !hashAttributeElement.isJsonNull()) {
+                hashValue = hashAttributeElement.getAsString();
             }
         }
 
