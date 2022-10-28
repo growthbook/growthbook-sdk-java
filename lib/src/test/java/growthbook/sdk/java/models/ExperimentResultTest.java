@@ -5,7 +5,6 @@ import growthbook.sdk.java.services.GrowthBookJsonUtils;
 import org.junit.jupiter.api.Test;
 
 import java.lang.reflect.Type;
-import java.util.ArrayList;
 
 import static org.junit.jupiter.api.Assertions.*;
 

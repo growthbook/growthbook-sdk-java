@@ -1,12 +1,17 @@
 package growthbook.sdk.java.models;
 
+import com.google.gson.reflect.TypeToken;
+import growthbook.sdk.java.services.GrowthBookJsonUtils;
 import org.junit.jupiter.api.Test;
 
+import java.lang.reflect.Type;
 import java.util.ArrayList;
 
 import static org.junit.jupiter.api.Assertions.*;
 
 class ExperimentTest {
+
+    GrowthBookJsonUtils jsonUtils = GrowthBookJsonUtils.getInstance();
 
     @Test
     void canBeConstructed() {
@@ -119,5 +124,16 @@ class ExperimentTest {
                 .build();
 
         assertEquals("{\"key\":\"my_experiment\",\"variations\":[100,200],\"weights\":[0.3,0.7],\"isActive\":true,\"coverage\":0.5,\"namespace\":[\"pricing\",0.0,1.0],\"force\":1,\"hashAttribute\":\"_id\"}", subject.toJson());
+    }
+
+    @Test
+    void test_canBeDeserialized() {
+        Type experimentType = new TypeToken<Experiment<Integer>>() {}.getType();
+
+        Experiment<Integer> subject = jsonUtils.gson.fromJson("{\"key\":\"my_experiment\",\"variations\":[100,200],\"weights\":[0.3,0.7],\"isActive\":true,\"coverage\":0.5,\"namespace\":[\"pricing\",0.0,1.0],\"force\":1,\"hashAttribute\":\"_id\"}", experimentType);
+
+        assertEquals("pricing", subject.getNamespace().getId());
+        assertEquals(100, subject.getVariations().get(0));
+        assertEquals(200, subject.getVariations().get(1));
     }
 }
