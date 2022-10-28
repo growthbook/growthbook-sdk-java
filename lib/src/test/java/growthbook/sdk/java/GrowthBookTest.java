@@ -32,8 +32,15 @@ class GrowthBookTest {
         ArrayList<String> failedTests = new ArrayList<>();
         ArrayList<Integer> failingIndexes = new ArrayList<>();
 
+        // Way off:
+        // 15 (missing experiment)
+        // 23 - wrong value, wrong source (should be experiment but was force). missing experiment. we aren't using force. it's the 2nd rule not the first.
+        //
+        // Kinda off: 12, 13, 14, 21
+        // Remaining include default values like equal weights that match the number of variations, coverage 1, isActive true, etc. but they are expected to be null.
+
         for (int i = 0; i < testCases.size(); i++) {
-//            if (i != 1) continue;
+//            if (i != 23) continue;
 
             JsonObject testCase = (JsonObject) testCases.get(i);
             String testDescription = testCase.get("name").getAsString();
@@ -75,18 +82,15 @@ class GrowthBookTest {
             FeatureResult<Object> result = subject.evalFeature(featureKey);
 //            System.out.printf("\n\n Eval Feature result: %s - JSON: %s", result, result.toJson());
 
-            // TODO: why is the source wrong? (getting unknownFeature instead of defaultValue)
-            // TODO: why are all FeatureResult values null??
-
-            System.out.printf("\n\nExpected result = %s", expectedResult);
-            System.out.printf("\n  Actual result = %s", result);
-
             boolean passes = expectedResult.equals(result);
 //            boolean passes = expectedString.equals(result.toJson());
 
             if (passes) {
                 passedTests.add(testDescription);
             } else {
+                System.out.printf("\n\nExpected result = %s", expectedResult);
+                System.out.printf("\n  Actual result = %s", result);
+
                 failedTests.add(testDescription);
                 failingIndexes.add(i);
             }

@@ -165,6 +165,7 @@ public class ExperimentEvaluator implements IExperimentEvaluator {
                 .<ValueType>builder()
                 .inExperiment(inExperiment)
                 .variationId(variationIndex)
+                .featureId(experiment.getKey())
                 .hashValue(hashValue)
                 .hashUsed(hashUsed)
                 .hashAttribute(hashAttribute)

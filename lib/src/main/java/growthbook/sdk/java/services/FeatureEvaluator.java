@@ -27,7 +27,7 @@ public class FeatureEvaluator implements IFeatureEvaluator {
             JsonObject featuresJson = context.getFeatures();
             System.out.printf("\n\nLooking for key %s in JSON %s", key, featuresJson);
 
-            if (!featuresJson.has(key)) {
+            if (featuresJson == null || !featuresJson.has(key)) {
                 System.out.printf("\n\nKey %s not found in JSON %s", key, featuresJson);
                 return emptyFeature;
             }
@@ -67,10 +67,14 @@ public class FeatureEvaluator implements IFeatureEvaluator {
             }
 
             HashMap<String, Object> attributes = context.getAttributes();
+            System.out.printf("\n\nAttributes = %s", attributes);
+
             if (attributes == null) {
                 attributes = new HashMap<>();
             }
             String attributesJson = GrowthBookJsonUtils.getInstance().gson.toJson(attributes);
+
+            // region Rules
 
             for (FeatureRule<ValueType> rule : feature.getRules()) {
                 // If the rule has a condition, and it evaluates to false, skip this rule and continue to the next one
@@ -134,13 +138,15 @@ public class FeatureEvaluator implements IFeatureEvaluator {
                     return FeatureResult
                             .<ValueType>builder()
                             .value(value)
-                            .ruleId(experimentKey) // todo: verify if this should be present
+//                            .ruleId(experimentKey) // todo: verify if this should be present
                             .source(FeatureResultSource.EXPERIMENT)
                             .experiment(experiment)
                             .experimentResult(result)
                             .build();
                 }
             }
+
+            // endregion Rules
 
             System.out.printf("🎃 Creating FeatureResult with raw JSON value %s", feature.getDefaultValue());
 
