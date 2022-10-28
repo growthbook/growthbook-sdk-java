@@ -35,13 +35,14 @@ public class Experiment<ValueType> {
     /**
      * How to weight traffic between variations. Must add to 1.
      */
+    @Nullable
     ArrayList<Float> weights;
 
     /**
      * If set to false, always return the control (first variation)
      */
-    @Builder.Default
-    Boolean isActive = true;
+    @Nullable
+    Boolean isActive;
 
     /**
      * What percent of users should be included in the experiment (between 0 and 1, inclusive)

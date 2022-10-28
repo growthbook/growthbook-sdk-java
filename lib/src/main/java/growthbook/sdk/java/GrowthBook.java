@@ -38,7 +38,7 @@ public class GrowthBook implements IGrowthBook {
 
     @Override
     public <ValueType>ExperimentResult<ValueType> run(Experiment<ValueType> experiment) {
-        ExperimentResult<ValueType> result = experimentEvaluatorEvaluator.evaluateExperiment(experiment, this.context);
+        ExperimentResult<ValueType> result = experimentEvaluatorEvaluator.evaluateExperiment(experiment, this.context, null);
 
         this.callbacks.forEach( callback -> {
             callback.onRun(result);

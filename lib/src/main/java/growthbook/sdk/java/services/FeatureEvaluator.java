@@ -131,14 +131,13 @@ public class FeatureEvaluator implements IFeatureEvaluator {
                         .variations(rule.getVariations())
                         .build();
 
-                ExperimentResult<ValueType> result = experimentEvaluator.evaluateExperiment(experiment, context);
+                ExperimentResult<ValueType> result = experimentEvaluator.evaluateExperiment(experiment, context, key);
                 if (result.getInExperiment()) {
                     Object value = GrowthBookJsonUtils.unwrap(result.getValue());
 
                     return FeatureResult
                             .<ValueType>builder()
                             .value(value)
-//                            .ruleId(experimentKey) // todo: verify if this should be present
                             .source(FeatureResultSource.EXPERIMENT)
                             .experiment(experiment)
                             .experimentResult(result)

@@ -2,6 +2,7 @@ package growthbook.sdk.java.services;
 
 import growthbook.sdk.java.models.*;
 
+import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
@@ -11,7 +12,7 @@ public class ExperimentEvaluator implements IExperimentEvaluator {
     private ConditionEvaluator conditionEvaluator = new ConditionEvaluator();
 
     @Override
-    public <ValueType> ExperimentResult<ValueType> evaluateExperiment(Experiment<ValueType> experiment, Context context) {
+    public <ValueType> ExperimentResult<ValueType> evaluateExperiment(Experiment<ValueType> experiment, Context context, @Nullable String featureId) {
         // If less than 2 variations, return immediately (not in experiment, variation 0)
         // If not enabled, return immediately (not in experiment, variation 0)
         ArrayList<ValueType> experimentVariations = experiment.getVariations();
@@ -19,7 +20,7 @@ public class ExperimentEvaluator implements IExperimentEvaluator {
             experimentVariations = new ArrayList<>();
         }
         if (!context.getEnabled() || experimentVariations.size() < 2) {
-            return getExperimentResult(experiment, context, 0, false, false);
+            return getExperimentResult(experiment, context, 0, false, false, featureId);
         }
 
         // If no forced variation, not in experiment, variation 0
@@ -29,12 +30,13 @@ public class ExperimentEvaluator implements IExperimentEvaluator {
         }
         Integer forcedVariation = forcedVariations.get(experiment.getKey());
         if (forcedVariation != null) {
-            return getExperimentResult(experiment, context, forcedVariation, false, false);
+            return getExperimentResult(experiment, context, forcedVariation, true, false, featureId);
         }
 
         // If experiment is not active, not in experiment, variation 0
-        if (!experiment.getIsActive()) {
-            return getExperimentResult(experiment, context, 0, false, false);
+
+        if (experiment.getIsActive() != null && !experiment.getIsActive()) {
+            return getExperimentResult(experiment, context, 0, false, false, featureId);
         }
 
         // Get the user hash attribute and the value. If empty, not in experiment, variation 0
@@ -48,7 +50,7 @@ public class ExperimentEvaluator implements IExperimentEvaluator {
         }
         String attributeValue = (String) attributes.get(hashAttribute);
         if (attributeValue == null || attributeValue.isEmpty()) {
-            return getExperimentResult(experiment, context, 0, false, false);
+            return getExperimentResult(experiment, context, 0, false, false, featureId);
         }
 
         // If experiment namespace is set, check if the hash value is included in the range, and if not
@@ -57,7 +59,7 @@ public class ExperimentEvaluator implements IExperimentEvaluator {
         if (namespace != null) {
             Boolean isInNamespace = GrowthBookUtils.inNameSpace(attributeValue, namespace);
             if (!isInNamespace) {
-                return getExperimentResult(experiment, context, 0, false, false);
+                return getExperimentResult(experiment, context, 0, false, false, featureId);
             }
         }
 
@@ -67,7 +69,7 @@ public class ExperimentEvaluator implements IExperimentEvaluator {
             String attributesJson = GrowthBookJsonUtils.getInstance().gson.toJson(attributes);
             Boolean shouldEvaluate = conditionEvaluator.evaluateCondition(attributesJson, jsonStringCondition);
             if (!shouldEvaluate) {
-                return getExperimentResult(experiment, context, 0, false, false);
+                return getExperimentResult(experiment, context, 0, false, false, featureId);
             }
         }
 
@@ -77,20 +79,18 @@ public class ExperimentEvaluator implements IExperimentEvaluator {
         if (weights == null) {
             weights = GrowthBookUtils.getEqualWeights(experiment.getVariations().size());
         }
-        experiment.setWeights(weights);
 
         // Coverage
         Float coverage = experiment.getCoverage();
         if (coverage == null) {
             coverage = 1.0f;
         }
-        experiment.setCoverage(coverage);
 
         // Bucket ranges
         ArrayList<BucketRange> bucketRanges = GrowthBookUtils.getBucketRanges(
                 experiment.getVariations().size(),
-                experiment.getCoverage(),
-                experiment.getWeights()
+                coverage,
+                weights
         );
 
         // Assigned variations
@@ -98,23 +98,23 @@ public class ExperimentEvaluator implements IExperimentEvaluator {
         Float hash = GrowthBookUtils.hash(attributeValue + experiment.getKey());
         Integer assignedVariation = GrowthBookUtils.chooseVariation(hash, bucketRanges);
         if (assignedVariation == -1) {
-            return getExperimentResult(experiment, context, 0, false, false);
+            return getExperimentResult(experiment, context, 0, false, false, featureId);
         }
 
         // If experiment has a forced index, not in experiment, variation is the forced experiment
         Integer force = experiment.getForce();
         if (force != null) {
-            return getExperimentResult(experiment, context, force, false, false);
+            return getExperimentResult(experiment, context, force, true, false, featureId);
         }
 
         // If QA mode is enabled, not in experiment, variation 0
         if (context.getIsQaMode()) {
-            return getExperimentResult(experiment, context, 0, false, false);
+            return getExperimentResult(experiment, context, 0, false, false, featureId);
         }
 
         // User is in an experiment.
         // Call the tracking callback with the result.
-        ExperimentResult<ValueType> result = getExperimentResult(experiment, context, assignedVariation, true, true);
+        ExperimentResult<ValueType> result = getExperimentResult(experiment, context, assignedVariation, true, true, featureId);
         TrackingCallback trackingCallback = context.getTrackingCallback();
         if (trackingCallback != null) {
             trackingCallback.onTrack(experiment, result);
@@ -128,7 +128,8 @@ public class ExperimentEvaluator implements IExperimentEvaluator {
             Context context,
             Integer variationIndex,
             Boolean inExperiment,
-            Boolean hashUsed
+            Boolean hashUsed,
+            String featureId
     ) {
         Integer targetVariationIndex = variationIndex;
         ValueType targetValue = null;
@@ -165,7 +166,7 @@ public class ExperimentEvaluator implements IExperimentEvaluator {
                 .<ValueType>builder()
                 .inExperiment(inExperiment)
                 .variationId(variationIndex)
-                .featureId(experiment.getKey())
+                .featureId(featureId)
                 .hashValue(hashValue)
                 .hashUsed(hashUsed)
                 .hashAttribute(hashAttribute)

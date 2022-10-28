@@ -32,13 +32,6 @@ class GrowthBookTest {
         ArrayList<String> failedTests = new ArrayList<>();
         ArrayList<Integer> failingIndexes = new ArrayList<>();
 
-        // Way off:
-        // 15 (missing experiment)
-        // 23 - wrong value, wrong source (should be experiment but was force). missing experiment. we aren't using force. it's the 2nd rule not the first.
-        //
-        // Kinda off: 12, 13, 14, 21
-        // Remaining include default values like equal weights that match the number of variations, coverage 1, isActive true, etc. but they are expected to be null.
-
         for (int i = 0; i < testCases.size(); i++) {
 //            if (i != 23) continue;
 
@@ -46,10 +39,10 @@ class GrowthBookTest {
             String testDescription = testCase.get("name").getAsString();
 
             Type attributesType = new TypeToken<HashMap<String, String>>() {}.getType();
-//            TestContext testContext = jsonUtils.gson.fromJson(testCase.get("context"), TestContext.class);
 
             String featuresJson = testCase.get("context").getAsJsonObject().get("features").getAsString();
 
+            // TODO: Fix serialization??
             String attributesJson = testCase.get("context").getAsJsonObject().get("attributes").getAsString();
             HashMap<String, Object> attributes = jsonUtils.gson.fromJson(attributesJson, attributesType);
 
@@ -60,6 +53,8 @@ class GrowthBookTest {
             System.out.printf("evalFeature test: %s (index = %s)", testDescription, i);
             System.out.printf("\nfeatures: %s", featuresJson);
             System.out.printf("\nattributesJson: %s", attributesJson);
+
+            // TODO: Convert attributes to attributesJson and use JsonElement internally
 
             Context context = Context
                     .builder()
@@ -104,100 +99,6 @@ class GrowthBookTest {
 
         assertEquals(0, failedTests.size(), "There are failing tests");
     }
-
-/*
-    void test_evalFeature() {
-        JsonArray testCases = helper.featureTestCases();
-
-        ArrayList<String> passedTests = new ArrayList<>();
-        ArrayList<String> failedTests = new ArrayList<>();
-
-        ArrayList<Integer> failingIndexes = new ArrayList<>();
-
-        // Failing results (response is wrong, not just data types)
-        // [6, 9, 12, 13, 14, 15, 16, 17, 21, 23]
-
-//        GrowthBook (15/24) - equality check fails
-        // Failing indexes: [4, 5, 6, 9, 12, 13, 14, 15, 16, 17, 19, 20, 21, 22, 23]
-
-        for (int i = 0; i < testCases.size(); i++) {
-//            if (i != 6) continue;
-
-            JsonElement jsonElement = testCases.get(i);
-            JsonArray testCase = (JsonArray) jsonElement;
-
-//            JsonObject jsonAttributes = testCase.get(1).getAsJsonObject().get("attributes").getAsJsonObject();
-
-            String testDescription = testCase.get(0).getAsString();
-
-            Type testContextType = new TypeToken<TestContext>() {}.getType();
-            JsonElement testContextJson = testCase.get(1);
-            TestContext testContext = jsonUtils.gson.fromJson(testContextJson, testContextType);
-
-            HashMap<String, Integer> forcedVariations = new HashMap<>();
-
-            // Build context
-            System.out.println("\n\n--------------------------");
-            System.out.printf("Building context for index %s named %s", i, testDescription);
-
-            JsonObject contextJson = (JsonObject) testCase.get(1);
-            JsonElement features = contextJson.get("features");
-            String featuresJson = "{}";
-            if (features != null) {
-                featuresJson = features.toString();
-            }
-            Context context = new Context(
-                    true,
-                    testContext.getAttributes(),
-                    null,
-                    featuresJson,
-                    forcedVariations,
-                    false,
-                    null
-            );
-
-            String featureKey = testCase.get(2).getAsString();
-
-            GrowthBook subject = new GrowthBook(context);
-            FeatureResult<Object> result = subject.evalFeature(featureKey);
-
-            System.out.printf("\n\n Eval Feature result: %s", result);
-
-            JsonObject expected = testCase.get(3).getAsJsonObject();
-
-            // TODO: value
-            // TODO: Fix unwrapping of numbers and strings. "1" != 1. We get string when we should get number.
-            // TODO: Fix unwrapping of booleans and strings. "true" != true. We get string when we should get booleans.
-            Object expectedValue = GrowthBookJsonUtils.unwrap(expected.get("value"));
-
-            boolean expectedOn = expected.get("on").getAsBoolean();
-            FeatureResultSource expectedSource = FeatureResultSource.fromString(expected.get("source").getAsString());
-
-            Object unwrappedExpected = GrowthBookJsonUtils.unwrap(expectedValue);
-            Object unwrappedResultValue = GrowthBookJsonUtils.unwrap(result.getValue());
-            boolean valueMatches = Objects.equals(unwrappedResultValue, unwrappedExpected);
-
-            boolean isPassing = expectedOn == result.isOn() &&
-                    expectedSource == result.getSource() &&
-                    valueMatches;
-
-            System.out.printf("\n\n🚚 evalFeature - Expected value: %s == Result value: %s - Value matches %s", expectedValue, result.getValue(), valueMatches);
-
-            if (isPassing) {
-                passedTests.add(testDescription);
-            } else {
-                failingIndexes.add(i);
-                failedTests.add(testDescription);
-            }
-        }
-
-        System.out.printf("\n\n✅ evalFeature - Passed tests: %s", passedTests);
-        System.out.printf("\n\n\n❗️ evalFeature - Failed tests = %s / %s . Failing = %s", failedTests.size(), testCases.size(), failedTests);
-        System.out.printf("\n\n\n evalFeature - Failing indexes = %s", failingIndexes);
-
-        assertEquals(0, failedTests.size(), "There are failing tests");
-    }
-*/
 
     @Test
     void run_executesExperimentResultCallbacks() {
