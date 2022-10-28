@@ -21,7 +21,7 @@ public class ExperimentEvaluator implements IExperimentEvaluator {
         if (experimentVariations == null) {
             experimentVariations = new ArrayList<>();
         }
-        if (!context.getEnabled() || experimentVariations.size() < 2) {
+        if ((context.getEnabled() != null && !context.getEnabled()) || experimentVariations.size() < 2) {
             return getExperimentResult(experiment, context, 0, false, false, featureId);
         }
 
@@ -114,7 +114,7 @@ public class ExperimentEvaluator implements IExperimentEvaluator {
         }
 
         // If QA mode is enabled, not in experiment, variation 0
-        if (context.getIsQaMode()) {
+        if (context.getIsQaMode() != null && context.getIsQaMode()) {
             return getExperimentResult(experiment, context, 0, false, false, featureId);
         }
 

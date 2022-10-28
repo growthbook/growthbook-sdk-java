@@ -7,6 +7,7 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.reflect.TypeToken;
 import growthbook.sdk.java.TestHelpers.TestCasesJsonHelper;
+import growthbook.sdk.java.TestHelpers.TestContext;
 import growthbook.sdk.java.models.*;
 import growthbook.sdk.java.services.GrowthBookJsonUtils;
 import org.junit.jupiter.api.Test;
@@ -35,8 +36,6 @@ class GrowthBookTest {
         for (int i = 0; i < testCases.size(); i++) {
             JsonObject testCase = (JsonObject) testCases.get(i);
             String testDescription = testCase.get("name").getAsString();
-
-            Type attributesType = new TypeToken<HashMap<String, String>>() {}.getType();
 
             String featuresJson = testCase.get("context").getAsJsonObject().get("features").getAsString();
 
@@ -106,10 +105,6 @@ class GrowthBookTest {
     @Test
     void test_runExperiment() {
         // TODO: runExperiment tests
-    }
-    /*
-    @Test
-    void test_runExperiment() {
         JsonArray testCases = helper.runTestCases();
 
         ArrayList<String> passedTests = new ArrayList<>();
@@ -117,74 +112,50 @@ class GrowthBookTest {
         ArrayList<Integer> failingIndexes = new ArrayList<>();
 
         for (int i = 0; i < testCases.size(); i++) {
+            // 54 crashes with JSON values for experiments
 //            if (i != 0) continue;
 
-            JsonElement jsonElement = testCases.get(i);
-            JsonArray testCase = (JsonArray) jsonElement;
-            String testDescription = testCase.get(0).getAsString();
-            JsonObject experimentJson = testCase.get(2).getAsJsonObject();
+            JsonObject testCase = (JsonObject) testCases.get(i);
+            String testDescription = testCase.get("name").getAsString();
 
-//            Type testContextType = new TypeToken<TestContext>() {}.getType();
-            JsonElement testContextJson = testCase.get(1);
-//            TestContext testContext = jsonUtils.gson.fromJson(testContextJson, testContextType);
-            TestContext testContext = jsonUtils.gson.fromJson(testContextJson, TestContext.class);
-//            Context realContext = jsonUtils.gson.fromJson(testContextJson, Context.class);
+            TestContext testContext = jsonUtils.gson.fromJson(testCase.get("context").getAsJsonObject(), TestContext.class);
 
-//            System.out.printf("\n\nDeserialized context: %s", realContext);
-            Type experimentType = new TypeToken<Experiment<JsonElement>>() {}.getType();
-            Experiment<JsonElement> testExperiment = jsonUtils.gson.fromJson(experimentJson, experimentType);
-            Experiment<JsonElement> experiment = Experiment
-                    .<JsonElement>builder()
-                    .key(testExperiment.getKey())
-                    .variations(testExperiment.getVariations())
-                    .build();
-
-//            Context context = new Context(
-//                    true,
-//                    testContext.getAttributes(),
-//                    null,
-//                    "{}",
-//                    new HashMap<>(),
-//                    false,
-//                    null
-//            );
             Context context = Context
                     .builder()
-                    .enabled(true)
-                    .attributes(testContext.getAttributes())
+                    .featuresJson(testContext.features)
+                    .attributesJson(testContext.attributes)
+                    .forcedVariationsMap(testContext.forcedVariations)
+                    .isQaMode(testContext.qaMode)
+                    .enabled(testContext.enabled)
+                    .url(testContext.url)
                     .build();
 
+            Experiment experiment = jsonUtils.gson.fromJson(testCase.get("experiment").getAsString(), Experiment.class);
+            ExperimentResult expectedResult = jsonUtils.gson.fromJson(testCase.get("result"), ExperimentResult.class);
+
             GrowthBook subject = new GrowthBook(context);
+            ExperimentResult result = subject.run(experiment);
 
-            System.out.printf("\n\nTest: %s - Attributes: %s - Experiment: %s", testDescription, testContext.getAttributes(), experiment);
+            System.out.printf("\n\n Test %s - (index = %s) Testing with context: %s", testDescription, i, context);
 
-            ExperimentResult<JsonElement> result = subject.run(experiment);
-            System.out.printf("\n\nExperiment result: %s", result);
-
-            JsonElement expectedValue = testCase.get(3);
-            String inExperimentValue = String.valueOf(testCase.get(4).getAsBoolean());
-
-            boolean expectedHashUsed = testCase.get(5).getAsBoolean();
-
-            // 3rd boolean is if the hash was used
-            boolean passes = expectedValue.equals(result.getValue().toString()) &&
-                    inExperimentValue.equals(result.getInExperiment().toString()) &&
-                    expectedHashUsed == result.getHashUsed();
-
-            System.out.printf("\n\n run - Comparisons: Expected values %s == %s , In experiment %s == %s, Hash used %s == %s", expectedValue, result.getValue(), inExperimentValue, result.getInExperiment(), expectedHashUsed, result.getHashUsed());
+            boolean passes = result.equals(expectedResult);
 
             if (passes) {
                 passedTests.add(testDescription);
             } else {
+                System.out.printf("\n\nExpected result = %s", expectedResult);
+                System.out.printf("\n  Actual result = %s", result);
+
                 failedTests.add(testDescription);
                 failingIndexes.add(i);
             }
         }
 
-        System.out.printf("\n\n✅ run - Passed tests: %s", passedTests);
-        System.out.printf("\n\n\n❗️ run - Failed tests = %s / %s . Failing = %s", failedTests.size(), testCases.size(), failedTests);
-        System.out.printf("\n\n\n run - Failing indexes = %s", failingIndexes);
+        System.out.printf("\n\n✅ run Experiment - Passed tests: %s", passedTests);
+        System.out.printf("\n\n\n❗️ run Experiment - Failed tests = %s / %s . Failing = %s", failedTests.size(), testCases.size(), failedTests);
+        System.out.printf("\n\n\n run Experiment - Failing indexes = %s", failingIndexes);
 
         assertEquals(0, failedTests.size(), "There are failing tests");
-    }*/
+    }
+
 }

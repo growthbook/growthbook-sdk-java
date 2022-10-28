@@ -25,6 +25,7 @@ public class Context {
         this.features = features;
     }
 
+    @Nullable
     @Builder.Default
     private Boolean enabled = true;
 
