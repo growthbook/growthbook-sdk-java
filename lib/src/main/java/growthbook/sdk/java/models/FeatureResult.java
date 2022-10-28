@@ -38,6 +38,10 @@ public class FeatureResult<ValueType> {
     @Nullable
     String ruleId;
 
+    public String toJson() {
+        return FeatureResult.getJson(this).toString();
+    }
+
     public Boolean isOn() {
         if (value == null) return false;
 

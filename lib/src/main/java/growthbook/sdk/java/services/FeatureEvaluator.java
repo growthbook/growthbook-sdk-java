@@ -34,7 +34,7 @@ public class FeatureEvaluator implements IFeatureEvaluator {
                         .build();
             }
 
-            HashMap<String, String> attributes = context.getAttributes();
+            HashMap<String, Object> attributes = context.getAttributes();
             if (attributes == null) {
                 attributes = new HashMap<>();
             }
@@ -55,7 +55,7 @@ public class FeatureEvaluator implements IFeatureEvaluator {
                             ruleKey = "id";
                         }
 
-                        String attrValue = attributes.get(ruleKey);
+                        String attrValue = (String) attributes.get(ruleKey);
                         if (attrValue == null || attrValue.isEmpty()) {
                             continue;
                         }

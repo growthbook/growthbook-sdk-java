@@ -13,7 +13,7 @@ import java.util.HashMap;
 public class TestContext {
     JsonElement attributes;
 
-    public HashMap<String, String> getAttributes() {
+    public HashMap<String, Object> getAttributes() {
         Type typeToken = new TypeToken<HashMap<String, Object>>() {}.getType();
         return GrowthBookJsonUtils.getInstance().gson.fromJson(attributes, typeToken);
     }

@@ -17,7 +17,7 @@ class ContextTest {
     @Mock
     private TrackingCallback trackingCallback;
 
-    HashMap<String, String> sampleUserAttributes = new HashMap<>();
+    HashMap<String, Object> sampleUserAttributes = new HashMap<>();
 
     @BeforeEach
     void setUp() {
@@ -42,15 +42,25 @@ class ContextTest {
         forcedVariations.put("other-test", 1);
         String featuresJson = "{}";
 
-        Context subject = new Context(
-                isEnabled,
-                sampleUserAttributes,
-                url,
-                featuresJson,
-                forcedVariations,
-                isQaMode,
-                trackingCallback
-        );
+        Context subject = Context
+                .builder()
+                .enabled(isEnabled)
+                .attributes(sampleUserAttributes)
+                .url(url)
+                .featuresJson(featuresJson)
+                .forcedVariationsMap(forcedVariations)
+                .isQaMode(isQaMode)
+                .trackingCallback(trackingCallback)
+                .build();
+//        Context subject = new Context(
+//                isEnabled,
+//                sampleUserAttributes,
+//                url,
+//                featuresJson,
+//                forcedVariations,
+//                isQaMode,
+//                trackingCallback
+//        );
 
         assertNotNull(subject);
     }
@@ -61,15 +71,16 @@ class ContextTest {
         Boolean isQaMode = false;
         String url = "http://localhost:3000";
 
-        Context subject = new Context(
-                isEnabled,
-                sampleUserAttributes,
-                url,
-                "{}",
-                new HashMap<>(),
-                isQaMode,
-                trackingCallback
-        );
+        Context subject = Context
+                .builder()
+                .enabled(isEnabled)
+                .attributes(sampleUserAttributes)
+                .url(url)
+                .featuresJson("{}")
+                .forcedVariationsMap(new HashMap<>())
+                .isQaMode(isQaMode)
+                .trackingCallback(trackingCallback)
+                .build();
 
         // Initial state OK
         assertTrue(subject.getEnabled());
@@ -88,15 +99,10 @@ class ContextTest {
 
     @Test
     void canExecuteATrackingCallback() {
-        Context subject = new Context(
-                true,
-                new HashMap<>(),
-                null,
-                "{}",
-                new HashMap<>(),
-                false,
-                trackingCallback
-        );
+        Context subject = Context
+                .builder()
+                .trackingCallback(trackingCallback)
+                .build();
 
         Experiment<String> experiment = Experiment.<String>builder().build();
         ExperimentResult<String> result = ExperimentResult

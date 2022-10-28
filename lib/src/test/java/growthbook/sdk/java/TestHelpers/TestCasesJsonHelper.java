@@ -42,7 +42,7 @@ public class TestCasesJsonHelper implements ITestCasesJsonHelper {
 
     @Override
     public JsonArray featureTestCases() {
-        return this.testCases.get("feature").getAsJsonArray();
+        return this.testCases.get("evalFeature").getAsJsonArray();
     }
 
     @Override

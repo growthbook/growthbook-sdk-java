@@ -21,7 +21,8 @@ public class GrowthBook implements IGrowthBook {
     }
 
     public GrowthBook() {
-        this.context = new Context(false, null, null, "{}", null, false, null);
+        this.context = Context.builder().build();
+//        this.context = new Context(false, null, null, "{}", null, false, null);
     }
 
     @Nullable
@@ -32,7 +33,7 @@ public class GrowthBook implements IGrowthBook {
 
     @Override
     public void setFeatures(String featuresJsonString) {
-        this.context.setFeatures(featuresJsonString);
+        this.context.setFeaturesJson(featuresJsonString);
     }
 
     @Override

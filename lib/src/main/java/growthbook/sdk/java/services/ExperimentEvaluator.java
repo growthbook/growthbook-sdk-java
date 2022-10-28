@@ -38,7 +38,7 @@ public class ExperimentEvaluator implements IExperimentEvaluator {
         }
 
         // Get the user hash attribute and the value. If empty, not in experiment, variation 0
-        HashMap<String, String> attributes = context.getAttributes();
+        HashMap<String, Object> attributes = context.getAttributes();
         if (attributes == null) {
             attributes = new HashMap<>();
         }
@@ -46,7 +46,7 @@ public class ExperimentEvaluator implements IExperimentEvaluator {
         if (hashAttribute == null) {
             hashAttribute = "id";
         }
-        String attributeValue = attributes.get(hashAttribute);
+        String attributeValue = (String) attributes.get(hashAttribute);
         if (attributeValue == null || attributeValue.isEmpty()) {
             return getExperimentResult(experiment, context, 0, false, false);
         }
@@ -152,10 +152,10 @@ public class ExperimentEvaluator implements IExperimentEvaluator {
             hashAttribute = "id";
         }
 
-        HashMap<String, String> attributes = context.getAttributes();
+        HashMap<String, Object> attributes = context.getAttributes();
         String hashValue = "";
         if (attributes != null) {
-            hashValue = attributes.get(hashAttribute);
+            hashValue = (String) attributes.get(hashAttribute);
             if (hashValue == null) {
                 hashValue = "";
             }
