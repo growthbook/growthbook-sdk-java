@@ -1,7 +1,5 @@
 package growthbook.sdk.java.services;
 
-import com.google.gson.JsonElement;
-import com.sun.org.apache.xpath.internal.operations.Bool;
 import growthbook.sdk.java.models.*;
 
 import java.util.ArrayList;

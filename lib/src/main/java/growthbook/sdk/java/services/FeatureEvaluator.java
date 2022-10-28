@@ -19,7 +19,7 @@ public class FeatureEvaluator implements IFeatureEvaluator {
                 .build();
 
         try {
-            Feature feature = context.getFeatures().get(key);
+            Feature<ValueType> feature = context.getFeatures().get(key);
             if (feature == null) {
                 return emptyFeature;
             }

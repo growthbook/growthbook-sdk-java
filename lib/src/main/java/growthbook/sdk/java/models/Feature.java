@@ -11,7 +11,7 @@ import javax.annotation.Nullable;
 import java.lang.reflect.Type;
 import java.util.ArrayList;
 
-public class Feature {
+public class Feature<ValueType> {
 
     // TODO: Rules?
 
@@ -19,7 +19,7 @@ public class Feature {
     private final DataType dataType;
 
     private final JsonObject featureJson;
-    private final ArrayList<FeatureRule> rules;
+    private final ArrayList<FeatureRule<ValueType>> rules;
 
     private final Object defaultValue;
 
@@ -35,7 +35,7 @@ public class Feature {
         return this.defaultValue;
     }
 
-    public ArrayList<FeatureRule> getRules() {
+    public ArrayList<FeatureRule<ValueType>> getRules() {
         return this.rules;
     }
 
@@ -48,7 +48,7 @@ public class Feature {
         }
     }
 
-    private static ArrayList<FeatureRule> getRulesFromFeatureJson(JsonObject json) {
+    private static <ValueType> ArrayList<FeatureRule<ValueType>> getRulesFromFeatureJson(JsonObject json) {
         try {
             // TODO: Verify that these end up correct
             Type featureRuleListType = new TypeToken<ArrayList<FeatureRule>>() {}.getType();
