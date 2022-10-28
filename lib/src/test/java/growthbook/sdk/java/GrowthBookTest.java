@@ -33,7 +33,7 @@ class GrowthBookTest {
         ArrayList<Integer> failingIndexes = new ArrayList<>();
 
         for (int i = 0; i < testCases.size(); i++) {
-//            if (i != 0) continue;
+//            if (i != 6) continue;
 
             JsonObject testCase = (JsonObject) testCases.get(i);
             String testDescription = testCase.get("name").getAsString();
@@ -69,13 +69,16 @@ class GrowthBookTest {
 
             GrowthBook subject = new GrowthBook(context);
             String expectedString = testCase.get("result").getAsString();
-            FeatureResult<Object> expectedResult = jsonUtils.gson.fromJson(expectedString, FeatureResult.class);
+            FeatureResult expectedResult = jsonUtils.gson.fromJson(expectedString, FeatureResult.class);
 
             FeatureResult<Object> result = subject.evalFeature(featureKey);
 //            System.out.printf("\n\n Eval Feature result: %s - JSON: %s", result, result.toJson());
 
+            // TODO: why is the source wrong? (getting unknownFeature instead of defaultValue)
+            // TODO: why are all FeatureResult values null??
+
             System.out.printf("\n\nExpected result = %s", expectedResult);
-            System.out.printf("\n\nActual result = %s", result);
+            System.out.printf("\n  Actual result = %s", result);
 
             boolean passes = expectedResult.equals(result);
 //            boolean passes = expectedString.equals(result.toJson());
