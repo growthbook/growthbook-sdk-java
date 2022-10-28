@@ -33,7 +33,7 @@ class GrowthBookTest {
         ArrayList<Integer> failingIndexes = new ArrayList<>();
 
         for (int i = 0; i < testCases.size(); i++) {
-//            if (i != 6) continue;
+//            if (i != 1) continue;
 
             JsonObject testCase = (JsonObject) testCases.get(i);
             String testDescription = testCase.get("name").getAsString();
@@ -56,6 +56,7 @@ class GrowthBookTest {
 
             Context context = Context
                     .builder()
+                    .featuresJson(featuresJson)
                     .attributes(attributes)
                     .forcedVariationsMap(forcedVariations)
                     .build();

@@ -1,11 +1,15 @@
 package growthbook.sdk.java.services;
 
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
 import growthbook.sdk.java.FeatureRule;
 import growthbook.sdk.java.models.*;
 
 import java.util.HashMap;
 
 public class FeatureEvaluator implements IFeatureEvaluator {
+
+    private final GrowthBookJsonUtils jsonUtils = GrowthBookJsonUtils.getInstance();
     private final ConditionEvaluator conditionEvaluator = new ConditionEvaluator();
     private final ExperimentEvaluator experimentEvaluator = new ExperimentEvaluator();
 
@@ -19,13 +23,41 @@ public class FeatureEvaluator implements IFeatureEvaluator {
                 .build();
 
         try {
-            Feature<ValueType> feature = context.getFeatures().get(key);
-            if (feature == null) {
+            // Unknown key, return empty feature
+            JsonObject featuresJson = context.getFeatures();
+            System.out.printf("\n\nLooking for key %s in JSON %s", key, featuresJson);
+
+            if (!featuresJson.has(key)) {
+                System.out.printf("\n\nKey %s not found in JSON %s", key, featuresJson);
                 return emptyFeature;
             }
 
+            System.out.printf("\n\nKey %s exists in JSON %s", key, featuresJson);
+
+            // The key exists
+            JsonElement featureJson = featuresJson.get(key);
+            FeatureResult<ValueType> defaultValueFeature = FeatureResult
+                    .<ValueType>builder()
+                    .value(null)
+                    .source(FeatureResultSource.DEFAULT_VALUE)
+                    .build();
+
+            if (featureJson == null) {
+                System.out.println("featureJson is null");
+                // When key exists but there is no value, should be default value with null value
+                return defaultValueFeature;
+            }
+
+//            System.out.printf("\n\nFeature: %s", featureJson);
+
+            Feature<ValueType> feature = jsonUtils.gson.fromJson(featureJson, Feature.class);
+            if (feature == null) {
+                // When key exists but there is no value, should be default value with null value
+                return defaultValueFeature;
+            }
+
             // If empty rule set, use the default value
-            if (feature.getRules().isEmpty()) {
+            if (feature.getRules() == null || feature.getRules().isEmpty()) {
                 Object value = GrowthBookJsonUtils.unwrap(feature.getDefaultValue());
                 return FeatureResult
                         .<ValueType>builder()

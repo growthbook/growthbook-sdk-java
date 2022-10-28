@@ -19,6 +19,8 @@ public class Feature<ValueType> {
     private final DataType dataType;
 
     private final JsonObject featureJson;
+
+    @Nullable
     private final ArrayList<FeatureRule<ValueType>> rules;
 
     private final Object defaultValue;

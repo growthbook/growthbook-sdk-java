@@ -1,6 +1,6 @@
 package growthbook.sdk.java.models;
 
-import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
 import growthbook.sdk.java.services.GrowthBookJsonUtils;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -17,9 +17,10 @@ import java.util.Map;
 @Builder
 @AllArgsConstructor
 public class Context {
-    private HashMap<String, Feature> features;
+    @Nullable
+    private JsonObject features;
 
-    private void setFeatures(HashMap<String, Feature> features) {
+    private void setFeatures(@Nullable JsonObject features) {
         this.features = features;
     }
 
@@ -86,18 +87,14 @@ public class Context {
         }
     }
 
-    private static HashMap<String, Feature> transformFeatures(String featuresJsonString) {
-        HashMap<String, Feature> transformedFeatures = new HashMap<>();
-
-        JsonElement featuresJson = GrowthBookJsonUtils.getInstance().gson.fromJson(featuresJsonString, JsonElement.class);
-
-        for (Map.Entry<String, JsonElement> entry : featuresJson.getAsJsonObject().entrySet()) {
-            // TODO: Transform features
-            Feature feature = new Feature(entry.getValue().toString());
-            transformedFeatures.put(entry.getKey(), feature);
+    @Nullable
+    private static JsonObject transformFeatures(String featuresJsonString) {
+        try {
+            return GrowthBookJsonUtils.getInstance().gson.fromJson(featuresJsonString, JsonObject.class);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return null;
         }
-
-        return transformedFeatures;
     }
 }
 //public class Context {

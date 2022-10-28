@@ -2,6 +2,7 @@ package growthbook.sdk.java.models;
 
 import com.google.gson.*;
 import com.google.gson.annotations.SerializedName;
+import growthbook.sdk.java.services.GrowthBookJsonUtils;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -75,7 +76,10 @@ public class FeatureResult<ValueType> {
         jsonObject.add("on", isOn);
         jsonObject.add("off", isOff);
 
-        // TODO: value
+        Object value = object.getValue();
+        JsonElement valueElement = GrowthBookJsonUtils.getInstance().gson.toJsonTree(value);
+        jsonObject.add("value", valueElement);
+
         // TODO: experiment
         // TODO: experiment result
 
