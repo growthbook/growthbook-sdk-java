@@ -43,7 +43,6 @@ public class ExperimentEvaluator implements IExperimentEvaluator {
         }
 
         // If experiment is not active, not in experiment, variation 0
-
         if (experiment.getIsActive() != null && !experiment.getIsActive()) {
             return getExperimentResult(experiment, context, 0, false, false, featureId);
         }
@@ -152,16 +151,15 @@ public class ExperimentEvaluator implements IExperimentEvaluator {
     ) {
         Integer targetVariationIndex = variationIndex;
         ArrayList<ValueType> experimentVariations = experiment.getVariations();
+        if (experimentVariations == null) {
+            experimentVariations = new ArrayList<>();
+        }
         if (variationIndex < 0 || variationIndex >= experimentVariations.size()) {
             variationIndex = 0;
             inExperiment = false;
         }
 
         ValueType targetValue = null;
-
-        if (experimentVariations == null) {
-            experimentVariations = new ArrayList<>();
-        }
 
         if (targetVariationIndex < 0 || targetVariationIndex >= experimentVariations.size()) {
             // Set to 0
