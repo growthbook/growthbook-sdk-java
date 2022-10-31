@@ -10,7 +10,7 @@ import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.*;
 
 class GrowthBookJsonUtilsTest {
-    GrowthBookJsonUtils subject = GrowthBookJsonUtils.getInstance();
+    final GrowthBookJsonUtils subject = GrowthBookJsonUtils.getInstance();
 
     @Test
     void canSerializeNamespaces() {

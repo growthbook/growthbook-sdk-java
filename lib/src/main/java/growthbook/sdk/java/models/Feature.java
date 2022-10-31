@@ -18,8 +18,6 @@ public class Feature<ValueType> {
     private final String rawValue;
     private final DataType dataType;
 
-    private final JsonObject featureJson;
-
     @Nullable
     private final ArrayList<FeatureRule<ValueType>> rules;
 
@@ -28,9 +26,10 @@ public class Feature<ValueType> {
     public Feature(String rawValue) {
         this.rawValue = rawValue;
         this.dataType = Feature.getValueDataType(rawValue);
-        this.featureJson = Feature.getFeatureJsonFromRawValue(rawValue);
+
+        JsonObject featureJson = Feature.getFeatureJsonFromRawValue(rawValue);
         this.defaultValue = GrowthBookJsonUtils.unwrap(featureJson.get("defaultValue"));
-        this.rules = Feature.getRulesFromFeatureJson(this.featureJson);
+        this.rules = Feature.getRulesFromFeatureJson(featureJson);
     }
 
     public Object getDefaultValue() {

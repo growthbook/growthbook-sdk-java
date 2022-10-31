@@ -35,19 +35,6 @@ class FeatureResultTest {
         assertNull(subject.experiment);
         assertEquals("hello", subject.getValue());
     }
-//
-//    @Test
-//    void canBeSerializedToJson() {
-//        FeatureResult subject = FeatureResult
-//                .builder()
-//                .rawJsonValue("\"hello\"")
-//                .source(FeatureResultSource.EXPERIMENT)
-//                .build();
-//
-//        String result = GrowthBookJsonUtils.getInstance().gson.toJson(subject);
-//
-//        assertEquals("{\"on\":false,\"value\":\"\"hello\"\",\"source\":\"experiment\"}", result);
-//    }
 
     @Test
     void featureResultSourceOutputsCorrectlyToString() {

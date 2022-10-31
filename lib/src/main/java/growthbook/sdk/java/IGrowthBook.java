@@ -7,25 +7,25 @@ import growthbook.sdk.java.models.FeatureResult;
 
 interface IGrowthBook {
 
-    public <ValueType>ExperimentResult<ValueType> run(Experiment<ValueType> experiment);
+    <ValueType>ExperimentResult<ValueType> run(Experiment<ValueType> experiment);
 
-    public void subscribe(ExperimentRunCallback callback);
+    void subscribe(ExperimentRunCallback callback);
 
-    public void destroy();
+    void destroy();
 
 
     // region Features
 
-    public <ValueType> FeatureResult<ValueType> evalFeature(String key);
+    <ValueType> FeatureResult<ValueType> evalFeature(String key);
 
     /**
      * Call this with the JSON string returned from API.
      * @param featuresJsonString features JSON from the GrowthBook API
      */
-    public void setFeatures(String featuresJsonString);
+    void setFeatures(String featuresJsonString);
 
-    public Boolean isOn(String featureKey);
-    public Boolean isOff(String featureKey);
+    Boolean isOn(String featureKey);
+    Boolean isOff(String featureKey);
 
     /**
      * Get the feature value as a boolean
@@ -33,7 +33,7 @@ interface IGrowthBook {
      * @param defaultValue boolean value to return
      * @return the found value or defaultValue
      */
-    public Boolean getFeatureValue(String featureKey, Boolean defaultValue);
+    Boolean getFeatureValue(String featureKey, Boolean defaultValue);
 
     /**
      * Get the feature value as a string
@@ -41,7 +41,7 @@ interface IGrowthBook {
      * @param defaultValue string value to return
      * @return the found value or defaultValue
      */
-    public String getFeatureValue(String featureKey, String defaultValue);
+    String getFeatureValue(String featureKey, String defaultValue);
 
     /**
      * Get the feature value as a float
@@ -49,7 +49,7 @@ interface IGrowthBook {
      * @param defaultValue float value to return
      * @return the found value or defaultValue
      */
-    public Float getFeatureValue(String featureKey, Float defaultValue);
+    Float getFeatureValue(String featureKey, Float defaultValue);
 
     /**
      * Get the feature value as an integer
@@ -57,7 +57,7 @@ interface IGrowthBook {
      * @param defaultValue integer value to return
      * @return the found value or defaultValue
      */
-    public Integer getFeatureValue(String featureKey, Integer defaultValue);
+    Integer getFeatureValue(String featureKey, Integer defaultValue);
 
     /**
      * Skip over the JSON parsing.
@@ -65,7 +65,7 @@ interface IGrowthBook {
      * @param featureKey name of the feature
      * @return string JSON of the value
      */
-    public String getRawFeatureValue(String featureKey);
+    String getRawFeatureValue(String featureKey);
 
     // endregion Features
 

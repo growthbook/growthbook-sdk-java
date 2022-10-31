@@ -19,20 +19,12 @@ public class FeatureResult<ValueType> {
     @SerializedName("value")
     Object value;
 
-    /**
-     * One of "unknownFeature", "defaultValue", "force", or "experiment"
-     */
     @Nullable
     FeatureResultSource source;
 
-    /**
-     * When source is "experiment", this will be an Experiment object
-     */
     @Nullable
     Experiment<ValueType> experiment;
 
-    // TODO: ExperimentResult experimentResult
-    // When source is "experiment", this will be an ExperimentResult object
     @Nullable
     ExperimentResult<ValueType> experimentResult;
 
@@ -76,17 +68,14 @@ public class FeatureResult<ValueType> {
         jsonObject.add("on", isOn);
         jsonObject.add("off", isOff);
 
-        // TODO: Write test for value
         Object value = object.getValue();
         JsonElement valueElement = GrowthBookJsonUtils.getInstance().gson.toJsonTree(value);
         jsonObject.add("value", valueElement);
 
-        // TODO: Write test experiment
         Experiment<ValueType> experiment = object.getExperiment();
         JsonElement experimentElement = GrowthBookJsonUtils.getInstance().gson.toJsonTree(experiment);
         jsonObject.add("experiment", experimentElement);
 
-        // TODO: Write test for experiment result
         ExperimentResult<ValueType> experimentResult = object.getExperimentResult();
         JsonElement experimentResultElement = GrowthBookJsonUtils.getInstance().gson.toJsonTree(experimentResult);
         jsonObject.add("experimentResult", experimentResultElement);

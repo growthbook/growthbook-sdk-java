@@ -9,7 +9,7 @@ import java.lang.reflect.Type;
 import static org.junit.jupiter.api.Assertions.*;
 
 class ExperimentResultTest {
-    GrowthBookJsonUtils jsonUtils = GrowthBookJsonUtils.getInstance();
+    final GrowthBookJsonUtils jsonUtils = GrowthBookJsonUtils.getInstance();
 
     @Test
     void test_canBeBuilt() {

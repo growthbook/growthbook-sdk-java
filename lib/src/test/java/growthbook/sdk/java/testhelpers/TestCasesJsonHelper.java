@@ -1,4 +1,4 @@
-package growthbook.sdk.java.TestHelpers;
+package growthbook.sdk.java.testhelpers;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonArray;

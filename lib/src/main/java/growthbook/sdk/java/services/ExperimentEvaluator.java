@@ -12,7 +12,7 @@ import java.util.Objects;
 
 public class ExperimentEvaluator implements IExperimentEvaluator {
 
-    private ConditionEvaluator conditionEvaluator = new ConditionEvaluator();
+    private final ConditionEvaluator conditionEvaluator = new ConditionEvaluator();
 
     @Override
     public <ValueType> ExperimentResult<ValueType> evaluateExperiment(Experiment<ValueType> experiment, Context context, @Nullable String featureId) {

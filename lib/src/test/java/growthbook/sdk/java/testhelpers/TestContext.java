@@ -1,6 +1,4 @@
-package growthbook.sdk.java.TestHelpers;
-
-import com.google.gson.JsonElement;
+package growthbook.sdk.java.testhelpers;
 
 import javax.annotation.Nullable;
 import java.util.HashMap;

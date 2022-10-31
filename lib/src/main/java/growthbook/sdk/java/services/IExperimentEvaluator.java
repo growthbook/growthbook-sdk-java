@@ -7,5 +7,5 @@ import growthbook.sdk.java.models.ExperimentResult;
 import javax.annotation.Nullable;
 
 public interface IExperimentEvaluator {
-    public <ValueType> ExperimentResult<ValueType> evaluateExperiment(Experiment<ValueType> experiment, Context context, @Nullable String featureId);
+    <ValueType> ExperimentResult<ValueType> evaluateExperiment(Experiment<ValueType> experiment, Context context, @Nullable String featureId);
 }

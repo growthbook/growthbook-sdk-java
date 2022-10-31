@@ -7,8 +7,8 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.reflect.TypeToken;
-import growthbook.sdk.java.TestHelpers.TestCasesJsonHelper;
-import growthbook.sdk.java.TestHelpers.TestContext;
+import growthbook.sdk.java.testhelpers.TestCasesJsonHelper;
+import growthbook.sdk.java.testhelpers.TestContext;
 import growthbook.sdk.java.models.*;
 import growthbook.sdk.java.services.GrowthBookJsonUtils;
 import org.junit.jupiter.api.Test;
@@ -24,8 +24,8 @@ import static org.mockito.Mockito.verify;
 
 class GrowthBookTest {
 
-    TestCasesJsonHelper helper = TestCasesJsonHelper.getInstance();
-    GrowthBookJsonUtils jsonUtils = GrowthBookJsonUtils.getInstance();
+    final TestCasesJsonHelper helper = TestCasesJsonHelper.getInstance();
+    final GrowthBookJsonUtils jsonUtils = GrowthBookJsonUtils.getInstance();
 
     @Test
     void test_evalFeature() {
@@ -134,7 +134,7 @@ class GrowthBookTest {
             JsonElement experimentElement = jsonUtils.gson.fromJson(testCase.get("experiment"), JsonElement.class);
             if (experimentElement != null) {
 //                System.out.printf("\n\n HERE: Experiment %s (index = %s)", experiment, i);
-                JsonObject experimentObject = jsonUtils.gson.fromJson(experimentElement.getAsString(), JsonObject.class);;
+                JsonObject experimentObject = jsonUtils.gson.fromJson(experimentElement.getAsString(), JsonObject.class);
                 JsonElement conditionElement = experimentObject.get("condition");
                 if (conditionElement != null) {
                     String conditionJson = conditionElement.toString();

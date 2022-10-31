@@ -1,4 +1,4 @@
-package growthbook.sdk.java.TestHelpers;
+package growthbook.sdk.java.testhelpers;
 
 import com.google.gson.JsonObject;
 import org.junit.jupiter.api.Test;

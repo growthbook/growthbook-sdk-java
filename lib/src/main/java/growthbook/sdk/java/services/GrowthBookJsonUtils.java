@@ -61,30 +61,6 @@ public class GrowthBookJsonUtils {
 
     // endregion Initialization
 
-    @Nullable
-    public static JsonElement getJsonElement(Object o) {
-        try {
-            JsonElement element = null;
-
-            if (o instanceof Boolean) {
-                element = new JsonPrimitive((Boolean) o);
-            }
-            if (o instanceof Float) {
-                element = new JsonPrimitive((Float) o);
-            }
-            if (o instanceof Integer) {
-                element = new JsonPrimitive((Integer) o);
-            }
-            if (o instanceof String) {
-                element = new JsonPrimitive((String) o);
-            }
-
-            return element;
-        } catch (Exception e) {
-            e.printStackTrace();
-            return null;
-        }
-    }
 
     /**
      * Unwrap an object. If it's not a JsonElement, you'll get the object right back

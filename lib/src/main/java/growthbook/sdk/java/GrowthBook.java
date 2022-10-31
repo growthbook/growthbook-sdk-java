@@ -9,10 +9,10 @@ import java.util.ArrayList;
 
 public class GrowthBook implements IGrowthBook {
 
-    private Context context;
+    private final Context context;
 
-    private FeatureEvaluator featureEvaluator = new FeatureEvaluator();
-    private ExperimentEvaluator experimentEvaluatorEvaluator = new ExperimentEvaluator();
+    private final FeatureEvaluator featureEvaluator = new FeatureEvaluator();
+    private final ExperimentEvaluator experimentEvaluatorEvaluator = new ExperimentEvaluator();
 
     private ArrayList<ExperimentRunCallback> callbacks = new ArrayList<>();
 

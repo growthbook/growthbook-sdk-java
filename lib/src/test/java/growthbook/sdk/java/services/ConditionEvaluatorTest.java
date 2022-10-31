@@ -1,11 +1,9 @@
 package growthbook.sdk.java.services;
 
-import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
-import growthbook.sdk.java.TestHelpers.TestCasesJsonHelper;
-import growthbook.sdk.java.models.DataType;
+import growthbook.sdk.java.testhelpers.TestCasesJsonHelper;
 import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
@@ -14,7 +12,7 @@ import static org.junit.jupiter.api.Assertions.*;
 
 class ConditionEvaluatorTest {
 
-    TestCasesJsonHelper helper = TestCasesJsonHelper.getInstance();
+    final TestCasesJsonHelper helper = TestCasesJsonHelper.getInstance();
 
     @Test
     void test_evaluateCondition_returnsFalseIfWrongShape() {
