@@ -3,7 +3,7 @@ package growthbook.sdk.java.services;
 import growthbook.sdk.java.models.Context;
 import growthbook.sdk.java.models.FeatureResult;
 
-public interface IFeatureEvaluator {
+interface IFeatureEvaluator {
     /**
      * Evaluate a feature.
      *

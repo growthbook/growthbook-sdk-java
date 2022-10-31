@@ -71,6 +71,10 @@ public class Experiment<ValueType> {
     @Builder.Default
     String hashAttribute = "id";
 
+    /**
+     * Get a Gson JsonElement of the experiment
+     * @return JsonElement
+     */
     public String toJson() {
         return Experiment.getJson(this).toString();
     }
@@ -83,6 +87,12 @@ public class Experiment<ValueType> {
 
     // region Serialization
 
+    /**
+     * Get a Gson JsonElement of the experiment
+     * @param object experiment
+     * @param <ValueType> value type for the experiment
+     * @return JsonElement
+     */
     public static <ValueType> JsonElement getJson(Experiment<ValueType> object) {
         JsonObject json = new JsonObject();
 
@@ -106,6 +116,11 @@ public class Experiment<ValueType> {
         return json;
     }
 
+    /**
+     * A Gson serializer for {@link Experiment}
+     * @return a serializer for {@link Experiment}
+     * @param <ValueType> value type for the Experiment
+     */
     public static <ValueType> JsonSerializer<Experiment<ValueType>> getSerializer() {
         return new JsonSerializer<Experiment<ValueType>>() {
             @Override

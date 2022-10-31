@@ -6,6 +6,6 @@ import growthbook.sdk.java.models.ExperimentResult;
 
 import javax.annotation.Nullable;
 
-public interface IExperimentEvaluator {
+interface IExperimentEvaluator {
     <ValueType> ExperimentResult<ValueType> evaluateExperiment(Experiment<ValueType> experiment, Context context, @Nullable String featureId);
 }

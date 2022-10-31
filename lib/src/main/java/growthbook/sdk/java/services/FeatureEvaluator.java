@@ -5,6 +5,9 @@ import com.google.gson.JsonObject;
 import growthbook.sdk.java.FeatureRule;
 import growthbook.sdk.java.models.*;
 
+/**
+ * <b>INTERNAL</b>: Implementation of feature evaluation
+ */
 public class FeatureEvaluator implements IFeatureEvaluator {
 
     private final GrowthBookJsonUtils jsonUtils = GrowthBookJsonUtils.getInstance();

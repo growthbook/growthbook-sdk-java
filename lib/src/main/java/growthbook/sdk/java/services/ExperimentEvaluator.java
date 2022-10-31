@@ -1,5 +1,6 @@
 package growthbook.sdk.java.services;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import growthbook.sdk.java.models.*;
@@ -10,6 +11,9 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 
+/**
+ * <b>INTERNAL</b>: Implementation of experiment evaluation
+ */
 public class ExperimentEvaluator implements IExperimentEvaluator {
 
     private final ConditionEvaluator conditionEvaluator = new ConditionEvaluator();

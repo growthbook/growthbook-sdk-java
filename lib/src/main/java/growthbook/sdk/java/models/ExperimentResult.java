@@ -12,6 +12,21 @@ import lombok.Data;
 import javax.annotation.Nullable;
 import java.lang.reflect.Type;
 
+/**
+ * The result of running an {@link Experiment} given a specific {@link Context}
+ *
+ * <ul>
+ * <li>inExperiment (boolean) - Whether or not the user is part of the experiment</li>
+ * <li>variationId (int) - The array index of the assigned variation</li>
+ * <li>value (any) - The array value of the assigned variation</li>
+ * <li>hashUsed (boolean) - If a hash was used to assign a variation</li>
+ * <li>hashAttribute (string) - The user attribute used to assign a variation</li>
+ * <li>hashValue (string) - The value of that attribute</li>
+ * <li>featureId (string or null) - The id of the feature (if any) that the experiment came from</li>
+ * </ul>
+ *
+ * @param <ValueType> generic type for the value type for this experiment's variations.
+ */
 @Data
 @Builder
 @AllArgsConstructor
@@ -41,6 +56,10 @@ public class ExperimentResult<ValueType> {
 
     // region Serialization
 
+    /**
+     * Serialized JSON string of the {@link ExperimentResult}
+     * @return JSON string
+     */
     public String toJson() {
         return ExperimentResult.getJson(this).toString();
     }
@@ -62,6 +81,11 @@ public class ExperimentResult<ValueType> {
         return json;
     }
 
+    /**
+     * A Gson serializer for {@link ExperimentResult}
+     * @return a Gson serializer
+     * @param <ValueType> type of the experiment
+     */
     public static <ValueType> JsonSerializer<ExperimentResult<ValueType>> getSerializer() {
         return new JsonSerializer<ExperimentResult<ValueType>>() {
             @Override

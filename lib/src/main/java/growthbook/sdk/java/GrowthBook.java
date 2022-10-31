@@ -6,7 +6,13 @@ import growthbook.sdk.java.services.FeatureEvaluator;
 
 import javax.annotation.Nullable;
 import java.util.ArrayList;
+import java.util.Map;
 
+/**
+ * GrowthBook SDK class.
+ * Build a context with {@link Context#builder()} or {@link Context#create(String, String, Boolean, Boolean, String, Map, TrackingCallback)}
+ * and pass it as an argument to the class constructor.
+ */
 public class GrowthBook implements IGrowthBook {
 
     private final Context context;
@@ -16,13 +22,20 @@ public class GrowthBook implements IGrowthBook {
 
     private ArrayList<ExperimentRunCallback> callbacks = new ArrayList<>();
 
+    /**
+     * Initialize teh GrowthBook SDK with a provided {@link Context}
+     * @param context {@link Context}
+     */
     public GrowthBook(Context context) {
         this.context = context;
     }
 
+    /**
+     * No-args constructor. A {@link Context} with default values is created.
+     * It's recommended to create your own context with {@link Context#builder()} or {@link Context#create(String, String, Boolean, Boolean, String, Map, TrackingCallback)}
+     */
     public GrowthBook() {
         this.context = Context.builder().build();
-//        this.context = new Context(false, null, null, "{}", null, false, null);
     }
 
     @Nullable

@@ -3,7 +3,7 @@ package growthbook.sdk.java.services;
 import java.math.BigInteger;
 import java.util.List;
 
-public class MathUtils {
+class MathUtils {
     private static final BigInteger INIT32 = new BigInteger("811c9dc5", 16);
     private static final BigInteger PRIME32 = new BigInteger("01000193", 16);
     private static final BigInteger MOD32 = new BigInteger("2").pow(32);
@@ -12,7 +12,7 @@ public class MathUtils {
      * Fowler-Noll-Vo algorithm
      * fnv32a returns an integer, so we convert that to a float using a modulus
      *
-     * @param data
+     * @param data byte list
      * @return BigInteger
      */
     public static BigInteger fnv1a_32(byte[] data) {

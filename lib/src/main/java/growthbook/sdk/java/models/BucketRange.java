@@ -35,6 +35,10 @@ public class BucketRange {
                 .build();
     }
 
+    /**
+     * Converts the bucket range to the serialized tuple
+     * @return JSON string of the bucket range
+     */
     public String toJson() {
         return BucketRange.getJson(this).toString();
     }
@@ -67,6 +71,10 @@ public class BucketRange {
         );
     }
 
+    /**
+     * @param object bucket range
+     * @return Gson JSON element
+     */
     static JsonElement getJson(BucketRange object) {
         JsonArray array = new JsonArray();
 
@@ -76,6 +84,9 @@ public class BucketRange {
         return array;
     }
 
+    /**
+     * @return serializer for {@link BucketRange}
+     */
     public static JsonSerializer<BucketRange> getSerializer() {
         return new JsonSerializer<BucketRange>() {
             @Override
@@ -85,6 +96,9 @@ public class BucketRange {
         };
     }
 
+    /**
+     * @return deserializer for {@link BucketRange}
+     */
     public static JsonDeserializer<BucketRange> getDeserializer() {
         return new JsonDeserializer<BucketRange>() {
             @Override

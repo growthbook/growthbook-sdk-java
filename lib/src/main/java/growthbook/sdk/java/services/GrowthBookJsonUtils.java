@@ -49,6 +49,7 @@ public class GrowthBookJsonUtils {
     }
 
     /**
+     * The JSON utils singleton
      * @return an instance of {@link GrowthBookJsonUtils}
      */
     public static GrowthBookJsonUtils getInstance() {
@@ -126,6 +127,11 @@ public class GrowthBookJsonUtils {
         return unwrapped;
     }
 
+    /**
+     * A convenience method to help work with types of JSON elements
+     * @param element unknown JsonElement
+     * @return {@link DataType}
+     */
     public static DataType getElementType(@Nullable JsonElement element) {
         try {
             if (element == null) return DataType.UNDEFINED;

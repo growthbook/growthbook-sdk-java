@@ -4,10 +4,28 @@ import com.google.gson.annotations.SerializedName;
 
 import javax.annotation.Nullable;
 
+/**
+ * An enum of the possible sources for the feature result
+ */
 public enum FeatureResultSource {
+    /**
+     * When the feature is unknown
+     */
     @SerializedName("unknownFeature") UNKNOWN_FEATURE("unknownFeature"),
+
+    /**
+     * When the value is assigned due to a default value condition
+     */
     @SerializedName("defaultValue") DEFAULT_VALUE("defaultValue"),
+
+    /**
+     * When the value is assigned due to a forced condition
+     */
     @SerializedName("force") FORCE("force"),
+
+    /**
+     * When the value is assigned due to an experiment condition
+     */
     @SerializedName("experiment") EXPERIMENT("experiment"),
     ;
     private final String rawValue;

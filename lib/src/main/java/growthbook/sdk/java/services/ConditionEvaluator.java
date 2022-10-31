@@ -14,14 +14,15 @@ import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+/**
+ * <b>INTERNAL</b>: Implementation of condition evaluation
+ */
 public class ConditionEvaluator implements IConditionEvaluator {
 
     private final GrowthBookJsonUtils jsonUtils = GrowthBookJsonUtils.getInstance();
 
     /**
      * Evaluate a condition for a set of user attributes based on the provided condition.
-     * <p>
-     * <p>
      * The condition syntax closely resembles MongoDB's syntax.
      * This is defined in the Feature's targeting conditions' Advanced settings.
      *
@@ -348,10 +349,10 @@ public class ConditionEvaluator implements IConditionEvaluator {
 
     /**
      * Compares two primitives for equality.
-     * @param a
-     * @param b
+     * @param a left side primitive
+     * @param b right side primitive
      * @param dataType The data type of the primitives
-     * @return
+     * @return if they are equal
      */
     Boolean arePrimitivesEqual(JsonPrimitive a, JsonPrimitive b, DataType dataType) {
         switch (dataType) {
@@ -382,11 +383,11 @@ public class ConditionEvaluator implements IConditionEvaluator {
      * Loop over each key/value pair
      * If evalOperatorCondition(key, attributeValue, value) is false, return false
      * Return true
-     * Else, do a deep comparison between attributeValue and conditionValue. Return true if equal, false if not.
+     * Else, do a deep comparison between attributeValue and conditionValue.
      *
-     * @param conditionValue
-     * @param attributeValue
-     * @return
+     * @param conditionValue Object or primitive
+     * @param attributeValue Object or primitive
+     * @return true if equal
      */
     Boolean evalConditionValue(JsonElement conditionValue, @Nullable JsonElement attributeValue) {
         if (conditionValue.isJsonObject()) {

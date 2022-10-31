@@ -11,31 +11,43 @@ import javax.annotation.Nullable;
 import java.lang.reflect.Type;
 import java.util.ArrayList;
 
+/**
+ * The feature with a generic value type.
+ * <ul>
+ * <li>defaultValue (any) - The default value (should use null if not specified)</li>
+ * <li>rules (FeatureRule[]) - Array of FeatureRule objects that determine when and how the defaultValue gets overridden</li>
+ * </ul>
+ * @param <ValueType> value type for the feature
+ */
 public class Feature<ValueType> {
-
-    // TODO: Rules?
-
-    private final String rawValue;
-    private final DataType dataType;
 
     @Nullable
     private final ArrayList<FeatureRule<ValueType>> rules;
 
     private final Object defaultValue;
 
+    /**
+     * Construct a feature with the JSON string
+     * @param rawValue JSON string of the feature
+     */
     public Feature(String rawValue) {
-        this.rawValue = rawValue;
-        this.dataType = Feature.getValueDataType(rawValue);
-
         JsonObject featureJson = Feature.getFeatureJsonFromRawValue(rawValue);
         this.defaultValue = GrowthBookJsonUtils.unwrap(featureJson.get("defaultValue"));
         this.rules = Feature.getRulesFromFeatureJson(featureJson);
     }
 
+    /**
+     * The default value for a feature evaluation
+     * @return value of the feature
+     */
     public Object getDefaultValue() {
         return this.defaultValue;
     }
 
+    /**
+     * Returns the rules for evaluating the feature
+     * @return rules list
+     */
     @Nullable
     public ArrayList<FeatureRule<ValueType>> getRules() {
         return this.rules;
@@ -52,7 +64,6 @@ public class Feature<ValueType> {
 
     private static <ValueType> ArrayList<FeatureRule<ValueType>> getRulesFromFeatureJson(JsonObject json) {
         try {
-            // TODO: Verify that these end up correct
             Type featureRuleListType = new TypeToken<ArrayList<FeatureRule>>() {}.getType();
             JsonElement rulesJsonElement = json.get("rules");
             JsonArray rulesJson;
@@ -66,26 +77,6 @@ public class Feature<ValueType> {
         } catch (Exception e) {
             e.printStackTrace();
             return new ArrayList<>();
-        }
-    }
-
-    public String getRawValue() {
-        return this.rawValue;
-    }
-
-    public DataType getDataType() {
-        return this.dataType;
-    }
-
-    @Nullable
-    private static DataType getValueDataType(String rawValue) {
-        try {
-            JsonElement jsonElement = GrowthBookJsonUtils.getInstance()
-                    .gson.fromJson(rawValue, JsonElement.class);
-            return GrowthBookJsonUtils.getElementType(jsonElement);
-        } catch (Exception e) {
-            e.printStackTrace();
-            return null;
         }
     }
 }

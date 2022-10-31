@@ -11,6 +11,9 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Map;
 
+/**
+ * <b>INTERNAL</b>: Implementation of for internal utility methods to support {@link growthbook.sdk.java.GrowthBook}
+ */
 public class GrowthBookUtils {
     /**
      * Hashes a string to a float between 0 and 1.

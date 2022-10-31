@@ -10,6 +10,20 @@ import lombok.Data;
 import javax.annotation.Nullable;
 import java.lang.reflect.Type;
 
+/**
+ * Results for a {@link growthbook.sdk.java.services.FeatureEvaluator#evaluateFeature(String, Context)}
+ *
+ * <ul>
+ * <li>value (any) - The assigned value of the feature</li>
+ * <li>on (boolean) - The assigned value cast to a boolean</li>
+ * <li>off (boolean) - The assigned value cast to a boolean and then negated</li>
+ * <li>source (enum) - One of "unknownFeature", "defaultValue", "force", or "experiment"</li>
+ * <li>experiment (Experiment or null) - When source is "experiment", this will be an Experiment object</li>
+ * <li>experimentResult (ExperimentResult or null) - When source is "experiment", this will be an ExperimentResult object</li>
+ * </ul>
+ *
+ * @param <ValueType> value type for the feature
+ */
 @Data
 @Builder
 @AllArgsConstructor
@@ -31,10 +45,18 @@ public class FeatureResult<ValueType> {
     @Nullable
     String ruleId;
 
+    /**
+     * Get a Gson JsonElement of the {@link FeatureResult}
+     * @return a Gson JsonElement
+     */
     public String toJson() {
         return FeatureResult.getJson(this).toString();
     }
 
+    /**
+     * Evaluates to true when the feature is on
+     * @return Boolean
+     */
     public Boolean isOn() {
         if (value == null) return false;
 
@@ -57,10 +79,20 @@ public class FeatureResult<ValueType> {
         return false;
     }
 
+    /**
+     * Evaluates to true when the feature is off
+     * @return Boolean
+     */
     public Boolean isOff() {
         return !isOn();
     }
 
+    /**
+     * Get a Gson JsonElement of the {@link FeatureResult}
+     * @param object {@link FeatureResult}
+     * @return a Gson JsonElement
+     * @param <ValueType> value type for the feature
+     */
     public static <ValueType> JsonElement getJson(FeatureResult<ValueType> object) {
         JsonObject jsonObject = new JsonObject();
         JsonPrimitive isOn = new JsonPrimitive(object.isOn());
@@ -89,6 +121,11 @@ public class FeatureResult<ValueType> {
         return jsonObject;
     }
 
+    /**
+     * a Gson serializer for {@link FeatureResult}
+     * @return Gson serializer
+     * @param <ValueType> {@link FeatureResult}
+     */
     public static <ValueType> JsonSerializer<FeatureResult<ValueType>> getSerializer() {
         return new JsonSerializer<FeatureResult<ValueType>>() {
             @Override

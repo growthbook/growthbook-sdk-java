@@ -54,10 +54,8 @@ publishing {
 }
 
 // Generates documentation in ./lib/build/docs/javadoc
-// Note: These docs are pretty useless for the Lombok stuff
-// TODO: Have doc comments for Lombuk-annotated classes get picked up by JavaDoc https://github.com/growthbook/growthbook-sdk-java/issues/4
 javadoc {
-    options.memberLevel = JavadocMemberLevel.PRIVATE
+    options.memberLevel = JavadocMemberLevel.PUBLIC
 
     build {
     }

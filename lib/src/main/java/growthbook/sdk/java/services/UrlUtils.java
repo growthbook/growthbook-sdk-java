@@ -6,7 +6,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 
-public class UrlUtils {
+class UrlUtils {
     /**
      * Parse a query string into a map of key/value pairs.
      *

@@ -75,6 +75,10 @@ public class Context {
     @Builder.Default
     private String attributesJson = "{}";
 
+    /**
+     * You can update the attributes JSON with new user attributes to evaluate against.
+     * @param attributesJson updated user attributes
+     */
     public void setAttributesJson(String attributesJson) {
         this.attributesJson = attributesJson;
         if (attributesJson != null) {
@@ -93,6 +97,11 @@ public class Context {
     @Builder.Default
     private String featuresJson = "{}";
 
+    /**
+     * You can update the features JSON with new features to evaluate against.
+     * @param featuresJson updated features
+     */
+
     public void setFeaturesJson(String featuresJson) {
         this.featuresJson = featuresJson;
         if (featuresJson != null) {
@@ -104,11 +113,20 @@ public class Context {
     @Builder.Default
     private Map<String, Integer> forcedVariationsMap = new HashMap<>();
 
+    /**
+     * The builder class to help create a context. You can use {@link #builder()} or {@link #create(String, String, Boolean, Boolean, String, Map, TrackingCallback)} to create a {@link Context}
+     */
+    public static class ContextBuilder {} // This stub is required for JavaDoc and is filled by Lombuk
+
+    /**
+     * The builder class to help create a context. You can use this or {@link #create(String, String, Boolean, Boolean, String, Map, TrackingCallback)} to create a {@link Context}
+     * @return {@link CustomContextBuilder}
+     */
     public static ContextBuilder builder() {
         return new CustomContextBuilder();
     }
 
-    public static class CustomContextBuilder extends ContextBuilder {
+    static class CustomContextBuilder extends ContextBuilder {
         @Override
         public Context build() {
             Context context = super.build();
