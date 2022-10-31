@@ -26,6 +26,12 @@ public class ExperimentEvaluator implements IExperimentEvaluator {
             return getExperimentResult(experiment, context, 0, false, false, featureId);
         }
 
+        // Query string overrides
+        Integer override = GrowthBookUtils.getQueryStringOverride(experiment.getKey(), context.getUrl(), experimentVariations.size());
+        if (override != null) {
+            return getExperimentResult(experiment, context, override, true, false, featureId);
+        }
+
         // If no forced variation, not in experiment, variation 0
         Map<String, Integer> forcedVariations = context.getForcedVariationsMap();
         if (forcedVariations == null) {
