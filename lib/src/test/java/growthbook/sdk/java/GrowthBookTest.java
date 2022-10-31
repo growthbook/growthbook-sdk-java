@@ -4,6 +4,7 @@
 package growthbook.sdk.java;
 
 import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.reflect.TypeToken;
 import growthbook.sdk.java.TestHelpers.TestCasesJsonHelper;
@@ -113,8 +114,7 @@ class GrowthBookTest {
         ArrayList<Integer> failingIndexes = new ArrayList<>();
 
         for (int i = 0; i < testCases.size(); i++) {
-            // 54 crashes with JSON values for experiments
-//            if (i != 0) continue;
+//            if (i != 46) continue;
 
             JsonObject testCase = (JsonObject) testCases.get(i);
             String testDescription = testCase.get("name").getAsString();
@@ -131,8 +131,19 @@ class GrowthBookTest {
                     .url(testContext.url)
                     .build();
 
+
             Experiment experiment = jsonUtils.gson.fromJson(testCase.get("experiment").getAsString(), Experiment.class);
             ExperimentResult expectedResult = jsonUtils.gson.fromJson(testCase.get("result"), ExperimentResult.class);
+            JsonElement experimentElement = jsonUtils.gson.fromJson(testCase.get("experiment"), JsonElement.class);
+            if (experimentElement != null) {
+//                System.out.printf("\n\n HERE: Experiment %s (index = %s)", experiment, i);
+                JsonObject experimentObject = jsonUtils.gson.fromJson(experimentElement.getAsString(), JsonObject.class);;
+                JsonElement conditionElement = experimentObject.get("condition");
+                if (conditionElement != null) {
+                    String conditionJson = conditionElement.toString();
+                    experiment.setConditionJson(conditionJson);
+                }
+            }
 
             GrowthBook subject = new GrowthBook(context);
             ExperimentResult result = subject.run(experiment);
