@@ -145,9 +145,14 @@ public class ExperimentEvaluator implements IExperimentEvaluator {
             String featureId
     ) {
         Integer targetVariationIndex = variationIndex;
+        ArrayList<ValueType> experimentVariations = experiment.getVariations();
+        if (variationIndex < 0 || variationIndex >= experimentVariations.size()) {
+            variationIndex = 0;
+            inExperiment = false;
+        }
+
         ValueType targetValue = null;
 
-        ArrayList<ValueType> experimentVariations = experiment.getVariations();
         if (experimentVariations == null) {
             experimentVariations = new ArrayList<>();
         }
