@@ -128,8 +128,6 @@ public class FeatureEvaluator implements IFeatureEvaluator {
                     experimentKey = key;
                 }
 
-                System.out.printf("🎃 Creating FeatureResult with raw JSON value %s", feature.getDefaultValue());
-
                 Experiment<ValueType> experiment = Experiment
                         .<ValueType>builder()
                         .key(experimentKey)
@@ -155,8 +153,6 @@ public class FeatureEvaluator implements IFeatureEvaluator {
             }
 
             // endregion Rules
-
-            System.out.printf("🎃 Creating FeatureResult with raw JSON value %s", feature.getDefaultValue());
 
             Object value = GrowthBookJsonUtils.unwrap(feature.getDefaultValue());
 

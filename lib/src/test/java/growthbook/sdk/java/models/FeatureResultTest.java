@@ -25,7 +25,6 @@ class FeatureResultTest {
         FeatureResult subject = FeatureResult
                 .<String>builder()
                 .value("hello")
-//                .rawJsonValue("\"hello\"")
                 .experiment(null)
                 .experimentResult(null)
                 .ruleId("my-rule-id")
