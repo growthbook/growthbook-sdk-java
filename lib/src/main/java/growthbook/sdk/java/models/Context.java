@@ -3,7 +3,6 @@ package growthbook.sdk.java.models;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import growthbook.sdk.java.services.GrowthBookJsonUtils;
-import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 
@@ -13,11 +12,45 @@ import java.util.Map;
 
 /**
  * Context object passed into the GrowthBook constructor.
+ * The {@link Context#builder()} is recommended for constructing a Context.
+ * Alternatively, you can use the static {@link #create(String, String, Boolean, Boolean, String, Map, TrackingCallback)} method.
  */
-@Data
-@Builder
-@AllArgsConstructor
+@Data @Builder
 public class Context {
+
+    /**
+     * The {@link Context.ContextBuilder} is recommended for constructing a Context.
+     * Alternatively, you can use this static method instead of the builder.
+     * @param attributesJson User attributes as JSON string
+     * @param featuresJson Features response as JSON string
+     * @param isEnabled Whether globally all experiments are enabled. Defaults to true.
+     * @param isQaMode If true, random assignment is disabled and only explicitly forced variations are used.
+     * @param url A URL string
+     * @param forcedVariationsMap Force specific experiments to always assign a specific variation (used for QA)
+     * @param trackingCallback A function that takes {@link Experiment} and {@link ExperimentResult} as arguments.
+     * @return created context
+     */
+    public static Context create(
+            @Nullable String attributesJson,
+            @Nullable String featuresJson,
+            @Nullable Boolean isEnabled,
+            Boolean isQaMode,
+            @Nullable String url,
+            @Nullable Map<String, Integer> forcedVariationsMap,
+            @Nullable TrackingCallback trackingCallback
+    ) {
+        return Context
+                .builder()
+                .attributesJson(attributesJson)
+                .featuresJson(featuresJson)
+                .enabled(isEnabled)
+                .isQaMode(isQaMode)
+                .url(url)
+                .forcedVariationsMap(forcedVariationsMap)
+                .trackingCallback(trackingCallback)
+                .build();
+    }
+
     @Nullable
     private JsonObject features;
 
@@ -29,18 +62,12 @@ public class Context {
     @Builder.Default
     private Boolean enabled = true;
 
-    /**
-     * The URL of the current page
-     */
     @Nullable
     private String url;
 
     @Builder.Default
     private Boolean isQaMode = false;
 
-    /**
-     * A function that takes `experiment` and `result` as arguments.
-     */
     @Nullable
     private TrackingCallback trackingCallback;
 
@@ -62,9 +89,6 @@ public class Context {
         this.attributes = attributes;
     }
 
-    /**
-     * Feature definitions
-     */
     @Nullable
     @Builder.Default
     private String featuresJson = "{}";
@@ -76,9 +100,6 @@ public class Context {
         }
     }
 
-    /**
-     * Force specific experiments to always assign a specific variation (used for QA)
-     */
     @Nullable
     @Builder.Default
     private Map<String, Integer> forcedVariationsMap = new HashMap<>();

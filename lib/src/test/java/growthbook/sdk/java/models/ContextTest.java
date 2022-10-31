@@ -39,25 +39,15 @@ class ContextTest {
         forcedVariations.put("other-test", 1);
         String featuresJson = "{}";
 
-        Context subject = Context
-                .builder()
-                .enabled(isEnabled)
-                .attributesJson(sampleUserAttributes)
-                .url(url)
-                .featuresJson(featuresJson)
-                .forcedVariationsMap(forcedVariations)
-                .isQaMode(isQaMode)
-                .trackingCallback(trackingCallback)
-                .build();
-//        Context subject = new Context(
-//                isEnabled,
-//                sampleUserAttributes,
-//                url,
-//                featuresJson,
-//                forcedVariations,
-//                isQaMode,
-//                trackingCallback
-//        );
+        Context subject = Context.create(
+                sampleUserAttributes,
+                featuresJson,
+                isEnabled,
+                isQaMode,
+                url,
+                forcedVariations,
+                trackingCallback
+        );
 
         assertNotNull(subject);
     }
