@@ -113,7 +113,5 @@ public class GrowthBook implements IGrowthBook {
         this.callbacks.add(callback);
     }
 
-    // TODO: private getFeatureResult(value, source, experiment, experimentResult): FeatureResult
-    // TODO: private getExperimentResult(experiment, variationIndex, hashUsed, featureId): ExperimentResult
     // TODO: getFeatureValue(key, defaultValue) // defaultValue is the fallback value
 }

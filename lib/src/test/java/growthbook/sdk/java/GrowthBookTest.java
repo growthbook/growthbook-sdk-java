@@ -106,7 +106,6 @@ class GrowthBookTest {
 
     @Test
     void test_runExperiment() {
-        // TODO: runExperiment tests
         JsonArray testCases = helper.runTestCases();
 
         ArrayList<String> passedTests = new ArrayList<>();

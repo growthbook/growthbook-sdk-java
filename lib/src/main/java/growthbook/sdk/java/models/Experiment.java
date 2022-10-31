@@ -51,7 +51,6 @@ public class Experiment<ValueType> {
      */
     Float coverage;
 
-    // TODO: Condition
     /**
      * Optional targeting condition
      */
