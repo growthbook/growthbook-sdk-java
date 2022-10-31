@@ -8,6 +8,7 @@ import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 
 public class ExperimentEvaluator implements IExperimentEvaluator {
 
@@ -48,12 +49,18 @@ public class ExperimentEvaluator implements IExperimentEvaluator {
         }
 
         String hashAttribute = experiment.getHashAttribute();
-        if (hashAttribute == null) {
+        if (hashAttribute == null || hashAttribute.equals("")) {
             hashAttribute = "id";
         }
         JsonElement attributeValueElement = attributes.get(hashAttribute);
 
-        if (attributeValueElement == null || attributeValueElement.isJsonNull()) {
+        if (
+                attributeValueElement == null ||
+                        attributeValueElement.isJsonNull() ||
+                        (attributeValueElement.isJsonPrimitive() &&
+                                attributeValueElement.getAsJsonPrimitive().isString() &&
+                                Objects.equals(attributeValueElement.getAsString(), ""))
+        ) {
             return getExperimentResult(experiment, context, 0, false, false, featureId);
         }
 
