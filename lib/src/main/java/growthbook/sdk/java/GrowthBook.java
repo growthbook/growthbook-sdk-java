@@ -23,7 +23,7 @@ public class GrowthBook implements IGrowthBook {
     private ArrayList<ExperimentRunCallback> callbacks = new ArrayList<>();
 
     /**
-     * Initialize teh GrowthBook SDK with a provided {@link Context}
+     * Initialize the GrowthBook SDK with a provided {@link Context}
      * @param context {@link Context}
      */
     public GrowthBook(Context context) {
