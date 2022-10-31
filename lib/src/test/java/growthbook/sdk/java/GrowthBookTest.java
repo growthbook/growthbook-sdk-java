@@ -114,8 +114,6 @@ class GrowthBookTest {
         ArrayList<Integer> failingIndexes = new ArrayList<>();
 
         for (int i = 0; i < testCases.size(); i++) {
-//            if (i != 46) continue;
-
             JsonObject testCase = (JsonObject) testCases.get(i);
             String testDescription = testCase.get("name").getAsString();
 
@@ -130,7 +128,6 @@ class GrowthBookTest {
                     .enabled(testContext.enabled)
                     .url(testContext.url)
                     .build();
-
 
             Experiment experiment = jsonUtils.gson.fromJson(testCase.get("experiment").getAsString(), Experiment.class);
             ExperimentResult expectedResult = jsonUtils.gson.fromJson(testCase.get("result"), ExperimentResult.class);

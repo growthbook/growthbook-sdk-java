@@ -4,6 +4,7 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonSerializationContext;
 import com.google.gson.JsonSerializer;
+import com.google.gson.annotations.SerializedName;
 import growthbook.sdk.java.services.GrowthBookJsonUtils;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -42,6 +43,7 @@ public class Experiment<ValueType> {
      * If set to false, always return the control (first variation)
      */
     @Nullable
+    @SerializedName("active")
     Boolean isActive;
 
     /**
