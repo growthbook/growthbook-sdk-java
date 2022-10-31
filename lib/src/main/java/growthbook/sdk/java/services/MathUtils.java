@@ -11,7 +11,6 @@ public class MathUtils {
     /**
      * Fowler-Noll-Vo algorithm
      * fnv32a returns an integer, so we convert that to a float using a modulus
-     * Source: <a href="https://github.com/jakedouglas/fnv-java/blob/master/src/main/java/com/bitlove/FNV.java">jakedouglas/fnv-java</a>
      *
      * @param data
      * @return BigInteger

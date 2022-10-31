@@ -18,7 +18,7 @@ class TestCasesJsonHelperTest {
 
     @Test
     void getTestCases_returnsTestCasesAsJson() {
-        JsonObject testCases = (JsonObject) TestCasesJsonHelper.getInstance().getTestCases();
+        JsonObject testCases = TestCasesJsonHelper.getInstance().getTestCases();
 
         assertNotNull(testCases);
         assertEquals("0.2.2", testCases.get("specVersion").getAsString());

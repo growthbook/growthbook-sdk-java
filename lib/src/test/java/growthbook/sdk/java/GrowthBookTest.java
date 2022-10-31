@@ -48,8 +48,8 @@ class GrowthBookTest {
 
 //            System.out.println("\n\n--------------------------");
 //            System.out.printf("evalFeature test: %s (index = %s)", testDescription, i);
-//            System.out.printf("\nfeatures: %s", featuresJson);
-//            System.out.printf("\nattributesJson: %s", attributesJson);
+//            System.out.printf("\n features: %s", featuresJson);
+//            System.out.printf("\n attributesJson: %s", attributesJson);
 
             Context context = Context
                     .builder()
@@ -58,7 +58,7 @@ class GrowthBookTest {
                     .forcedVariationsMap(forcedVariations)
                     .build();
 
-//            System.out.printf("\ncontext: %s", context);
+//            System.out.printf("\n context: %s", context);
             String featureKey = testCase.get("feature").getAsString();
 //            String type = testCase.get("type").getAsString();
 

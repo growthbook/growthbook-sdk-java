@@ -16,7 +16,7 @@ class ContextTest {
     @Mock
     private TrackingCallback trackingCallback;
 
-    String sampleUserAttributes = "{\"country\": \"canada\", \"device\": \"android\"}";
+    final String sampleUserAttributes = "{\"country\": \"canada\", \"device\": \"android\"}";
 
     @BeforeEach
     void setUp() {

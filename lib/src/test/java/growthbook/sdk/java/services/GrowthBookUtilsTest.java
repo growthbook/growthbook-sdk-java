@@ -16,7 +16,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 class GrowthBookUtilsTest {
-    TestCasesJsonHelper helper = TestCasesJsonHelper.getInstance();
+    final TestCasesJsonHelper helper = TestCasesJsonHelper.getInstance();
 
     @Test
     void providesTestCaseData() {

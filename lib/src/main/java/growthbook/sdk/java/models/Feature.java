@@ -36,6 +36,7 @@ public class Feature<ValueType> {
         return this.defaultValue;
     }
 
+    @Nullable
     public ArrayList<FeatureRule<ValueType>> getRules() {
         return this.rules;
     }

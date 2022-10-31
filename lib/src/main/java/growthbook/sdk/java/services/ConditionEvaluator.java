@@ -305,6 +305,7 @@ public class ConditionEvaluator implements IConditionEvaluator {
                 return evalConditionValue(expected, size);
 
             case ELEMENT_MATCH:
+                if (actual == null) return false;
                 return elemMatch(actual, expected);
 
             case ALL:

@@ -11,7 +11,7 @@ import static org.junit.jupiter.api.Assertions.*;
 
 class ExperimentTest {
 
-    GrowthBookJsonUtils jsonUtils = GrowthBookJsonUtils.getInstance();
+    final GrowthBookJsonUtils jsonUtils = GrowthBookJsonUtils.getInstance();
 
     @Test
     void canBeConstructed() {
