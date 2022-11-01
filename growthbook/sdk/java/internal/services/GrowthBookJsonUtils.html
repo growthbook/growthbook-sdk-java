@@ -5,21 +5,21 @@
 <title>GrowthBookJsonUtils (lib main-SNAPSHOT API)</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
-<meta name="description" content="declaration: package: growthbook.sdk.java.services, class: GrowthBookJsonUtils">
+<meta name="description" content="declaration: package: growthbook.sdk.java.internal.services, class: GrowthBookJsonUtils">
 <meta name="generator" content="javadoc/ClassWriterImpl">
-<link rel="stylesheet" type="text/css" href="../../../../stylesheet.css" title="Style">
-<link rel="stylesheet" type="text/css" href="../../../../script-dir/jquery-ui.min.css" title="Style">
-<link rel="stylesheet" type="text/css" href="../../../../jquery-ui.overrides.css" title="Style">
-<script type="text/javascript" src="../../../../script.js"></script>
-<script type="text/javascript" src="../../../../script-dir/jquery-3.5.1.min.js"></script>
-<script type="text/javascript" src="../../../../script-dir/jquery-ui.min.js"></script>
+<link rel="stylesheet" type="text/css" href="../../../../../stylesheet.css" title="Style">
+<link rel="stylesheet" type="text/css" href="../../../../../script-dir/jquery-ui.min.css" title="Style">
+<link rel="stylesheet" type="text/css" href="../../../../../jquery-ui.overrides.css" title="Style">
+<script type="text/javascript" src="../../../../../script.js"></script>
+<script type="text/javascript" src="../../../../../script-dir/jquery-3.5.1.min.js"></script>
+<script type="text/javascript" src="../../../../../script-dir/jquery-ui.min.js"></script>
 </head>
 <body class="class-declaration-page">
 <script type="text/javascript">var evenRowColor = "even-row-color";
 var oddRowColor = "odd-row-color";
 var tableTab = "table-tab";
 var activeTableTab = "active-table-tab";
-var pathtoroot = "../../../../";
+var pathtoroot = "../../../../../";
 loadScripts(document, 'script');</script>
 <noscript>
 <div>JavaScript is disabled on your browser.</div>
@@ -31,12 +31,12 @@ loadScripts(document, 'script');</script>
 <div class="top-nav" id="navbar-top">
 <div class="skip-nav"><a href="#skip-navbar-top" title="Skip navigation links">Skip navigation links</a></div>
 <ul id="navbar-top-firstrow" class="nav-list" title="Navigation">
-<li><a href="../../../../index.html">Overview</a></li>
+<li><a href="../../../../../index.html">Overview</a></li>
 <li><a href="package-summary.html">Package</a></li>
 <li class="nav-bar-cell1-rev">Class</li>
 <li><a href="package-tree.html">Tree</a></li>
-<li><a href="../../../../index-all.html">Index</a></li>
-<li><a href="../../../../help-doc.html#class">Help</a></li>
+<li><a href="../../../../../index-all.html">Index</a></li>
+<li><a href="../../../../../help-doc.html#class">Help</a></li>
 </ul>
 </div>
 <div class="sub-nav">
@@ -67,17 +67,17 @@ loadScripts(document, 'script');</script>
 <main role="main">
 <!-- ======== START OF CLASS DATA ======== -->
 <div class="header">
-<div class="sub-title"><span class="package-label-in-type">Package</span>&nbsp;<a href="package-summary.html">growthbook.sdk.java.services</a></div>
+<div class="sub-title"><span class="package-label-in-type">Package</span>&nbsp;<a href="package-summary.html">growthbook.sdk.java.internal.services</a></div>
 <h1 title="Class GrowthBookJsonUtils" class="title">Class GrowthBookJsonUtils</h1>
 </div>
 <div class="inheritance" title="Inheritance Tree"><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html" title="class or interface in java.lang" class="external-link">java.lang.Object</a>
-<div class="inheritance">growthbook.sdk.java.services.GrowthBookJsonUtils</div>
+<div class="inheritance">growthbook.sdk.java.internal.services.GrowthBookJsonUtils</div>
 </div>
 <section class="class-description" id="class-description">
 <hr>
 <div class="type-signature"><span class="modifiers">public class </span><span class="element-name type-name-label">GrowthBookJsonUtils</span>
 <span class="extends-implements">extends <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html" title="class or interface in java.lang" class="external-link">Object</a></span></div>
-<div class="block">This convenience class was created to help with the serialization and deserialization of custom types.
+<div class="block"><b>INTERNAL</b>: This convenience class was created to help with the serialization and deserialization of custom types.
  Some types in the JSON source are tuples. This helps with transforming to and from POJOs.
  The provided methods use a custom Gson instance that has all required type adapters registered.</div>
 </section>
@@ -111,12 +111,12 @@ loadScripts(document, 'script');</script>
 <div class="table-header col-first">Modifier and Type</div>
 <div class="table-header col-second">Method</div>
 <div class="table-header col-last">Description</div>
-<div class="col-first even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code>static <a href="../models/DataType.html" title="enum class in growthbook.sdk.java.models">DataType</a></code></div>
+<div class="col-first even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code>static <a href="../../models/DataType.html" title="enum class in growthbook.sdk.java.models">DataType</a></code></div>
 <div class="col-second even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code><a href="#getElementType(com.google.gson.JsonElement)" class="member-name-link">getElementType</a><wbr>(com.google.gson.JsonElement&nbsp;element)</code></div>
 <div class="col-last even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4">
 <div class="block">A convenience method to help work with types of JSON elements</div>
 </div>
-<div class="col-first odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code>static <a href="GrowthBookJsonUtils.html" title="class in growthbook.sdk.java.services">GrowthBookJsonUtils</a></code></div>
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code>static <a href="GrowthBookJsonUtils.html" title="class in growthbook.sdk.java.internal.services">GrowthBookJsonUtils</a></code></div>
 <div class="col-second odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code><a href="#getInstance()" class="member-name-link">getInstance</a>()</code></div>
 <div class="col-last odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4">
 <div class="block">The JSON utils singleton</div>
@@ -167,11 +167,11 @@ loadScripts(document, 'script');</script>
 <li>
 <section class="detail" id="getInstance()">
 <h3>getInstance</h3>
-<div class="member-signature"><span class="modifiers">public static</span>&nbsp;<span class="return-type"><a href="GrowthBookJsonUtils.html" title="class in growthbook.sdk.java.services">GrowthBookJsonUtils</a></span>&nbsp;<span class="element-name">getInstance</span>()</div>
+<div class="member-signature"><span class="modifiers">public static</span>&nbsp;<span class="return-type"><a href="GrowthBookJsonUtils.html" title="class in growthbook.sdk.java.internal.services">GrowthBookJsonUtils</a></span>&nbsp;<span class="element-name">getInstance</span>()</div>
 <div class="block">The JSON utils singleton</div>
 <dl class="notes">
 <dt>Returns:</dt>
-<dd>an instance of <a href="GrowthBookJsonUtils.html" title="class in growthbook.sdk.java.services"><code>GrowthBookJsonUtils</code></a></dd>
+<dd>an instance of <a href="GrowthBookJsonUtils.html" title="class in growthbook.sdk.java.internal.services"><code>GrowthBookJsonUtils</code></a></dd>
 </dl>
 </section>
 </li>
@@ -191,14 +191,14 @@ loadScripts(document, 'script');</script>
 <li>
 <section class="detail" id="getElementType(com.google.gson.JsonElement)">
 <h3>getElementType</h3>
-<div class="member-signature"><span class="modifiers">public static</span>&nbsp;<span class="return-type"><a href="../models/DataType.html" title="enum class in growthbook.sdk.java.models">DataType</a></span>&nbsp;<span class="element-name">getElementType</span><wbr><span class="parameters">(@Nullable
+<div class="member-signature"><span class="modifiers">public static</span>&nbsp;<span class="return-type"><a href="../../models/DataType.html" title="enum class in growthbook.sdk.java.models">DataType</a></span>&nbsp;<span class="element-name">getElementType</span><wbr><span class="parameters">(@Nullable
  com.google.gson.JsonElement&nbsp;element)</span></div>
 <div class="block">A convenience method to help work with types of JSON elements</div>
 <dl class="notes">
 <dt>Parameters:</dt>
 <dd><code>element</code> - unknown JsonElement</dd>
 <dt>Returns:</dt>
-<dd><a href="../models/DataType.html" title="enum class in growthbook.sdk.java.models"><code>DataType</code></a></dd>
+<dd><a href="../../models/DataType.html" title="enum class in growthbook.sdk.java.models"><code>DataType</code></a></dd>
 </dl>
 </section>
 </li>
