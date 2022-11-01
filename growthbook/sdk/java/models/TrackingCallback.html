@@ -68,11 +68,12 @@ loadScripts(document, 'script');</script>
 <!-- ======== START OF CLASS DATA ======== -->
 <div class="header">
 <div class="sub-title"><span class="package-label-in-type">Package</span>&nbsp;<a href="package-summary.html">growthbook.sdk.java.models</a></div>
-<h1 title="Interface TrackingCallback" class="title">Interface TrackingCallback&lt;ValueType&gt;</h1>
+<h1 title="Interface TrackingCallback" class="title">Interface TrackingCallback</h1>
 </div>
 <section class="class-description" id="class-description">
 <hr>
-<div class="type-signature"><span class="modifiers">public interface </span><span class="element-name type-name-label">TrackingCallback&lt;ValueType&gt;</span></div>
+<div class="type-signature"><span class="modifiers">public interface </span><span class="element-name type-name-label">TrackingCallback</span></div>
+<div class="block">This callback is called with the <a href="Experiment.html" title="class in growthbook.sdk.java.models"><code>Experiment</code></a> and <a href="ExperimentResult.html" title="class in growthbook.sdk.java.models"><code>ExperimentResult</code></a> when an experiment is evaluated.</div>
 </section>
 <section class="summary">
 <ul class="summary-list">
@@ -87,10 +88,12 @@ loadScripts(document, 'script');</script>
 <div class="table-header col-first">Modifier and Type</div>
 <div class="table-header col-second">Method</div>
 <div class="table-header col-last">Description</div>
-<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code>void</code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code><a href="#onTrack(growthbook.sdk.java.models.Experiment,growthbook.sdk.java.models.TrackingResult)" class="member-name-link">onTrack</a><wbr>(<a href="Experiment.html" title="class in growthbook.sdk.java.models">Experiment</a>&nbsp;experiment,
- <a href="TrackingResult.html" title="class in growthbook.sdk.java.models">TrackingResult</a>&lt;<a href="TrackingCallback.html" title="type parameter in TrackingCallback">ValueType</a>&gt;&nbsp;trackingResult)</code></div>
-<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3">&nbsp;</div>
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code>&lt;ValueType&gt;<br>void</code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code><a href="#onTrack(growthbook.sdk.java.models.Experiment,growthbook.sdk.java.models.ExperimentResult)" class="member-name-link">onTrack</a><wbr>(<a href="Experiment.html" title="class in growthbook.sdk.java.models">Experiment</a>&lt;ValueType&gt;&nbsp;experiment,
+ <a href="ExperimentResult.html" title="class in growthbook.sdk.java.models">ExperimentResult</a>&lt;ValueType&gt;&nbsp;experimentResult)</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3">
+<div class="block">This callback is called with the <a href="Experiment.html" title="class in growthbook.sdk.java.models"><code>Experiment</code></a> and <a href="ExperimentResult.html" title="class in growthbook.sdk.java.models"><code>ExperimentResult</code></a> when an experiment is evaluated.</div>
+</div>
 </div>
 </div>
 </div>
@@ -106,10 +109,18 @@ loadScripts(document, 'script');</script>
 <h2>Method Details</h2>
 <ul class="member-list">
 <li>
-<section class="detail" id="onTrack(growthbook.sdk.java.models.Experiment,growthbook.sdk.java.models.TrackingResult)">
+<section class="detail" id="onTrack(growthbook.sdk.java.models.Experiment,growthbook.sdk.java.models.ExperimentResult)">
 <h3>onTrack</h3>
-<div class="member-signature"><span class="return-type">void</span>&nbsp;<span class="element-name">onTrack</span><wbr><span class="parameters">(<a href="Experiment.html" title="class in growthbook.sdk.java.models">Experiment</a>&nbsp;experiment,
- <a href="TrackingResult.html" title="class in growthbook.sdk.java.models">TrackingResult</a>&lt;<a href="TrackingCallback.html" title="type parameter in TrackingCallback">ValueType</a>&gt;&nbsp;trackingResult)</span></div>
+<div class="member-signature"><span class="type-parameters">&lt;ValueType&gt;</span>&nbsp;<span class="return-type">void</span>&nbsp;<span class="element-name">onTrack</span><wbr><span class="parameters">(<a href="Experiment.html" title="class in growthbook.sdk.java.models">Experiment</a>&lt;ValueType&gt;&nbsp;experiment,
+ <a href="ExperimentResult.html" title="class in growthbook.sdk.java.models">ExperimentResult</a>&lt;ValueType&gt;&nbsp;experimentResult)</span></div>
+<div class="block">This callback is called with the <a href="Experiment.html" title="class in growthbook.sdk.java.models"><code>Experiment</code></a> and <a href="ExperimentResult.html" title="class in growthbook.sdk.java.models"><code>ExperimentResult</code></a> when an experiment is evaluated.</div>
+<dl class="notes">
+<dt>Type Parameters:</dt>
+<dd><code>ValueType</code> - the value type for the experiment</dd>
+<dt>Parameters:</dt>
+<dd><code>experiment</code> - the <a href="Experiment.html" title="class in growthbook.sdk.java.models"><code>Experiment</code></a></dd>
+<dd><code>experimentResult</code> - the <a href="ExperimentResult.html" title="class in growthbook.sdk.java.models"><code>ExperimentResult</code></a></dd>
+</dl>
 </section>
 </li>
 </ul>

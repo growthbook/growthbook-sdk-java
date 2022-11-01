@@ -45,13 +45,13 @@ loadScripts(document, 'script');</script>
 <li>Summary:&nbsp;</li>
 <li>Nested&nbsp;|&nbsp;</li>
 <li><a href="#field-summary">Field</a>&nbsp;|&nbsp;</li>
-<li><a href="#constructor-summary">Constr</a>&nbsp;|&nbsp;</li>
+<li>Constr&nbsp;|&nbsp;</li>
 <li><a href="#method-summary">Method</a></li>
 </ul>
 <ul class="sub-nav-list">
 <li>Detail:&nbsp;</li>
 <li><a href="#field-detail">Field</a>&nbsp;|&nbsp;</li>
-<li><a href="#constructor-detail">Constr</a>&nbsp;|&nbsp;</li>
+<li>Constr&nbsp;|&nbsp;</li>
 <li><a href="#method-detail">Method</a></li>
 </ul>
 </div>
@@ -97,24 +97,6 @@ loadScripts(document, 'script');</script>
 <div class="col-last even-row-color">
 <div class="block">The Gson instance is exposed for convenience.</div>
 </div>
-<div class="col-first odd-row-color"><code>private static <a href="GrowthBookJsonUtils.html" title="class in growthbook.sdk.java.services">GrowthBookJsonUtils</a></code></div>
-<div class="col-second odd-row-color"><code><a href="#instance" class="member-name-link">instance</a></code></div>
-<div class="col-last odd-row-color">&nbsp;</div>
-</div>
-</section>
-</li>
-<!-- ======== CONSTRUCTOR SUMMARY ======== -->
-<li>
-<section class="constructor-summary" id="constructor-summary">
-<h2>Constructor Summary</h2>
-<div class="caption"><span>Constructors</span></div>
-<div class="summary-table three-column-summary">
-<div class="table-header col-first">Modifier</div>
-<div class="table-header col-second">Constructor</div>
-<div class="table-header col-last">Description</div>
-<div class="col-first even-row-color"><code>private </code></div>
-<div class="col-constructor-name even-row-color"><code><a href="#%3Cinit%3E()" class="member-name-link">GrowthBookJsonUtils</a>()</code></div>
-<div class="col-last even-row-color">&nbsp;</div>
 </div>
 </section>
 </li>
@@ -129,15 +111,33 @@ loadScripts(document, 'script');</script>
 <div class="table-header col-first">Modifier and Type</div>
 <div class="table-header col-second">Method</div>
 <div class="table-header col-last">Description</div>
-<div class="col-first even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code>static <a href="GrowthBookJsonUtils.html" title="class in growthbook.sdk.java.services">GrowthBookJsonUtils</a></code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code><a href="#getInstance()" class="member-name-link">getInstance</a>()</code></div>
-<div class="col-last even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4">&nbsp;</div>
+<div class="col-first even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code>static <a href="../models/DataType.html" title="enum class in growthbook.sdk.java.models">DataType</a></code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code><a href="#getElementType(com.google.gson.JsonElement)" class="member-name-link">getElementType</a><wbr>(com.google.gson.JsonElement&nbsp;element)</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4">
+<div class="block">A convenience method to help work with types of JSON elements</div>
+</div>
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code>static <a href="GrowthBookJsonUtils.html" title="class in growthbook.sdk.java.services">GrowthBookJsonUtils</a></code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code><a href="#getInstance()" class="member-name-link">getInstance</a>()</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4">
+<div class="block">The JSON utils singleton</div>
+</div>
+<div class="col-first even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code>static com.google.gson.JsonElement</code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code><a href="#getJsonElementForObject(java.lang.Object)" class="member-name-link">getJsonElementForObject</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html" title="class or interface in java.lang" class="external-link">Object</a>&nbsp;object)</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4">
+<div class="block">Given a provided object, which can be a primitive or a serializable class,
+ Will return a JSON element.</div>
+</div>
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code>static <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html" title="class or interface in java.lang" class="external-link">Object</a></code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code><a href="#unwrap(java.lang.Object)" class="member-name-link">unwrap</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html" title="class or interface in java.lang" class="external-link">Object</a>&nbsp;o)</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4">
+<div class="block">Unwrap an object.</div>
+</div>
 </div>
 </div>
 </div>
 <div class="inherited-list">
 <h3 id="methods-inherited-from-class-java.lang.Object">Methods inherited from class&nbsp;java.lang.<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html" title="class or interface in java.lang" class="external-link">Object</a></h3>
-<code><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html#clone()" title="class or interface in java.lang" class="external-link">clone</a>, <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html#equals(java.lang.Object)" title="class or interface in java.lang" class="external-link">equals</a>, <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html#finalize()" title="class or interface in java.lang" class="external-link">finalize</a>, <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html#getClass()" title="class or interface in java.lang" class="external-link">getClass</a>, <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html#hashCode()" title="class or interface in java.lang" class="external-link">hashCode</a>, <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html#notify()" title="class or interface in java.lang" class="external-link">notify</a>, <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html#notifyAll()" title="class or interface in java.lang" class="external-link">notifyAll</a>, <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html#toString()" title="class or interface in java.lang" class="external-link">toString</a>, <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html#wait()" title="class or interface in java.lang" class="external-link">wait</a>, <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html#wait(long)" title="class or interface in java.lang" class="external-link">wait</a>, <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html#wait(long,int)" title="class or interface in java.lang" class="external-link">wait</a></code></div>
+<code><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html#equals(java.lang.Object)" title="class or interface in java.lang" class="external-link">equals</a>, <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html#getClass()" title="class or interface in java.lang" class="external-link">getClass</a>, <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html#hashCode()" title="class or interface in java.lang" class="external-link">hashCode</a>, <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html#notify()" title="class or interface in java.lang" class="external-link">notify</a>, <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html#notifyAll()" title="class or interface in java.lang" class="external-link">notifyAll</a>, <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html#toString()" title="class or interface in java.lang" class="external-link">toString</a>, <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html#wait()" title="class or interface in java.lang" class="external-link">wait</a>, <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html#wait(long)" title="class or interface in java.lang" class="external-link">wait</a>, <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html#wait(long,int)" title="class or interface in java.lang" class="external-link">wait</a></code></div>
 </section>
 </li>
 </ul>
@@ -156,26 +156,6 @@ loadScripts(document, 'script');</script>
 <div class="block">The Gson instance is exposed for convenience.</div>
 </section>
 </li>
-<li>
-<section class="detail" id="instance">
-<h3>instance</h3>
-<div class="member-signature"><span class="modifiers">private static</span>&nbsp;<span class="return-type"><a href="GrowthBookJsonUtils.html" title="class in growthbook.sdk.java.services">GrowthBookJsonUtils</a></span>&nbsp;<span class="element-name">instance</span></div>
-</section>
-</li>
-</ul>
-</section>
-</li>
-<!-- ========= CONSTRUCTOR DETAIL ======== -->
-<li>
-<section class="constructor-details" id="constructor-detail">
-<h2>Constructor Details</h2>
-<ul class="member-list">
-<li>
-<section class="detail" id="&lt;init&gt;()">
-<h3>GrowthBookJsonUtils</h3>
-<div class="member-signature"><span class="modifiers">private</span>&nbsp;<span class="element-name">GrowthBookJsonUtils</span>()</div>
-</section>
-</li>
 </ul>
 </section>
 </li>
@@ -188,9 +168,55 @@ loadScripts(document, 'script');</script>
 <section class="detail" id="getInstance()">
 <h3>getInstance</h3>
 <div class="member-signature"><span class="modifiers">public static</span>&nbsp;<span class="return-type"><a href="GrowthBookJsonUtils.html" title="class in growthbook.sdk.java.services">GrowthBookJsonUtils</a></span>&nbsp;<span class="element-name">getInstance</span>()</div>
+<div class="block">The JSON utils singleton</div>
 <dl class="notes">
 <dt>Returns:</dt>
 <dd>an instance of <a href="GrowthBookJsonUtils.html" title="class in growthbook.sdk.java.services"><code>GrowthBookJsonUtils</code></a></dd>
+</dl>
+</section>
+</li>
+<li>
+<section class="detail" id="unwrap(java.lang.Object)">
+<h3>unwrap</h3>
+<div class="member-signature"><span class="modifiers">public static</span>&nbsp;<span class="return-type"><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html" title="class or interface in java.lang" class="external-link">Object</a></span>&nbsp;<span class="element-name">unwrap</span><wbr><span class="parameters">(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html" title="class or interface in java.lang" class="external-link">Object</a>&nbsp;o)</span></div>
+<div class="block">Unwrap an object. If it's not a JsonElement, you'll get the object right back</div>
+<dl class="notes">
+<dt>Parameters:</dt>
+<dd><code>o</code> - the JSON element to unwrap.</dd>
+<dt>Returns:</dt>
+<dd>unwrapped or original object</dd>
+</dl>
+</section>
+</li>
+<li>
+<section class="detail" id="getElementType(com.google.gson.JsonElement)">
+<h3>getElementType</h3>
+<div class="member-signature"><span class="modifiers">public static</span>&nbsp;<span class="return-type"><a href="../models/DataType.html" title="enum class in growthbook.sdk.java.models">DataType</a></span>&nbsp;<span class="element-name">getElementType</span><wbr><span class="parameters">(@Nullable
+ com.google.gson.JsonElement&nbsp;element)</span></div>
+<div class="block">A convenience method to help work with types of JSON elements</div>
+<dl class="notes">
+<dt>Parameters:</dt>
+<dd><code>element</code> - unknown JsonElement</dd>
+<dt>Returns:</dt>
+<dd><a href="../models/DataType.html" title="enum class in growthbook.sdk.java.models"><code>DataType</code></a></dd>
+</dl>
+</section>
+</li>
+<li>
+<section class="detail" id="getJsonElementForObject(java.lang.Object)">
+<h3>getJsonElementForObject</h3>
+<div class="member-signature"><span class="annotations">@Nullable
+</span><span class="modifiers">public static</span>&nbsp;<span class="return-type">com.google.gson.JsonElement</span>&nbsp;<span class="element-name">getJsonElementForObject</span><wbr><span class="parameters">(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html" title="class or interface in java.lang" class="external-link">Object</a>&nbsp;object)</span></div>
+<div class="block">Given a provided object, which can be a primitive or a serializable class,
+ Will return a JSON element.
+ It will first attempt to detect it as a primitive type. If that doesn't work,
+ it will try to serialize it.
+ If serialization fails, null will be returned.</div>
+<dl class="notes">
+<dt>Parameters:</dt>
+<dd><code>object</code> - Unknown typed object</dd>
+<dt>Returns:</dt>
+<dd>the JSON element that gets created or null if serialization fails</dd>
 </dl>
 </section>
 </li>

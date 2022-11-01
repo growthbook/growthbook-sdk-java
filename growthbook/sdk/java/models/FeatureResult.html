@@ -15,7 +15,11 @@
 <script type="text/javascript" src="../../../../script-dir/jquery-ui.min.js"></script>
 </head>
 <body class="class-declaration-page">
-<script type="text/javascript">var pathtoroot = "../../../../";
+<script type="text/javascript">var evenRowColor = "even-row-color";
+var oddRowColor = "odd-row-color";
+var tableTab = "table-tab";
+var activeTableTab = "active-table-tab";
+var pathtoroot = "../../../../";
 loadScripts(document, 'script');</script>
 <noscript>
 <div>JavaScript is disabled on your browser.</div>
@@ -40,15 +44,15 @@ loadScripts(document, 'script');</script>
 <ul class="sub-nav-list">
 <li>Summary:&nbsp;</li>
 <li>Nested&nbsp;|&nbsp;</li>
-<li><a href="#field-summary">Field</a>&nbsp;|&nbsp;</li>
+<li>Field&nbsp;|&nbsp;</li>
 <li><a href="#constructor-summary">Constr</a>&nbsp;|&nbsp;</li>
 <li><a href="#method-summary">Method</a></li>
 </ul>
 <ul class="sub-nav-list">
 <li>Detail:&nbsp;</li>
-<li><a href="#field-detail">Field</a>&nbsp;|&nbsp;</li>
+<li>Field&nbsp;|&nbsp;</li>
 <li><a href="#constructor-detail">Constr</a>&nbsp;|&nbsp;</li>
-<li>Method</li>
+<li><a href="#method-detail">Method</a></li>
 </ul>
 </div>
 <div class="nav-list-search"><label for="search-input">SEARCH:</label>
@@ -70,37 +74,26 @@ loadScripts(document, 'script');</script>
 <div class="inheritance">growthbook.sdk.java.models.FeatureResult&lt;ValueType&gt;</div>
 </div>
 <section class="class-description" id="class-description">
+<dl class="notes">
+<dt>Type Parameters:</dt>
+<dd><code>ValueType</code> - value type for the feature</dd>
+</dl>
 <hr>
 <div class="type-signature"><span class="modifiers">public class </span><span class="element-name type-name-label">FeatureResult&lt;ValueType&gt;</span>
 <span class="extends-implements">extends <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html" title="class or interface in java.lang" class="external-link">Object</a></span></div>
+<div class="block">Results for a <a href="../services/FeatureEvaluator.html#evaluateFeature(java.lang.String,growthbook.sdk.java.models.Context)"><code>FeatureEvaluator.evaluateFeature(String, Context)</code></a>
+
+ <ul>
+ <li>value (any) - The assigned value of the feature</li>
+ <li>on (boolean) - The assigned value cast to a boolean</li>
+ <li>off (boolean) - The assigned value cast to a boolean and then negated</li>
+ <li>source (enum) - One of "unknownFeature", "defaultValue", "force", or "experiment"</li>
+ <li>experiment (Experiment or null) - When source is "experiment", this will be an Experiment object</li>
+ <li>experimentResult (ExperimentResult or null) - When source is "experiment", this will be an ExperimentResult object</li>
+ </ul></div>
 </section>
 <section class="summary">
 <ul class="summary-list">
-<!-- =========== FIELD SUMMARY =========== -->
-<li>
-<section class="field-summary" id="field-summary">
-<h2>Field Summary</h2>
-<div class="caption"><span>Fields</span></div>
-<div class="summary-table three-column-summary">
-<div class="table-header col-first">Modifier and Type</div>
-<div class="table-header col-second">Field</div>
-<div class="table-header col-last">Description</div>
-<div class="col-first even-row-color"><code>(package private) <a href="Experiment.html" title="class in growthbook.sdk.java.models">Experiment</a></code></div>
-<div class="col-second even-row-color"><code><a href="#experiment" class="member-name-link">experiment</a></code></div>
-<div class="col-last even-row-color">
-<div class="block">When source is "experiment", this will be an Experiment object</div>
-</div>
-<div class="col-first odd-row-color"><code>(package private) <a href="FeatureResultSource.html" title="enum class in growthbook.sdk.java.models">FeatureResultSource</a></code></div>
-<div class="col-second odd-row-color"><code><a href="#source" class="member-name-link">source</a></code></div>
-<div class="col-last odd-row-color">
-<div class="block">One of "unknownFeature", "defaultValue", "force", or "experiment"</div>
-</div>
-<div class="col-first even-row-color"><code>(package private) <a href="FeatureResult.html" title="type parameter in FeatureResult">ValueType</a></code></div>
-<div class="col-second even-row-color"><code><a href="#value" class="member-name-link">value</a></code></div>
-<div class="col-last even-row-color">&nbsp;</div>
-</div>
-</section>
-</li>
 <!-- ======== CONSTRUCTOR SUMMARY ======== -->
 <li>
 <section class="constructor-summary" id="constructor-summary">
@@ -118,46 +111,50 @@ loadScripts(document, 'script');</script>
 <li>
 <section class="method-summary" id="method-summary">
 <h2>Method Summary</h2>
+<div id="method-summary-table">
+<div class="table-tabs" role="tablist" aria-orientation="horizontal"><button id="method-summary-table-tab0" role="tab" aria-selected="true" aria-controls="method-summary-table.tabpanel" tabindex="0" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table', 3)" class="active-table-tab">All Methods</button><button id="method-summary-table-tab1" role="tab" aria-selected="false" aria-controls="method-summary-table.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table-tab1', 3)" class="table-tab">Static Methods</button><button id="method-summary-table-tab2" role="tab" aria-selected="false" aria-controls="method-summary-table.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table-tab2', 3)" class="table-tab">Instance Methods</button><button id="method-summary-table-tab4" role="tab" aria-selected="false" aria-controls="method-summary-table.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table-tab4', 3)" class="table-tab">Concrete Methods</button></div>
+<div id="method-summary-table.tabpanel" role="tabpanel">
+<div class="summary-table three-column-summary" aria-labelledby="method-summary-table-tab0">
+<div class="table-header col-first">Modifier and Type</div>
+<div class="table-header col-second">Method</div>
+<div class="table-header col-last">Description</div>
+<div class="col-first even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code>static &lt;ValueType&gt;<br>com.google.gson.JsonElement</code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code><a href="#getJson(growthbook.sdk.java.models.FeatureResult)" class="member-name-link">getJson</a><wbr>(<a href="FeatureResult.html" title="class in growthbook.sdk.java.models">FeatureResult</a>&lt;ValueType&gt;&nbsp;object)</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4">
+<div class="block">Get a Gson JsonElement of the <a href="FeatureResult.html" title="class in growthbook.sdk.java.models"><code>FeatureResult</code></a></div>
+</div>
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code>static &lt;ValueType&gt;<br>com.google.gson.JsonSerializer&lt;<a href="FeatureResult.html" title="class in growthbook.sdk.java.models">FeatureResult</a>&lt;ValueType&gt;&gt;</code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code><a href="#getSerializer()" class="member-name-link">getSerializer</a>()</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4">
+<div class="block">a Gson serializer for <a href="FeatureResult.html" title="class in growthbook.sdk.java.models"><code>FeatureResult</code></a></div>
+</div>
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Boolean.html" title="class or interface in java.lang" class="external-link">Boolean</a></code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#isOff()" class="member-name-link">isOff</a>()</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="block">Evaluates to true when the feature is off</div>
+</div>
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Boolean.html" title="class or interface in java.lang" class="external-link">Boolean</a></code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#isOn()" class="member-name-link">isOn</a>()</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="block">Evaluates to true when the feature is on</div>
+</div>
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a></code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#toJson()" class="member-name-link">toJson</a>()</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="block">Get a Gson JsonElement of the <a href="FeatureResult.html" title="class in growthbook.sdk.java.models"><code>FeatureResult</code></a></div>
+</div>
+</div>
+</div>
+</div>
 <div class="inherited-list">
 <h3 id="methods-inherited-from-class-java.lang.Object">Methods inherited from class&nbsp;java.lang.<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html" title="class or interface in java.lang" class="external-link">Object</a></h3>
-<code><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html#clone()" title="class or interface in java.lang" class="external-link">clone</a>, <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html#equals(java.lang.Object)" title="class or interface in java.lang" class="external-link">equals</a>, <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html#finalize()" title="class or interface in java.lang" class="external-link">finalize</a>, <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html#getClass()" title="class or interface in java.lang" class="external-link">getClass</a>, <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html#hashCode()" title="class or interface in java.lang" class="external-link">hashCode</a>, <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html#notify()" title="class or interface in java.lang" class="external-link">notify</a>, <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html#notifyAll()" title="class or interface in java.lang" class="external-link">notifyAll</a>, <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html#toString()" title="class or interface in java.lang" class="external-link">toString</a>, <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html#wait()" title="class or interface in java.lang" class="external-link">wait</a>, <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html#wait(long)" title="class or interface in java.lang" class="external-link">wait</a>, <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html#wait(long,int)" title="class or interface in java.lang" class="external-link">wait</a></code></div>
+<code><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html#equals(java.lang.Object)" title="class or interface in java.lang" class="external-link">equals</a>, <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html#getClass()" title="class or interface in java.lang" class="external-link">getClass</a>, <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html#hashCode()" title="class or interface in java.lang" class="external-link">hashCode</a>, <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html#notify()" title="class or interface in java.lang" class="external-link">notify</a>, <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html#notifyAll()" title="class or interface in java.lang" class="external-link">notifyAll</a>, <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html#toString()" title="class or interface in java.lang" class="external-link">toString</a>, <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html#wait()" title="class or interface in java.lang" class="external-link">wait</a>, <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html#wait(long)" title="class or interface in java.lang" class="external-link">wait</a>, <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html#wait(long,int)" title="class or interface in java.lang" class="external-link">wait</a></code></div>
 </section>
 </li>
 </ul>
 </section>
 <section class="details">
 <ul class="details-list">
-<!-- ============ FIELD DETAIL =========== -->
-<li>
-<section class="field-details" id="field-detail">
-<h2>Field Details</h2>
-<ul class="member-list">
-<li>
-<section class="detail" id="value">
-<h3>value</h3>
-<div class="member-signature"><span class="annotations">@Nullable
-</span><span class="return-type"><a href="FeatureResult.html" title="type parameter in FeatureResult">ValueType</a></span>&nbsp;<span class="element-name">value</span></div>
-</section>
-</li>
-<li>
-<section class="detail" id="source">
-<h3>source</h3>
-<div class="member-signature"><span class="annotations">@Nullable
-</span><span class="return-type"><a href="FeatureResultSource.html" title="enum class in growthbook.sdk.java.models">FeatureResultSource</a></span>&nbsp;<span class="element-name">source</span></div>
-<div class="block">One of "unknownFeature", "defaultValue", "force", or "experiment"</div>
-</section>
-</li>
-<li>
-<section class="detail" id="experiment">
-<h3>experiment</h3>
-<div class="member-signature"><span class="annotations">@Nullable
-</span><span class="return-type"><a href="Experiment.html" title="class in growthbook.sdk.java.models">Experiment</a></span>&nbsp;<span class="element-name">experiment</span></div>
-<div class="block">When source is "experiment", this will be an Experiment object</div>
-</section>
-</li>
-</ul>
-</section>
-</li>
 <!-- ========= CONSTRUCTOR DETAIL ======== -->
 <li>
 <section class="constructor-details" id="constructor-detail">
@@ -167,6 +164,77 @@ loadScripts(document, 'script');</script>
 <section class="detail" id="&lt;init&gt;()">
 <h3>FeatureResult</h3>
 <div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="element-name">FeatureResult</span>()</div>
+</section>
+</li>
+</ul>
+</section>
+</li>
+<!-- ============ METHOD DETAIL ========== -->
+<li>
+<section class="method-details" id="method-detail">
+<h2>Method Details</h2>
+<ul class="member-list">
+<li>
+<section class="detail" id="toJson()">
+<h3>toJson</h3>
+<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a></span>&nbsp;<span class="element-name">toJson</span>()</div>
+<div class="block">Get a Gson JsonElement of the <a href="FeatureResult.html" title="class in growthbook.sdk.java.models"><code>FeatureResult</code></a></div>
+<dl class="notes">
+<dt>Returns:</dt>
+<dd>a Gson JsonElement</dd>
+</dl>
+</section>
+</li>
+<li>
+<section class="detail" id="isOn()">
+<h3>isOn</h3>
+<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Boolean.html" title="class or interface in java.lang" class="external-link">Boolean</a></span>&nbsp;<span class="element-name">isOn</span>()</div>
+<div class="block">Evaluates to true when the feature is on</div>
+<dl class="notes">
+<dt>Returns:</dt>
+<dd>Boolean</dd>
+</dl>
+</section>
+</li>
+<li>
+<section class="detail" id="isOff()">
+<h3>isOff</h3>
+<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Boolean.html" title="class or interface in java.lang" class="external-link">Boolean</a></span>&nbsp;<span class="element-name">isOff</span>()</div>
+<div class="block">Evaluates to true when the feature is off</div>
+<dl class="notes">
+<dt>Returns:</dt>
+<dd>Boolean</dd>
+</dl>
+</section>
+</li>
+<li>
+<section class="detail" id="getJson(growthbook.sdk.java.models.FeatureResult)">
+<h3>getJson</h3>
+<div class="member-signature"><span class="modifiers">public static</span>&nbsp;<span class="type-parameters">&lt;ValueType&gt;</span>
+<span class="return-type">com.google.gson.JsonElement</span>&nbsp;<span class="element-name">getJson</span><wbr><span class="parameters">(<a href="FeatureResult.html" title="class in growthbook.sdk.java.models">FeatureResult</a>&lt;ValueType&gt;&nbsp;object)</span></div>
+<div class="block">Get a Gson JsonElement of the <a href="FeatureResult.html" title="class in growthbook.sdk.java.models"><code>FeatureResult</code></a></div>
+<dl class="notes">
+<dt>Type Parameters:</dt>
+<dd><code>ValueType</code> - value type for the feature</dd>
+<dt>Parameters:</dt>
+<dd><code>object</code> - <a href="FeatureResult.html" title="class in growthbook.sdk.java.models"><code>FeatureResult</code></a></dd>
+<dt>Returns:</dt>
+<dd>a Gson JsonElement</dd>
+</dl>
+</section>
+</li>
+<li>
+<section class="detail" id="getSerializer()">
+<h3>getSerializer</h3>
+<div class="member-signature"><span class="modifiers">public static</span>&nbsp;<span class="type-parameters">&lt;ValueType&gt;</span>
+<span class="return-type">com.google.gson.JsonSerializer&lt;<a href="FeatureResult.html" title="class in growthbook.sdk.java.models">FeatureResult</a>&lt;ValueType&gt;&gt;</span>&nbsp;<span class="element-name">getSerializer</span>()</div>
+<div class="block">a Gson serializer for <a href="FeatureResult.html" title="class in growthbook.sdk.java.models"><code>FeatureResult</code></a></div>
+<dl class="notes">
+<dt>Type Parameters:</dt>
+<dd><code>ValueType</code> - <a href="FeatureResult.html" title="class in growthbook.sdk.java.models"><code>FeatureResult</code></a></dd>
+<dt>Returns:</dt>
+<dd>Gson serializer</dd>
+</dl>
 </section>
 </li>
 </ul>

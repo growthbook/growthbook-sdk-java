@@ -45,13 +45,13 @@ loadScripts(document, 'script');</script>
 <li>Summary:&nbsp;</li>
 <li><a href="#nested-class-summary">Nested</a>&nbsp;|&nbsp;</li>
 <li><a href="#enum-constant-summary">Enum Constants</a>&nbsp;|&nbsp;</li>
-<li><a href="#field-summary">Field</a>&nbsp;|&nbsp;</li>
+<li>Field&nbsp;|&nbsp;</li>
 <li><a href="#method-summary">Method</a></li>
 </ul>
 <ul class="sub-nav-list">
 <li>Detail:&nbsp;</li>
 <li><a href="#enum-constant-detail">Enum Constants</a>&nbsp;|&nbsp;</li>
-<li><a href="#field-detail">Field</a>&nbsp;|&nbsp;</li>
+<li>Field&nbsp;|&nbsp;</li>
 <li><a href="#method-detail">Method</a></li>
 </ul>
 </div>
@@ -83,6 +83,7 @@ loadScripts(document, 'script');</script>
 <hr>
 <div class="type-signature"><span class="modifiers">public enum </span><span class="element-name type-name-label">FeatureResultSource</span>
 <span class="extends-implements">extends <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Enum.html" title="class or interface in java.lang" class="external-link">Enum</a>&lt;<a href="FeatureResultSource.html" title="enum class in growthbook.sdk.java.models">FeatureResultSource</a>&gt;</span></div>
+<div class="block">An enum of the possible sources for the feature result</div>
 </section>
 <section class="summary">
 <ul class="summary-list">
@@ -104,43 +105,21 @@ loadScripts(document, 'script');</script>
 <div class="table-header col-first">Enum Constant</div>
 <div class="table-header col-last">Description</div>
 <div class="col-first even-row-color"><code><a href="#DEFAULT_VALUE" class="member-name-link">DEFAULT_VALUE</a></code></div>
-<div class="col-last even-row-color">&nbsp;</div>
+<div class="col-last even-row-color">
+<div class="block">When the value is assigned due to a default value condition</div>
+</div>
 <div class="col-first odd-row-color"><code><a href="#EXPERIMENT" class="member-name-link">EXPERIMENT</a></code></div>
-<div class="col-last odd-row-color">&nbsp;</div>
+<div class="col-last odd-row-color">
+<div class="block">When the value is assigned due to an experiment condition</div>
+</div>
 <div class="col-first even-row-color"><code><a href="#FORCE" class="member-name-link">FORCE</a></code></div>
-<div class="col-last even-row-color">&nbsp;</div>
+<div class="col-last even-row-color">
+<div class="block">When the value is assigned due to a forced condition</div>
+</div>
 <div class="col-first odd-row-color"><code><a href="#UNKNOWN_FEATURE" class="member-name-link">UNKNOWN_FEATURE</a></code></div>
-<div class="col-last odd-row-color">&nbsp;</div>
+<div class="col-last odd-row-color">
+<div class="block">When the feature is unknown</div>
 </div>
-</section>
-</li>
-<!-- =========== FIELD SUMMARY =========== -->
-<li>
-<section class="field-summary" id="field-summary">
-<h2>Field Summary</h2>
-<div class="caption"><span>Fields</span></div>
-<div class="summary-table three-column-summary">
-<div class="table-header col-first">Modifier and Type</div>
-<div class="table-header col-second">Field</div>
-<div class="table-header col-last">Description</div>
-<div class="col-first even-row-color"><code>private final <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a></code></div>
-<div class="col-second even-row-color"><code><a href="#rawValue" class="member-name-link">rawValue</a></code></div>
-<div class="col-last even-row-color">&nbsp;</div>
-</div>
-</section>
-</li>
-<!-- ======== CONSTRUCTOR SUMMARY ======== -->
-<li>
-<section class="constructor-summary" id="constructor-summary">
-<h2>Constructor Summary</h2>
-<div class="caption"><span>Constructors</span></div>
-<div class="summary-table three-column-summary">
-<div class="table-header col-first">Modifier</div>
-<div class="table-header col-second">Constructor</div>
-<div class="table-header col-last">Description</div>
-<div class="col-first even-row-color"><code>private </code></div>
-<div class="col-constructor-name even-row-color"><code><a href="#%3Cinit%3E(java.lang.String)" class="member-name-link">FeatureResultSource</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;rawValue)</code></div>
-<div class="col-last even-row-color">&nbsp;</div>
 </div>
 </section>
 </li>
@@ -155,17 +134,22 @@ loadScripts(document, 'script');</script>
 <div class="table-header col-first">Modifier and Type</div>
 <div class="table-header col-second">Method</div>
 <div class="table-header col-last">Description</div>
-<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a></code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#toString()" class="member-name-link">toString</a>()</code></div>
-<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">&nbsp;</div>
-<div class="col-first odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code>static <a href="FeatureResultSource.html" title="enum class in growthbook.sdk.java.models">FeatureResultSource</a></code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code><a href="#valueOf(java.lang.String)" class="member-name-link">valueOf</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;name)</code></div>
-<div class="col-last odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4">
+<div class="col-first even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code>static <a href="FeatureResultSource.html" title="enum class in growthbook.sdk.java.models">FeatureResultSource</a></code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code><a href="#fromString(java.lang.String)" class="member-name-link">fromString</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;stringValue)</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4">
+<div class="block">Get a nullable enum Operator from the string value.</div>
+</div>
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a></code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#toString()" class="member-name-link">toString</a>()</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">&nbsp;</div>
+<div class="col-first even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code>static <a href="FeatureResultSource.html" title="enum class in growthbook.sdk.java.models">FeatureResultSource</a></code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code><a href="#valueOf(java.lang.String)" class="member-name-link">valueOf</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;name)</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4">
 <div class="block">Returns the enum constant of this class with the specified name.</div>
 </div>
-<div class="col-first even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code>static <a href="FeatureResultSource.html" title="enum class in growthbook.sdk.java.models">FeatureResultSource</a>[]</code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code><a href="#values()" class="member-name-link">values</a>()</code></div>
-<div class="col-last even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4">
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code>static <a href="FeatureResultSource.html" title="enum class in growthbook.sdk.java.models">FeatureResultSource</a>[]</code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code><a href="#values()" class="member-name-link">values</a>()</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4">
 <div class="block">Returns an array containing the constants of this enum class, in
 the order they are declared.</div>
 </div>
@@ -174,7 +158,7 @@ the order they are declared.</div>
 </div>
 <div class="inherited-list">
 <h3 id="methods-inherited-from-class-java.lang.Enum">Methods inherited from class&nbsp;java.lang.<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Enum.html" title="class or interface in java.lang" class="external-link">Enum</a></h3>
-<code><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Enum.html#clone()" title="class or interface in java.lang" class="external-link">clone</a>, <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Enum.html#compareTo(E)" title="class or interface in java.lang" class="external-link">compareTo</a>, <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Enum.html#describeConstable()" title="class or interface in java.lang" class="external-link">describeConstable</a>, <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Enum.html#equals(java.lang.Object)" title="class or interface in java.lang" class="external-link">equals</a>, <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Enum.html#finalize()" title="class or interface in java.lang" class="external-link">finalize</a>, <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Enum.html#getDeclaringClass()" title="class or interface in java.lang" class="external-link">getDeclaringClass</a>, <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Enum.html#hashCode()" title="class or interface in java.lang" class="external-link">hashCode</a>, <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Enum.html#name()" title="class or interface in java.lang" class="external-link">name</a>, <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Enum.html#ordinal()" title="class or interface in java.lang" class="external-link">ordinal</a>, <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Enum.html#valueOf(java.lang.Class,java.lang.String)" title="class or interface in java.lang" class="external-link">valueOf</a></code></div>
+<code><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Enum.html#compareTo(E)" title="class or interface in java.lang" class="external-link">compareTo</a>, <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Enum.html#describeConstable()" title="class or interface in java.lang" class="external-link">describeConstable</a>, <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Enum.html#equals(java.lang.Object)" title="class or interface in java.lang" class="external-link">equals</a>, <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Enum.html#getDeclaringClass()" title="class or interface in java.lang" class="external-link">getDeclaringClass</a>, <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Enum.html#hashCode()" title="class or interface in java.lang" class="external-link">hashCode</a>, <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Enum.html#name()" title="class or interface in java.lang" class="external-link">name</a>, <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Enum.html#ordinal()" title="class or interface in java.lang" class="external-link">ordinal</a>, <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Enum.html#valueOf(java.lang.Class,java.lang.String)" title="class or interface in java.lang" class="external-link">valueOf</a></code></div>
 <div class="inherited-list">
 <h3 id="methods-inherited-from-class-java.lang.Object">Methods inherited from class&nbsp;java.lang.<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html" title="class or interface in java.lang" class="external-link">Object</a></h3>
 <code><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html#getClass()" title="class or interface in java.lang" class="external-link">getClass</a>, <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html#notify()" title="class or interface in java.lang" class="external-link">notify</a>, <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html#notifyAll()" title="class or interface in java.lang" class="external-link">notifyAll</a>, <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html#wait()" title="class or interface in java.lang" class="external-link">wait</a>, <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html#wait(long)" title="class or interface in java.lang" class="external-link">wait</a>, <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html#wait(long,int)" title="class or interface in java.lang" class="external-link">wait</a></code></div>
@@ -194,6 +178,7 @@ the order they are declared.</div>
 <h3>UNKNOWN_FEATURE</h3>
 <div class="member-signature"><span class="annotations">@SerializedName("unknownFeature")
 </span><span class="modifiers">public static final</span>&nbsp;<span class="return-type"><a href="FeatureResultSource.html" title="enum class in growthbook.sdk.java.models">FeatureResultSource</a></span>&nbsp;<span class="element-name">UNKNOWN_FEATURE</span></div>
+<div class="block">When the feature is unknown</div>
 </section>
 </li>
 <li>
@@ -201,6 +186,7 @@ the order they are declared.</div>
 <h3>DEFAULT_VALUE</h3>
 <div class="member-signature"><span class="annotations">@SerializedName("defaultValue")
 </span><span class="modifiers">public static final</span>&nbsp;<span class="return-type"><a href="FeatureResultSource.html" title="enum class in growthbook.sdk.java.models">FeatureResultSource</a></span>&nbsp;<span class="element-name">DEFAULT_VALUE</span></div>
+<div class="block">When the value is assigned due to a default value condition</div>
 </section>
 </li>
 <li>
@@ -208,6 +194,7 @@ the order they are declared.</div>
 <h3>FORCE</h3>
 <div class="member-signature"><span class="annotations">@SerializedName("force")
 </span><span class="modifiers">public static final</span>&nbsp;<span class="return-type"><a href="FeatureResultSource.html" title="enum class in growthbook.sdk.java.models">FeatureResultSource</a></span>&nbsp;<span class="element-name">FORCE</span></div>
+<div class="block">When the value is assigned due to a forced condition</div>
 </section>
 </li>
 <li>
@@ -215,34 +202,7 @@ the order they are declared.</div>
 <h3>EXPERIMENT</h3>
 <div class="member-signature"><span class="annotations">@SerializedName("experiment")
 </span><span class="modifiers">public static final</span>&nbsp;<span class="return-type"><a href="FeatureResultSource.html" title="enum class in growthbook.sdk.java.models">FeatureResultSource</a></span>&nbsp;<span class="element-name">EXPERIMENT</span></div>
-</section>
-</li>
-</ul>
-</section>
-</li>
-<!-- ============ FIELD DETAIL =========== -->
-<li>
-<section class="field-details" id="field-detail">
-<h2>Field Details</h2>
-<ul class="member-list">
-<li>
-<section class="detail" id="rawValue">
-<h3>rawValue</h3>
-<div class="member-signature"><span class="modifiers">private final</span>&nbsp;<span class="return-type"><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a></span>&nbsp;<span class="element-name">rawValue</span></div>
-</section>
-</li>
-</ul>
-</section>
-</li>
-<!-- ========= CONSTRUCTOR DETAIL ======== -->
-<li>
-<section class="constructor-details" id="constructor-detail">
-<h2>Constructor Details</h2>
-<ul class="member-list">
-<li>
-<section class="detail" id="&lt;init&gt;(java.lang.String)">
-<h3>FeatureResultSource</h3>
-<div class="member-signature"><span class="modifiers">private</span>&nbsp;<span class="element-name">FeatureResultSource</span><wbr><span class="parameters">(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;rawValue)</span></div>
+<div class="block">When the value is assigned due to an experiment condition</div>
 </section>
 </li>
 </ul>
@@ -291,6 +251,20 @@ not permitted.)</div>
 <dl class="notes">
 <dt>Overrides:</dt>
 <dd><code><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Enum.html#toString()" title="class or interface in java.lang" class="external-link">toString</a></code>&nbsp;in class&nbsp;<code><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Enum.html" title="class or interface in java.lang" class="external-link">Enum</a>&lt;<a href="FeatureResultSource.html" title="enum class in growthbook.sdk.java.models">FeatureResultSource</a>&gt;</code></dd>
+</dl>
+</section>
+</li>
+<li>
+<section class="detail" id="fromString(java.lang.String)">
+<h3>fromString</h3>
+<div class="member-signature"><span class="annotations">@Nullable
+</span><span class="modifiers">public static</span>&nbsp;<span class="return-type"><a href="FeatureResultSource.html" title="enum class in growthbook.sdk.java.models">FeatureResultSource</a></span>&nbsp;<span class="element-name">fromString</span><wbr><span class="parameters">(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;stringValue)</span></div>
+<div class="block">Get a nullable enum Operator from the string value. Use this instead of valueOf()</div>
+<dl class="notes">
+<dt>Parameters:</dt>
+<dd><code>stringValue</code> - string to try to parse as an operator</dd>
+<dt>Returns:</dt>
+<dd>nullable Operator</dd>
 </dl>
 </section>
 </li>

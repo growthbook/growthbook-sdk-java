@@ -15,7 +15,11 @@
 <script type="text/javascript" src="../../../../script-dir/jquery-ui.min.js"></script>
 </head>
 <body class="class-declaration-page">
-<script type="text/javascript">var pathtoroot = "../../../../";
+<script type="text/javascript">var evenRowColor = "even-row-color";
+var oddRowColor = "odd-row-color";
+var tableTab = "table-tab";
+var activeTableTab = "active-table-tab";
+var pathtoroot = "../../../../";
 loadScripts(document, 'script');</script>
 <noscript>
 <div>JavaScript is disabled on your browser.</div>
@@ -39,16 +43,16 @@ loadScripts(document, 'script');</script>
 <div>
 <ul class="sub-nav-list">
 <li>Summary:&nbsp;</li>
-<li>Nested&nbsp;|&nbsp;</li>
-<li><a href="#field-summary">Field</a>&nbsp;|&nbsp;</li>
+<li><a href="#nested-class-summary">Nested</a>&nbsp;|&nbsp;</li>
+<li>Field&nbsp;|&nbsp;</li>
 <li><a href="#constructor-summary">Constr</a>&nbsp;|&nbsp;</li>
 <li><a href="#method-summary">Method</a></li>
 </ul>
 <ul class="sub-nav-list">
 <li>Detail:&nbsp;</li>
-<li><a href="#field-detail">Field</a>&nbsp;|&nbsp;</li>
+<li>Field&nbsp;|&nbsp;</li>
 <li><a href="#constructor-detail">Constr</a>&nbsp;|&nbsp;</li>
-<li>Method</li>
+<li><a href="#method-detail">Method</a></li>
 </ul>
 </div>
 <div class="nav-list-search"><label for="search-input">SEARCH:</label>
@@ -64,57 +68,34 @@ loadScripts(document, 'script');</script>
 <!-- ======== START OF CLASS DATA ======== -->
 <div class="header">
 <div class="sub-title"><span class="package-label-in-type">Package</span>&nbsp;<a href="package-summary.html">growthbook.sdk.java.models</a></div>
-<h1 title="Class Context" class="title">Class Context&lt;TrackingCallbackResultType&gt;</h1>
+<h1 title="Class Context" class="title">Class Context</h1>
 </div>
 <div class="inheritance" title="Inheritance Tree"><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html" title="class or interface in java.lang" class="external-link">java.lang.Object</a>
-<div class="inheritance">growthbook.sdk.java.models.Context&lt;TrackingCallbackResultType&gt;</div>
+<div class="inheritance">growthbook.sdk.java.models.Context</div>
 </div>
 <section class="class-description" id="class-description">
 <hr>
-<div class="type-signature"><span class="modifiers">public class </span><span class="element-name type-name-label">Context&lt;TrackingCallbackResultType&gt;</span>
+<div class="type-signature"><span class="modifiers">public class </span><span class="element-name type-name-label">Context</span>
 <span class="extends-implements">extends <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html" title="class or interface in java.lang" class="external-link">Object</a></span></div>
-<div class="block">Context object passed into the GrowthBook constructor.</div>
+<div class="block">Context object passed into the GrowthBook constructor.
+ The <a href="#builder()"><code>builder()</code></a> is recommended for constructing a Context.
+ Alternatively, you can use the static <a href="#create(java.lang.String,java.lang.String,java.lang.Boolean,java.lang.Boolean,java.lang.String,java.util.Map,growthbook.sdk.java.models.TrackingCallback)"><code>create(String, String, Boolean, Boolean, String, Map, TrackingCallback)</code></a> method.</div>
 </section>
 <section class="summary">
 <ul class="summary-list">
-<!-- =========== FIELD SUMMARY =========== -->
+<!-- ======== NESTED CLASS SUMMARY ======== -->
 <li>
-<section class="field-summary" id="field-summary">
-<h2>Field Summary</h2>
-<div class="caption"><span>Fields</span></div>
+<section class="nested-class-summary" id="nested-class-summary">
+<h2>Nested Class Summary</h2>
+<div class="caption"><span>Nested Classes</span></div>
 <div class="summary-table three-column-summary">
 <div class="table-header col-first">Modifier and Type</div>
-<div class="table-header col-second">Field</div>
+<div class="table-header col-second">Class</div>
 <div class="table-header col-last">Description</div>
-<div class="col-first even-row-color"><code>(package private) <a href="UserAttributes.html" title="interface in growthbook.sdk.java.models">UserAttributes</a></code></div>
-<div class="col-second even-row-color"><code><a href="#attributes" class="member-name-link">attributes</a></code></div>
+<div class="col-first even-row-color"><code>static class&nbsp;</code></div>
+<div class="col-second even-row-color"><code><a href="Context.ContextBuilder.html" class="type-name-link" title="class in growthbook.sdk.java.models">Context.ContextBuilder</a></code></div>
 <div class="col-last even-row-color">
-<div class="block">Map of user attributes that are used to assign variations</div>
-</div>
-<div class="col-first odd-row-color"><code>(package private) <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Boolean.html" title="class or interface in java.lang" class="external-link">Boolean</a></code></div>
-<div class="col-second odd-row-color"><code><a href="#enabled" class="member-name-link">enabled</a></code></div>
-<div class="col-last odd-row-color">
-<div class="block">Switch to globally disable all experiments</div>
-</div>
-<div class="col-first even-row-color"><code>(package private) <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/Map.html" title="class or interface in java.util" class="external-link">Map</a>&lt;<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>,<wbr><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Integer.html" title="class or interface in java.lang" class="external-link">Integer</a>&gt;</code></div>
-<div class="col-second even-row-color"><code><a href="#forcedVariationsMap" class="member-name-link">forcedVariationsMap</a></code></div>
-<div class="col-last even-row-color">
-<div class="block">Force specific experiments to always assign a specific variation (used for QA)</div>
-</div>
-<div class="col-first odd-row-color"><code>(package private) <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Boolean.html" title="class or interface in java.lang" class="external-link">Boolean</a></code></div>
-<div class="col-second odd-row-color"><code><a href="#isQaMode" class="member-name-link">isQaMode</a></code></div>
-<div class="col-last odd-row-color">
-<div class="block">If true, random assignment is disabled and only explicitly forced variations are used.</div>
-</div>
-<div class="col-first even-row-color"><code>(package private) <a href="TrackingCallback.html" title="interface in growthbook.sdk.java.models">TrackingCallback</a>&lt;<a href="Context.html" title="type parameter in Context">TrackingCallbackResultType</a>&gt;</code></div>
-<div class="col-second even-row-color"><code><a href="#trackingCallback" class="member-name-link">trackingCallback</a></code></div>
-<div class="col-last even-row-color">
-<div class="block">A function that takes `experiment` and `result` as arguments.</div>
-</div>
-<div class="col-first odd-row-color"><code>(package private) <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a></code></div>
-<div class="col-second odd-row-color"><code><a href="#url" class="member-name-link">url</a></code></div>
-<div class="col-last odd-row-color">
-<div class="block">The URL of the current page</div>
+<div class="block">The builder class to help create a context.</div>
 </div>
 </div>
 </section>
@@ -136,69 +117,51 @@ loadScripts(document, 'script');</script>
 <li>
 <section class="method-summary" id="method-summary">
 <h2>Method Summary</h2>
+<div id="method-summary-table">
+<div class="table-tabs" role="tablist" aria-orientation="horizontal"><button id="method-summary-table-tab0" role="tab" aria-selected="true" aria-controls="method-summary-table.tabpanel" tabindex="0" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table', 3)" class="active-table-tab">All Methods</button><button id="method-summary-table-tab1" role="tab" aria-selected="false" aria-controls="method-summary-table.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table-tab1', 3)" class="table-tab">Static Methods</button><button id="method-summary-table-tab2" role="tab" aria-selected="false" aria-controls="method-summary-table.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table-tab2', 3)" class="table-tab">Instance Methods</button><button id="method-summary-table-tab4" role="tab" aria-selected="false" aria-controls="method-summary-table.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table-tab4', 3)" class="table-tab">Concrete Methods</button></div>
+<div id="method-summary-table.tabpanel" role="tabpanel">
+<div class="summary-table three-column-summary" aria-labelledby="method-summary-table-tab0">
+<div class="table-header col-first">Modifier and Type</div>
+<div class="table-header col-second">Method</div>
+<div class="table-header col-last">Description</div>
+<div class="col-first even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code>static <a href="Context.ContextBuilder.html" title="class in growthbook.sdk.java.models">Context.ContextBuilder</a></code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code><a href="#builder()" class="member-name-link">builder</a>()</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4">
+<div class="block">The builder class to help create a context.</div>
+</div>
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code>static <a href="Context.html" title="class in growthbook.sdk.java.models">Context</a></code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code><a href="#create(java.lang.String,java.lang.String,java.lang.Boolean,java.lang.Boolean,java.lang.String,java.util.Map,growthbook.sdk.java.models.TrackingCallback)" class="member-name-link">create</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;attributesJson,
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;featuresJson,
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Boolean.html" title="class or interface in java.lang" class="external-link">Boolean</a>&nbsp;isEnabled,
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Boolean.html" title="class or interface in java.lang" class="external-link">Boolean</a>&nbsp;isQaMode,
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;url,
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/Map.html" title="class or interface in java.util" class="external-link">Map</a>&lt;<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>,<wbr><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Integer.html" title="class or interface in java.lang" class="external-link">Integer</a>&gt;&nbsp;forcedVariationsMap,
+ <a href="TrackingCallback.html" title="interface in growthbook.sdk.java.models">TrackingCallback</a>&nbsp;trackingCallback)</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4">
+<div class="block">The <a href="Context.ContextBuilder.html" title="class in growthbook.sdk.java.models"><code>Context.ContextBuilder</code></a> is recommended for constructing a Context.</div>
+</div>
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>void</code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#setAttributesJson(java.lang.String)" class="member-name-link">setAttributesJson</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;attributesJson)</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="block">You can update the attributes JSON with new user attributes to evaluate against.</div>
+</div>
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>void</code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#setFeaturesJson(java.lang.String)" class="member-name-link">setFeaturesJson</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;featuresJson)</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="block">You can update the features JSON with new features to evaluate against.</div>
+</div>
+</div>
+</div>
+</div>
 <div class="inherited-list">
 <h3 id="methods-inherited-from-class-java.lang.Object">Methods inherited from class&nbsp;java.lang.<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html" title="class or interface in java.lang" class="external-link">Object</a></h3>
-<code><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html#clone()" title="class or interface in java.lang" class="external-link">clone</a>, <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html#equals(java.lang.Object)" title="class or interface in java.lang" class="external-link">equals</a>, <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html#finalize()" title="class or interface in java.lang" class="external-link">finalize</a>, <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html#getClass()" title="class or interface in java.lang" class="external-link">getClass</a>, <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html#hashCode()" title="class or interface in java.lang" class="external-link">hashCode</a>, <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html#notify()" title="class or interface in java.lang" class="external-link">notify</a>, <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html#notifyAll()" title="class or interface in java.lang" class="external-link">notifyAll</a>, <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html#toString()" title="class or interface in java.lang" class="external-link">toString</a>, <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html#wait()" title="class or interface in java.lang" class="external-link">wait</a>, <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html#wait(long)" title="class or interface in java.lang" class="external-link">wait</a>, <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html#wait(long,int)" title="class or interface in java.lang" class="external-link">wait</a></code></div>
+<code><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html#equals(java.lang.Object)" title="class or interface in java.lang" class="external-link">equals</a>, <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html#getClass()" title="class or interface in java.lang" class="external-link">getClass</a>, <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html#hashCode()" title="class or interface in java.lang" class="external-link">hashCode</a>, <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html#notify()" title="class or interface in java.lang" class="external-link">notify</a>, <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html#notifyAll()" title="class or interface in java.lang" class="external-link">notifyAll</a>, <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html#toString()" title="class or interface in java.lang" class="external-link">toString</a>, <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html#wait()" title="class or interface in java.lang" class="external-link">wait</a>, <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html#wait(long)" title="class or interface in java.lang" class="external-link">wait</a>, <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html#wait(long,int)" title="class or interface in java.lang" class="external-link">wait</a></code></div>
 </section>
 </li>
 </ul>
 </section>
 <section class="details">
 <ul class="details-list">
-<!-- ============ FIELD DETAIL =========== -->
-<li>
-<section class="field-details" id="field-detail">
-<h2>Field Details</h2>
-<ul class="member-list">
-<li>
-<section class="detail" id="enabled">
-<h3>enabled</h3>
-<div class="member-signature"><span class="return-type"><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Boolean.html" title="class or interface in java.lang" class="external-link">Boolean</a></span>&nbsp;<span class="element-name">enabled</span></div>
-<div class="block">Switch to globally disable all experiments</div>
-</section>
-</li>
-<li>
-<section class="detail" id="url">
-<h3>url</h3>
-<div class="member-signature"><span class="annotations">@Nullable
-</span><span class="return-type"><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a></span>&nbsp;<span class="element-name">url</span></div>
-<div class="block">The URL of the current page</div>
-</section>
-</li>
-<li>
-<section class="detail" id="isQaMode">
-<h3>isQaMode</h3>
-<div class="member-signature"><span class="annotations">@Nullable
-</span><span class="return-type"><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Boolean.html" title="class or interface in java.lang" class="external-link">Boolean</a></span>&nbsp;<span class="element-name">isQaMode</span></div>
-<div class="block">If true, random assignment is disabled and only explicitly forced variations are used.</div>
-</section>
-</li>
-<li>
-<section class="detail" id="trackingCallback">
-<h3>trackingCallback</h3>
-<div class="member-signature"><span class="return-type"><a href="TrackingCallback.html" title="interface in growthbook.sdk.java.models">TrackingCallback</a>&lt;<a href="Context.html" title="type parameter in Context">TrackingCallbackResultType</a>&gt;</span>&nbsp;<span class="element-name">trackingCallback</span></div>
-<div class="block">A function that takes `experiment` and `result` as arguments.</div>
-</section>
-</li>
-<li>
-<section class="detail" id="attributes">
-<h3>attributes</h3>
-<div class="member-signature"><span class="annotations">@Nullable
-</span><span class="return-type"><a href="UserAttributes.html" title="interface in growthbook.sdk.java.models">UserAttributes</a></span>&nbsp;<span class="element-name">attributes</span></div>
-<div class="block">Map of user attributes that are used to assign variations</div>
-</section>
-</li>
-<li>
-<section class="detail" id="forcedVariationsMap">
-<h3>forcedVariationsMap</h3>
-<div class="member-signature"><span class="annotations">@Nullable
-</span><span class="return-type"><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/Map.html" title="class or interface in java.util" class="external-link">Map</a>&lt;<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>,<wbr><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Integer.html" title="class or interface in java.lang" class="external-link">Integer</a>&gt;</span>&nbsp;<span class="element-name">forcedVariationsMap</span></div>
-<div class="block">Force specific experiments to always assign a specific variation (used for QA)</div>
-</section>
-</li>
-</ul>
-</section>
-</li>
 <!-- ========= CONSTRUCTOR DETAIL ======== -->
 <li>
 <section class="constructor-details" id="constructor-detail">
@@ -208,6 +171,79 @@ loadScripts(document, 'script');</script>
 <section class="detail" id="&lt;init&gt;()">
 <h3>Context</h3>
 <div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="element-name">Context</span>()</div>
+</section>
+</li>
+</ul>
+</section>
+</li>
+<!-- ============ METHOD DETAIL ========== -->
+<li>
+<section class="method-details" id="method-detail">
+<h2>Method Details</h2>
+<ul class="member-list">
+<li>
+<section class="detail" id="create(java.lang.String,java.lang.String,java.lang.Boolean,java.lang.Boolean,java.lang.String,java.util.Map,growthbook.sdk.java.models.TrackingCallback)">
+<h3>create</h3>
+<div class="member-signature"><span class="modifiers">public static</span>&nbsp;<span class="return-type"><a href="Context.html" title="class in growthbook.sdk.java.models">Context</a></span>&nbsp;<span class="element-name">create</span><wbr><span class="parameters">(@Nullable
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;attributesJson,
+ @Nullable
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;featuresJson,
+ @Nullable
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Boolean.html" title="class or interface in java.lang" class="external-link">Boolean</a>&nbsp;isEnabled,
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Boolean.html" title="class or interface in java.lang" class="external-link">Boolean</a>&nbsp;isQaMode,
+ @Nullable
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;url,
+ @Nullable
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/Map.html" title="class or interface in java.util" class="external-link">Map</a>&lt;<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>,<wbr><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Integer.html" title="class or interface in java.lang" class="external-link">Integer</a>&gt;&nbsp;forcedVariationsMap,
+ @Nullable
+ <a href="TrackingCallback.html" title="interface in growthbook.sdk.java.models">TrackingCallback</a>&nbsp;trackingCallback)</span></div>
+<div class="block">The <a href="Context.ContextBuilder.html" title="class in growthbook.sdk.java.models"><code>Context.ContextBuilder</code></a> is recommended for constructing a Context.
+ Alternatively, you can use this static method instead of the builder.</div>
+<dl class="notes">
+<dt>Parameters:</dt>
+<dd><code>attributesJson</code> - User attributes as JSON string</dd>
+<dd><code>featuresJson</code> - Features response as JSON string</dd>
+<dd><code>isEnabled</code> - Whether globally all experiments are enabled. Defaults to true.</dd>
+<dd><code>isQaMode</code> - If true, random assignment is disabled and only explicitly forced variations are used.</dd>
+<dd><code>url</code> - A URL string</dd>
+<dd><code>forcedVariationsMap</code> - Force specific experiments to always assign a specific variation (used for QA)</dd>
+<dd><code>trackingCallback</code> - A function that takes <a href="Experiment.html" title="class in growthbook.sdk.java.models"><code>Experiment</code></a> and <a href="ExperimentResult.html" title="class in growthbook.sdk.java.models"><code>ExperimentResult</code></a> as arguments.</dd>
+<dt>Returns:</dt>
+<dd>created context</dd>
+</dl>
+</section>
+</li>
+<li>
+<section class="detail" id="setAttributesJson(java.lang.String)">
+<h3>setAttributesJson</h3>
+<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type">void</span>&nbsp;<span class="element-name">setAttributesJson</span><wbr><span class="parameters">(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;attributesJson)</span></div>
+<div class="block">You can update the attributes JSON with new user attributes to evaluate against.</div>
+<dl class="notes">
+<dt>Parameters:</dt>
+<dd><code>attributesJson</code> - updated user attributes</dd>
+</dl>
+</section>
+</li>
+<li>
+<section class="detail" id="setFeaturesJson(java.lang.String)">
+<h3>setFeaturesJson</h3>
+<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type">void</span>&nbsp;<span class="element-name">setFeaturesJson</span><wbr><span class="parameters">(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;featuresJson)</span></div>
+<div class="block">You can update the features JSON with new features to evaluate against.</div>
+<dl class="notes">
+<dt>Parameters:</dt>
+<dd><code>featuresJson</code> - updated features</dd>
+</dl>
+</section>
+</li>
+<li>
+<section class="detail" id="builder()">
+<h3>builder</h3>
+<div class="member-signature"><span class="modifiers">public static</span>&nbsp;<span class="return-type"><a href="Context.ContextBuilder.html" title="class in growthbook.sdk.java.models">Context.ContextBuilder</a></span>&nbsp;<span class="element-name">builder</span>()</div>
+<div class="block">The builder class to help create a context. You can use this or <a href="#create(java.lang.String,java.lang.String,java.lang.Boolean,java.lang.Boolean,java.lang.String,java.util.Map,growthbook.sdk.java.models.TrackingCallback)"><code>create(String, String, Boolean, Boolean, String, Map, TrackingCallback)</code></a> to create a <a href="Context.html" title="class in growthbook.sdk.java.models"><code>Context</code></a></div>
+<dl class="notes">
+<dt>Returns:</dt>
+<dd><code>Context.CustomContextBuilder</code></dd>
+</dl>
 </section>
 </li>
 </ul>

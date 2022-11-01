@@ -15,7 +15,11 @@
 <script type="text/javascript" src="../../../script-dir/jquery-ui.min.js"></script>
 </head>
 <body class="class-declaration-page">
-<script type="text/javascript">var pathtoroot = "../../../";
+<script type="text/javascript">var evenRowColor = "even-row-color";
+var oddRowColor = "odd-row-color";
+var tableTab = "table-tab";
+var activeTableTab = "active-table-tab";
+var pathtoroot = "../../../";
 loadScripts(document, 'script');</script>
 <noscript>
 <div>JavaScript is disabled on your browser.</div>
@@ -48,7 +52,7 @@ loadScripts(document, 'script');</script>
 <li>Detail:&nbsp;</li>
 <li>Field&nbsp;|&nbsp;</li>
 <li><a href="#constructor-detail">Constr</a>&nbsp;|&nbsp;</li>
-<li>Method</li>
+<li><a href="#method-detail">Method</a></li>
 </ul>
 </div>
 <div class="nav-list-search"><label for="search-input">SEARCH:</label>
@@ -70,14 +74,12 @@ loadScripts(document, 'script');</script>
 <div class="inheritance">growthbook.sdk.java.GrowthBook</div>
 </div>
 <section class="class-description" id="class-description">
-<dl class="notes">
-<dt>All Implemented Interfaces:</dt>
-<dd><code><a href="IGrowthBook.html" title="interface in growthbook.sdk.java">IGrowthBook</a></code></dd>
-</dl>
 <hr>
 <div class="type-signature"><span class="modifiers">public class </span><span class="element-name type-name-label">GrowthBook</span>
-<span class="extends-implements">extends <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html" title="class or interface in java.lang" class="external-link">Object</a>
-implements <a href="IGrowthBook.html" title="interface in growthbook.sdk.java">IGrowthBook</a></span></div>
+<span class="extends-implements">extends <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html" title="class or interface in java.lang" class="external-link">Object</a></span></div>
+<div class="block">GrowthBook SDK class.
+ Build a context with <a href="models/Context.html#builder()"><code>Context.builder()</code></a> or <a href="models/Context.html#create(java.lang.String,java.lang.String,java.lang.Boolean,java.lang.Boolean,java.lang.String,java.util.Map,growthbook.sdk.java.models.TrackingCallback)"><code>Context.create(String, String, Boolean, Boolean, String, Map, TrackingCallback)</code></a>
+ and pass it as an argument to the class constructor.</div>
 </section>
 <section class="summary">
 <ul class="summary-list">
@@ -90,7 +92,13 @@ implements <a href="IGrowthBook.html" title="interface in growthbook.sdk.java">I
 <div class="table-header col-first">Constructor</div>
 <div class="table-header col-last">Description</div>
 <div class="col-constructor-name even-row-color"><code><a href="#%3Cinit%3E()" class="member-name-link">GrowthBook</a>()</code></div>
-<div class="col-last even-row-color">&nbsp;</div>
+<div class="col-last even-row-color">
+<div class="block">No-args constructor.</div>
+</div>
+<div class="col-constructor-name odd-row-color"><code><a href="#%3Cinit%3E(growthbook.sdk.java.models.Context)" class="member-name-link">GrowthBook</a><wbr>(<a href="models/Context.html" title="class in growthbook.sdk.java.models">Context</a>&nbsp;context)</code></div>
+<div class="col-last odd-row-color">
+<div class="block">Initialize the GrowthBook SDK with a provided <a href="models/Context.html" title="class in growthbook.sdk.java.models"><code>Context</code></a></div>
+</div>
 </div>
 </section>
 </li>
@@ -98,9 +106,59 @@ implements <a href="IGrowthBook.html" title="interface in growthbook.sdk.java">I
 <li>
 <section class="method-summary" id="method-summary">
 <h2>Method Summary</h2>
+<div id="method-summary-table">
+<div class="table-tabs" role="tablist" aria-orientation="horizontal"><button id="method-summary-table-tab0" role="tab" aria-selected="true" aria-controls="method-summary-table.tabpanel" tabindex="0" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table', 3)" class="active-table-tab">All Methods</button><button id="method-summary-table-tab2" role="tab" aria-selected="false" aria-controls="method-summary-table.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table-tab2', 3)" class="table-tab">Instance Methods</button><button id="method-summary-table-tab4" role="tab" aria-selected="false" aria-controls="method-summary-table.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table-tab4', 3)" class="table-tab">Concrete Methods</button></div>
+<div id="method-summary-table.tabpanel" role="tabpanel">
+<div class="summary-table three-column-summary" aria-labelledby="method-summary-table-tab0">
+<div class="table-header col-first">Modifier and Type</div>
+<div class="table-header col-second">Method</div>
+<div class="table-header col-last">Description</div>
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>void</code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#destroy()" class="member-name-link">destroy</a>()</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">&nbsp;</div>
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>&lt;ValueType&gt;<br><a href="models/FeatureResult.html" title="class in growthbook.sdk.java.models">FeatureResult</a>&lt;ValueType&gt;</code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#evalFeature(java.lang.String)" class="member-name-link">evalFeature</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;key)</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">&nbsp;</div>
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Boolean.html" title="class or interface in java.lang" class="external-link">Boolean</a></code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#getFeatureValue(java.lang.String,java.lang.Boolean)" class="member-name-link">getFeatureValue</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;featureKey,
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Boolean.html" title="class or interface in java.lang" class="external-link">Boolean</a>&nbsp;defaultValue)</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">&nbsp;</div>
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Float.html" title="class or interface in java.lang" class="external-link">Float</a></code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#getFeatureValue(java.lang.String,java.lang.Float)" class="member-name-link">getFeatureValue</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;featureKey,
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Float.html" title="class or interface in java.lang" class="external-link">Float</a>&nbsp;defaultValue)</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">&nbsp;</div>
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Integer.html" title="class or interface in java.lang" class="external-link">Integer</a></code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#getFeatureValue(java.lang.String,java.lang.Integer)" class="member-name-link">getFeatureValue</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;featureKey,
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Integer.html" title="class or interface in java.lang" class="external-link">Integer</a>&nbsp;defaultValue)</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">&nbsp;</div>
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a></code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#getFeatureValue(java.lang.String,java.lang.String)" class="member-name-link">getFeatureValue</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;featureKey,
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;defaultValue)</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">&nbsp;</div>
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a></code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#getRawFeatureValue(java.lang.String)" class="member-name-link">getRawFeatureValue</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;featureKey)</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">&nbsp;</div>
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Boolean.html" title="class or interface in java.lang" class="external-link">Boolean</a></code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#isOff(java.lang.String)" class="member-name-link">isOff</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;featureKey)</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">&nbsp;</div>
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Boolean.html" title="class or interface in java.lang" class="external-link">Boolean</a></code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#isOn(java.lang.String)" class="member-name-link">isOn</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;featureKey)</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">&nbsp;</div>
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>&lt;ValueType&gt;<br><a href="models/ExperimentResult.html" title="class in growthbook.sdk.java.models">ExperimentResult</a>&lt;ValueType&gt;</code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#run(growthbook.sdk.java.models.Experiment)" class="member-name-link">run</a><wbr>(<a href="models/Experiment.html" title="class in growthbook.sdk.java.models">Experiment</a>&lt;ValueType&gt;&nbsp;experiment)</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">&nbsp;</div>
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>void</code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#setFeatures(java.lang.String)" class="member-name-link">setFeatures</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;featuresJsonString)</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">&nbsp;</div>
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>void</code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#subscribe(growthbook.sdk.java.models.ExperimentRunCallback)" class="member-name-link">subscribe</a><wbr>(<a href="models/ExperimentRunCallback.html" title="interface in growthbook.sdk.java.models">ExperimentRunCallback</a>&nbsp;callback)</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">&nbsp;</div>
+</div>
+</div>
+</div>
 <div class="inherited-list">
 <h3 id="methods-inherited-from-class-java.lang.Object">Methods inherited from class&nbsp;java.lang.<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html" title="class or interface in java.lang" class="external-link">Object</a></h3>
-<code><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html#clone()" title="class or interface in java.lang" class="external-link">clone</a>, <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html#equals(java.lang.Object)" title="class or interface in java.lang" class="external-link">equals</a>, <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html#finalize()" title="class or interface in java.lang" class="external-link">finalize</a>, <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html#getClass()" title="class or interface in java.lang" class="external-link">getClass</a>, <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html#hashCode()" title="class or interface in java.lang" class="external-link">hashCode</a>, <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html#notify()" title="class or interface in java.lang" class="external-link">notify</a>, <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html#notifyAll()" title="class or interface in java.lang" class="external-link">notifyAll</a>, <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html#toString()" title="class or interface in java.lang" class="external-link">toString</a>, <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html#wait()" title="class or interface in java.lang" class="external-link">wait</a>, <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html#wait(long)" title="class or interface in java.lang" class="external-link">wait</a>, <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html#wait(long,int)" title="class or interface in java.lang" class="external-link">wait</a></code></div>
+<code><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html#equals(java.lang.Object)" title="class or interface in java.lang" class="external-link">equals</a>, <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html#getClass()" title="class or interface in java.lang" class="external-link">getClass</a>, <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html#hashCode()" title="class or interface in java.lang" class="external-link">hashCode</a>, <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html#notify()" title="class or interface in java.lang" class="external-link">notify</a>, <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html#notifyAll()" title="class or interface in java.lang" class="external-link">notifyAll</a>, <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html#toString()" title="class or interface in java.lang" class="external-link">toString</a>, <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html#wait()" title="class or interface in java.lang" class="external-link">wait</a>, <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html#wait(long)" title="class or interface in java.lang" class="external-link">wait</a>, <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html#wait(long,int)" title="class or interface in java.lang" class="external-link">wait</a></code></div>
 </section>
 </li>
 </ul>
@@ -113,9 +171,108 @@ implements <a href="IGrowthBook.html" title="interface in growthbook.sdk.java">I
 <h2>Constructor Details</h2>
 <ul class="member-list">
 <li>
+<section class="detail" id="&lt;init&gt;(growthbook.sdk.java.models.Context)">
+<h3>GrowthBook</h3>
+<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="element-name">GrowthBook</span><wbr><span class="parameters">(<a href="models/Context.html" title="class in growthbook.sdk.java.models">Context</a>&nbsp;context)</span></div>
+<div class="block">Initialize the GrowthBook SDK with a provided <a href="models/Context.html" title="class in growthbook.sdk.java.models"><code>Context</code></a></div>
+<dl class="notes">
+<dt>Parameters:</dt>
+<dd><code>context</code> - <a href="models/Context.html" title="class in growthbook.sdk.java.models"><code>Context</code></a></dd>
+</dl>
+</section>
+</li>
+<li>
 <section class="detail" id="&lt;init&gt;()">
 <h3>GrowthBook</h3>
 <div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="element-name">GrowthBook</span>()</div>
+<div class="block">No-args constructor. A <a href="models/Context.html" title="class in growthbook.sdk.java.models"><code>Context</code></a> with default values is created.
+ It's recommended to create your own context with <a href="models/Context.html#builder()"><code>Context.builder()</code></a> or <a href="models/Context.html#create(java.lang.String,java.lang.String,java.lang.Boolean,java.lang.Boolean,java.lang.String,java.util.Map,growthbook.sdk.java.models.TrackingCallback)"><code>Context.create(String, String, Boolean, Boolean, String, Map, TrackingCallback)</code></a></div>
+</section>
+</li>
+</ul>
+</section>
+</li>
+<!-- ============ METHOD DETAIL ========== -->
+<li>
+<section class="method-details" id="method-detail">
+<h2>Method Details</h2>
+<ul class="member-list">
+<li>
+<section class="detail" id="evalFeature(java.lang.String)">
+<h3>evalFeature</h3>
+<div class="member-signature"><span class="annotations">@Nullable
+</span><span class="modifiers">public</span>&nbsp;<span class="type-parameters">&lt;ValueType&gt;</span>&nbsp;<span class="return-type"><a href="models/FeatureResult.html" title="class in growthbook.sdk.java.models">FeatureResult</a>&lt;ValueType&gt;</span>&nbsp;<span class="element-name">evalFeature</span><wbr><span class="parameters">(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;key)</span></div>
+</section>
+</li>
+<li>
+<section class="detail" id="setFeatures(java.lang.String)">
+<h3>setFeatures</h3>
+<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type">void</span>&nbsp;<span class="element-name">setFeatures</span><wbr><span class="parameters">(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;featuresJsonString)</span></div>
+</section>
+</li>
+<li>
+<section class="detail" id="run(growthbook.sdk.java.models.Experiment)">
+<h3>run</h3>
+<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="type-parameters">&lt;ValueType&gt;</span>&nbsp;<span class="return-type"><a href="models/ExperimentResult.html" title="class in growthbook.sdk.java.models">ExperimentResult</a>&lt;ValueType&gt;</span>&nbsp;<span class="element-name">run</span><wbr><span class="parameters">(<a href="models/Experiment.html" title="class in growthbook.sdk.java.models">Experiment</a>&lt;ValueType&gt;&nbsp;experiment)</span></div>
+</section>
+</li>
+<li>
+<section class="detail" id="isOn(java.lang.String)">
+<h3>isOn</h3>
+<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Boolean.html" title="class or interface in java.lang" class="external-link">Boolean</a></span>&nbsp;<span class="element-name">isOn</span><wbr><span class="parameters">(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;featureKey)</span></div>
+</section>
+</li>
+<li>
+<section class="detail" id="isOff(java.lang.String)">
+<h3>isOff</h3>
+<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Boolean.html" title="class or interface in java.lang" class="external-link">Boolean</a></span>&nbsp;<span class="element-name">isOff</span><wbr><span class="parameters">(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;featureKey)</span></div>
+</section>
+</li>
+<li>
+<section class="detail" id="getFeatureValue(java.lang.String,java.lang.Boolean)">
+<h3>getFeatureValue</h3>
+<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Boolean.html" title="class or interface in java.lang" class="external-link">Boolean</a></span>&nbsp;<span class="element-name">getFeatureValue</span><wbr><span class="parameters">(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;featureKey,
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Boolean.html" title="class or interface in java.lang" class="external-link">Boolean</a>&nbsp;defaultValue)</span></div>
+</section>
+</li>
+<li>
+<section class="detail" id="getFeatureValue(java.lang.String,java.lang.String)">
+<h3>getFeatureValue</h3>
+<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a></span>&nbsp;<span class="element-name">getFeatureValue</span><wbr><span class="parameters">(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;featureKey,
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;defaultValue)</span></div>
+</section>
+</li>
+<li>
+<section class="detail" id="getFeatureValue(java.lang.String,java.lang.Float)">
+<h3>getFeatureValue</h3>
+<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Float.html" title="class or interface in java.lang" class="external-link">Float</a></span>&nbsp;<span class="element-name">getFeatureValue</span><wbr><span class="parameters">(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;featureKey,
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Float.html" title="class or interface in java.lang" class="external-link">Float</a>&nbsp;defaultValue)</span></div>
+</section>
+</li>
+<li>
+<section class="detail" id="getFeatureValue(java.lang.String,java.lang.Integer)">
+<h3>getFeatureValue</h3>
+<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Integer.html" title="class or interface in java.lang" class="external-link">Integer</a></span>&nbsp;<span class="element-name">getFeatureValue</span><wbr><span class="parameters">(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;featureKey,
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Integer.html" title="class or interface in java.lang" class="external-link">Integer</a>&nbsp;defaultValue)</span></div>
+</section>
+</li>
+<li>
+<section class="detail" id="getRawFeatureValue(java.lang.String)">
+<h3>getRawFeatureValue</h3>
+<div class="member-signature"><span class="annotations">@Nullable
+</span><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a></span>&nbsp;<span class="element-name">getRawFeatureValue</span><wbr><span class="parameters">(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;featureKey)</span></div>
+</section>
+</li>
+<li>
+<section class="detail" id="destroy()">
+<h3>destroy</h3>
+<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type">void</span>&nbsp;<span class="element-name">destroy</span>()</div>
+</section>
+</li>
+<li>
+<section class="detail" id="subscribe(growthbook.sdk.java.models.ExperimentRunCallback)">
+<h3>subscribe</h3>
+<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type">void</span>&nbsp;<span class="element-name">subscribe</span><wbr><span class="parameters">(<a href="models/ExperimentRunCallback.html" title="interface in growthbook.sdk.java.models">ExperimentRunCallback</a>&nbsp;callback)</span></div>
 </section>
 </li>
 </ul>

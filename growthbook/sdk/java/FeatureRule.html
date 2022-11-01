@@ -40,13 +40,13 @@ loadScripts(document, 'script');</script>
 <ul class="sub-nav-list">
 <li>Summary:&nbsp;</li>
 <li>Nested&nbsp;|&nbsp;</li>
-<li><a href="#field-summary">Field</a>&nbsp;|&nbsp;</li>
+<li>Field&nbsp;|&nbsp;</li>
 <li><a href="#constructor-summary">Constr</a>&nbsp;|&nbsp;</li>
 <li><a href="#method-summary">Method</a></li>
 </ul>
 <ul class="sub-nav-list">
 <li>Detail:&nbsp;</li>
-<li><a href="#field-detail">Field</a>&nbsp;|&nbsp;</li>
+<li>Field&nbsp;|&nbsp;</li>
 <li><a href="#constructor-detail">Constr</a>&nbsp;|&nbsp;</li>
 <li>Method</li>
 </ul>
@@ -70,47 +70,28 @@ loadScripts(document, 'script');</script>
 <div class="inheritance">growthbook.sdk.java.FeatureRule&lt;ValueType&gt;</div>
 </div>
 <section class="class-description" id="class-description">
+<dl class="notes">
+<dt>Type Parameters:</dt>
+<dd><code>ValueType</code> - generic type for the value type for this experiment's variations.</dd>
+</dl>
 <hr>
 <div class="type-signature"><span class="modifiers">public class </span><span class="element-name type-name-label">FeatureRule&lt;ValueType&gt;</span>
 <span class="extends-implements">extends <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html" title="class or interface in java.lang" class="external-link">Object</a></span></div>
+<div class="block">Overrides the defaultValue of a Feature. Has a number of optional properties
+
+ <ul>
+ <li>condition (Condition) - Optional targeting condition</li>
+ <li>coverage (number) - What percent of users should be included in the experiment (between 0 and 1, inclusive)</li>
+ <li>force (any) - Immediately force a specific value (ignore every other option besides condition and coverage)</li>
+ <li>variations (any[]) - Run an experiment (A/B test) and randomly choose between these variations</li>
+ <li>key (string) - The globally unique tracking key for the experiment (default to the feature key)</li>
+ <li>weights (number[]) - How to weight traffic between variations. Must add to 1.</li>
+ <li>namespace (Namespace) - Adds the experiment to a namespace</li>
+ <li>hashAttribute (string) - What user attribute should be used to assign variations (defaults to id)</li>
+ </ul></div>
 </section>
 <section class="summary">
 <ul class="summary-list">
-<!-- =========== FIELD SUMMARY =========== -->
-<li>
-<section class="field-summary" id="field-summary">
-<h2>Field Summary</h2>
-<div class="caption"><span>Fields</span></div>
-<div class="summary-table three-column-summary">
-<div class="table-header col-first">Modifier and Type</div>
-<div class="table-header col-second">Field</div>
-<div class="table-header col-last">Description</div>
-<div class="col-first even-row-color"><code>(package private) <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Float.html" title="class or interface in java.lang" class="external-link">Float</a></code></div>
-<div class="col-second even-row-color"><code><a href="#coverage" class="member-name-link">coverage</a></code></div>
-<div class="col-last even-row-color">&nbsp;</div>
-<div class="col-first odd-row-color"><code>(package private) <a href="FeatureRule.html" title="type parameter in FeatureRule">ValueType</a></code></div>
-<div class="col-second odd-row-color"><code><a href="#force" class="member-name-link">force</a></code></div>
-<div class="col-last odd-row-color">
-<div class="block">Immediately force a specific value (ignore every other option besides condition and coverage)</div>
-</div>
-<div class="col-first even-row-color"><code>(package private) <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a></code></div>
-<div class="col-second even-row-color"><code><a href="#hashAttribute" class="member-name-link">hashAttribute</a></code></div>
-<div class="col-last even-row-color">
-<div class="block">What user attribute should be used to assign variations (defaults to `id`)</div>
-</div>
-<div class="col-first odd-row-color"><code>(package private) <a href="models/Namespace.html" title="class in growthbook.sdk.java.models">Namespace</a></code></div>
-<div class="col-second odd-row-color"><code><a href="#namespace" class="member-name-link">namespace</a></code></div>
-<div class="col-last odd-row-color">
-<div class="block">Adds the experiment to a namespace</div>
-</div>
-<div class="col-first even-row-color"><code>(package private) <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/ArrayList.html" title="class or interface in java.util" class="external-link">ArrayList</a>&lt;<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Float.html" title="class or interface in java.lang" class="external-link">Float</a>&gt;</code></div>
-<div class="col-second even-row-color"><code><a href="#weights" class="member-name-link">weights</a></code></div>
-<div class="col-last even-row-color">
-<div class="block">How to weight traffic between variations.</div>
-</div>
-</div>
-</section>
-</li>
 <!-- ======== CONSTRUCTOR SUMMARY ======== -->
 <li>
 <section class="constructor-summary" id="constructor-summary">
@@ -130,59 +111,13 @@ loadScripts(document, 'script');</script>
 <h2>Method Summary</h2>
 <div class="inherited-list">
 <h3 id="methods-inherited-from-class-java.lang.Object">Methods inherited from class&nbsp;java.lang.<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html" title="class or interface in java.lang" class="external-link">Object</a></h3>
-<code><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html#clone()" title="class or interface in java.lang" class="external-link">clone</a>, <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html#equals(java.lang.Object)" title="class or interface in java.lang" class="external-link">equals</a>, <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html#finalize()" title="class or interface in java.lang" class="external-link">finalize</a>, <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html#getClass()" title="class or interface in java.lang" class="external-link">getClass</a>, <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html#hashCode()" title="class or interface in java.lang" class="external-link">hashCode</a>, <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html#notify()" title="class or interface in java.lang" class="external-link">notify</a>, <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html#notifyAll()" title="class or interface in java.lang" class="external-link">notifyAll</a>, <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html#toString()" title="class or interface in java.lang" class="external-link">toString</a>, <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html#wait()" title="class or interface in java.lang" class="external-link">wait</a>, <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html#wait(long)" title="class or interface in java.lang" class="external-link">wait</a>, <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html#wait(long,int)" title="class or interface in java.lang" class="external-link">wait</a></code></div>
+<code><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html#equals(java.lang.Object)" title="class or interface in java.lang" class="external-link">equals</a>, <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html#getClass()" title="class or interface in java.lang" class="external-link">getClass</a>, <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html#hashCode()" title="class or interface in java.lang" class="external-link">hashCode</a>, <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html#notify()" title="class or interface in java.lang" class="external-link">notify</a>, <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html#notifyAll()" title="class or interface in java.lang" class="external-link">notifyAll</a>, <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html#toString()" title="class or interface in java.lang" class="external-link">toString</a>, <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html#wait()" title="class or interface in java.lang" class="external-link">wait</a>, <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html#wait(long)" title="class or interface in java.lang" class="external-link">wait</a>, <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html#wait(long,int)" title="class or interface in java.lang" class="external-link">wait</a></code></div>
 </section>
 </li>
 </ul>
 </section>
 <section class="details">
 <ul class="details-list">
-<!-- ============ FIELD DETAIL =========== -->
-<li>
-<section class="field-details" id="field-detail">
-<h2>Field Details</h2>
-<ul class="member-list">
-<li>
-<section class="detail" id="coverage">
-<h3>coverage</h3>
-<div class="member-signature"><span class="annotations">@Nullable
-</span><span class="return-type"><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Float.html" title="class or interface in java.lang" class="external-link">Float</a></span>&nbsp;<span class="element-name">coverage</span></div>
-</section>
-</li>
-<li>
-<section class="detail" id="force">
-<h3>force</h3>
-<div class="member-signature"><span class="annotations">@Nullable
-</span><span class="return-type"><a href="FeatureRule.html" title="type parameter in FeatureRule">ValueType</a></span>&nbsp;<span class="element-name">force</span></div>
-<div class="block">Immediately force a specific value (ignore every other option besides condition and coverage)</div>
-</section>
-</li>
-<li>
-<section class="detail" id="weights">
-<h3>weights</h3>
-<div class="member-signature"><span class="annotations">@Nullable
-</span><span class="return-type"><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/ArrayList.html" title="class or interface in java.util" class="external-link">ArrayList</a>&lt;<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Float.html" title="class or interface in java.lang" class="external-link">Float</a>&gt;</span>&nbsp;<span class="element-name">weights</span></div>
-<div class="block">How to weight traffic between variations. Must add to 1.</div>
-</section>
-</li>
-<li>
-<section class="detail" id="namespace">
-<h3>namespace</h3>
-<div class="member-signature"><span class="annotations">@Nullable
-</span><span class="return-type"><a href="models/Namespace.html" title="class in growthbook.sdk.java.models">Namespace</a></span>&nbsp;<span class="element-name">namespace</span></div>
-<div class="block">Adds the experiment to a namespace</div>
-</section>
-</li>
-<li>
-<section class="detail" id="hashAttribute">
-<h3>hashAttribute</h3>
-<div class="member-signature"><span class="return-type"><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a></span>&nbsp;<span class="element-name">hashAttribute</span></div>
-<div class="block">What user attribute should be used to assign variations (defaults to `id`)</div>
-</section>
-</li>
-</ul>
-</section>
-</li>
 <!-- ========= CONSTRUCTOR DETAIL ======== -->
 <li>
 <section class="constructor-details" id="constructor-detail">
