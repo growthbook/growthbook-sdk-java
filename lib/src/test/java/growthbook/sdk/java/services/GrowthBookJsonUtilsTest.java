@@ -1,13 +1,16 @@
 package growthbook.sdk.java.services;
 
+import com.google.gson.Gson;
+import com.google.gson.JsonElement;
 import growthbook.sdk.java.models.BucketRange;
+import growthbook.sdk.java.models.DataType;
 import growthbook.sdk.java.models.Namespace;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.*;
 
 class GrowthBookJsonUtilsTest {
-    GrowthBookJsonUtils subject = GrowthBookJsonUtils.getInstance();
+    final GrowthBookJsonUtils subject = GrowthBookJsonUtils.getInstance();
 
     @Test
     void canSerializeNamespaces() {
@@ -43,5 +46,18 @@ class GrowthBookJsonUtilsTest {
 
         assertEquals(subject.getRangeStart(), 0.3f);
         assertEquals(subject.getRangeEnd(), 0.7f);
+    }
+
+
+    @Test
+    void test_getElementType() {
+        Gson gson = GrowthBookJsonUtils.getInstance().gson;
+
+        assertEquals(DataType.NULL, GrowthBookJsonUtils.getElementType(gson.fromJson("null", JsonElement.class)));
+        assertEquals(DataType.ARRAY, GrowthBookJsonUtils.getElementType(gson.fromJson("[1]", JsonElement.class)));
+        assertEquals(DataType.OBJECT, GrowthBookJsonUtils.getElementType(gson.fromJson("{ \"foo\": 2}", JsonElement.class)));
+        assertEquals(DataType.BOOLEAN, GrowthBookJsonUtils.getElementType(gson.fromJson("true", JsonElement.class)));
+        assertEquals(DataType.NUMBER, GrowthBookJsonUtils.getElementType(gson.fromJson("1337", JsonElement.class)));
+        assertEquals(DataType.STRING, GrowthBookJsonUtils.getElementType(gson.fromJson("\"hello\"", JsonElement.class)));
     }
 }

@@ -5,8 +5,8 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
 import com.google.gson.reflect.TypeToken;
+import growthbook.sdk.java.models.DataType;
 import growthbook.sdk.java.models.Operator;
-import growthbook.sdk.java.models.UserAttributes;
 
 import javax.annotation.Nullable;
 import java.lang.reflect.Type;
@@ -14,38 +14,15 @@ import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+/**
+ * <b>INTERNAL</b>: Implementation of condition evaluation
+ */
 public class ConditionEvaluator implements IConditionEvaluator {
-
-    enum DataType {
-        STRING("string"),
-        NUMBER("number"),
-        BOOLEAN("boolean"),
-        ARRAY("array"),
-        OBJECT("object"),
-        NULL("null"),
-        UNDEFINED("undefined"),
-        UNKNOWN("unknown"),
-        ;
-        private final String rawValue;
-
-        DataType(String rawValue) {
-            this.rawValue = rawValue;
-        }
-
-        @Override
-        public String toString() {
-            return this.rawValue;
-        }
-    }
 
     private final GrowthBookJsonUtils jsonUtils = GrowthBookJsonUtils.getInstance();
 
     /**
      * Evaluate a condition for a set of user attributes based on the provided condition.
-     * <p>
-     * If you are using the {@link UserAttributes} interface, you can call <code>userAttributes.toJson()</code>
-     * before passing it to this method.
-     * <p>
      * The condition syntax closely resembles MongoDB's syntax.
      * This is defined in the Feature's targeting conditions' Advanced settings.
      *
@@ -158,32 +135,6 @@ public class ConditionEvaluator implements IConditionEvaluator {
         return element;
     }
 
-    DataType getType(@Nullable JsonElement element) {
-        try {
-            if (element == null) return DataType.UNDEFINED;
-
-            if (element.toString().equals("null")) {
-                return DataType.NULL;
-            }
-
-            if (element.isJsonPrimitive()) {
-                JsonPrimitive primitive = element.getAsJsonPrimitive();
-                if (primitive.isBoolean()) return DataType.BOOLEAN;
-                if (primitive.isNumber()) return DataType.NUMBER;
-                if (primitive.isString()) return DataType.STRING;
-            }
-
-            if (element.isJsonArray()) return DataType.ARRAY;
-            if (element.isJsonObject()) return DataType.OBJECT;
-
-            return DataType.UNKNOWN;
-        } catch (RuntimeException e) {
-            e.printStackTrace();
-            return DataType.UNKNOWN;
-        }
-    }
-
-
 
     /**
      * Evaluates the condition using the operator. For example, if you provide the following condition:
@@ -241,7 +192,7 @@ public class ConditionEvaluator implements IConditionEvaluator {
         Operator operator = Operator.fromString(operatorString);
         if (operator == null) return false;
 
-        DataType attributeDataType = getType(actual);
+        DataType attributeDataType = GrowthBookJsonUtils.getElementType(actual);
 
         switch (operator) {
             case IN:
@@ -355,6 +306,7 @@ public class ConditionEvaluator implements IConditionEvaluator {
                 return evalConditionValue(expected, size);
 
             case ELEMENT_MATCH:
+                if (actual == null) return false;
                 return elemMatch(actual, expected);
 
             case ALL:
@@ -377,7 +329,7 @@ public class ConditionEvaluator implements IConditionEvaluator {
                 return !evalConditionValue(expected, actual);
 
             case TYPE:
-                return getType(actual).toString().equals(expected.getAsString());
+                return GrowthBookJsonUtils.getElementType(actual).toString().equals(expected.getAsString());
 
             case EXISTS:
                 boolean exists = expected.getAsBoolean();
@@ -397,10 +349,10 @@ public class ConditionEvaluator implements IConditionEvaluator {
 
     /**
      * Compares two primitives for equality.
-     * @param a
-     * @param b
+     * @param a left side primitive
+     * @param b right side primitive
      * @param dataType The data type of the primitives
-     * @return
+     * @return if they are equal
      */
     Boolean arePrimitivesEqual(JsonPrimitive a, JsonPrimitive b, DataType dataType) {
         switch (dataType) {
@@ -431,11 +383,11 @@ public class ConditionEvaluator implements IConditionEvaluator {
      * Loop over each key/value pair
      * If evalOperatorCondition(key, attributeValue, value) is false, return false
      * Return true
-     * Else, do a deep comparison between attributeValue and conditionValue. Return true if equal, false if not.
+     * Else, do a deep comparison between attributeValue and conditionValue.
      *
-     * @param conditionValue
-     * @param attributeValue
-     * @return
+     * @param conditionValue Object or primitive
+     * @param attributeValue Object or primitive
+     * @return true if equal
      */
     Boolean evalConditionValue(JsonElement conditionValue, @Nullable JsonElement attributeValue) {
         if (conditionValue.isJsonObject()) {

@@ -5,7 +5,8 @@ import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
 class FeatureRuleTest {
 
@@ -15,6 +16,8 @@ class FeatureRuleTest {
         weights.add(0.3f);
         weights.add(0.7f);
 
+        ArrayList<Integer> variations = new ArrayList<>();
+
         Namespace namespace = Namespace
                 .builder()
                 .id("pricing")
@@ -22,18 +25,21 @@ class FeatureRuleTest {
                 .rangeEnd(0.6f)
                 .build();
 
-        FeatureRule<String> subject = new FeatureRule<String>(
+        FeatureRule<Integer> subject = new FeatureRule<Integer>(
+                "my-key",
                 0.5f,
-                "forced-value",
+                100,
+                variations,
                 weights,
                 namespace,
-                "_id"
+                "_id",
+                null
         );
 
         assertEquals(0.5f, subject.coverage);
         assertEquals(0.5f, subject.getCoverage());
-        assertEquals("forced-value", subject.force);
-        assertEquals("forced-value", subject.getForce());
+        assertEquals(100, subject.force);
+        assertEquals(100, subject.getForce());
         assertEquals(namespace, subject.namespace);
         assertEquals(namespace, subject.getNamespace());
         assertEquals("_id", subject.hashAttribute);
@@ -47,6 +53,8 @@ class FeatureRuleTest {
         ArrayList<Float> weights = new ArrayList<Float>();
         weights.add(0.3f);
         weights.add(0.7f);
+
+        ArrayList<String> variations = new ArrayList<>();
 
         Namespace namespace = Namespace
                 .builder()

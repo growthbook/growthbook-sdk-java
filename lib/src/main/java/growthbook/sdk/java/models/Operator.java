@@ -2,6 +2,9 @@ package growthbook.sdk.java.models;
 
 import javax.annotation.Nullable;
 
+/**
+ * Operator for use in the condition JSON
+ */
 public enum Operator {
     /**
      * $in

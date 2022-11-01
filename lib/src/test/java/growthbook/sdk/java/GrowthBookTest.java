@@ -3,6 +3,173 @@
  */
 package growthbook.sdk.java;
 
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.google.gson.reflect.TypeToken;
+import growthbook.sdk.java.testhelpers.TestCasesJsonHelper;
+import growthbook.sdk.java.testhelpers.TestContext;
+import growthbook.sdk.java.models.*;
+import growthbook.sdk.java.services.GrowthBookJsonUtils;
+import org.junit.jupiter.api.Test;
+
+import java.lang.reflect.Type;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Objects;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+
 class GrowthBookTest {
+
+    final TestCasesJsonHelper helper = TestCasesJsonHelper.getInstance();
+    final GrowthBookJsonUtils jsonUtils = GrowthBookJsonUtils.getInstance();
+
+    @Test
+    void test_evalFeature() {
+        JsonArray testCases = helper.featureTestCases();
+
+        ArrayList<String> passedTests = new ArrayList<>();
+        ArrayList<String> failedTests = new ArrayList<>();
+        ArrayList<Integer> failingIndexes = new ArrayList<>();
+
+        for (int i = 0; i < testCases.size(); i++) {
+            JsonObject testCase = (JsonObject) testCases.get(i);
+            String testDescription = testCase.get("name").getAsString();
+
+            String featuresJson = testCase.get("context").getAsJsonObject().get("features").getAsString();
+
+            String attributesJson = testCase.get("context").getAsJsonObject().get("attributes").getAsString();
+
+            Type forcedVariationsType = new TypeToken<HashMap<String, Integer>>() {}.getType();
+            HashMap<String, Integer> forcedVariations = jsonUtils.gson.fromJson(testCase.get("context").getAsJsonObject().get("forcedVariations"), forcedVariationsType);
+
+//            System.out.println("\n\n--------------------------");
+//            System.out.printf("evalFeature test: %s (index = %s)", testDescription, i);
+//            System.out.printf("\n features: %s", featuresJson);
+//            System.out.printf("\n attributesJson: %s", attributesJson);
+
+            Context context = Context
+                    .builder()
+                    .featuresJson(featuresJson)
+                    .attributesJson(attributesJson)
+                    .forcedVariationsMap(forcedVariations)
+                    .build();
+
+//            System.out.printf("\n context: %s", context);
+            String featureKey = testCase.get("feature").getAsString();
+//            String type = testCase.get("type").getAsString();
+
+            GrowthBook subject = new GrowthBook(context);
+            String expectedString = testCase.get("result").getAsString();
+            FeatureResult expectedResult = jsonUtils.gson.fromJson(expectedString, FeatureResult.class);
+
+            FeatureResult<Object> result = subject.evalFeature(featureKey);
+//            System.out.printf("\n\n Eval Feature result: %s - JSON: %s", result, result.toJson());
+
+            boolean passes = expectedResult.equals(result);
+
+            if (passes) {
+                passedTests.add(testDescription);
+            } else {
+                System.out.printf("\n\nExpected result = %s", expectedResult);
+                System.out.printf("\n  Actual result = %s", result);
+
+                failedTests.add(testDescription);
+                failingIndexes.add(i);
+            }
+        }
+
+        System.out.printf("\n\n✅ evalFeature - Passed tests: %s", passedTests);
+        System.out.printf("\n\n\n❗️ evalFeature - Failed tests = %s / %s . Failing = %s", failedTests.size(), testCases.size(), failedTests);
+        System.out.printf("\n\n\n evalFeature - Failing indexes = %s", failingIndexes);
+
+        assertEquals(0, failedTests.size(), "There are failing tests");
+    }
+
+    @Test
+    void run_executesExperimentResultCallbacks() {
+        GrowthBook subject = new GrowthBook();
+        ExperimentRunCallback mockCallback1 = mock(ExperimentRunCallback.class);
+        ExperimentRunCallback mockCallback2 = mock(ExperimentRunCallback.class);
+        Experiment<String> mockExperiment = Experiment.<String>builder().build();
+
+        subject.subscribe(mockCallback1);
+        subject.subscribe(mockCallback2);
+        ExperimentResult<String> result = subject.run(mockExperiment);
+
+        verify(mockCallback1).onRun(result);
+        verify(mockCallback2).onRun(result);
+    }
+
+    @Test
+    void test_runExperiment() {
+        JsonArray testCases = helper.runTestCases();
+
+        ArrayList<String> passedTests = new ArrayList<>();
+        ArrayList<String> failedTests = new ArrayList<>();
+        ArrayList<Integer> failingIndexes = new ArrayList<>();
+
+        for (int i = 0; i < testCases.size(); i++) {
+            JsonObject testCase = (JsonObject) testCases.get(i);
+            String testDescription = testCase.get("name").getAsString();
+
+            TestContext testContext = jsonUtils.gson.fromJson(testCase.get("context").getAsJsonObject(), TestContext.class);
+
+            Context context = Context
+                    .builder()
+                    .featuresJson(testContext.features)
+                    .attributesJson(testContext.attributes)
+                    .forcedVariationsMap(testContext.forcedVariations)
+                    .isQaMode(testContext.qaMode)
+                    .enabled(testContext.enabled)
+                    .url(testContext.url)
+                    .build();
+
+            Experiment experiment = jsonUtils.gson.fromJson(testCase.get("experiment").getAsString(), Experiment.class);
+            ExperimentResult expectedResult = jsonUtils.gson.fromJson(testCase.get("result"), ExperimentResult.class);
+            JsonElement experimentElement = jsonUtils.gson.fromJson(testCase.get("experiment"), JsonElement.class);
+            if (experimentElement != null) {
+//                System.out.printf("\n\n HERE: Experiment %s (index = %s)", experiment, i);
+                JsonObject experimentObject = jsonUtils.gson.fromJson(experimentElement.getAsString(), JsonObject.class);
+                JsonElement conditionElement = experimentObject.get("condition");
+                if (conditionElement != null) {
+                    String conditionJson = conditionElement.toString();
+                    experiment.setConditionJson(conditionJson);
+                }
+            }
+
+            GrowthBook subject = new GrowthBook(context);
+            ExperimentResult result = subject.run(experiment);
+
+            boolean valueMatches = Objects.equals(result.getValue(), expectedResult.getValue());
+            boolean inExperimentMatches = Objects.equals(result.getInExperiment(), expectedResult.getInExperiment());
+            boolean hashUsed = Objects.equals(result.getHashUsed(), expectedResult.getHashUsed());
+
+            boolean passes = valueMatches && inExperimentMatches && hashUsed;
+
+            if (passes) {
+                passedTests.add(testDescription);
+            } else {
+                System.out.println("-----");
+                System.out.printf("\n\n Test %s - (index = %s) Testing with context: %s", testDescription, i, context);
+                System.out.printf("\n\n Experiment: %s", experiment);
+
+                System.out.printf("\n\nExpected result = %s", expectedResult);
+                System.out.printf("\n  Actual result = %s", result);
+
+                failedTests.add(testDescription);
+                failingIndexes.add(i);
+            }
+        }
+
+        System.out.printf("\n\n✅ run Experiment - Passed tests: %s", passedTests);
+        System.out.printf("\n\n\n❗️ run Experiment - Failed tests = %s / %s . Failing = %s", failedTests.size(), testCases.size(), failedTests);
+        System.out.printf("\n\n\n run Experiment - Failing indexes = %s", failingIndexes);
+
+        assertEquals(0, failedTests.size(), "There are failing tests");
+    }
 
 }

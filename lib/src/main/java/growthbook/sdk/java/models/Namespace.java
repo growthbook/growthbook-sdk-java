@@ -12,7 +12,7 @@ import java.lang.reflect.Type;
  * A tuple that specifies what part of a namespace an experiment includes. If two experiments are in the same namespace and their ranges don't overlap, they wil be mutually exclusive.
  * <p>
  * The tuple has 3 parts:
- * <p>
+ * </p>
  * <ul>
  *     <li>The namespace id (string)</li>
  *     <li>The beginning of the range (float, between 0 and 1)</li>
@@ -56,6 +56,10 @@ public class Namespace {
                 .build();
     }
 
+    /**
+     * A JSON string for the namespace, resulting in a triple value [id, rangeStart, rangeEnd]
+     * @return JSON string
+     */
     public String toJson() {
         return Namespace.getJson(this).toString();
     }
@@ -65,6 +69,10 @@ public class Namespace {
         return toJson();
     }
 
+    /**
+     * a Gson deserializer for {@link Namespace}
+     * @return a deserializer for {@link Namespace}
+     */
     public static JsonDeserializer<Namespace> getDeserializer() {
         return new JsonDeserializer<Namespace>() {
             @Override
@@ -74,6 +82,10 @@ public class Namespace {
         };
     }
 
+    /**
+     * a Gson serializer for {@link Namespace}
+     * @return a serializer for {@link Namespace}
+     */
     public static JsonSerializer<Namespace> getSerializer() {
         return new JsonSerializer<Namespace>() {
             @Override

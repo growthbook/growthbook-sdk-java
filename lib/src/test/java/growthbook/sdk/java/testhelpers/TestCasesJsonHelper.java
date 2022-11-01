@@ -1,4 +1,4 @@
-package growthbook.sdk.java.TestHelpers;
+package growthbook.sdk.java.testhelpers;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonArray;
@@ -42,7 +42,7 @@ public class TestCasesJsonHelper implements ITestCasesJsonHelper {
 
     @Override
     public JsonArray featureTestCases() {
-        return this.testCases.get("feature").getAsJsonArray();
+        return this.testCases.get("evalFeature").getAsJsonArray();
     }
 
     @Override

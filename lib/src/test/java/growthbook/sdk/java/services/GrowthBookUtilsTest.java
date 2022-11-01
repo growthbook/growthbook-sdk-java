@@ -2,21 +2,21 @@ package growthbook.sdk.java.services;
 
 import com.google.gson.JsonArray;
 import com.google.gson.reflect.TypeToken;
-import growthbook.sdk.java.TestHelpers.TestCasesJsonHelper;
+import growthbook.sdk.java.testhelpers.TestCasesJsonHelper;
 import growthbook.sdk.java.models.BucketRange;
 import growthbook.sdk.java.models.Namespace;
 import org.junit.jupiter.api.Test;
 
 import javax.annotation.Nullable;
-import java.lang.reflect.Array;
 import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.List;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 class GrowthBookUtilsTest {
-    TestCasesJsonHelper helper = TestCasesJsonHelper.getInstance();
+    final TestCasesJsonHelper helper = TestCasesJsonHelper.getInstance();
 
     @Test
     void providesTestCaseData() {

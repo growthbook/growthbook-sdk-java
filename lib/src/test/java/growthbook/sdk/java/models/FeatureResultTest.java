@@ -8,39 +8,31 @@ import static org.junit.jupiter.api.Assertions.*;
 class FeatureResultTest {
     @Test
     void canBeConstructed() {
-        FeatureResult<Integer> subject = new FeatureResult<Integer>(
+        FeatureResult subject = new FeatureResult(
                 100,
                 FeatureResultSource.DEFAULT_VALUE,
-                null
+                null,
+                null,
+                "my-rule-id"
         );
 
         assertNull(subject.experiment);
-        assertEquals(100, subject.value);
+        assertEquals(100, subject.getValue());
     }
 
     @Test
     void canBeBuilt() {
-        FeatureResult<String> subject = FeatureResult
+        FeatureResult subject = FeatureResult
                 .<String>builder()
                 .value("hello")
+                .experiment(null)
+                .experimentResult(null)
+                .ruleId("my-rule-id")
                 .source(FeatureResultSource.EXPERIMENT)
                 .build();
 
         assertNull(subject.experiment);
-        assertEquals("hello", subject.value);
-    }
-
-    @Test
-    void canBeSerializedToJson() {
-        FeatureResult<String> subject = FeatureResult
-                .<String>builder()
-                .value("hello")
-                .source(FeatureResultSource.EXPERIMENT)
-                .build();
-
-        String result = GrowthBookJsonUtils.getInstance().gson.toJson(subject);
-
-        assertEquals("{\"value\":\"hello\",\"source\":\"experiment\"}", result);
+        assertEquals("hello", subject.getValue());
     }
 
     @Test
@@ -53,21 +45,21 @@ class FeatureResultTest {
 
     @Test
     void featureResultSourceOutputsCorrectlyToJson() {
-        FeatureResult<String> subject = FeatureResult
-                .<String>builder()
+        FeatureResult subject = FeatureResult
+                .builder()
                 .source(FeatureResultSource.EXPERIMENT)
                 .build();
 
         // experiment
-        assertEquals("{\"source\":\"experiment\"}", GrowthBookJsonUtils.getInstance().gson.toJson(subject));
+        assertEquals("{\"on\":false,\"off\":true,\"source\":\"experiment\"}", GrowthBookJsonUtils.getInstance().gson.toJson(subject));
         // Unknown
         subject.setSource(FeatureResultSource.UNKNOWN_FEATURE);
-        assertEquals("{\"source\":\"unknownFeature\"}", GrowthBookJsonUtils.getInstance().gson.toJson(subject));
+        assertEquals("{\"on\":false,\"off\":true,\"source\":\"unknownFeature\"}", GrowthBookJsonUtils.getInstance().gson.toJson(subject));
         // force
         subject.setSource(FeatureResultSource.FORCE);
-        assertEquals("{\"source\":\"force\"}", GrowthBookJsonUtils.getInstance().gson.toJson(subject));
+        assertEquals("{\"on\":false,\"off\":true,\"source\":\"force\"}", GrowthBookJsonUtils.getInstance().gson.toJson(subject));
         // defaultValue
         subject.setSource(FeatureResultSource.DEFAULT_VALUE);
-        assertEquals("{\"source\":\"defaultValue\"}", GrowthBookJsonUtils.getInstance().gson.toJson(subject));
+        assertEquals("{\"on\":false,\"off\":true,\"source\":\"defaultValue\"}", GrowthBookJsonUtils.getInstance().gson.toJson(subject));
     }
 }

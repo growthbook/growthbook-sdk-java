@@ -1,9 +1,9 @@
-package growthbook.sdk.java.TestHelpers;
+package growthbook.sdk.java.testhelpers;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 
-public interface ITestCasesJsonHelper {
+interface ITestCasesJsonHelper {
     JsonObject getTestCases();
     JsonArray evalConditionTestCases();
     JsonArray getHNVTestCases();

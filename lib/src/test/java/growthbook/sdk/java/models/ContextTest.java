@@ -1,6 +1,5 @@
 package growthbook.sdk.java.models;
 
-import growthbook.sdk.java.TestHelpers.SampleUserAttributes;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -10,15 +9,14 @@ import org.mockito.MockitoAnnotations;
 import java.util.HashMap;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
 class ContextTest {
     private AutoCloseable closeable;
     @Mock
-    private TrackingCallback<String> trackingCallback;
+    private TrackingCallback trackingCallback;
 
-    SampleUserAttributes sampleUserAttributes = new SampleUserAttributes("android", "canada");
+    final String sampleUserAttributes = "{\"country\": \"canada\", \"device\": \"android\"}";
 
     @BeforeEach
     void setUp() {
@@ -35,40 +33,20 @@ class ContextTest {
         Boolean isEnabled = true;
         Boolean isQaMode = false;
         String url = "http://localhost:3000";
-        ForcedVariationsMap forcedVariations = new ForcedVariationsHashMap();
+        HashMap<String, Integer> forcedVariations = new HashMap<String, Integer>();
         forcedVariations.put("my-test", 0);
         forcedVariations.put("other-test", 1);
+        String featuresJson = "{}";
 
-        Context<String> subject = new Context<String>(
-                isEnabled,
-                url,
-                isQaMode,
-                trackingCallback,
+        Context subject = Context.create(
                 sampleUserAttributes,
-                forcedVariations
+                featuresJson,
+                isEnabled,
+                isQaMode,
+                url,
+                forcedVariations,
+                trackingCallback
         );
-
-        assertNotNull(subject);
-    }
-
-    @Test
-    void canBeBuilt() {
-        Boolean isEnabled = true;
-        Boolean isQaMode = false;
-        String url = "http://localhost:3000";
-
-        ForcedVariationsMap forcedVariations = new ForcedVariationsHashMap();
-        forcedVariations.put("my-test", 0);
-        forcedVariations.put("other-test", 1);
-
-        Context<String> subject = Context
-                .<String>builder()
-                .enabled(isEnabled)
-                .isQaMode(isQaMode)
-                .attributes(sampleUserAttributes)
-                .forcedVariationsMap(forcedVariations)
-                .url(url)
-                .build();
 
         assertNotNull(subject);
     }
@@ -79,12 +57,15 @@ class ContextTest {
         Boolean isQaMode = false;
         String url = "http://localhost:3000";
 
-        Context<String> subject = Context
-                .<String>builder()
+        Context subject = Context
+                .builder()
                 .enabled(isEnabled)
-                .isQaMode(isQaMode)
-                .attributes(sampleUserAttributes)
+                .attributesJson(sampleUserAttributes)
                 .url(url)
+                .featuresJson("{}")
+                .forcedVariationsMap(new HashMap<>())
+                .isQaMode(isQaMode)
+                .trackingCallback(trackingCallback)
                 .build();
 
         // Initial state OK
@@ -103,28 +84,18 @@ class ContextTest {
     }
 
     @Test
-    void serializableAttributes() {
-        Context<String> subject = Context
-                .<String>builder()
-                .attributes(sampleUserAttributes)
-                .build();
-
-        assertEquals("{\"device\":\"android\",\"country\":\"canada\"}", subject.attributes.toJson());
-    }
-
-    @Test
     void canExecuteATrackingCallback() {
-        Context<String> subject = Context
-                .<String>builder()
+        Context subject = Context
+                .builder()
                 .trackingCallback(trackingCallback)
                 .build();
 
-        Experiment experiment = Experiment.builder().build();
-        TrackingResult<String> result = TrackingResult
+        Experiment<String> experiment = Experiment.<String>builder().build();
+        ExperimentResult<String> result = ExperimentResult
                 .<String>builder()
                 .value("Hello, world!")
                 .build();
-        subject.trackingCallback.onTrack(experiment, result);
+        subject.getTrackingCallback().onTrack(experiment, result);
 
         verify(trackingCallback).onTrack(experiment, result);
     }

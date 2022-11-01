@@ -1,4 +1,4 @@
-package growthbook.sdk.java.TestHelpers;
+package growthbook.sdk.java.testhelpers;
 
 import com.google.gson.JsonObject;
 import org.junit.jupiter.api.Test;
@@ -18,7 +18,7 @@ class TestCasesJsonHelperTest {
 
     @Test
     void getTestCases_returnsTestCasesAsJson() {
-        JsonObject testCases = (JsonObject) TestCasesJsonHelper.getInstance().getTestCases();
+        JsonObject testCases = TestCasesJsonHelper.getInstance().getTestCases();
 
         assertNotNull(testCases);
         assertEquals("0.2.2", testCases.get("specVersion").getAsString());
