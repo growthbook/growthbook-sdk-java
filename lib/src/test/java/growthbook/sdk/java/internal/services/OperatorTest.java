@@ -1,4 +1,4 @@
-package growthbook.sdk.java.services;
+package growthbook.sdk.java.internal.services;
 
 import growthbook.sdk.java.models.Operator;
 import org.junit.jupiter.api.Test;

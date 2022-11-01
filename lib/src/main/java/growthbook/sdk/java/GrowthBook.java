@@ -1,10 +1,10 @@
 package growthbook.sdk.java;
 
 import growthbook.sdk.java.models.*;
-import growthbook.sdk.java.services.ConditionEvaluator;
-import growthbook.sdk.java.services.ExperimentEvaluator;
-import growthbook.sdk.java.services.FeatureEvaluator;
-import growthbook.sdk.java.services.GrowthBookJsonUtils;
+import growthbook.sdk.java.internal.services.ConditionEvaluator;
+import growthbook.sdk.java.internal.services.ExperimentEvaluator;
+import growthbook.sdk.java.internal.services.FeatureEvaluator;
+import growthbook.sdk.java.internal.services.GrowthBookJsonUtils;
 
 import javax.annotation.Nullable;
 import java.util.ArrayList;

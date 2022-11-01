@@ -77,6 +77,7 @@ interface IGrowthBook {
 
     /**
      * Get the feature value as a Gson-deserializable.
+     * If your class requires a custom deserializer, use {@link #getFeatureValue(String, Object)} instead and deserialize it with your own Gson instance.
      * @param featureKey feature identifier
      * @param defaultValue default generic class
      * @param gsonDeserializableClass the class of the generic, e.g. MyFeature.class

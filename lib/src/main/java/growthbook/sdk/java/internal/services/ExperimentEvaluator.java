@@ -1,6 +1,5 @@
-package growthbook.sdk.java.services;
+package growthbook.sdk.java.internal.services;
 
-import com.google.common.annotations.VisibleForTesting;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import growthbook.sdk.java.models.*;

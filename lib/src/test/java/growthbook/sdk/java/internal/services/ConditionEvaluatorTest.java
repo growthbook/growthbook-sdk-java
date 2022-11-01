@@ -1,8 +1,10 @@
-package growthbook.sdk.java.services;
+package growthbook.sdk.java.internal.services;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import growthbook.sdk.java.internal.services.ConditionEvaluator;
+import growthbook.sdk.java.internal.services.GrowthBookJsonUtils;
 import growthbook.sdk.java.testhelpers.TestCasesJsonHelper;
 import org.junit.jupiter.api.Test;
 

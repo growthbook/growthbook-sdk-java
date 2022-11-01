@@ -5,7 +5,7 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonSerializationContext;
 import com.google.gson.JsonSerializer;
 import com.google.gson.annotations.SerializedName;
-import growthbook.sdk.java.services.GrowthBookJsonUtils;
+import growthbook.sdk.java.internal.services.GrowthBookJsonUtils;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;

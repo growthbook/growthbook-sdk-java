@@ -7,14 +7,14 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.reflect.TypeToken;
-import growthbook.sdk.java.services.ConditionEvaluator;
-import growthbook.sdk.java.services.ExperimentEvaluator;
-import growthbook.sdk.java.services.FeatureEvaluator;
+import growthbook.sdk.java.internal.services.ConditionEvaluator;
+import growthbook.sdk.java.internal.services.ExperimentEvaluator;
+import growthbook.sdk.java.internal.services.FeatureEvaluator;
 import growthbook.sdk.java.testhelpers.PaperCupsConfig;
 import growthbook.sdk.java.testhelpers.TestCasesJsonHelper;
 import growthbook.sdk.java.testhelpers.TestContext;
 import growthbook.sdk.java.models.*;
-import growthbook.sdk.java.services.GrowthBookJsonUtils;
+import growthbook.sdk.java.internal.services.GrowthBookJsonUtils;
 import org.junit.jupiter.api.Test;
 
 import java.lang.reflect.Type;
