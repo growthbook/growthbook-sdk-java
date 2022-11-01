@@ -23,8 +23,7 @@ import java.util.HashMap;
 import java.util.Objects;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.*;
 
 class GrowthBookTest {
 
@@ -106,6 +105,20 @@ class GrowthBookTest {
 
         verify(mockCallback1).onRun(result);
         verify(mockCallback2).onRun(result);
+    }
+
+    @Test
+    void run_executesExperimentResultCallbacksEveryTimeItIsCalled() {
+        GrowthBook subject = new GrowthBook();
+        ExperimentRunCallback mockCallback = mock(ExperimentRunCallback.class);
+        Experiment<String> mockExperiment = Experiment.<String>builder().build();
+
+        subject.subscribe(mockCallback);
+        subject.run(mockExperiment);
+        subject.run(mockExperiment);
+        subject.run(mockExperiment);
+
+        verify(mockCallback, times(3)).onRun(any());
     }
 
     @Test
@@ -377,5 +390,30 @@ class GrowthBookTest {
         subject.evaluateCondition(attrJson, conditionJson);
 
         verify(mockConditionEvaluator).evaluateCondition(attrJson, conditionJson);
+    }
+
+    @Test
+    void test_destroyClearsCallbacks() {
+        GrowthBook subject = new GrowthBook();
+        ExperimentRunCallback mockCallback1 = mock(ExperimentRunCallback.class);
+        ExperimentRunCallback mockCallback2 = mock(ExperimentRunCallback.class);
+        Experiment<String> mockExperiment = Experiment.<String>builder().build();
+
+        // Add callbacks
+        subject.subscribe(mockCallback1);
+        subject.subscribe(mockCallback2);
+
+        // Perform action that results in the initial call
+        subject.run(mockExperiment);
+
+        // Perform action that clears callbacks
+        subject.destroy();
+
+        // Run another experiment
+        ExperimentResult<String> result2 = subject.run(mockExperiment);
+
+        // Verify callbacks are only called once (for the initial invocation)
+        verify(mockCallback1, times(1)).onRun(result2);
+        verify(mockCallback2, times(1)).onRun(result2);
     }
 }
