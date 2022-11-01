@@ -14,7 +14,6 @@ public class FeatureEvaluator implements IFeatureEvaluator {
     private final ConditionEvaluator conditionEvaluator = new ConditionEvaluator();
     private final ExperimentEvaluator experimentEvaluator = new ExperimentEvaluator();
 
-    @SuppressWarnings("unchecked")
     @Override
     public <ValueType> FeatureResult<ValueType> evaluateFeature(String key, Context context) throws ClassCastException {
         FeatureResult<ValueType> emptyFeature = FeatureResult

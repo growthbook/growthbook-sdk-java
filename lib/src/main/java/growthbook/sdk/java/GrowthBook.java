@@ -3,6 +3,7 @@ package growthbook.sdk.java;
 import growthbook.sdk.java.models.*;
 import growthbook.sdk.java.services.ExperimentEvaluator;
 import growthbook.sdk.java.services.FeatureEvaluator;
+import growthbook.sdk.java.services.GrowthBookJsonUtils;
 
 import javax.annotation.Nullable;
 import java.util.ArrayList;
@@ -19,6 +20,8 @@ public class GrowthBook implements IGrowthBook {
 
     private final FeatureEvaluator featureEvaluator = new FeatureEvaluator();
     private final ExperimentEvaluator experimentEvaluatorEvaluator = new ExperimentEvaluator();
+
+    private final GrowthBookJsonUtils jsonUtils = GrowthBookJsonUtils.getInstance();
 
     private ArrayList<ExperimentRunCallback> callbacks = new ArrayList<>();
 
@@ -113,6 +116,29 @@ public class GrowthBook implements IGrowthBook {
     }
 
     @Override
+    public Object getFeatureValue(String featureKey, Object defaultValue) {
+        try {
+            return this.featureEvaluator.evaluateFeature(featureKey, context).getValue();
+        } catch (Exception e) {
+            e.printStackTrace();
+            return defaultValue;
+        }
+    }
+
+    @Override
+    public <ValueType> ValueType getFeatureValue(String featureKey, ValueType defaultValue, Class<ValueType> gsonDeserializableClass) {
+        try {
+            Object value = this.featureEvaluator.evaluateFeature(featureKey, context).getValue();
+            String stringValue = jsonUtils.gson.toJson(value);
+
+            return jsonUtils.gson.fromJson(stringValue, gsonDeserializableClass);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return defaultValue;
+        }
+    }
+
+    @Override
     public Double getFeatureValue(String featureKey, Double defaultValue) {
         try {
             return (Double) this.featureEvaluator.evaluateFeature(featureKey, context).getValue();
@@ -120,13 +146,6 @@ public class GrowthBook implements IGrowthBook {
             e.printStackTrace();
             return defaultValue;
         }
-    }
-
-    @Nullable
-    @Override
-    public String getRawFeatureValue(String featureKey) {
-        // TODO: implement
-        return null;
     }
 
     @Override

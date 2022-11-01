@@ -316,7 +316,7 @@ class GrowthBookTest {
     }
 
     @Test
-    void test_getFeatureValue_object() {
+    void test_getFeatureValue_asObject() {
         String featureKey = "papercups-config";
         String attributes = "{ \"user\": \"standard\" }";
         String features = TestCasesJsonHelper.getInstance().getDemoFeaturesJson();
@@ -328,13 +328,33 @@ class GrowthBookTest {
                 .build();
         GrowthBook subject = new GrowthBook(context);
 
-        // You can down cast your class to Object then cast it back
         Object defaultConfig = new PaperCupsConfig("abc123", "My Chat", true);
-        Object resultObject = subject.<Object>getFeatureValue(featureKey, defaultConfig);
+        Object resultObject = subject.getFeatureValue(featureKey, defaultConfig);
+        // showing that this object can be deserialized manually
         String resultConfigString = jsonUtils.gson.toJson(resultObject);
         PaperCupsConfig resultConfig = jsonUtils.gson.fromJson(resultConfigString, PaperCupsConfig.class);
 
         assertNotNull(resultObject);
+        assertNotNull(resultConfig);
+        assertEquals("Welcome to GrowthBook Cloud", resultConfig.title);
+    }
+
+    @Test
+    void test_getFeatureValue_asGsonDeserializable() {
+        String featureKey = "papercups-config";
+        String attributes = "{ \"user\": \"standard\" }";
+        String features = TestCasesJsonHelper.getInstance().getDemoFeaturesJson();
+
+        Context context = Context
+                .builder()
+                .featuresJson(features)
+                .attributesJson(attributes)
+                .build();
+        GrowthBook subject = new GrowthBook(context);
+
+        PaperCupsConfig defaultConfig = new PaperCupsConfig("abc123", "My Chat", true);
+        PaperCupsConfig resultConfig = subject.getFeatureValue(featureKey, defaultConfig, PaperCupsConfig.class);
+
         assertNotNull(resultConfig);
         assertEquals("Welcome to GrowthBook Cloud", resultConfig.title);
     }
