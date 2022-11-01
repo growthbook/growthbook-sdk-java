@@ -7,6 +7,9 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.reflect.TypeToken;
+import growthbook.sdk.java.services.ConditionEvaluator;
+import growthbook.sdk.java.services.ExperimentEvaluator;
+import growthbook.sdk.java.services.FeatureEvaluator;
 import growthbook.sdk.java.testhelpers.PaperCupsConfig;
 import growthbook.sdk.java.testhelpers.TestCasesJsonHelper;
 import growthbook.sdk.java.testhelpers.TestContext;
@@ -357,5 +360,22 @@ class GrowthBookTest {
 
         assertNotNull(resultConfig);
         assertEquals("Welcome to GrowthBook Cloud", resultConfig.title);
+    }
+
+    @Test
+    void test_evaluateCondition_callsConditionEvaluator() {
+        ConditionEvaluator mockConditionEvaluator = mock(ConditionEvaluator.class);
+        ExperimentEvaluator mockExperimentEvaluator = mock(ExperimentEvaluator.class);
+        FeatureEvaluator mockFeatureEvaluator = mock(FeatureEvaluator.class);
+        Context context = Context.builder().build();
+
+        String attrJson = "{ id: 1 }";
+        String conditionJson = "{}";
+
+        GrowthBook subject = new GrowthBook(context, mockFeatureEvaluator, mockConditionEvaluator, mockExperimentEvaluator);
+
+        subject.evaluateCondition(attrJson, conditionJson);
+
+        verify(mockConditionEvaluator).evaluateCondition(attrJson, conditionJson);
     }
 }

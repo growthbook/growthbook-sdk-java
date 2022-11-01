@@ -1,4 +1,4 @@
-package growthbook.sdk.java;
+package growthbook.sdk.java.models;
 
 import com.google.gson.JsonElement;
 import growthbook.sdk.java.models.Namespace;
@@ -10,7 +10,7 @@ import javax.annotation.Nullable;
 import java.util.ArrayList;
 
 /**
- * Overrides the defaultValue of a Feature. Has a number of optional properties
+ * Overrides the defaultValue of a Feature based on a set of requirements. Has a number of optional properties
  *
  * <ul>
  * <li>condition (Condition) - Optional targeting condition</li>

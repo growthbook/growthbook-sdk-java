@@ -2,7 +2,7 @@ package growthbook.sdk.java.services;
 
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
-import growthbook.sdk.java.FeatureRule;
+import growthbook.sdk.java.models.FeatureRule;
 import growthbook.sdk.java.models.*;
 
 /**

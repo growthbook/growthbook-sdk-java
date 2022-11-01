@@ -87,5 +87,11 @@ interface IGrowthBook {
 
     // endregion Features
 
+    // region Conditions
+
+    Boolean evaluateCondition(String attributesJsonString, String conditionJsonString);
+
+    // endregion Conditions
+
     // TODO: getAllResults (not required)
 }

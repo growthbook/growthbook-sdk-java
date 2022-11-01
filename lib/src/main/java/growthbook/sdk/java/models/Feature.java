@@ -4,7 +4,6 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.reflect.TypeToken;
-import growthbook.sdk.java.FeatureRule;
 import growthbook.sdk.java.services.GrowthBookJsonUtils;
 
 import javax.annotation.Nullable;

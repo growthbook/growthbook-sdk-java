@@ -1,6 +1,7 @@
 package growthbook.sdk.java;
 
 import growthbook.sdk.java.models.*;
+import growthbook.sdk.java.services.ConditionEvaluator;
 import growthbook.sdk.java.services.ExperimentEvaluator;
 import growthbook.sdk.java.services.FeatureEvaluator;
 import growthbook.sdk.java.services.GrowthBookJsonUtils;
@@ -18,8 +19,10 @@ public class GrowthBook implements IGrowthBook {
 
     private final Context context;
 
-    private final FeatureEvaluator featureEvaluator = new FeatureEvaluator();
-    private final ExperimentEvaluator experimentEvaluatorEvaluator = new ExperimentEvaluator();
+    // dependencies
+    private final FeatureEvaluator featureEvaluator;
+    private final ConditionEvaluator conditionEvaluator;
+    private final ExperimentEvaluator experimentEvaluatorEvaluator;
 
     private final GrowthBookJsonUtils jsonUtils = GrowthBookJsonUtils.getInstance();
 
@@ -31,6 +34,10 @@ public class GrowthBook implements IGrowthBook {
      */
     public GrowthBook(Context context) {
         this.context = context;
+
+        this.featureEvaluator = new FeatureEvaluator();
+        this.conditionEvaluator = new ConditionEvaluator();
+        this.experimentEvaluatorEvaluator = new ExperimentEvaluator();
     }
 
     /**
@@ -39,6 +46,26 @@ public class GrowthBook implements IGrowthBook {
      */
     public GrowthBook() {
         this.context = Context.builder().build();
+
+        // dependencies
+        this.featureEvaluator = new FeatureEvaluator();
+        this.conditionEvaluator = new ConditionEvaluator();
+        this.experimentEvaluatorEvaluator = new ExperimentEvaluator();
+    }
+
+    /**
+     * <b>INTERNAL:</b> Constructor with injected dependencies. Useful for testing but not intended to be used
+     *
+     * @param context Context
+     * @param featureEvaluator FeatureEvaluator
+     * @param conditionEvaluator ConditionEvaluator
+     * @param experimentEvaluator ExperimentEvaluator
+     */
+    GrowthBook(Context context, FeatureEvaluator featureEvaluator, ConditionEvaluator conditionEvaluator, ExperimentEvaluator experimentEvaluator) {
+        this.featureEvaluator = featureEvaluator;
+        this.conditionEvaluator = conditionEvaluator;
+        this.experimentEvaluatorEvaluator = experimentEvaluator;
+        this.context = context;
     }
 
     @Nullable
@@ -136,6 +163,11 @@ public class GrowthBook implements IGrowthBook {
             e.printStackTrace();
             return defaultValue;
         }
+    }
+
+    @Override
+    public Boolean evaluateCondition(String attributesJsonString, String conditionJsonString) {
+        return conditionEvaluator.evaluateCondition(attributesJsonString, conditionJsonString);
     }
 
     @Override
