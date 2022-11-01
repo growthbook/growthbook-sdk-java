@@ -60,6 +60,14 @@ interface IGrowthBook {
     Integer getFeatureValue(String featureKey, Integer defaultValue);
 
     /**
+     * Get the feature value as a double
+     * @param featureKey name of the feature
+     * @param defaultValue integer value to return
+     * @return the found value or defaultValue
+     */
+    Double getFeatureValue(String featureKey, Double defaultValue);
+
+    /**
      * Skip over the JSON parsing.
      * You may want to do this if you'd like to skip Gson parsing and parse it yourself.
      * @param featureKey name of the feature

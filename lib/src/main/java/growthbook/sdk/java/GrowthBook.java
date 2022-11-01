@@ -62,38 +62,64 @@ public class GrowthBook implements IGrowthBook {
 
     @Override
     public Boolean isOn(String featureKey) {
-        // TODO:
-        return null;
+        return this.featureEvaluator.evaluateFeature(featureKey, context).isOn();
     }
 
     @Override
     public Boolean isOff(String featureKey) {
-        // TODO:
-        return null;
+        return this.featureEvaluator.evaluateFeature(featureKey, context).isOff();
     }
 
     @Override
     public Boolean getFeatureValue(String featureKey, Boolean defaultValue) {
-        // TODO: implement
-        return defaultValue;
+        try {
+            return (Boolean) this.featureEvaluator.evaluateFeature(featureKey, context).getValue();
+        } catch (Exception e) {
+            e.printStackTrace();
+            return defaultValue;
+        }
     }
 
     @Override
     public String getFeatureValue(String featureKey, String defaultValue) {
-        // TODO: implement
-        return defaultValue;
+        try {
+            return (String) this.featureEvaluator.evaluateFeature(featureKey, context).getValue();
+        } catch (Exception e) {
+            e.printStackTrace();
+            return defaultValue;
+        }
     }
 
     @Override
     public Float getFeatureValue(String featureKey, Float defaultValue) {
-        // TODO: implement
-        return defaultValue;
+        try {
+            Double value = getFeatureValue(featureKey, Double.valueOf(defaultValue));
+            return value.floatValue();
+        } catch (Exception e) {
+            e.printStackTrace();
+            return defaultValue;
+        }
     }
 
     @Override
     public Integer getFeatureValue(String featureKey, Integer defaultValue) {
-        // TODO: implement
-        return defaultValue;
+        try {
+            Double value = getFeatureValue(featureKey, Double.valueOf(defaultValue));
+            return value.intValue();
+        } catch (Exception e) {
+            e.printStackTrace();
+            return defaultValue;
+        }
+    }
+
+    @Override
+    public Double getFeatureValue(String featureKey, Double defaultValue) {
+        try {
+            return (Double) this.featureEvaluator.evaluateFeature(featureKey, context).getValue();
+        } catch (Exception e) {
+            e.printStackTrace();
+            return defaultValue;
+        }
     }
 
     @Nullable
@@ -112,6 +138,4 @@ public class GrowthBook implements IGrowthBook {
     public void subscribe(ExperimentRunCallback callback) {
         this.callbacks.add(callback);
     }
-
-    // TODO: getFeatureValue(key, defaultValue) // defaultValue is the fallback value
 }

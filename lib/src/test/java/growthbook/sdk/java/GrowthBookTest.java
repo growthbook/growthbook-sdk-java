@@ -18,7 +18,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Objects;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
@@ -172,4 +172,145 @@ class GrowthBookTest {
         assertEquals(0, failedTests.size(), "There are failing tests");
     }
 
+    @Test
+    void test_isOn_returns_true() {
+        String featureKey = "new-feature";
+        String attributes = "{ \"user_group\": \"subscriber\", \"beta_users\": true }";
+        String features = TestCasesJsonHelper.getInstance().getDemoFeaturesJson();
+
+        Context context = Context
+                .builder()
+                .featuresJson(features)
+                .attributesJson(attributes)
+                .build();
+        GrowthBook subject = new GrowthBook(context);
+
+        assertTrue(subject.isOn(featureKey));
+        assertFalse(subject.isOff(featureKey));
+    }
+
+    @Test
+    void test_isOn_returns_false() {
+        String featureKey = "new-feature";
+        String attributes = "{ \"user_group\": \"standard\", \"beta_users\": false }";
+        String features = TestCasesJsonHelper.getInstance().getDemoFeaturesJson();
+
+        Context context = Context
+                .builder()
+                .featuresJson(features)
+                .attributesJson(attributes)
+                .build();
+        GrowthBook subject = new GrowthBook(context);
+
+        assertFalse(subject.isOn(featureKey));
+        assertTrue(subject.isOff(featureKey));
+    }
+
+    @Test
+    void test_getFeatureValue_boolean() {
+        String featureKey = "new-feature";
+        String attributes = "{ \"user_group\": \"subscriber\", \"beta_users\": true }";
+        String features = TestCasesJsonHelper.getInstance().getDemoFeaturesJson();
+
+        Context context = Context
+                .builder()
+                .featuresJson(features)
+                .attributesJson(attributes)
+                .build();
+        GrowthBook subject = new GrowthBook(context);
+
+        Boolean result = subject.getFeatureValue(featureKey, false);
+
+        assertTrue(result);
+    }
+
+    @Test
+    void test_getFeatureValue_string_inExperiment() {
+        String featureKey = "covid-banner-text";
+        String attributes = "{ \"user_group\": \"subscriber\", \"beta_users\": true }";
+        String features = TestCasesJsonHelper.getInstance().getDemoFeaturesJson();
+
+        Context context = Context
+                .builder()
+                .featuresJson(features)
+                .attributesJson(attributes)
+                .build();
+        GrowthBook subject = new GrowthBook(context);
+
+        String result = subject.getFeatureValue(featureKey, "nope");
+
+        assertEquals("Beta users", result);
+    }
+
+    @Test
+    void test_getFeatureValue_string_notInExperiment() {
+        String featureKey = "covid-banner-text";
+        String attributes = "{ \"user_group\": \"subscriber\", \"beta_users\": false }";
+        String features = TestCasesJsonHelper.getInstance().getDemoFeaturesJson();
+
+        Context context = Context
+                .builder()
+                .featuresJson(features)
+                .attributesJson(attributes)
+                .build();
+        GrowthBook subject = new GrowthBook(context);
+
+        String result = subject.getFeatureValue(featureKey, "nope");
+
+        assertEquals("We're safe", result);
+    }
+
+    @Test
+    void test_getFeatureValue_double_inExperiment() {
+        String featureKey = "demo";
+        String attributes = "{ \"admin\": true }";
+        String features = TestCasesJsonHelper.getInstance().getDemoFeaturesJson();
+
+        Context context = Context
+                .builder()
+                .featuresJson(features)
+                .attributesJson(attributes)
+                .build();
+        GrowthBook subject = new GrowthBook(context);
+
+        Double result = subject.getFeatureValue(featureKey, Double.valueOf(999));
+
+        assertEquals(1, result);
+    }
+
+    @Test
+    void test_getFeatureValue_integer_inExperiment() {
+        String featureKey = "demo";
+        String attributes = "{ \"admin\": true }";
+        String features = TestCasesJsonHelper.getInstance().getDemoFeaturesJson();
+
+        Context context = Context
+                .builder()
+                .featuresJson(features)
+                .attributesJson(attributes)
+                .build();
+        GrowthBook subject = new GrowthBook(context);
+
+        Integer result = subject.getFeatureValue(featureKey, 999);
+
+        assertEquals(1, result);
+    }
+
+    @Test
+    void test_getFeatureValue_float() {
+        String featureKey = "price";
+        String attributes = "{ \"user\": \"standard\" }";
+        String features = TestCasesJsonHelper.getInstance().getDemoFeaturesJson();
+
+        Context context = Context
+                .builder()
+                .featuresJson(features)
+                .attributesJson(attributes)
+                .build();
+        GrowthBook subject = new GrowthBook(context);
+
+        Float result = subject.getFeatureValue(featureKey, 0.00f);
+
+        assertEquals(10.99f, result);
+    }
 }
