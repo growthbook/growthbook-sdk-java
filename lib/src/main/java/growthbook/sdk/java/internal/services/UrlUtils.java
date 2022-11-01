@@ -1,4 +1,4 @@
-package growthbook.sdk.java.services;
+package growthbook.sdk.java.internal.services;
 
 import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;

@@ -2,7 +2,8 @@ package growthbook.sdk.java.models;
 
 import com.google.gson.*;
 import com.google.gson.annotations.SerializedName;
-import growthbook.sdk.java.services.GrowthBookJsonUtils;
+import growthbook.sdk.java.internal.services.FeatureEvaluator;
+import growthbook.sdk.java.internal.services.GrowthBookJsonUtils;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -11,7 +12,7 @@ import javax.annotation.Nullable;
 import java.lang.reflect.Type;
 
 /**
- * Results for a {@link growthbook.sdk.java.services.FeatureEvaluator#evaluateFeature(String, Context)}
+ * Results for a {@link FeatureEvaluator#evaluateFeature(String, Context)}
  *
  * <ul>
  * <li>value (any) - The assigned value of the feature</li>

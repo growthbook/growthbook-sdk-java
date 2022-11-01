@@ -68,10 +68,18 @@ public class TestCasesJsonHelper implements ITestCasesJsonHelper {
     // region Initialization
 
     private final JsonObject testCases;
+
+    private final String demoFeaturesJson;
+
+    public String getDemoFeaturesJson() {
+        return this.demoFeaturesJson;
+    }
+
     private static TestCasesJsonHelper instance = null;
 
     private TestCasesJsonHelper() {
         this.testCases = initializeTestCasesFromFile();
+        this.demoFeaturesJson = initializeDemoFeaturesFromFile();
     }
 
     public static TestCasesJsonHelper getInstance() {
@@ -84,9 +92,7 @@ public class TestCasesJsonHelper implements ITestCasesJsonHelper {
     }
 
     private JsonObject initializeTestCasesFromFile() {
-        Path resourceDirectory = Paths.get("src","test","resources");
-        String absolutePath = resourceDirectory.toFile().getAbsolutePath();
-        System.out.println(absolutePath);
+        String absolutePath = getResourceDirectoryPath();
 
         Gson gson = new Gson();
         try {
@@ -94,6 +100,25 @@ public class TestCasesJsonHelper implements ITestCasesJsonHelper {
         } catch (FileNotFoundException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    private String initializeDemoFeaturesFromFile() {
+        String absolutePath = getResourceDirectoryPath();
+
+        Gson gson = new Gson();
+        try {
+            JsonObject features = gson.fromJson(new FileReader(absolutePath + "/demo-features-001.json"), JsonObject.class);
+            return features.toString();
+        } catch (FileNotFoundException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    private String getResourceDirectoryPath() {
+        Path resourceDirectory = Paths.get("src","test","resources");
+        String absolutePath = resourceDirectory.toFile().getAbsolutePath();
+        System.out.println(absolutePath);
+        return absolutePath;
     }
 
     // endregion Initialization

@@ -1,8 +1,10 @@
 package growthbook.sdk.java;
 
 import growthbook.sdk.java.models.*;
-import growthbook.sdk.java.services.ExperimentEvaluator;
-import growthbook.sdk.java.services.FeatureEvaluator;
+import growthbook.sdk.java.internal.services.ConditionEvaluator;
+import growthbook.sdk.java.internal.services.ExperimentEvaluator;
+import growthbook.sdk.java.internal.services.FeatureEvaluator;
+import growthbook.sdk.java.internal.services.GrowthBookJsonUtils;
 
 import javax.annotation.Nullable;
 import java.util.ArrayList;
@@ -17,8 +19,12 @@ public class GrowthBook implements IGrowthBook {
 
     private final Context context;
 
-    private final FeatureEvaluator featureEvaluator = new FeatureEvaluator();
-    private final ExperimentEvaluator experimentEvaluatorEvaluator = new ExperimentEvaluator();
+    // dependencies
+    private final FeatureEvaluator featureEvaluator;
+    private final ConditionEvaluator conditionEvaluator;
+    private final ExperimentEvaluator experimentEvaluatorEvaluator;
+
+    private final GrowthBookJsonUtils jsonUtils = GrowthBookJsonUtils.getInstance();
 
     private ArrayList<ExperimentRunCallback> callbacks = new ArrayList<>();
 
@@ -28,6 +34,10 @@ public class GrowthBook implements IGrowthBook {
      */
     public GrowthBook(Context context) {
         this.context = context;
+
+        this.featureEvaluator = new FeatureEvaluator();
+        this.conditionEvaluator = new ConditionEvaluator();
+        this.experimentEvaluatorEvaluator = new ExperimentEvaluator();
     }
 
     /**
@@ -36,6 +46,26 @@ public class GrowthBook implements IGrowthBook {
      */
     public GrowthBook() {
         this.context = Context.builder().build();
+
+        // dependencies
+        this.featureEvaluator = new FeatureEvaluator();
+        this.conditionEvaluator = new ConditionEvaluator();
+        this.experimentEvaluatorEvaluator = new ExperimentEvaluator();
+    }
+
+    /**
+     * <b>INTERNAL:</b> Constructor with injected dependencies. Useful for testing but not intended to be used
+     *
+     * @param context Context
+     * @param featureEvaluator FeatureEvaluator
+     * @param conditionEvaluator ConditionEvaluator
+     * @param experimentEvaluator ExperimentEvaluator
+     */
+    GrowthBook(Context context, FeatureEvaluator featureEvaluator, ConditionEvaluator conditionEvaluator, ExperimentEvaluator experimentEvaluator) {
+        this.featureEvaluator = featureEvaluator;
+        this.conditionEvaluator = conditionEvaluator;
+        this.experimentEvaluatorEvaluator = experimentEvaluator;
+        this.context = context;
     }
 
     @Nullable
@@ -62,45 +92,92 @@ public class GrowthBook implements IGrowthBook {
 
     @Override
     public Boolean isOn(String featureKey) {
-        // TODO:
-        return null;
+        return this.featureEvaluator.evaluateFeature(featureKey, context).isOn();
     }
 
     @Override
     public Boolean isOff(String featureKey) {
-        // TODO:
-        return null;
+        return this.featureEvaluator.evaluateFeature(featureKey, context).isOff();
     }
 
     @Override
     public Boolean getFeatureValue(String featureKey, Boolean defaultValue) {
-        // TODO: implement
-        return defaultValue;
+        try {
+            return (Boolean) this.featureEvaluator.evaluateFeature(featureKey, context).getValue();
+        } catch (Exception e) {
+            e.printStackTrace();
+            return defaultValue;
+        }
     }
 
     @Override
     public String getFeatureValue(String featureKey, String defaultValue) {
-        // TODO: implement
-        return defaultValue;
+        try {
+            return (String) this.featureEvaluator.evaluateFeature(featureKey, context).getValue();
+        } catch (Exception e) {
+            e.printStackTrace();
+            return defaultValue;
+        }
     }
 
     @Override
     public Float getFeatureValue(String featureKey, Float defaultValue) {
-        // TODO: implement
-        return defaultValue;
+        try {
+            Double value = getFeatureValue(featureKey, Double.valueOf(defaultValue));
+            return value.floatValue();
+        } catch (Exception e) {
+            e.printStackTrace();
+            return defaultValue;
+        }
     }
 
     @Override
     public Integer getFeatureValue(String featureKey, Integer defaultValue) {
-        // TODO: implement
-        return defaultValue;
+        try {
+            Double value = getFeatureValue(featureKey, Double.valueOf(defaultValue));
+            return value.intValue();
+        } catch (Exception e) {
+            e.printStackTrace();
+            return defaultValue;
+        }
     }
 
-    @Nullable
     @Override
-    public String getRawFeatureValue(String featureKey) {
-        // TODO: implement
-        return null;
+    public Object getFeatureValue(String featureKey, Object defaultValue) {
+        try {
+            return this.featureEvaluator.evaluateFeature(featureKey, context).getValue();
+        } catch (Exception e) {
+            e.printStackTrace();
+            return defaultValue;
+        }
+    }
+
+    @Override
+    public <ValueType> ValueType getFeatureValue(String featureKey, ValueType defaultValue, Class<ValueType> gsonDeserializableClass) {
+        try {
+            Object value = this.featureEvaluator.evaluateFeature(featureKey, context).getValue();
+            String stringValue = jsonUtils.gson.toJson(value);
+
+            return jsonUtils.gson.fromJson(stringValue, gsonDeserializableClass);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return defaultValue;
+        }
+    }
+
+    @Override
+    public Boolean evaluateCondition(String attributesJsonString, String conditionJsonString) {
+        return conditionEvaluator.evaluateCondition(attributesJsonString, conditionJsonString);
+    }
+
+    @Override
+    public Double getFeatureValue(String featureKey, Double defaultValue) {
+        try {
+            return (Double) this.featureEvaluator.evaluateFeature(featureKey, context).getValue();
+        } catch (Exception e) {
+            e.printStackTrace();
+            return defaultValue;
+        }
     }
 
     @Override
@@ -112,6 +189,4 @@ public class GrowthBook implements IGrowthBook {
     public void subscribe(ExperimentRunCallback callback) {
         this.callbacks.add(callback);
     }
-
-    // TODO: getFeatureValue(key, defaultValue) // defaultValue is the fallback value
 }

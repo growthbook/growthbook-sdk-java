@@ -1,4 +1,4 @@
-package growthbook.sdk.java.services;
+package growthbook.sdk.java.internal.services;
 
 import growthbook.sdk.java.models.BucketRange;
 import growthbook.sdk.java.models.Namespace;

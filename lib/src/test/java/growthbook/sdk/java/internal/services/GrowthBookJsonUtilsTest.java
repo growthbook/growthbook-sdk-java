@@ -1,7 +1,8 @@
-package growthbook.sdk.java.services;
+package growthbook.sdk.java.internal.services;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonElement;
+import growthbook.sdk.java.internal.services.GrowthBookJsonUtils;
 import growthbook.sdk.java.models.BucketRange;
 import growthbook.sdk.java.models.DataType;
 import growthbook.sdk.java.models.Namespace;

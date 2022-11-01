@@ -1,8 +1,8 @@
-package growthbook.sdk.java.services;
+package growthbook.sdk.java.internal.services;
 
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
-import growthbook.sdk.java.FeatureRule;
+import growthbook.sdk.java.models.FeatureRule;
 import growthbook.sdk.java.models.*;
 
 /**
@@ -14,7 +14,6 @@ public class FeatureEvaluator implements IFeatureEvaluator {
     private final ConditionEvaluator conditionEvaluator = new ConditionEvaluator();
     private final ExperimentEvaluator experimentEvaluator = new ExperimentEvaluator();
 
-    @SuppressWarnings("unchecked")
     @Override
     public <ValueType> FeatureResult<ValueType> evaluateFeature(String key, Context context) throws ClassCastException {
         FeatureResult<ValueType> emptyFeature = FeatureResult
@@ -54,7 +53,7 @@ public class FeatureEvaluator implements IFeatureEvaluator {
 
             // If empty rule set, use the default value
             if (feature.getRules() == null || feature.getRules().isEmpty()) {
-                Object value = GrowthBookJsonUtils.unwrap(feature.getDefaultValue());
+                ValueType value = (ValueType) GrowthBookJsonUtils.unwrap(feature.getDefaultValue());
                 return FeatureResult
                         .<ValueType>builder()
                         .source(FeatureResultSource.DEFAULT_VALUE)
@@ -115,7 +114,7 @@ public class FeatureEvaluator implements IFeatureEvaluator {
                         }
                     }
 
-                    Object value = GrowthBookJsonUtils.unwrap(rule.getForce());
+                    ValueType value = (ValueType) GrowthBookJsonUtils.unwrap(rule.getForce());
 
                     // Apply the force rule
                     return FeatureResult
@@ -143,7 +142,7 @@ public class FeatureEvaluator implements IFeatureEvaluator {
 
                 ExperimentResult<ValueType> result = experimentEvaluator.evaluateExperiment(experiment, context, key);
                 if (result.getInExperiment()) {
-                    Object value = GrowthBookJsonUtils.unwrap(result.getValue());
+                    ValueType value = (ValueType) GrowthBookJsonUtils.unwrap(result.getValue());
 
                     return FeatureResult
                             .<ValueType>builder()
@@ -157,7 +156,7 @@ public class FeatureEvaluator implements IFeatureEvaluator {
 
             // endregion Rules
 
-            Object value = GrowthBookJsonUtils.unwrap(feature.getDefaultValue());
+            ValueType value = (ValueType) GrowthBookJsonUtils.unwrap(feature.getDefaultValue());
 
             return FeatureResult
                     .<ValueType>builder()

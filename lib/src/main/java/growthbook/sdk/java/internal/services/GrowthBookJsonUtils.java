@@ -1,4 +1,4 @@
-package growthbook.sdk.java.services;
+package growthbook.sdk.java.internal.services;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -11,7 +11,7 @@ import java.math.BigDecimal;
 import java.math.BigInteger;
 
 /**
- * This convenience class was created to help with the serialization and deserialization of custom types.
+ * <b>INTERNAL</b>: This convenience class was created to help with the serialization and deserialization of custom types.
  * Some types in the JSON source are tuples. This helps with transforming to and from POJOs.
  * The provided methods use a custom Gson instance that has all required type adapters registered.
  */

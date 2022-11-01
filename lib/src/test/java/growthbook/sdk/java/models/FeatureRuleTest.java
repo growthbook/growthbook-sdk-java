@@ -1,5 +1,6 @@
-package growthbook.sdk.java;
+package growthbook.sdk.java.models;
 
+import growthbook.sdk.java.models.FeatureRule;
 import growthbook.sdk.java.models.Namespace;
 import org.junit.jupiter.api.Test;
 

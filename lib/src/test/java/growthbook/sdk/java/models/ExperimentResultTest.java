@@ -1,7 +1,7 @@
 package growthbook.sdk.java.models;
 
 import com.google.gson.reflect.TypeToken;
-import growthbook.sdk.java.services.GrowthBookJsonUtils;
+import growthbook.sdk.java.internal.services.GrowthBookJsonUtils;
 import org.junit.jupiter.api.Test;
 
 import java.lang.reflect.Type;

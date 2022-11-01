@@ -7,10 +7,14 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.reflect.TypeToken;
+import growthbook.sdk.java.internal.services.ConditionEvaluator;
+import growthbook.sdk.java.internal.services.ExperimentEvaluator;
+import growthbook.sdk.java.internal.services.FeatureEvaluator;
+import growthbook.sdk.java.testhelpers.PaperCupsConfig;
 import growthbook.sdk.java.testhelpers.TestCasesJsonHelper;
 import growthbook.sdk.java.testhelpers.TestContext;
 import growthbook.sdk.java.models.*;
-import growthbook.sdk.java.services.GrowthBookJsonUtils;
+import growthbook.sdk.java.internal.services.GrowthBookJsonUtils;
 import org.junit.jupiter.api.Test;
 
 import java.lang.reflect.Type;
@@ -18,9 +22,8 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Objects;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.*;
 
 class GrowthBookTest {
 
@@ -105,6 +108,20 @@ class GrowthBookTest {
     }
 
     @Test
+    void run_executesExperimentResultCallbacksEveryTimeItIsCalled() {
+        GrowthBook subject = new GrowthBook();
+        ExperimentRunCallback mockCallback = mock(ExperimentRunCallback.class);
+        Experiment<String> mockExperiment = Experiment.<String>builder().build();
+
+        subject.subscribe(mockCallback);
+        subject.run(mockExperiment);
+        subject.run(mockExperiment);
+        subject.run(mockExperiment);
+
+        verify(mockCallback, times(3)).onRun(any());
+    }
+
+    @Test
     void test_runExperiment() {
         JsonArray testCases = helper.runTestCases();
 
@@ -172,4 +189,231 @@ class GrowthBookTest {
         assertEquals(0, failedTests.size(), "There are failing tests");
     }
 
+    @Test
+    void test_isOn_returns_true() {
+        String featureKey = "new-feature";
+        String attributes = "{ \"user_group\": \"subscriber\", \"beta_users\": true }";
+        String features = TestCasesJsonHelper.getInstance().getDemoFeaturesJson();
+
+        Context context = Context
+                .builder()
+                .featuresJson(features)
+                .attributesJson(attributes)
+                .build();
+        GrowthBook subject = new GrowthBook(context);
+
+        assertTrue(subject.isOn(featureKey));
+        assertFalse(subject.isOff(featureKey));
+    }
+
+    @Test
+    void test_isOn_returns_false() {
+        String featureKey = "new-feature";
+        String attributes = "{ \"user_group\": \"standard\", \"beta_users\": false }";
+        String features = TestCasesJsonHelper.getInstance().getDemoFeaturesJson();
+
+        Context context = Context
+                .builder()
+                .featuresJson(features)
+                .attributesJson(attributes)
+                .build();
+        GrowthBook subject = new GrowthBook(context);
+
+        assertFalse(subject.isOn(featureKey));
+        assertTrue(subject.isOff(featureKey));
+    }
+
+    @Test
+    void test_getFeatureValue_boolean() {
+        String featureKey = "new-feature";
+        String attributes = "{ \"user_group\": \"subscriber\", \"beta_users\": true }";
+        String features = TestCasesJsonHelper.getInstance().getDemoFeaturesJson();
+
+        Context context = Context
+                .builder()
+                .featuresJson(features)
+                .attributesJson(attributes)
+                .build();
+        GrowthBook subject = new GrowthBook(context);
+
+        Boolean result = subject.getFeatureValue(featureKey, false);
+
+        assertTrue(result);
+    }
+
+    @Test
+    void test_getFeatureValue_string_inExperiment() {
+        String featureKey = "covid-banner-text";
+        String attributes = "{ \"user_group\": \"subscriber\", \"beta_users\": true }";
+        String features = TestCasesJsonHelper.getInstance().getDemoFeaturesJson();
+
+        Context context = Context
+                .builder()
+                .featuresJson(features)
+                .attributesJson(attributes)
+                .build();
+        GrowthBook subject = new GrowthBook(context);
+
+        String result = subject.getFeatureValue(featureKey, "nope");
+
+        assertEquals("Beta users", result);
+    }
+
+    @Test
+    void test_getFeatureValue_string_notInExperiment() {
+        String featureKey = "covid-banner-text";
+        String attributes = "{ \"user_group\": \"subscriber\", \"beta_users\": false }";
+        String features = TestCasesJsonHelper.getInstance().getDemoFeaturesJson();
+
+        Context context = Context
+                .builder()
+                .featuresJson(features)
+                .attributesJson(attributes)
+                .build();
+        GrowthBook subject = new GrowthBook(context);
+
+        String result = subject.getFeatureValue(featureKey, "nope");
+
+        assertEquals("We're safe", result);
+    }
+
+    @Test
+    void test_getFeatureValue_double_inExperiment() {
+        String featureKey = "demo";
+        String attributes = "{ \"admin\": true }";
+        String features = TestCasesJsonHelper.getInstance().getDemoFeaturesJson();
+
+        Context context = Context
+                .builder()
+                .featuresJson(features)
+                .attributesJson(attributes)
+                .build();
+        GrowthBook subject = new GrowthBook(context);
+
+        Double result = subject.getFeatureValue(featureKey, Double.valueOf(999));
+
+        assertEquals(1, result);
+    }
+
+    @Test
+    void test_getFeatureValue_integer_inExperiment() {
+        String featureKey = "demo";
+        String attributes = "{ \"admin\": true }";
+        String features = TestCasesJsonHelper.getInstance().getDemoFeaturesJson();
+
+        Context context = Context
+                .builder()
+                .featuresJson(features)
+                .attributesJson(attributes)
+                .build();
+        GrowthBook subject = new GrowthBook(context);
+
+        Integer result = subject.getFeatureValue(featureKey, 999);
+
+        assertEquals(1, result);
+    }
+
+    @Test
+    void test_getFeatureValue_float() {
+        String featureKey = "price";
+        String attributes = "{ \"user\": \"standard\" }";
+        String features = TestCasesJsonHelper.getInstance().getDemoFeaturesJson();
+
+        Context context = Context
+                .builder()
+                .featuresJson(features)
+                .attributesJson(attributes)
+                .build();
+        GrowthBook subject = new GrowthBook(context);
+
+        Float result = subject.getFeatureValue(featureKey, 0.00f);
+
+        assertEquals(10.99f, result);
+    }
+
+    @Test
+    void test_getFeatureValue_asObject() {
+        String featureKey = "papercups-config";
+        String attributes = "{ \"user\": \"standard\" }";
+        String features = TestCasesJsonHelper.getInstance().getDemoFeaturesJson();
+
+        Context context = Context
+                .builder()
+                .featuresJson(features)
+                .attributesJson(attributes)
+                .build();
+        GrowthBook subject = new GrowthBook(context);
+
+        Object defaultConfig = new PaperCupsConfig("abc123", "My Chat", true);
+        Object resultObject = subject.getFeatureValue(featureKey, defaultConfig);
+        // showing that this object can be deserialized manually
+        String resultConfigString = jsonUtils.gson.toJson(resultObject);
+        PaperCupsConfig resultConfig = jsonUtils.gson.fromJson(resultConfigString, PaperCupsConfig.class);
+
+        assertNotNull(resultObject);
+        assertNotNull(resultConfig);
+        assertEquals("Welcome to GrowthBook Cloud", resultConfig.title);
+    }
+
+    @Test
+    void test_getFeatureValue_asGsonDeserializable() {
+        String featureKey = "papercups-config";
+        String attributes = "{ \"user\": \"standard\" }";
+        String features = TestCasesJsonHelper.getInstance().getDemoFeaturesJson();
+
+        Context context = Context
+                .builder()
+                .featuresJson(features)
+                .attributesJson(attributes)
+                .build();
+        GrowthBook subject = new GrowthBook(context);
+
+        PaperCupsConfig defaultConfig = new PaperCupsConfig("abc123", "My Chat", true);
+        PaperCupsConfig resultConfig = subject.getFeatureValue(featureKey, defaultConfig, PaperCupsConfig.class);
+
+        assertNotNull(resultConfig);
+        assertEquals("Welcome to GrowthBook Cloud", resultConfig.title);
+    }
+
+    @Test
+    void test_evaluateCondition_callsConditionEvaluator() {
+        ConditionEvaluator mockConditionEvaluator = mock(ConditionEvaluator.class);
+        ExperimentEvaluator mockExperimentEvaluator = mock(ExperimentEvaluator.class);
+        FeatureEvaluator mockFeatureEvaluator = mock(FeatureEvaluator.class);
+        Context context = Context.builder().build();
+
+        String attrJson = "{ id: 1 }";
+        String conditionJson = "{}";
+
+        GrowthBook subject = new GrowthBook(context, mockFeatureEvaluator, mockConditionEvaluator, mockExperimentEvaluator);
+
+        subject.evaluateCondition(attrJson, conditionJson);
+
+        verify(mockConditionEvaluator).evaluateCondition(attrJson, conditionJson);
+    }
+
+    @Test
+    void test_destroyClearsCallbacks() {
+        GrowthBook subject = new GrowthBook();
+        ExperimentRunCallback mockCallback1 = mock(ExperimentRunCallback.class);
+        ExperimentRunCallback mockCallback2 = mock(ExperimentRunCallback.class);
+        Experiment<String> mockExperiment = Experiment.<String>builder().build();
+
+        // Add callbacks
+        subject.subscribe(mockCallback1);
+        subject.subscribe(mockCallback2);
+
+        // Perform action that results in the initial call
+        subject.run(mockExperiment);
+
+        // Perform action that clears callbacks
+        subject.destroy();
+
+        // Run another experiment
+        ExperimentResult<String> result2 = subject.run(mockExperiment);
+
+        // Verify callbacks are only called once (for the initial invocation)
+        verify(mockCallback1, times(1)).onRun(result2);
+        verify(mockCallback2, times(1)).onRun(result2);
+    }
 }

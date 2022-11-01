@@ -2,7 +2,7 @@ package growthbook.sdk.java.models;
 
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
-import growthbook.sdk.java.services.GrowthBookJsonUtils;
+import growthbook.sdk.java.internal.services.GrowthBookJsonUtils;
 import lombok.Builder;
 import lombok.Data;
 

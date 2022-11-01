@@ -60,14 +60,39 @@ interface IGrowthBook {
     Integer getFeatureValue(String featureKey, Integer defaultValue);
 
     /**
-     * Skip over the JSON parsing.
-     * You may want to do this if you'd like to skip Gson parsing and parse it yourself.
+     * Get the feature value as a double
      * @param featureKey name of the feature
-     * @return string JSON of the value
+     * @param defaultValue integer value to return
+     * @return the found value or defaultValue
      */
-    String getRawFeatureValue(String featureKey);
+    Double getFeatureValue(String featureKey, Double defaultValue);
+
+    /**
+     * Get the feature value as an Object. This may be useful for implementations that do not use Gson.
+     * @param featureKey feature identifier
+     * @param defaultValue default object value
+     * @return Object
+     */
+    Object getFeatureValue(String featureKey, Object defaultValue);
+
+    /**
+     * Get the feature value as a Gson-deserializable.
+     * If your class requires a custom deserializer, use {@link #getFeatureValue(String, Object)} instead and deserialize it with your own Gson instance.
+     * @param featureKey feature identifier
+     * @param defaultValue default generic class
+     * @param gsonDeserializableClass the class of the generic, e.g. MyFeature.class
+     * @return ValueType instance
+     * @param <ValueType> Gson deserializable type
+     */
+    <ValueType> ValueType getFeatureValue(String featureKey, ValueType defaultValue, Class<ValueType> gsonDeserializableClass);
 
     // endregion Features
+
+    // region Conditions
+
+    Boolean evaluateCondition(String attributesJsonString, String conditionJsonString);
+
+    // endregion Conditions
 
     // TODO: getAllResults (not required)
 }
