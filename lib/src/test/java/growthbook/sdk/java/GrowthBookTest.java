@@ -7,6 +7,7 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.reflect.TypeToken;
+import growthbook.sdk.java.testhelpers.PaperCupsConfig;
 import growthbook.sdk.java.testhelpers.TestCasesJsonHelper;
 import growthbook.sdk.java.testhelpers.TestContext;
 import growthbook.sdk.java.models.*;
@@ -312,5 +313,29 @@ class GrowthBookTest {
         Float result = subject.getFeatureValue(featureKey, 0.00f);
 
         assertEquals(10.99f, result);
+    }
+
+    @Test
+    void test_getFeatureValue_object() {
+        String featureKey = "papercups-config";
+        String attributes = "{ \"user\": \"standard\" }";
+        String features = TestCasesJsonHelper.getInstance().getDemoFeaturesJson();
+
+        Context context = Context
+                .builder()
+                .featuresJson(features)
+                .attributesJson(attributes)
+                .build();
+        GrowthBook subject = new GrowthBook(context);
+
+        // You can down cast your class to Object then cast it back
+        Object defaultConfig = new PaperCupsConfig("abc123", "My Chat", true);
+        Object resultObject = subject.<Object>getFeatureValue(featureKey, defaultConfig);
+        String resultConfigString = jsonUtils.gson.toJson(resultObject);
+        PaperCupsConfig resultConfig = jsonUtils.gson.fromJson(resultConfigString, PaperCupsConfig.class);
+
+        assertNotNull(resultObject);
+        assertNotNull(resultConfig);
+        assertEquals("Welcome to GrowthBook Cloud", resultConfig.title);
     }
 }
