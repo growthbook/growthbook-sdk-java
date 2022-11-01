@@ -103,7 +103,8 @@ public class GrowthBook implements IGrowthBook {
     @Override
     public Boolean getFeatureValue(String featureKey, Boolean defaultValue) {
         try {
-            return (Boolean) this.featureEvaluator.evaluateFeature(featureKey, context).getValue();
+            Boolean maybeValue = (Boolean) this.featureEvaluator.evaluateFeature(featureKey, context).getValue();
+            return maybeValue == null ? defaultValue : maybeValue;
         } catch (Exception e) {
             e.printStackTrace();
             return defaultValue;
@@ -113,7 +114,8 @@ public class GrowthBook implements IGrowthBook {
     @Override
     public String getFeatureValue(String featureKey, String defaultValue) {
         try {
-            return (String) this.featureEvaluator.evaluateFeature(featureKey, context).getValue();
+            String maybeValue = (String) this.featureEvaluator.evaluateFeature(featureKey, context).getValue();
+            return maybeValue == null ? defaultValue : maybeValue;
         } catch (Exception e) {
             e.printStackTrace();
             return defaultValue;
@@ -123,8 +125,8 @@ public class GrowthBook implements IGrowthBook {
     @Override
     public Float getFeatureValue(String featureKey, Float defaultValue) {
         try {
-            Double value = getFeatureValue(featureKey, Double.valueOf(defaultValue));
-            return value.floatValue();
+            Double maybeValue = getFeatureValue(featureKey, Double.valueOf(defaultValue));
+            return maybeValue == null ? defaultValue : maybeValue.floatValue();
         } catch (Exception e) {
             e.printStackTrace();
             return defaultValue;
@@ -134,8 +136,8 @@ public class GrowthBook implements IGrowthBook {
     @Override
     public Integer getFeatureValue(String featureKey, Integer defaultValue) {
         try {
-            Double value = getFeatureValue(featureKey, Double.valueOf(defaultValue));
-            return value.intValue();
+            Double maybeValue = getFeatureValue(featureKey, Double.valueOf(defaultValue));
+            return maybeValue == null ? defaultValue : maybeValue.intValue();
         } catch (Exception e) {
             e.printStackTrace();
             return defaultValue;
@@ -145,7 +147,8 @@ public class GrowthBook implements IGrowthBook {
     @Override
     public Object getFeatureValue(String featureKey, Object defaultValue) {
         try {
-            return this.featureEvaluator.evaluateFeature(featureKey, context).getValue();
+            Object maybeValue = this.featureEvaluator.evaluateFeature(featureKey, context).getValue();
+            return maybeValue == null ? defaultValue : maybeValue;
         } catch (Exception e) {
             e.printStackTrace();
             return defaultValue;
@@ -155,8 +158,12 @@ public class GrowthBook implements IGrowthBook {
     @Override
     public <ValueType> ValueType getFeatureValue(String featureKey, ValueType defaultValue, Class<ValueType> gsonDeserializableClass) {
         try {
-            Object value = this.featureEvaluator.evaluateFeature(featureKey, context).getValue();
-            String stringValue = jsonUtils.gson.toJson(value);
+            Object maybeValue = this.featureEvaluator.evaluateFeature(featureKey, context).getValue();
+            if (maybeValue == null) {
+                return defaultValue;
+            }
+
+            String stringValue = jsonUtils.gson.toJson(maybeValue);
 
             return jsonUtils.gson.fromJson(stringValue, gsonDeserializableClass);
         } catch (Exception e) {
@@ -173,7 +180,8 @@ public class GrowthBook implements IGrowthBook {
     @Override
     public Double getFeatureValue(String featureKey, Double defaultValue) {
         try {
-            return (Double) this.featureEvaluator.evaluateFeature(featureKey, context).getValue();
+            Double maybeValue = (Double) this.featureEvaluator.evaluateFeature(featureKey, context).getValue();
+            return maybeValue == null ? defaultValue : maybeValue;
         } catch (Exception e) {
             e.printStackTrace();
             return defaultValue;

@@ -416,4 +416,100 @@ class GrowthBookTest {
         verify(mockCallback1, times(1)).onRun(result2);
         verify(mockCallback2, times(1)).onRun(result2);
     }
+
+    @Test
+    void test_getFeatureValue_string_nullValueUsesDefaultValue() {
+        String featureKey = "some-unknown-feature-key";
+        String features = "{}";
+        String attributes = "{}";
+
+        Context context = Context
+                .builder()
+                .featuresJson(features)
+                .attributesJson(attributes)
+                .build();
+        GrowthBook subject = new GrowthBook(context);
+
+        String result = subject.getFeatureValue(featureKey, "my fallback value");
+
+        assertNotNull(result);
+        assertEquals("my fallback value", result);
+    }
+
+    @Test
+    void test_getFeatureValue_float_nullValueUsesDefaultValue() {
+        String featureKey = "some-unknown-feature-key";
+        String features = "{}";
+        String attributes = "{}";
+
+        Context context = Context
+                .builder()
+                .featuresJson(features)
+                .attributesJson(attributes)
+                .build();
+        GrowthBook subject = new GrowthBook(context);
+
+        Float result = subject.getFeatureValue(featureKey, 10.0f);
+
+        assertNotNull(result);
+        assertEquals(10.0f, result);
+    }
+
+    @Test
+    void test_getFeatureValue_integer_nullValueUsesDefaultValue() {
+        String featureKey = "some-unknown-feature-key";
+        String features = "{}";
+        String attributes = "{}";
+
+        Context context = Context
+                .builder()
+                .featuresJson(features)
+                .attributesJson(attributes)
+                .build();
+        GrowthBook subject = new GrowthBook(context);
+
+        Integer result = subject.getFeatureValue(featureKey, 99);
+
+        assertNotNull(result);
+        assertEquals(99, result);
+    }
+
+    @Test
+    void test_getFeatureValue_double_nullValueUsesDefaultValue() {
+        String featureKey = "some-unknown-feature-key";
+        String features = "{}";
+        String attributes = "{}";
+
+        Context context = Context
+                .builder()
+                .featuresJson(features)
+                .attributesJson(attributes)
+                .build();
+        GrowthBook subject = new GrowthBook(context);
+
+        Double result = subject.getFeatureValue(featureKey, Double.valueOf(101));
+
+        assertNotNull(result);
+        assertEquals(Double.valueOf(101), result);
+    }
+
+    @Test
+    void test_getFeatureValue_gsonDeserializable_nullValueUsesDefaultValue() {
+        String featureKey = "some-unknown-feature-key";
+        String features = "{}";
+        String attributes = "{}";
+
+        Context context = Context
+                .builder()
+                .featuresJson(features)
+                .attributesJson(attributes)
+                .build();
+        GrowthBook subject = new GrowthBook(context);
+
+        PaperCupsConfig defaultConfig = new PaperCupsConfig("abc123", "My Chat", true);
+        PaperCupsConfig result = subject.getFeatureValue(featureKey, defaultConfig, PaperCupsConfig.class);
+
+        assertNotNull(result);
+        assertEquals(defaultConfig, result);
+    }
 }
