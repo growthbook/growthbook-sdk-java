@@ -7,6 +7,7 @@ import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
 import java.util.HashMap;
+import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.verify;
@@ -98,5 +99,21 @@ class ContextTest {
         subject.getTrackingCallback().onTrack(experiment, result);
 
         verify(trackingCallback).onTrack(experiment, result);
+    }
+
+    @Test
+    void fakeTest() {
+        Map<String, Integer> map = new HashMap<>(120);
+
+        String obj = "Hello, world!";
+
+        switch (obj) {
+            case String s && s.length() > 5 -> System.out.println(s.toUpperCase());
+            case String s                   -> System.out.println(s.toLowerCase());
+
+            case Integer i                  -> System.out.println(i * i);
+
+            default -> {}
+        }
     }
 }
