@@ -53,6 +53,11 @@ publishing {
     }
 }
 
+java {
+    withSourcesJar()
+    withJavadocJar()
+}
+
 // Generates documentation in ./lib/build/docs/javadoc
 javadoc {
     options.memberLevel = JavadocMemberLevel.PUBLIC
