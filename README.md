@@ -2,4 +2,8 @@
 
 # GrowthBook Java SDK
 
-TODO
+- [Requirements](#requirements)
+
+## Requirements
+
+- Java version 1.8 or later
