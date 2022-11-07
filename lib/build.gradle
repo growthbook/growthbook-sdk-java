@@ -55,6 +55,9 @@ publishing {
 
 java {
     withSourcesJar()
+
+    // This fails for Java 19
+    // ref: https://github.com/growthbook/growthbook-sdk-java/actions/runs/3413815008/jobs/5680998078#step:5:44
     withJavadocJar()
 }
 
