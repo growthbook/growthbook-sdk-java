@@ -3,7 +3,6 @@ on:
   push:
     branches:
       - main
-      - java-versions-ci
 
   pull_request:
     branches:
@@ -14,7 +13,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        java: [ '8', '11', '16', '17' ]
+        java: [ '8', '11', '16' ] # default is 17. See ci.yml
     name: Java version ${{ matrix.java }}
     steps:
       - uses: actions/checkout@v2
