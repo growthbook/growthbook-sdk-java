@@ -1,16 +1,27 @@
-name: CI
+name: Java versions
 on:
   push:
+    branches:
+      - main
+
+  pull_request:
+    branches:
+      - main
 
 jobs:
   build:
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        java: [ '8', '11', '16', '19' ] # default is 17. See ci.yml
+    name: Java version ${{ matrix.java }}
     steps:
       - uses: actions/checkout@v2
       - uses: actions/setup-java@v3
         with:
           distribution: temurin
-          java-version: 17
+          java-version: ${{ matrix.java }}
 
       - name: Setup Gradle
         uses: gradle/gradle-build-action@v2
