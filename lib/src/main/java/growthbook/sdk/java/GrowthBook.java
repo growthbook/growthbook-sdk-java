@@ -1,18 +1,11 @@
 package growthbook.sdk.java;
 
-import growthbook.sdk.java.models.*;
-import growthbook.sdk.java.internal.services.ConditionEvaluator;
-import growthbook.sdk.java.internal.services.ExperimentEvaluator;
-import growthbook.sdk.java.internal.services.FeatureEvaluator;
-import growthbook.sdk.java.internal.services.GrowthBookJsonUtils;
-
 import javax.annotation.Nullable;
 import java.util.ArrayList;
-import java.util.Map;
 
 /**
  * GrowthBook SDK class.
- * Build a context with {@link GBContext#builder()} or {@link GBContext#create(String, String, Boolean, Boolean, String, Map, TrackingCallback)}
+ * Build a context with {@link GBContext#builder()} or the {@link GBContext} constructor
  * and pass it as an argument to the class constructor.
  */
 public class GrowthBook implements IGrowthBook {
@@ -42,7 +35,7 @@ public class GrowthBook implements IGrowthBook {
 
     /**
      * No-args constructor. A {@link GBContext} with default values is created.
-     * It's recommended to create your own context with {@link GBContext#builder()} or {@link GBContext#create(String, String, Boolean, Boolean, String, Map, TrackingCallback)}
+     * It's recommended to create your own context with {@link GBContext#builder()} or the {@link GBContext} constructor
      */
     public GrowthBook() {
         this.context = GBContext.builder().build();
@@ -77,6 +70,11 @@ public class GrowthBook implements IGrowthBook {
     @Override
     public void setFeatures(String featuresJsonString) {
         this.context.setFeaturesJson(featuresJsonString);
+    }
+
+    @Override
+    public void setAttributes(String attributesJsonString) {
+        this.context.setAttributesJson(attributesJsonString);
     }
 
     @Override
