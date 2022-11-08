@@ -12,12 +12,12 @@ import java.util.Map;
 
 /**
  * GrowthBook SDK class.
- * Build a context with {@link Context#builder()} or {@link Context#create(String, String, Boolean, Boolean, String, Map, TrackingCallback)}
+ * Build a context with {@link GBContext#builder()} or {@link GBContext#create(String, String, Boolean, Boolean, String, Map, TrackingCallback)}
  * and pass it as an argument to the class constructor.
  */
 public class GrowthBook implements IGrowthBook {
 
-    private final Context context;
+    private final GBContext context;
 
     // dependencies
     private final FeatureEvaluator featureEvaluator;
@@ -29,10 +29,10 @@ public class GrowthBook implements IGrowthBook {
     private ArrayList<ExperimentRunCallback> callbacks = new ArrayList<>();
 
     /**
-     * Initialize the GrowthBook SDK with a provided {@link Context}
-     * @param context {@link Context}
+     * Initialize the GrowthBook SDK with a provided {@link GBContext}
+     * @param context {@link GBContext}
      */
-    public GrowthBook(Context context) {
+    public GrowthBook(GBContext context) {
         this.context = context;
 
         this.featureEvaluator = new FeatureEvaluator();
@@ -41,11 +41,11 @@ public class GrowthBook implements IGrowthBook {
     }
 
     /**
-     * No-args constructor. A {@link Context} with default values is created.
-     * It's recommended to create your own context with {@link Context#builder()} or {@link Context#create(String, String, Boolean, Boolean, String, Map, TrackingCallback)}
+     * No-args constructor. A {@link GBContext} with default values is created.
+     * It's recommended to create your own context with {@link GBContext#builder()} or {@link GBContext#create(String, String, Boolean, Boolean, String, Map, TrackingCallback)}
      */
     public GrowthBook() {
-        this.context = Context.builder().build();
+        this.context = GBContext.builder().build();
 
         // dependencies
         this.featureEvaluator = new FeatureEvaluator();
@@ -61,7 +61,7 @@ public class GrowthBook implements IGrowthBook {
      * @param conditionEvaluator ConditionEvaluator
      * @param experimentEvaluator ExperimentEvaluator
      */
-    GrowthBook(Context context, FeatureEvaluator featureEvaluator, ConditionEvaluator conditionEvaluator, ExperimentEvaluator experimentEvaluator) {
+    GrowthBook(GBContext context, FeatureEvaluator featureEvaluator, ConditionEvaluator conditionEvaluator, ExperimentEvaluator experimentEvaluator) {
         this.featureEvaluator = featureEvaluator;
         this.conditionEvaluator = conditionEvaluator;
         this.experimentEvaluatorEvaluator = experimentEvaluator;

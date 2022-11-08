@@ -12,14 +12,14 @@ import java.util.Map;
 
 /**
  * Context object passed into the GrowthBook constructor.
- * The {@link Context#builder()} is recommended for constructing a Context.
+ * The {@link GBContext#builder()} is recommended for constructing a Context.
  * Alternatively, you can use the static {@link #create(String, String, Boolean, Boolean, String, Map, TrackingCallback)} method.
  */
 @Data @Builder
-public class Context {
+public class GBContext {
 
     /**
-     * The {@link Context.ContextBuilder} is recommended for constructing a Context.
+     * The {@link GBContextBuilder} is recommended for constructing a Context.
      * Alternatively, you can use this static method instead of the builder.
      * @param attributesJson User attributes as JSON string
      * @param featuresJson Features response as JSON string
@@ -30,7 +30,7 @@ public class Context {
      * @param trackingCallback A function that takes {@link Experiment} and {@link ExperimentResult} as arguments.
      * @return created context
      */
-    public static Context create(
+    public static GBContext create(
             @Nullable String attributesJson,
             @Nullable String featuresJson,
             @Nullable Boolean isEnabled,
@@ -39,7 +39,7 @@ public class Context {
             @Nullable Map<String, Integer> forcedVariationsMap,
             @Nullable TrackingCallback trackingCallback
     ) {
-        return Context
+        return GBContext
                 .builder()
                 .attributesJson(attributesJson)
                 .featuresJson(featuresJson)
@@ -82,7 +82,7 @@ public class Context {
     public void setAttributesJson(String attributesJson) {
         this.attributesJson = attributesJson;
         if (attributesJson != null) {
-            this.setAttributes(Context.transformAttributes(attributesJson));
+            this.setAttributes(GBContext.transformAttributes(attributesJson));
         }
     }
 
@@ -105,7 +105,7 @@ public class Context {
     public void setFeaturesJson(String featuresJson) {
         this.featuresJson = featuresJson;
         if (featuresJson != null) {
-            this.setFeatures(Context.transformFeatures(featuresJson));
+            this.setFeatures(GBContext.transformFeatures(featuresJson));
         }
     }
 
@@ -114,25 +114,25 @@ public class Context {
     private Map<String, Integer> forcedVariationsMap = new HashMap<>();
 
     /**
-     * The builder class to help create a context. You can use {@link #builder()} or {@link #create(String, String, Boolean, Boolean, String, Map, TrackingCallback)} to create a {@link Context}
+     * The builder class to help create a context. You can use {@link #builder()} or {@link #create(String, String, Boolean, Boolean, String, Map, TrackingCallback)} to create a {@link GBContext}
      */
-    public static class ContextBuilder {} // This stub is required for JavaDoc and is filled by Lombuk
+    public static class GBContextBuilder {} // This stub is required for JavaDoc and is filled by Lombuk
 
     /**
-     * The builder class to help create a context. You can use this or {@link #create(String, String, Boolean, Boolean, String, Map, TrackingCallback)} to create a {@link Context}
-     * @return {@link CustomContextBuilder}
+     * The builder class to help create a context. You can use this or {@link #create(String, String, Boolean, Boolean, String, Map, TrackingCallback)} to create a {@link GBContext}
+     * @return {@link CustomGBContextBuilder}
      */
-    public static ContextBuilder builder() {
-        return new CustomContextBuilder();
+    public static GBContextBuilder builder() {
+        return new CustomGBContextBuilder();
     }
 
-    static class CustomContextBuilder extends ContextBuilder {
+    static class CustomGBContextBuilder extends GBContextBuilder {
         @Override
-        public Context build() {
-            Context context = super.build();
+        public GBContext build() {
+            GBContext context = super.build();
 
             if (context.featuresJson != null) {
-                context.setFeatures(Context.transformFeatures(context.featuresJson));
+                context.setFeatures(GBContext.transformFeatures(context.featuresJson));
             }
 
             context.setAttributesJson(context.attributesJson);

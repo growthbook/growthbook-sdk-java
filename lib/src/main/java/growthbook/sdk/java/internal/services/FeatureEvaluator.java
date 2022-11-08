@@ -2,7 +2,6 @@ package growthbook.sdk.java.internal.services;
 
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
-import growthbook.sdk.java.models.FeatureRule;
 import growthbook.sdk.java.models.*;
 
 /**
@@ -15,7 +14,7 @@ public class FeatureEvaluator implements IFeatureEvaluator {
     private final ExperimentEvaluator experimentEvaluator = new ExperimentEvaluator();
 
     @Override
-    public <ValueType> FeatureResult<ValueType> evaluateFeature(String key, Context context) throws ClassCastException {
+    public <ValueType> FeatureResult<ValueType> evaluateFeature(String key, GBContext context) throws ClassCastException {
         FeatureResult<ValueType> emptyFeature = FeatureResult
                 .<ValueType>builder()
                 .value(null)
