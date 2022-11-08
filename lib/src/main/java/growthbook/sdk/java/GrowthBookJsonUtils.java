@@ -14,7 +14,7 @@ import java.math.BigInteger;
  * Some types in the JSON source are tuples. This helps with transforming to and from POJOs.
  * The provided methods use a custom Gson instance that has all required type adapters registered.
  */
-public class GrowthBookJsonUtils {
+class GrowthBookJsonUtils {
     /**
      * The Gson instance is exposed for convenience.
      */
