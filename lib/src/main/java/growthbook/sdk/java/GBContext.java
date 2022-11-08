@@ -114,7 +114,7 @@ public class GBContext {
     public static class GBContextBuilder {} // This stub is required for JavaDoc and is filled by Lombuk
 
     /**
-     * The builder class to help create a context. You can use {@link #builder()} or the {@link GBContext} constructor
+     * The builder class to help create a context. You can use this builder or the constructor
      * @return {@link CustomGBContextBuilder}
      */
     public static GBContextBuilder builder() {

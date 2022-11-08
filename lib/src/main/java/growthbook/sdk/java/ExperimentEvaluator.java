@@ -179,9 +179,7 @@ class ExperimentEvaluator implements IExperimentEvaluator {
 
         String hashValue = "";
         JsonObject attributes = context.getAttributes();
-        if (attributes == null) {
-            attributes = new JsonObject();
-        } else {
+        if (attributes != null) {
             JsonElement hashAttributeElement = attributes.get(hashAttribute);
             if (hashAttributeElement != null && !hashAttributeElement.isJsonNull()) {
                 hashValue = hashAttributeElement.getAsString();

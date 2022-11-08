@@ -2,7 +2,6 @@ package growthbook.sdk.java;
 
 import javax.annotation.Nullable;
 import java.util.ArrayList;
-import java.util.Map;
 
 /**
  * GrowthBook SDK class.
