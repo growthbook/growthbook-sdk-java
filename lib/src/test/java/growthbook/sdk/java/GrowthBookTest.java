@@ -54,7 +54,7 @@ class GrowthBookTest {
 //            System.out.printf("\n features: %s", featuresJson);
 //            System.out.printf("\n attributesJson: %s", attributesJson);
 
-            Context context = Context
+            GBContext context = GBContext
                     .builder()
                     .featuresJson(featuresJson)
                     .attributesJson(attributesJson)
@@ -135,7 +135,7 @@ class GrowthBookTest {
 
             TestContext testContext = jsonUtils.gson.fromJson(testCase.get("context").getAsJsonObject(), TestContext.class);
 
-            Context context = Context
+            GBContext context = GBContext
                     .builder()
                     .featuresJson(testContext.features)
                     .attributesJson(testContext.attributes)
@@ -195,7 +195,7 @@ class GrowthBookTest {
         String attributes = "{ \"user_group\": \"subscriber\", \"beta_users\": true }";
         String features = TestCasesJsonHelper.getInstance().getDemoFeaturesJson();
 
-        Context context = Context
+        GBContext context = GBContext
                 .builder()
                 .featuresJson(features)
                 .attributesJson(attributes)
@@ -212,7 +212,7 @@ class GrowthBookTest {
         String attributes = "{ \"user_group\": \"standard\", \"beta_users\": false }";
         String features = TestCasesJsonHelper.getInstance().getDemoFeaturesJson();
 
-        Context context = Context
+        GBContext context = GBContext
                 .builder()
                 .featuresJson(features)
                 .attributesJson(attributes)
@@ -229,7 +229,7 @@ class GrowthBookTest {
         String attributes = "{ \"user_group\": \"subscriber\", \"beta_users\": true }";
         String features = TestCasesJsonHelper.getInstance().getDemoFeaturesJson();
 
-        Context context = Context
+        GBContext context = GBContext
                 .builder()
                 .featuresJson(features)
                 .attributesJson(attributes)
@@ -247,7 +247,7 @@ class GrowthBookTest {
         String attributes = "{ \"user_group\": \"subscriber\", \"beta_users\": true }";
         String features = TestCasesJsonHelper.getInstance().getDemoFeaturesJson();
 
-        Context context = Context
+        GBContext context = GBContext
                 .builder()
                 .featuresJson(features)
                 .attributesJson(attributes)
@@ -265,7 +265,7 @@ class GrowthBookTest {
         String attributes = "{ \"user_group\": \"subscriber\", \"beta_users\": false }";
         String features = TestCasesJsonHelper.getInstance().getDemoFeaturesJson();
 
-        Context context = Context
+        GBContext context = GBContext
                 .builder()
                 .featuresJson(features)
                 .attributesJson(attributes)
@@ -283,7 +283,7 @@ class GrowthBookTest {
         String attributes = "{ \"admin\": true }";
         String features = TestCasesJsonHelper.getInstance().getDemoFeaturesJson();
 
-        Context context = Context
+        GBContext context = GBContext
                 .builder()
                 .featuresJson(features)
                 .attributesJson(attributes)
@@ -301,7 +301,7 @@ class GrowthBookTest {
         String attributes = "{ \"admin\": true }";
         String features = TestCasesJsonHelper.getInstance().getDemoFeaturesJson();
 
-        Context context = Context
+        GBContext context = GBContext
                 .builder()
                 .featuresJson(features)
                 .attributesJson(attributes)
@@ -319,7 +319,7 @@ class GrowthBookTest {
         String attributes = "{ \"user\": \"standard\" }";
         String features = TestCasesJsonHelper.getInstance().getDemoFeaturesJson();
 
-        Context context = Context
+        GBContext context = GBContext
                 .builder()
                 .featuresJson(features)
                 .attributesJson(attributes)
@@ -337,7 +337,7 @@ class GrowthBookTest {
         String attributes = "{ \"user\": \"standard\" }";
         String features = TestCasesJsonHelper.getInstance().getDemoFeaturesJson();
 
-        Context context = Context
+        GBContext context = GBContext
                 .builder()
                 .featuresJson(features)
                 .attributesJson(attributes)
@@ -361,7 +361,7 @@ class GrowthBookTest {
         String attributes = "{ \"user\": \"standard\" }";
         String features = TestCasesJsonHelper.getInstance().getDemoFeaturesJson();
 
-        Context context = Context
+        GBContext context = GBContext
                 .builder()
                 .featuresJson(features)
                 .attributesJson(attributes)
@@ -380,7 +380,7 @@ class GrowthBookTest {
         ConditionEvaluator mockConditionEvaluator = mock(ConditionEvaluator.class);
         ExperimentEvaluator mockExperimentEvaluator = mock(ExperimentEvaluator.class);
         FeatureEvaluator mockFeatureEvaluator = mock(FeatureEvaluator.class);
-        Context context = Context.builder().build();
+        GBContext context = GBContext.builder().build();
 
         String attrJson = "{ id: 1 }";
         String conditionJson = "{}";
@@ -423,7 +423,7 @@ class GrowthBookTest {
         String features = "{}";
         String attributes = "{}";
 
-        Context context = Context
+        GBContext context = GBContext
                 .builder()
                 .featuresJson(features)
                 .attributesJson(attributes)
@@ -442,7 +442,7 @@ class GrowthBookTest {
         String features = "{}";
         String attributes = "{}";
 
-        Context context = Context
+        GBContext context = GBContext
                 .builder()
                 .featuresJson(features)
                 .attributesJson(attributes)
@@ -461,7 +461,7 @@ class GrowthBookTest {
         String features = "{}";
         String attributes = "{}";
 
-        Context context = Context
+        GBContext context = GBContext
                 .builder()
                 .featuresJson(features)
                 .attributesJson(attributes)
@@ -480,7 +480,7 @@ class GrowthBookTest {
         String features = "{}";
         String attributes = "{}";
 
-        Context context = Context
+        GBContext context = GBContext
                 .builder()
                 .featuresJson(features)
                 .attributesJson(attributes)
@@ -499,7 +499,7 @@ class GrowthBookTest {
         String features = "{}";
         String attributes = "{}";
 
-        Context context = Context
+        GBContext context = GBContext
                 .builder()
                 .featuresJson(features)
                 .attributesJson(attributes)

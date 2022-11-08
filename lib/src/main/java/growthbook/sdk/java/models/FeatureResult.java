@@ -12,7 +12,7 @@ import javax.annotation.Nullable;
 import java.lang.reflect.Type;
 
 /**
- * Results for a {@link FeatureEvaluator#evaluateFeature(String, Context)}
+ * Results for a {@link FeatureEvaluator#evaluateFeature(String, GBContext)}
  *
  * <ul>
  * <li>value (any) - The assigned value of the feature</li>

@@ -11,7 +11,7 @@ import java.util.HashMap;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.verify;
 
-class ContextTest {
+class GBContextTest {
     private AutoCloseable closeable;
     @Mock
     private TrackingCallback trackingCallback;
@@ -38,7 +38,7 @@ class ContextTest {
         forcedVariations.put("other-test", 1);
         String featuresJson = "{}";
 
-        Context subject = Context.create(
+        GBContext subject = GBContext.create(
                 sampleUserAttributes,
                 featuresJson,
                 isEnabled,
@@ -57,7 +57,7 @@ class ContextTest {
         Boolean isQaMode = false;
         String url = "http://localhost:3000";
 
-        Context subject = Context
+        GBContext subject = GBContext
                 .builder()
                 .enabled(isEnabled)
                 .attributesJson(sampleUserAttributes)
@@ -85,7 +85,7 @@ class ContextTest {
 
     @Test
     void canExecuteATrackingCallback() {
-        Context subject = Context
+        GBContext subject = GBContext
                 .builder()
                 .trackingCallback(trackingCallback)
                 .build();

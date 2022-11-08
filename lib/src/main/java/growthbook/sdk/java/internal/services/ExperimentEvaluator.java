@@ -18,7 +18,7 @@ public class ExperimentEvaluator implements IExperimentEvaluator {
     private final ConditionEvaluator conditionEvaluator = new ConditionEvaluator();
 
     @Override
-    public <ValueType> ExperimentResult<ValueType> evaluateExperiment(Experiment<ValueType> experiment, Context context, @Nullable String featureId) {
+    public <ValueType> ExperimentResult<ValueType> evaluateExperiment(Experiment<ValueType> experiment, GBContext context, @Nullable String featureId) {
         // If less than 2 variations, return immediately (not in experiment, variation 0)
         // If not enabled, return immediately (not in experiment, variation 0)
         ArrayList<ValueType> experimentVariations = experiment.getVariations();
@@ -146,7 +146,7 @@ public class ExperimentEvaluator implements IExperimentEvaluator {
 
     private <ValueType> ExperimentResult<ValueType> getExperimentResult(
             Experiment<ValueType> experiment,
-            Context context,
+            GBContext context,
             Integer variationIndex,
             Boolean inExperiment,
             Boolean hashUsed,

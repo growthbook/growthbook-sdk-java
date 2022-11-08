@@ -13,7 +13,7 @@ import javax.annotation.Nullable;
 import java.lang.reflect.Type;
 
 /**
- * The result of running an {@link Experiment} given a specific {@link Context}
+ * The result of running an {@link Experiment} given a specific {@link GBContext}
  *
  * <ul>
  * <li>inExperiment (boolean) - Whether or not the user is part of the experiment</li>

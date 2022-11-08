@@ -1,6 +1,6 @@
 package growthbook.sdk.java.internal.services;
 
-import growthbook.sdk.java.models.Context;
+import growthbook.sdk.java.models.GBContext;
 import growthbook.sdk.java.models.FeatureResult;
 
 interface IFeatureEvaluator {
@@ -13,5 +13,5 @@ interface IFeatureEvaluator {
      * @return feature result
      * @throws ClassCastException When a value type fails to cast to the provided type, this can throw an exception
      */
-    <ValueType> FeatureResult<ValueType> evaluateFeature(String key, Context context);
+    <ValueType> FeatureResult<ValueType> evaluateFeature(String key, GBContext context);
 }
