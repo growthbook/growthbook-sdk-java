@@ -73,7 +73,7 @@ loadScripts(document, 'script');</script>
 </dd>
 <dt><a href="growthbook/sdk/java/models/BucketRange.html#%3Cinit%3E()" class="member-name-link">BucketRange()</a> - Constructor for class growthbook.sdk.java.models.<a href="growthbook/sdk/java/models/BucketRange.html" title="class in growthbook.sdk.java.models">BucketRange</a></dt>
 <dd>&nbsp;</dd>
-<dt><a href="growthbook/sdk/java/models/Context.html#builder()" class="member-name-link">builder()</a> - Static method in class growthbook.sdk.java.models.<a href="growthbook/sdk/java/models/Context.html" title="class in growthbook.sdk.java.models">Context</a></dt>
+<dt><a href="growthbook/sdk/java/models/GBContext.html#builder()" class="member-name-link">builder()</a> - Static method in class growthbook.sdk.java.models.<a href="growthbook/sdk/java/models/GBContext.html" title="class in growthbook.sdk.java.models">GBContext</a></dt>
 <dd>
 <div class="block">The builder class to help create a context.</div>
 </dd>
@@ -90,21 +90,9 @@ loadScripts(document, 'script');</script>
 </dd>
 <dt><a href="growthbook/sdk/java/internal/services/ConditionEvaluator.html#%3Cinit%3E()" class="member-name-link">ConditionEvaluator()</a> - Constructor for class growthbook.sdk.java.internal.services.<a href="growthbook/sdk/java/internal/services/ConditionEvaluator.html" title="class in growthbook.sdk.java.internal.services">ConditionEvaluator</a></dt>
 <dd>&nbsp;</dd>
-<dt><a href="growthbook/sdk/java/models/Context.html" class="type-name-link" title="class in growthbook.sdk.java.models">Context</a> - Class in <a href="growthbook/sdk/java/models/package-summary.html">growthbook.sdk.java.models</a></dt>
+<dt><a href="growthbook/sdk/java/models/GBContext.html#create(java.lang.String,java.lang.String,java.lang.Boolean,java.lang.Boolean,java.lang.String,java.util.Map,growthbook.sdk.java.models.TrackingCallback)" class="member-name-link">create(String, String, Boolean, Boolean, String, Map&lt;String, Integer&gt;, TrackingCallback)</a> - Static method in class growthbook.sdk.java.models.<a href="growthbook/sdk/java/models/GBContext.html" title="class in growthbook.sdk.java.models">GBContext</a></dt>
 <dd>
-<div class="block">Context object passed into the GrowthBook constructor.</div>
-</dd>
-<dt><a href="growthbook/sdk/java/models/Context.html#%3Cinit%3E()" class="member-name-link">Context()</a> - Constructor for class growthbook.sdk.java.models.<a href="growthbook/sdk/java/models/Context.html" title="class in growthbook.sdk.java.models">Context</a></dt>
-<dd>&nbsp;</dd>
-<dt><a href="growthbook/sdk/java/models/Context.ContextBuilder.html" class="type-name-link" title="class in growthbook.sdk.java.models">Context.ContextBuilder</a> - Class in <a href="growthbook/sdk/java/models/package-summary.html">growthbook.sdk.java.models</a></dt>
-<dd>
-<div class="block">The builder class to help create a context.</div>
-</dd>
-<dt><a href="growthbook/sdk/java/models/Context.ContextBuilder.html#%3Cinit%3E()" class="member-name-link">ContextBuilder()</a> - Constructor for class growthbook.sdk.java.models.<a href="growthbook/sdk/java/models/Context.ContextBuilder.html" title="class in growthbook.sdk.java.models">Context.ContextBuilder</a></dt>
-<dd>&nbsp;</dd>
-<dt><a href="growthbook/sdk/java/models/Context.html#create(java.lang.String,java.lang.String,java.lang.Boolean,java.lang.Boolean,java.lang.String,java.util.Map,growthbook.sdk.java.models.TrackingCallback)" class="member-name-link">create(String, String, Boolean, Boolean, String, Map&lt;String, Integer&gt;, TrackingCallback)</a> - Static method in class growthbook.sdk.java.models.<a href="growthbook/sdk/java/models/Context.html" title="class in growthbook.sdk.java.models">Context</a></dt>
-<dd>
-<div class="block">The <a href="growthbook/sdk/java/models/Context.ContextBuilder.html" title="class in growthbook.sdk.java.models"><code>Context.ContextBuilder</code></a> is recommended for constructing a Context.</div>
+<div class="block">The <a href="growthbook/sdk/java/models/GBContext.GBContextBuilder.html" title="class in growthbook.sdk.java.models"><code>GBContext.GBContextBuilder</code></a> is recommended for constructing a Context.</div>
 </dd>
 </dl>
 <h2 class="title" id="I:D">D</h2>
@@ -140,9 +128,9 @@ loadScripts(document, 'script');</script>
 <dd>
 <div class="block">Evaluate a condition for a set of user attributes based on the provided condition.</div>
 </dd>
-<dt><a href="growthbook/sdk/java/internal/services/ExperimentEvaluator.html#evaluateExperiment(growthbook.sdk.java.models.Experiment,growthbook.sdk.java.models.Context,java.lang.String)" class="member-name-link">evaluateExperiment(Experiment&lt;ValueType&gt;, Context, String)</a> - Method in class growthbook.sdk.java.internal.services.<a href="growthbook/sdk/java/internal/services/ExperimentEvaluator.html" title="class in growthbook.sdk.java.internal.services">ExperimentEvaluator</a></dt>
+<dt><a href="growthbook/sdk/java/internal/services/ExperimentEvaluator.html#evaluateExperiment(growthbook.sdk.java.models.Experiment,growthbook.sdk.java.models.GBContext,java.lang.String)" class="member-name-link">evaluateExperiment(Experiment&lt;ValueType&gt;, GBContext, String)</a> - Method in class growthbook.sdk.java.internal.services.<a href="growthbook/sdk/java/internal/services/ExperimentEvaluator.html" title="class in growthbook.sdk.java.internal.services">ExperimentEvaluator</a></dt>
 <dd>&nbsp;</dd>
-<dt><a href="growthbook/sdk/java/internal/services/FeatureEvaluator.html#evaluateFeature(java.lang.String,growthbook.sdk.java.models.Context)" class="member-name-link">evaluateFeature(String, Context)</a> - Method in class growthbook.sdk.java.internal.services.<a href="growthbook/sdk/java/internal/services/FeatureEvaluator.html" title="class in growthbook.sdk.java.internal.services">FeatureEvaluator</a></dt>
+<dt><a href="growthbook/sdk/java/internal/services/FeatureEvaluator.html#evaluateFeature(java.lang.String,growthbook.sdk.java.models.GBContext)" class="member-name-link">evaluateFeature(String, GBContext)</a> - Method in class growthbook.sdk.java.internal.services.<a href="growthbook/sdk/java/internal/services/FeatureEvaluator.html" title="class in growthbook.sdk.java.internal.services">FeatureEvaluator</a></dt>
 <dd>&nbsp;</dd>
 <dt><a href="growthbook/sdk/java/models/Operator.html#EXISTS" class="member-name-link">EXISTS</a> - Enum constant in enum class growthbook.sdk.java.models.<a href="growthbook/sdk/java/models/Operator.html" title="enum class in growthbook.sdk.java.models">Operator</a></dt>
 <dd>
@@ -166,7 +154,7 @@ loadScripts(document, 'script');</script>
 <dd>&nbsp;</dd>
 <dt><a href="growthbook/sdk/java/models/ExperimentResult.html" class="type-name-link" title="class in growthbook.sdk.java.models">ExperimentResult</a>&lt;<a href="growthbook/sdk/java/models/ExperimentResult.html" title="type parameter in ExperimentResult">ValueType</a>&gt; - Class in <a href="growthbook/sdk/java/models/package-summary.html">growthbook.sdk.java.models</a></dt>
 <dd>
-<div class="block">The result of running an <a href="growthbook/sdk/java/models/Experiment.html" title="class in growthbook.sdk.java.models"><code>Experiment</code></a> given a specific <a href="growthbook/sdk/java/models/Context.html" title="class in growthbook.sdk.java.models"><code>Context</code></a>
+<div class="block">The result of running an <a href="growthbook/sdk/java/models/Experiment.html" title="class in growthbook.sdk.java.models"><code>Experiment</code></a> given a specific <a href="growthbook/sdk/java/models/GBContext.html" title="class in growthbook.sdk.java.models"><code>GBContext</code></a>
 
  
  inExperiment (boolean) - Whether or not the user is part of the experiment
@@ -203,7 +191,7 @@ loadScripts(document, 'script');</script>
 <dd>&nbsp;</dd>
 <dt><a href="growthbook/sdk/java/models/FeatureResult.html" class="type-name-link" title="class in growthbook.sdk.java.models">FeatureResult</a>&lt;<a href="growthbook/sdk/java/models/FeatureResult.html" title="type parameter in FeatureResult">ValueType</a>&gt; - Class in <a href="growthbook/sdk/java/models/package-summary.html">growthbook.sdk.java.models</a></dt>
 <dd>
-<div class="block">Results for a <a href="growthbook/sdk/java/internal/services/FeatureEvaluator.html#evaluateFeature(java.lang.String,growthbook.sdk.java.models.Context)"><code>FeatureEvaluator.evaluateFeature(String, Context)</code></a>
+<div class="block">Results for a <a href="growthbook/sdk/java/internal/services/FeatureEvaluator.html#evaluateFeature(java.lang.String,growthbook.sdk.java.models.GBContext)"><code>FeatureEvaluator.evaluateFeature(String, GBContext)</code></a>
 
  
  value (any) - The assigned value of the feature
@@ -241,6 +229,18 @@ loadScripts(document, 'script');</script>
 </dl>
 <h2 class="title" id="I:G">G</h2>
 <dl class="index">
+<dt><a href="growthbook/sdk/java/models/GBContext.html" class="type-name-link" title="class in growthbook.sdk.java.models">GBContext</a> - Class in <a href="growthbook/sdk/java/models/package-summary.html">growthbook.sdk.java.models</a></dt>
+<dd>
+<div class="block">Context object passed into the GrowthBook constructor.</div>
+</dd>
+<dt><a href="growthbook/sdk/java/models/GBContext.html#%3Cinit%3E()" class="member-name-link">GBContext()</a> - Constructor for class growthbook.sdk.java.models.<a href="growthbook/sdk/java/models/GBContext.html" title="class in growthbook.sdk.java.models">GBContext</a></dt>
+<dd>&nbsp;</dd>
+<dt><a href="growthbook/sdk/java/models/GBContext.GBContextBuilder.html" class="type-name-link" title="class in growthbook.sdk.java.models">GBContext.GBContextBuilder</a> - Class in <a href="growthbook/sdk/java/models/package-summary.html">growthbook.sdk.java.models</a></dt>
+<dd>
+<div class="block">The builder class to help create a context.</div>
+</dd>
+<dt><a href="growthbook/sdk/java/models/GBContext.GBContextBuilder.html#%3Cinit%3E()" class="member-name-link">GBContextBuilder()</a> - Constructor for class growthbook.sdk.java.models.<a href="growthbook/sdk/java/models/GBContext.GBContextBuilder.html" title="class in growthbook.sdk.java.models">GBContext.GBContextBuilder</a></dt>
+<dd>&nbsp;</dd>
 <dt><a href="growthbook/sdk/java/internal/services/GrowthBookUtils.html#getBucketRanges(java.lang.Integer,java.lang.Float,java.util.ArrayList)" class="member-name-link">getBucketRanges(Integer, Float, ArrayList&lt;Float&gt;)</a> - Static method in class growthbook.sdk.java.internal.services.<a href="growthbook/sdk/java/internal/services/GrowthBookUtils.html" title="class in growthbook.sdk.java.internal.services">GrowthBookUtils</a></dt>
 <dd>
 <div class="block">This converts and experiment's coverage and variation weights into an array of bucket ranges.</div>
@@ -332,9 +332,9 @@ loadScripts(document, 'script');</script>
 <dd>
 <div class="block">No-args constructor.</div>
 </dd>
-<dt><a href="growthbook/sdk/java/GrowthBook.html#%3Cinit%3E(growthbook.sdk.java.models.Context)" class="member-name-link">GrowthBook(Context)</a> - Constructor for class growthbook.sdk.java.<a href="growthbook/sdk/java/GrowthBook.html" title="class in growthbook.sdk.java">GrowthBook</a></dt>
+<dt><a href="growthbook/sdk/java/GrowthBook.html#%3Cinit%3E(growthbook.sdk.java.models.GBContext)" class="member-name-link">GrowthBook(GBContext)</a> - Constructor for class growthbook.sdk.java.<a href="growthbook/sdk/java/GrowthBook.html" title="class in growthbook.sdk.java">GrowthBook</a></dt>
 <dd>
-<div class="block">Initialize the GrowthBook SDK with a provided <a href="growthbook/sdk/java/models/Context.html" title="class in growthbook.sdk.java.models"><code>Context</code></a></div>
+<div class="block">Initialize the GrowthBook SDK with a provided <a href="growthbook/sdk/java/models/GBContext.html" title="class in growthbook.sdk.java.models"><code>GBContext</code></a></div>
 </dd>
 <dt><a href="growthbook/sdk/java/package-summary.html">growthbook.sdk.java</a> - package growthbook.sdk.java</dt>
 <dd>&nbsp;</dd>
@@ -467,13 +467,13 @@ loadScripts(document, 'script');</script>
 </dl>
 <h2 class="title" id="I:S">S</h2>
 <dl class="index">
-<dt><a href="growthbook/sdk/java/models/Context.html#setAttributesJson(java.lang.String)" class="member-name-link">setAttributesJson(String)</a> - Method in class growthbook.sdk.java.models.<a href="growthbook/sdk/java/models/Context.html" title="class in growthbook.sdk.java.models">Context</a></dt>
+<dt><a href="growthbook/sdk/java/models/GBContext.html#setAttributesJson(java.lang.String)" class="member-name-link">setAttributesJson(String)</a> - Method in class growthbook.sdk.java.models.<a href="growthbook/sdk/java/models/GBContext.html" title="class in growthbook.sdk.java.models">GBContext</a></dt>
 <dd>
 <div class="block">You can update the attributes JSON with new user attributes to evaluate against.</div>
 </dd>
 <dt><a href="growthbook/sdk/java/GrowthBook.html#setFeatures(java.lang.String)" class="member-name-link">setFeatures(String)</a> - Method in class growthbook.sdk.java.<a href="growthbook/sdk/java/GrowthBook.html" title="class in growthbook.sdk.java">GrowthBook</a></dt>
 <dd>&nbsp;</dd>
-<dt><a href="growthbook/sdk/java/models/Context.html#setFeaturesJson(java.lang.String)" class="member-name-link">setFeaturesJson(String)</a> - Method in class growthbook.sdk.java.models.<a href="growthbook/sdk/java/models/Context.html" title="class in growthbook.sdk.java.models">Context</a></dt>
+<dt><a href="growthbook/sdk/java/models/GBContext.html#setFeaturesJson(java.lang.String)" class="member-name-link">setFeaturesJson(String)</a> - Method in class growthbook.sdk.java.models.<a href="growthbook/sdk/java/models/GBContext.html" title="class in growthbook.sdk.java.models">GBContext</a></dt>
 <dd>
 <div class="block">You can update the features JSON with new features to evaluate against.</div>
 </dd>
