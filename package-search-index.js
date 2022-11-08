@@ -1,1 +1,1 @@
-packageSearchIndex = [{"l":"All Packages","u":"allpackages-index.html"},{"l":"growthbook.sdk.java"},{"l":"growthbook.sdk.java.internal.services"},{"l":"growthbook.sdk.java.models"}];updateSearchResults();
+packageSearchIndex = [{"l":"All Packages","u":"allpackages-index.html"},{"l":"growthbook.sdk.java"}];updateSearchResults();
