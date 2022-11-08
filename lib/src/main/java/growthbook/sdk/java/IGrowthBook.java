@@ -1,10 +1,5 @@
 package growthbook.sdk.java;
 
-import growthbook.sdk.java.models.Experiment;
-import growthbook.sdk.java.models.ExperimentResult;
-import growthbook.sdk.java.models.ExperimentRunCallback;
-import growthbook.sdk.java.models.FeatureResult;
-
 interface IGrowthBook {
 
     <ValueType>ExperimentResult<ValueType> run(Experiment<ValueType> experiment);
