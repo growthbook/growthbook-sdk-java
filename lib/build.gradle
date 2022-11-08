@@ -10,6 +10,7 @@ plugins {
     // Apply the java-library plugin for API and implementation separation.
     id 'java-library'
     id 'maven-publish'
+    id 'org.jetbrains.kotlin.jvm' version '1.6.21'
     id 'jacoco'
 }
 
@@ -37,6 +38,9 @@ dependencies {
 
     // https://mvnrepository.com/artifact/com.google.code.gson/gson
     implementation 'com.google.code.gson:gson:2.9.1'
+
+    // Add support for Kotlin
+    implementation 'org.jetbrains.kotlin:kotlin-stdlib-jdk8'
 
     // Adds getter, setter and builder boilerplate
     // https://projectlombok.org/
