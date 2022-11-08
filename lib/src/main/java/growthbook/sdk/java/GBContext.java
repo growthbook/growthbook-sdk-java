@@ -14,9 +14,9 @@ import java.util.Map;
 /**
  * Context object passed into the GrowthBook constructor.
  * The {@link GBContext#builder()} is recommended for constructing a Context.
- * Alternatively, you can use the static {@link #create(String, String, Boolean, Boolean, String, Map, TrackingCallback)} method.
+ * Alternatively, you can use the class's constructor.
  */
-@Data @Builder
+@Data
 public class GBContext {
 
     /**
@@ -24,32 +24,29 @@ public class GBContext {
      * Alternatively, you can use this static method instead of the builder.
      * @param attributesJson User attributes as JSON string
      * @param featuresJson Features response as JSON string
-     * @param isEnabled Whether globally all experiments are enabled. Defaults to true.
+     * @param enabled Whether globally all experiments are enabled. Defaults to true.
      * @param isQaMode If true, random assignment is disabled and only explicitly forced variations are used.
      * @param url A URL string
      * @param forcedVariationsMap Force specific experiments to always assign a specific variation (used for QA)
      * @param trackingCallback A function that takes {@link Experiment} and {@link ExperimentResult} as arguments.
-     * @return created context
      */
-    public static GBContext create(
+    @Builder
+    public GBContext(
             @Nullable String attributesJson,
             @Nullable String featuresJson,
-            @Nullable Boolean isEnabled,
+            @Nullable Boolean enabled,
             Boolean isQaMode,
             @Nullable String url,
             @Nullable Map<String, Integer> forcedVariationsMap,
             @Nullable TrackingCallback trackingCallback
     ) {
-        return GBContext
-                .builder()
-                .attributesJson(attributesJson)
-                .featuresJson(featuresJson)
-                .enabled(isEnabled)
-                .isQaMode(isQaMode)
-                .url(url)
-                .forcedVariationsMap(forcedVariationsMap)
-                .trackingCallback(trackingCallback)
-                .build();
+        this.attributesJson = attributesJson == null ? "{}" : attributesJson;
+        this.featuresJson = featuresJson == null ? "{}" : featuresJson;
+        this.enabled = enabled == null ? true : enabled;
+        this.isQaMode = isQaMode == null ? false : isQaMode;
+        this.url = url;
+        this.forcedVariationsMap = forcedVariationsMap == null ? new HashMap<>() : forcedVariationsMap;
+        this.trackingCallback = trackingCallback;
     }
 
     @Nullable
@@ -61,21 +58,18 @@ public class GBContext {
     }
 
     @Nullable
-    @Builder.Default
-    private Boolean enabled = true;
+    private Boolean enabled;
 
     @Nullable
     private String url;
 
-    @Builder.Default
-    private Boolean isQaMode = false;
+    private Boolean isQaMode;
 
     @Nullable
     private TrackingCallback trackingCallback;
 
     @Nullable
-    @Builder.Default
-    private String attributesJson = "{}";
+    private String attributesJson;
 
     /**
      * You can update the attributes JSON with new user attributes to evaluate against.
@@ -97,8 +91,7 @@ public class GBContext {
     }
 
     @Nullable
-    @Builder.Default
-    private String featuresJson = "{}";
+    private String featuresJson;
 
     /**
      * You can update the features JSON with new features to evaluate against.
@@ -113,16 +106,15 @@ public class GBContext {
     }
 
     @Nullable
-    @Builder.Default
-    private Map<String, Integer> forcedVariationsMap = new HashMap<>();
+    private Map<String, Integer> forcedVariationsMap;
 
     /**
-     * The builder class to help create a context. You can use {@link #builder()} or {@link #create(String, String, Boolean, Boolean, String, Map, TrackingCallback)} to create a {@link GBContext}
+     * The builder class to help create a context. You can use {@link #builder()} or the {@link GBContext} constructor
      */
     public static class GBContextBuilder {} // This stub is required for JavaDoc and is filled by Lombuk
 
     /**
-     * The builder class to help create a context. You can use this or {@link #create(String, String, Boolean, Boolean, String, Map, TrackingCallback)} to create a {@link GBContext}
+     * The builder class to help create a context. You can use {@link #builder()} or the {@link GBContext} constructor
      * @return {@link CustomGBContextBuilder}
      */
     public static GBContextBuilder builder() {

@@ -38,7 +38,7 @@ class GBContextTest {
         forcedVariations.put("other-test", 1);
         String featuresJson = "{}";
 
-        GBContext subject = GBContext.create(
+        GBContext subject = new GBContext(
                 sampleUserAttributes,
                 featuresJson,
                 isEnabled,
