@@ -2,8 +2,10 @@ package growthbook.sdk.java;
 
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Data;
+import lombok.Getter;
 
 import javax.annotation.Nullable;
 import java.util.HashMap;
@@ -51,6 +53,7 @@ public class GBContext {
     }
 
     @Nullable
+    @Getter(AccessLevel.PACKAGE)
     private JsonObject features;
 
     private void setFeatures(@Nullable JsonObject features) {
@@ -86,6 +89,7 @@ public class GBContext {
     }
 
     @Nullable
+    @Getter(AccessLevel.PACKAGE)
     private JsonObject attributes;
 
     private void setAttributes(@Nullable JsonObject attributes) {
