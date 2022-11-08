@@ -19,6 +19,12 @@ interface IGrowthBook {
      */
     void setFeatures(String featuresJsonString);
 
+    /**
+     * Update the user's attributes
+     * @param attributesJsonString user attributes JSON
+     */
+    void setAttributes(String attributesJsonString);
+
     Boolean isOn(String featureKey);
     Boolean isOff(String featureKey);
 

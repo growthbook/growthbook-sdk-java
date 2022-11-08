@@ -74,6 +74,11 @@ public class GrowthBook implements IGrowthBook {
     }
 
     @Override
+    public void setAttributes(String attributesJsonString) {
+        this.context.setAttributesJson(attributesJsonString);
+    }
+
+    @Override
     public <ValueType>ExperimentResult<ValueType> run(Experiment<ValueType> experiment) {
         ExperimentResult<ValueType> result = experimentEvaluatorEvaluator.evaluateExperiment(experiment, this.context, null);
 
