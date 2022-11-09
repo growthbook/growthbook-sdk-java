@@ -1,5 +1,3 @@
-# 🚧⛔️ WIP DO NOT USE
-
 [![](https://jitpack.io/v/growthbook/growthbook-sdk-java.svg)](https://jitpack.io/#growthbook/growthbook-sdk-java)
 
 # GrowthBook Java SDK
