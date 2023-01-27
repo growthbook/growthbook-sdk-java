@@ -1,5 +1,5 @@
 {
-  "specVersion": "0.2.2",
+  "specVersion": "0.2.3",
   "evalFeature": [
     {
       "name": "unknown feature key",
@@ -1062,6 +1062,19 @@
         "url": null
       },
       "experiment": "{\"key\":\"my-test\",\"variations\":[0,1],\"namespace\":[\"namespace\",0,0.1]}",
+      "result": {"value": 0, "inExperiment": false, "hashUsed": false}
+    },
+    {
+      "name": "Experiment coverage - Works when 0",
+      "type": "integer",
+      "context": {
+        "attributes": "{\"id\":\"1\"}",
+        "enabled": null,
+        "forcedVariations": null,
+        "qaMode": null,
+        "url": null
+      },
+      "experiment": "{\"key\": \"no-coverage\", \"variations\": [0, 1], \"coverage\": 0}",
       "result": {"value": 0, "inExperiment": false, "hashUsed": false}
     }
   ],
