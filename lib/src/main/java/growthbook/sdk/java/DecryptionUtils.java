@@ -37,14 +37,15 @@ public class DecryptionUtils {
             byte[] plainText = cipher.doFinal(decodedCipher);
 
             return new String(plainText);
+        } catch (InvalidAlgorithmParameterException e) {
+            throw new IllegalArgumentException("Invalid payload");
         } catch (InvalidKeyException e) {
             throw new IllegalArgumentException("Invalid encryption key");
         } catch (
                 NoSuchAlgorithmException
                 | NoSuchPaddingException
                 | IllegalBlockSizeException
-                | BadPaddingException
-                | InvalidAlgorithmParameterException e
+                | BadPaddingException e
         ) {
             e.printStackTrace();
             throw new RuntimeException(e);
