@@ -41,6 +41,7 @@ class GBContextTest {
         GBContext subject = new GBContext(
                 sampleUserAttributes,
                 featuresJson,
+                null,
                 isEnabled,
                 isQaMode,
                 url,
@@ -98,5 +99,61 @@ class GBContextTest {
         subject.getTrackingCallback().onTrack(experiment, result);
 
         verify(trackingCallback).onTrack(experiment, result);
+    }
+
+    @Test
+    void supportsEncryptedFeaturesUsingConstructor() {
+        Boolean isEnabled = true;
+        Boolean isQaMode = false;
+        String url = "http://localhost:3000";
+        HashMap<String, Integer> forcedVariations = new HashMap<String, Integer>();
+        forcedVariations.put("my-test", 0);
+        forcedVariations.put("other-test", 1);
+        String encryptedFeaturesJson = "7rvPA94JEsqRo9yPZsdsXg==.bJ8vtYvX+ur3cEUFVkYo1OyWb98oLnMlpeoO0Hs4YPc0EVb7oKX4KNz+Yt6GUMBsieXqtL7oaYzX+kMayZEtV+3bhyDYnS9QBrvalnfxbLExjtnsy8g0pPQHU/P/DPIzO0F+pphcahRfi+3AMTnIreqvkqrcX+MyOwHN56lqEs23Vp4Rsq2qDow/LZmn5kpwMNhMY0DBq7jC+lh2Oyly0g==";
+        String encryptionKey = "BhB1wORFmZLTDjbvstvS8w==";
+
+        GBContext subject = new GBContext(
+                sampleUserAttributes,
+                encryptedFeaturesJson,
+                encryptionKey,
+                isEnabled,
+                isQaMode,
+                url,
+                forcedVariations,
+                trackingCallback
+        );
+        String expectedFeaturesJson = "{\"greeting\":{\"defaultValue\":\"hello\",\"rules\":[{\"condition\":{\"country\":\"france\"},\"force\":\"bonjour\"},{\"condition\":{\"country\":\"mexico\"},\"force\":\"hola\"}]}}";
+
+        assertNotNull(subject);
+        assertEquals(expectedFeaturesJson.trim(), subject.getFeaturesJson().trim());
+    }
+
+    @Test
+    void supportsEncryptedFeaturesUsingBuilder() {
+        Boolean isEnabled = true;
+        Boolean isQaMode = false;
+        String url = "http://localhost:3000";
+        HashMap<String, Integer> forcedVariations = new HashMap<String, Integer>();
+        forcedVariations.put("my-test", 0);
+        forcedVariations.put("other-test", 1);
+        String encryptedFeaturesJson = "7rvPA94JEsqRo9yPZsdsXg==.bJ8vtYvX+ur3cEUFVkYo1OyWb98oLnMlpeoO0Hs4YPc0EVb7oKX4KNz+Yt6GUMBsieXqtL7oaYzX+kMayZEtV+3bhyDYnS9QBrvalnfxbLExjtnsy8g0pPQHU/P/DPIzO0F+pphcahRfi+3AMTnIreqvkqrcX+MyOwHN56lqEs23Vp4Rsq2qDow/LZmn5kpwMNhMY0DBq7jC+lh2Oyly0g==";
+        String encryptionKey = "BhB1wORFmZLTDjbvstvS8w==";
+
+        GBContext subject = GBContext
+                .builder()
+                .enabled(isEnabled)
+                .attributesJson(sampleUserAttributes)
+                .url(url)
+                .featuresJson(encryptedFeaturesJson)
+                .encryptionKey(encryptionKey)
+                .forcedVariationsMap(new HashMap<>())
+                .isQaMode(isQaMode)
+                .trackingCallback(trackingCallback)
+                .build();
+
+        String expectedFeaturesJson = "{\"greeting\":{\"defaultValue\":\"hello\",\"rules\":[{\"condition\":{\"country\":\"france\"},\"force\":\"bonjour\"},{\"condition\":{\"country\":\"mexico\"},\"force\":\"hola\"}]}}";
+
+        assertNotNull(subject);
+        assertEquals(expectedFeaturesJson.trim(), subject.getFeaturesJson().trim());
     }
 }
