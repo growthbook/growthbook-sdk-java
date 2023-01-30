@@ -25,15 +25,12 @@ public class DecryptionUtils {
             String cipherText = parts[1];
 
             byte[] decodedIv = Base64.getDecoder().decode(iv.getBytes(StandardCharsets.UTF_8));
-
             IvParameterSpec ivParameterSpec = new IvParameterSpec(decodedIv);
 
             Cipher cipher = Cipher.getInstance("AES/CBC/NOPADDING");
-
             cipher.init(Cipher.DECRYPT_MODE, DecryptionUtils.keyFromSecret(encryptionKey), ivParameterSpec);
 
             byte[] decodedCipher = Base64.getDecoder().decode(cipherText.getBytes(StandardCharsets.UTF_8));
-
             byte[] plainText = cipher.doFinal(decodedCipher);
 
             return new String(plainText);
