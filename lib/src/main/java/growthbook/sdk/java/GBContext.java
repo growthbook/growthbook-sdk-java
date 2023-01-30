@@ -23,7 +23,8 @@ public class GBContext {
      * The {@link GBContextBuilder} is recommended for constructing a Context.
      * Alternatively, you can use this static method instead of the builder.
      * @param attributesJson User attributes as JSON string
-     * @param featuresJson Features response as JSON string
+     * @param featuresJson Features response as JSON string, or the encrypted payload. Encrypted payload requires `encryptionKey`
+     * @param encryptionKey Optional encryption key. If this is not null, featuresJson should be an encrypted payload.
      * @param enabled Whether globally all experiments are enabled. Defaults to true.
      * @param isQaMode If true, random assignment is disabled and only explicitly forced variations are used.
      * @param url A URL string
@@ -34,14 +35,25 @@ public class GBContext {
     public GBContext(
             @Nullable String attributesJson,
             @Nullable String featuresJson,
+            @Nullable String encryptionKey,
             @Nullable Boolean enabled,
             Boolean isQaMode,
             @Nullable String url,
             @Nullable Map<String, Integer> forcedVariationsMap,
             @Nullable TrackingCallback trackingCallback
     ) {
+        this.encryptionKey = encryptionKey;
+
         this.attributesJson = attributesJson == null ? "{}" : attributesJson;
-        this.featuresJson = featuresJson == null ? "{}" : featuresJson;
+
+        if (featuresJson == null) {
+            this.featuresJson = "{}";
+        } else if (encryptionKey != null) {
+            this.featuresJson = DecryptionUtils.decrypt(featuresJson, encryptionKey);
+        } else {
+            this.featuresJson = featuresJson;
+        }
+
         this.enabled = enabled == null ? true : enabled;
         this.isQaMode = isQaMode == null ? false : isQaMode;
         this.url = url;
@@ -92,6 +104,9 @@ public class GBContext {
 
     @Nullable
     private String featuresJson;
+
+    @Nullable
+    private String encryptionKey;
 
     /**
      * You can update the features JSON with new features to evaluate against.

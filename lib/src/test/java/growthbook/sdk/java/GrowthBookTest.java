@@ -371,6 +371,26 @@ class GrowthBookTest {
     }
 
     @Test
+    void test_getFeatureValue_returnsFeatureValueFromEncryptedFeatures() {
+        String encryptedFeaturesJson = "7rvPA94JEsqRo9yPZsdsXg==.bJ8vtYvX+ur3cEUFVkYo1OyWb98oLnMlpeoO0Hs4YPc0EVb7oKX4KNz+Yt6GUMBsieXqtL7oaYzX+kMayZEtV+3bhyDYnS9QBrvalnfxbLExjtnsy8g0pPQHU/P/DPIzO0F+pphcahRfi+3AMTnIreqvkqrcX+MyOwHN56lqEs23Vp4Rsq2qDow/LZmn5kpwMNhMY0DBq7jC+lh2Oyly0g==";
+        String encryptionKey = "BhB1wORFmZLTDjbvstvS8w==";
+        String sampleUserAttributes = "{\"country\": \"mexico\", \"device\": \"android\"}";
+
+        GBContext context = GBContext
+                .builder()
+                .attributesJson(sampleUserAttributes)
+                .featuresJson(encryptedFeaturesJson)
+                .encryptionKey(encryptionKey)
+                .build();
+        GrowthBook subject = new GrowthBook(context);
+
+        String result = subject.getFeatureValue("greeting", "hello");
+        String expected = "hola";
+
+        assertEquals(expected, result);
+    }
+
+    @Test
     void test_evaluateCondition_callsConditionEvaluator() {
         ConditionEvaluator mockConditionEvaluator = mock(ConditionEvaluator.class);
         ExperimentEvaluator mockExperimentEvaluator = mock(ExperimentEvaluator.class);
