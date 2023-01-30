@@ -146,7 +146,7 @@ class GBContextTest {
                 .url(url)
                 .featuresJson(encryptedFeaturesJson)
                 .encryptionKey(encryptionKey)
-                .forcedVariationsMap(new HashMap<>())
+                .forcedVariationsMap(forcedVariations)
                 .isQaMode(isQaMode)
                 .trackingCallback(trackingCallback)
                 .build();
