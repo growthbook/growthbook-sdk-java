@@ -156,4 +156,16 @@ class GBContextTest {
         assertNotNull(subject);
         assertEquals(expectedFeaturesJson.trim(), subject.getFeaturesJson().trim());
     }
+
+    @Test
+    void supportsFeaturesWithAURLDefaultValue() {
+        GBContext subject = GBContext
+                .builder()
+                .featuresJson("{\"host_portal\": {\"defaultValue\": \"https://portal-test.test.com.br/\"}}")
+                .attributesJson("{}")
+                .build();
+
+        assertEquals("{\"host_portal\": {\"defaultValue\": \"https://portal-test.test.com.br/\"}}", subject.getFeaturesJson());
+        assertNotNull(subject.getFeatures());
+    }
 }
