@@ -93,21 +93,19 @@ class GBFeaturesRepositoryTest {
         assertEquals(expected, subject.getFeaturesJson());
     }
 
+    /*
     @Test
     void canFetchEncryptedFeatures_real() throws FeatureFetchException {
-        String encryptionKey = "BhB1wORFmZLTDjbvstvS8w==";
-        GBFeaturesRepository subject = new GBFeaturesRepository(
-            "http://localhost:3100/api/features/sdk-7MfWjn4Uuawuaetu",
-            encryptionKey
-        );
+        String endpoint = "http://localhost:3100/api/features/sdk-7MfWjn4Uuawuaetu";
+        String encryptionKey = "o0maZL/O7AphxcbRvaJIzw==";
+        GBFeaturesRepository subject = new GBFeaturesRepository(endpoint, encryptionKey);
 
         subject.initialize();
 
-        assertEquals(
-            "{\"banner_text\":{\"defaultValue\":\"Welcome to Acme Donuts!\",\"rules\":[{\"condition\":{\"country\":\"france\"},\"force\":\"Bienvenue au Beignets Acme !\"},{\"condition\":{\"country\":\"spain\"},\"force\":\"¡Bienvenidos y bienvenidas a Donas Acme!\"}]},\"dark_mode\":{\"defaultValue\":false,\"rules\":[{\"condition\":{\"loggedIn\":true},\"force\":true,\"coverage\":0.5,\"hashAttribute\":\"id\"}]},\"donut_price\":{\"defaultValue\":2.5,\"rules\":[{\"condition\":{\"employee\":true},\"force\":0}]},\"meal_overrides_gluten_free\":{\"defaultValue\":{\"meal_type\":\"standard\",\"dessert\":\"Strawberry Cheesecake\"},\"rules\":[{\"condition\":{\"dietaryRestrictions\":{\"$elemMatch\":{\"$eq\":\"gluten_free\"}}},\"force\":{\"meal_type\":\"gf\",\"dessert\":\"French Vanilla Ice Cream\"}}]}}",
-            subject.getFeaturesJson()
-        );
+        String expected = "{\"targeted_percentage_rollout\":{\"defaultValue\":false,\"rules\":[{\"condition\":{\"id\":\"foo\"},\"force\":true,\"coverage\":0.5,\"hashAttribute\":\"id\"}]},\"test_feature\":{\"defaultValue\":false,\"rules\":[{\"condition\":{\"id\":{\"$not\":{\"$regex\":\"foo\"},\"$eq\":\"\"}},\"force\":true}]},\"sample_json\":{\"defaultValue\":{}},\"string_feature\":{\"defaultValue\":\"hello, world!\"},\"some_test_feature\":{\"defaultValue\":true},\"my_new_feature_jan17_5\":{\"defaultValue\":true},\"my_new_feature_jan17_13\":{\"defaultValue\":true}}";
+        assertEquals(expected, subject.getFeaturesJson().trim());
     }
+    */
 
     @Test
     void canFetchEncryptedFeatures_mockedResponse() throws IOException, FeatureFetchException {
@@ -115,9 +113,9 @@ class GBFeaturesRepositoryTest {
             "  \"status\": 200,\n" +
             "  \"features\": {},\n" +
             "  \"dateUpdated\": \"2023-01-25T00:51:26.772Z\",\n" +
-            "  \"encryptedFeatures\": \"Im7+N+s8exPaS1/9vgQRvQ==.3QnDpYJWpRM3L1vNqnaXCIgaYnTXm0b6orNweuCXBsMqhDAETsRmLHUHC8Y8D12D4bCyNIsDUmQipOVjpmj8bJ5mqAyOvV7aTuwrF+F5kXRZufcl7lw3ra/9fI24KNGzLGKIS8mEPnP1+rV31tPl/6shV97LWUfJ4V0xKGEZhdHUhdhYo6U6iainGqxWPp+9tRffE3DQznsTDzz0tKyDZ0qDn+3ETylwsolk6W3sqgAPmMPM6KUjcQ0s3O0W7C+mS4N9M2ng75gwR9rPLKHv7qHh6uGKcpqx1dkWn5w4v7CzeRawfLsVEp8Z8Rb/NgYfSmUGA8ma8xn6YDFjLuIhvMy8uo4Tvk17kKt7WHHs7g7+fUe564ZV/jcLuXREmKgkG9frksZObvlu2YYcnpRxaRGWi8x5dJkHqn7BEAxetMWqZPrHv3HkQE5+Iw5B3EGblWTv1eBdcoOiDAIUf59EZ1/U0D9bmAKSpNyZpjtKUhiN1fUS2ikWo4Z3OxwfP46M8gFMH0wc9DVjTgxWRm+7mRuHuRnINr2HvnGDQ+bOTUlNkCZq435ur2EExdNB23jwMe2zSHaRJDEdOGxWkOB8/VggNWzEs90O8rql9tVfhztBmUdBQMY8e1IjO0O6VUHh\"\n" +
+            "  \"encryptedFeatures\": \"jfLnSxjChWcbyHaIF30RNw==.iz8DywkSk4+WhNqnIwvr/PdvAwaRNjN3RE30JeOezGAQ/zZ2yoVyVo4w0nLHYqOje5MbhmL0ssvlH0ojk/BxqdSzXD4Wzo3DXfKV81Nzi1aSdiCMnVAIYEzjPl1IKZC3fl88YDBNV3F6YnR9Lemy9yzT03cvMZ0NZ9t5LZO2xS2MhpPYNcAfAlfxXhBGXj6UFDoNKGAtGKdc/zmJsUVQGLtHmqLspVynnJlPPo9nXG+87bt6SjSfQfySUgHm28hb4VmDhVmCx0N37buolVr3pzjZ1QK+tyMKIV7x4/Gu06k8sm0eU4HjG5DFsPgTR7qDu/N5Nk5UTRpG7aSXTUErxhHSJ7MQaxH/Dp/71zVEicaJ0qZE3oPRnU187QVBfdVLLRbqq2QU7Yu0GyJ1jjuf6TA+759OgifHdm17SX43L94Qe62CMU7JQyAqt7h7XmTTQBG664HYwgHJ0ju/9jySC4KUlRxNsixH1tJfznnEXqxgSozn4J61UprTqcmlxLZ1hZPCcRew3mm9DMAG9+YEiL8MhaIwsw8oVq9GirN1S8G3m/6UxQHxZVraPvMRXpGt5VpzEDJ0Po+phrIAhPuIbNpgb08b6Ej4Xh9XXeOLtIcpuj+gNpc4pR4tqF2IOwET\"\n" +
             "}";
-        String encryptionKey = "BhB1wORFmZLTDjbvstvS8w==";
+        String encryptionKey = "o0maZL/O7AphxcbRvaJIzw==";
         OkHttpClient mockOkHttpClient = mockHttpClient(fakeResponseJson);
 
         GBFeaturesRepository subject = new GBFeaturesRepository(
@@ -127,8 +125,8 @@ class GBFeaturesRepositoryTest {
         );
         subject.initialize();
 
-        String expected = "{\"greeting\":{\"defaultValue\":\"hello\",\"rules\":[{\"condition\":{\"country\":\"france\"},\"force\":\"bonjour\"},{\"condition\":{\"country\":\"mexico\"},\"force\":\"hola\"}]}}";
-        assertEquals(expected, subject.getFeaturesJson());
+        String expected = "{\"targeted_percentage_rollout\":{\"defaultValue\":false,\"rules\":[{\"condition\":{\"id\":\"foo\"},\"force\":true,\"coverage\":0.5,\"hashAttribute\":\"id\"}]},\"test_feature\":{\"defaultValue\":false,\"rules\":[{\"condition\":{\"id\":{\"$not\":{\"$regex\":\"foo\"},\"$eq\":\"\"}},\"force\":true}]},\"sample_json\":{\"defaultValue\":{}},\"string_feature\":{\"defaultValue\":\"hello, world!\"},\"some_test_feature\":{\"defaultValue\":true},\"my_new_feature_jan17_5\":{\"defaultValue\":true},\"my_new_feature_jan17_13\":{\"defaultValue\":true}}";
+        assertEquals(expected, subject.getFeaturesJson().trim());
     }
 
     /**

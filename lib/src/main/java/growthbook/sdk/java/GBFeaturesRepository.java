@@ -105,7 +105,6 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
                 }
 
                 String encryptedFeaturesJson = encryptedFeaturesJsonElement.getAsString();
-                System.out.printf("This is the base64: %s", encryptedFeaturesJson);
                 this.featuresJson = DecryptionUtils.decrypt(encryptedFeaturesJson, this.encryptionKey);
             } else {
                 JsonElement featuresJsonElement = jsonObject.get("features");
@@ -118,9 +117,6 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
 
                 this.featuresJson = featuresJsonElement.toString();
             }
-
-            // TODO: Remove this
-            System.out.printf("Fetched features: %s \n\n", this.featuresJson);
         } catch (IOException e) {
             e.printStackTrace();
             throw new FeatureFetchException(
