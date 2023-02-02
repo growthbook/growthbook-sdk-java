@@ -12,7 +12,10 @@ import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.util.Base64;
 
-public class DecryptionUtils {
+/**
+ * INTERNAL: This class is used internally to decrypt an encrypted features response
+ */
+class DecryptionUtils {
     public static String decrypt(String payload, String encryptionKey) {
         if (!payload.contains(".")) {
             throw new IllegalArgumentException("Invalid payload");

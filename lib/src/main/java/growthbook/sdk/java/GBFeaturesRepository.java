@@ -10,6 +10,13 @@ import org.jetbrains.annotations.NotNull;
 import javax.annotation.Nullable;
 import java.io.IOException;
 
+/**
+ * This class can be created with its `builder()` or constructor.
+ * It will fetch the features from the endpoint provided.
+ * Initialize with {@link GBFeaturesRepository#initialize()}
+ * Get the features JSON with {@link GBFeaturesRepository#getFeaturesJson()}.
+ * You would provide the features JSON when creating the {@link GBContext}
+ */
 public class GBFeaturesRepository implements IGBFeaturesRepository {
 
     @Nullable @Getter
@@ -20,6 +27,11 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
 
     private final OkHttpClient okHttpClient;
 
+    /**
+     * Allows you to get the features JSON from the provided {@link GBFeaturesRepository#getEndpoint()}.
+     * You must call {@link GBFeaturesRepository#initialize()} before calling this method
+     * or your features would not have loaded.
+     */
     @Getter
     private String featuresJson = "{}";
 

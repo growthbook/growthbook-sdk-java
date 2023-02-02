@@ -1,5 +1,8 @@
 package growthbook.sdk.java;
 
+/**
+ * Tag for the published GrowthBook SDK version
+ */
 public class Version {
     private Version() {}
 
