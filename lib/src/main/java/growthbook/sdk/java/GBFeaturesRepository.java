@@ -44,7 +44,7 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
      * @param endpoint SDK Endpoint URL
      * @param encryptionKey optional key for decrypting encrypted payload
      */
-    public GBFeaturesRepository(
+    GBFeaturesRepository(
         OkHttpClient okHttpClient,
         @Nullable String endpoint,
         @Nullable String encryptionKey
