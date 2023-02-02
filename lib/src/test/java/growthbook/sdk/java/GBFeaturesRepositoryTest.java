@@ -129,6 +129,15 @@ class GBFeaturesRepositoryTest {
         assertEquals(expected, subject.getFeaturesJson().trim());
     }
 
+    /*
+    @Test
+    void testUserAgentHeaders() throws FeatureFetchException {
+        String endpoint = "http://localhost:3100/healthcheck";
+        GBFeaturesRepository subject = new GBFeaturesRepository(endpoint, null);
+        subject.initialize();
+    }
+    */
+
     /**
      * Create a mock instance of {@link OkHttpClient}
      * @param serializedBody JSON string response
