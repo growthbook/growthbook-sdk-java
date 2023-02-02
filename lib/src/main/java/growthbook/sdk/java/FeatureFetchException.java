@@ -14,7 +14,7 @@ import lombok.Getter;
  * UNKNOWN:
  *   - there was an unknown error that occurred when attempting to make the request.
  */
-class FeatureFetchException extends Exception {
+public class FeatureFetchException extends Exception {
     @Getter
     private final FeatureFetchErrorCode errorCode;
 
