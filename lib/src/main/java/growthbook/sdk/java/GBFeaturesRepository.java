@@ -10,6 +10,8 @@ import org.jetbrains.annotations.NotNull;
 import javax.annotation.Nullable;
 import java.io.IOException;
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * This class can be created with its `builder()` or constructor.
@@ -33,6 +35,8 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
     private Long expiresAt;
 
     private final OkHttpClient okHttpClient;
+
+    private ArrayList<FeatureRefreshCallback> refreshCallbacks = new ArrayList<>();
 
     /**
      * Allows you to get the features JSON from the provided {@link GBFeaturesRepository#getEndpoint()}.
@@ -90,6 +94,16 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
         }
 
         return this.featuresJson;
+    }
+
+    @Override
+    public void onFeaturesRefresh(FeatureRefreshCallback callback) {
+        this.refreshCallbacks.add(callback);
+    }
+
+    @Override
+    public void clearCallbacks() {
+        this.refreshCallbacks.clear();
     }
 
     private void enqueueFeatureRefreshRequest() {
@@ -193,7 +207,13 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
                 }
 
                 String encryptedFeaturesJson = encryptedFeaturesJsonElement.getAsString();
-                this.featuresJson = DecryptionUtils.decrypt(encryptedFeaturesJson, this.encryptionKey).trim();
+                String refreshedFeatures = DecryptionUtils.decrypt(encryptedFeaturesJson, this.encryptionKey).trim();
+
+                this.featuresJson = refreshedFeatures;
+
+                this.refreshCallbacks.forEach(featureRefreshCallback -> {
+                    featureRefreshCallback.onRefresh(refreshedFeatures);
+                });
             } else {
                 JsonElement featuresJsonElement = jsonObject.get("features");
                 if (featuresJsonElement == null) {

@@ -11,4 +11,11 @@ interface IGBFeaturesRepository {
      * @return featuresJson String
      */
     String getFeaturesJson();
+
+    void onFeaturesRefresh(FeatureRefreshCallback callback);
+
+    /**
+     * Clears the feature refresh callbacks
+     */
+    void clearCallbacks();
 }
