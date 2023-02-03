@@ -20,7 +20,7 @@ import java.time.Instant;
  */
 public class GBFeaturesRepository implements IGBFeaturesRepository {
 
-    @Nullable @Getter
+    @Getter
     private final String endpoint;
 
     @Nullable @Getter
@@ -49,10 +49,14 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
      */
     @Builder
     public GBFeaturesRepository(
-        @Nullable String endpoint,
+        String endpoint,
         @Nullable String encryptionKey,
         @Nullable Integer ttlSeconds
     ) {
+        if (endpoint == null) {
+            throw new IllegalArgumentException("endpoint cannot be null");
+        }
+
         this.endpoint = endpoint;
         this.encryptionKey = encryptionKey;
         this.ttlSeconds = ttlSeconds == null ? 60 : ttlSeconds;
@@ -80,7 +84,36 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
     }
 
     public String getFeaturesJson() {
+        if (isCacheExpired()) {
+            this.enqueueFeatureRefreshRequest();
+            this.refreshExpiresAt();
+        }
+
         return this.featuresJson;
+    }
+
+    private void enqueueFeatureRefreshRequest() {
+        GBFeaturesRepository self = this;
+
+        Request request = new Request.Builder()
+            .url(this.endpoint)
+            .build();
+
+        this.okHttpClient.newCall(request).enqueue(new Callback() {
+            @Override
+            public void onFailure(@NotNull Call call, @NotNull IOException e) {
+                // OkHttp will auto-retry on failure
+            }
+
+            @Override
+            public void onResponse(@NotNull Call call, @NotNull Response response) throws IOException {
+                try {
+                    self.onSuccess(response);
+                } catch (FeatureFetchException e) {
+                    e.printStackTrace();
+                }
+            }
+        });
     }
 
     @Override
@@ -91,6 +124,7 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
     private OkHttpClient initializeHttpClient() {
         OkHttpClient client = new OkHttpClient.Builder()
             .addInterceptor(new GBFeaturesRepositoryRequestInterceptor())
+            .retryOnConnectionFailure(true)
             .build();
 
         return client;
