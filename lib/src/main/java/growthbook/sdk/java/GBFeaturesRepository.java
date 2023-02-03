@@ -193,7 +193,7 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
                 }
 
                 String encryptedFeaturesJson = encryptedFeaturesJsonElement.getAsString();
-                this.featuresJson = DecryptionUtils.decrypt(encryptedFeaturesJson, this.encryptionKey);
+                this.featuresJson = DecryptionUtils.decrypt(encryptedFeaturesJson, this.encryptionKey).trim();
             } else {
                 JsonElement featuresJsonElement = jsonObject.get("features");
                 if (featuresJsonElement == null) {
