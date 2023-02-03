@@ -9,6 +9,7 @@ import org.jetbrains.annotations.NotNull;
 
 import javax.annotation.Nullable;
 import java.io.IOException;
+import java.time.Instant;
 
 /**
  * This class can be created with its `builder()` or constructor.
@@ -25,6 +26,12 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
     @Nullable @Getter
     private final String encryptionKey;
 
+    @Getter
+    private final Integer ttlSeconds;
+
+    @Getter
+    private Long expiresAt;
+
     private final OkHttpClient okHttpClient;
 
     /**
@@ -39,14 +46,18 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
      * Create a new GBFeaturesRepository
      * @param endpoint SDK Endpoint URL
      * @param encryptionKey optional key for decrypting encrypted payload
+     * @param ttlSeconds How often the cache should be invalidated (default: 60)
      */
     @Builder
     public GBFeaturesRepository(
         @Nullable String endpoint,
-        @Nullable String encryptionKey
+        @Nullable String encryptionKey,
+        @Nullable Integer ttlSeconds
     ) {
         this.endpoint = endpoint;
         this.encryptionKey = encryptionKey;
+        this.ttlSeconds = ttlSeconds == null ? 60 : ttlSeconds;
+        this.refreshExpiresAt();
         this.okHttpClient = this.initializeHttpClient();
     }
 
@@ -59,10 +70,13 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
     GBFeaturesRepository(
         OkHttpClient okHttpClient,
         @Nullable String endpoint,
-        @Nullable String encryptionKey
+        @Nullable String encryptionKey,
+        @Nullable Integer ttlSeconds
     ) {
         this.encryptionKey = encryptionKey;
         this.endpoint = endpoint;
+        this.ttlSeconds = ttlSeconds == null ? 60 : ttlSeconds;
+        this.refreshExpiresAt();
         this.okHttpClient = okHttpClient;
     }
 
@@ -77,6 +91,15 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
             .build();
 
         return client;
+    }
+
+    private void refreshExpiresAt() {
+        this.expiresAt = Instant.now().getEpochSecond() + this.ttlSeconds;
+    }
+
+    private Boolean isCacheExpired() {
+        long now = Instant.now().getEpochSecond();
+        return now >= this.expiresAt;
     }
 
     /**
@@ -95,6 +118,22 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
             .build();
 
         try (Response response = this.okHttpClient.newCall(request).execute()) {
+            this.onSuccess(response);
+        } catch (IOException e) {
+            e.printStackTrace();
+            throw new FeatureFetchException(
+                FeatureFetchException.FeatureFetchErrorCode.UNKNOWN,
+                e.getMessage()
+            );
+        }
+    }
+
+    /**
+     * Handles the successful features fetching response
+     * @param response Successful response
+     */
+    private void onSuccess(Response response) throws FeatureFetchException {
+        try {
             ResponseBody responseBody = response.body();
             if (responseBody == null) {
                 throw new FeatureFetchException(

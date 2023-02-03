@@ -17,6 +17,7 @@ class GBFeaturesRepositoryTest {
     void canBeConstructed_withNullEncryptionKey() {
         GBFeaturesRepository subject = new GBFeaturesRepository(
             "https://cdn.growthbook.io/api/features/java_NsrWldWd5bxQJZftGsWKl7R2yD2LtAK8C8EUYh9L8",
+            null,
             null
         );
 
@@ -28,7 +29,8 @@ class GBFeaturesRepositoryTest {
     void canBeConstructed_withEncryptionKey() {
         GBFeaturesRepository subject = new GBFeaturesRepository(
             "https://cdn.growthbook.io/api/features/sdk-862b5mHcP9XPugqD",
-            "BhB1wORFmZLTDjbvstvS8w=="
+            "BhB1wORFmZLTDjbvstvS8w==",
+            null
         );
 
         assertNotNull(subject);
@@ -60,11 +62,11 @@ class GBFeaturesRepositoryTest {
         assertEquals("BhB1wORFmZLTDjbvstvS8w==", subject.getEncryptionKey());
     }
 
-    /*
     @Test
     void canFetchUnencryptedFeatures_real() throws FeatureFetchException {
         GBFeaturesRepository subject = new GBFeaturesRepository(
             "https://cdn.growthbook.io/api/features/java_NsrWldWd5bxQJZftGsWKl7R2yD2LtAK8C8EUYh9L8",
+            null,
             null
         );
 
@@ -75,7 +77,6 @@ class GBFeaturesRepositoryTest {
             subject.getFeaturesJson()
         );
     }
-    */
 
     @Test
     void canFetchUnencryptedFeatures_mockedResponse() throws FeatureFetchException, IOException {
@@ -85,6 +86,7 @@ class GBFeaturesRepositoryTest {
         GBFeaturesRepository subject = new GBFeaturesRepository(
             mockOkHttpClient,
             "http://localhost:80",
+            null,
             null
         );
         subject.initialize();
@@ -93,19 +95,17 @@ class GBFeaturesRepositoryTest {
         assertEquals(expected, subject.getFeaturesJson());
     }
 
-    /*
     @Test
     void canFetchEncryptedFeatures_real() throws FeatureFetchException {
         String endpoint = "http://localhost:3100/api/features/sdk-7MfWjn4Uuawuaetu";
         String encryptionKey = "o0maZL/O7AphxcbRvaJIzw==";
-        GBFeaturesRepository subject = new GBFeaturesRepository(endpoint, encryptionKey);
+        GBFeaturesRepository subject = new GBFeaturesRepository(endpoint, encryptionKey, null);
 
         subject.initialize();
 
         String expected = "{\"targeted_percentage_rollout\":{\"defaultValue\":false,\"rules\":[{\"condition\":{\"id\":\"foo\"},\"force\":true,\"coverage\":0.5,\"hashAttribute\":\"id\"}]},\"test_feature\":{\"defaultValue\":false,\"rules\":[{\"condition\":{\"id\":{\"$not\":{\"$regex\":\"foo\"},\"$eq\":\"\"}},\"force\":true}]},\"sample_json\":{\"defaultValue\":{}},\"string_feature\":{\"defaultValue\":\"hello, world!\"},\"some_test_feature\":{\"defaultValue\":true},\"my_new_feature_jan17_5\":{\"defaultValue\":true},\"my_new_feature_jan17_13\":{\"defaultValue\":true}}";
         assertEquals(expected, subject.getFeaturesJson().trim());
     }
-    */
 
     @Test
     void canFetchEncryptedFeatures_mockedResponse() throws IOException, FeatureFetchException {
@@ -121,7 +121,8 @@ class GBFeaturesRepositoryTest {
         GBFeaturesRepository subject = new GBFeaturesRepository(
             mockOkHttpClient,
             "http://localhost:80",
-            encryptionKey
+            encryptionKey,
+            null
         );
         subject.initialize();
 
