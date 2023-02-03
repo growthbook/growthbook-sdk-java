@@ -99,10 +99,13 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
             .url(this.endpoint)
             .build();
 
+        System.out.println("\n\n 🔵 Enqueuing refresh of features \n\n");
+
         this.okHttpClient.newCall(request).enqueue(new Callback() {
             @Override
             public void onFailure(@NotNull Call call, @NotNull IOException e) {
                 // OkHttp will auto-retry on failure
+                System.out.println("\n\n 🔵 onFailure \n\n");
             }
 
             @Override
@@ -170,6 +173,7 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
      * @param response Successful response
      */
     private void onSuccess(Response response) throws FeatureFetchException {
+        System.out.println("\n\n 🔵 onSuccess! \n\n");
         try {
             ResponseBody responseBody = response.body();
             if (responseBody == null) {
