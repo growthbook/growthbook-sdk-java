@@ -223,7 +223,13 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
                     );
                 }
 
-                this.featuresJson = featuresJsonElement.toString();
+                String refreshedFeatures = featuresJsonElement.toString().trim();
+
+                this.featuresJson = refreshedFeatures;
+
+                this.refreshCallbacks.forEach(featureRefreshCallback -> {
+                    featureRefreshCallback.onRefresh(refreshedFeatures);
+                });
             }
         } catch (IOException e) {
             e.printStackTrace();
