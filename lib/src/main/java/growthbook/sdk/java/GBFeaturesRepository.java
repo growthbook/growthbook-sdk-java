@@ -39,7 +39,6 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
      * You must call {@link GBFeaturesRepository#initialize()} before calling this method
      * or your features would not have loaded.
      */
-    @Getter
     private String featuresJson = "{}";
 
     /**
@@ -78,6 +77,10 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
         this.ttlSeconds = ttlSeconds == null ? 60 : ttlSeconds;
         this.refreshExpiresAt();
         this.okHttpClient = okHttpClient;
+    }
+
+    public String getFeaturesJson() {
+        return this.featuresJson;
     }
 
     @Override
