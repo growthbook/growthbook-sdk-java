@@ -62,6 +62,7 @@ class GBFeaturesRepositoryTest {
         assertEquals("BhB1wORFmZLTDjbvstvS8w==", subject.getEncryptionKey());
     }
 
+    /*
     @Test
     void canFetchUnencryptedFeatures_real() throws FeatureFetchException {
         GBFeaturesRepository subject = new GBFeaturesRepository(
@@ -77,6 +78,7 @@ class GBFeaturesRepositoryTest {
             subject.getFeaturesJson()
         );
     }
+    */
 
     @Test
     void canFetchUnencryptedFeatures_mockedResponse() throws FeatureFetchException, IOException {
@@ -95,6 +97,7 @@ class GBFeaturesRepositoryTest {
         assertEquals(expected, subject.getFeaturesJson());
     }
 
+    /*
     @Test
     void canFetchEncryptedFeatures_real() throws FeatureFetchException {
         String endpoint = "http://localhost:3100/api/features/sdk-7MfWjn4Uuawuaetu";
@@ -106,6 +109,7 @@ class GBFeaturesRepositoryTest {
         String expected = "{\"targeted_percentage_rollout\":{\"defaultValue\":false,\"rules\":[{\"condition\":{\"id\":\"foo\"},\"force\":true,\"coverage\":0.5,\"hashAttribute\":\"id\"}]},\"test_feature\":{\"defaultValue\":false,\"rules\":[{\"condition\":{\"id\":{\"$not\":{\"$regex\":\"foo\"},\"$eq\":\"\"}},\"force\":true}]},\"sample_json\":{\"defaultValue\":{}},\"string_feature\":{\"defaultValue\":\"hello, world!\"},\"some_test_feature\":{\"defaultValue\":true},\"my_new_feature_jan17_5\":{\"defaultValue\":true},\"my_new_feature_jan17_13\":{\"defaultValue\":true}}";
         assertEquals(expected, subject.getFeaturesJson().trim());
     }
+    */
 
     @Test
     void canFetchEncryptedFeatures_mockedResponse() throws IOException, FeatureFetchException {
