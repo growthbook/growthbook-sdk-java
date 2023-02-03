@@ -8,8 +8,7 @@ import java.io.IOException;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 class GBFeaturesRepositoryTest {
 
@@ -132,6 +131,114 @@ class GBFeaturesRepositoryTest {
 
         String expected = "{\"targeted_percentage_rollout\":{\"defaultValue\":false,\"rules\":[{\"condition\":{\"id\":\"foo\"},\"force\":true,\"coverage\":0.5,\"hashAttribute\":\"id\"}]},\"test_feature\":{\"defaultValue\":false,\"rules\":[{\"condition\":{\"id\":{\"$not\":{\"$regex\":\"foo\"},\"$eq\":\"\"}},\"force\":true}]},\"sample_json\":{\"defaultValue\":{}},\"string_feature\":{\"defaultValue\":\"hello, world!\"},\"some_test_feature\":{\"defaultValue\":true},\"my_new_feature_jan17_5\":{\"defaultValue\":true},\"my_new_feature_jan17_13\":{\"defaultValue\":true}}";
         assertEquals(expected, subject.getFeaturesJson().trim());
+    }
+
+    @Test
+    void refreshesFeaturesWhenGetFeaturesCalledAfterCacheExpired() throws IOException, FeatureFetchException, InterruptedException {
+        Integer ttlSeconds = 5; // cache invalidates every 5 seconds
+        String fakeResponseJson = "{\n" +
+            "  \"status\": 200,\n" +
+            "  \"features\": {},\n" +
+            "  \"dateUpdated\": \"2023-01-25T00:51:26.772Z\",\n" +
+            "  \"encryptedFeatures\": \"jfLnSxjChWcbyHaIF30RNw==.iz8DywkSk4+WhNqnIwvr/PdvAwaRNjN3RE30JeOezGAQ/zZ2yoVyVo4w0nLHYqOje5MbhmL0ssvlH0ojk/BxqdSzXD4Wzo3DXfKV81Nzi1aSdiCMnVAIYEzjPl1IKZC3fl88YDBNV3F6YnR9Lemy9yzT03cvMZ0NZ9t5LZO2xS2MhpPYNcAfAlfxXhBGXj6UFDoNKGAtGKdc/zmJsUVQGLtHmqLspVynnJlPPo9nXG+87bt6SjSfQfySUgHm28hb4VmDhVmCx0N37buolVr3pzjZ1QK+tyMKIV7x4/Gu06k8sm0eU4HjG5DFsPgTR7qDu/N5Nk5UTRpG7aSXTUErxhHSJ7MQaxH/Dp/71zVEicaJ0qZE3oPRnU187QVBfdVLLRbqq2QU7Yu0GyJ1jjuf6TA+759OgifHdm17SX43L94Qe62CMU7JQyAqt7h7XmTTQBG664HYwgHJ0ju/9jySC4KUlRxNsixH1tJfznnEXqxgSozn4J61UprTqcmlxLZ1hZPCcRew3mm9DMAG9+YEiL8MhaIwsw8oVq9GirN1S8G3m/6UxQHxZVraPvMRXpGt5VpzEDJ0Po+phrIAhPuIbNpgb08b6Ej4Xh9XXeOLtIcpuj+gNpc4pR4tqF2IOwET\"\n" +
+            "}";
+        String encryptionKey = "o0maZL/O7AphxcbRvaJIzw==";
+        OkHttpClient mockOkHttpClient = mockHttpClient(fakeResponseJson);
+        GBFeaturesRepository subject = new GBFeaturesRepository(
+            mockOkHttpClient,
+            "http://localhost:80",
+            encryptionKey,
+            ttlSeconds
+        );
+        subject.initialize();
+
+        // Advance time 3 seconds. We are still within the cache TTL so it should not trigger a refresh.
+        Thread.sleep(3_000);
+        subject.getFeaturesJson();
+
+        // Advance time 3 seconds. We are now at 6 seconds which is 1 second past, so it should trigger a refresh
+        Thread.sleep(3_000);
+        subject.getFeaturesJson();
+
+        // Calls:
+        //  1 = initial .execute()
+        //  2 = refresh .enqueue()
+        verify(mockOkHttpClient.newCall(any()), times(2));
+    }
+
+    @Test
+    void doesNotRefreshFeaturesWhenGetFeaturesCalledWithinCacheTime() throws IOException, FeatureFetchException, InterruptedException {
+        Integer ttlSeconds = 10; // cache invalidates every 10 seconds
+        String fakeResponseJson = "{\n" +
+            "  \"status\": 200,\n" +
+            "  \"features\": {},\n" +
+            "  \"dateUpdated\": \"2023-01-25T00:51:26.772Z\",\n" +
+            "  \"encryptedFeatures\": \"jfLnSxjChWcbyHaIF30RNw==.iz8DywkSk4+WhNqnIwvr/PdvAwaRNjN3RE30JeOezGAQ/zZ2yoVyVo4w0nLHYqOje5MbhmL0ssvlH0ojk/BxqdSzXD4Wzo3DXfKV81Nzi1aSdiCMnVAIYEzjPl1IKZC3fl88YDBNV3F6YnR9Lemy9yzT03cvMZ0NZ9t5LZO2xS2MhpPYNcAfAlfxXhBGXj6UFDoNKGAtGKdc/zmJsUVQGLtHmqLspVynnJlPPo9nXG+87bt6SjSfQfySUgHm28hb4VmDhVmCx0N37buolVr3pzjZ1QK+tyMKIV7x4/Gu06k8sm0eU4HjG5DFsPgTR7qDu/N5Nk5UTRpG7aSXTUErxhHSJ7MQaxH/Dp/71zVEicaJ0qZE3oPRnU187QVBfdVLLRbqq2QU7Yu0GyJ1jjuf6TA+759OgifHdm17SX43L94Qe62CMU7JQyAqt7h7XmTTQBG664HYwgHJ0ju/9jySC4KUlRxNsixH1tJfznnEXqxgSozn4J61UprTqcmlxLZ1hZPCcRew3mm9DMAG9+YEiL8MhaIwsw8oVq9GirN1S8G3m/6UxQHxZVraPvMRXpGt5VpzEDJ0Po+phrIAhPuIbNpgb08b6Ej4Xh9XXeOLtIcpuj+gNpc4pR4tqF2IOwET\"\n" +
+            "}";
+        String encryptionKey = "o0maZL/O7AphxcbRvaJIzw==";
+        OkHttpClient mockOkHttpClient = mockHttpClient(fakeResponseJson);
+        GBFeaturesRepository subject = new GBFeaturesRepository(
+            mockOkHttpClient,
+            "http://localhost:80",
+            encryptionKey,
+            ttlSeconds
+        );
+        subject.initialize();
+
+        // Advance time 3 seconds. We are still within the cache TTL so it should not trigger a refresh.
+        Thread.sleep(3_000);
+        subject.getFeaturesJson();
+
+        // Advance time 3 seconds. We are now at 6 seconds which is still under the TTL of 10 seconds.
+        Thread.sleep(3_000);
+        subject.getFeaturesJson();
+
+        // Calls:
+        //  1 = initial .execute()
+        verify(mockOkHttpClient.newCall(any()), times(1));
+    }
+
+    @Test
+    void refreshesFeaturesWhenGetFeaturesCalledAfterCacheExpired_multipleTimes() throws IOException, FeatureFetchException, InterruptedException {
+        Integer ttlSeconds = 5; // cache invalidates every 5 seconds
+        String fakeResponseJson = "{\n" +
+            "  \"status\": 200,\n" +
+            "  \"features\": {},\n" +
+            "  \"dateUpdated\": \"2023-01-25T00:51:26.772Z\",\n" +
+            "  \"encryptedFeatures\": \"jfLnSxjChWcbyHaIF30RNw==.iz8DywkSk4+WhNqnIwvr/PdvAwaRNjN3RE30JeOezGAQ/zZ2yoVyVo4w0nLHYqOje5MbhmL0ssvlH0ojk/BxqdSzXD4Wzo3DXfKV81Nzi1aSdiCMnVAIYEzjPl1IKZC3fl88YDBNV3F6YnR9Lemy9yzT03cvMZ0NZ9t5LZO2xS2MhpPYNcAfAlfxXhBGXj6UFDoNKGAtGKdc/zmJsUVQGLtHmqLspVynnJlPPo9nXG+87bt6SjSfQfySUgHm28hb4VmDhVmCx0N37buolVr3pzjZ1QK+tyMKIV7x4/Gu06k8sm0eU4HjG5DFsPgTR7qDu/N5Nk5UTRpG7aSXTUErxhHSJ7MQaxH/Dp/71zVEicaJ0qZE3oPRnU187QVBfdVLLRbqq2QU7Yu0GyJ1jjuf6TA+759OgifHdm17SX43L94Qe62CMU7JQyAqt7h7XmTTQBG664HYwgHJ0ju/9jySC4KUlRxNsixH1tJfznnEXqxgSozn4J61UprTqcmlxLZ1hZPCcRew3mm9DMAG9+YEiL8MhaIwsw8oVq9GirN1S8G3m/6UxQHxZVraPvMRXpGt5VpzEDJ0Po+phrIAhPuIbNpgb08b6Ej4Xh9XXeOLtIcpuj+gNpc4pR4tqF2IOwET\"\n" +
+            "}";
+        String encryptionKey = "o0maZL/O7AphxcbRvaJIzw==";
+        OkHttpClient mockOkHttpClient = mockHttpClient(fakeResponseJson);
+        GBFeaturesRepository subject = new GBFeaturesRepository(
+            mockOkHttpClient,
+            "http://localhost:80",
+            encryptionKey,
+            ttlSeconds
+        );
+        subject.initialize();
+
+        // Advance time 3 seconds. We are still within the cache TTL so it should not trigger a refresh.
+        Thread.sleep(3_000);
+        subject.getFeaturesJson();
+
+        // Advance time 3 seconds. We are now at 6 seconds which is 1 second past, so it should trigger a refresh
+        Thread.sleep(3_000);
+        subject.getFeaturesJson();
+
+        // Advance time another 5 seconds, which should trigger another refresh
+        Thread.sleep(5_000);
+        subject.getFeaturesJson();
+
+        // Advance time another 5 seconds, which should trigger another refresh
+        Thread.sleep(5_000);
+        subject.getFeaturesJson();
+
+        // Calls:
+        //  1 = initial .execute()
+        //  2 = refresh .enqueue()
+        //  3 = refresh .enqueue()
+        //  4 = refresh .enqueue()
+        verify(mockOkHttpClient.newCall(any()), times(4));
     }
 
     /*
