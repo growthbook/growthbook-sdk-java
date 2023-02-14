@@ -100,14 +100,17 @@ class GBFeaturesRepositoryTest {
     /*
     @Test
     void canFetchEncryptedFeatures_real() throws FeatureFetchException {
-        String endpoint = "http://localhost:3100/api/features/sdk-7MfWjn4Uuawuaetu";
-        String encryptionKey = "o0maZL/O7AphxcbRvaJIzw==";
+        String endpoint = "https://cdn.growthbook.io/api/features/sdk-862b5mHcP9XPugqD";
+        String encryptionKey = "BhB1wORFmZLTDjbvstvS8w==";
         GBFeaturesRepository subject = new GBFeaturesRepository(endpoint, encryptionKey, null);
 
         subject.initialize();
 
-        String expected = "{\"targeted_percentage_rollout\":{\"defaultValue\":false,\"rules\":[{\"condition\":{\"id\":\"foo\"},\"force\":true,\"coverage\":0.5,\"hashAttribute\":\"id\"}]},\"test_feature\":{\"defaultValue\":false,\"rules\":[{\"condition\":{\"id\":{\"$not\":{\"$regex\":\"foo\"},\"$eq\":\"\"}},\"force\":true}]},\"sample_json\":{\"defaultValue\":{}},\"string_feature\":{\"defaultValue\":\"hello, world!\"},\"some_test_feature\":{\"defaultValue\":true},\"my_new_feature_jan17_5\":{\"defaultValue\":true},\"my_new_feature_jan17_13\":{\"defaultValue\":true}}";
-        assertEquals(expected, subject.getFeaturesJson().trim());
+        String expected = "{\"greeting\":{\"defaultValue\":\"hello\",\"rules\":[{\"condition\":{\"country\":\"france\"},\"force\":\"bonjour\"},{\"condition\":{\"country\":\"mexico\"},\"force\":\"holaaaaa\"}]}}";
+        String actual = subject.getFeaturesJson();
+        System.out.println(actual);
+
+        assertEquals(expected, actual.trim());
     }
     */
 

@@ -36,7 +36,7 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
 
     private final OkHttpClient okHttpClient;
 
-    private ArrayList<FeatureRefreshCallback> refreshCallbacks = new ArrayList<>();
+    private final ArrayList<FeatureRefreshCallback> refreshCallbacks = new ArrayList<>();
 
     /**
      * Allows you to get the features JSON from the provided {@link GBFeaturesRepository#getEndpoint()}.
@@ -172,6 +172,7 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
             this.onSuccess(response);
         } catch (IOException e) {
             e.printStackTrace();
+
             throw new FeatureFetchException(
                 FeatureFetchException.FeatureFetchErrorCode.UNKNOWN,
                 e.getMessage()
@@ -195,10 +196,12 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
             JsonObject jsonObject = GrowthBookJsonUtils.getInstance()
                 .gson.fromJson(responseBody.string(), JsonObject.class);
 
-            if (this.encryptionKey != null) {
-                // Decrypt features
-                JsonElement encryptedFeaturesJsonElement = jsonObject.get("encryptedFeatures");
+            // Features will be refreshed as either an encrypted or un-encrypted JSON string
+            String refreshedFeatures;
 
+            if (this.encryptionKey != null) {
+                // Use encrypted features at responseBody.encryptedFeatures
+                JsonElement encryptedFeaturesJsonElement = jsonObject.get("encryptedFeatures");
                 if (encryptedFeaturesJsonElement == null) {
                     throw new FeatureFetchException(
                         FeatureFetchException.FeatureFetchErrorCode.CONFIGURATION_ERROR,
@@ -207,14 +210,9 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
                 }
 
                 String encryptedFeaturesJson = encryptedFeaturesJsonElement.getAsString();
-                String refreshedFeatures = DecryptionUtils.decrypt(encryptedFeaturesJson, this.encryptionKey).trim();
-
-                this.featuresJson = refreshedFeatures;
-
-                this.refreshCallbacks.forEach(featureRefreshCallback -> {
-                    featureRefreshCallback.onRefresh(refreshedFeatures);
-                });
+                refreshedFeatures = DecryptionUtils.decrypt(encryptedFeaturesJson, this.encryptionKey).trim();
             } else {
+                // Use unencrypted features at responseBody.features
                 JsonElement featuresJsonElement = jsonObject.get("features");
                 if (featuresJsonElement == null) {
                     throw new FeatureFetchException(
@@ -223,16 +221,17 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
                     );
                 }
 
-                String refreshedFeatures = featuresJsonElement.toString().trim();
-
-                this.featuresJson = refreshedFeatures;
-
-                this.refreshCallbacks.forEach(featureRefreshCallback -> {
-                    featureRefreshCallback.onRefresh(refreshedFeatures);
-                });
+                refreshedFeatures = featuresJsonElement.toString().trim();
             }
+
+            this.featuresJson = refreshedFeatures;
+
+            this.refreshCallbacks.forEach(featureRefreshCallback -> {
+                featureRefreshCallback.onRefresh(this.featuresJson);
+            });
         } catch (IOException e) {
             e.printStackTrace();
+
             throw new FeatureFetchException(
                 FeatureFetchException.FeatureFetchErrorCode.UNKNOWN,
                 e.getMessage()
