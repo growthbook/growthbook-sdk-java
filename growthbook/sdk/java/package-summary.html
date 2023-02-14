@@ -66,7 +66,7 @@ loadScripts(document, 'script');</script>
 <ul class="summary-list">
 <li>
 <div id="class-summary">
-<div class="table-tabs" role="tablist" aria-orientation="horizontal"><button id="class-summary-tab0" role="tab" aria-selected="true" aria-controls="class-summary.tabpanel" tabindex="0" onkeydown="switchTab(event)" onclick="show('class-summary', 'class-summary', 2)" class="active-table-tab">All Classes and Interfaces</button><button id="class-summary-tab1" role="tab" aria-selected="false" aria-controls="class-summary.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('class-summary', 'class-summary-tab1', 2)" class="table-tab">Interfaces</button><button id="class-summary-tab2" role="tab" aria-selected="false" aria-controls="class-summary.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('class-summary', 'class-summary-tab2', 2)" class="table-tab">Classes</button><button id="class-summary-tab3" role="tab" aria-selected="false" aria-controls="class-summary.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('class-summary', 'class-summary-tab3', 2)" class="table-tab">Enum Classes</button></div>
+<div class="table-tabs" role="tablist" aria-orientation="horizontal"><button id="class-summary-tab0" role="tab" aria-selected="true" aria-controls="class-summary.tabpanel" tabindex="0" onkeydown="switchTab(event)" onclick="show('class-summary', 'class-summary', 2)" class="active-table-tab">All Classes and Interfaces</button><button id="class-summary-tab1" role="tab" aria-selected="false" aria-controls="class-summary.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('class-summary', 'class-summary-tab1', 2)" class="table-tab">Interfaces</button><button id="class-summary-tab2" role="tab" aria-selected="false" aria-controls="class-summary.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('class-summary', 'class-summary-tab2', 2)" class="table-tab">Classes</button><button id="class-summary-tab3" role="tab" aria-selected="false" aria-controls="class-summary.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('class-summary', 'class-summary-tab3', 2)" class="table-tab">Enum Classes</button><button id="class-summary-tab5" role="tab" aria-selected="false" aria-controls="class-summary.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('class-summary', 'class-summary-tab5', 2)" class="table-tab">Exceptions</button></div>
 <div id="class-summary.tabpanel" role="tabpanel">
 <div class="summary-table two-column-summary" aria-labelledby="class-summary-tab0">
 <div class="table-header col-first">Class</div>
@@ -79,14 +79,12 @@ loadScripts(document, 'script');</script>
 <div class="col-last odd-row-color class-summary class-summary-tab3">
 <div class="block">A data type class used internally to help evaluate conditions</div>
 </div>
-<div class="col-first even-row-color class-summary class-summary-tab2"><a href="DecryptionUtils.html" title="class in growthbook.sdk.java">DecryptionUtils</a></div>
-<div class="col-last even-row-color class-summary class-summary-tab2">&nbsp;</div>
-<div class="col-first odd-row-color class-summary class-summary-tab2"><a href="Experiment.html" title="class in growthbook.sdk.java">Experiment</a>&lt;ValueType&gt;</div>
-<div class="col-last odd-row-color class-summary class-summary-tab2">
+<div class="col-first even-row-color class-summary class-summary-tab2"><a href="Experiment.html" title="class in growthbook.sdk.java">Experiment</a>&lt;ValueType&gt;</div>
+<div class="col-last even-row-color class-summary class-summary-tab2">
 <div class="block">Defines a single Experiment</div>
 </div>
-<div class="col-first even-row-color class-summary class-summary-tab2"><a href="ExperimentResult.html" title="class in growthbook.sdk.java">ExperimentResult</a>&lt;ValueType&gt;</div>
-<div class="col-last even-row-color class-summary class-summary-tab2">
+<div class="col-first odd-row-color class-summary class-summary-tab2"><a href="ExperimentResult.html" title="class in growthbook.sdk.java">ExperimentResult</a>&lt;ValueType&gt;</div>
+<div class="col-last odd-row-color class-summary class-summary-tab2">
 <div class="block">The result of running an <a href="Experiment.html" title="class in growthbook.sdk.java"><code>Experiment</code></a> given a specific <a href="GBContext.html" title="class in growthbook.sdk.java"><code>GBContext</code></a>
 
  
@@ -99,14 +97,25 @@ loadScripts(document, 'script');</script>
  featureId (string or null) - The id of the feature (if any) that the experiment came from
  </div>
 </div>
-<div class="col-first odd-row-color class-summary class-summary-tab1"><a href="ExperimentRunCallback.html" title="interface in growthbook.sdk.java">ExperimentRunCallback</a></div>
-<div class="col-last odd-row-color class-summary class-summary-tab1">
+<div class="col-first even-row-color class-summary class-summary-tab1"><a href="ExperimentRunCallback.html" title="interface in growthbook.sdk.java">ExperimentRunCallback</a></div>
+<div class="col-last even-row-color class-summary class-summary-tab1">
 <div class="block">A callback to be executed with an <a href="ExperimentResult.html" title="class in growthbook.sdk.java"><code>ExperimentResult</code></a> whenever an experiment is run.</div>
 </div>
-<div class="col-first even-row-color class-summary class-summary-tab2"><a href="Feature.html" title="class in growthbook.sdk.java">Feature</a>&lt;ValueType&gt;</div>
-<div class="col-last even-row-color class-summary class-summary-tab2">
+<div class="col-first odd-row-color class-summary class-summary-tab2"><a href="Feature.html" title="class in growthbook.sdk.java">Feature</a>&lt;ValueType&gt;</div>
+<div class="col-last odd-row-color class-summary class-summary-tab2">
 <div class="block">The feature with a generic value type.</div>
 </div>
+<div class="col-first even-row-color class-summary class-summary-tab5"><a href="FeatureFetchException.html" title="class in growthbook.sdk.java">FeatureFetchException</a></div>
+<div class="col-last even-row-color class-summary class-summary-tab5">
+<div class="block">This error is thrown by <a href="GBFeaturesRepository.html" title="class in growthbook.sdk.java"><code>GBFeaturesRepository</code></a>
+ You can call getErrorCode() to get an enum of various error types you can handle.</div>
+</div>
+<div class="col-first odd-row-color class-summary class-summary-tab3"><a href="FeatureFetchException.FeatureFetchErrorCode.html" title="enum class in growthbook.sdk.java">FeatureFetchException.FeatureFetchErrorCode</a></div>
+<div class="col-last odd-row-color class-summary class-summary-tab3">
+<div class="block">Error codes available for a <a href="FeatureFetchException.html" title="class in growthbook.sdk.java"><code>FeatureFetchException</code></a></div>
+</div>
+<div class="col-first even-row-color class-summary class-summary-tab1"><a href="FeatureRefreshCallback.html" title="interface in growthbook.sdk.java">FeatureRefreshCallback</a></div>
+<div class="col-last even-row-color class-summary class-summary-tab1">&nbsp;</div>
 <div class="col-first odd-row-color class-summary class-summary-tab2"><a href="FeatureResult.html" title="class in growthbook.sdk.java">FeatureResult</a>&lt;ValueType&gt;</div>
 <div class="col-last odd-row-color class-summary class-summary-tab2">
 <div class="block">Results for a <code>IFeatureEvaluator.evaluateFeature(String, GBContext)</code>
@@ -136,21 +145,29 @@ loadScripts(document, 'script');</script>
 <div class="col-last odd-row-color class-summary class-summary-tab2">
 <div class="block">The builder class to help create a context.</div>
 </div>
-<div class="col-first even-row-color class-summary class-summary-tab2"><a href="GrowthBook.html" title="class in growthbook.sdk.java">GrowthBook</a></div>
+<div class="col-first even-row-color class-summary class-summary-tab2"><a href="GBFeaturesRepository.html" title="class in growthbook.sdk.java">GBFeaturesRepository</a></div>
 <div class="col-last even-row-color class-summary class-summary-tab2">
+<div class="block">This class can be created with its `builder()` or constructor.</div>
+</div>
+<div class="col-first odd-row-color class-summary class-summary-tab2"><a href="GrowthBook.html" title="class in growthbook.sdk.java">GrowthBook</a></div>
+<div class="col-last odd-row-color class-summary class-summary-tab2">
 <div class="block">GrowthBook SDK class.</div>
 </div>
-<div class="col-first odd-row-color class-summary class-summary-tab2"><a href="Namespace.html" title="class in growthbook.sdk.java">Namespace</a></div>
-<div class="col-last odd-row-color class-summary class-summary-tab2">
+<div class="col-first even-row-color class-summary class-summary-tab2"><a href="Namespace.html" title="class in growthbook.sdk.java">Namespace</a></div>
+<div class="col-last even-row-color class-summary class-summary-tab2">
 <div class="block">A tuple that specifies what part of a namespace an experiment includes.</div>
 </div>
-<div class="col-first even-row-color class-summary class-summary-tab3"><a href="Operator.html" title="enum class in growthbook.sdk.java">Operator</a></div>
-<div class="col-last even-row-color class-summary class-summary-tab3">
+<div class="col-first odd-row-color class-summary class-summary-tab3"><a href="Operator.html" title="enum class in growthbook.sdk.java">Operator</a></div>
+<div class="col-last odd-row-color class-summary class-summary-tab3">
 <div class="block">Operator for use in the condition JSON</div>
 </div>
-<div class="col-first odd-row-color class-summary class-summary-tab1"><a href="TrackingCallback.html" title="interface in growthbook.sdk.java">TrackingCallback</a></div>
-<div class="col-last odd-row-color class-summary class-summary-tab1">
+<div class="col-first even-row-color class-summary class-summary-tab1"><a href="TrackingCallback.html" title="interface in growthbook.sdk.java">TrackingCallback</a></div>
+<div class="col-last even-row-color class-summary class-summary-tab1">
 <div class="block">This callback is called with the <a href="Experiment.html" title="class in growthbook.sdk.java"><code>Experiment</code></a> and <a href="ExperimentResult.html" title="class in growthbook.sdk.java"><code>ExperimentResult</code></a> when an experiment is evaluated.</div>
+</div>
+<div class="col-first odd-row-color class-summary class-summary-tab2"><a href="Version.html" title="class in growthbook.sdk.java">Version</a></div>
+<div class="col-last odd-row-color class-summary class-summary-tab2">
+<div class="block">Tag for the published GrowthBook SDK version</div>
 </div>
 </div>
 </div>

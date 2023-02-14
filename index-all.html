@@ -48,7 +48,7 @@ loadScripts(document, 'script');</script>
 <div class="header">
 <h1>Index</h1>
 </div>
-<a href="#I:A">A</a>&nbsp;<a href="#I:B">B</a>&nbsp;<a href="#I:D">D</a>&nbsp;<a href="#I:E">E</a>&nbsp;<a href="#I:F">F</a>&nbsp;<a href="#I:G">G</a>&nbsp;<a href="#I:H">H</a>&nbsp;<a href="#I:I">I</a>&nbsp;<a href="#I:L">L</a>&nbsp;<a href="#I:N">N</a>&nbsp;<a href="#I:O">O</a>&nbsp;<a href="#I:R">R</a>&nbsp;<a href="#I:S">S</a>&nbsp;<a href="#I:T">T</a>&nbsp;<a href="#I:U">U</a>&nbsp;<a href="#I:V">V</a>&nbsp;<br><a href="allclasses-index.html">All&nbsp;Classes&nbsp;and&nbsp;Interfaces</a><span class="vertical-separator">|</span><a href="allpackages-index.html">All&nbsp;Packages</a>
+<a href="#I:A">A</a>&nbsp;<a href="#I:B">B</a>&nbsp;<a href="#I:C">C</a>&nbsp;<a href="#I:D">D</a>&nbsp;<a href="#I:E">E</a>&nbsp;<a href="#I:F">F</a>&nbsp;<a href="#I:G">G</a>&nbsp;<a href="#I:H">H</a>&nbsp;<a href="#I:I">I</a>&nbsp;<a href="#I:L">L</a>&nbsp;<a href="#I:N">N</a>&nbsp;<a href="#I:O">O</a>&nbsp;<a href="#I:R">R</a>&nbsp;<a href="#I:S">S</a>&nbsp;<a href="#I:T">T</a>&nbsp;<a href="#I:U">U</a>&nbsp;<a href="#I:V">V</a>&nbsp;<br><a href="allclasses-index.html">All&nbsp;Classes&nbsp;and&nbsp;Interfaces</a><span class="vertical-separator">|</span><a href="allpackages-index.html">All&nbsp;Packages</a><span class="vertical-separator">|</span><a href="serialized-form.html">Serialized&nbsp;Form</a>
 <h2 class="title" id="I:A">A</h2>
 <dl class="index">
 <dt><a href="growthbook/sdk/java/Operator.html#ALL" class="member-name-link">ALL</a> - Enum constant in enum class growthbook.sdk.java.<a href="growthbook/sdk/java/Operator.html" title="enum class in growthbook.sdk.java">Operator</a></dt>
@@ -77,18 +77,22 @@ loadScripts(document, 'script');</script>
 <div class="block">The builder class to help create a context.</div>
 </dd>
 </dl>
+<h2 class="title" id="I:C">C</h2>
+<dl class="index">
+<dt><a href="growthbook/sdk/java/GBFeaturesRepository.html#clearCallbacks()" class="member-name-link">clearCallbacks()</a> - Method in class growthbook.sdk.java.<a href="growthbook/sdk/java/GBFeaturesRepository.html" title="class in growthbook.sdk.java">GBFeaturesRepository</a></dt>
+<dd>&nbsp;</dd>
+<dt><a href="growthbook/sdk/java/FeatureFetchException.FeatureFetchErrorCode.html#CONFIGURATION_ERROR" class="member-name-link">CONFIGURATION_ERROR</a> - Enum constant in enum class growthbook.sdk.java.<a href="growthbook/sdk/java/FeatureFetchException.FeatureFetchErrorCode.html" title="enum class in growthbook.sdk.java">FeatureFetchException.FeatureFetchErrorCode</a></dt>
+<dd>
+<div class="block">- an encryptionKey was provided but the endpoint does not support encryption so decryption fails
+   - no features were found for an unencrypted endpoint</div>
+</dd>
+</dl>
 <h2 class="title" id="I:D">D</h2>
 <dl class="index">
 <dt><a href="growthbook/sdk/java/DataType.html" class="type-name-link" title="enum class in growthbook.sdk.java">DataType</a> - Enum Class in <a href="growthbook/sdk/java/package-summary.html">growthbook.sdk.java</a></dt>
 <dd>
 <div class="block">A data type class used internally to help evaluate conditions</div>
 </dd>
-<dt><a href="growthbook/sdk/java/DecryptionUtils.html#decrypt(java.lang.String,java.lang.String)" class="member-name-link">decrypt(String, String)</a> - Static method in class growthbook.sdk.java.<a href="growthbook/sdk/java/DecryptionUtils.html" title="class in growthbook.sdk.java">DecryptionUtils</a></dt>
-<dd>&nbsp;</dd>
-<dt><a href="growthbook/sdk/java/DecryptionUtils.html" class="type-name-link" title="class in growthbook.sdk.java">DecryptionUtils</a> - Class in <a href="growthbook/sdk/java/package-summary.html">growthbook.sdk.java</a></dt>
-<dd>&nbsp;</dd>
-<dt><a href="growthbook/sdk/java/DecryptionUtils.html#%3Cinit%3E()" class="member-name-link">DecryptionUtils()</a> - Constructor for class growthbook.sdk.java.<a href="growthbook/sdk/java/DecryptionUtils.html" title="class in growthbook.sdk.java">DecryptionUtils</a></dt>
-<dd>&nbsp;</dd>
 <dt><a href="growthbook/sdk/java/FeatureResultSource.html#DEFAULT_VALUE" class="member-name-link">DEFAULT_VALUE</a> - Enum constant in enum class growthbook.sdk.java.<a href="growthbook/sdk/java/FeatureResultSource.html" title="enum class in growthbook.sdk.java">FeatureResultSource</a></dt>
 <dd>
 <div class="block">When the value is assigned due to a default value condition</div>
@@ -157,6 +161,25 @@ loadScripts(document, 'script');</script>
 <dd>
 <div class="block">Construct a feature with the JSON string</div>
 </dd>
+<dt><a href="growthbook/sdk/java/FeatureFetchException.html" class="type-name-link" title="class in growthbook.sdk.java">FeatureFetchException</a> - Exception in <a href="growthbook/sdk/java/package-summary.html">growthbook.sdk.java</a></dt>
+<dd>
+<div class="block">This error is thrown by <a href="growthbook/sdk/java/GBFeaturesRepository.html" title="class in growthbook.sdk.java"><code>GBFeaturesRepository</code></a>
+ You can call getErrorCode() to get an enum of various error types you can handle.</div>
+</dd>
+<dt><a href="growthbook/sdk/java/FeatureFetchException.html#%3Cinit%3E(growthbook.sdk.java.FeatureFetchException.FeatureFetchErrorCode)" class="member-name-link">FeatureFetchException(FeatureFetchException.FeatureFetchErrorCode)</a> - Constructor for exception growthbook.sdk.java.<a href="growthbook/sdk/java/FeatureFetchException.html" title="class in growthbook.sdk.java">FeatureFetchException</a></dt>
+<dd>
+<div class="block">Create an exception with error code</div>
+</dd>
+<dt><a href="growthbook/sdk/java/FeatureFetchException.html#%3Cinit%3E(growthbook.sdk.java.FeatureFetchException.FeatureFetchErrorCode,java.lang.String)" class="member-name-link">FeatureFetchException(FeatureFetchException.FeatureFetchErrorCode, String)</a> - Constructor for exception growthbook.sdk.java.<a href="growthbook/sdk/java/FeatureFetchException.html" title="class in growthbook.sdk.java">FeatureFetchException</a></dt>
+<dd>
+<div class="block">Create an exception with error code and custom message</div>
+</dd>
+<dt><a href="growthbook/sdk/java/FeatureFetchException.FeatureFetchErrorCode.html" class="type-name-link" title="enum class in growthbook.sdk.java">FeatureFetchException.FeatureFetchErrorCode</a> - Enum Class in <a href="growthbook/sdk/java/package-summary.html">growthbook.sdk.java</a></dt>
+<dd>
+<div class="block">Error codes available for a <a href="growthbook/sdk/java/FeatureFetchException.html" title="class in growthbook.sdk.java"><code>FeatureFetchException</code></a></div>
+</dd>
+<dt><a href="growthbook/sdk/java/FeatureRefreshCallback.html" class="type-name-link" title="interface in growthbook.sdk.java">FeatureRefreshCallback</a> - Interface in <a href="growthbook/sdk/java/package-summary.html">growthbook.sdk.java</a></dt>
+<dd>&nbsp;</dd>
 <dt><a href="growthbook/sdk/java/FeatureResult.html" class="type-name-link" title="class in growthbook.sdk.java">FeatureResult</a>&lt;<a href="growthbook/sdk/java/FeatureResult.html" title="type parameter in FeatureResult">ValueType</a>&gt; - Class in <a href="growthbook/sdk/java/package-summary.html">growthbook.sdk.java</a></dt>
 <dd>
 <div class="block">Results for a <code>IFeatureEvaluator.evaluateFeature(String, GBContext)</code>
@@ -211,6 +234,14 @@ loadScripts(document, 'script');</script>
 </dd>
 <dt><a href="growthbook/sdk/java/GBContext.GBContextBuilder.html#%3Cinit%3E()" class="member-name-link">GBContextBuilder()</a> - Constructor for class growthbook.sdk.java.<a href="growthbook/sdk/java/GBContext.GBContextBuilder.html" title="class in growthbook.sdk.java">GBContext.GBContextBuilder</a></dt>
 <dd>&nbsp;</dd>
+<dt><a href="growthbook/sdk/java/GBFeaturesRepository.html" class="type-name-link" title="class in growthbook.sdk.java">GBFeaturesRepository</a> - Class in <a href="growthbook/sdk/java/package-summary.html">growthbook.sdk.java</a></dt>
+<dd>
+<div class="block">This class can be created with its `builder()` or constructor.</div>
+</dd>
+<dt><a href="growthbook/sdk/java/GBFeaturesRepository.html#%3Cinit%3E(java.lang.String,java.lang.String,java.lang.Integer)" class="member-name-link">GBFeaturesRepository(String, String, Integer)</a> - Constructor for class growthbook.sdk.java.<a href="growthbook/sdk/java/GBFeaturesRepository.html" title="class in growthbook.sdk.java">GBFeaturesRepository</a></dt>
+<dd>
+<div class="block">Create a new GBFeaturesRepository</div>
+</dd>
 <dt><a href="growthbook/sdk/java/Feature.html#getDefaultValue()" class="member-name-link">getDefaultValue()</a> - Method in class growthbook.sdk.java.<a href="growthbook/sdk/java/Feature.html" title="class in growthbook.sdk.java">Feature</a></dt>
 <dd>
 <div class="block">The default value for a feature evaluation</div>
@@ -221,6 +252,8 @@ loadScripts(document, 'script');</script>
 <dd>
 <div class="block">a Gson deserializer for <a href="growthbook/sdk/java/Namespace.html" title="class in growthbook.sdk.java"><code>Namespace</code></a></div>
 </dd>
+<dt><a href="growthbook/sdk/java/GBFeaturesRepository.html#getFeaturesJson()" class="member-name-link">getFeaturesJson()</a> - Method in class growthbook.sdk.java.<a href="growthbook/sdk/java/GBFeaturesRepository.html" title="class in growthbook.sdk.java">GBFeaturesRepository</a></dt>
+<dd>&nbsp;</dd>
 <dt><a href="growthbook/sdk/java/GrowthBook.html#getFeatureValue(java.lang.String,java.lang.Boolean)" class="member-name-link">getFeatureValue(String, Boolean)</a> - Method in class growthbook.sdk.java.<a href="growthbook/sdk/java/GrowthBook.html" title="class in growthbook.sdk.java">GrowthBook</a></dt>
 <dd>&nbsp;</dd>
 <dt><a href="growthbook/sdk/java/GrowthBook.html#getFeatureValue(java.lang.String,java.lang.Double)" class="member-name-link">getFeatureValue(String, Double)</a> - Method in class growthbook.sdk.java.<a href="growthbook/sdk/java/GrowthBook.html" title="class in growthbook.sdk.java">GrowthBook</a></dt>
@@ -299,6 +332,8 @@ loadScripts(document, 'script');</script>
 <dd>
 <div class="block">$in</div>
 </dd>
+<dt><a href="growthbook/sdk/java/GBFeaturesRepository.html#initialize()" class="member-name-link">initialize()</a> - Method in class growthbook.sdk.java.<a href="growthbook/sdk/java/GBFeaturesRepository.html" title="class in growthbook.sdk.java">GBFeaturesRepository</a></dt>
+<dd>&nbsp;</dd>
 <dt><a href="growthbook/sdk/java/FeatureResult.html#isOff()" class="member-name-link">isOff()</a> - Method in class growthbook.sdk.java.<a href="growthbook/sdk/java/FeatureResult.html" title="class in growthbook.sdk.java">FeatureResult</a></dt>
 <dd>
 <div class="block">Evaluates to true when the feature is off</div>
@@ -339,6 +374,10 @@ loadScripts(document, 'script');</script>
 <dd>
 <div class="block">$nin</div>
 </dd>
+<dt><a href="growthbook/sdk/java/FeatureFetchException.FeatureFetchErrorCode.html#NO_RESPONSE_ERROR" class="member-name-link">NO_RESPONSE_ERROR</a> - Enum constant in enum class growthbook.sdk.java.<a href="growthbook/sdk/java/FeatureFetchException.FeatureFetchErrorCode.html" title="enum class in growthbook.sdk.java">FeatureFetchException.FeatureFetchErrorCode</a></dt>
+<dd>
+<div class="block">- there was no response body</div>
+</dd>
 <dt><a href="growthbook/sdk/java/Operator.html#NOT" class="member-name-link">NOT</a> - Enum constant in enum class growthbook.sdk.java.<a href="growthbook/sdk/java/Operator.html" title="enum class in growthbook.sdk.java">Operator</a></dt>
 <dd>
 <div class="block">$not</div>
@@ -358,6 +397,10 @@ loadScripts(document, 'script');</script>
 <dd>
 <div class="block">when the type is an object</div>
 </dd>
+<dt><a href="growthbook/sdk/java/GBFeaturesRepository.html#onFeaturesRefresh(growthbook.sdk.java.FeatureRefreshCallback)" class="member-name-link">onFeaturesRefresh(FeatureRefreshCallback)</a> - Method in class growthbook.sdk.java.<a href="growthbook/sdk/java/GBFeaturesRepository.html" title="class in growthbook.sdk.java">GBFeaturesRepository</a></dt>
+<dd>&nbsp;</dd>
+<dt><a href="growthbook/sdk/java/FeatureRefreshCallback.html#onRefresh(java.lang.String)" class="member-name-link">onRefresh(String)</a> - Method in interface growthbook.sdk.java.<a href="growthbook/sdk/java/FeatureRefreshCallback.html" title="interface in growthbook.sdk.java">FeatureRefreshCallback</a></dt>
+<dd>&nbsp;</dd>
 <dt><a href="growthbook/sdk/java/ExperimentRunCallback.html#onRun(growthbook.sdk.java.ExperimentResult)" class="member-name-link">onRun(ExperimentResult)</a> - Method in interface growthbook.sdk.java.<a href="growthbook/sdk/java/ExperimentRunCallback.html" title="interface in growthbook.sdk.java">ExperimentRunCallback</a></dt>
 <dd>
 <div class="block">A callback to be executed with an <a href="growthbook/sdk/java/ExperimentResult.html" title="class in growthbook.sdk.java"><code>ExperimentResult</code></a> whenever an experiment is run.</div>
@@ -458,6 +501,10 @@ loadScripts(document, 'script');</script>
 <dd>
 <div class="block">when the type is unknown.</div>
 </dd>
+<dt><a href="growthbook/sdk/java/FeatureFetchException.FeatureFetchErrorCode.html#UNKNOWN" class="member-name-link">UNKNOWN</a> - Enum constant in enum class growthbook.sdk.java.<a href="growthbook/sdk/java/FeatureFetchException.FeatureFetchErrorCode.html" title="enum class in growthbook.sdk.java">FeatureFetchException.FeatureFetchErrorCode</a></dt>
+<dd>
+<div class="block">- there was an unknown error that occurred when attempting to make the request.</div>
+</dd>
 <dt><a href="growthbook/sdk/java/FeatureResultSource.html#UNKNOWN_FEATURE" class="member-name-link">UNKNOWN_FEATURE</a> - Enum constant in enum class growthbook.sdk.java.<a href="growthbook/sdk/java/FeatureResultSource.html" title="enum class in growthbook.sdk.java">FeatureResultSource</a></dt>
 <dd>
 <div class="block">When the feature is unknown</div>
@@ -466,6 +513,10 @@ loadScripts(document, 'script');</script>
 <h2 class="title" id="I:V">V</h2>
 <dl class="index">
 <dt><a href="growthbook/sdk/java/DataType.html#valueOf(java.lang.String)" class="member-name-link">valueOf(String)</a> - Static method in enum class growthbook.sdk.java.<a href="growthbook/sdk/java/DataType.html" title="enum class in growthbook.sdk.java">DataType</a></dt>
+<dd>
+<div class="block">Returns the enum constant of this class with the specified name.</div>
+</dd>
+<dt><a href="growthbook/sdk/java/FeatureFetchException.FeatureFetchErrorCode.html#valueOf(java.lang.String)" class="member-name-link">valueOf(String)</a> - Static method in enum class growthbook.sdk.java.<a href="growthbook/sdk/java/FeatureFetchException.FeatureFetchErrorCode.html" title="enum class in growthbook.sdk.java">FeatureFetchException.FeatureFetchErrorCode</a></dt>
 <dd>
 <div class="block">Returns the enum constant of this class with the specified name.</div>
 </dd>
@@ -482,6 +533,11 @@ loadScripts(document, 'script');</script>
 <div class="block">Returns an array containing the constants of this enum class, in
 the order they are declared.</div>
 </dd>
+<dt><a href="growthbook/sdk/java/FeatureFetchException.FeatureFetchErrorCode.html#values()" class="member-name-link">values()</a> - Static method in enum class growthbook.sdk.java.<a href="growthbook/sdk/java/FeatureFetchException.FeatureFetchErrorCode.html" title="enum class in growthbook.sdk.java">FeatureFetchException.FeatureFetchErrorCode</a></dt>
+<dd>
+<div class="block">Returns an array containing the constants of this enum class, in
+the order they are declared.</div>
+</dd>
 <dt><a href="growthbook/sdk/java/FeatureResultSource.html#values()" class="member-name-link">values()</a> - Static method in enum class growthbook.sdk.java.<a href="growthbook/sdk/java/FeatureResultSource.html" title="enum class in growthbook.sdk.java">FeatureResultSource</a></dt>
 <dd>
 <div class="block">Returns an array containing the constants of this enum class, in
@@ -492,8 +548,12 @@ the order they are declared.</div>
 <div class="block">Returns an array containing the constants of this enum class, in
 the order they are declared.</div>
 </dd>
+<dt><a href="growthbook/sdk/java/Version.html" class="type-name-link" title="class in growthbook.sdk.java">Version</a> - Class in <a href="growthbook/sdk/java/package-summary.html">growthbook.sdk.java</a></dt>
+<dd>
+<div class="block">Tag for the published GrowthBook SDK version</div>
+</dd>
 </dl>
-<a href="#I:A">A</a>&nbsp;<a href="#I:B">B</a>&nbsp;<a href="#I:D">D</a>&nbsp;<a href="#I:E">E</a>&nbsp;<a href="#I:F">F</a>&nbsp;<a href="#I:G">G</a>&nbsp;<a href="#I:H">H</a>&nbsp;<a href="#I:I">I</a>&nbsp;<a href="#I:L">L</a>&nbsp;<a href="#I:N">N</a>&nbsp;<a href="#I:O">O</a>&nbsp;<a href="#I:R">R</a>&nbsp;<a href="#I:S">S</a>&nbsp;<a href="#I:T">T</a>&nbsp;<a href="#I:U">U</a>&nbsp;<a href="#I:V">V</a>&nbsp;<br><a href="allclasses-index.html">All&nbsp;Classes&nbsp;and&nbsp;Interfaces</a><span class="vertical-separator">|</span><a href="allpackages-index.html">All&nbsp;Packages</a></main>
+<a href="#I:A">A</a>&nbsp;<a href="#I:B">B</a>&nbsp;<a href="#I:C">C</a>&nbsp;<a href="#I:D">D</a>&nbsp;<a href="#I:E">E</a>&nbsp;<a href="#I:F">F</a>&nbsp;<a href="#I:G">G</a>&nbsp;<a href="#I:H">H</a>&nbsp;<a href="#I:I">I</a>&nbsp;<a href="#I:L">L</a>&nbsp;<a href="#I:N">N</a>&nbsp;<a href="#I:O">O</a>&nbsp;<a href="#I:R">R</a>&nbsp;<a href="#I:S">S</a>&nbsp;<a href="#I:T">T</a>&nbsp;<a href="#I:U">U</a>&nbsp;<a href="#I:V">V</a>&nbsp;<br><a href="allclasses-index.html">All&nbsp;Classes&nbsp;and&nbsp;Interfaces</a><span class="vertical-separator">|</span><a href="allpackages-index.html">All&nbsp;Packages</a><span class="vertical-separator">|</span><a href="serialized-form.html">Serialized&nbsp;Form</a></main>
 </div>
 </div>
 </body>
