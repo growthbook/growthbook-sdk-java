@@ -49,7 +49,7 @@ public class GBContext {
         if (featuresJson == null) {
             this.featuresJson = "{}";
         } else if (encryptionKey != null) {
-            this.featuresJson = DecryptionUtils.decrypt(featuresJson, encryptionKey);
+            this.featuresJson = DecryptionUtils.decrypt(featuresJson, encryptionKey).trim();
         } else {
             this.featuresJson = featuresJson;
         }
