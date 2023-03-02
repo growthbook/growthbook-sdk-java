@@ -13,7 +13,7 @@ class FeatureEvaluator implements IFeatureEvaluator {
     private final ExperimentEvaluator experimentEvaluator = new ExperimentEvaluator();
 
     @Override
-    public <ValueType> FeatureResult<ValueType> evaluateFeature(String key, GBContext context) throws ClassCastException {
+    public <ValueType> FeatureResult<ValueType> evaluateFeature(String key, GBContext context, Class<ValueType> valueTypeClass) throws ClassCastException {
         FeatureResult<ValueType> emptyFeature = FeatureResult
                 .<ValueType>builder()
                 .value(null)

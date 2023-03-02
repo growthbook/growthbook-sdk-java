@@ -63,8 +63,8 @@ public class GrowthBook implements IGrowthBook {
 
     @Nullable
     @Override
-    public <ValueType> FeatureResult<ValueType> evalFeature(String key) {
-        return featureEvaluator.evaluateFeature(key, this.context);
+    public <ValueType> FeatureResult<ValueType> evalFeature(String key, Class<ValueType> valueTypeClass) {
+        return featureEvaluator.evaluateFeature(key, this.context, valueTypeClass);
     }
 
     @Override
@@ -90,18 +90,18 @@ public class GrowthBook implements IGrowthBook {
 
     @Override
     public Boolean isOn(String featureKey) {
-        return this.featureEvaluator.evaluateFeature(featureKey, context).isOn();
+        return this.featureEvaluator.evaluateFeature(featureKey, context, Object.class).isOn();
     }
 
     @Override
     public Boolean isOff(String featureKey) {
-        return this.featureEvaluator.evaluateFeature(featureKey, context).isOff();
+        return this.featureEvaluator.evaluateFeature(featureKey, context, Object.class).isOff();
     }
 
     @Override
     public Boolean getFeatureValue(String featureKey, Boolean defaultValue) {
         try {
-            Boolean maybeValue = (Boolean) this.featureEvaluator.evaluateFeature(featureKey, context).getValue();
+            Boolean maybeValue = (Boolean) this.featureEvaluator.evaluateFeature(featureKey, context, defaultValue.getClass()).getValue();
             return maybeValue == null ? defaultValue : maybeValue;
         } catch (Exception e) {
             e.printStackTrace();
@@ -112,7 +112,7 @@ public class GrowthBook implements IGrowthBook {
     @Override
     public String getFeatureValue(String featureKey, String defaultValue) {
         try {
-            String maybeValue = (String) this.featureEvaluator.evaluateFeature(featureKey, context).getValue();
+            String maybeValue = (String) this.featureEvaluator.evaluateFeature(featureKey, context, defaultValue.getClass()).getValue();
             return maybeValue == null ? defaultValue : maybeValue;
         } catch (Exception e) {
             e.printStackTrace();
@@ -145,7 +145,7 @@ public class GrowthBook implements IGrowthBook {
     @Override
     public Object getFeatureValue(String featureKey, Object defaultValue) {
         try {
-            Object maybeValue = this.featureEvaluator.evaluateFeature(featureKey, context).getValue();
+            Object maybeValue = this.featureEvaluator.evaluateFeature(featureKey, context, defaultValue.getClass()).getValue();
             return maybeValue == null ? defaultValue : maybeValue;
         } catch (Exception e) {
             e.printStackTrace();
@@ -156,7 +156,7 @@ public class GrowthBook implements IGrowthBook {
     @Override
     public <ValueType> ValueType getFeatureValue(String featureKey, ValueType defaultValue, Class<ValueType> gsonDeserializableClass) {
         try {
-            Object maybeValue = this.featureEvaluator.evaluateFeature(featureKey, context).getValue();
+            Object maybeValue = this.featureEvaluator.evaluateFeature(featureKey, context, gsonDeserializableClass).getValue();
             if (maybeValue == null) {
                 return defaultValue;
             }
@@ -178,7 +178,7 @@ public class GrowthBook implements IGrowthBook {
     @Override
     public Double getFeatureValue(String featureKey, Double defaultValue) {
         try {
-            Double maybeValue = (Double) this.featureEvaluator.evaluateFeature(featureKey, context).getValue();
+            Double maybeValue = (Double) this.featureEvaluator.evaluateFeature(featureKey, context, defaultValue.getClass()).getValue();
             return maybeValue == null ? defaultValue : maybeValue;
         } catch (Exception e) {
             e.printStackTrace();
