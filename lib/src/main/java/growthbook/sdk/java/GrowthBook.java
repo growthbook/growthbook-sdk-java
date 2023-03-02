@@ -101,7 +101,7 @@ public class GrowthBook implements IGrowthBook {
     @Override
     public Boolean getFeatureValue(String featureKey, Boolean defaultValue) {
         try {
-            Boolean maybeValue = (Boolean) this.featureEvaluator.evaluateFeature(featureKey, context, defaultValue.getClass()).getValue();
+            Boolean maybeValue = (Boolean) this.featureEvaluator.evaluateFeature(featureKey, context, Boolean.class).getValue();
             return maybeValue == null ? defaultValue : maybeValue;
         } catch (Exception e) {
             e.printStackTrace();
@@ -112,7 +112,7 @@ public class GrowthBook implements IGrowthBook {
     @Override
     public String getFeatureValue(String featureKey, String defaultValue) {
         try {
-            String maybeValue = (String) this.featureEvaluator.evaluateFeature(featureKey, context, defaultValue.getClass()).getValue();
+            String maybeValue = (String) this.featureEvaluator.evaluateFeature(featureKey, context, String.class).getValue();
             return maybeValue == null ? defaultValue : maybeValue;
         } catch (Exception e) {
             e.printStackTrace();
@@ -123,8 +123,18 @@ public class GrowthBook implements IGrowthBook {
     @Override
     public Float getFeatureValue(String featureKey, Float defaultValue) {
         try {
-            Double maybeValue = getFeatureValue(featureKey, Double.valueOf(defaultValue));
-            return maybeValue == null ? defaultValue : maybeValue.floatValue();
+            // Type erasure occurs so a Double ends up being returned
+            Double maybeValue = (Double) this.featureEvaluator.evaluateFeature(featureKey, context, Double.class).getValue();
+
+            if (maybeValue == null) {
+                return defaultValue;
+            }
+
+            try {
+                return maybeValue.floatValue();
+            } catch (NumberFormatException e) {
+                return defaultValue;
+            }
         } catch (Exception e) {
             e.printStackTrace();
             return defaultValue;
@@ -134,8 +144,18 @@ public class GrowthBook implements IGrowthBook {
     @Override
     public Integer getFeatureValue(String featureKey, Integer defaultValue) {
         try {
-            Double maybeValue = getFeatureValue(featureKey, Double.valueOf(defaultValue));
-            return maybeValue == null ? defaultValue : maybeValue.intValue();
+            // Type erasure occurs so a Double ends up being returned
+            Double maybeValue = (Double) this.featureEvaluator.evaluateFeature(featureKey, context, Double.class).getValue();
+
+            if (maybeValue == null) {
+                return defaultValue;
+            }
+
+            try {
+                return maybeValue.intValue();
+            } catch (NumberFormatException e) {
+                return defaultValue;
+            }
         } catch (Exception e) {
             e.printStackTrace();
             return defaultValue;
@@ -178,7 +198,7 @@ public class GrowthBook implements IGrowthBook {
     @Override
     public Double getFeatureValue(String featureKey, Double defaultValue) {
         try {
-            Double maybeValue = (Double) this.featureEvaluator.evaluateFeature(featureKey, context, defaultValue.getClass()).getValue();
+            Double maybeValue = (Double) this.featureEvaluator.evaluateFeature(featureKey, context, Double.class).getValue();
             return maybeValue == null ? defaultValue : maybeValue;
         } catch (Exception e) {
             e.printStackTrace();

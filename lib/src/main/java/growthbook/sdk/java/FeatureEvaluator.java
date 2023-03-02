@@ -3,6 +3,10 @@ package growthbook.sdk.java;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 
+import javax.annotation.Nullable;
+import java.net.MalformedURLException;
+import java.net.URL;
+
 /**
  * <b>INTERNAL</b>: Implementation of feature evaluation
  */
@@ -21,6 +25,20 @@ class FeatureEvaluator implements IFeatureEvaluator {
                 .build();
 
         try {
+            // Check for feature values forced by URL
+            // TODO: Add enabled flag check
+            Boolean urlCheckingEnabled = true;
+            if (urlCheckingEnabled) {
+                ValueType forcedValue = evaluateForcedFeatureValueFromUrl(key, context.getUrl(), valueTypeClass);
+                if (forcedValue != null) {
+                    return FeatureResult
+                        .<ValueType>builder()
+                        .value(forcedValue)
+                        .source(FeatureResultSource.URL_OVERRIDE)
+                        .build();
+                }
+            }
+
             // Unknown key, return empty feature
             JsonObject featuresJson = context.getFeatures();
             if (featuresJson == null || !featuresJson.has(key)) {
@@ -165,5 +183,40 @@ class FeatureEvaluator implements IFeatureEvaluator {
             e.printStackTrace();
             return emptyFeature;
         }
+    }
+
+    private @Nullable <ValueType> ValueType evaluateForcedFeatureValueFromUrl(String key, @Nullable String urlString, Class<ValueType> valueTypeClass) {
+        if (urlString == null) return null;
+
+        try {
+            URL url = new URL(urlString);
+
+            if (valueTypeClass.equals(Boolean.class)) {
+                return (ValueType) GrowthBookUtils.getForcedBooleanValueFromUrl(key, url);
+            }
+
+            if (valueTypeClass.equals(String.class)) {
+                return (ValueType) GrowthBookUtils.getForcedStringValueFromUrl(key, url);
+            }
+
+            if (valueTypeClass.equals(Integer.class)) {
+                return (ValueType) GrowthBookUtils.getForcedIntegerValueFromUrl(key, url);
+            }
+
+            if (valueTypeClass.equals(Float.class)) {
+                return (ValueType) GrowthBookUtils.getForcedFloatValueFromUrl(key, url);
+            }
+
+            if (valueTypeClass.equals(Double.class)) {
+                return (ValueType) GrowthBookUtils.getForcedDoubleValueFromUrl(key, url);
+            }
+
+            // TODO: JSON and Object?
+        } catch (MalformedURLException | ClassCastException e) {
+            e.printStackTrace();
+            return null;
+        }
+
+        return null;
     }
 }

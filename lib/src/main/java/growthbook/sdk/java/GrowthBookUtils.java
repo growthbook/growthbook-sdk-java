@@ -180,15 +180,14 @@ class GrowthBookUtils {
 
     // region Forced feature for URL -> Boolean
 
-    // TODO: Add test
     /**
      * Evaluate a forced boolean value from a URL. If the provided key is not present in the URL, return null.
      * @param featureKey    feature ID/key (not prefixed with gb~)
      * @param url    Page URL to evaluate for forced feature values
-     * @return  boolean value or null
+     * @return  value or null
      */
     @Nullable
-    public static Boolean getForcedValueFromUrl(String featureKey, URL url) {
+    public static Boolean getForcedBooleanValueFromUrl(String featureKey, URL url) {
         String value = getForcedFeatureRawValueForKeyFromUrl(featureKey, url);
 
         if (value == null) return null;
@@ -206,31 +205,92 @@ class GrowthBookUtils {
         return null;
     }
 
+    // endregion Forced feature for URL -> Boolean
+
+    // region Forced feature for URL -> String
+
     /**
-     * See {@link #getForcedValueFromUrl(String, URL)}
+     * Evaluate a forced string value from a URL. If the provided key is not present in the URL, return null.
+     * @param featureKey    feature ID/key (not prefixed with gb~)
+     * @param url    Page URL to evaluate for forced feature values
+     * @return  value or null
      */
     @Nullable
-    public static Boolean getForcedValueFromUrl(String featureKey, String urlString) {
+    public static String getForcedStringValueFromUrl(String featureKey, URL url) {
+        return getForcedFeatureRawValueForKeyFromUrl(featureKey, url);
+    }
+
+    // endregion Forced feature for URL -> String
+
+    // region Forced feature for URL -> Float
+
+    /**
+     * Evaluate a forced float value from a URL. If the provided key is not present in the URL, return null.
+     * @param featureKey    feature ID/key (not prefixed with gb~)
+     * @param url    Page URL to evaluate for forced feature values
+     * @return  value or null
+     */
+    @Nullable
+    public static Float getForcedFloatValueFromUrl(String featureKey, URL url) {
+        String value = getForcedFeatureRawValueForKeyFromUrl(featureKey, url);
+
+        if (value == null) return null;
+
         try {
-            URL url = new URL(urlString);
-            return getForcedValueFromUrl(featureKey, url);
-        } catch (MalformedURLException e) {
+            return Float.parseFloat(value);
+        } catch (NumberFormatException e) {
             return null;
         }
     }
 
-    // endregion Forced feature for URL -> Boolean
-
-    // region Forced feature for URL -> String
-    // TODO:
-    // endregion Forced feature for URL -> String
-
-    // region Forced feature for URL -> Float
-    // TODO:
     // endregion Forced feature for URL -> Float
 
+
+    // region Forced feature for URL -> Double
+
+    /**
+     * Evaluate a forced float value from a URL. If the provided key is not present in the URL, return null.
+     * @param featureKey    feature ID/key (not prefixed with gb~)
+     * @param url    Page URL to evaluate for forced feature values
+     * @return  value or null
+     */
+    @Nullable
+    public static Double getForcedDoubleValueFromUrl(String featureKey, URL url) {
+        String value = getForcedFeatureRawValueForKeyFromUrl(featureKey, url);
+
+        if (value == null) return null;
+
+        try {
+            return Double.parseDouble(value);
+        } catch (NumberFormatException e) {
+            return null;
+        }
+    }
+
+    // endregion Forced feature for URL -> Double
+
+
     // region Forced feature for URL -> Integer
-    // TODO:
+
+    /**
+     * Evaluate a forced integer value from a URL. If the provided key is not present in the URL, return null.
+     * @param featureKey    feature ID/key (not prefixed with gb~)
+     * @param url    Page URL to evaluate for forced feature values
+     * @return  value or null
+     */
+    @Nullable
+    public static Integer getForcedIntegerValueFromUrl(String featureKey, URL url) {
+        String value = getForcedFeatureRawValueForKeyFromUrl(featureKey, url);
+
+        if (value == null) return null;
+
+        try {
+            return Integer.parseInt(value);
+        } catch (NumberFormatException e) {
+            return null;
+        }
+    }
+
     // endregion Forced feature for URL -> Integer
 
     // endregion Forced feature for URL
