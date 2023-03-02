@@ -78,6 +78,8 @@ class GrowthBookUtils {
         return new ArrayList<Float>(Collections.nCopies(size, weight));
     }
 
+    // region Experiment for query string
+
     /**
      * This checks if an experiment variation is being forced via a URL query string.
      * This may not be applicable for all SDKs (e.g. mobile).
@@ -152,6 +154,86 @@ class GrowthBookUtils {
             return null;
         }
     }
+
+    // endregion Experiment for query string
+
+
+
+    // region Forced feature for URL
+
+    /**
+     * Given a URL and a feature key, will find the raw value in the URL if it exists, otherwise returns null
+     * @param featureKey  Feature ID/key (not prefixed with gb~)
+     * @param url  Page URL to evaluate for forced feature values
+     * @return forced feature value
+     */
+    private static @Nullable String getForcedFeatureRawValueForKeyFromUrl(String featureKey, URL url) {
+        String prefixedKey = "gb~" + featureKey;
+        Map<String, String> queryMap = UrlUtils.parseQueryString(url.getQuery());
+
+        if (!queryMap.containsKey(prefixedKey)) {
+            return null;
+        }
+
+        return queryMap.get(prefixedKey);
+    }
+
+    // region Forced feature for URL -> Boolean
+
+    // TODO: Add test
+    /**
+     * Evaluate a forced boolean value from a URL. If the provided key is not present in the URL, return null.
+     * @param featureKey    feature ID/key (not prefixed with gb~)
+     * @param url    Page URL to evaluate for forced feature values
+     * @return  boolean value or null
+     */
+    @Nullable
+    public static Boolean getForcedValueFromUrl(String featureKey, URL url) {
+        String value = getForcedFeatureRawValueForKeyFromUrl(featureKey, url);
+
+        if (value == null) return null;
+
+        value = value.toLowerCase();
+
+        if (value.equals("true") || value.equals("1") || value.equals("on")) {
+            return true;
+        }
+
+        if (value.equals("false") || value.equals("0") || value.equals("off")) {
+            return false;
+        }
+
+        return null;
+    }
+
+    /**
+     * See {@link #getForcedValueFromUrl(String, URL)}
+     */
+    @Nullable
+    public static Boolean getForcedValueFromUrl(String featureKey, String urlString) {
+        try {
+            URL url = new URL(urlString);
+            return getForcedValueFromUrl(featureKey, url);
+        } catch (MalformedURLException e) {
+            return null;
+        }
+    }
+
+    // endregion Forced feature for URL -> Boolean
+
+    // region Forced feature for URL -> String
+    // TODO:
+    // endregion Forced feature for URL -> String
+
+    // region Forced feature for URL -> Float
+    // TODO:
+    // endregion Forced feature for URL -> Float
+
+    // region Forced feature for URL -> Integer
+    // TODO:
+    // endregion Forced feature for URL -> Integer
+
+    // endregion Forced feature for URL
 
     /**
      * This converts and experiment's coverage and variation weights into an array of bucket ranges.
