@@ -96,6 +96,13 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
         return this.featuresJson;
     }
 
+    /**
+     * Subscribe to feature refresh events
+     * This callback is called when the features are successfully refreshed.
+     * This is called even if the features have not changed.
+     * This will not be called if fetching the features results in a failure.
+     * @param callback  This callback will be called when features are refreshed
+     */
     @Override
     public void onFeaturesRefresh(FeatureRefreshCallback callback) {
         this.refreshCallbacks.add(callback);
