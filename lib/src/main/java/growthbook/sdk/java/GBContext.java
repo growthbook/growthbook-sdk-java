@@ -27,7 +27,7 @@ public class GBContext {
      * @param encryptionKey Optional encryption key. If this is not null, featuresJson should be an encrypted payload.
      * @param enabled Whether globally all experiments are enabled. Defaults to true.
      * @param isQaMode If true, random assignment is disabled and only explicitly forced variations are used.
-     * @param url A URL string
+     * @param url A URL string that is used for experiment evaluation, as well as forcing feature values.
      * @param forcedVariationsMap Force specific experiments to always assign a specific variation (used for QA)
      * @param trackingCallback A function that takes {@link Experiment} and {@link ExperimentResult} as arguments.
      */
@@ -39,6 +39,7 @@ public class GBContext {
             @Nullable Boolean enabled,
             Boolean isQaMode,
             @Nullable String url,
+            Boolean allowUrlOverrides,
             @Nullable Map<String, Integer> forcedVariationsMap,
             @Nullable TrackingCallback trackingCallback
     ) {
@@ -56,6 +57,7 @@ public class GBContext {
 
         this.enabled = enabled == null ? true : enabled;
         this.isQaMode = isQaMode == null ? false : isQaMode;
+        this.allowUrlOverride = allowUrlOverrides == null ? false : allowUrlOverrides;
         this.url = url;
         this.forcedVariationsMap = forcedVariationsMap == null ? new HashMap<>() : forcedVariationsMap;
         this.trackingCallback = trackingCallback;
@@ -76,6 +78,8 @@ public class GBContext {
     private String url;
 
     private Boolean isQaMode;
+
+    private Boolean allowUrlOverride;
 
     @Nullable
     private TrackingCallback trackingCallback;

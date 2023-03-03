@@ -26,9 +26,7 @@ class FeatureEvaluator implements IFeatureEvaluator {
 
         try {
             // Check for feature values forced by URL
-            // TODO: Add enabled flag check
-            Boolean urlCheckingEnabled = true;
-            if (urlCheckingEnabled) {
+            if (context.getAllowUrlOverride()) {
                 ValueType forcedValue = evaluateForcedFeatureValueFromUrl(key, context.getUrl(), valueTypeClass);
                 if (forcedValue != null) {
                     return FeatureResult
