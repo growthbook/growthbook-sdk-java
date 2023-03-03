@@ -25,9 +25,10 @@ public class GBContext {
      * @param attributesJson User attributes as JSON string
      * @param featuresJson Features response as JSON string, or the encrypted payload. Encrypted payload requires `encryptionKey`
      * @param encryptionKey Optional encryption key. If this is not null, featuresJson should be an encrypted payload.
-     * @param enabled Whether globally all experiments are enabled. Defaults to true.
+     * @param enabled Whether globally all experiments are enabled (default: true)
      * @param isQaMode If true, random assignment is disabled and only explicitly forced variations are used.
      * @param url A URL string that is used for experiment evaluation, as well as forcing feature values.
+     * @param allowUrlOverrides Boolean flag to allow URL overrides (default: false)
      * @param forcedVariationsMap Force specific experiments to always assign a specific variation (used for QA)
      * @param trackingCallback A function that takes {@link Experiment} and {@link ExperimentResult} as arguments.
      */
