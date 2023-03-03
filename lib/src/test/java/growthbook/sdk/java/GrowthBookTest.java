@@ -713,8 +713,9 @@ class GrowthBookTest {
         assertEquals("Hello, everyone! I hope you are all doing well!", result);
     }
 
+    // JSON example -> use built-in Gson support
     @Test
-    void test_withUrl_getFeatureValue_forcesJsonValue() {
+    void test_withUrl_getFeatureValue_forcesJsonValue_Gson() {
         String featuresJson = "{\"status\":200,\"features\":{\"banner_text\":{\"defaultValue\":\"Welcome to Acme Donuts!\",\"rules\":[{\"condition\":{\"country\":\"france\"},\"force\":\"Bienvenue au Beignets Acme !\"},{\"condition\":{\"country\":\"spain\"},\"force\":\"¡Bienvenidos y bienvenidas a Donas Acme!\"}]},\"dark_mode\":{\"defaultValue\":false,\"rules\":[{\"condition\":{\"loggedIn\":true},\"force\":true,\"coverage\":0.5,\"hashAttribute\":\"id\"}]},\"donut_price\":{\"defaultValue\":2.5,\"rules\":[{\"condition\":{\"employee\":true},\"force\":0}]},\"meal_overrides_gluten_free\":{\"defaultValue\":{\"meal_type\":\"standard\",\"dessert\":\"Strawberry Cheesecake\"},\"rules\":[{\"condition\":{\"dietaryRestrictions\":{\"$elemMatch\":{\"$eq\":\"gluten_free\"}}},\"force\":{\"meal_type\":\"gf\",\"dessert\":\"French Vanilla Ice Cream\"}}]}},\"dateUpdated\":\"2023-01-11T00:26:01.745Z\"}";
         String attributes = "{}";
         String url = "http://localhost:8080/url-feature-force?gb~meal_overrides_gluten_free=%7B%22meal_type%22%3A%20%22gf%22%2C%20%22dessert%22%3A%20%22French%20Vanilla%20Ice%20Cream%22%7D&gb~dark_mode=true&gb~donut_price=3.33&gb~banner_text=Hello%2C%20everyone!%20I%20hope%20you%20are%20all%20doing%20well!";
@@ -731,6 +732,30 @@ class GrowthBookTest {
         MealOrder emptyMealOrder = new MealOrder(MealType.STANDARD, "Donut");
 
         MealOrder result = (MealOrder) subject.getFeatureValue("meal_overrides_gluten_free", emptyMealOrder);
+
+        assertEquals(MealType.GLUTEN_FREE, result.getMealType());
+        assertEquals("French Vanilla Ice Cream", result.getDessert());
+    }
+
+    // JSON example -> use your own JSON deserialization implementation
+    @Test
+    void test_withUrl_getFeatureValue_jsonValueFromString() {
+        String featuresJson = "{\"status\":200,\"features\":{\"banner_text\":{\"defaultValue\":\"Welcome to Acme Donuts!\",\"rules\":[{\"condition\":{\"country\":\"france\"},\"force\":\"Bienvenue au Beignets Acme !\"},{\"condition\":{\"country\":\"spain\"},\"force\":\"¡Bienvenidos y bienvenidas a Donas Acme!\"}]},\"dark_mode\":{\"defaultValue\":false,\"rules\":[{\"condition\":{\"loggedIn\":true},\"force\":true,\"coverage\":0.5,\"hashAttribute\":\"id\"}]},\"donut_price\":{\"defaultValue\":2.5,\"rules\":[{\"condition\":{\"employee\":true},\"force\":0}]},\"meal_overrides_gluten_free\":{\"defaultValue\":{\"meal_type\":\"standard\",\"dessert\":\"Strawberry Cheesecake\"},\"rules\":[{\"condition\":{\"dietaryRestrictions\":{\"$elemMatch\":{\"$eq\":\"gluten_free\"}}},\"force\":{\"meal_type\":\"gf\",\"dessert\":\"French Vanilla Ice Cream\"}}]}},\"dateUpdated\":\"2023-01-11T00:26:01.745Z\"}";
+        String attributes = "{}";
+        String url = "http://localhost:8080/url-feature-force?gb~meal_overrides_gluten_free=%7B%22meal_type%22%3A%20%22gf%22%2C%20%22dessert%22%3A%20%22French%20Vanilla%20Ice%20Cream%22%7D&gb~dark_mode=true&gb~donut_price=3.33&gb~banner_text=Hello%2C%20everyone!%20I%20hope%20you%20are%20all%20doing%20well!";
+
+        GBContext context = GBContext
+            .builder()
+            .featuresJson(featuresJson)
+            .attributesJson(attributes)
+            .url(url)
+            .allowUrlOverrides(true)
+            .build();
+        GrowthBook subject = new GrowthBook(context);
+
+        String resultAsString = (String) subject.getFeatureValue("meal_overrides_gluten_free", "{\"meal_type\": \"standard\", \"dessert\": \"Donut\"}");
+        // Custom deserialization example
+        MealOrder result = jsonUtils.gson.fromJson(resultAsString, MealOrder.class);
 
         assertEquals(MealType.GLUTEN_FREE, result.getMealType());
         assertEquals("French Vanilla Ice Cream", result.getDessert());
@@ -778,19 +803,6 @@ class GrowthBookTest {
         }
     }
 
-    static class GBTestingFoo {
-        @SerializedName("foo") String foo = "FOO!";
-
-        @Override
-        public boolean equals(Object obj) {
-            if (obj instanceof GBTestingFoo) {
-                return Objects.equals(((GBTestingFoo) obj).foo, this.foo);
-            }
-
-            return false;
-        }
-    }
-
     static class MealOrder {
         @SerializedName("meal_type")
         MealType mealType;
@@ -809,6 +821,19 @@ class GrowthBookTest {
         public MealOrder(MealType mealType, String dessert) {
             this.mealType = mealType;
             this.dessert = dessert;
+        }
+    }
+
+    static class GBTestingFoo {
+        @SerializedName("foo") String foo = "FOO!";
+
+        @Override
+        public boolean equals(Object obj) {
+            if (obj instanceof GBTestingFoo) {
+                return Objects.equals(((GBTestingFoo) obj).foo, this.foo);
+            }
+
+            return false;
         }
     }
 
