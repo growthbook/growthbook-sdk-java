@@ -1,5 +1,7 @@
 package growthbook.sdk.java;
 
+import com.google.gson.Gson;
+
 import javax.annotation.Nullable;
 import java.math.BigInteger;
 import java.net.MalformedURLException;
@@ -292,6 +294,24 @@ class GrowthBookUtils {
     }
 
     // endregion Forced feature for URL -> Integer
+
+    // region Forced feature for URL -> Objects
+
+    @Nullable
+    public static <ValueType> ValueType getForcedSerializableValueFromUrl(String featureKey, URL url, Class<ValueType> valueTypeClass, Gson gson) {
+        String value = getForcedFeatureRawValueForKeyFromUrl(featureKey, url);
+
+        if (value == null) return null;
+
+        try {
+            return gson.fromJson(value, valueTypeClass);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return null;
+        }
+    }
+
+    // endregion Forced feature for URL -> Objects
 
     // endregion Forced feature for URL
 

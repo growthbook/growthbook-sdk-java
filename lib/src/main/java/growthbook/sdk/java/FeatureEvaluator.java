@@ -209,12 +209,10 @@ class FeatureEvaluator implements IFeatureEvaluator {
                 return (ValueType) GrowthBookUtils.getForcedDoubleValueFromUrl(key, url);
             }
 
-            // TODO: JSON and Object?
+            return GrowthBookUtils.getForcedSerializableValueFromUrl(key, url, valueTypeClass, jsonUtils.gson);
         } catch (MalformedURLException | ClassCastException e) {
             e.printStackTrace();
             return null;
         }
-
-        return null;
     }
 }
