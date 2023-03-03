@@ -546,6 +546,7 @@ class GrowthBookTest {
             .featuresJson(featuresJson)
             .attributesJson(attributes)
             .url(url)
+            .allowUrlOverrides(true)
             .build();
         GrowthBook subject = new GrowthBook(context);
 
@@ -565,6 +566,7 @@ class GrowthBookTest {
             .featuresJson(featuresJson)
             .attributesJson(attributes)
             .url(url)
+            .allowUrlOverrides(true)
             .build();
         GrowthBook subject = new GrowthBook(context);
 
@@ -584,6 +586,7 @@ class GrowthBookTest {
             .featuresJson(featuresJson)
             .attributesJson(attributes)
             .url(url)
+            .allowUrlOverrides(true)
             .build();
         GrowthBook subject = new GrowthBook(context);
 
@@ -603,6 +606,7 @@ class GrowthBookTest {
             .featuresJson(featuresJson)
             .attributesJson(attributes)
             .url(url)
+            .allowUrlOverrides(true)
             .build();
         GrowthBook subject = new GrowthBook(context);
 
@@ -622,6 +626,7 @@ class GrowthBookTest {
             .featuresJson(featuresJson)
             .attributesJson(attributes)
             .url(url)
+            .allowUrlOverrides(true)
             .build();
         GrowthBook subject = new GrowthBook(context);
 
@@ -641,6 +646,7 @@ class GrowthBookTest {
             .featuresJson(featuresJson)
             .attributesJson(attributes)
             .url(url)
+            .allowUrlOverrides(true)
             .build();
         GrowthBook subject = new GrowthBook(context);
 
@@ -660,6 +666,7 @@ class GrowthBookTest {
             .featuresJson(featuresJson)
             .attributesJson(attributes)
             .url(url)
+            .allowUrlOverrides(true)
             .build();
         GrowthBook subject = new GrowthBook(context);
 
@@ -678,6 +685,7 @@ class GrowthBookTest {
             .featuresJson(featuresJson)
             .attributesJson(attributes)
             .url(url)
+            .allowUrlOverrides(true)
             .build();
         GrowthBook subject = new GrowthBook(context);
 
@@ -696,6 +704,7 @@ class GrowthBookTest {
             .featuresJson(featuresJson)
             .attributesJson(attributes)
             .url(url)
+            .allowUrlOverrides(true)
             .build();
         GrowthBook subject = new GrowthBook(context);
 
@@ -703,6 +712,7 @@ class GrowthBookTest {
         assertEquals("Hello, everyone! I hope you are all doing well!", result);
     }
 
+    // TODO: Support JSON
 //    @Test
 //    void test_withUrl_getFeatureValue_forcesJsonValue() {
 //        String featuresJson = "{\"status\":200,\"features\":{\"banner_text\":{\"defaultValue\":\"Welcome to Acme Donuts!\",\"rules\":[{\"condition\":{\"country\":\"france\"},\"force\":\"Bienvenue au Beignets Acme !\"},{\"condition\":{\"country\":\"spain\"},\"force\":\"¡Bienvenidos y bienvenidas a Donas Acme!\"}]},\"dark_mode\":{\"defaultValue\":false,\"rules\":[{\"condition\":{\"loggedIn\":true},\"force\":true,\"coverage\":0.5,\"hashAttribute\":\"id\"}]},\"donut_price\":{\"defaultValue\":2.5,\"rules\":[{\"condition\":{\"employee\":true},\"force\":0}]},\"meal_overrides_gluten_free\":{\"defaultValue\":{\"meal_type\":\"standard\",\"dessert\":\"Strawberry Cheesecake\"},\"rules\":[{\"condition\":{\"dietaryRestrictions\":{\"$elemMatch\":{\"$eq\":\"gluten_free\"}}},\"force\":{\"meal_type\":\"gf\",\"dessert\":\"French Vanilla Ice Cream\"}}]}},\"dateUpdated\":\"2023-01-11T00:26:01.745Z\"}";
@@ -724,6 +734,7 @@ class GrowthBookTest {
             .featuresJson(featuresJson)
             .attributesJson(attributes)
             .url(url)
+            .allowUrlOverrides(true)
             .build();
         GrowthBook subject = new GrowthBook(context);
 
@@ -743,6 +754,7 @@ class GrowthBookTest {
             .featuresJson(featuresJson)
             .attributesJson(attributes)
             .url(url)
+            .allowUrlOverrides(true)
             .build();
         GrowthBook subject = new GrowthBook(context);
 
@@ -762,6 +774,7 @@ class GrowthBookTest {
             .featuresJson(featuresJson)
             .attributesJson(attributes)
             .url(url)
+            .allowUrlOverrides(true)
             .build();
         GrowthBook subject = new GrowthBook(context);
 
@@ -781,6 +794,7 @@ class GrowthBookTest {
             .featuresJson(featuresJson)
             .attributesJson(attributes)
             .url(url)
+            .allowUrlOverrides(true)
             .build();
         GrowthBook subject = new GrowthBook(context);
 
