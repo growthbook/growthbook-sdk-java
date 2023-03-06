@@ -112,7 +112,7 @@ loadScripts(document, 'script');</script>
 </dd>
 <dt><a href="growthbook/sdk/java/BucketRange.html#equals(java.lang.Object)" class="member-name-link">equals(Object)</a> - Method in class growthbook.sdk.java.<a href="growthbook/sdk/java/BucketRange.html" title="class in growthbook.sdk.java">BucketRange</a></dt>
 <dd>&nbsp;</dd>
-<dt><a href="growthbook/sdk/java/GrowthBook.html#evalFeature(java.lang.String)" class="member-name-link">evalFeature(String)</a> - Method in class growthbook.sdk.java.<a href="growthbook/sdk/java/GrowthBook.html" title="class in growthbook.sdk.java">GrowthBook</a></dt>
+<dt><a href="growthbook/sdk/java/GrowthBook.html#evalFeature(java.lang.String,java.lang.Class)" class="member-name-link">evalFeature(String, Class&lt;ValueType&gt;)</a> - Method in class growthbook.sdk.java.<a href="growthbook/sdk/java/GrowthBook.html" title="class in growthbook.sdk.java">GrowthBook</a></dt>
 <dd>&nbsp;</dd>
 <dt><a href="growthbook/sdk/java/GrowthBook.html#evaluateCondition(java.lang.String,java.lang.String)" class="member-name-link">evaluateCondition(String, String)</a> - Method in class growthbook.sdk.java.<a href="growthbook/sdk/java/GrowthBook.html" title="class in growthbook.sdk.java">GrowthBook</a></dt>
 <dd>&nbsp;</dd>
@@ -179,10 +179,12 @@ loadScripts(document, 'script');</script>
 <div class="block">Error codes available for a <a href="growthbook/sdk/java/FeatureFetchException.html" title="class in growthbook.sdk.java"><code>FeatureFetchException</code></a></div>
 </dd>
 <dt><a href="growthbook/sdk/java/FeatureRefreshCallback.html" class="type-name-link" title="interface in growthbook.sdk.java">FeatureRefreshCallback</a> - Interface in <a href="growthbook/sdk/java/package-summary.html">growthbook.sdk.java</a></dt>
-<dd>&nbsp;</dd>
+<dd>
+<div class="block">See <a href="growthbook/sdk/java/GBFeaturesRepository.html#onFeaturesRefresh(growthbook.sdk.java.FeatureRefreshCallback)"><code>GBFeaturesRepository.onFeaturesRefresh(FeatureRefreshCallback)</code></a></div>
+</dd>
 <dt><a href="growthbook/sdk/java/FeatureResult.html" class="type-name-link" title="class in growthbook.sdk.java">FeatureResult</a>&lt;<a href="growthbook/sdk/java/FeatureResult.html" title="type parameter in FeatureResult">ValueType</a>&gt; - Class in <a href="growthbook/sdk/java/package-summary.html">growthbook.sdk.java</a></dt>
 <dd>
-<div class="block">Results for a <code>IFeatureEvaluator.evaluateFeature(String, GBContext)</code>
+<div class="block">Results for a <code>IFeatureEvaluator.evaluateFeature(String, GBContext, Class)</code>
 
  
  value (any) - The assigned value of the feature
@@ -224,7 +226,7 @@ loadScripts(document, 'script');</script>
 <dd>
 <div class="block">Context object passed into the GrowthBook constructor.</div>
 </dd>
-<dt><a href="growthbook/sdk/java/GBContext.html#%3Cinit%3E(java.lang.String,java.lang.String,java.lang.String,java.lang.Boolean,java.lang.Boolean,java.lang.String,java.util.Map,growthbook.sdk.java.TrackingCallback)" class="member-name-link">GBContext(String, String, String, Boolean, Boolean, String, Map&lt;String, Integer&gt;, TrackingCallback)</a> - Constructor for class growthbook.sdk.java.<a href="growthbook/sdk/java/GBContext.html" title="class in growthbook.sdk.java">GBContext</a></dt>
+<dt><a href="growthbook/sdk/java/GBContext.html#%3Cinit%3E(java.lang.String,java.lang.String,java.lang.String,java.lang.Boolean,java.lang.Boolean,java.lang.String,java.lang.Boolean,java.util.Map,growthbook.sdk.java.TrackingCallback)" class="member-name-link">GBContext(String, String, String, Boolean, Boolean, String, Boolean, Map&lt;String, Integer&gt;, TrackingCallback)</a> - Constructor for class growthbook.sdk.java.<a href="growthbook/sdk/java/GBContext.html" title="class in growthbook.sdk.java">GBContext</a></dt>
 <dd>
 <div class="block">The <a href="growthbook/sdk/java/GBContext.GBContextBuilder.html" title="class in growthbook.sdk.java"><code>GBContext.GBContextBuilder</code></a> is recommended for constructing a Context.</div>
 </dd>
@@ -398,9 +400,14 @@ loadScripts(document, 'script');</script>
 <div class="block">when the type is an object</div>
 </dd>
 <dt><a href="growthbook/sdk/java/GBFeaturesRepository.html#onFeaturesRefresh(growthbook.sdk.java.FeatureRefreshCallback)" class="member-name-link">onFeaturesRefresh(FeatureRefreshCallback)</a> - Method in class growthbook.sdk.java.<a href="growthbook/sdk/java/GBFeaturesRepository.html" title="class in growthbook.sdk.java">GBFeaturesRepository</a></dt>
-<dd>&nbsp;</dd>
+<dd>
+<div class="block">Subscribe to feature refresh events
+ This callback is called when the features are successfully refreshed.</div>
+</dd>
 <dt><a href="growthbook/sdk/java/FeatureRefreshCallback.html#onRefresh(java.lang.String)" class="member-name-link">onRefresh(String)</a> - Method in interface growthbook.sdk.java.<a href="growthbook/sdk/java/FeatureRefreshCallback.html" title="interface in growthbook.sdk.java">FeatureRefreshCallback</a></dt>
-<dd>&nbsp;</dd>
+<dd>
+<div class="block">See <a href="growthbook/sdk/java/GBFeaturesRepository.html#onFeaturesRefresh(growthbook.sdk.java.FeatureRefreshCallback)"><code>GBFeaturesRepository.onFeaturesRefresh(FeatureRefreshCallback)</code></a></div>
+</dd>
 <dt><a href="growthbook/sdk/java/ExperimentRunCallback.html#onRun(growthbook.sdk.java.ExperimentResult)" class="member-name-link">onRun(ExperimentResult)</a> - Method in interface growthbook.sdk.java.<a href="growthbook/sdk/java/ExperimentRunCallback.html" title="interface in growthbook.sdk.java">ExperimentRunCallback</a></dt>
 <dd>
 <div class="block">A callback to be executed with an <a href="growthbook/sdk/java/ExperimentResult.html" title="class in growthbook.sdk.java"><code>ExperimentResult</code></a> whenever an experiment is run.</div>
@@ -508,6 +515,10 @@ loadScripts(document, 'script');</script>
 <dt><a href="growthbook/sdk/java/FeatureResultSource.html#UNKNOWN_FEATURE" class="member-name-link">UNKNOWN_FEATURE</a> - Enum constant in enum class growthbook.sdk.java.<a href="growthbook/sdk/java/FeatureResultSource.html" title="enum class in growthbook.sdk.java">FeatureResultSource</a></dt>
 <dd>
 <div class="block">When the feature is unknown</div>
+</dd>
+<dt><a href="growthbook/sdk/java/FeatureResultSource.html#URL_OVERRIDE" class="member-name-link">URL_OVERRIDE</a> - Enum constant in enum class growthbook.sdk.java.<a href="growthbook/sdk/java/FeatureResultSource.html" title="enum class in growthbook.sdk.java">FeatureResultSource</a></dt>
+<dd>
+<div class="block">When the value is assigned due to forced feature assignment via the URL</div>
 </dd>
 </dl>
 <h2 class="title" id="I:V">V</h2>
