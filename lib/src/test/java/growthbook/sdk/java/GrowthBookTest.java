@@ -6,6 +6,7 @@ package growthbook.sdk.java;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import com.google.gson.annotations.SerializedName;
 import com.google.gson.reflect.TypeToken;
 import growthbook.sdk.java.testhelpers.PaperCupsConfig;
 import growthbook.sdk.java.testhelpers.TestCasesJsonHelper;
@@ -64,7 +65,7 @@ class GrowthBookTest {
             String expectedString = testCase.get("result").getAsString();
             FeatureResult expectedResult = jsonUtils.gson.fromJson(expectedString, FeatureResult.class);
 
-            FeatureResult<Object> result = subject.evalFeature(featureKey);
+            FeatureResult<Object> result = subject.evalFeature(featureKey, Object.class);
 //            System.out.printf("\n\n Eval Feature result: %s - JSON: %s", result, result.toJson());
 
             boolean passes = expectedResult.equals(result);
@@ -432,6 +433,8 @@ class GrowthBookTest {
         verify(mockCallback2, times(1)).onRun(result2);
     }
 
+    // region getFeatureValue
+
     @Test
     void test_getFeatureValue_string_nullValueUsesDefaultValue() {
         String featureKey = "some-unknown-feature-key";
@@ -527,4 +530,397 @@ class GrowthBookTest {
         assertNotNull(result);
         assertEquals(defaultConfig, result);
     }
+
+    // endregion getFeatureValue
+
+
+    // region URL -> force features
+
+    @Test
+    void test_withUrl_getFeatureValue_forcesBooleanValue_true() {
+        String featuresJson = "{\"status\":200,\"features\":{\"banner_text\":{\"defaultValue\":\"Welcome to Acme Donuts!\",\"rules\":[{\"condition\":{\"country\":\"france\"},\"force\":\"Bienvenue au Beignets Acme !\"},{\"condition\":{\"country\":\"spain\"},\"force\":\"¡Bienvenidos y bienvenidas a Donas Acme!\"}]},\"dark_mode\":{\"defaultValue\":false,\"rules\":[{\"condition\":{\"loggedIn\":true},\"force\":true,\"coverage\":0.5,\"hashAttribute\":\"id\"}]},\"donut_price\":{\"defaultValue\":2.5,\"rules\":[{\"condition\":{\"employee\":true},\"force\":0}]},\"meal_overrides_gluten_free\":{\"defaultValue\":{\"meal_type\":\"standard\",\"dessert\":\"Strawberry Cheesecake\"},\"rules\":[{\"condition\":{\"dietaryRestrictions\":{\"$elemMatch\":{\"$eq\":\"gluten_free\"}}},\"force\":{\"meal_type\":\"gf\",\"dessert\":\"French Vanilla Ice Cream\"}}]}},\"dateUpdated\":\"2023-01-11T00:26:01.745Z\"}";
+        String attributes = "{}";
+        String url = "http://localhost:8080/url-feature-force?gb~meal_overrides_gluten_free=%7B%22meal_type%22%3A%20%22gf%22%2C%20%22dessert%22%3A%20%22French%20Vanilla%20Ice%20Cream%22%7D&gb~dark_mode=true&gb~donut_price=3.33&gb~banner_text=Hello%2C%20everyone!%20I%20hope%20you%20are%20all%20doing%20well!";
+
+        GBContext context = GBContext
+            .builder()
+            .featuresJson(featuresJson)
+            .attributesJson(attributes)
+            .url(url)
+            .allowUrlOverrides(true)
+            .build();
+        GrowthBook subject = new GrowthBook(context);
+
+        Boolean result = subject.getFeatureValue("dark_mode", false);
+
+        assertEquals(true, result);
+    }
+
+    @Test
+    void test_withUrl_getFeatureValue_forcesBooleanValue_on() {
+        String featuresJson = "{\"status\":200,\"features\":{\"banner_text\":{\"defaultValue\":\"Welcome to Acme Donuts!\",\"rules\":[{\"condition\":{\"country\":\"france\"},\"force\":\"Bienvenue au Beignets Acme !\"},{\"condition\":{\"country\":\"spain\"},\"force\":\"¡Bienvenidos y bienvenidas a Donas Acme!\"}]},\"dark_mode\":{\"defaultValue\":false,\"rules\":[{\"condition\":{\"loggedIn\":true},\"force\":true,\"coverage\":0.5,\"hashAttribute\":\"id\"}]},\"donut_price\":{\"defaultValue\":2.5,\"rules\":[{\"condition\":{\"employee\":true},\"force\":0}]},\"meal_overrides_gluten_free\":{\"defaultValue\":{\"meal_type\":\"standard\",\"dessert\":\"Strawberry Cheesecake\"},\"rules\":[{\"condition\":{\"dietaryRestrictions\":{\"$elemMatch\":{\"$eq\":\"gluten_free\"}}},\"force\":{\"meal_type\":\"gf\",\"dessert\":\"French Vanilla Ice Cream\"}}]}},\"dateUpdated\":\"2023-01-11T00:26:01.745Z\"}";
+        String attributes = "{}";
+        String url = "http://localhost:8080/url-feature-force?gb~meal_overrides_gluten_free=%7B%22meal_type%22%3A%20%22gf%22%2C%20%22dessert%22%3A%20%22French%20Vanilla%20Ice%20Cream%22%7D&gb~dark_mode=on&gb~donut_price=3.33&gb~banner_text=Hello%2C%20everyone!%20I%20hope%20you%20are%20all%20doing%20well!";
+
+        GBContext context = GBContext
+            .builder()
+            .featuresJson(featuresJson)
+            .attributesJson(attributes)
+            .url(url)
+            .allowUrlOverrides(true)
+            .build();
+        GrowthBook subject = new GrowthBook(context);
+
+        Boolean result = subject.getFeatureValue("dark_mode", false);
+
+        assertEquals(true, result);
+    }
+
+    @Test
+    void test_withUrl_getFeatureValue_forcesBooleanValue_1() {
+        String featuresJson = "{\"status\":200,\"features\":{\"banner_text\":{\"defaultValue\":\"Welcome to Acme Donuts!\",\"rules\":[{\"condition\":{\"country\":\"france\"},\"force\":\"Bienvenue au Beignets Acme !\"},{\"condition\":{\"country\":\"spain\"},\"force\":\"¡Bienvenidos y bienvenidas a Donas Acme!\"}]},\"dark_mode\":{\"defaultValue\":false,\"rules\":[{\"condition\":{\"loggedIn\":true},\"force\":true,\"coverage\":0.5,\"hashAttribute\":\"id\"}]},\"donut_price\":{\"defaultValue\":2.5,\"rules\":[{\"condition\":{\"employee\":true},\"force\":0}]},\"meal_overrides_gluten_free\":{\"defaultValue\":{\"meal_type\":\"standard\",\"dessert\":\"Strawberry Cheesecake\"},\"rules\":[{\"condition\":{\"dietaryRestrictions\":{\"$elemMatch\":{\"$eq\":\"gluten_free\"}}},\"force\":{\"meal_type\":\"gf\",\"dessert\":\"French Vanilla Ice Cream\"}}]}},\"dateUpdated\":\"2023-01-11T00:26:01.745Z\"}";
+        String attributes = "{}";
+        String url = "http://localhost:8080/url-feature-force?gb~meal_overrides_gluten_free=%7B%22meal_type%22%3A%20%22gf%22%2C%20%22dessert%22%3A%20%22French%20Vanilla%20Ice%20Cream%22%7D&gb~dark_mode=1&gb~donut_price=3.33&gb~banner_text=Hello%2C%20everyone!%20I%20hope%20you%20are%20all%20doing%20well!";
+
+        GBContext context = GBContext
+            .builder()
+            .featuresJson(featuresJson)
+            .attributesJson(attributes)
+            .url(url)
+            .allowUrlOverrides(true)
+            .build();
+        GrowthBook subject = new GrowthBook(context);
+
+        Boolean result = subject.getFeatureValue("dark_mode", false);
+
+        assertEquals(true, result);
+    }
+
+    @Test
+    void test_withUrl_getFeatureValue_forcesBooleanValue_false() {
+        String featuresJson = "{\"status\":200,\"features\":{\"banner_text\":{\"defaultValue\":\"Welcome to Acme Donuts!\",\"rules\":[{\"condition\":{\"country\":\"france\"},\"force\":\"Bienvenue au Beignets Acme !\"},{\"condition\":{\"country\":\"spain\"},\"force\":\"¡Bienvenidos y bienvenidas a Donas Acme!\"}]},\"dark_mode\":{\"defaultValue\":false,\"rules\":[{\"condition\":{\"loggedIn\":true},\"force\":true,\"coverage\":0.5,\"hashAttribute\":\"id\"}]},\"donut_price\":{\"defaultValue\":2.5,\"rules\":[{\"condition\":{\"employee\":true},\"force\":0}]},\"meal_overrides_gluten_free\":{\"defaultValue\":{\"meal_type\":\"standard\",\"dessert\":\"Strawberry Cheesecake\"},\"rules\":[{\"condition\":{\"dietaryRestrictions\":{\"$elemMatch\":{\"$eq\":\"gluten_free\"}}},\"force\":{\"meal_type\":\"gf\",\"dessert\":\"French Vanilla Ice Cream\"}}]}},\"dateUpdated\":\"2023-01-11T00:26:01.745Z\"}";
+        String attributes = "{}";
+        String url = "http://localhost:8080/url-feature-force?gb~meal_overrides_gluten_free=%7B%22meal_type%22%3A%20%22gf%22%2C%20%22dessert%22%3A%20%22French%20Vanilla%20Ice%20Cream%22%7D&gb~dark_mode=false&gb~donut_price=3.33&gb~banner_text=Hello%2C%20everyone!%20I%20hope%20you%20are%20all%20doing%20well!";
+
+        GBContext context = GBContext
+            .builder()
+            .featuresJson(featuresJson)
+            .attributesJson(attributes)
+            .url(url)
+            .allowUrlOverrides(true)
+            .build();
+        GrowthBook subject = new GrowthBook(context);
+
+        Boolean result = subject.getFeatureValue("dark_mode", true);
+
+        assertEquals(false, result);
+    }
+
+    @Test
+    void test_withUrl_getFeatureValue_forcesBooleanValue_off() {
+        String featuresJson = "{\"status\":200,\"features\":{\"banner_text\":{\"defaultValue\":\"Welcome to Acme Donuts!\",\"rules\":[{\"condition\":{\"country\":\"france\"},\"force\":\"Bienvenue au Beignets Acme !\"},{\"condition\":{\"country\":\"spain\"},\"force\":\"¡Bienvenidos y bienvenidas a Donas Acme!\"}]},\"dark_mode\":{\"defaultValue\":false,\"rules\":[{\"condition\":{\"loggedIn\":true},\"force\":true,\"coverage\":0.5,\"hashAttribute\":\"id\"}]},\"donut_price\":{\"defaultValue\":2.5,\"rules\":[{\"condition\":{\"employee\":true},\"force\":0}]},\"meal_overrides_gluten_free\":{\"defaultValue\":{\"meal_type\":\"standard\",\"dessert\":\"Strawberry Cheesecake\"},\"rules\":[{\"condition\":{\"dietaryRestrictions\":{\"$elemMatch\":{\"$eq\":\"gluten_free\"}}},\"force\":{\"meal_type\":\"gf\",\"dessert\":\"French Vanilla Ice Cream\"}}]}},\"dateUpdated\":\"2023-01-11T00:26:01.745Z\"}";
+        String attributes = "{}";
+        String url = "http://localhost:8080/url-feature-force?gb~meal_overrides_gluten_free=%7B%22meal_type%22%3A%20%22gf%22%2C%20%22dessert%22%3A%20%22French%20Vanilla%20Ice%20Cream%22%7D&gb~dark_mode=off&gb~donut_price=3.33&gb~banner_text=Hello%2C%20everyone!%20I%20hope%20you%20are%20all%20doing%20well!";
+
+        GBContext context = GBContext
+            .builder()
+            .featuresJson(featuresJson)
+            .attributesJson(attributes)
+            .url(url)
+            .allowUrlOverrides(true)
+            .build();
+        GrowthBook subject = new GrowthBook(context);
+
+        Boolean result = subject.getFeatureValue("dark_mode", true);
+
+        assertEquals(false, result);
+    }
+
+    @Test
+    void test_withUrl_getFeatureValue_forcesBooleanValue_0() {
+        String featuresJson = "{\"status\":200,\"features\":{\"banner_text\":{\"defaultValue\":\"Welcome to Acme Donuts!\",\"rules\":[{\"condition\":{\"country\":\"france\"},\"force\":\"Bienvenue au Beignets Acme !\"},{\"condition\":{\"country\":\"spain\"},\"force\":\"¡Bienvenidos y bienvenidas a Donas Acme!\"}]},\"dark_mode\":{\"defaultValue\":false,\"rules\":[{\"condition\":{\"loggedIn\":true},\"force\":true,\"coverage\":0.5,\"hashAttribute\":\"id\"}]},\"donut_price\":{\"defaultValue\":2.5,\"rules\":[{\"condition\":{\"employee\":true},\"force\":0}]},\"meal_overrides_gluten_free\":{\"defaultValue\":{\"meal_type\":\"standard\",\"dessert\":\"Strawberry Cheesecake\"},\"rules\":[{\"condition\":{\"dietaryRestrictions\":{\"$elemMatch\":{\"$eq\":\"gluten_free\"}}},\"force\":{\"meal_type\":\"gf\",\"dessert\":\"French Vanilla Ice Cream\"}}]}},\"dateUpdated\":\"2023-01-11T00:26:01.745Z\"}";
+        String attributes = "{}";
+        String url = "http://localhost:8080/url-feature-force?gb~meal_overrides_gluten_free=%7B%22meal_type%22%3A%20%22gf%22%2C%20%22dessert%22%3A%20%22French%20Vanilla%20Ice%20Cream%22%7D&gb~dark_mode=0&gb~donut_price=3.33&gb~banner_text=Hello%2C%20everyone!%20I%20hope%20you%20are%20all%20doing%20well!";
+
+        GBContext context = GBContext
+            .builder()
+            .featuresJson(featuresJson)
+            .attributesJson(attributes)
+            .url(url)
+            .allowUrlOverrides(true)
+            .build();
+        GrowthBook subject = new GrowthBook(context);
+
+        Boolean result = subject.getFeatureValue("dark_mode", true);
+
+        assertEquals(false, result);
+    }
+
+    @Test
+    void test_withUrl_getFeatureValue_forcesIntegerValue() {
+        String featuresJson = "{\"status\":200,\"features\":{\"banner_text\":{\"defaultValue\":\"Welcome to Acme Donuts!\",\"rules\":[{\"condition\":{\"country\":\"france\"},\"force\":\"Bienvenue au Beignets Acme !\"},{\"condition\":{\"country\":\"spain\"},\"force\":\"¡Bienvenidos y bienvenidas a Donas Acme!\"}]},\"dark_mode\":{\"defaultValue\":false,\"rules\":[{\"condition\":{\"loggedIn\":true},\"force\":true,\"coverage\":0.5,\"hashAttribute\":\"id\"}]},\"donut_price\":{\"defaultValue\":2.5,\"rules\":[{\"condition\":{\"employee\":true},\"force\":0}]},\"meal_overrides_gluten_free\":{\"defaultValue\":{\"meal_type\":\"standard\",\"dessert\":\"Strawberry Cheesecake\"},\"rules\":[{\"condition\":{\"dietaryRestrictions\":{\"$elemMatch\":{\"$eq\":\"gluten_free\"}}},\"force\":{\"meal_type\":\"gf\",\"dessert\":\"French Vanilla Ice Cream\"}}]}},\"dateUpdated\":\"2023-01-11T00:26:01.745Z\"}";
+        String attributes = "{}";
+        String url = "http://localhost:8080/url-feature-force?gb~meal_overrides_gluten_free=%7B%22meal_type%22%3A%20%22gf%22%2C%20%22dessert%22%3A%20%22French%20Vanilla%20Ice%20Cream%22%7D&gb~dark_mode=true&gb~donut_price=2&gb~banner_text=Hello%2C%20everyone!%20I%20hope%20you%20are%20all%20doing%20well!";
+
+        GBContext context = GBContext
+            .builder()
+            .featuresJson(featuresJson)
+            .attributesJson(attributes)
+            .url(url)
+            .allowUrlOverrides(true)
+            .build();
+        GrowthBook subject = new GrowthBook(context);
+
+        Integer result = subject.getFeatureValue("donut_price", 999);
+
+        assertEquals(2, result);
+    }
+
+    @Test
+    void test_withUrl_getFeatureValue_forcesFloatValue() {
+        String featuresJson = "{\"status\":200,\"features\":{\"banner_text\":{\"defaultValue\":\"Welcome to Acme Donuts!\",\"rules\":[{\"condition\":{\"country\":\"france\"},\"force\":\"Bienvenue au Beignets Acme !\"},{\"condition\":{\"country\":\"spain\"},\"force\":\"¡Bienvenidos y bienvenidas a Donas Acme!\"}]},\"dark_mode\":{\"defaultValue\":false,\"rules\":[{\"condition\":{\"loggedIn\":true},\"force\":true,\"coverage\":0.5,\"hashAttribute\":\"id\"}]},\"donut_price\":{\"defaultValue\":2.5,\"rules\":[{\"condition\":{\"employee\":true},\"force\":0}]},\"meal_overrides_gluten_free\":{\"defaultValue\":{\"meal_type\":\"standard\",\"dessert\":\"Strawberry Cheesecake\"},\"rules\":[{\"condition\":{\"dietaryRestrictions\":{\"$elemMatch\":{\"$eq\":\"gluten_free\"}}},\"force\":{\"meal_type\":\"gf\",\"dessert\":\"French Vanilla Ice Cream\"}}]}},\"dateUpdated\":\"2023-01-11T00:26:01.745Z\"}";
+        String attributes = "{}";
+        String url = "http://localhost:8080/url-feature-force?gb~meal_overrides_gluten_free=%7B%22meal_type%22%3A%20%22gf%22%2C%20%22dessert%22%3A%20%22French%20Vanilla%20Ice%20Cream%22%7D&gb~dark_mode=true&gb~donut_price=3.33&gb~banner_text=Hello%2C%20everyone!%20I%20hope%20you%20are%20all%20doing%20well!";
+        GBContext context = GBContext
+            .builder()
+            .featuresJson(featuresJson)
+            .attributesJson(attributes)
+            .url(url)
+            .allowUrlOverrides(true)
+            .build();
+        GrowthBook subject = new GrowthBook(context);
+
+        Float result = subject.getFeatureValue("donut_price", 9999f);
+
+        assertEquals(3.33f, result);
+    }
+
+    @Test
+    void test_withUrl_getFeatureValue_forcesStringValue() {
+        String featuresJson = "{\"status\":200,\"features\":{\"banner_text\":{\"defaultValue\":\"Welcome to Acme Donuts!\",\"rules\":[{\"condition\":{\"country\":\"france\"},\"force\":\"Bienvenue au Beignets Acme !\"},{\"condition\":{\"country\":\"spain\"},\"force\":\"¡Bienvenidos y bienvenidas a Donas Acme!\"}]},\"dark_mode\":{\"defaultValue\":false,\"rules\":[{\"condition\":{\"loggedIn\":true},\"force\":true,\"coverage\":0.5,\"hashAttribute\":\"id\"}]},\"donut_price\":{\"defaultValue\":2.5,\"rules\":[{\"condition\":{\"employee\":true},\"force\":0}]},\"meal_overrides_gluten_free\":{\"defaultValue\":{\"meal_type\":\"standard\",\"dessert\":\"Strawberry Cheesecake\"},\"rules\":[{\"condition\":{\"dietaryRestrictions\":{\"$elemMatch\":{\"$eq\":\"gluten_free\"}}},\"force\":{\"meal_type\":\"gf\",\"dessert\":\"French Vanilla Ice Cream\"}}]}},\"dateUpdated\":\"2023-01-11T00:26:01.745Z\"}";
+        String attributes = "{}";
+        String url = "http://localhost:8080/url-feature-force?gb~meal_overrides_gluten_free=%7B%22meal_type%22%3A%20%22gf%22%2C%20%22dessert%22%3A%20%22French%20Vanilla%20Ice%20Cream%22%7D&gb~dark_mode=true&gb~donut_price=3.33&gb~banner_text=Hello%2C%20everyone!%20I%20hope%20you%20are%20all%20doing%20well!";
+        GBContext context = GBContext
+            .builder()
+            .featuresJson(featuresJson)
+            .attributesJson(attributes)
+            .url(url)
+            .allowUrlOverrides(true)
+            .build();
+        GrowthBook subject = new GrowthBook(context);
+
+        String result = subject.getFeatureValue("banner_text", "???");
+        assertEquals("Hello, everyone! I hope you are all doing well!", result);
+    }
+
+    // JSON example -> use built-in Gson support
+    @Test
+    void test_withUrl_getFeatureValue_forcesJsonValue_Gson() {
+        String featuresJson = "{\"status\":200,\"features\":{\"banner_text\":{\"defaultValue\":\"Welcome to Acme Donuts!\",\"rules\":[{\"condition\":{\"country\":\"france\"},\"force\":\"Bienvenue au Beignets Acme !\"},{\"condition\":{\"country\":\"spain\"},\"force\":\"¡Bienvenidos y bienvenidas a Donas Acme!\"}]},\"dark_mode\":{\"defaultValue\":false,\"rules\":[{\"condition\":{\"loggedIn\":true},\"force\":true,\"coverage\":0.5,\"hashAttribute\":\"id\"}]},\"donut_price\":{\"defaultValue\":2.5,\"rules\":[{\"condition\":{\"employee\":true},\"force\":0}]},\"meal_overrides_gluten_free\":{\"defaultValue\":{\"meal_type\":\"standard\",\"dessert\":\"Strawberry Cheesecake\"},\"rules\":[{\"condition\":{\"dietaryRestrictions\":{\"$elemMatch\":{\"$eq\":\"gluten_free\"}}},\"force\":{\"meal_type\":\"gf\",\"dessert\":\"French Vanilla Ice Cream\"}}]}},\"dateUpdated\":\"2023-01-11T00:26:01.745Z\"}";
+        String attributes = "{}";
+        String url = "http://localhost:8080/url-feature-force?gb~meal_overrides_gluten_free=%7B%22meal_type%22%3A%20%22gf%22%2C%20%22dessert%22%3A%20%22French%20Vanilla%20Ice%20Cream%22%7D&gb~dark_mode=true&gb~donut_price=3.33&gb~banner_text=Hello%2C%20everyone!%20I%20hope%20you%20are%20all%20doing%20well!";
+
+        GBContext context = GBContext
+            .builder()
+            .featuresJson(featuresJson)
+            .attributesJson(attributes)
+            .url(url)
+            .allowUrlOverrides(true)
+            .build();
+        GrowthBook subject = new GrowthBook(context);
+
+        MealOrder emptyMealOrder = new MealOrder(MealType.STANDARD, "Donut");
+
+        MealOrder result = (MealOrder) subject.getFeatureValue("meal_overrides_gluten_free", emptyMealOrder);
+
+        assertEquals(MealType.GLUTEN_FREE, result.getMealType());
+        assertEquals("French Vanilla Ice Cream", result.getDessert());
+    }
+
+    // JSON example -> use your own JSON deserialization implementation
+    @Test
+    void test_withUrl_getFeatureValue_jsonValueFromString() {
+        String featuresJson = "{\"status\":200,\"features\":{\"banner_text\":{\"defaultValue\":\"Welcome to Acme Donuts!\",\"rules\":[{\"condition\":{\"country\":\"france\"},\"force\":\"Bienvenue au Beignets Acme !\"},{\"condition\":{\"country\":\"spain\"},\"force\":\"¡Bienvenidos y bienvenidas a Donas Acme!\"}]},\"dark_mode\":{\"defaultValue\":false,\"rules\":[{\"condition\":{\"loggedIn\":true},\"force\":true,\"coverage\":0.5,\"hashAttribute\":\"id\"}]},\"donut_price\":{\"defaultValue\":2.5,\"rules\":[{\"condition\":{\"employee\":true},\"force\":0}]},\"meal_overrides_gluten_free\":{\"defaultValue\":{\"meal_type\":\"standard\",\"dessert\":\"Strawberry Cheesecake\"},\"rules\":[{\"condition\":{\"dietaryRestrictions\":{\"$elemMatch\":{\"$eq\":\"gluten_free\"}}},\"force\":{\"meal_type\":\"gf\",\"dessert\":\"French Vanilla Ice Cream\"}}]}},\"dateUpdated\":\"2023-01-11T00:26:01.745Z\"}";
+        String attributes = "{}";
+        String url = "http://localhost:8080/url-feature-force?gb~meal_overrides_gluten_free=%7B%22meal_type%22%3A%20%22gf%22%2C%20%22dessert%22%3A%20%22French%20Vanilla%20Ice%20Cream%22%7D&gb~dark_mode=true&gb~donut_price=3.33&gb~banner_text=Hello%2C%20everyone!%20I%20hope%20you%20are%20all%20doing%20well!";
+
+        GBContext context = GBContext
+            .builder()
+            .featuresJson(featuresJson)
+            .attributesJson(attributes)
+            .url(url)
+            .allowUrlOverrides(true)
+            .build();
+        GrowthBook subject = new GrowthBook(context);
+
+        String resultAsString = (String) subject.getFeatureValue("meal_overrides_gluten_free", "{\"meal_type\": \"standard\", \"dessert\": \"Donut\"}");
+        // Custom deserialization example
+        MealOrder result = jsonUtils.gson.fromJson(resultAsString, MealOrder.class);
+
+        assertEquals(MealType.GLUTEN_FREE, result.getMealType());
+        assertEquals("French Vanilla Ice Cream", result.getDessert());
+    }
+
+    @Test
+    void test_withUrl_getFeatureValue_withForcedJsonValue_returnsDefaultValueWhenInvalid() {
+        String featuresJson = "{\"status\":200,\"features\":{\"banner_text\":{\"defaultValue\":\"Welcome to Acme Donuts!\",\"rules\":[{\"condition\":{\"country\":\"france\"},\"force\":\"Bienvenue au Beignets Acme !\"},{\"condition\":{\"country\":\"spain\"},\"force\":\"¡Bienvenidos y bienvenidas a Donas Acme!\"}]},\"dark_mode\":{\"defaultValue\":false,\"rules\":[{\"condition\":{\"loggedIn\":true},\"force\":true,\"coverage\":0.5,\"hashAttribute\":\"id\"}]},\"donut_price\":{\"defaultValue\":2.5,\"rules\":[{\"condition\":{\"employee\":true},\"force\":0}]},\"meal_overrides_gluten_free\":{\"defaultValue\":{\"meal_type\":\"standard\",\"dessert\":\"Strawberry Cheesecake\"},\"rules\":[{\"condition\":{\"dietaryRestrictions\":{\"$elemMatch\":{\"$eq\":\"gluten_free\"}}},\"force\":{\"meal_type\":\"gf\",\"dessert\":\"French Vanilla Ice Cream\"}}]}},\"dateUpdated\":\"2023-01-11T00:26:01.745Z\"}";
+        String attributes = "{}";
+        String url = "http://localhost:8080/url-feature-force?gb~meal_overrides_gluten_free=%7B%22meal_type%22%3A%20%22gf%22%2C%20%22dessert%22%3A%20%22French%20Vanilla%20Ice%20Cream%22%7D&gb~dark_mode=true&gb~donut_price=3.33&gb~banner_text=Hello%2C%20everyone!%20I%20hope%20you%20are%20all%20doing%20well!";
+
+        GBContext context = GBContext
+            .builder()
+            .featuresJson(featuresJson)
+            .attributesJson(attributes)
+            .url(url)
+            .allowUrlOverrides(true)
+            .build();
+        GrowthBook subject = new GrowthBook(context);
+
+        // We try to deserialize an unsupported class from the URL but it cannot deserialize properly, so we get the default value
+        GBTestingFoo defaultFoo = new GBTestingFoo();
+        GBTestingFoo result = (GBTestingFoo) subject.getFeatureValue("meal_overrides_gluten_free", defaultFoo);
+
+        assertEquals(defaultFoo, result);
+    }
+
+    enum MealType {
+        @SerializedName("standard")
+        STANDARD("Standard Meal"),
+
+        @SerializedName("gf")
+        GLUTEN_FREE("Gluten-Free Meal"),
+        ;
+
+        private final String rawValue;
+
+        MealType(String rawValue) {
+            this.rawValue = rawValue;
+        }
+
+        @Override
+        public String toString() {
+            return this.rawValue;
+        }
+    }
+
+    static class MealOrder {
+        @SerializedName("meal_type")
+        MealType mealType;
+
+        public MealType getMealType() {
+            return this.mealType;
+        }
+
+        @SerializedName("dessert")
+        String dessert;
+
+        public String getDessert() {
+            return this.dessert;
+        }
+
+        public MealOrder(MealType mealType, String dessert) {
+            this.mealType = mealType;
+            this.dessert = dessert;
+        }
+    }
+
+    static class GBTestingFoo {
+        @SerializedName("foo") String foo = "FOO!";
+
+        @Override
+        public boolean equals(Object obj) {
+            if (obj instanceof GBTestingFoo) {
+                return Objects.equals(((GBTestingFoo) obj).foo, this.foo);
+            }
+
+            return false;
+        }
+    }
+
+
+    // region URL -> force features -> evaluateFeature
+
+    @Test
+    void test_withUrl_evaluateFeature_forcesBooleanValue() {
+        String featuresJson = "{\"status\":200,\"features\":{\"banner_text\":{\"defaultValue\":\"Welcome to Acme Donuts!\",\"rules\":[{\"condition\":{\"country\":\"france\"},\"force\":\"Bienvenue au Beignets Acme !\"},{\"condition\":{\"country\":\"spain\"},\"force\":\"¡Bienvenidos y bienvenidas a Donas Acme!\"}]},\"dark_mode\":{\"defaultValue\":false,\"rules\":[{\"condition\":{\"loggedIn\":true},\"force\":true,\"coverage\":0.5,\"hashAttribute\":\"id\"}]},\"donut_price\":{\"defaultValue\":2.5,\"rules\":[{\"condition\":{\"employee\":true},\"force\":0}]},\"meal_overrides_gluten_free\":{\"defaultValue\":{\"meal_type\":\"standard\",\"dessert\":\"Strawberry Cheesecake\"},\"rules\":[{\"condition\":{\"dietaryRestrictions\":{\"$elemMatch\":{\"$eq\":\"gluten_free\"}}},\"force\":{\"meal_type\":\"gf\",\"dessert\":\"French Vanilla Ice Cream\"}}]}},\"dateUpdated\":\"2023-01-11T00:26:01.745Z\"}";
+        String attributes = "{}";
+        String url = "http://localhost:8080/url-feature-force?gb~meal_overrides_gluten_free=%7B%22meal_type%22%3A%20%22gf%22%2C%20%22dessert%22%3A%20%22French%20Vanilla%20Ice%20Cream%22%7D&gb~dark_mode=true&gb~donut_price=3.33&gb~banner_text=Hello%2C%20everyone!%20I%20hope%20you%20are%20all%20doing%20well!";
+        GBContext context = GBContext
+            .builder()
+            .featuresJson(featuresJson)
+            .attributesJson(attributes)
+            .url(url)
+            .allowUrlOverrides(true)
+            .build();
+        GrowthBook subject = new GrowthBook(context);
+
+        FeatureResult<Boolean> result = subject.evalFeature("dark_mode", Boolean.class);
+
+        assertEquals(true, result.getValue());
+        assertEquals(FeatureResultSource.URL_OVERRIDE, result.source);
+    }
+
+    @Test
+    void test_withUrl_evaluateFeature_forcesStringValue() {
+        String featuresJson = "{\"status\":200,\"features\":{\"banner_text\":{\"defaultValue\":\"Welcome to Acme Donuts!\",\"rules\":[{\"condition\":{\"country\":\"france\"},\"force\":\"Bienvenue au Beignets Acme !\"},{\"condition\":{\"country\":\"spain\"},\"force\":\"¡Bienvenidos y bienvenidas a Donas Acme!\"}]},\"dark_mode\":{\"defaultValue\":false,\"rules\":[{\"condition\":{\"loggedIn\":true},\"force\":true,\"coverage\":0.5,\"hashAttribute\":\"id\"}]},\"donut_price\":{\"defaultValue\":2.5,\"rules\":[{\"condition\":{\"employee\":true},\"force\":0}]},\"meal_overrides_gluten_free\":{\"defaultValue\":{\"meal_type\":\"standard\",\"dessert\":\"Strawberry Cheesecake\"},\"rules\":[{\"condition\":{\"dietaryRestrictions\":{\"$elemMatch\":{\"$eq\":\"gluten_free\"}}},\"force\":{\"meal_type\":\"gf\",\"dessert\":\"French Vanilla Ice Cream\"}}]}},\"dateUpdated\":\"2023-01-11T00:26:01.745Z\"}";
+        String attributes = "{}";
+        String url = "http://localhost:8080/url-feature-force?gb~meal_overrides_gluten_free=%7B%22meal_type%22%3A%20%22gf%22%2C%20%22dessert%22%3A%20%22French%20Vanilla%20Ice%20Cream%22%7D&gb~dark_mode=true&gb~donut_price=3.33&gb~banner_text=Hello%2C%20everyone!%20I%20hope%20you%20are%20all%20doing%20well!";
+        GBContext context = GBContext
+            .builder()
+            .featuresJson(featuresJson)
+            .attributesJson(attributes)
+            .url(url)
+            .allowUrlOverrides(true)
+            .build();
+        GrowthBook subject = new GrowthBook(context);
+
+        FeatureResult<String> result = subject.evalFeature("banner_text", String.class);
+
+        assertEquals("Hello, everyone! I hope you are all doing well!", result.getValue());
+        assertEquals(FeatureResultSource.URL_OVERRIDE, result.source);
+    }
+
+    @Test
+    void test_withUrl_evaluateFeature_forcesFloatValue() {
+        String featuresJson = "{\"status\":200,\"features\":{\"banner_text\":{\"defaultValue\":\"Welcome to Acme Donuts!\",\"rules\":[{\"condition\":{\"country\":\"france\"},\"force\":\"Bienvenue au Beignets Acme !\"},{\"condition\":{\"country\":\"spain\"},\"force\":\"¡Bienvenidos y bienvenidas a Donas Acme!\"}]},\"dark_mode\":{\"defaultValue\":false,\"rules\":[{\"condition\":{\"loggedIn\":true},\"force\":true,\"coverage\":0.5,\"hashAttribute\":\"id\"}]},\"donut_price\":{\"defaultValue\":2.5,\"rules\":[{\"condition\":{\"employee\":true},\"force\":0}]},\"meal_overrides_gluten_free\":{\"defaultValue\":{\"meal_type\":\"standard\",\"dessert\":\"Strawberry Cheesecake\"},\"rules\":[{\"condition\":{\"dietaryRestrictions\":{\"$elemMatch\":{\"$eq\":\"gluten_free\"}}},\"force\":{\"meal_type\":\"gf\",\"dessert\":\"French Vanilla Ice Cream\"}}]}},\"dateUpdated\":\"2023-01-11T00:26:01.745Z\"}";
+        String attributes = "{}";
+        String url = "http://localhost:8080/url-feature-force?gb~meal_overrides_gluten_free=%7B%22meal_type%22%3A%20%22gf%22%2C%20%22dessert%22%3A%20%22French%20Vanilla%20Ice%20Cream%22%7D&gb~dark_mode=true&gb~donut_price=3.33&gb~banner_text=Hello%2C%20everyone!%20I%20hope%20you%20are%20all%20doing%20well!";
+        GBContext context = GBContext
+            .builder()
+            .featuresJson(featuresJson)
+            .attributesJson(attributes)
+            .url(url)
+            .allowUrlOverrides(true)
+            .build();
+        GrowthBook subject = new GrowthBook(context);
+
+        FeatureResult<Float> result = subject.evalFeature("donut_price", Float.class);
+
+        assertEquals(3.33f, result.getValue());
+        assertEquals(FeatureResultSource.URL_OVERRIDE, result.source);
+    }
+
+    @Test
+    void test_withUrl_evaluateFeature_forcesIntegerValue() {
+        String featuresJson = "{\"status\":200,\"features\":{\"banner_text\":{\"defaultValue\":\"Welcome to Acme Donuts!\",\"rules\":[{\"condition\":{\"country\":\"france\"},\"force\":\"Bienvenue au Beignets Acme !\"},{\"condition\":{\"country\":\"spain\"},\"force\":\"¡Bienvenidos y bienvenidas a Donas Acme!\"}]},\"dark_mode\":{\"defaultValue\":false,\"rules\":[{\"condition\":{\"loggedIn\":true},\"force\":true,\"coverage\":0.5,\"hashAttribute\":\"id\"}]},\"donut_price\":{\"defaultValue\":2.5,\"rules\":[{\"condition\":{\"employee\":true},\"force\":0}]},\"meal_overrides_gluten_free\":{\"defaultValue\":{\"meal_type\":\"standard\",\"dessert\":\"Strawberry Cheesecake\"},\"rules\":[{\"condition\":{\"dietaryRestrictions\":{\"$elemMatch\":{\"$eq\":\"gluten_free\"}}},\"force\":{\"meal_type\":\"gf\",\"dessert\":\"French Vanilla Ice Cream\"}}]}},\"dateUpdated\":\"2023-01-11T00:26:01.745Z\"}";
+        String attributes = "{}";
+        String url = "http://localhost:8080/url-feature-force?gb~meal_overrides_gluten_free=%7B%22meal_type%22%3A%20%22gf%22%2C%20%22dessert%22%3A%20%22French%20Vanilla%20Ice%20Cream%22%7D&gb~dark_mode=true&gb~donut_price=4&gb~banner_text=Hello%2C%20everyone!%20I%20hope%20you%20are%20all%20doing%20well!";
+        GBContext context = GBContext
+            .builder()
+            .featuresJson(featuresJson)
+            .attributesJson(attributes)
+            .url(url)
+            .allowUrlOverrides(true)
+            .build();
+        GrowthBook subject = new GrowthBook(context);
+
+        FeatureResult<Integer> result = subject.evalFeature("donut_price", Integer.class);
+
+        assertEquals(4, result.getValue());
+        assertEquals(FeatureResultSource.URL_OVERRIDE, result.source);
+    }
+
+    // endregion URL -> force features -> evaluateFeature
+
+    // endregion URL -> force features
 }

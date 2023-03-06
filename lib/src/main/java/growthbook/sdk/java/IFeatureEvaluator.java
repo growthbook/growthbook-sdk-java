@@ -10,5 +10,5 @@ interface IFeatureEvaluator {
      * @return feature result
      * @throws ClassCastException When a value type fails to cast to the provided type, this can throw an exception
      */
-    <ValueType> FeatureResult<ValueType> evaluateFeature(String key, GBContext context);
+    <ValueType> FeatureResult<ValueType> evaluateFeature(String key, GBContext context, Class<ValueType> valueTypeClass);
 }

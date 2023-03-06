@@ -32,6 +32,7 @@ class GBContextTest {
     void canBeConstructed() {
         Boolean isEnabled = true;
         Boolean isQaMode = false;
+        Boolean allowUrlOverride = false;
         String url = "http://localhost:3000";
         HashMap<String, Integer> forcedVariations = new HashMap<String, Integer>();
         forcedVariations.put("my-test", 0);
@@ -45,6 +46,7 @@ class GBContextTest {
                 isEnabled,
                 isQaMode,
                 url,
+                allowUrlOverride,
                 forcedVariations,
                 trackingCallback
         );
@@ -105,6 +107,7 @@ class GBContextTest {
     void supportsEncryptedFeaturesUsingConstructor() {
         Boolean isEnabled = true;
         Boolean isQaMode = false;
+        Boolean allowUrlOverride = false;
         String url = "http://localhost:3000";
         HashMap<String, Integer> forcedVariations = new HashMap<String, Integer>();
         forcedVariations.put("my-test", 0);
@@ -119,6 +122,7 @@ class GBContextTest {
                 isEnabled,
                 isQaMode,
                 url,
+                allowUrlOverride,
                 forcedVariations,
                 trackingCallback
         );
@@ -132,6 +136,7 @@ class GBContextTest {
     void supportsEncryptedFeaturesUsingBuilder() {
         Boolean isEnabled = true;
         Boolean isQaMode = false;
+        Boolean allowUrlOverride = false;
         String url = "http://localhost:3000";
         HashMap<String, Integer> forcedVariations = new HashMap<String, Integer>();
         forcedVariations.put("my-test", 0);
@@ -144,6 +149,7 @@ class GBContextTest {
                 .enabled(isEnabled)
                 .attributesJson(sampleUserAttributes)
                 .url(url)
+                .allowUrlOverrides(allowUrlOverride)
                 .featuresJson(encryptedFeaturesJson)
                 .encryptionKey(encryptionKey)
                 .forcedVariationsMap(forcedVariations)

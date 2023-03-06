@@ -24,6 +24,11 @@ public enum FeatureResultSource {
     @SerializedName("force") FORCE("force"),
 
     /**
+     * When the value is assigned due to forced feature assignment via the URL
+     */
+    @SerializedName("urlOverride") URL_OVERRIDE("urlOverride"),
+
+    /**
      * When the value is assigned due to an experiment condition
      */
     @SerializedName("experiment") EXPERIMENT("experiment"),

@@ -26,8 +26,8 @@ class UrlUtils {
                 if (Objects.equals(name, "")) {
                     continue;
                 }
-                String value = keyValuePair.length > 1 ? URLDecoder.decode(
-                        keyValuePair[1], "UTF-8") : "";
+                String value = keyValuePair.length > 1 ? URLDecoder.decode(keyValuePair[1], "UTF-8") : "";
+
                 map.put(name, value);
             } catch (UnsupportedEncodingException e) {
                 e.printStackTrace();

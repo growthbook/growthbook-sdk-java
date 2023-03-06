@@ -11,7 +11,7 @@ interface IGrowthBook {
 
     // region Features
 
-    <ValueType> FeatureResult<ValueType> evalFeature(String key);
+    <ValueType> FeatureResult<ValueType> evalFeature(String key, Class<ValueType> valueTypeClass);
 
     /**
      * Call this with the JSON string returned from API.

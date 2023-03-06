@@ -1,5 +1,7 @@
 package growthbook.sdk.java;
 
+import com.google.gson.Gson;
+
 import javax.annotation.Nullable;
 import java.math.BigInteger;
 import java.net.MalformedURLException;
@@ -78,6 +80,8 @@ class GrowthBookUtils {
         return new ArrayList<Float>(Collections.nCopies(size, weight));
     }
 
+    // region Experiment for query string
+
     /**
      * This checks if an experiment variation is being forced via a URL query string.
      * This may not be applicable for all SDKs (e.g. mobile).
@@ -152,6 +156,164 @@ class GrowthBookUtils {
             return null;
         }
     }
+
+    // endregion Experiment for query string
+
+
+
+    // region Forced feature for URL
+
+    /**
+     * Given a URL and a feature key, will find the raw value in the URL if it exists, otherwise returns null
+     * @param featureKey  Feature ID/key (not prefixed with gb~)
+     * @param url  Page URL to evaluate for forced feature values
+     * @return forced feature value
+     */
+    private static @Nullable String getForcedFeatureRawValueForKeyFromUrl(String featureKey, URL url) {
+        String prefixedKey = "gb~" + featureKey;
+        Map<String, String> queryMap = UrlUtils.parseQueryString(url.getQuery());
+
+        if (!queryMap.containsKey(prefixedKey)) {
+            return null;
+        }
+
+        return queryMap.get(prefixedKey);
+    }
+
+    // region Forced feature for URL -> Boolean
+
+    /**
+     * Evaluate a forced boolean value from a URL. If the provided key is not present in the URL, return null.
+     * @param featureKey    feature ID/key (not prefixed with gb~)
+     * @param url    Page URL to evaluate for forced feature values
+     * @return  value or null
+     */
+    @Nullable
+    public static Boolean getForcedBooleanValueFromUrl(String featureKey, URL url) {
+        String value = getForcedFeatureRawValueForKeyFromUrl(featureKey, url);
+
+        if (value == null) return null;
+
+        value = value.toLowerCase();
+
+        if (value.equals("true") || value.equals("1") || value.equals("on")) {
+            return true;
+        }
+
+        if (value.equals("false") || value.equals("0") || value.equals("off")) {
+            return false;
+        }
+
+        return null;
+    }
+
+    // endregion Forced feature for URL -> Boolean
+
+    // region Forced feature for URL -> String
+
+    /**
+     * Evaluate a forced string value from a URL. If the provided key is not present in the URL, return null.
+     * @param featureKey    feature ID/key (not prefixed with gb~)
+     * @param url    Page URL to evaluate for forced feature values
+     * @return  value or null
+     */
+    @Nullable
+    public static String getForcedStringValueFromUrl(String featureKey, URL url) {
+        return getForcedFeatureRawValueForKeyFromUrl(featureKey, url);
+    }
+
+    // endregion Forced feature for URL -> String
+
+    // region Forced feature for URL -> Float
+
+    /**
+     * Evaluate a forced float value from a URL. If the provided key is not present in the URL, return null.
+     * @param featureKey    feature ID/key (not prefixed with gb~)
+     * @param url    Page URL to evaluate for forced feature values
+     * @return  value or null
+     */
+    @Nullable
+    public static Float getForcedFloatValueFromUrl(String featureKey, URL url) {
+        String value = getForcedFeatureRawValueForKeyFromUrl(featureKey, url);
+
+        if (value == null) return null;
+
+        try {
+            return Float.parseFloat(value);
+        } catch (NumberFormatException e) {
+            return null;
+        }
+    }
+
+    // endregion Forced feature for URL -> Float
+
+
+    // region Forced feature for URL -> Double
+
+    /**
+     * Evaluate a forced float value from a URL. If the provided key is not present in the URL, return null.
+     * @param featureKey    feature ID/key (not prefixed with gb~)
+     * @param url    Page URL to evaluate for forced feature values
+     * @return  value or null
+     */
+    @Nullable
+    public static Double getForcedDoubleValueFromUrl(String featureKey, URL url) {
+        String value = getForcedFeatureRawValueForKeyFromUrl(featureKey, url);
+
+        if (value == null) return null;
+
+        try {
+            return Double.parseDouble(value);
+        } catch (NumberFormatException e) {
+            return null;
+        }
+    }
+
+    // endregion Forced feature for URL -> Double
+
+
+    // region Forced feature for URL -> Integer
+
+    /**
+     * Evaluate a forced integer value from a URL. If the provided key is not present in the URL, return null.
+     * @param featureKey    feature ID/key (not prefixed with gb~)
+     * @param url    Page URL to evaluate for forced feature values
+     * @return  value or null
+     */
+    @Nullable
+    public static Integer getForcedIntegerValueFromUrl(String featureKey, URL url) {
+        String value = getForcedFeatureRawValueForKeyFromUrl(featureKey, url);
+
+        if (value == null) return null;
+
+        try {
+            return Integer.parseInt(value);
+        } catch (NumberFormatException e) {
+            return null;
+        }
+    }
+
+    // endregion Forced feature for URL -> Integer
+
+    // region Forced feature for URL -> Objects
+
+    @Nullable
+    public static <ValueType> ValueType getForcedSerializableValueFromUrl(String featureKey, URL url, Class<ValueType> valueTypeClass, Gson gson) {
+        String value = getForcedFeatureRawValueForKeyFromUrl(featureKey, url);
+
+        if (value == null) return null;
+
+        try {
+            return gson.fromJson(value, valueTypeClass);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return null;
+        }
+    }
+
+    // endregion Forced feature for URL -> Objects
+
+    // endregion Forced feature for URL
 
     /**
      * This converts and experiment's coverage and variation weights into an array of bucket ranges.
