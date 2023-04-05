@@ -32,7 +32,7 @@ class GrowthBookUtilsTest {
             String input = kv.get(0).getAsString();
             Float expected = kv.get(1).getAsFloat();
 
-            assertEquals(expected, GrowthBookUtils.hash(input));
+            assertEquals(expected, GrowthBookUtils.hash(input, HashVersion.V1));
         });
     }
 
@@ -52,7 +52,7 @@ class GrowthBookUtilsTest {
 
             assertEquals(
                     expected,
-                    GrowthBookUtils.inNameSpace(userId, namespace),
+                    GrowthBookUtils.inNameSpace(userId, namespace, HashVersion.V1),
                     String.format("Namespace test case failure: %s", testDescription)
             );
         });

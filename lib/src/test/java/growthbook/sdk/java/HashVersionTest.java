@@ -21,5 +21,6 @@ class HashVersionTest {
     void test_fromInt() {
         assertEquals(HashVersion.V1, HashVersion.fromInt(1));
         assertEquals(HashVersion.V2, HashVersion.fromInt(2));
+        assertNull(HashVersion.fromInt(3));
     }
 }

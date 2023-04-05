@@ -122,7 +122,7 @@ class FeatureEvaluator implements IFeatureEvaluator {
                         }
 
                         String attrValue = attrValueElement.getAsString();
-                        Float hashFnv = GrowthBookUtils.hash(attrValue + key);
+                        Float hashFnv = GrowthBookUtils.hash(attrValue + key, context.getHashVersion());
                         if (hashFnv > rule.getCoverage()) {
                             continue;
                         }

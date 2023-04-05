@@ -77,7 +77,7 @@ class ExperimentEvaluator implements IExperimentEvaluator {
         // user is not in the experiment, variation 0.
         Namespace namespace = experiment.getNamespace();
         if (namespace != null) {
-            Boolean isInNamespace = GrowthBookUtils.inNameSpace(attributeValue, namespace);
+            Boolean isInNamespace = GrowthBookUtils.inNameSpace(attributeValue, namespace, context.getHashVersion());
             if (!isInNamespace) {
                 return getExperimentResult(experiment, context, 0, false, false, featureId);
             }
@@ -115,7 +115,7 @@ class ExperimentEvaluator implements IExperimentEvaluator {
 
         // Assigned variations
         // If not assigned a variation (-1), not in experiment, variation 0
-        Float hash = GrowthBookUtils.hash(attributeValue + experiment.getKey());
+        Float hash = GrowthBookUtils.hash(attributeValue + experiment.getKey(), context.getHashVersion());
         Integer assignedVariation = GrowthBookUtils.chooseVariation(hash, bucketRanges);
         if (assignedVariation == -1) {
             return getExperimentResult(experiment, context, 0, false, false, featureId);

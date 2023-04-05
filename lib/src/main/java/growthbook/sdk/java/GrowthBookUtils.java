@@ -1,6 +1,7 @@
 package growthbook.sdk.java;
 
 import com.google.gson.Gson;
+import sun.reflect.generics.reflectiveObjects.NotImplementedException;
 
 import javax.annotation.Nullable;
 import java.math.BigInteger;
@@ -19,9 +20,21 @@ class GrowthBookUtils {
      * Uses the simple Fowler–Noll–Vo algorithm, specifically fnv32a.
      *
      * @param stringValue Input string
+     * @param hashVersion The hash version
      * @return hashed float value
      */
-    public static Float hash(String stringValue) {
+    public static Float hash(String stringValue, HashVersion hashVersion) {
+        switch (hashVersion) {
+            case V2:
+                return hashV2(stringValue);
+
+            case V1:
+            default:
+                return hashV1(stringValue);
+        }
+    }
+
+    private static Float hashV1(String stringValue) {
         BigInteger bigInt = MathUtils.fnv1a_32(stringValue.getBytes());
         BigInteger thousand = new BigInteger("1000");
         BigInteger remainder = bigInt.remainder(thousand);
@@ -31,6 +44,10 @@ class GrowthBookUtils {
         return remainderAsFloat / 1000f;
     }
 
+    private static Float hashV2(String stringValue) {
+        throw new NotImplementedException();
+    }
+
     /**
      * This checks if a userId is within an experiment namespace or not.
      *
@@ -38,8 +55,8 @@ class GrowthBookUtils {
      * @param namespace Namespace to check the user identifier against
      * @return whether the user is in the namespace
      */
-    public static Boolean inNameSpace(String userId, Namespace namespace) {
-        Float n = hash(userId + "__" + namespace.getId());
+    public static Boolean inNameSpace(String userId, Namespace namespace, HashVersion hashVersion) {
+        Float n = hash(userId + "__" + namespace.getId(), hashVersion);
         return n >= namespace.getRangeStart() && n < namespace.getRangeEnd();
     }
 
