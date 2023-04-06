@@ -12,23 +12,10 @@ import javax.annotation.Nullable;
 import java.lang.reflect.Type;
 
 /**
- * The result of running an {@link Experiment} given a specific {@link GBContext}
- *
- * <ul>
- * <li>inExperiment (boolean) - Whether or not the user is part of the experiment</li>
- * <li>variationId (int) - The array index of the assigned variation</li>
- * <li>value (any) - The array value of the assigned variation</li>
- * <li>hashUsed (boolean) - If a hash was used to assign a variation</li>
- * <li>hashAttribute (string) - The user attribute used to assign a variation</li>
- * <li>hashValue (string) - The value of that attribute</li>
- * <li>featureId (string or null) - The id of the feature (if any) that the experiment came from</li>
- * </ul>
- *
+ * The result of an {@link GrowthBook#run(Experiment)} call
  * @param <ValueType> generic type for the value type for this experiment's variations.
  */
 @Data
-@Builder
-@AllArgsConstructor
 public class ExperimentResult<ValueType> {
     @Nullable
     ValueType value;
@@ -36,12 +23,10 @@ public class ExperimentResult<ValueType> {
     @Nullable
     Integer variationId;
 
-    @Builder.Default
-    Boolean inExperiment = false;
+    Boolean inExperiment;
 
     @Nullable
-    @Builder.Default
-    String hashAttribute = "id";
+    String hashAttribute;
 
     @Nullable
     String hashValue;
@@ -49,9 +34,58 @@ public class ExperimentResult<ValueType> {
     @Nullable
     String featureId;
 
-    @Builder.Default
-    Boolean hashUsed = false;
+    Boolean hashUsed;
 
+    @Nullable
+    String key;
+
+    @Nullable
+    String name;
+
+    @Nullable
+    Integer bucket;
+
+    @Nullable
+    Boolean passThrough;
+
+    /**
+     * The result of running an {@link Experiment} given a specific {@link GBContext}
+     *
+     * @param value The array value of the assigned variation
+     * @param variationId The array index of the assigned variation
+     * @param inExperiment Whether the user is part of the experiment or not
+     * @param hashAttribute The user attribute used to assign a variation (default: "id")
+     * @param hashValue The value of that attribute
+     * @param featureId The id of the feature (if any) that the experiment came from
+     * @param hashUsed If a hash was used to assign a variation
+     * @param key The experiment key, if any
+     */
+    @Builder
+    public ExperimentResult(
+        @Nullable ValueType value,
+        @Nullable Integer variationId,
+        Boolean inExperiment,
+        @Nullable String hashAttribute,
+        @Nullable String hashValue,
+        @Nullable String featureId,
+        Boolean hashUsed,
+        @Nullable String key,
+        @Nullable String name,
+        @Nullable Integer bucket,
+        @Nullable Boolean passThrough
+    ) {
+        this.value = value;
+        this.variationId = variationId;
+        this.inExperiment = inExperiment == null ? false : inExperiment;
+        this.hashAttribute = hashAttribute == null ? "id" : hashAttribute;
+        this.hashValue = hashValue;
+        this.featureId = featureId;
+        this.hashUsed = hashUsed == null ? false : hashUsed;
+        this.key = key;
+        this.name = name;
+        this.bucket = bucket;
+        this.passThrough = passThrough;
+    }
 
     // region Serialization
 

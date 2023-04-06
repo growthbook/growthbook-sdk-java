@@ -58,7 +58,11 @@ class ExperimentResultTest {
                 "id",
                 "123",
                 "my_feature",
-                true
+                true,
+                null,
+                null,
+                null,
+                null
         );
 
         assertEquals("c", subject.getValue());
