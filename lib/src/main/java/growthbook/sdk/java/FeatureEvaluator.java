@@ -128,7 +128,7 @@ class FeatureEvaluator implements IFeatureEvaluator {
                         }
 
                         Float hashFnv = GrowthBookUtils.hash(attrValue, context.getHashVersion(), seed);
-                        if (hashFnv > rule.getCoverage()) {
+                        if (hashFnv != null && hashFnv > rule.getCoverage()) {
                             continue;
                         }
                     }

@@ -1,7 +1,7 @@
 package growthbook.sdk.java;
 
 import com.google.gson.Gson;
-import sun.reflect.generics.reflectiveObjects.NotImplementedException;
+import org.jetbrains.annotations.NotNull;
 
 import javax.annotation.Nullable;
 import java.math.BigInteger;
@@ -16,22 +16,22 @@ import java.util.Map;
  */
 class GrowthBookUtils {
     /**
-     * Hashes a string to a float between 0 and 1.
+     * Hashes a string to a float between 0 and 1, or null if the hash version is unsupported.
      * Uses the simple Fowler–Noll–Vo algorithm, specifically fnv32a.
      *
      * @param stringValue Input string
      * @param hashVersion The hash version
      * @param seed A seed value that can be used instead of the experiment key for hashing
-     * @return hashed float value
+     * @return hashed float value or null if the hash version is unsupported.
      */
-    public static Float hash(String stringValue, HashVersion hashVersion, String seed) {
+    public static @Nullable Float hash(String stringValue, HashVersion hashVersion, String seed) {
         switch (hashVersion) {
+            case V1:
+                return hashV1(stringValue, seed);
             case V2:
                 return hashV2(stringValue, seed);
-
-            case V1:
             default:
-                return hashV1(stringValue, seed);
+                return null;
         }
     }
 
@@ -40,13 +40,19 @@ class GrowthBookUtils {
         BigInteger thousand = new BigInteger("1000");
         BigInteger remainder = bigInt.remainder(thousand);
 
-        String remainderAsString = remainder.toString();
-        float remainderAsFloat = Float.parseFloat(remainderAsString);
+        float remainderAsFloat = Float.parseFloat(remainder.toString());
         return remainderAsFloat / 1000f;
     }
 
     private static Float hashV2(String stringValue, String seed) {
-        throw new NotImplementedException();
+        BigInteger first = MathUtils.fnv1a_32((seed + stringValue).getBytes());
+        BigInteger second = MathUtils.fnv1a_32(first.toString().getBytes());
+
+        BigInteger tenThousand = new BigInteger("10000");
+        BigInteger remainder = second.remainder(tenThousand);
+
+        float remainderAsFloat = Float.parseFloat(remainder.toString());
+        return remainderAsFloat / 10000f;
     }
 
     /**
@@ -58,6 +64,7 @@ class GrowthBookUtils {
      */
     public static Boolean inNameSpace(String userId, Namespace namespace) {
         Float n = hash(userId, HashVersion.V1, "__" + namespace.getId());
+        if (n == null) return false;
         return n >= namespace.getRangeStart() && n < namespace.getRangeEnd();
     }
 
@@ -69,7 +76,7 @@ class GrowthBookUtils {
      * @param bucketRanges list of {@link BucketRange}
      * @return index of the {@link BucketRange} list to assign
      */
-    public static Integer chooseVariation(Float n, ArrayList<BucketRange> bucketRanges) {
+    public static Integer chooseVariation(@NotNull Float n, ArrayList<BucketRange> bucketRanges) {
         for (int i = 0; i < bucketRanges.size(); i++) {
             BucketRange range = bucketRanges.get(i);
             if (n >= range.getRangeStart() && n < range.getRangeEnd()) {
@@ -344,7 +351,7 @@ class GrowthBookUtils {
      */
     public static ArrayList<BucketRange> getBucketRanges(
             Integer numberOfVariations,
-            Float coverage,
+            @NotNull Float coverage,
             @Nullable ArrayList<Float> weights
     ) {
         float clampedCoverage = MathUtils.clamp(coverage, 0.0f, 1.0f);
