@@ -31,6 +31,9 @@ public class FeatureRule<ValueType> {
     String key;
 
     @Nullable
+    String seed;
+
+    @Nullable
     Float coverage;
 
     @Nullable

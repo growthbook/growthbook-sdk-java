@@ -25,6 +25,8 @@ public class Experiment<ValueType> {
      */
     String key;
 
+    @Nullable
+    String seed;
 
     /**
      * The different variations to choose between

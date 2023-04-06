@@ -21,21 +21,22 @@ class GrowthBookUtils {
      *
      * @param stringValue Input string
      * @param hashVersion The hash version
+     * @param seed A seed value that can be used instead of the experiment key for hashing
      * @return hashed float value
      */
-    public static Float hash(String stringValue, HashVersion hashVersion) {
+    public static Float hash(String stringValue, HashVersion hashVersion, String seed) {
         switch (hashVersion) {
             case V2:
-                return hashV2(stringValue);
+                return hashV2(stringValue, seed);
 
             case V1:
             default:
-                return hashV1(stringValue);
+                return hashV1(stringValue, seed);
         }
     }
 
-    private static Float hashV1(String stringValue) {
-        BigInteger bigInt = MathUtils.fnv1a_32(stringValue.getBytes());
+    private static Float hashV1(String stringValue, String seed) {
+        BigInteger bigInt = MathUtils.fnv1a_32((stringValue + seed).getBytes());
         BigInteger thousand = new BigInteger("1000");
         BigInteger remainder = bigInt.remainder(thousand);
 
@@ -44,7 +45,7 @@ class GrowthBookUtils {
         return remainderAsFloat / 1000f;
     }
 
-    private static Float hashV2(String stringValue) {
+    private static Float hashV2(String stringValue, String seed) {
         throw new NotImplementedException();
     }
 
@@ -55,8 +56,8 @@ class GrowthBookUtils {
      * @param namespace Namespace to check the user identifier against
      * @return whether the user is in the namespace
      */
-    public static Boolean inNameSpace(String userId, Namespace namespace, HashVersion hashVersion) {
-        Float n = hash(userId + "__" + namespace.getId(), hashVersion);
+    public static Boolean inNameSpace(String userId, Namespace namespace) {
+        Float n = hash(userId, HashVersion.V1, "__" + namespace.getId());
         return n >= namespace.getRangeStart() && n < namespace.getRangeEnd();
     }
 
