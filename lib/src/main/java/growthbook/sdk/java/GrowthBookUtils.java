@@ -25,6 +25,8 @@ class GrowthBookUtils {
      * @return hashed float value or null if the hash version is unsupported.
      */
     public static @Nullable Float hash(String stringValue, HashVersion hashVersion, String seed) {
+        if (hashVersion == null) return null;
+
         switch (hashVersion) {
             case V1:
                 return hashV1(stringValue, seed);
