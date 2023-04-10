@@ -59,6 +59,9 @@ public class ExperimentResult<ValueType> {
      * @param featureId The id of the feature (if any) that the experiment came from
      * @param hashUsed If a hash was used to assign a variation
      * @param key The experiment key, if any
+     * @param name The human-readable name of the assigned variation
+     * @param bucket The hash value used to assign a variation (float from 0 to 1)
+     * @param passThrough Used for holdout groups
      */
     @Builder
     public ExperimentResult(
