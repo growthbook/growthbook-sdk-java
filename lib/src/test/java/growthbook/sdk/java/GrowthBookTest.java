@@ -79,7 +79,7 @@ class GrowthBookTest {
             boolean bucketPasses = true;
             boolean keyPasses = true;
             if (expectedResult.getExperimentResult() != null) {
-                System.out.printf("Has an experiment result: %s (index = %s)", testDescription, i);
+                System.out.printf("\n\nHas an experiment result: %s (index = %s)", testDescription, i);
                 hashValuePasses = Objects.equals(expectedResult.getExperimentResult().getHashValue(), result.getExperimentResult().getHashValue());
 
                 Float expectedBucket = expectedResult.getExperimentResult().getBucket();

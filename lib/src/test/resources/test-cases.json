@@ -175,7 +175,7 @@
         "forcedVariations": null
       },
       "feature": "feature",
-      "result": "{\"on\":false,\"off\":true,\"source\":\"experiment\",\"value\":false,\"experiment\":{\"coverage\":0.99,\"hashAttribute\":\"anonId\",\"namespace\":[\"pricing\",0,1],\"key\":\"hello\",\"variations\":[true,false],\"weights\":[0.1,0.9]},\"experimentResult\":{\"featureId\":\"feature\",\"value\":false,\"variationId\":1,\"inExperiment\":true,\"hashUsed\":true,\"hashAttribute\":\"anonId\",\"hashValue\":\"123\"}}"
+      "result": "{\"value\":false,\"on\":false,\"off\":true,\"source\":\"experiment\",\"experiment\":{\"coverage\":0.99,\"ranges\":[[0,0.1],[0.1,1]],\"meta\":[{\"key\":\"v0\",\"name\":\"variation 0\"},{\"key\":\"v1\",\"name\":\"variation 1\"}],\"filters\":[{\"attribute\":\"anonId\",\"seed\":\"pricing\",\"ranges\":[[0,1]]}],\"name\":\"Test\",\"phase\":\"1\",\"seed\":\"feature\",\"hashVersion\":2,\"hashAttribute\":\"anonId\",\"namespace\":[\"pricing\",0,1],\"key\":\"hello\",\"variations\":[true,false],\"weights\":[0.1,0.9]},\"experimentResult\":{\"featureId\":\"feature\",\"value\":false,\"variationId\":1,\"inExperiment\":true,\"hashUsed\":true,\"hashAttribute\":\"anonId\",\"hashValue\":\"123\",\"bucket\":0.5231,\"key\":\"v1\",\"name\":\"variation 1\"}}"
     },
     {
       "name": "rule orders - skip 1",
