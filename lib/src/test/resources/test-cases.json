@@ -1,5 +1,5 @@
 {
-  "specVersion": "0.2.3",
+  "specVersion": "0.4.1",
   "evalFeature": [
     {
       "name": "unknown feature key",
@@ -142,7 +142,7 @@
         "forcedVariations": null
       },
       "feature": "feature",
-      "result": "{\"on\":true,\"off\":false,\"source\":\"experiment\",\"value\":\"c\",\"experiment\":{\"key\":\"feature\",\"variations\":[\"a\",\"b\",\"c\"]},\"experimentResult\":{\"featureId\":\"feature\",\"value\":\"c\",\"variationId\":2,\"inExperiment\":true,\"hashUsed\":true,\"hashAttribute\":\"id\",\"hashValue\":\"123\"}}"
+      "result": "{\"on\":true,\"off\":false,\"source\":\"experiment\",\"value\":\"c\",\"experiment\":{\"key\":\"feature\",\"variations\":[\"a\",\"b\",\"c\"]},\"experimentResult\":{\"featureId\":\"feature\",\"value\":\"c\",\"variationId\":2,\"inExperiment\":true,\"hashUsed\":true,\"hashAttribute\":\"id\",\"hashValue\":\"123\",\"bucket\": 0.863,\"key\": \"2\"}}"
     },
     {
       "name": "empty experiment rule - a",
@@ -153,7 +153,7 @@
         "forcedVariations": null
       },
       "feature": "feature",
-      "result": "{\"on\":true,\"off\":false,\"source\":\"experiment\",\"value\":\"a\",\"experiment\":{\"key\":\"feature\",\"variations\":[\"a\",\"b\",\"c\"]},\"experimentResult\":{\"featureId\":\"feature\",\"value\":\"a\",\"variationId\":0,\"inExperiment\":true,\"hashUsed\":true,\"hashAttribute\":\"id\",\"hashValue\":\"456\"}}"
+      "result": "{\"on\":true,\"off\":false,\"source\":\"experiment\",\"value\":\"a\",\"experiment\":{\"key\":\"feature\",\"variations\":[\"a\",\"b\",\"c\"]},\"experimentResult\":{\"featureId\":\"feature\",\"value\":\"a\",\"variationId\":0,\"inExperiment\":true,\"hashUsed\":true,\"hashAttribute\":\"id\",\"hashValue\":\"456\",\"bucket\": 0.178,\"key\": \"0\"}}"
     },
     {
       "name": "empty experiment rule - b",
@@ -164,7 +164,7 @@
         "forcedVariations": null
       },
       "feature": "feature",
-      "result": "{\"on\":true,\"off\":false,\"source\":\"experiment\",\"value\":\"b\",\"experiment\":{\"key\":\"feature\",\"variations\":[\"a\",\"b\",\"c\"]},\"experimentResult\":{\"featureId\":\"feature\",\"value\":\"b\",\"variationId\":1,\"inExperiment\":true,\"hashUsed\":true,\"hashAttribute\":\"id\",\"hashValue\":\"fds\"}}"
+      "result": "{\"on\":true,\"off\":false,\"source\":\"experiment\",\"value\":\"b\",\"experiment\":{\"key\":\"feature\",\"variations\":[\"a\",\"b\",\"c\"]},\"experimentResult\":{\"featureId\":\"feature\",\"value\":\"b\",\"variationId\":1,\"inExperiment\":true,\"hashUsed\":true,\"hashAttribute\":\"id\",\"hashValue\":\"fds\",\"bucket\": 0.514,\"key\": \"1\"}}"
     },
     {
       "name": "creates experiments properly",

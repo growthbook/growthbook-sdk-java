@@ -43,7 +43,7 @@ public class ExperimentResult<ValueType> {
     String name;
 
     @Nullable
-    Integer bucket;
+    Float bucket;
 
     @Nullable
     Boolean passThrough;
@@ -74,7 +74,7 @@ public class ExperimentResult<ValueType> {
         Boolean hashUsed,
         @Nullable String key,
         @Nullable String name,
-        @Nullable Integer bucket,
+        @Nullable Float bucket,
         @Nullable Boolean passThrough
     ) {
         this.value = value;

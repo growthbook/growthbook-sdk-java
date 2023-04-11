@@ -63,6 +63,7 @@ class GrowthBookTest {
 
             GrowthBook subject = new GrowthBook(context);
             String expectedString = testCase.get("result").getAsString();
+//            System.out.printf("\n\n Trying to serialize: %s", expectedString);
             FeatureResult expectedResult = jsonUtils.gson.fromJson(expectedString, FeatureResult.class);
 
             FeatureResult<Object> result = subject.evalFeature(featureKey, Object.class);
@@ -73,7 +74,29 @@ class GrowthBookTest {
             boolean offPasses = Objects.equals(expectedResult.isOff(), result.isOff());
             boolean sourcePasses = Objects.equals(expectedResult.getSource(), result.getSource());
 
-            boolean passes = valuePasses && onPasses && offPasses && sourcePasses;
+            // Hash value on experiment
+            boolean hashValuePasses = true;
+            boolean bucketPasses = true;
+            boolean keyPasses = true;
+            if (expectedResult.getExperimentResult() != null) {
+                System.out.printf("Has an experiment result: %s (index = %s)", testDescription, i);
+                hashValuePasses = Objects.equals(expectedResult.getExperimentResult().getHashValue(), result.getExperimentResult().getHashValue());
+
+                Float expectedBucket = expectedResult.getExperimentResult().getBucket();
+                Float actualBucket = result.getExperimentResult().getBucket();
+                bucketPasses = Objects.equals(expectedBucket, actualBucket);
+                if (!bucketPasses) {
+                    System.out.printf("\n\nExpected bucket: %s, Actual bucket: %s", expectedBucket, actualBucket);
+                }
+                String expectedKey = expectedResult.getExperimentResult().getKey();
+                String actualKey = result.getExperimentResult().getKey();
+                keyPasses = Objects.equals(expectedKey, actualKey);
+                if (!keyPasses) {
+                    System.out.printf("\n\nExpected key: %s, Actual key: %s", expectedKey, actualKey);
+                }
+            }
+
+            boolean passes = valuePasses && onPasses && offPasses && sourcePasses && hashValuePasses && keyPasses && bucketPasses;
 
             if (passes) {
                 passedTests.add(testDescription);
