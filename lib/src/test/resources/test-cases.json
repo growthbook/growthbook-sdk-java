@@ -263,7 +263,7 @@
         "forcedVariations": {"feature": 1}
       },
       "feature": "feature",
-      "result": "{\"on\":true,\"off\":false,\"source\":\"experiment\",\"value\":1,\"experiment\":{\"key\":\"feature\",\"variations\":[0,1,2,3]},\"experimentResult\":{\"featureId\":\"feature\",\"value\":1,\"variationId\":1,\"inExperiment\":true,\"hashUsed\":false,\"hashAttribute\":\"id\",\"hashValue\":\"123\"}}"
+      "result": "{\"on\":true,\"off\":false,\"source\":\"experiment\",\"value\":1,\"experiment\":{\"key\":\"feature\",\"variations\":[0,1,2,3]},\"experimentResult\":{\"featureId\":\"feature\",\"value\":1,\"variationId\":1,\"inExperiment\":true,\"hashUsed\":false,\"hashAttribute\":\"id\",\"hashValue\":\"123\",\"key\": \"1\"}}"
     }
   ],
   "run": [
