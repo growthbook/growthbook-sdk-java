@@ -42,38 +42,32 @@ class DecryptionUtilsTest {
     }
 
     @Test
-    void test_throwsArgumentExceptionWhenPayloadInvalid() {
+    void test_returnsNull_WhenPayloadInvalid() {
         String payload = "foobar";
         String encryptionKey = "BhB1wORFmZLTDjbvstvS8w==";
 
-        Exception exception = assertThrows(IllegalArgumentException.class, () -> {
-            DecryptionUtils.decrypt(payload, encryptionKey);
-        });
+        String result = DecryptionUtils.decrypt(payload, encryptionKey);
 
-        assertTrue(exception.getMessage().contains("Invalid payload"));
+        assertNull(result);
     }
 
     @Test
-    void test_throwsArgumentExceptionWhenPayloadInvalid_decodingIv() {
+    void test_returnsNull_WhenPayloadInvalid_decodingIv() {
         String payload = "foobar.bar";
         String encryptionKey = "BhB1wORFmZLTDjbvstvS8w==";
 
-        Exception exception = assertThrows(IllegalArgumentException.class, () -> {
-            DecryptionUtils.decrypt(payload, encryptionKey);
-        });
+        String result = DecryptionUtils.decrypt(payload, encryptionKey);
 
-        assertTrue(exception.getMessage().contains("Invalid payload"));
+        assertNull(result);
     }
 
     @Test
-    void test_throwsArgumentExceptionWhenEncryptionKeyInvalid() {
+    void test_returnsNull_WhenEncryptionKeyInvalid() {
         String payload = "7rvPA94JEsqRo9yPZsdsXg==.bJ8vtYvX+ur3cEUFVkYo1OyWb98oLnMlpeoO0Hs4YPc0EVb7oKX4KNz+Yt6GUMBsieXqtL7oaYzX+kMayZEtV+3bhyDYnS9QBrvalnfxbLExjtnsy8g0pPQHU/P/DPIzO0F+pphcahRfi+3AMTnIreqvkqrcX+MyOwHN56lqEs23Vp4Rsq2qDow/LZmn5kpwMNhMY0DBq7jC+lh2Oyly0g==";
         String encryptionKey = "foobar";
 
-        Exception exception = assertThrows(IllegalArgumentException.class, () -> {
-            DecryptionUtils.decrypt(payload, encryptionKey);
-        });
+        String result = DecryptionUtils.decrypt(payload, encryptionKey);
 
-        assertTrue(exception.getMessage().contains("Invalid encryption key"));
+        assertNull(result);
     }
 }

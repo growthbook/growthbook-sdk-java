@@ -164,4 +164,34 @@ class GBContextTest {
         assertNotNull(subject);
         assertEquals(expectedFeaturesJson.trim(), subject.getFeaturesJson().trim());
     }
+
+    @Test
+    void whenEncryptionKeyInvalid_featuresStayEmpty() {
+        String encryptedFeaturesJson = "7rvPA94JEsqRo9yPZsdsXg==.bJ8vtYvX+ur3cEUFVkYo1OyWb98oLnMlpeoO0Hs4YPc0EVb7oKX4KNz+Yt6GUMBsieXqtL7oaYzX+kMayZEtV+3bhyDYnS9QBrvalnfxbLExjtnsy8g0pPQHU/P/DPIzO0F+pphcahRfi+3AMTnIreqvkqrcX+MyOwHN56lqEs23Vp4Rsq2qDow/LZmn5kpwMNhMY0DBq7jC+lh2Oyly0g==";
+        String encryptionKey = "nope";
+
+        GBContext subject = GBContext
+            .builder()
+            .attributesJson(sampleUserAttributes)
+            .featuresJson(encryptedFeaturesJson)
+            .encryptionKey(encryptionKey)
+            .build();
+
+        assertEquals("{}", subject.getFeaturesJson());
+    }
+
+    @Test
+    void whenEncryptedPayloadMalformed_featuresStayEmpty() {
+        String encryptedFeaturesJson = "foo.bar.baz.==.ow/LZmn5kpwMNhMY0DBq7jC+lh2Oyly0g==";
+        String encryptionKey = "BhB1wORFmZLTDjbvstvS8w==";
+
+        GBContext subject = GBContext
+            .builder()
+            .attributesJson(sampleUserAttributes)
+            .featuresJson(encryptedFeaturesJson)
+            .encryptionKey(encryptionKey)
+            .build();
+
+        assertEquals("{}", subject.getFeaturesJson());
+    }
 }

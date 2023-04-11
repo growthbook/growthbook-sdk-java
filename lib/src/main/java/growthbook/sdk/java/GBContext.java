@@ -50,11 +50,16 @@ public class GBContext {
 
         this.attributesJson = attributesJson == null ? "{}" : attributesJson;
 
-        if (featuresJson == null) {
-            this.featuresJson = "{}";
-        } else if (encryptionKey != null) {
-            this.featuresJson = DecryptionUtils.decrypt(featuresJson, encryptionKey).trim();
-        } else {
+        // Features start as empty JSON
+        this.featuresJson = "{}";
+        if (encryptionKey != null && featuresJson != null) {
+            // Attempt to decrypt payload
+            String decrypted = DecryptionUtils.decrypt(featuresJson, encryptionKey);
+            if (decrypted != null) {
+                this.featuresJson = decrypted.trim();
+            }
+        } else if (featuresJson != null) {
+            // Use features
             this.featuresJson = featuresJson;
         }
 

@@ -1,5 +1,6 @@
 package growthbook.sdk.java;
 
+import javax.annotation.Nullable;
 import javax.crypto.BadPaddingException;
 import javax.crypto.Cipher;
 import javax.crypto.IllegalBlockSizeException;
@@ -16,9 +17,10 @@ import java.util.Base64;
  * INTERNAL: This class is used internally to decrypt an encrypted features response
  */
 class DecryptionUtils {
-    public static String decrypt(String payload, String encryptionKey) {
+
+    public static @Nullable String decrypt(String payload, String encryptionKey) {
         if (!payload.contains(".")) {
-            throw new IllegalArgumentException("Invalid payload");
+            return null;
         }
 
         try {
@@ -37,18 +39,16 @@ class DecryptionUtils {
             byte[] plainText = cipher.doFinal(decodedCipher);
 
             return new String(plainText);
-        } catch (InvalidAlgorithmParameterException e) {
-            throw new IllegalArgumentException("Invalid payload");
-        } catch (InvalidKeyException e) {
-            throw new IllegalArgumentException("Invalid encryption key");
         } catch (
-                NoSuchAlgorithmException
-                | NoSuchPaddingException
-                | IllegalBlockSizeException
-                | BadPaddingException e
+            InvalidAlgorithmParameterException |
+            InvalidKeyException |
+            NoSuchAlgorithmException |
+            NoSuchPaddingException |
+            IllegalBlockSizeException |
+            BadPaddingException e
         ) {
             e.printStackTrace();
-            throw new RuntimeException(e);
+            return null;
         }
     }
 
