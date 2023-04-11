@@ -170,7 +170,7 @@
       "name": "creates experiments properly",
       "type": "boolean",
       "context": {
-        "features": "{\"feature\":{\"rules\":[{\"coverage\":0.99,\"hashAttribute\":\"anonId\",\"namespace\":[\"pricing\",0,1],\"key\":\"hello\",\"variations\":[true,false],\"weights\":[0.1,0.9],\"condition\":{\"premium\":true}}]}}",
+        "features": "{\"feature\":{\"rules\":[{\"coverage\":0.99,\"hashAttribute\":\"anonId\",\"seed\":\"feature\",\"hashVersion\":2,\"name\":\"Test\",\"phase\":\"1\",\"ranges\":[[0,0.1],[0.1,1]],\"meta\":[{\"key\":\"v0\",\"name\":\"variation 0\"},{\"key\":\"v1\",\"name\":\"variation 1\"}],\"filters\":[{\"attribute\":\"anonId\",\"seed\":\"pricing\",\"ranges\":[[0,1]]}],\"namespace\":[\"pricing\",0,1],\"key\":\"hello\",\"variations\":[true,false],\"weights\":[0.1,0.9],\"condition\":{\"premium\":true}}]}}",
         "attributes": "{\"anonId\":\"123\",\"premium\":true}",
         "forcedVariations": null
       },
