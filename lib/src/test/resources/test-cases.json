@@ -314,6 +314,16 @@
       },
       "feature": "feature",
       "result": "{\"value\":2,\"on\":true,\"off\":false,\"source\":\"force\"}"
+    },
+    {
+      "name": "Support passthrough variations",
+      "type": "integer",
+      "context": {
+        "features": "{\"feature\":{\"defaultValue\":0,\"rules\":[{\"key\":\"holdout\",\"variations\":[1,2],\"hashVersion\":2,\"ranges\":[[0,0.01],[0.01,1]],\"meta\":[{},{\"passthrough\":true}]},{\"key\":\"experiment\",\"variations\":[3,4],\"hashVersion\":2,\"ranges\":[[0,0.5],[0.5,1]]}]}}",
+        "attributes": "{\"id\": \"1\"}"
+      },
+      "feature": "feature",
+      "result": "{\"value\":3,\"on\":true,\"off\":false,\"source\":\"experiment\",\"experiment\":{\"key\":\"experiment\",\"hashVersion\":2,\"variations\":[3,4],\"ranges\":[[0,0.5],[0.5,1]]},\"experimentResult\":{\"featureId\":\"feature\",\"hashAttribute\":\"id\",\"hashUsed\":true,\"hashValue\":\"1\",\"inExperiment\":true,\"key\":\"0\",\"value\":3,\"variationId\":0,\"bucket\":0.4413}}"
     }
   ],
   "run": [
