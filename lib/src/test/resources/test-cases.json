@@ -264,6 +264,16 @@
       },
       "feature": "feature",
       "result": "{\"on\":true,\"off\":false,\"source\":\"experiment\",\"value\":1,\"experiment\":{\"key\":\"feature\",\"variations\":[0,1,2,3]},\"experimentResult\":{\"featureId\":\"feature\",\"value\":1,\"variationId\":1,\"inExperiment\":true,\"hashUsed\":false,\"hashAttribute\":\"id\",\"hashValue\":\"123\",\"key\": \"1\"}}"
+    },
+    {
+      "name": "Force rule with range, ignores coverage",
+      "type": "integer",
+      "context": {
+        "features": "{\"feature\":{\"defaultValue\":0,\"rules\":[{\"force\":2,\"coverage\":0.01,\"range\":[0,0.99]}]}}",
+        "attributes": "{\"id\": \"1\"}"
+      },
+      "feature": "feature",
+      "result": "{\"value\":2,\"on\":true,\"off\":false,\"source\":\"force\"}"
     }
   ],
   "run": [
