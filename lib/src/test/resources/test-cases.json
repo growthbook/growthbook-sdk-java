@@ -241,7 +241,7 @@
         "forcedVariations": null
       },
       "feature": "feature",
-      "result": "{\"on\":true,\"off\":false,\"source\":\"experiment\",\"value\":1,\"experiment\":{\"key\":\"feature\",\"variations\":[0,1]},\"experimentResult\":{\"featureId\":\"feature\",\"hashAttribute\":\"id\",\"hashValue\":123,\"hashUsed\":true,\"inExperiment\":true,\"value\":1,\"variationId\":1}}"
+      "result": "{\"on\":true,\"off\":false,\"source\":\"experiment\",\"value\":1,\"experiment\":{\"key\":\"feature\",\"variations\":[0,1]},\"experimentResult\":{\"featureId\":\"feature\",\"hashAttribute\":\"id\",\"hashValue\":123,\"hashUsed\":true,\"inExperiment\":true,\"value\":1,\"variationId\":1,\"key\": \"1\",\"bucket\": 0.863}}"
     },
     {
       "name": "skip experiment on missing hashAttribute",
