@@ -68,7 +68,12 @@ class GrowthBookTest {
             FeatureResult<Object> result = subject.evalFeature(featureKey, Object.class);
 //            System.out.printf("\n\n Eval Feature result: %s - JSON: %s", result, result.toJson());
 
-            boolean passes = expectedResult.equals(result);
+            boolean valuePasses = Objects.equals(expectedResult.getValue(), result.getValue());
+            boolean onPasses = Objects.equals(expectedResult.isOn(), result.isOn());
+            boolean offPasses = Objects.equals(expectedResult.isOff(), result.isOff());
+            boolean sourcePasses = Objects.equals(expectedResult.getSource(), result.getSource());
+
+            boolean passes = valuePasses && onPasses && offPasses && sourcePasses;
 
             if (passes) {
                 passedTests.add(testDescription);
