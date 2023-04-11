@@ -33,7 +33,8 @@ class ExperimentTest {
                 conditionJson,
                 namespace,
                 1,
-                "_id"
+                "_id",
+                null
         );
         assertEquals(0.5f, experiment.coverage);
         assertEquals(0.5f, experiment.getCoverage());

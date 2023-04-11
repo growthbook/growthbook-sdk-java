@@ -71,6 +71,9 @@ public class Experiment<ValueType> {
     @Builder.Default
     String hashAttribute = "id";
 
+    @Builder.Default
+    HashVersion hashVersion = HashVersion.V1;
+
     /**
      * Get a Gson JsonElement of the experiment
      * @return JsonElement
