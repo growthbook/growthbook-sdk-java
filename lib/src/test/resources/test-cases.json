@@ -304,6 +304,16 @@
       },
       "feature": "feature",
       "result": "{\"value\":0,\"on\":false,\"off\":true,\"source\":\"defaultValue\"}"
+    },
+    {
+      "name": "Force rule, use seed with range",
+      "type": "integer",
+      "context": {
+        "features": "{\"feature\":{\"defaultValue\":0,\"rules\":[{\"force\":2,\"range\":[0,0.5],\"seed\":\"fjdslafdsa\",\"hashVersion\":2}]}}",
+        "attributes": "{\"id\": \"1\"}"
+      },
+      "feature": "feature",
+      "result": "{\"value\":2,\"on\":true,\"off\":false,\"source\":\"force\"}"
     }
   ],
   "run": [
