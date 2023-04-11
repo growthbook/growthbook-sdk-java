@@ -294,6 +294,16 @@
       },
       "feature": "feature",
       "result": "{\"value\":0,\"on\":false,\"off\":true,\"source\":\"defaultValue\"}"
+    },
+    {
+      "name": "Force rule, skip due to filter",
+      "type": "integer",
+      "context": {
+        "features": "{\"feature\":{\"defaultValue\":0,\"rules\":[{\"force\":2,\"filters\":[{\"seed\":\"seed\",\"ranges\":[[0,0.01]]}]}]}}",
+        "attributes": "{\"id\": \"1\"}"
+      },
+      "feature": "feature",
+      "result": "{\"value\":0,\"on\":false,\"off\":true,\"source\":\"defaultValue\"}"
     }
   ],
   "run": [
