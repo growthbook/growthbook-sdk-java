@@ -1146,6 +1146,19 @@
       },
       "experiment": "{\"key\": \"no-coverage\", \"variations\": [0, 1], \"coverage\": 0}",
       "result": {"value": 0, "inExperiment": false, "hashUsed": false}
+    },
+    {
+      "name": "Filtered, included",
+      "type": "integer",
+      "context": {
+        "attributes": "{\"id\": \"1\",\"anonId\": \"fsdafsda\"}"
+      },
+      "experiment": "{\"key\":\"filtered\",\"variations\":[0,1],\"filters\":[{\"seed\":\"seed\",\"ranges\":[[0,0.1],[0.2,0.4]]},{\"seed\":\"seed\",\"attribute\":\"anonId\",\"ranges\":[[0.8,1]]}]}",
+      "result": {
+        "value": 1,
+        "inExperiment": true,
+        "hashUsed": true
+      }
     }
   ],
   "evalCondition": [
