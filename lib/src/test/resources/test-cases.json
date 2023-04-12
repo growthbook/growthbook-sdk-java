@@ -1172,6 +1172,19 @@
         "inExperiment": false,
         "hashUsed": false
       }
+    },
+    {
+      "name": "Filtered, ignore namespace",
+      "type": "integer",
+      "context": {
+        "attributes": "{\"id\": \"1\"}"
+      },
+      "experiment": "{\"key\":\"filtered\",\"variations\":[0,1],\"filters\":[{\"seed\":\"seed\",\"ranges\":[[0,0.1],[0.2,0.4]]}],\"namespace\":[\"test\",0,0.001]}",
+      "result": {
+        "value": 1,
+        "inExperiment": true,
+        "hashUsed": true
+      }
     }
   ],
   "evalCondition": [
