@@ -1159,6 +1159,19 @@
         "inExperiment": true,
         "hashUsed": true
       }
+    },
+    {
+      "name": "Filtered, excluded",
+      "type": "integer",
+      "context": {
+        "attributes": "{\"id\": \"1\",\"anonId\": \"fsdafsda\"}"
+      },
+      "experiment": "{\"key\":\"filtered\",\"variations\":[0,1],\"filters\":[{\"seed\":\"seed\",\"ranges\":[[0,0.1],[0.2,0.4]]},{\"seed\":\"seed\",\"attribute\":\"anonId\",\"ranges\":[[0.6,0.8]]}]}",
+      "result": {
+        "value": 0,
+        "inExperiment": false,
+        "hashUsed": false
+      }
     }
   ],
   "evalCondition": [
