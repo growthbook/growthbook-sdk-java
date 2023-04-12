@@ -123,6 +123,17 @@
       "result": "{\"on\":true,\"off\":false,\"source\":\"defaultValue\",\"value\":2,\"experiment\":null,\"experimentResult\":null}"
     },
     {
+      "name": "force rules - coverage with bad hash version",
+      "type": "integer",
+      "context": {
+        "features": "{\"feature\":{\"defaultValue\":2,\"rules\":[{\"force\":1,\"coverage\":1,\"hashVersion\":99}]}}",
+        "attributes": "{\"id\": \"1\"}",
+        "forcedVariations": null
+      },
+      "feature": "feature",
+      "result": "{\"value\":2,\"on\":true,\"off\":false,\"source\":\"defaultValue\"}"
+    },
+    {
       "name": "ignores empty rules",
       "type": "null",
       "context": {
