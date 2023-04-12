@@ -1185,6 +1185,19 @@
         "inExperiment": true,
         "hashUsed": true
       }
+    },
+    {
+      "name": "Ranges, ignore coverage and weights",
+      "type": "integer",
+      "context": {
+        "attributes": "{\"id\": \"1\"}"
+      },
+      "experiment": "{\"key\":\"ranges\",\"variations\":[0,1],\"ranges\":[[0.99,1],[0,0.99]],\"coverage\":0.01,\"weights\":[0.99,0.01]}",
+      "result": {
+        "value": 1,
+        "inExperiment": true,
+        "hashUsed": true
+      }
     }
   ],
   "evalCondition": [
