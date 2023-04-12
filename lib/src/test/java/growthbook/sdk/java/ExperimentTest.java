@@ -25,7 +25,6 @@ class ExperimentTest {
 
         Experiment<Float> experiment = new Experiment<Float>(
                 "my_experiment",
-                null,
                 variations,
                 weights,
                 true,
@@ -34,6 +33,12 @@ class ExperimentTest {
                 namespace,
                 1,
                 "_id",
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
                 null
         );
         assertEquals(0.5f, experiment.coverage);

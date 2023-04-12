@@ -12,6 +12,7 @@ import lombok.Data;
 import javax.annotation.Nullable;
 import java.lang.reflect.Type;
 import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Defines a single Experiment
@@ -24,9 +25,6 @@ public class Experiment<ValueType> {
      * The globally unique identifier for the experiment
      */
     String key;
-
-    @Nullable
-    String seed;
 
     /**
      * The different variations to choose between
@@ -71,8 +69,30 @@ public class Experiment<ValueType> {
     @Builder.Default
     String hashAttribute = "id";
 
+    @Nullable
     @Builder.Default
     HashVersion hashVersion = HashVersion.V1;
+
+    @Nullable
+    @Builder.Default
+    List<BucketRange> ranges = new ArrayList<>();
+
+    @Nullable
+    @Builder.Default
+    List<VariationMeta> meta = new ArrayList<>();
+
+    @Nullable
+    @Builder.Default
+    List<Filter> filters = new ArrayList<>();
+
+    @Nullable
+    String seed;
+
+    @Nullable
+    String name;
+
+    @Nullable
+    String phase;
 
     /**
      * Get a Gson JsonElement of the experiment
