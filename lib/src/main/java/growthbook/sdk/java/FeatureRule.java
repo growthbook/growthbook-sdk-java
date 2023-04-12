@@ -7,6 +7,7 @@ import lombok.Data;
 
 import javax.annotation.Nullable;
 import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Overrides the defaultValue of a Feature based on a set of requirements. Has a number of optional properties
@@ -31,9 +32,6 @@ public class FeatureRule<ValueType> {
     String key;
 
     @Nullable
-    String seed;
-
-    @Nullable
     Float coverage;
 
     @Nullable
@@ -53,4 +51,36 @@ public class FeatureRule<ValueType> {
 
     @Nullable
     JsonElement condition;
+
+    @Nullable
+    @Builder.Default
+    HashVersion hashVersion = HashVersion.V1;
+
+    @Nullable
+    BucketRange range;
+
+    @Nullable
+    @Builder.Default
+    List<BucketRange> ranges = new ArrayList<>();
+
+    @Nullable
+    @Builder.Default
+    List<VariationMeta> meta = new ArrayList<>();
+
+    @Nullable
+    @Builder.Default
+    List<Filter> filters = new ArrayList<>();
+
+    @Nullable
+    String seed;
+
+    @Nullable
+    String name;
+
+    @Nullable
+    String phase;
+
+    @Nullable
+    @Builder.Default
+    List<TrackData<ValueType>> tracks = new ArrayList<>();
 }
