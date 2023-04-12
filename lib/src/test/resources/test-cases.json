@@ -1224,6 +1224,32 @@
         "inExperiment": true,
         "hashUsed": true
       }
+    },
+    {
+      "name": "Uses seed with default weights/coverage",
+      "type": "integer",
+      "context": {
+        "attributes": "{\"id\": \"1\"}"
+      },
+      "experiment": "{\"key\":\"key\",\"seed\":\"foo\",\"hashVersion\":2,\"variations\":[0,1]}",
+      "result": {
+        "value": 1,
+        "inExperiment": true,
+        "hashUsed": true
+      }
+    },
+    {
+      "name": "Uses seed with weights/coverage",
+      "type": "integer",
+      "context": {
+        "attributes": "{\"id\": \"1\"}"
+      },
+      "experiment": "{\"key\":\"key\",\"seed\":\"foo\",\"hashVersion\":2,\"variations\":[0,1],\"weights\":[0.5,0.5],\"coverage\":0.99}",
+      "result": {
+        "value": 1,
+        "inExperiment": true,
+        "hashUsed": true
+      }
     }
   ],
   "evalCondition": [
