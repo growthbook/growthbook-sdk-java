@@ -1,5 +1,8 @@
 package growthbook.sdk.java;
 
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+
 import javax.annotation.Nullable;
 import java.util.ArrayList;
 
@@ -214,5 +217,39 @@ public class GrowthBook implements IGrowthBook {
     @Override
     public void subscribe(ExperimentRunCallback callback) {
         this.callbacks.add(callback);
+    }
+
+    private Boolean isIncludedInRollout(
+        String seed,
+        String hashAttribute,
+        @Nullable BucketRange range,
+        @Nullable Float coverage,
+        @Nullable HashVersion hashVersion
+    ) {
+        if (range == null && coverage == null) return true;
+
+        if (hashAttribute == null || hashAttribute.equals("")) {
+            hashAttribute = "id";
+        }
+
+        JsonObject attributes = context.getAttributes();
+        if (attributes == null) return false;
+
+        JsonElement hashValueElement = attributes.get(hashAttribute);
+        if (hashValueElement == null || hashValueElement.isJsonNull()) return false;
+
+        if (hashVersion == null) {
+            hashVersion = HashVersion.V1;
+        }
+        String hashValue = hashValueElement.getAsString();
+        Float hash = GrowthBookUtils.hash(hashValue, hashVersion, seed);
+        if (hash == null) return false;
+
+        Boolean isIncluded = GrowthBookUtils.inRange(hash, range);
+        if (isIncluded) return true;
+
+        if (coverage != null) return hash <= coverage;
+
+        return true;
     }
 }

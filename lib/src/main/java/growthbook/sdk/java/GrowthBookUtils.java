@@ -389,4 +389,17 @@ class GrowthBookUtils {
 
         return bucketRanges;
     }
+
+    /**
+     * Verifies if the provided float is within the lower (inclusive) and upper (exclusive) bounds of
+     * the provided {@link BucketRange}.
+     *
+     * @param n Float value to check if it's in range
+     * @param range {@link BucketRange}
+     * @return whether to include this hash value is within range. Returns false if either arguments are null.
+     */
+    public static Boolean inRange(Float n, BucketRange range) {
+        if (n == null || range == null) return false;
+        return n >= range.getRangeStart() && n < range.getRangeEnd();
+    }
 }
