@@ -430,7 +430,7 @@ class GrowthBookUtils {
                 hashVersion = HashVersion.V2;
             }
 
-            Float n = GrowthBookUtils.hash(filter.getSeed(), hashVersion, hashValue);
+            Float n = GrowthBookUtils.hash(hashValue, hashVersion, filter.getSeed());
             if (n == null) return true;
 
             List<BucketRange> ranges = filter.getRanges();
