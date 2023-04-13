@@ -84,7 +84,12 @@ public class ExperimentResult<ValueType> {
         this.hashValue = hashValue;
         this.featureId = featureId;
         this.hashUsed = hashUsed == null ? false : hashUsed;
+
         this.key = key;
+        if (this.key == null && variationId != null) {
+            this.key = variationId.toString();
+        }
+
         this.name = name;
         this.bucket = bucket;
         this.passThrough = passThrough;
