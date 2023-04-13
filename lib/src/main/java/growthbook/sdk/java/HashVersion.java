@@ -1,6 +1,9 @@
 package growthbook.sdk.java;
 
+import com.google.gson.*;
+
 import javax.annotation.Nullable;
+import java.lang.reflect.Type;
 
 /**
  * The hashing algorithm version you'd like to use.
@@ -30,6 +33,24 @@ public enum HashVersion {
     }
 
     /**
+     * @param object HashVersion
+     * @return Gson JSON element
+     */
+    static JsonElement getJson(HashVersion object) {
+        Integer hashVersionInt = object.intValue();
+        return new JsonPrimitive(hashVersionInt);
+    }
+
+    static HashVersion fromJson(JsonElement jsonElement) {
+        if (jsonElement == null) return null;
+        if (!jsonElement.isJsonPrimitive()) return null;
+        if (jsonElement.isJsonNull()) return null;
+
+        Integer hashVersionInt = jsonElement.getAsInt();
+        return HashVersion.fromInt(hashVersionInt);
+    }
+
+    /**
      * @return the integer value of the hash version
      */
     public Integer intValue() {
@@ -51,5 +72,23 @@ public enum HashVersion {
         }
 
         return null;
+    }
+
+    public static JsonSerializer<HashVersion> getSerializer() {
+        return new JsonSerializer<HashVersion>() {
+            @Override
+            public JsonElement serialize(HashVersion src, Type typeOfSrc, JsonSerializationContext context) {
+                return HashVersion.getJson(src);
+            }
+        };
+    }
+
+    public static JsonDeserializer<HashVersion> getDeserializer() {
+        return new JsonDeserializer<HashVersion>() {
+            @Override
+            public HashVersion deserialize(JsonElement json, Type typeOfT, JsonDeserializationContext context) throws JsonParseException {
+                return HashVersion.fromJson(json);
+            }
+        };
     }
 }
