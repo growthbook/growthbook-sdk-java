@@ -54,9 +54,11 @@ public class GBContext {
         this.featuresJson = "{}";
         if (encryptionKey != null && featuresJson != null) {
             // Attempt to decrypt payload
-            String decrypted = DecryptionUtils.decrypt(featuresJson, encryptionKey);
-            if (decrypted != null) {
+            try {
+                String decrypted = DecryptionUtils.decrypt(featuresJson, encryptionKey);
                 this.featuresJson = decrypted.trim();
+            } catch (DecryptionUtils.DecryptionException e) {
+                e.printStackTrace();
             }
         } else if (featuresJson != null) {
             // Use features

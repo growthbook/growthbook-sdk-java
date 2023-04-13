@@ -1,12 +1,14 @@
 package growthbook.sdk.java;
 
-import javax.annotation.Nullable;
 import javax.crypto.BadPaddingException;
 import javax.crypto.Cipher;
 import javax.crypto.IllegalBlockSizeException;
 import javax.crypto.NoSuchPaddingException;
 import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
+import java.nio.ByteBuffer;
+import java.nio.charset.CharacterCodingException;
+import java.nio.charset.CodingErrorAction;
 import java.nio.charset.StandardCharsets;
 import java.security.InvalidAlgorithmParameterException;
 import java.security.InvalidKeyException;
@@ -18,9 +20,15 @@ import java.util.Base64;
  */
 class DecryptionUtils {
 
-    public static @Nullable String decrypt(String payload, String encryptionKey) {
+    public static class DecryptionException extends Exception {
+        public DecryptionException(String errorMessage) {
+            super(errorMessage);
+        }
+    }
+
+    public static String decrypt(String payload, String encryptionKey) throws DecryptionException {
         if (!payload.contains(".")) {
-            return null;
+            throw new DecryptionException("Invalid payload");
         }
 
         try {
@@ -38,17 +46,27 @@ class DecryptionUtils {
             byte[] decodedCipher = Base64.getDecoder().decode(cipherText.getBytes(StandardCharsets.UTF_8));
             byte[] plainText = cipher.doFinal(decodedCipher);
 
+            // This decoder ensures no malformed input due to using a mismatching iv key
+            StandardCharsets.UTF_8
+                .newDecoder()
+                .onMalformedInput(CodingErrorAction.REPORT)
+                .decode(ByteBuffer.wrap(plainText));
+
             return new String(plainText);
+        } catch (InvalidAlgorithmParameterException e) {
+            throw new DecryptionException("Invalid payload");
+        } catch (InvalidKeyException e) {
+            throw new DecryptionException("Invalid encryption key");
         } catch (
-            InvalidAlgorithmParameterException |
-            InvalidKeyException |
-            NoSuchAlgorithmException |
-            NoSuchPaddingException |
-            IllegalBlockSizeException |
-            BadPaddingException e
+            NoSuchAlgorithmException
+            | NoSuchPaddingException
+            | IllegalBlockSizeException
+            | CharacterCodingException
+            | IllegalArgumentException
+            | BadPaddingException e
         ) {
             e.printStackTrace();
-            return null;
+            throw new DecryptionException(e.getMessage());
         }
     }
 

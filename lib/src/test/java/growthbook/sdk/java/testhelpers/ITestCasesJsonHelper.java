@@ -14,4 +14,5 @@ interface ITestCasesJsonHelper {
     JsonArray getQueryStringOverrideTestCases();
     JsonArray getInNamespaceTestCases();
     JsonArray getEqualWeightsTestCases();
+    JsonArray decryptionTestCases();
 }
