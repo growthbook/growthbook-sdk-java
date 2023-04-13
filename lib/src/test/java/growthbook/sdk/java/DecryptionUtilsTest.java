@@ -1,10 +1,17 @@
 package growthbook.sdk.java;
 
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
+import growthbook.sdk.java.testhelpers.TestCasesJsonHelper;
 import org.junit.jupiter.api.Test;
+
+import java.util.ArrayList;
 
 import static org.junit.jupiter.api.Assertions.*;
 
 class DecryptionUtilsTest {
+    final TestCasesJsonHelper helper = TestCasesJsonHelper.getInstance();
+
     @Test
     void test_canDecryptEncryptedPayload_1() {
         String payload = "7rvPA94JEsqRo9yPZsdsXg==.bJ8vtYvX+ur3cEUFVkYo1OyWb98oLnMlpeoO0Hs4YPc0EVb7oKX4KNz+Yt6GUMBsieXqtL7oaYzX+kMayZEtV+3bhyDYnS9QBrvalnfxbLExjtnsy8g0pPQHU/P/DPIzO0F+pphcahRfi+3AMTnIreqvkqrcX+MyOwHN56lqEs23Vp4Rsq2qDow/LZmn5kpwMNhMY0DBq7jC+lh2Oyly0g==";
@@ -69,5 +76,35 @@ class DecryptionUtilsTest {
         String result = DecryptionUtils.decrypt(payload, encryptionKey);
 
         assertNull(result);
+    }
+
+    @Test
+    void jsonTestCases_decrypt() {
+        JsonArray testCases = helper.decryptionTestCases();
+
+        ArrayList<String> passedTests = new ArrayList<>();
+        ArrayList<String> failedTests = new ArrayList<>();
+        ArrayList<Integer> failingIndexes = new ArrayList<>();
+
+        for (int i = 0; i < testCases.size(); i++) {
+            JsonArray test = (JsonArray) testCases.get(i);
+            String name = test.get(0).getAsString();
+            String payload = test.get(1).getAsString();
+            String key = test.get(2).getAsString();
+
+            JsonElement expectedElem = test.get(3);
+            if (expectedElem.isJsonNull()) {
+                // Null means no features can be parsed
+                Exception exception = assertThrows(IllegalArgumentException.class, () -> {
+                    DecryptionUtils.decrypt(payload, key);
+                });
+            } else {
+                String expected = test.get(3).getAsString();
+
+                String actual = DecryptionUtils.decrypt(payload, key).trim();
+
+                assertEquals(expected, actual);
+            }
+        }
     }
 }
