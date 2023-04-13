@@ -1,6 +1,7 @@
 package growthbook.sdk.java;
 
 import com.google.gson.JsonElement;
+import com.google.gson.annotations.SerializedName;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -63,6 +64,7 @@ public class FeatureRule<ValueType> {
     ArrayList<BucketRange> ranges;
 
     @Nullable
+    @SerializedName("meta")
     ArrayList<VariationMeta> meta;
 
     @Nullable

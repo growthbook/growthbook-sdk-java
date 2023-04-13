@@ -76,6 +76,7 @@ public class Experiment<ValueType> {
     ArrayList<BucketRange> ranges;
 
     @Nullable
+    @SerializedName("meta")
     ArrayList<VariationMeta> meta;
 
     @Nullable
