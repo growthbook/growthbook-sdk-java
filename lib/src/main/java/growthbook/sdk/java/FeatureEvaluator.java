@@ -121,6 +121,15 @@ class FeatureEvaluator implements IFeatureEvaluator {
                         continue;
                     }
 
+                    // Call the tracking callback with all the track data
+                    List<TrackData<ValueType>> trackData = rule.getTracks();
+                    TrackingCallback trackingCallback = context.getTrackingCallback();
+                    if (trackData != null && trackingCallback != null) {
+                        trackData.forEach(t -> {
+                            trackingCallback.onTrack(t.getExperiment(), t.getExperimentResult());
+                        });
+                    }
+
 
                     ValueType value = (ValueType) GrowthBookJsonUtils.unwrap(rule.getForce());
 
