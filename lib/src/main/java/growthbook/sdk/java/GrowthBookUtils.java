@@ -85,7 +85,7 @@ class GrowthBookUtils {
     public static Integer chooseVariation(@NotNull Float n, ArrayList<BucketRange> bucketRanges) {
         for (int i = 0; i < bucketRanges.size(); i++) {
             BucketRange range = bucketRanges.get(i);
-            if (n >= range.getRangeStart() && n < range.getRangeEnd()) {
+            if (inRange(n, range)) {
                 return i;
             }
         }
