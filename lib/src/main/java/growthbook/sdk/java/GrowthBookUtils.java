@@ -1,6 +1,9 @@
 package growthbook.sdk.java;
 
 import com.google.gson.Gson;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonPrimitive;
 import org.jetbrains.annotations.NotNull;
 
 import javax.annotation.Nullable;
@@ -9,6 +12,7 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -401,5 +405,72 @@ class GrowthBookUtils {
     public static Boolean inRange(Float n, BucketRange range) {
         if (n == null || range == null) return false;
         return n >= range.getRangeStart() && n < range.getRangeEnd();
+    }
+
+    public static Boolean isFilteredOut(List<Filter> filters, JsonObject attributes) {
+        if (filters == null) return false;
+        if (attributes == null) return false;
+
+        return filters.stream().anyMatch(filter -> {
+            if (filter.getAttribute() == null) return true;
+
+            JsonElement hashValueElement = attributes.get(filter.getAttribute());
+            if (hashValueElement == null) return true;
+            if (hashValueElement.isJsonNull()) return true;
+            if (!hashValueElement.isJsonPrimitive()) return true;
+
+            JsonPrimitive hashValuePrimitive = hashValueElement.getAsJsonPrimitive();
+            if (!hashValuePrimitive.isString()) return true;
+
+            String hashValue = hashValuePrimitive.getAsString();
+            if (hashValue == null || hashValue.equals("")) return true;
+
+            HashVersion hashVersion = filter.getHashVersion();
+            if (hashVersion == null) {
+                hashVersion = HashVersion.V2;
+            }
+
+            Float n = GrowthBookUtils.hash(filter.getSeed(), hashVersion, hashValue);
+            if (n == null) return true;
+
+            List<BucketRange> ranges = filter.getRanges();
+            if (ranges == null) return true;
+
+            return ranges.stream().noneMatch(range -> GrowthBookUtils.inRange(n, range));
+        });
+    }
+
+    public static Boolean isIncludedInRollout(
+        JsonObject attributes,
+        String seed,
+        String hashAttribute,
+        @Nullable BucketRange range,
+        @Nullable Float coverage,
+        @Nullable HashVersion hashVersion
+    ) {
+        if (range == null && coverage == null) return true;
+
+        if (hashAttribute == null || hashAttribute.equals("")) {
+            hashAttribute = "id";
+        }
+
+        if (attributes == null) return false;
+
+        JsonElement hashValueElement = attributes.get(hashAttribute);
+        if (hashValueElement == null || hashValueElement.isJsonNull()) return false;
+
+        if (hashVersion == null) {
+            hashVersion = HashVersion.V1;
+        }
+        String hashValue = hashValueElement.getAsString();
+        Float hash = GrowthBookUtils.hash(hashValue, hashVersion, seed);
+        if (hash == null) return false;
+
+        Boolean isIncluded = GrowthBookUtils.inRange(hash, range);
+        if (isIncluded) return true;
+
+        if (coverage != null) return hash <= coverage;
+
+        return true;
     }
 }

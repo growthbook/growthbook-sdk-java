@@ -60,16 +60,13 @@ public class FeatureRule<ValueType> {
     BucketRange range;
 
     @Nullable
-    @Builder.Default
-    List<BucketRange> ranges = new ArrayList<>();
+    ArrayList<BucketRange> ranges;
 
     @Nullable
-    @Builder.Default
-    List<VariationMeta> meta = new ArrayList<>();
+    ArrayList<VariationMeta> meta;
 
     @Nullable
-    @Builder.Default
-    List<Filter> filters = new ArrayList<>();
+    ArrayList<Filter> filters;
 
     @Nullable
     String seed;
@@ -81,6 +78,5 @@ public class FeatureRule<ValueType> {
     String phase;
 
     @Nullable
-    @Builder.Default
-    List<TrackData<ValueType>> tracks = new ArrayList<>();
+    ArrayList<TrackData<ValueType>> tracks;
 }

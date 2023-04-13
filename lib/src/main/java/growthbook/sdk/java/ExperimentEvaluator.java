@@ -4,10 +4,7 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 
 import javax.annotation.Nullable;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
 
 /**
  * <b>INTERNAL</b>: Implementation of experiment evaluation
@@ -73,10 +70,16 @@ class ExperimentEvaluator implements IExperimentEvaluator {
 
         String attributeValue = attributeValueElement.getAsString();
 
-        // If experiment namespace is set, check if the hash value is included in the range, and if not
-        // user is not in the experiment, variation 0.
+        List<Filter> filters = experiment.getFilters();
         Namespace namespace = experiment.getNamespace();
-        if (namespace != null) {
+        if (filters != null) {
+            // Exclude if user is filtered out (used to be called "namespace")
+            if (GrowthBookUtils.isFilteredOut(filters, attributes)) {
+                return getExperimentResult(experiment, context, 0, false, false, featureId);
+            }
+        } else if (namespace != null) {
+            // If experiment namespace is set, check if the hash value is included in the range, and if not
+            // user is not in the experiment, variation 0.
             Boolean isInNamespace = GrowthBookUtils.inNameSpace(attributeValue, namespace);
             if (!isInNamespace) {
                 return getExperimentResult(experiment, context, 0, false, false, featureId);
@@ -107,11 +110,14 @@ class ExperimentEvaluator implements IExperimentEvaluator {
         }
 
         // Bucket ranges
-        ArrayList<BucketRange> bucketRanges = GrowthBookUtils.getBucketRanges(
+        ArrayList<BucketRange> bucketRanges = experiment.getRanges();
+        if (bucketRanges == null) {
+            bucketRanges = GrowthBookUtils.getBucketRanges(
                 experiment.getVariations().size(),
                 coverage,
                 weights
-        );
+            );
+        }
 
         // Assigned variations
         // If not assigned a variation (-1), not in experiment, variation 0
@@ -120,6 +126,9 @@ class ExperimentEvaluator implements IExperimentEvaluator {
             seed = experiment.getKey();
         }
         Float hash = GrowthBookUtils.hash(attributeValue, context.getHashVersion(), seed);
+        if (hash == null) {
+            return getExperimentResult(experiment, context, 0, false, false, featureId);
+        }
         Integer assignedVariation = GrowthBookUtils.chooseVariation(hash, bucketRanges);
         if (assignedVariation == -1) {
             return getExperimentResult(experiment, context, 0, false, false, featureId);

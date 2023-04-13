@@ -99,7 +99,7 @@ class FeatureEvaluator implements IFeatureEvaluator {
 
                 // If there are filters for who is included (e.g. namespaces)
                 List<Filter> filters = rule.getFilters();
-                if (isFilteredOut(filters, attributes)) {
+                if (GrowthBookUtils.isFilteredOut(filters, attributes)) {
                     continue;
                 }
 
@@ -109,7 +109,7 @@ class FeatureEvaluator implements IFeatureEvaluator {
                         ruleKey = "id";
                     }
                     if (
-                        !isIncludedInRollout(
+                        !GrowthBookUtils.isIncludedInRollout(
                             attributes,
                             rule.getSeed(),
                             ruleKey,
@@ -129,7 +129,6 @@ class FeatureEvaluator implements IFeatureEvaluator {
                             trackingCallback.onTrack(t.getExperiment(), t.getExperimentResult());
                         });
                     }
-
 
                     ValueType value = (ValueType) GrowthBookJsonUtils.unwrap(rule.getForce());
 
@@ -155,10 +154,17 @@ class FeatureEvaluator implements IFeatureEvaluator {
                         .hashAttribute(rule.getHashAttribute())
                         .namespace(rule.getNamespace())
                         .variations(rule.getVariations())
+                        .meta(rule.getMeta())
+                        .ranges(rule.getRanges())
+                        .name(rule.getName())
+                        .phase(rule.getPhase())
+                        .seed(rule.getSeed())
+                        .hashVersion(rule.getHashVersion())
+                        .filters(rule.getFilters())
                         .build();
 
                 ExperimentResult<ValueType> result = experimentEvaluator.evaluateExperiment(experiment, context, key);
-                if (result.getInExperiment()) {
+                if (result.getInExperiment() && (result.getPassThrough() == null || !result.getPassThrough())) {
                     ValueType value = (ValueType) GrowthBookJsonUtils.unwrap(result.getValue());
 
                     return FeatureResult
@@ -184,73 +190,6 @@ class FeatureEvaluator implements IFeatureEvaluator {
             e.printStackTrace();
             return emptyFeature;
         }
-    }
-
-    private Boolean isFilteredOut(List<Filter> filters, JsonObject attributes) {
-        if (filters == null) return false;
-        if (attributes == null) return false;
-
-        return filters.stream().anyMatch(filter -> {
-            if (filter.getAttribute() == null) return true;
-
-            JsonElement hashValueElement = attributes.get(filter.getAttribute());
-            if (hashValueElement == null) return true;
-            if (hashValueElement.isJsonNull()) return true;
-            if (!hashValueElement.isJsonPrimitive()) return true;
-
-            JsonPrimitive hashValuePrimitive = hashValueElement.getAsJsonPrimitive();
-            if (!hashValuePrimitive.isString()) return true;
-
-            String hashValue = hashValuePrimitive.getAsString();
-            if (hashValue == null || hashValue.equals("")) return true;
-
-            HashVersion hashVersion = filter.getHashVersion();
-            if (hashVersion == null) {
-                hashVersion = HashVersion.V2;
-            }
-
-            Float n = GrowthBookUtils.hash(filter.getSeed(), hashVersion, hashValue);
-            if (n == null) return true;
-
-            List<BucketRange> ranges = filter.getRanges();
-            if (ranges == null) return true;
-
-            return ranges.stream().noneMatch(range -> GrowthBookUtils.inRange(n, range));
-        });
-    }
-
-    private Boolean isIncludedInRollout(
-        JsonObject attributes,
-        String seed,
-        String hashAttribute,
-        @Nullable BucketRange range,
-        @Nullable Float coverage,
-        @Nullable HashVersion hashVersion
-    ) {
-        if (range == null && coverage == null) return true;
-
-        if (hashAttribute == null || hashAttribute.equals("")) {
-            hashAttribute = "id";
-        }
-
-        if (attributes == null) return false;
-
-        JsonElement hashValueElement = attributes.get(hashAttribute);
-        if (hashValueElement == null || hashValueElement.isJsonNull()) return false;
-
-        if (hashVersion == null) {
-            hashVersion = HashVersion.V1;
-        }
-        String hashValue = hashValueElement.getAsString();
-        Float hash = GrowthBookUtils.hash(hashValue, hashVersion, seed);
-        if (hash == null) return false;
-
-        Boolean isIncluded = GrowthBookUtils.inRange(hash, range);
-        if (isIncluded) return true;
-
-        if (coverage != null) return hash <= coverage;
-
-        return true;
     }
 
     private @Nullable <ValueType> ValueType evaluateForcedFeatureValueFromUrl(String key, @Nullable String urlString, Class<ValueType> valueTypeClass) {

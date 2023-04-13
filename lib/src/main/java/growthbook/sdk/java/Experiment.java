@@ -12,7 +12,6 @@ import lombok.Data;
 import javax.annotation.Nullable;
 import java.lang.reflect.Type;
 import java.util.ArrayList;
-import java.util.List;
 
 /**
  * Defines a single Experiment
@@ -74,16 +73,13 @@ public class Experiment<ValueType> {
     HashVersion hashVersion = HashVersion.V1;
 
     @Nullable
-    @Builder.Default
-    List<BucketRange> ranges = new ArrayList<>();
+    ArrayList<BucketRange> ranges;
 
     @Nullable
-    @Builder.Default
-    List<VariationMeta> meta = new ArrayList<>();
+    ArrayList<VariationMeta> meta;
 
     @Nullable
-    @Builder.Default
-    List<Filter> filters = new ArrayList<>();
+    ArrayList<Filter> filters;
 
     @Nullable
     String seed;
