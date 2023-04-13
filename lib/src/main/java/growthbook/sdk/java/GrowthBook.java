@@ -2,9 +2,11 @@ package growthbook.sdk.java;
 
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import com.google.gson.JsonPrimitive;
 
 import javax.annotation.Nullable;
 import java.util.ArrayList;
+import java.util.List;
 
 /**
  * GrowthBook SDK class.
@@ -251,5 +253,40 @@ public class GrowthBook implements IGrowthBook {
         if (coverage != null) return hash <= coverage;
 
         return true;
+    }
+
+    private Boolean isFilteredOut(List<Filter> filters) {
+        if (filters == null) return false;
+
+        JsonObject attributes = context.getAttributes();
+        if (attributes == null) return false;
+
+        return filters.stream().anyMatch(filter -> {
+            if (filter.getAttribute() == null) return true;
+
+            JsonElement hashValueElement = attributes.get(filter.getAttribute());
+            if (hashValueElement == null) return true;
+            if (hashValueElement.isJsonNull()) return true;
+            if (!hashValueElement.isJsonPrimitive()) return true;
+
+            JsonPrimitive hashValuePrimitive = hashValueElement.getAsJsonPrimitive();
+            if (!hashValuePrimitive.isString()) return true;
+
+            String hashValue = hashValuePrimitive.getAsString();
+            if (hashValue == null || hashValue.equals("")) return true;
+
+            HashVersion hashVersion = filter.getHashVersion();
+            if (hashVersion == null) {
+                hashVersion = HashVersion.V2;
+            }
+
+            Float n = GrowthBookUtils.hash(filter.getSeed(), hashVersion, hashValue);
+            if (n == null) return true;
+
+            List<BucketRange> ranges = filter.getRanges();
+            if (ranges == null) return true;
+
+            return ranges.stream().noneMatch(range -> GrowthBookUtils.inRange(n, range));
+        });
     }
 }
