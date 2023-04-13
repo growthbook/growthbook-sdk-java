@@ -1,12 +1,7 @@
 package growthbook.sdk.java;
 
-import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
-import com.google.gson.JsonPrimitive;
-
 import javax.annotation.Nullable;
 import java.util.ArrayList;
-import java.util.List;
 
 /**
  * GrowthBook SDK class.
@@ -219,74 +214,5 @@ public class GrowthBook implements IGrowthBook {
     @Override
     public void subscribe(ExperimentRunCallback callback) {
         this.callbacks.add(callback);
-    }
-
-    private Boolean isIncludedInRollout(
-        String seed,
-        String hashAttribute,
-        @Nullable BucketRange range,
-        @Nullable Float coverage,
-        @Nullable HashVersion hashVersion
-    ) {
-        if (range == null && coverage == null) return true;
-
-        if (hashAttribute == null || hashAttribute.equals("")) {
-            hashAttribute = "id";
-        }
-
-        JsonObject attributes = context.getAttributes();
-        if (attributes == null) return false;
-
-        JsonElement hashValueElement = attributes.get(hashAttribute);
-        if (hashValueElement == null || hashValueElement.isJsonNull()) return false;
-
-        if (hashVersion == null) {
-            hashVersion = HashVersion.V1;
-        }
-        String hashValue = hashValueElement.getAsString();
-        Float hash = GrowthBookUtils.hash(hashValue, hashVersion, seed);
-        if (hash == null) return false;
-
-        Boolean isIncluded = GrowthBookUtils.inRange(hash, range);
-        if (isIncluded) return true;
-
-        if (coverage != null) return hash <= coverage;
-
-        return true;
-    }
-
-    private Boolean isFilteredOut(List<Filter> filters) {
-        if (filters == null) return false;
-
-        JsonObject attributes = context.getAttributes();
-        if (attributes == null) return false;
-
-        return filters.stream().anyMatch(filter -> {
-            if (filter.getAttribute() == null) return true;
-
-            JsonElement hashValueElement = attributes.get(filter.getAttribute());
-            if (hashValueElement == null) return true;
-            if (hashValueElement.isJsonNull()) return true;
-            if (!hashValueElement.isJsonPrimitive()) return true;
-
-            JsonPrimitive hashValuePrimitive = hashValueElement.getAsJsonPrimitive();
-            if (!hashValuePrimitive.isString()) return true;
-
-            String hashValue = hashValuePrimitive.getAsString();
-            if (hashValue == null || hashValue.equals("")) return true;
-
-            HashVersion hashVersion = filter.getHashVersion();
-            if (hashVersion == null) {
-                hashVersion = HashVersion.V2;
-            }
-
-            Float n = GrowthBookUtils.hash(filter.getSeed(), hashVersion, hashValue);
-            if (n == null) return true;
-
-            List<BucketRange> ranges = filter.getRanges();
-            if (ranges == null) return true;
-
-            return ranges.stream().noneMatch(range -> GrowthBookUtils.inRange(n, range));
-        });
     }
 }
