@@ -58,4 +58,20 @@ class FilterTest {
         assertEquals(HashVersion.V2, subject.getHashVersion());
         assertEquals(0, subject.getRanges().size());
     }
+
+    @Test
+    void testCanBeSerializedIntoJson() {
+        ArrayList<BucketRange> ranges = new ArrayList<>();
+        ranges.add(new BucketRange(0.f, 0.2f));
+        ranges.add(new BucketRange(0.2f, 0.5f));
+
+        Filter subject = Filter.builder()
+            .attribute("user_id")
+            .seed("some-seed")
+            .hashVersion(HashVersion.V2)
+            .ranges(ranges)
+            .build();
+
+        assertEquals("{\"seed\":\"some-seed\",\"ranges\":[[0.0,0.2],[0.2,0.5]],\"attribute\":\"user_id\",\"hashVersion\":2}", subject.toJson());
+    }
 }

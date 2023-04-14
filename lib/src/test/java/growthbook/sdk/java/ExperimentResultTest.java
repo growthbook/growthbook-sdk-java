@@ -85,14 +85,15 @@ class ExperimentResultTest {
                 .hashValue("123")
                 .featureId("my_feature")
                 .hashUsed(true)
+                .passThrough(true)
                 .build();
 
         assertEquals(
-                "{\"featureId\":\"my_feature\",\"value\":\"c\",\"variationId\":2,\"inExperiment\":true,\"hashUsed\":true,\"hashAttribute\":\"id\",\"hashValue\":\"123\"}",
+                "{\"value\":\"c\",\"variationId\":2,\"inExperiment\":true,\"hashAttribute\":\"id\",\"hashValue\":\"123\",\"featureId\":\"my_feature\",\"hashUsed\":true,\"key\":\"2\",\"passthrough\":true}",
                 subject.toJson()
         );
         assertEquals(
-                "{\"featureId\":\"my_feature\",\"value\":\"c\",\"variationId\":2,\"inExperiment\":true,\"hashUsed\":true,\"hashAttribute\":\"id\",\"hashValue\":\"123\"}",
+                "{\"value\":\"c\",\"variationId\":2,\"inExperiment\":true,\"hashAttribute\":\"id\",\"hashValue\":\"123\",\"featureId\":\"my_feature\",\"hashUsed\":true,\"key\":\"2\",\"passthrough\":true}",
                 jsonUtils.gson.toJson(subject)
         );
     }

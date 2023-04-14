@@ -16,6 +16,7 @@ import javax.annotation.Nullable;
 @AllArgsConstructor
 public class VariationMeta {
     @Nullable String key;
+
     @Nullable String name;
 
     @SerializedName("passthrough")

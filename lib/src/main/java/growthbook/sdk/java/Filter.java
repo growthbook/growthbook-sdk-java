@@ -39,4 +39,13 @@ public class Filter {
         this.attribute = attribute == null ? "id" : attribute;
         this.hashVersion = hashVersion == null ? HashVersion.V2 : hashVersion;
     }
+
+    public String toJson() {
+        return GrowthBookJsonUtils.getInstance().gson.toJson(this);
+    }
+
+    @Override
+    public String toString() {
+        return toJson();
+    }
 }

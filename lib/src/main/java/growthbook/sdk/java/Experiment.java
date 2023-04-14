@@ -1,7 +1,6 @@
 package growthbook.sdk.java;
 
 import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
 import com.google.gson.JsonSerializationContext;
 import com.google.gson.JsonSerializer;
 import com.google.gson.annotations.SerializedName;
@@ -114,26 +113,7 @@ public class Experiment<ValueType> {
      * @return JsonElement
      */
     public static <ValueType> JsonElement getJson(Experiment<ValueType> object) {
-        JsonObject json = new JsonObject();
-
-        json.addProperty("key", object.getKey());
-
-        JsonElement variationsElement = GrowthBookJsonUtils.getJsonElementForObject(object.getVariations());
-        json.add("variations", variationsElement);
-
-        JsonElement weightsElement = GrowthBookJsonUtils.getJsonElementForObject(object.getWeights());
-        json.add("weights", weightsElement);
-
-        json.addProperty("isActive", object.getIsActive());
-        json.addProperty("coverage", object.getCoverage());
-
-        JsonElement namespaceElement = GrowthBookJsonUtils.getJsonElementForObject(object.getNamespace());
-        json.add("namespace", namespaceElement);
-
-        json.addProperty("force", object.getForce());
-        json.addProperty("hashAttribute", object.getHashAttribute());
-
-        return json;
+        return GrowthBookJsonUtils.getJsonElementForObject(object);
     }
 
     /**

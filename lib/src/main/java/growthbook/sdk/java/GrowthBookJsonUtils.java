@@ -27,6 +27,8 @@ class GrowthBookJsonUtils {
     private GrowthBookJsonUtils() {
         GsonBuilder gsonBuilder = new GsonBuilder();
 
+//        gsonBuilder.excludeFieldsWithoutExposeAnnotation();
+
         // Namespaces
         gsonBuilder.registerTypeAdapter(Namespace.class, Namespace.getSerializer());
         gsonBuilder.registerTypeAdapter(Namespace.class, Namespace.getDeserializer());
@@ -37,12 +39,6 @@ class GrowthBookJsonUtils {
 
         // FeatureResult
         gsonBuilder.registerTypeAdapter(FeatureResult.class, FeatureResult.getSerializer());
-
-        // Experiment
-        gsonBuilder.registerTypeAdapter(Experiment.class, Experiment.getSerializer());
-
-        // ExperimentResult
-        gsonBuilder.registerTypeAdapter(ExperimentResult.class, ExperimentResult.getSerializer());
 
         // HashVersion enum
         gsonBuilder.registerTypeAdapter(HashVersion.class, HashVersion.getSerializer());

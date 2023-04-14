@@ -1,16 +1,11 @@
 package growthbook.sdk.java;
 
 import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
-import com.google.gson.JsonSerializationContext;
-import com.google.gson.JsonSerializer;
 import com.google.gson.annotations.SerializedName;
-import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 
 import javax.annotation.Nullable;
-import java.lang.reflect.Type;
 
 /**
  * The result of an {@link GrowthBook#run(Experiment)} call
@@ -108,34 +103,7 @@ public class ExperimentResult<ValueType> {
     }
 
     static <ValueType> JsonElement getJson(ExperimentResult<ValueType> object) {
-        JsonObject json = new JsonObject();
-
-        json.addProperty("featureId", object.getFeatureId());
-
-        JsonElement valueElement = GrowthBookJsonUtils.getJsonElementForObject(object.getValue());
-        json.add("value", valueElement);
-
-        json.addProperty("variationId", object.getVariationId());
-        json.addProperty("inExperiment", object.getInExperiment());
-        json.addProperty("hashUsed", object.getHashUsed());
-        json.addProperty("hashAttribute", object.getHashAttribute());
-        json.addProperty("hashValue", object.getHashValue());
-
-        return json;
-    }
-
-    /**
-     * A Gson serializer for {@link ExperimentResult}
-     * @return a Gson serializer
-     * @param <ValueType> type of the experiment
-     */
-    public static <ValueType> JsonSerializer<ExperimentResult<ValueType>> getSerializer() {
-        return new JsonSerializer<ExperimentResult<ValueType>>() {
-            @Override
-            public JsonElement serialize(ExperimentResult<ValueType> src, Type typeOfSrc, JsonSerializationContext context) {
-                return ExperimentResult.getJson(src);
-            }
-        };
+        return GrowthBookJsonUtils.getJsonElementForObject(object);
     }
 
     // endregion Serialization
