@@ -32,8 +32,7 @@ class GrowthBookUtilsTest {
             String seed = kv.get(0).getAsString();
             String input = kv.get(1).getAsString();
 
-            Integer hashVersionInt = kv.get(2).getAsInt();
-            HashVersion hashVersion = HashVersion.fromInt(hashVersionInt);
+            Integer hashVersion = kv.get(2).getAsInt();
 
             Float expected = null;
             if (!kv.get(3).isJsonNull()) {

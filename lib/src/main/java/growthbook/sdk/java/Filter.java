@@ -18,7 +18,7 @@ public class Filter {
 
     String attribute;
 
-    HashVersion hashVersion;
+    Integer hashVersion;
 
     /**
      * Object used for mutual exclusion and filtering users out of experiments based on random hashes.
@@ -32,12 +32,12 @@ public class Filter {
         @Nullable String seed,
         List<BucketRange> ranges,
         String attribute,
-        HashVersion hashVersion
+        Integer hashVersion
     ) {
         this.seed = seed == null ? "" : seed;
         this.ranges = ranges == null ? new ArrayList<>() : ranges;
         this.attribute = attribute == null ? "id" : attribute;
-        this.hashVersion = hashVersion == null ? HashVersion.V2 : hashVersion;
+        this.hashVersion = hashVersion == null ? 2 : hashVersion;
     }
 
     public String toJson() {

@@ -16,13 +16,13 @@ class FilterTest {
         Filter subject = Filter.builder()
             .attribute("user_id")
             .seed("some-seed")
-            .hashVersion(HashVersion.V1)
+            .hashVersion(1)
             .ranges(ranges)
             .build();
 
         assertEquals("user_id", subject.getAttribute());
         assertEquals("some-seed", subject.getSeed());
-        assertEquals(HashVersion.V1, subject.getHashVersion());
+        assertEquals(1, subject.getHashVersion());
         assertEquals(ranges, subject.getRanges());
     }
 
@@ -32,7 +32,7 @@ class FilterTest {
 
         assertEquals("id", subject.getAttribute());
         assertEquals("", subject.getSeed());
-        assertEquals(HashVersion.V2, subject.getHashVersion());
+        assertEquals(2, subject.getHashVersion());
         assertEquals(0, subject.getRanges().size());
     }
 
@@ -41,11 +41,11 @@ class FilterTest {
         ArrayList<BucketRange> ranges = new ArrayList<>();
         ranges.add(new BucketRange(0.f, 0.2f));
 
-        Filter subject = new Filter("seed", ranges, "user_id", HashVersion.V1);
+        Filter subject = new Filter("seed", ranges, "user_id", 1);
 
         assertEquals("user_id", subject.getAttribute());
         assertEquals("seed", subject.getSeed());
-        assertEquals(HashVersion.V1, subject.getHashVersion());
+        assertEquals(1, subject.getHashVersion());
         assertEquals(1, subject.getRanges().size());
     }
 
@@ -55,7 +55,7 @@ class FilterTest {
 
         assertEquals("id", subject.getAttribute());
         assertEquals("", subject.getSeed());
-        assertEquals(HashVersion.V2, subject.getHashVersion());
+        assertEquals(2, subject.getHashVersion());
         assertEquals(0, subject.getRanges().size());
     }
 
@@ -68,7 +68,7 @@ class FilterTest {
         Filter subject = Filter.builder()
             .attribute("user_id")
             .seed("some-seed")
-            .hashVersion(HashVersion.V2)
+            .hashVersion(2)
             .ranges(ranges)
             .build();
 

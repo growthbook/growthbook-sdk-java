@@ -41,10 +41,6 @@ class GrowthBookJsonUtils {
         // FeatureResult
         gsonBuilder.registerTypeAdapter(FeatureResult.class, FeatureResult.getSerializer());
 
-        // HashVersion enum
-        gsonBuilder.registerTypeAdapter(HashVersion.class, HashVersion.getSerializer());
-        gsonBuilder.registerTypeAdapter(HashVersion.class, HashVersion.getDeserializer());
-
         gson = gsonBuilder.create();
     }
 

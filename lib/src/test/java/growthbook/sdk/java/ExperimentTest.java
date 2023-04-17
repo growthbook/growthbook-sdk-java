@@ -129,7 +129,7 @@ class ExperimentTest {
                 .hashAttribute("_id")
                 .build();
 
-        assertEquals("{\"key\":\"my_experiment\",\"variations\":[100,200],\"weights\":[0.3,0.7],\"active\":true,\"coverage\":0.5,\"conditionJson\":\"{}\",\"namespace\":[\"pricing\",0.0,1.0],\"force\":1,\"hashAttribute\":\"_id\",\"hashVersion\":1}", subject.toJson());
+        assertEquals("{\"key\":\"my_experiment\",\"variations\":[100,200],\"weights\":[0.3,0.7],\"active\":true,\"coverage\":0.5,\"conditionJson\":\"{}\",\"namespace\":[\"pricing\",0.0,1.0],\"force\":1,\"hashAttribute\":\"_id\"}", subject.toJson());
     }
 
     @Test

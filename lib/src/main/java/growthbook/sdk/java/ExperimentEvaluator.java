@@ -125,9 +125,9 @@ class ExperimentEvaluator implements IExperimentEvaluator {
         if (seed == null) {
             seed = experiment.getKey();
         }
-        HashVersion hashVersion = context.getHashVersion();
+        Integer hashVersion = context.getHashVersion();
         if (hashVersion == null) {
-            hashVersion = HashVersion.V1;
+            hashVersion = 1;
         }
         Float hash = GrowthBookUtils.hash(attributeValue, hashVersion, seed);
         if (hash == null) {

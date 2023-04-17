@@ -28,13 +28,13 @@ class GrowthBookUtils {
      * @param seed A seed value that can be used instead of the experiment key for hashing
      * @return hashed float value or null if the hash version is unsupported.
      */
-    public static @Nullable Float hash(String stringValue, HashVersion hashVersion, String seed) {
+    public static @Nullable Float hash(String stringValue, Integer hashVersion, String seed) {
         if (hashVersion == null) return null;
 
         switch (hashVersion) {
-            case V1:
+            case 1:
                 return hashV1(stringValue, seed);
-            case V2:
+            case 2:
                 return hashV2(stringValue, seed);
             default:
                 return null;
@@ -69,7 +69,7 @@ class GrowthBookUtils {
      * @return whether the user is in the namespace
      */
     public static Boolean inNameSpace(String userId, Namespace namespace) {
-        Float n = hash(userId, HashVersion.V1, "__" + namespace.getId());
+        Float n = hash(userId, 1, "__" + namespace.getId());
         if (n == null) return false;
         return n >= namespace.getRangeStart() && n < namespace.getRangeEnd();
     }
@@ -425,9 +425,9 @@ class GrowthBookUtils {
             String hashValue = hashValuePrimitive.getAsString();
             if (hashValue == null || hashValue.equals("")) return true;
 
-            HashVersion hashVersion = filter.getHashVersion();
+            Integer hashVersion = filter.getHashVersion();
             if (hashVersion == null) {
-                hashVersion = HashVersion.V2;
+                hashVersion = 2;
             }
 
             Float n = GrowthBookUtils.hash(hashValue, hashVersion, filter.getSeed());
@@ -446,7 +446,7 @@ class GrowthBookUtils {
         String hashAttribute,
         @Nullable BucketRange range,
         @Nullable Float coverage,
-        @Nullable HashVersion hashVersion
+        @Nullable Integer hashVersion
     ) {
         if (range == null && coverage == null) return true;
 
@@ -460,7 +460,7 @@ class GrowthBookUtils {
         if (hashValueElement == null || hashValueElement.isJsonNull()) return false;
 
         if (hashVersion == null) {
-            hashVersion = HashVersion.V1;
+            hashVersion = 1;
         }
         String hashValue = hashValueElement.getAsString();
         Float hash = GrowthBookUtils.hash(hashValue, hashVersion, seed);

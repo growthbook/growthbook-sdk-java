@@ -68,8 +68,7 @@ public class Experiment<ValueType> {
     String hashAttribute = "id";
 
     @Nullable
-    @Builder.Default
-    HashVersion hashVersion = HashVersion.V1;
+    Integer hashVersion;
 
     @Nullable
     ArrayList<BucketRange> ranges;

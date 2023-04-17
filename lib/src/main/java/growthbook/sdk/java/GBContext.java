@@ -38,7 +38,7 @@ public class GBContext {
             @Nullable String attributesJson,
             @Nullable String featuresJson,
             @Nullable String encryptionKey,
-            @Nullable HashVersion hashVersion,
+            @Nullable Integer hashVersion,
             @Nullable Boolean enabled,
             Boolean isQaMode,
             @Nullable String url,
@@ -65,7 +65,7 @@ public class GBContext {
             this.featuresJson = featuresJson;
         }
 
-        this.hashVersion = hashVersion == null ? HashVersion.V1 : hashVersion;
+        this.hashVersion = hashVersion == null ? 1 : hashVersion;
         this.enabled = enabled == null ? true : enabled;
         this.isQaMode = isQaMode == null ? false : isQaMode;
         this.allowUrlOverride = allowUrlOverrides == null ? false : allowUrlOverrides;
@@ -85,7 +85,7 @@ public class GBContext {
     @Nullable
     private Boolean enabled;
 
-    private HashVersion hashVersion;
+    private Integer hashVersion;
 
     @Nullable
     private String url;

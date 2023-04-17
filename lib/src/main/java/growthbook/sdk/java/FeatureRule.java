@@ -54,7 +54,7 @@ public class FeatureRule<ValueType> {
     JsonElement condition;
 
     @Nullable
-    HashVersion hashVersion;
+    Integer hashVersion;
 
     @Nullable
     BucketRange range;
