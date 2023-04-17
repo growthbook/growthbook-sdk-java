@@ -412,15 +412,17 @@ class GrowthBookUtils {
         if (attributes == null) return false;
 
         return filters.stream().anyMatch(filter -> {
-            if (filter.getAttribute() == null) return true;
+            String hashAttribute = filter.getAttribute();
+            if (hashAttribute == null) {
+                hashAttribute = "id";
+            }
 
-            JsonElement hashValueElement = attributes.get(filter.getAttribute());
+            JsonElement hashValueElement = attributes.get(hashAttribute);
             if (hashValueElement == null) return true;
             if (hashValueElement.isJsonNull()) return true;
             if (!hashValueElement.isJsonPrimitive()) return true;
 
             JsonPrimitive hashValuePrimitive = hashValueElement.getAsJsonPrimitive();
-            if (!hashValuePrimitive.isString()) return true;
 
             String hashValue = hashValuePrimitive.getAsString();
             if (hashValue == null || hashValue.equals("")) return true;
