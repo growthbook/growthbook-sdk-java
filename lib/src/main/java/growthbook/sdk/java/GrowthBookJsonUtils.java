@@ -27,9 +27,6 @@ class GrowthBookJsonUtils {
     private GrowthBookJsonUtils() {
         GsonBuilder gsonBuilder = new GsonBuilder();
 
-        // Enable this to opt-in fields with @Expose - this will likely break JSON value types for other serialization libraries
-//        gsonBuilder.excludeFieldsWithoutExposeAnnotation();
-
         // Namespaces
         gsonBuilder.registerTypeAdapter(Namespace.class, Namespace.getSerializer());
         gsonBuilder.registerTypeAdapter(Namespace.class, Namespace.getDeserializer());
