@@ -1,15 +1,12 @@
 package growthbook.sdk.java;
 
 import com.google.gson.JsonElement;
-import com.google.gson.JsonSerializationContext;
-import com.google.gson.JsonSerializer;
 import com.google.gson.annotations.SerializedName;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 
 import javax.annotation.Nullable;
-import java.lang.reflect.Type;
 import java.util.ArrayList;
 
 /**
@@ -113,20 +110,6 @@ public class Experiment<ValueType> {
      */
     public static <ValueType> JsonElement getJson(Experiment<ValueType> object) {
         return GrowthBookJsonUtils.getJsonElementForObject(object);
-    }
-
-    /**
-     * A Gson serializer for {@link Experiment}
-     * @return a serializer for {@link Experiment}
-     * @param <ValueType> value type for the Experiment
-     */
-    public static <ValueType> JsonSerializer<Experiment<ValueType>> getSerializer() {
-        return new JsonSerializer<Experiment<ValueType>>() {
-            @Override
-            public JsonElement serialize(Experiment<ValueType> src, Type typeOfSrc, JsonSerializationContext context) {
-                return Experiment.getJson(src);
-            }
-        };
     }
 
     // endregion Serialization
