@@ -40,6 +40,9 @@ public class Filter {
         this.hashVersion = hashVersion == null ? 2 : hashVersion;
     }
 
+    /**
+     * @return JSON string of the {@link Filter}
+     */
     public String toJson() {
         return GrowthBookJsonUtils.getInstance().gson.toJson(this);
     }

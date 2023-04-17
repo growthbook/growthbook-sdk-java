@@ -25,7 +25,6 @@ public class GBContext {
      * @param attributesJson User attributes as JSON string
      * @param featuresJson Features response as JSON string, or the encrypted payload. Encrypted payload requires `encryptionKey`
      * @param encryptionKey Optional encryption key. If this is not null, featuresJson should be an encrypted payload.
-     * @param hashVersion Version of the hashing algorithm. Version 1 is most common across our SDK's, while version 2 is the recommended and will become the default. (default: 1)
      * @param enabled Whether globally all experiments are enabled (default: true)
      * @param isQaMode If true, random assignment is disabled and only explicitly forced variations are used.
      * @param url A URL string that is used for experiment evaluation, as well as forcing feature values.
