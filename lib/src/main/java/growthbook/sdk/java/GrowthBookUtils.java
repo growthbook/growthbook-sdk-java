@@ -466,13 +466,11 @@ class GrowthBookUtils {
         }
         String hashValue = hashValueElement.getAsString();
         Float hash = GrowthBookUtils.hash(hashValue, hashVersion, seed);
+
         if (hash == null) return false;
 
-        Boolean isIncluded = GrowthBookUtils.inRange(hash, range);
-        if (isIncluded) return true;
+        if (range != null) return GrowthBookUtils.inRange(hash, range);
 
-        if (coverage != null) return hash <= coverage;
-
-        return true;
+        return hash <= coverage;
     }
 }

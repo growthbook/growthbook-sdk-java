@@ -59,8 +59,6 @@ class FeatureEvaluator implements IFeatureEvaluator {
                 return defaultValueFeature;
             }
 
-//            System.out.printf("\n\nFeature: %s", featureJson);
-
             Feature<ValueType> feature = jsonUtils.gson.fromJson(featureJson, Feature.class);
             if (feature == null) {
                 // When key exists but there is no value, should be default value with null value
@@ -108,10 +106,16 @@ class FeatureEvaluator implements IFeatureEvaluator {
                     if (ruleKey == null) {
                         ruleKey = "id";
                     }
+
+                    String seed = rule.getSeed();
+                    if (seed == null) {
+                        seed = key;
+                    }
+
                     if (
                         !GrowthBookUtils.isIncludedInRollout(
                             attributes,
-                            rule.getSeed(),
+                            seed,
                             ruleKey,
                             rule.getRange(),
                             rule.getCoverage(),

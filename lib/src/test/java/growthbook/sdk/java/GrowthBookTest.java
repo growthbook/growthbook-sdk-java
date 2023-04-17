@@ -63,7 +63,7 @@ class GrowthBookTest {
 
             GrowthBook subject = new GrowthBook(context);
             String expectedString = testCase.get("result").getAsString();
-//            System.out.printf("\n\n Trying to serialize: %s", expectedString);
+//            System.out.printf("\n\n Expected result (string): %s", expectedString);
             FeatureResult expectedResult = jsonUtils.gson.fromJson(expectedString, FeatureResult.class);
 
             FeatureResult<Object> result = subject.evalFeature(featureKey, Object.class);
@@ -119,6 +119,9 @@ class GrowthBookTest {
             if (passes) {
                 passedTests.add(testDescription);
             } else {
+//                System.out.printf("\n\nevalFeature test: %s (index = %s)", testDescription, i);
+//                System.out.printf("\n r %s", featuresJson);
+//                System.out.printf("\n attributesJson: %s", attributesJson);
                 System.out.printf("\n\nExpected result = %s", expectedResult);
                 System.out.printf("\n  Actual result = %s", result);
 
@@ -126,6 +129,7 @@ class GrowthBookTest {
                     "\n\n valuePasses = %s, onPasses = %s, offPasses = %s, sourcePasses = %s, hashValuePasses = %s, keyPasses = %s, bucketPasses = %s",
                     valuePasses, onPasses, offPasses, sourcePasses, hashValuePasses, keyPasses, bucketPasses
                 );
+//                System.out.println("\n\n-------------------------------");
 
                 failedTests.add(testDescription);
                 failingIndexes.add(i);

@@ -125,7 +125,7 @@ class ExperimentEvaluator implements IExperimentEvaluator {
         if (seed == null) {
             seed = experiment.getKey();
         }
-        Integer hashVersion = context.getHashVersion();
+        Integer hashVersion = experiment.getHashVersion();
         if (hashVersion == null) {
             hashVersion = 1;
         }
@@ -170,7 +170,6 @@ class ExperimentEvaluator implements IExperimentEvaluator {
             String featureId,
             @Nullable Float hashBucket
     ) {
-        Integer targetVariationIndex = variationIndex;
         ArrayList<ValueType> experimentVariations = experiment.getVariations();
         if (experimentVariations == null) {
             experimentVariations = new ArrayList<>();
@@ -182,13 +181,8 @@ class ExperimentEvaluator implements IExperimentEvaluator {
 
         ValueType targetValue = null;
 
-        if (targetVariationIndex < 0 || targetVariationIndex >= experimentVariations.size()) {
-            // Set to 0
-            targetVariationIndex = 0;
-        }
-
         if (!experimentVariations.isEmpty()) {
-            targetValue = experiment.getVariations().get(targetVariationIndex);
+            targetValue = experiment.getVariations().get(variationIndex);
         }
 
         String hashAttribute = experiment.getHashAttribute();
@@ -218,6 +212,7 @@ class ExperimentEvaluator implements IExperimentEvaluator {
                 .<ValueType>builder()
                 .inExperiment(inExperiment)
                 .variationId(variationIndex)
+                .key(maybeMeta == null ? variationIndex.toString() : maybeMeta.getKey())
                 .featureId(featureId)
                 .hashValue(hashValue)
                 .hashUsed(hashUsed)
