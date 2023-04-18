@@ -34,6 +34,7 @@ loadScripts(document, 'script');</script>
 <li class="nav-bar-cell1-rev">Package</li>
 <li>Class</li>
 <li><a href="package-tree.html">Tree</a></li>
+<li><a href="../../../deprecated-list.html">Deprecated</a></li>
 <li><a href="../../../index-all.html">Index</a></li>
 <li><a href="../../../help-doc.html#package">Help</a></li>
 </ul>
@@ -85,17 +86,7 @@ loadScripts(document, 'script');</script>
 </div>
 <div class="col-first odd-row-color class-summary class-summary-tab2"><a href="ExperimentResult.html" title="class in growthbook.sdk.java">ExperimentResult</a>&lt;ValueType&gt;</div>
 <div class="col-last odd-row-color class-summary class-summary-tab2">
-<div class="block">The result of running an <a href="Experiment.html" title="class in growthbook.sdk.java"><code>Experiment</code></a> given a specific <a href="GBContext.html" title="class in growthbook.sdk.java"><code>GBContext</code></a>
-
- 
- inExperiment (boolean) - Whether or not the user is part of the experiment
- variationId (int) - The array index of the assigned variation
- value (any) - The array value of the assigned variation
- hashUsed (boolean) - If a hash was used to assign a variation
- hashAttribute (string) - The user attribute used to assign a variation
- hashValue (string) - The value of that attribute
- featureId (string or null) - The id of the feature (if any) that the experiment came from
- </div>
+<div class="block">The result of an <a href="GrowthBook.html#run(growthbook.sdk.java.Experiment)"><code>GrowthBook.run(Experiment)</code></a> call</div>
 </div>
 <div class="col-first even-row-color class-summary class-summary-tab1"><a href="ExperimentRunCallback.html" title="interface in growthbook.sdk.java">ExperimentRunCallback</a></div>
 <div class="col-last even-row-color class-summary class-summary-tab1">
@@ -139,36 +130,46 @@ loadScripts(document, 'script');</script>
 <div class="col-last odd-row-color class-summary class-summary-tab2">
 <div class="block">Overrides the defaultValue of a Feature based on a set of requirements.</div>
 </div>
-<div class="col-first even-row-color class-summary class-summary-tab2"><a href="GBContext.html" title="class in growthbook.sdk.java">GBContext</a></div>
+<div class="col-first even-row-color class-summary class-summary-tab2"><a href="Filter.html" title="class in growthbook.sdk.java">Filter</a></div>
 <div class="col-last even-row-color class-summary class-summary-tab2">
+<div class="block">Object used for mutual exclusion and filtering users out of experiments based on random hashes.</div>
+</div>
+<div class="col-first odd-row-color class-summary class-summary-tab2"><a href="GBContext.html" title="class in growthbook.sdk.java">GBContext</a></div>
+<div class="col-last odd-row-color class-summary class-summary-tab2">
 <div class="block">Context object passed into the GrowthBook constructor.</div>
 </div>
-<div class="col-first odd-row-color class-summary class-summary-tab2"><a href="GBContext.GBContextBuilder.html" title="class in growthbook.sdk.java">GBContext.GBContextBuilder</a></div>
-<div class="col-last odd-row-color class-summary class-summary-tab2">
+<div class="col-first even-row-color class-summary class-summary-tab2"><a href="GBContext.GBContextBuilder.html" title="class in growthbook.sdk.java">GBContext.GBContextBuilder</a></div>
+<div class="col-last even-row-color class-summary class-summary-tab2">
 <div class="block">The builder class to help create a context.</div>
 </div>
-<div class="col-first even-row-color class-summary class-summary-tab2"><a href="GBFeaturesRepository.html" title="class in growthbook.sdk.java">GBFeaturesRepository</a></div>
-<div class="col-last even-row-color class-summary class-summary-tab2">
+<div class="col-first odd-row-color class-summary class-summary-tab2"><a href="GBFeaturesRepository.html" title="class in growthbook.sdk.java">GBFeaturesRepository</a></div>
+<div class="col-last odd-row-color class-summary class-summary-tab2">
 <div class="block">This class can be created with its `builder()` or constructor.</div>
 </div>
-<div class="col-first odd-row-color class-summary class-summary-tab2"><a href="GrowthBook.html" title="class in growthbook.sdk.java">GrowthBook</a></div>
-<div class="col-last odd-row-color class-summary class-summary-tab2">
+<div class="col-first even-row-color class-summary class-summary-tab2"><a href="GrowthBook.html" title="class in growthbook.sdk.java">GrowthBook</a></div>
+<div class="col-last even-row-color class-summary class-summary-tab2">
 <div class="block">GrowthBook SDK class.</div>
 </div>
-<div class="col-first even-row-color class-summary class-summary-tab2"><a href="Namespace.html" title="class in growthbook.sdk.java">Namespace</a></div>
-<div class="col-last even-row-color class-summary class-summary-tab2">
-<div class="block">A tuple that specifies what part of a namespace an experiment includes.</div>
-</div>
-<div class="col-first odd-row-color class-summary class-summary-tab3"><a href="Operator.html" title="enum class in growthbook.sdk.java">Operator</a></div>
-<div class="col-last odd-row-color class-summary class-summary-tab3">
+<div class="col-first odd-row-color class-summary class-summary-tab2"><a href="Namespace.html" title="class in growthbook.sdk.java">Namespace</a></div>
+<div class="col-last odd-row-color class-summary class-summary-tab2">Deprecated.</div>
+<div class="col-first even-row-color class-summary class-summary-tab3"><a href="Operator.html" title="enum class in growthbook.sdk.java">Operator</a></div>
+<div class="col-last even-row-color class-summary class-summary-tab3">
 <div class="block">Operator for use in the condition JSON</div>
+</div>
+<div class="col-first odd-row-color class-summary class-summary-tab2"><a href="TrackData.html" title="class in growthbook.sdk.java">TrackData</a>&lt;ValueType&gt;</div>
+<div class="col-last odd-row-color class-summary class-summary-tab2">
+<div class="block">Used for remote feature evaluation to trigger the <a href="TrackingCallback.html" title="interface in growthbook.sdk.java"><code>TrackingCallback</code></a></div>
 </div>
 <div class="col-first even-row-color class-summary class-summary-tab1"><a href="TrackingCallback.html" title="interface in growthbook.sdk.java">TrackingCallback</a></div>
 <div class="col-last even-row-color class-summary class-summary-tab1">
 <div class="block">This callback is called with the <a href="Experiment.html" title="class in growthbook.sdk.java"><code>Experiment</code></a> and <a href="ExperimentResult.html" title="class in growthbook.sdk.java"><code>ExperimentResult</code></a> when an experiment is evaluated.</div>
 </div>
-<div class="col-first odd-row-color class-summary class-summary-tab2"><a href="Version.html" title="class in growthbook.sdk.java">Version</a></div>
+<div class="col-first odd-row-color class-summary class-summary-tab2"><a href="VariationMeta.html" title="class in growthbook.sdk.java">VariationMeta</a></div>
 <div class="col-last odd-row-color class-summary class-summary-tab2">
+<div class="block">Meta info about an experiment variation</div>
+</div>
+<div class="col-first even-row-color class-summary class-summary-tab2"><a href="Version.html" title="class in growthbook.sdk.java">Version</a></div>
+<div class="col-last even-row-color class-summary class-summary-tab2">
 <div class="block">Tag for the published GrowthBook SDK version</div>
 </div>
 </div>

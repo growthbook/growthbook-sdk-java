@@ -34,6 +34,7 @@ loadScripts(document, 'script');</script>
 <li><a href="package-summary.html">Package</a></li>
 <li class="nav-bar-cell1-rev">Class</li>
 <li><a href="package-tree.html">Tree</a></li>
+<li><a href="../../../deprecated-list.html">Deprecated</a></li>
 <li><a href="../../../index-all.html">Index</a></li>
 <li><a href="../../../help-doc.html#class">Help</a></li>
 </ul>
@@ -80,17 +81,7 @@ loadScripts(document, 'script');</script>
 <hr>
 <div class="type-signature"><span class="modifiers">public class </span><span class="element-name type-name-label">ExperimentResult&lt;ValueType&gt;</span>
 <span class="extends-implements">extends <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html" title="class or interface in java.lang" class="external-link">Object</a></span></div>
-<div class="block">The result of running an <a href="Experiment.html" title="class in growthbook.sdk.java"><code>Experiment</code></a> given a specific <a href="GBContext.html" title="class in growthbook.sdk.java"><code>GBContext</code></a>
-
- <ul>
- <li>inExperiment (boolean) - Whether or not the user is part of the experiment</li>
- <li>variationId (int) - The array index of the assigned variation</li>
- <li>value (any) - The array value of the assigned variation</li>
- <li>hashUsed (boolean) - If a hash was used to assign a variation</li>
- <li>hashAttribute (string) - The user attribute used to assign a variation</li>
- <li>hashValue (string) - The value of that attribute</li>
- <li>featureId (string or null) - The id of the feature (if any) that the experiment came from</li>
- </ul></div>
+<div class="block">The result of an <a href="GrowthBook.html#run(growthbook.sdk.java.Experiment)"><code>GrowthBook.run(Experiment)</code></a> call</div>
 </section>
 <section class="summary">
 <ul class="summary-list">
@@ -102,8 +93,20 @@ loadScripts(document, 'script');</script>
 <div class="summary-table two-column-summary">
 <div class="table-header col-first">Constructor</div>
 <div class="table-header col-last">Description</div>
-<div class="col-constructor-name even-row-color"><code><a href="#%3Cinit%3E()" class="member-name-link">ExperimentResult</a>()</code></div>
-<div class="col-last even-row-color">&nbsp;</div>
+<div class="col-constructor-name even-row-color"><code><a href="#%3Cinit%3E(ValueType,java.lang.Integer,java.lang.Boolean,java.lang.String,java.lang.String,java.lang.String,java.lang.Boolean,java.lang.String,java.lang.String,java.lang.Float,java.lang.Boolean)" class="member-name-link">ExperimentResult</a><wbr>(<a href="ExperimentResult.html" title="type parameter in ExperimentResult">ValueType</a>&nbsp;value,
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Integer.html" title="class or interface in java.lang" class="external-link">Integer</a>&nbsp;variationId,
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Boolean.html" title="class or interface in java.lang" class="external-link">Boolean</a>&nbsp;inExperiment,
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;hashAttribute,
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;hashValue,
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;featureId,
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Boolean.html" title="class or interface in java.lang" class="external-link">Boolean</a>&nbsp;hashUsed,
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;key,
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;name,
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Float.html" title="class or interface in java.lang" class="external-link">Float</a>&nbsp;bucket,
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Boolean.html" title="class or interface in java.lang" class="external-link">Boolean</a>&nbsp;passThrough)</code></div>
+<div class="col-last even-row-color">
+<div class="block">The result of running an <a href="Experiment.html" title="class in growthbook.sdk.java"><code>Experiment</code></a> given a specific <a href="GBContext.html" title="class in growthbook.sdk.java"><code>GBContext</code></a></div>
+</div>
 </div>
 </section>
 </li>
@@ -112,20 +115,15 @@ loadScripts(document, 'script');</script>
 <section class="method-summary" id="method-summary">
 <h2>Method Summary</h2>
 <div id="method-summary-table">
-<div class="table-tabs" role="tablist" aria-orientation="horizontal"><button id="method-summary-table-tab0" role="tab" aria-selected="true" aria-controls="method-summary-table.tabpanel" tabindex="0" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table', 3)" class="active-table-tab">All Methods</button><button id="method-summary-table-tab1" role="tab" aria-selected="false" aria-controls="method-summary-table.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table-tab1', 3)" class="table-tab">Static Methods</button><button id="method-summary-table-tab2" role="tab" aria-selected="false" aria-controls="method-summary-table.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table-tab2', 3)" class="table-tab">Instance Methods</button><button id="method-summary-table-tab4" role="tab" aria-selected="false" aria-controls="method-summary-table.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table-tab4', 3)" class="table-tab">Concrete Methods</button></div>
+<div class="table-tabs" role="tablist" aria-orientation="horizontal"><button id="method-summary-table-tab0" role="tab" aria-selected="true" aria-controls="method-summary-table.tabpanel" tabindex="0" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table', 3)" class="active-table-tab">All Methods</button><button id="method-summary-table-tab2" role="tab" aria-selected="false" aria-controls="method-summary-table.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table-tab2', 3)" class="table-tab">Instance Methods</button><button id="method-summary-table-tab4" role="tab" aria-selected="false" aria-controls="method-summary-table.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table-tab4', 3)" class="table-tab">Concrete Methods</button></div>
 <div id="method-summary-table.tabpanel" role="tabpanel">
 <div class="summary-table three-column-summary" aria-labelledby="method-summary-table-tab0">
 <div class="table-header col-first">Modifier and Type</div>
 <div class="table-header col-second">Method</div>
 <div class="table-header col-last">Description</div>
-<div class="col-first even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code>static &lt;ValueType&gt;<br>com.google.gson.JsonSerializer&lt;<a href="ExperimentResult.html" title="class in growthbook.sdk.java">ExperimentResult</a>&lt;ValueType&gt;&gt;</code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code><a href="#getSerializer()" class="member-name-link">getSerializer</a>()</code></div>
-<div class="col-last even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4">
-<div class="block">A Gson serializer for <a href="ExperimentResult.html" title="class in growthbook.sdk.java"><code>ExperimentResult</code></a></div>
-</div>
-<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a></code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#toJson()" class="member-name-link">toJson</a>()</code></div>
-<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a></code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#toJson()" class="member-name-link">toJson</a>()</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">Serialized JSON string of the <a href="ExperimentResult.html" title="class in growthbook.sdk.java"><code>ExperimentResult</code></a></div>
 </div>
 </div>
@@ -146,9 +144,43 @@ loadScripts(document, 'script');</script>
 <h2>Constructor Details</h2>
 <ul class="member-list">
 <li>
-<section class="detail" id="&lt;init&gt;()">
-<h3>ExperimentResult</h3>
-<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="element-name">ExperimentResult</span>()</div>
+<section class="detail" id="&lt;init&gt;(ValueType,java.lang.Integer,java.lang.Boolean,java.lang.String,java.lang.String,java.lang.String,java.lang.Boolean,java.lang.String,java.lang.String,java.lang.Float,java.lang.Boolean)">
+<h3 id="&lt;init&gt;(java.lang.Object,java.lang.Integer,java.lang.Boolean,java.lang.String,java.lang.String,java.lang.String,java.lang.Boolean,java.lang.String,java.lang.String,java.lang.Float,java.lang.Boolean)">ExperimentResult</h3>
+<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="element-name">ExperimentResult</span><wbr><span class="parameters">(@Nullable
+ <a href="ExperimentResult.html" title="type parameter in ExperimentResult">ValueType</a>&nbsp;value,
+ @Nullable
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Integer.html" title="class or interface in java.lang" class="external-link">Integer</a>&nbsp;variationId,
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Boolean.html" title="class or interface in java.lang" class="external-link">Boolean</a>&nbsp;inExperiment,
+ @Nullable
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;hashAttribute,
+ @Nullable
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;hashValue,
+ @Nullable
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;featureId,
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Boolean.html" title="class or interface in java.lang" class="external-link">Boolean</a>&nbsp;hashUsed,
+ @Nullable
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;key,
+ @Nullable
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;name,
+ @Nullable
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Float.html" title="class or interface in java.lang" class="external-link">Float</a>&nbsp;bucket,
+ @Nullable
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Boolean.html" title="class or interface in java.lang" class="external-link">Boolean</a>&nbsp;passThrough)</span></div>
+<div class="block">The result of running an <a href="Experiment.html" title="class in growthbook.sdk.java"><code>Experiment</code></a> given a specific <a href="GBContext.html" title="class in growthbook.sdk.java"><code>GBContext</code></a></div>
+<dl class="notes">
+<dt>Parameters:</dt>
+<dd><code>value</code> - The array value of the assigned variation</dd>
+<dd><code>variationId</code> - The array index of the assigned variation</dd>
+<dd><code>inExperiment</code> - Whether the user is part of the experiment or not</dd>
+<dd><code>hashAttribute</code> - The user attribute used to assign a variation (default: "id")</dd>
+<dd><code>hashValue</code> - The value of that attribute</dd>
+<dd><code>featureId</code> - The id of the feature (if any) that the experiment came from</dd>
+<dd><code>hashUsed</code> - If a hash was used to assign a variation</dd>
+<dd><code>key</code> - The experiment key, if any</dd>
+<dd><code>name</code> - The human-readable name of the assigned variation</dd>
+<dd><code>bucket</code> - The hash value used to assign a variation (float from 0 to 1)</dd>
+<dd><code>passThrough</code> - Used for holdout groups</dd>
+</dl>
 </section>
 </li>
 </ul>
@@ -167,20 +199,6 @@ loadScripts(document, 'script');</script>
 <dl class="notes">
 <dt>Returns:</dt>
 <dd>JSON string</dd>
-</dl>
-</section>
-</li>
-<li>
-<section class="detail" id="getSerializer()">
-<h3>getSerializer</h3>
-<div class="member-signature"><span class="modifiers">public static</span>&nbsp;<span class="type-parameters">&lt;ValueType&gt;</span>
-<span class="return-type">com.google.gson.JsonSerializer&lt;<a href="ExperimentResult.html" title="class in growthbook.sdk.java">ExperimentResult</a>&lt;ValueType&gt;&gt;</span>&nbsp;<span class="element-name">getSerializer</span>()</div>
-<div class="block">A Gson serializer for <a href="ExperimentResult.html" title="class in growthbook.sdk.java"><code>ExperimentResult</code></a></div>
-<dl class="notes">
-<dt>Type Parameters:</dt>
-<dd><code>ValueType</code> - type of the experiment</dd>
-<dt>Returns:</dt>
-<dd>a Gson serializer</dd>
 </dl>
 </section>
 </li>
