@@ -63,18 +63,73 @@ class GrowthBookTest {
 
             GrowthBook subject = new GrowthBook(context);
             String expectedString = testCase.get("result").getAsString();
+//            System.out.printf("\n\n Expected result (string): %s", expectedString);
             FeatureResult expectedResult = jsonUtils.gson.fromJson(expectedString, FeatureResult.class);
 
             FeatureResult<Object> result = subject.evalFeature(featureKey, Object.class);
-//            System.out.printf("\n\n Eval Feature result: %s - JSON: %s", result, result.toJson());
+//            System.out.printf("\n\n Eval Feature actual: %s - JSON: %s", result, result.toJson());
+//            System.out.printf("\n\n Eval Feature expected: %s - JSON: %s", expectedResult, expectedResult.toJson());
 
-            boolean passes = expectedResult.equals(result);
+            boolean valuePasses = Objects.equals(expectedResult.getValue(), result.getValue());
+            if (!valuePasses) {
+                System.out.printf("\n\nExpected value: %s, Actual value: %s", expectedResult.getValue(), result.getValue());
+            }
+            boolean onPasses = Objects.equals(expectedResult.isOn(), result.isOn());
+            if (!onPasses) {
+                System.out.printf("\n\nExpected isOn: %s, Actual isOn: %s", expectedResult.isOn(), result.isOn());
+            }
+            boolean offPasses = Objects.equals(expectedResult.isOff(), result.isOff());
+            if (!offPasses) {
+                System.out.printf("\n\nExpected isOff: %s, Actual isOff: %s", expectedResult.isOff(), result.isOff());
+            }
+            boolean sourcePasses = Objects.equals(expectedResult.getSource(), result.getSource());
+            if (!sourcePasses) {
+                System.out.printf("\n\nExpected getSource: %s, Actual getSource: %s", expectedResult.getSource(), result.getSource());
+            }
+
+            // Hash value on experiment
+            boolean hashValuePasses = true;
+            boolean bucketPasses = true;
+            boolean keyPasses = true;
+            if (expectedResult.getExperimentResult() != null) {
+                System.out.printf("\n\nHas an experiment result: %s (index = %s)", testDescription, i);
+                ExperimentResult actualResult = result.getExperimentResult();
+                String actualHashValue = actualResult != null ? actualResult.getHashValue() : null;
+                hashValuePasses = Objects.equals(expectedResult.getExperimentResult().getHashValue(), actualHashValue);
+                if (!hashValuePasses) {
+                    System.out.printf("\n\nExpected getExperimentResult().getHashValue(): %s, Actual getExperimentResult().getHashValue(): %s", expectedResult.getExperimentResult().getHashValue(), actualHashValue);
+                }
+
+                Float expectedBucket = expectedResult.getExperimentResult().getBucket();
+                Float actualBucket = actualResult != null ? result.getExperimentResult().getBucket() : null;
+                bucketPasses = Objects.equals(expectedBucket, actualBucket);
+                if (!bucketPasses) {
+                    System.out.printf("\n\nExpected bucket: %s, Actual bucket: %s", expectedBucket, actualBucket);
+                }
+                String expectedKey = expectedResult.getExperimentResult().getKey();
+                String actualKey = actualResult != null ? result.getExperimentResult().getKey() : null;
+                keyPasses = Objects.equals(expectedKey, actualKey);
+                if (!keyPasses) {
+                    System.out.printf("\n\nExpected key: %s, Actual key: %s", expectedKey, actualKey);
+                }
+            }
+
+            boolean passes = valuePasses && onPasses && offPasses && sourcePasses && hashValuePasses && keyPasses && bucketPasses;
 
             if (passes) {
                 passedTests.add(testDescription);
             } else {
+//                System.out.printf("\n\nevalFeature test: %s (index = %s)", testDescription, i);
+//                System.out.printf("\n r %s", featuresJson);
+//                System.out.printf("\n attributesJson: %s", attributesJson);
                 System.out.printf("\n\nExpected result = %s", expectedResult);
                 System.out.printf("\n  Actual result = %s", result);
+
+                System.out.printf(
+                    "\n\n valuePasses = %s, onPasses = %s, offPasses = %s, sourcePasses = %s, hashValuePasses = %s, keyPasses = %s, bucketPasses = %s",
+                    valuePasses, onPasses, offPasses, sourcePasses, hashValuePasses, keyPasses, bucketPasses
+                );
+//                System.out.println("\n\n-------------------------------");
 
                 failedTests.add(testDescription);
                 failingIndexes.add(i);

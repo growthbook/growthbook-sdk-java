@@ -32,7 +32,14 @@ class ExperimentTest {
                 conditionJson,
                 namespace,
                 1,
-                "_id"
+                "_id",
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null
         );
         assertEquals(0.5f, experiment.coverage);
         assertEquals(0.5f, experiment.getCoverage());
@@ -122,16 +129,17 @@ class ExperimentTest {
                 .hashAttribute("_id")
                 .build();
 
-        assertEquals("{\"key\":\"my_experiment\",\"variations\":[100,200],\"weights\":[0.3,0.7],\"isActive\":true,\"coverage\":0.5,\"namespace\":[\"pricing\",0.0,1.0],\"force\":1,\"hashAttribute\":\"_id\"}", subject.toJson());
+        assertEquals("{\"key\":\"my_experiment\",\"variations\":[100,200],\"weights\":[0.3,0.7],\"active\":true,\"coverage\":0.5,\"conditionJson\":\"{}\",\"namespace\":[\"pricing\",0.0,1.0],\"force\":1,\"hashAttribute\":\"_id\"}", subject.toJson());
     }
 
     @Test
     void test_canBeDeserialized() {
         Type experimentType = new TypeToken<Experiment<Integer>>() {}.getType();
 
-        Experiment<Integer> subject = jsonUtils.gson.fromJson("{\"key\":\"my_experiment\",\"variations\":[100,200],\"weights\":[0.3,0.7],\"isActive\":true,\"coverage\":0.5,\"namespace\":[\"pricing\",0.0,1.0],\"force\":1,\"hashAttribute\":\"_id\"}", experimentType);
+        Experiment<Integer> subject = jsonUtils.gson.fromJson("{\"key\":\"my_experiment\",\"variations\":[100,200],\"weights\":[0.3,0.7],\"active\":true,\"coverage\":0.5,\"namespace\":[\"pricing\",0.0,1.0],\"force\":1,\"hashAttribute\":\"_id\"}", experimentType);
 
         assertEquals("pricing", subject.getNamespace().getId());
+        assertTrue(subject.getIsActive());
         assertEquals(100, subject.getVariations().get(0));
         assertEquals(200, subject.getVariations().get(1));
     }

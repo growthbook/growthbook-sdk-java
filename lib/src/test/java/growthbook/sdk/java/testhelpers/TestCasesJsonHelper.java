@@ -61,6 +61,12 @@ public class TestCasesJsonHelper implements ITestCasesJsonHelper {
     }
 
     @Override
+    public JsonArray decryptionTestCases() {
+        return this.testCases.get("decrypt").getAsJsonArray();
+    }
+
+
+    @Override
     public JsonArray getQueryStringOverrideTestCases() {
         return this.testCases.get("getQueryStringOverride").getAsJsonArray();
     }

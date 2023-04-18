@@ -32,6 +32,15 @@ class FeatureRuleTest {
                 weights,
                 namespace,
                 "_id",
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
                 null
         );
 

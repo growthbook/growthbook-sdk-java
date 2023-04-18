@@ -2,10 +2,12 @@ package growthbook.sdk.java;
 
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import com.google.gson.JsonPrimitive;
 
 import javax.annotation.Nullable;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.util.List;
 
 /**
  * <b>INTERNAL</b>: Implementation of feature evaluation
@@ -57,8 +59,6 @@ class FeatureEvaluator implements IFeatureEvaluator {
                 return defaultValueFeature;
             }
 
-//            System.out.printf("\n\nFeature: %s", featureJson);
-
             Feature<ValueType> feature = jsonUtils.gson.fromJson(featureJson, Feature.class);
             if (feature == null) {
                 // When key exists but there is no value, should be default value with null value
@@ -95,37 +95,43 @@ class FeatureEvaluator implements IFeatureEvaluator {
                     }
                 }
 
+                // If there are filters for who is included (e.g. namespaces)
+                List<Filter> filters = rule.getFilters();
+                if (GrowthBookUtils.isFilteredOut(filters, attributes)) {
+                    continue;
+                }
+
                 if (rule.getForce() != null) {
-                    if (rule.getCoverage() != null) {
-                        String ruleKey = rule.getHashAttribute();
-                        if (ruleKey == null) {
-                            ruleKey = "id";
-                        }
+                    String ruleKey = rule.getHashAttribute();
+                    if (ruleKey == null) {
+                        ruleKey = "id";
+                    }
 
-                        JsonElement attrValueElement = attributes.get(ruleKey);
+                    String seed = rule.getSeed();
+                    if (seed == null) {
+                        seed = key;
+                    }
 
-                        if (attrValueElement == null || attrValueElement.isJsonNull()) {
-                            continue;
-                        }
+                    if (
+                        !GrowthBookUtils.isIncludedInRollout(
+                            attributes,
+                            seed,
+                            ruleKey,
+                            rule.getRange(),
+                            rule.getCoverage(),
+                            rule.getHashVersion()
+                        )
+                    ) {
+                        continue;
+                    }
 
-                        boolean isEmpty = false;
-                        if (attrValueElement.isJsonObject()) {
-                            isEmpty = attrValueElement.getAsJsonObject().entrySet().size() == 0;
-                        } else if (attrValueElement.isJsonArray()) {
-                            isEmpty = attrValueElement.getAsJsonArray().size() == 0;
-                        } else if (attrValueElement.isJsonPrimitive() && attrValueElement.getAsJsonPrimitive().isString()) {
-                            isEmpty = attrValueElement.getAsString().isEmpty();
-                        }
-
-                        if (isEmpty) {
-                            continue;
-                        }
-
-                        String attrValue = attrValueElement.getAsString();
-                        Float hashFnv = GrowthBookUtils.hash(attrValue + key);
-                        if (hashFnv > rule.getCoverage()) {
-                            continue;
-                        }
+                    // Call the tracking callback with all the track data
+                    List<TrackData<ValueType>> trackData = rule.getTracks();
+                    TrackingCallback trackingCallback = context.getTrackingCallback();
+                    if (trackData != null && trackingCallback != null) {
+                        trackData.forEach(t -> {
+                            trackingCallback.onTrack(t.getExperiment(), t.getExperimentResult());
+                        });
                     }
 
                     ValueType value = (ValueType) GrowthBookJsonUtils.unwrap(rule.getForce());
@@ -152,10 +158,17 @@ class FeatureEvaluator implements IFeatureEvaluator {
                         .hashAttribute(rule.getHashAttribute())
                         .namespace(rule.getNamespace())
                         .variations(rule.getVariations())
+                        .meta(rule.getMeta())
+                        .ranges(rule.getRanges())
+                        .name(rule.getName())
+                        .phase(rule.getPhase())
+                        .seed(rule.getSeed())
+                        .hashVersion(rule.getHashVersion())
+                        .filters(rule.getFilters())
                         .build();
 
                 ExperimentResult<ValueType> result = experimentEvaluator.evaluateExperiment(experiment, context, key);
-                if (result.getInExperiment()) {
+                if (result.getInExperiment() && (result.getPassThrough() == null || !result.getPassThrough())) {
                     ValueType value = (ValueType) GrowthBookJsonUtils.unwrap(result.getValue());
 
                     return FeatureResult

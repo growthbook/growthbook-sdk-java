@@ -38,12 +38,6 @@ class GrowthBookJsonUtils {
         // FeatureResult
         gsonBuilder.registerTypeAdapter(FeatureResult.class, FeatureResult.getSerializer());
 
-        // Experiment
-        gsonBuilder.registerTypeAdapter(Experiment.class, Experiment.getSerializer());
-
-        // ExperimentResult
-        gsonBuilder.registerTypeAdapter(ExperimentResult.class, ExperimentResult.getSerializer());
-
         gson = gsonBuilder.create();
     }
 

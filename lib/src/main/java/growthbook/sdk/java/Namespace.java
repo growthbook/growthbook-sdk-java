@@ -19,6 +19,7 @@ import java.lang.reflect.Type;
  *     <li>The end of the range (float, between 0 and 1)</li>
  * </ul>
  */
+@Deprecated
 @Data
 @Builder
 @AllArgsConstructor

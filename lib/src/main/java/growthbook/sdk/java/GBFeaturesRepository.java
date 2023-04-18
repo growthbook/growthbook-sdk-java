@@ -236,7 +236,7 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
             this.refreshCallbacks.forEach(featureRefreshCallback -> {
                 featureRefreshCallback.onRefresh(this.featuresJson);
             });
-        } catch (IOException e) {
+        } catch (IOException | DecryptionUtils.DecryptionException e) {
             e.printStackTrace();
 
             throw new FeatureFetchException(

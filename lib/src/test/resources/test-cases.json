@@ -1,5 +1,5 @@
 {
-  "specVersion": "0.2.3",
+  "specVersion": "0.4.1",
   "evalFeature": [
     {
       "name": "unknown feature key",
@@ -123,6 +123,17 @@
       "result": "{\"on\":true,\"off\":false,\"source\":\"defaultValue\",\"value\":2,\"experiment\":null,\"experimentResult\":null}"
     },
     {
+      "name": "force rules - coverage with bad hash version",
+      "type": "integer",
+      "context": {
+        "features": "{\"feature\":{\"defaultValue\":2,\"rules\":[{\"force\":1,\"coverage\":1,\"hashVersion\":99}]}}",
+        "attributes": "{\"id\": \"1\"}",
+        "forcedVariations": null
+      },
+      "feature": "feature",
+      "result": "{\"value\":2,\"on\":true,\"off\":false,\"source\":\"defaultValue\"}"
+    },
+    {
       "name": "ignores empty rules",
       "type": "null",
       "context": {
@@ -142,7 +153,7 @@
         "forcedVariations": null
       },
       "feature": "feature",
-      "result": "{\"on\":true,\"off\":false,\"source\":\"experiment\",\"value\":\"c\",\"experiment\":{\"key\":\"feature\",\"variations\":[\"a\",\"b\",\"c\"]},\"experimentResult\":{\"featureId\":\"feature\",\"value\":\"c\",\"variationId\":2,\"inExperiment\":true,\"hashUsed\":true,\"hashAttribute\":\"id\",\"hashValue\":\"123\"}}"
+      "result": "{\"on\":true,\"off\":false,\"source\":\"experiment\",\"value\":\"c\",\"experiment\":{\"key\":\"feature\",\"variations\":[\"a\",\"b\",\"c\"]},\"experimentResult\":{\"featureId\":\"feature\",\"value\":\"c\",\"variationId\":2,\"inExperiment\":true,\"hashUsed\":true,\"hashAttribute\":\"id\",\"hashValue\":\"123\",\"bucket\": 0.863,\"key\": \"2\"}}"
     },
     {
       "name": "empty experiment rule - a",
@@ -153,7 +164,7 @@
         "forcedVariations": null
       },
       "feature": "feature",
-      "result": "{\"on\":true,\"off\":false,\"source\":\"experiment\",\"value\":\"a\",\"experiment\":{\"key\":\"feature\",\"variations\":[\"a\",\"b\",\"c\"]},\"experimentResult\":{\"featureId\":\"feature\",\"value\":\"a\",\"variationId\":0,\"inExperiment\":true,\"hashUsed\":true,\"hashAttribute\":\"id\",\"hashValue\":\"456\"}}"
+      "result": "{\"on\":true,\"off\":false,\"source\":\"experiment\",\"value\":\"a\",\"experiment\":{\"key\":\"feature\",\"variations\":[\"a\",\"b\",\"c\"]},\"experimentResult\":{\"featureId\":\"feature\",\"value\":\"a\",\"variationId\":0,\"inExperiment\":true,\"hashUsed\":true,\"hashAttribute\":\"id\",\"hashValue\":\"456\",\"bucket\": 0.178,\"key\": \"0\"}}"
     },
     {
       "name": "empty experiment rule - b",
@@ -164,18 +175,18 @@
         "forcedVariations": null
       },
       "feature": "feature",
-      "result": "{\"on\":true,\"off\":false,\"source\":\"experiment\",\"value\":\"b\",\"experiment\":{\"key\":\"feature\",\"variations\":[\"a\",\"b\",\"c\"]},\"experimentResult\":{\"featureId\":\"feature\",\"value\":\"b\",\"variationId\":1,\"inExperiment\":true,\"hashUsed\":true,\"hashAttribute\":\"id\",\"hashValue\":\"fds\"}}"
+      "result": "{\"on\":true,\"off\":false,\"source\":\"experiment\",\"value\":\"b\",\"experiment\":{\"key\":\"feature\",\"variations\":[\"a\",\"b\",\"c\"]},\"experimentResult\":{\"featureId\":\"feature\",\"value\":\"b\",\"variationId\":1,\"inExperiment\":true,\"hashUsed\":true,\"hashAttribute\":\"id\",\"hashValue\":\"fds\",\"bucket\": 0.514,\"key\": \"1\"}}"
     },
     {
       "name": "creates experiments properly",
       "type": "boolean",
       "context": {
-        "features": "{\"feature\":{\"rules\":[{\"coverage\":0.99,\"hashAttribute\":\"anonId\",\"namespace\":[\"pricing\",0,1],\"key\":\"hello\",\"variations\":[true,false],\"weights\":[0.1,0.9],\"condition\":{\"premium\":true}}]}}",
+        "features": "{\"feature\":{\"rules\":[{\"coverage\":0.99,\"hashAttribute\":\"anonId\",\"seed\":\"feature\",\"hashVersion\":2,\"name\":\"Test\",\"phase\":\"1\",\"ranges\":[[0,0.1],[0.1,1]],\"meta\":[{\"key\":\"v0\",\"name\":\"variation 0\"},{\"key\":\"v1\",\"name\":\"variation 1\"}],\"filters\":[{\"attribute\":\"anonId\",\"seed\":\"pricing\",\"ranges\":[[0,1]]}],\"namespace\":[\"pricing\",0,1],\"key\":\"hello\",\"variations\":[true,false],\"weights\":[0.1,0.9],\"condition\":{\"premium\":true}}]}}",
         "attributes": "{\"anonId\":\"123\",\"premium\":true}",
         "forcedVariations": null
       },
       "feature": "feature",
-      "result": "{\"on\":false,\"off\":true,\"source\":\"experiment\",\"value\":false,\"experiment\":{\"coverage\":0.99,\"hashAttribute\":\"anonId\",\"namespace\":[\"pricing\",0,1],\"key\":\"hello\",\"variations\":[true,false],\"weights\":[0.1,0.9]},\"experimentResult\":{\"featureId\":\"feature\",\"value\":false,\"variationId\":1,\"inExperiment\":true,\"hashUsed\":true,\"hashAttribute\":\"anonId\",\"hashValue\":\"123\"}}"
+      "result": "{\"value\":false,\"on\":false,\"off\":true,\"source\":\"experiment\",\"experiment\":{\"coverage\":0.99,\"ranges\":[[0,0.1],[0.1,1]],\"meta\":[{\"key\":\"v0\",\"name\":\"variation 0\"},{\"key\":\"v1\",\"name\":\"variation 1\"}],\"filters\":[{\"attribute\":\"anonId\",\"seed\":\"pricing\",\"ranges\":[[0,1]]}],\"name\":\"Test\",\"phase\":\"1\",\"seed\":\"feature\",\"hashVersion\":2,\"hashAttribute\":\"anonId\",\"namespace\":[\"pricing\",0,1],\"key\":\"hello\",\"variations\":[true,false],\"weights\":[0.1,0.9]},\"experimentResult\":{\"featureId\":\"feature\",\"value\":false,\"variationId\":1,\"inExperiment\":true,\"hashUsed\":true,\"hashAttribute\":\"anonId\",\"hashValue\":\"123\",\"bucket\":0.5231,\"key\":\"v1\",\"name\":\"variation 1\"}}"
     },
     {
       "name": "rule orders - skip 1",
@@ -241,7 +252,7 @@
         "forcedVariations": null
       },
       "feature": "feature",
-      "result": "{\"on\":true,\"off\":false,\"source\":\"experiment\",\"value\":1,\"experiment\":{\"key\":\"feature\",\"variations\":[0,1]},\"experimentResult\":{\"featureId\":\"feature\",\"hashAttribute\":\"id\",\"hashValue\":123,\"hashUsed\":true,\"inExperiment\":true,\"value\":1,\"variationId\":1}}"
+      "result": "{\"on\":true,\"off\":false,\"source\":\"experiment\",\"value\":1,\"experiment\":{\"key\":\"feature\",\"variations\":[0,1]},\"experimentResult\":{\"featureId\":\"feature\",\"hashAttribute\":\"id\",\"hashValue\":123,\"hashUsed\":true,\"inExperiment\":true,\"value\":1,\"variationId\":1,\"key\": \"1\",\"bucket\": 0.863}}"
     },
     {
       "name": "skip experiment on missing hashAttribute",
@@ -263,7 +274,77 @@
         "forcedVariations": {"feature": 1}
       },
       "feature": "feature",
-      "result": "{\"on\":true,\"off\":false,\"source\":\"experiment\",\"value\":1,\"experiment\":{\"key\":\"feature\",\"variations\":[0,1,2,3]},\"experimentResult\":{\"featureId\":\"feature\",\"value\":1,\"variationId\":1,\"inExperiment\":true,\"hashUsed\":false,\"hashAttribute\":\"id\",\"hashValue\":\"123\"}}"
+      "result": "{\"on\":true,\"off\":false,\"source\":\"experiment\",\"value\":1,\"experiment\":{\"key\":\"feature\",\"variations\":[0,1,2,3]},\"experimentResult\":{\"featureId\":\"feature\",\"value\":1,\"variationId\":1,\"inExperiment\":true,\"hashUsed\":false,\"hashAttribute\":\"id\",\"hashValue\":\"123\",\"key\": \"1\"}}"
+    },
+    {
+      "name": "Force rule with range, ignores coverage",
+      "type": "integer",
+      "context": {
+        "features": "{\"feature\":{\"defaultValue\":0,\"rules\":[{\"force\":2,\"coverage\":0.01,\"range\":[0,0.99]}]}}",
+        "attributes": "{\"id\": \"1\"}"
+      },
+      "feature": "feature",
+      "result": "{\"value\":2,\"on\":true,\"off\":false,\"source\":\"force\"}"
+    },
+    {
+      "name": "Force rule, hash version 2",
+      "type": "integer",
+      "context": {
+        "features": "{\"feature\":{\"defaultValue\":0,\"rules\":[{\"force\":2,\"hashVersion\":2,\"range\":[0.96,0.97]}]}}",
+        "attributes": "{\"id\": \"1\"}"
+      },
+      "feature": "feature",
+      "result": "{\"value\":2,\"on\":true,\"off\":false,\"source\":\"force\"}"
+    },
+    {
+      "name": "Force rule, skip due to range",
+      "type": "integer",
+      "context": {
+        "features": "{\"feature\":{\"defaultValue\":0,\"rules\":[{\"force\":2,\"range\":[0,0.01]}]}}",
+        "attributes": "{\"id\": \"1\"}"
+      },
+      "feature": "feature",
+      "result": "{\"value\":0,\"on\":false,\"off\":true,\"source\":\"defaultValue\"}"
+    },
+    {
+      "name": "Force rule, skip due to filter",
+      "type": "integer",
+      "context": {
+        "features": "{\"feature\":{\"defaultValue\":0,\"rules\":[{\"force\":2,\"filters\":[{\"seed\":\"seed\",\"ranges\":[[0,0.01]]}]}]}}",
+        "attributes": "{\"id\": \"1\"}"
+      },
+      "feature": "feature",
+      "result": "{\"value\":0,\"on\":false,\"off\":true,\"source\":\"defaultValue\"}"
+    },
+    {
+      "name": "Force rule, use seed with range",
+      "type": "integer",
+      "context": {
+        "features": "{\"feature\":{\"defaultValue\":0,\"rules\":[{\"force\":2,\"range\":[0,0.5],\"seed\":\"fjdslafdsa\",\"hashVersion\":2}]}}",
+        "attributes": "{\"id\": \"1\"}"
+      },
+      "feature": "feature",
+      "result": "{\"value\":2,\"on\":true,\"off\":false,\"source\":\"force\"}"
+    },
+    {
+      "name": "Support passthrough variations",
+      "type": "integer",
+      "context": {
+        "features": "{\"feature\":{\"defaultValue\":0,\"rules\":[{\"key\":\"holdout\",\"variations\":[1,2],\"hashVersion\":2,\"ranges\":[[0,0.01],[0.01,1]],\"meta\":[{},{\"passthrough\":true}]},{\"key\":\"experiment\",\"variations\":[3,4],\"hashVersion\":2,\"ranges\":[[0,0.5],[0.5,1]]}]}}",
+        "attributes": "{\"id\": \"1\"}"
+      },
+      "feature": "feature",
+      "result": "{\"value\":3,\"on\":true,\"off\":false,\"source\":\"experiment\",\"experiment\":{\"key\":\"experiment\",\"hashVersion\":2,\"variations\":[3,4],\"ranges\":[[0,0.5],[0.5,1]]},\"experimentResult\":{\"featureId\":\"feature\",\"hashAttribute\":\"id\",\"hashUsed\":true,\"hashValue\":\"1\",\"inExperiment\":true,\"key\":\"0\",\"value\":3,\"variationId\":0,\"bucket\":0.4413}}"
+    },
+    {
+      "name": "Support holdout groups",
+      "type": "integer",
+      "context": {
+        "features": "{\"feature\":{\"defaultValue\":0,\"rules\":[{\"key\":\"holdout\",\"hashVersion\":2,\"variations\":[1,2],\"ranges\":[[0,0.99],[0.99,1]],\"meta\":[{},{\"passthrough\":true}]},{\"key\":\"experiment\",\"hashVersion\":2,\"variations\":[3,4],\"ranges\":[[0,0.5],[0.5,1]]}]}}",
+        "attributes": "{\"id\": \"1\"}"
+      },
+      "feature": "feature",
+      "result": "{\"value\":1,\"on\":true,\"off\":false,\"source\":\"experiment\",\"experiment\":{\"hashVersion\":2,\"ranges\":[[0,0.99],[0.99,1]],\"meta\":[{},{\"passthrough\":true}],\"key\":\"holdout\",\"variations\":[1,2]},\"experimentResult\":{\"featureId\":\"feature\",\"hashAttribute\":\"id\",\"hashUsed\":true,\"hashValue\":\"1\",\"inExperiment\":true,\"key\":\"0\",\"value\":1,\"variationId\":0,\"bucket\":0.8043}}"
     }
   ],
   "run": [
@@ -1076,6 +1157,110 @@
       },
       "experiment": "{\"key\": \"no-coverage\", \"variations\": [0, 1], \"coverage\": 0}",
       "result": {"value": 0, "inExperiment": false, "hashUsed": false}
+    },
+    {
+      "name": "Filtered, included",
+      "type": "integer",
+      "context": {
+        "attributes": "{\"id\": \"1\",\"anonId\": \"fsdafsda\"}"
+      },
+      "experiment": "{\"key\":\"filtered\",\"variations\":[0,1],\"filters\":[{\"seed\":\"seed\",\"ranges\":[[0,0.1],[0.2,0.4]]},{\"seed\":\"seed\",\"attribute\":\"anonId\",\"ranges\":[[0.8,1]]}]}",
+      "result": {
+        "value": 1,
+        "inExperiment": true,
+        "hashUsed": true
+      }
+    },
+    {
+      "name": "Filtered, excluded",
+      "type": "integer",
+      "context": {
+        "attributes": "{\"id\": \"1\",\"anonId\": \"fsdafsda\"}"
+      },
+      "experiment": "{\"key\":\"filtered\",\"variations\":[0,1],\"filters\":[{\"seed\":\"seed\",\"ranges\":[[0,0.1],[0.2,0.4]]},{\"seed\":\"seed\",\"attribute\":\"anonId\",\"ranges\":[[0.6,0.8]]}]}",
+      "result": {
+        "value": 0,
+        "inExperiment": false,
+        "hashUsed": false
+      }
+    },
+    {
+      "name": "Filtered, ignore namespace",
+      "type": "integer",
+      "context": {
+        "attributes": "{\"id\": \"1\"}"
+      },
+      "experiment": "{\"key\":\"filtered\",\"variations\":[0,1],\"filters\":[{\"seed\":\"seed\",\"ranges\":[[0,0.1],[0.2,0.4]]}],\"namespace\":[\"test\",0,0.001]}",
+      "result": {
+        "value": 1,
+        "inExperiment": true,
+        "hashUsed": true
+      }
+    },
+    {
+      "name": "Ranges, ignore coverage and weights",
+      "type": "integer",
+      "context": {
+        "attributes": "{\"id\": \"1\"}"
+      },
+      "experiment": "{\"key\":\"ranges\",\"variations\":[0,1],\"ranges\":[[0.99,1],[0,0.99]],\"coverage\":0.01,\"weights\":[0.99,0.01]}",
+      "result": {
+        "value": 1,
+        "inExperiment": true,
+        "hashUsed": true
+      }
+    },
+    {
+      "name": "Ranges, partial coverage",
+      "type": "integer",
+      "context": {
+        "attributes": "{\"id\": \"1\"}"
+      },
+      "experiment": "{\"key\":\"configs\",\"variations\":[0,1],\"ranges\":[[0,0.1],[0.9,1]]}",
+      "result": {
+        "value": 0,
+        "inExperiment": false,
+        "hashUsed": false
+      }
+    },
+    {
+      "name": "Uses seed and hash version",
+      "type": "integer",
+      "context": {
+        "attributes": "{\"id\": \"1\"}"
+      },
+      "experiment": "{\"key\":\"key\",\"seed\":\"foo\",\"hashVersion\":2,\"variations\":[0,1],\"ranges\":[[0,0.5],[0.5,1]]}",
+      "result": {
+        "value": 1,
+        "inExperiment": true,
+        "hashUsed": true
+      }
+    },
+    {
+      "name": "Uses seed with default weights/coverage",
+      "type": "integer",
+      "context": {
+        "attributes": "{\"id\": \"1\"}"
+      },
+      "experiment": "{\"key\":\"key\",\"seed\":\"foo\",\"hashVersion\":2,\"variations\":[0,1]}",
+      "result": {
+        "value": 1,
+        "inExperiment": true,
+        "hashUsed": true
+      }
+    },
+    {
+      "name": "Uses seed with weights/coverage",
+      "type": "integer",
+      "context": {
+        "attributes": "{\"id\": \"1\"}"
+      },
+      "experiment": "{\"key\":\"key\",\"seed\":\"foo\",\"hashVersion\":2,\"variations\":[0,1],\"weights\":[0.5,0.5],\"coverage\":0.99}",
+      "result": {
+        "value": 1,
+        "inExperiment": true,
+        "hashUsed": true
+      }
     }
   ],
   "evalCondition": [
@@ -1544,13 +1729,21 @@
     ]
   ],
   "hash": [
-    ["a", 0.22],
-    ["b", 0.077],
-    ["ab", 0.946],
-    ["def", 0.652],
-    ["8952klfjas09ujkasdf", 0.549],
-    ["123", 0.011],
-    ["___)((*\":&", 0.563]
+    ["", "a", 1, 0.22],
+    ["", "b", 1, 0.077],
+    ["b", "a", 1, 0.946],
+    ["ef", "d", 1, 0.652],
+    ["asdf", "8952klfjas09ujk", 1, 0.549],
+    ["", "123", 1, 0.011],
+    ["", "___)((*\":&", 1, 0.563],
+    ["seed", "a", 2, 0.0505],
+    ["seed", "b", 2, 0.2696],
+    ["foo", "ab", 2, 0.2575],
+    ["foo", "def", 2, 0.2019],
+    ["89123klj", "8952klfjas09ujkasdf", 2, 0.124],
+    ["90850943850283058242805", "123", 2, 0.7516],
+    ["()**(%$##$%#$#", "___)((*\":&", 2, 0.0128],
+    ["abc", "def", 99, null]
   ],
   "getBucketRange": [
     ["normal 50/50", [2, 1, null], [[0, 0.5], [0.5, 1]]],
@@ -1669,5 +1862,67 @@
     [2, [0.5, 0.5]],
     [3, [0.33333333, 0.33333333, 0.33333333]],
     [4, [0.25, 0.25, 0.25, 0.25]]
+  ],
+  "decrypt": [
+    [
+      "Valid feature",
+      "m5ylFM6ndyOJA2OPadubkw==.Uu7ViqgKEt/dWvCyhI46q088PkAEJbnXKf3KPZjf9IEQQ+A8fojNoxw4wIbPX3aj",
+      "Zvwv/+uhpFDznZ6SX28Yjg==",
+      "{\"feature\":{\"defaultValue\":true}}"
+    ],
+    [
+      "Broken JSON",
+      "SVZIM2oKD1JoHNIeeoW3Uw==.AGbRiGAHf2f6/ziVr9UTIy+bVFmVli6+bHZ2jnCm9N991ITv1ROvOEjxjLSmgEpv",
+      "UQD0Qqw7fM1bhfKKPH8TGw==",
+      "{\"feature\":{\"defaultValue\":true?5%"
+    ],
+    [
+      "Wrong key",
+      "m5ylFM6ndyOJA2OPadubkw==.Uu7ViqgKEt/dWvCyhI46q088PkAEJbnXKf3KPZjf9IEQQ+A8fojNoxw4wIbPX3aj",
+      "Zvwv/+uhpFDznZ6SX39Yjg==",
+      null
+    ],
+    [
+      "Invalid key length",
+      "m5ylFM6ndyOJA2OPadubkw==.Uu7ViqgKEt/dWvCyhI46q088PkAEJbnXKf3KPZjf9IEQQ+A8fojNoxw4wIbPX3aj",
+      "Zvwv/+uhpFDznSX39Yjg==",
+      null
+    ],
+    [
+      "Invalid key characters",
+      "m5ylFM6ndyOJA2OPadubkw==.Uu7ViqgKEt/dWvCyhI46q088PkAEJbnXKf3KPZjf9IEQQ+A8fojNoxw4wIbPX3aj",
+      "Zvwv/%!(pFDznZ6SX39Yjg==",
+      null
+    ],
+    [
+      "Invalid body",
+      "m5ylFM6ndyOJA2OPadubkw==.Uu7ViqgKEt/dWvCyhI46q0!*&()f3KPZjf9IEQQ+A8fojNoxw4wIbPX3aj",
+      "Zvwv/+uhpFDznZ6SX28Yjg==",
+      null
+    ],
+    [
+      "Invalid iv length",
+      "m5ylFM6ndyOPadubkw==.Uu7ViqgKEt/dWvCyhI46q088PkAEJbnXKf3KPZjf9IEQQ+A8fojNoxw4wIbPX3aj",
+      "Zvwv/+uhpFDznZ6SX28Yjg==",
+      null
+    ],
+    [
+      "Invalid iv",
+      "m5ylFM6*&(OJA2OPadubkw==.Uu7ViqgKEt/dWvCyhI46q088PkAEJbnXKf3KPZjf9IEQQ+A8fojNoxw4wIbPX3aj",
+      "Zvwv/+uhpFDznZ6SX28Yjg==",
+      null
+    ],
+    [
+      "Missing delimiter",
+      "m5ylFM6ndyOJA2OPadubkw==Uu7ViqgKEt/dWvCyhI46q088PkAEJbnXKf3KPZjf9IEQQ+A8fojNoxw4wIbPX3aj",
+      "Zvwv/+uhpFDznZ6SX28Yjg==",
+      null
+    ],
+    [
+      "Corrupted payload",
+      "fsa*(&(SF*&F&SF^SD&*FS&*6fsdkajfd",
+      "Zvwv/+uhpFDznZ6SX28Yjg==",
+      null
+    ]
   ]
 }

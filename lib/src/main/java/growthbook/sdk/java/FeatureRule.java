@@ -1,12 +1,14 @@
 package growthbook.sdk.java;
 
 import com.google.gson.JsonElement;
+import com.google.gson.annotations.SerializedName;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 
 import javax.annotation.Nullable;
 import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Overrides the defaultValue of a Feature based on a set of requirements. Has a number of optional properties
@@ -50,4 +52,32 @@ public class FeatureRule<ValueType> {
 
     @Nullable
     JsonElement condition;
+
+    @Nullable
+    Integer hashVersion;
+
+    @Nullable
+    BucketRange range;
+
+    @Nullable
+    ArrayList<BucketRange> ranges;
+
+    @Nullable
+    @SerializedName("meta")
+    ArrayList<VariationMeta> meta;
+
+    @Nullable
+    ArrayList<Filter> filters;
+
+    @Nullable
+    String seed;
+
+    @Nullable
+    String name;
+
+    @Nullable
+    String phase;
+
+    @Nullable
+    ArrayList<TrackData<ValueType>> tracks;
 }

@@ -1,6 +1,10 @@
 package growthbook.sdk.java;
 
 import com.google.gson.Gson;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonPrimitive;
+import org.jetbrains.annotations.NotNull;
 
 import javax.annotation.Nullable;
 import java.math.BigInteger;
@@ -8,6 +12,7 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -15,20 +20,45 @@ import java.util.Map;
  */
 class GrowthBookUtils {
     /**
-     * Hashes a string to a float between 0 and 1.
+     * Hashes a string to a float between 0 and 1, or null if the hash version is unsupported.
      * Uses the simple Fowler–Noll–Vo algorithm, specifically fnv32a.
      *
      * @param stringValue Input string
-     * @return hashed float value
+     * @param hashVersion The hash version
+     * @param seed A seed value that can be used instead of the experiment key for hashing
+     * @return hashed float value or null if the hash version is unsupported.
      */
-    public static Float hash(String stringValue) {
-        BigInteger bigInt = MathUtils.fnv1a_32(stringValue.getBytes());
+    public static @Nullable Float hash(String stringValue, Integer hashVersion, String seed) {
+        if (hashVersion == null) return null;
+
+        switch (hashVersion) {
+            case 1:
+                return hashV1(stringValue, seed);
+            case 2:
+                return hashV2(stringValue, seed);
+            default:
+                return null;
+        }
+    }
+
+    private static Float hashV1(String stringValue, String seed) {
+        BigInteger bigInt = MathUtils.fnv1a_32((stringValue + seed).getBytes());
         BigInteger thousand = new BigInteger("1000");
         BigInteger remainder = bigInt.remainder(thousand);
 
-        String remainderAsString = remainder.toString();
-        float remainderAsFloat = Float.parseFloat(remainderAsString);
+        float remainderAsFloat = Float.parseFloat(remainder.toString());
         return remainderAsFloat / 1000f;
+    }
+
+    private static Float hashV2(String stringValue, String seed) {
+        BigInteger first = MathUtils.fnv1a_32((seed + stringValue).getBytes());
+        BigInteger second = MathUtils.fnv1a_32(first.toString().getBytes());
+
+        BigInteger tenThousand = new BigInteger("10000");
+        BigInteger remainder = second.remainder(tenThousand);
+
+        float remainderAsFloat = Float.parseFloat(remainder.toString());
+        return remainderAsFloat / 10000f;
     }
 
     /**
@@ -39,7 +69,8 @@ class GrowthBookUtils {
      * @return whether the user is in the namespace
      */
     public static Boolean inNameSpace(String userId, Namespace namespace) {
-        Float n = hash(userId + "__" + namespace.getId());
+        Float n = hash(userId, 1, "__" + namespace.getId());
+        if (n == null) return false;
         return n >= namespace.getRangeStart() && n < namespace.getRangeEnd();
     }
 
@@ -51,10 +82,10 @@ class GrowthBookUtils {
      * @param bucketRanges list of {@link BucketRange}
      * @return index of the {@link BucketRange} list to assign
      */
-    public static Integer chooseVariation(Float n, ArrayList<BucketRange> bucketRanges) {
+    public static Integer chooseVariation(@NotNull Float n, ArrayList<BucketRange> bucketRanges) {
         for (int i = 0; i < bucketRanges.size(); i++) {
             BucketRange range = bucketRanges.get(i);
-            if (n >= range.getRangeStart() && n < range.getRangeEnd()) {
+            if (inRange(n, range)) {
                 return i;
             }
         }
@@ -326,7 +357,7 @@ class GrowthBookUtils {
      */
     public static ArrayList<BucketRange> getBucketRanges(
             Integer numberOfVariations,
-            Float coverage,
+            @NotNull Float coverage,
             @Nullable ArrayList<Float> weights
     ) {
         float clampedCoverage = MathUtils.clamp(coverage, 0.0f, 1.0f);
@@ -361,5 +392,85 @@ class GrowthBookUtils {
         }
 
         return bucketRanges;
+    }
+
+    /**
+     * Verifies if the provided float is within the lower (inclusive) and upper (exclusive) bounds of
+     * the provided {@link BucketRange}.
+     *
+     * @param n Float value to check if it's in range
+     * @param range {@link BucketRange}
+     * @return whether to include this hash value is within range. Returns false if either arguments are null.
+     */
+    public static Boolean inRange(Float n, BucketRange range) {
+        if (n == null || range == null) return false;
+        return n >= range.getRangeStart() && n < range.getRangeEnd();
+    }
+
+    public static Boolean isFilteredOut(List<Filter> filters, JsonObject attributes) {
+        if (filters == null) return false;
+        if (attributes == null) return false;
+
+        return filters.stream().anyMatch(filter -> {
+            String hashAttribute = filter.getAttribute();
+            if (hashAttribute == null) {
+                hashAttribute = "id";
+            }
+
+            JsonElement hashValueElement = attributes.get(hashAttribute);
+            if (hashValueElement == null) return true;
+            if (hashValueElement.isJsonNull()) return true;
+            if (!hashValueElement.isJsonPrimitive()) return true;
+
+            JsonPrimitive hashValuePrimitive = hashValueElement.getAsJsonPrimitive();
+
+            String hashValue = hashValuePrimitive.getAsString();
+            if (hashValue == null || hashValue.equals("")) return true;
+
+            Integer hashVersion = filter.getHashVersion();
+            if (hashVersion == null) {
+                hashVersion = 2;
+            }
+
+            Float n = GrowthBookUtils.hash(hashValue, hashVersion, filter.getSeed());
+            if (n == null) return true;
+
+            List<BucketRange> ranges = filter.getRanges();
+            if (ranges == null) return true;
+
+            return ranges.stream().noneMatch(range -> GrowthBookUtils.inRange(n, range));
+        });
+    }
+
+    public static Boolean isIncludedInRollout(
+        JsonObject attributes,
+        String seed,
+        String hashAttribute,
+        @Nullable BucketRange range,
+        @Nullable Float coverage,
+        @Nullable Integer hashVersion
+    ) {
+        if (range == null && coverage == null) return true;
+
+        if (hashAttribute == null || hashAttribute.equals("")) {
+            hashAttribute = "id";
+        }
+
+        if (attributes == null) return false;
+
+        JsonElement hashValueElement = attributes.get(hashAttribute);
+        if (hashValueElement == null || hashValueElement.isJsonNull()) return false;
+
+        if (hashVersion == null) {
+            hashVersion = 1;
+        }
+        String hashValue = hashValueElement.getAsString();
+        Float hash = GrowthBookUtils.hash(hashValue, hashVersion, seed);
+
+        if (hash == null) return false;
+
+        if (range != null) return GrowthBookUtils.inRange(hash, range);
+
+        return hash <= coverage;
     }
 }

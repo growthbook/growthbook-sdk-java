@@ -29,10 +29,18 @@ class GrowthBookUtilsTest {
         hnvCases.forEach(jsonElement -> {
             JsonArray kv = (JsonArray) jsonElement;
 
-            String input = kv.get(0).getAsString();
-            Float expected = kv.get(1).getAsFloat();
+            String seed = kv.get(0).getAsString();
+            String input = kv.get(1).getAsString();
 
-            assertEquals(expected, GrowthBookUtils.hash(input));
+            Integer hashVersion = kv.get(2).getAsInt();
+
+            Float expected = null;
+            if (!kv.get(3).isJsonNull()) {
+                // In the case of unsupported hash versions, this method returns null
+                expected = kv.get(3).getAsFloat();
+            }
+
+            assertEquals(expected, GrowthBookUtils.hash(input, hashVersion, seed));
         });
     }
 
