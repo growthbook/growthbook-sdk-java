@@ -12,6 +12,7 @@
 ## Requirements
 
 - Java version 1.8 or later
+- The library uses Slf4j for logging. You will need to add an appropriate slf4j binding for the logging framework that your project uses.
 
 
 ## Documentation

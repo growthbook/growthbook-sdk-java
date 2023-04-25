@@ -1,11 +1,14 @@
 package growthbook.sdk.java;
 
+import lombok.extern.slf4j.Slf4j;
+
 import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 
+@Slf4j
 class UrlUtils {
     /**
      * Parse a query string into a map of key/value pairs.
@@ -30,7 +33,7 @@ class UrlUtils {
 
                 map.put(name, value);
             } catch (UnsupportedEncodingException e) {
-                e.printStackTrace();
+                log.error("Unable to parse query string [{}]", queryString, e);
             }
         }
         return map;

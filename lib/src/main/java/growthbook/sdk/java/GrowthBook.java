@@ -1,5 +1,7 @@
 package growthbook.sdk.java;
 
+import lombok.extern.slf4j.Slf4j;
+
 import javax.annotation.Nullable;
 import java.util.ArrayList;
 
@@ -8,6 +10,7 @@ import java.util.ArrayList;
  * Build a context with {@link GBContext#builder()} or the {@link GBContext} constructor
  * and pass it as an argument to the class constructor.
  */
+@Slf4j
 public class GrowthBook implements IGrowthBook {
 
     private final GBContext context;
@@ -104,7 +107,7 @@ public class GrowthBook implements IGrowthBook {
             Boolean maybeValue = (Boolean) this.featureEvaluator.evaluateFeature(featureKey, context, Boolean.class).getValue();
             return maybeValue == null ? defaultValue : maybeValue;
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("Error evaluating feature [{}]", featureKey, e);
             return defaultValue;
         }
     }
@@ -115,7 +118,7 @@ public class GrowthBook implements IGrowthBook {
             String maybeValue = (String) this.featureEvaluator.evaluateFeature(featureKey, context, String.class).getValue();
             return maybeValue == null ? defaultValue : maybeValue;
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("Error evaluating feature [{}]", featureKey, e);
             return defaultValue;
         }
     }
@@ -136,7 +139,7 @@ public class GrowthBook implements IGrowthBook {
                 return defaultValue;
             }
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("Error evaluating feature [{}]", featureKey, e);
             return defaultValue;
         }
     }
@@ -157,7 +160,7 @@ public class GrowthBook implements IGrowthBook {
                 return defaultValue;
             }
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("Error evaluating feature [{}]", featureKey, e);
             return defaultValue;
         }
     }
@@ -168,7 +171,7 @@ public class GrowthBook implements IGrowthBook {
             Object maybeValue = this.featureEvaluator.evaluateFeature(featureKey, context, defaultValue.getClass()).getValue();
             return maybeValue == null ? defaultValue : maybeValue;
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("Error evaluating feature [{}]", featureKey, e);
             return defaultValue;
         }
     }
@@ -185,7 +188,7 @@ public class GrowthBook implements IGrowthBook {
 
             return jsonUtils.gson.fromJson(stringValue, gsonDeserializableClass);
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("Error evaluating feature [{}]", featureKey, e);
             return defaultValue;
         }
     }
@@ -201,7 +204,7 @@ public class GrowthBook implements IGrowthBook {
             Double maybeValue = (Double) this.featureEvaluator.evaluateFeature(featureKey, context, Double.class).getValue();
             return maybeValue == null ? defaultValue : maybeValue;
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("Error evaluating feature [{}]", featureKey, e);
             return defaultValue;
         }
     }

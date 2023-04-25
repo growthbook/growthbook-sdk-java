@@ -4,6 +4,7 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonPrimitive;
+import lombok.extern.slf4j.Slf4j;
 
 import javax.annotation.Nullable;
 import java.math.BigDecimal;
@@ -14,6 +15,7 @@ import java.math.BigInteger;
  * Some types in the JSON source are tuples. This helps with transforming to and from POJOs.
  * The provided methods use a custom Gson instance that has all required type adapters registered.
  */
+@Slf4j
 class GrowthBookJsonUtils {
     /**
      * The Gson instance is exposed for convenience.
@@ -145,7 +147,7 @@ class GrowthBookJsonUtils {
 
             return DataType.UNKNOWN;
         } catch (RuntimeException e) {
-            e.printStackTrace();
+            log.error("Error getting element type [{}]", element, e);
             return DataType.UNKNOWN;
         }
     }
@@ -172,7 +174,7 @@ class GrowthBookJsonUtils {
 
             return GrowthBookJsonUtils.getInstance().gson.toJsonTree(object);
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("Error getting json element for object [{}]", object, e);
             return null;
         }
     }

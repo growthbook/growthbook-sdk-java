@@ -4,6 +4,7 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import lombok.Builder;
 import lombok.Getter;
+import lombok.extern.slf4j.Slf4j;
 import okhttp3.*;
 import org.jetbrains.annotations.NotNull;
 
@@ -20,6 +21,7 @@ import java.util.List;
  * Get the features JSON with {@link GBFeaturesRepository#getFeaturesJson()}.
  * You would provide the features JSON when creating the {@link GBContext}
  */
+@Slf4j
 public class GBFeaturesRepository implements IGBFeaturesRepository {
 
     @Getter
@@ -131,7 +133,7 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
                 try {
                     self.onSuccess(response);
                 } catch (FeatureFetchException e) {
-                    e.printStackTrace();
+                    log.error("Error refreshing features", e);
                 }
             }
         });
@@ -178,7 +180,7 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
         try (Response response = this.okHttpClient.newCall(request).execute()) {
             this.onSuccess(response);
         } catch (IOException e) {
-            e.printStackTrace();
+            log.error("Error fetching features", e);
 
             throw new FeatureFetchException(
                 FeatureFetchException.FeatureFetchErrorCode.UNKNOWN,
@@ -237,7 +239,7 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
                 featureRefreshCallback.onRefresh(this.featuresJson);
             });
         } catch (IOException | DecryptionUtils.DecryptionException e) {
-            e.printStackTrace();
+            log.error("Error fetching features", e);
 
             throw new FeatureFetchException(
                 FeatureFetchException.FeatureFetchErrorCode.UNKNOWN,

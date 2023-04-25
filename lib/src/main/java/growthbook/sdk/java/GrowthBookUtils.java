@@ -4,6 +4,7 @@ import com.google.gson.Gson;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
+import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.NotNull;
 
 import javax.annotation.Nullable;
@@ -18,6 +19,7 @@ import java.util.Map;
 /**
  * <b>INTERNAL</b>: Implementation of for internal utility methods to support {@link growthbook.sdk.java.GrowthBook}
  */
+@Slf4j
 class GrowthBookUtils {
     /**
      * Hashes a string to a float between 0 and 1, or null if the hash version is unsupported.
@@ -183,7 +185,7 @@ class GrowthBookUtils {
 
             return variationValue;
         } catch (NumberFormatException exception) {
-            exception.printStackTrace();
+            log.error("Error querying override for [{}] from [{}]", id, url, exception);
             return null;
         }
     }
@@ -337,7 +339,7 @@ class GrowthBookUtils {
         try {
             return gson.fromJson(value, valueTypeClass);
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("Error forced value for feature [{}] from url [{}]", featureKey, url, e);
             return null;
         }
     }

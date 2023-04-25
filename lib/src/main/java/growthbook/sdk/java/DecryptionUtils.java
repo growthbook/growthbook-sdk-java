@@ -1,5 +1,7 @@
 package growthbook.sdk.java;
 
+import lombok.extern.slf4j.Slf4j;
+
 import javax.crypto.BadPaddingException;
 import javax.crypto.Cipher;
 import javax.crypto.IllegalBlockSizeException;
@@ -18,6 +20,7 @@ import java.util.Base64;
 /**
  * INTERNAL: This class is used internally to decrypt an encrypted features response
  */
+@Slf4j
 class DecryptionUtils {
 
     public static class DecryptionException extends Exception {
@@ -65,7 +68,7 @@ class DecryptionUtils {
             | IllegalArgumentException
             | BadPaddingException e
         ) {
-            e.printStackTrace();
+            log.error("Unable to decrypt payload", e);
             throw new DecryptionException(e.getMessage());
         }
     }
