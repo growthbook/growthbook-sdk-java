@@ -122,7 +122,7 @@ class ConditionEvaluatorTest {
             String paddedVersion = StringUtils.paddedVersionString(version);
             String paddedOther = StringUtils.paddedVersionString(otherVersion);
 
-            System.out.printf("%s < %s = %s - actual: %s\n",  paddedVersion, paddedOther, equals, paddedVersion.compareTo(paddedOther) < 0);
+//            System.out.printf("%s < %s = %s - actual: %s\n",  paddedVersion, paddedOther, equals, paddedVersion.compareTo(paddedOther) < 0);
 
             assertEquals(paddedVersion.compareTo(paddedOther) < 0, equals);
         }
@@ -141,7 +141,7 @@ class ConditionEvaluatorTest {
             String paddedVersion = StringUtils.paddedVersionString(version);
             String paddedOther = StringUtils.paddedVersionString(otherVersion);
 
-            System.out.printf("%s > %s = %s - actual: %s\n",  paddedVersion, paddedOther, equals, paddedVersion.compareTo(paddedOther) > 0);
+//            System.out.printf("%s > %s = %s - actual: %s\n",  paddedVersion, paddedOther, equals, paddedVersion.compareTo(paddedOther) > 0);
 
             assertEquals(paddedVersion.compareTo(paddedOther) > 0, equals);
         }
