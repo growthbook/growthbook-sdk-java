@@ -196,6 +196,15 @@ class ConditionEvaluator implements IConditionEvaluator {
             case IN:
                 if (actual == null) return false;
 
+                if (DataType.ARRAY == attributeDataType) {
+                    if (!expected.isJsonArray()) return false;
+
+                    JsonArray value = actual.getAsJsonArray();
+                    JsonArray expectedArr = expected.getAsJsonArray();
+
+                    return isIn(value, expectedArr);
+                }
+
                 if (DataType.STRING == attributeDataType) {
                     String value = actual.getAsString();
                     Type listType = new TypeToken<ArrayList<String>>() {}.getType();
@@ -219,6 +228,16 @@ class ConditionEvaluator implements IConditionEvaluator {
 
             case NIN:
                 if (actual == null) return false;
+
+                if (DataType.ARRAY == attributeDataType) {
+                    if (!expected.isJsonArray()) return false;
+
+                    JsonArray value = actual.getAsJsonArray();
+                    JsonArray expectedArr = expected.getAsJsonArray();
+
+                    return !isIn(value, expectedArr);
+                }
+
                 if (DataType.STRING == attributeDataType) {
                     String value = actual.getAsString();
                     Type listType = new TypeToken<ArrayList<String>>() {}.getType();
@@ -340,6 +359,42 @@ class ConditionEvaluator implements IConditionEvaluator {
                     return actual == null || actual.isJsonNull();
                 }
 
+            case VERSION_GT:
+                if (actual == null || expected == null) return false;
+
+                return StringUtils.paddedVersionString(actual.getAsString())
+                    .compareTo(StringUtils.paddedVersionString(expected.getAsString())) > 0;
+
+            case VERSION_GTE:
+                if (actual == null || expected == null) return false;
+
+                return StringUtils.paddedVersionString(actual.getAsString())
+                    .compareTo(StringUtils.paddedVersionString(expected.getAsString())) >= 0;
+
+            case VERSION_LT:
+                if (actual == null || expected == null) return false;
+
+                return StringUtils.paddedVersionString(actual.getAsString())
+                    .compareTo(StringUtils.paddedVersionString(expected.getAsString())) < 0;
+
+            case VERSION_LTE:
+                if (actual == null || expected == null) return false;
+
+                return StringUtils.paddedVersionString(actual.getAsString())
+                    .compareTo(StringUtils.paddedVersionString(expected.getAsString())) <= 0;
+
+            case VERSION_NE:
+                if (actual == null || expected == null) return false;
+
+                return StringUtils.paddedVersionString(actual.getAsString())
+                    .compareTo(StringUtils.paddedVersionString(expected.getAsString())) != 0;
+
+            case VERSION_EQ:
+                if (actual == null || expected == null) return false;
+
+                return StringUtils.paddedVersionString(actual.getAsString())
+                    .compareTo(StringUtils.paddedVersionString(expected.getAsString())) == 0;
+
             default:
                 return false;
         }
@@ -402,6 +457,13 @@ class ConditionEvaluator implements IConditionEvaluator {
 
                 return true;
             }
+        }
+
+        if (
+            conditionValue.isJsonNull() &&
+                (attributeValue == null || attributeValue.isJsonNull())
+        ) {
+            return true;
         }
 
         if (attributeValue == null) {
@@ -473,5 +535,32 @@ class ConditionEvaluator implements IConditionEvaluator {
         }
 
         return true;
+    }
+
+    private Boolean isIn(JsonElement actual, JsonArray expected) {
+        Type listType = new TypeToken<ArrayList<Object>>() {}.getType();
+        ArrayList<JsonElement> expectedAsList = jsonUtils.gson.fromJson(expected, listType);
+
+        if (!actual.isJsonArray()) return expectedAsList.contains(actual);
+
+        JsonArray actualArr = actual.getAsJsonArray();
+
+        if (actualArr.size() == 0) return false;
+
+        DataType attributeDataType = GrowthBookJsonUtils.getElementType(actualArr.get(0));
+        ArrayList<Object> actualAsList = jsonUtils.gson.fromJson(actualArr, listType);
+
+        return actualAsList.stream()
+            .anyMatch(o -> {
+                if (
+                    attributeDataType == DataType.STRING ||
+                        attributeDataType == DataType.NUMBER ||
+                        attributeDataType == DataType.BOOLEAN
+                ) {
+                    return expectedAsList.contains(o);
+                }
+
+                return false;
+            });
     }
 }

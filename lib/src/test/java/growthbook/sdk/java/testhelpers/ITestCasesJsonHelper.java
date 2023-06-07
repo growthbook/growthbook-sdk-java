@@ -15,4 +15,7 @@ interface ITestCasesJsonHelper {
     JsonArray getInNamespaceTestCases();
     JsonArray getEqualWeightsTestCases();
     JsonArray decryptionTestCases();
+    JsonArray versionCompareTestCases_eq();
+    JsonArray versionCompareTestCases_lt();
+    JsonArray versionCompareTestCases_gt();
 }
