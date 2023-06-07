@@ -65,6 +65,20 @@ public class TestCasesJsonHelper implements ITestCasesJsonHelper {
         return this.testCases.get("decrypt").getAsJsonArray();
     }
 
+    @Override
+    public JsonArray versionCompareTestCases_eq() {
+        return this.testCases.get("versionCompare").getAsJsonObject().get("eq").getAsJsonArray();
+    }
+
+    @Override
+    public JsonArray versionCompareTestCases_lt() {
+        return this.testCases.get("versionCompare").getAsJsonObject().get("lt").getAsJsonArray();
+    }
+
+    @Override
+    public JsonArray versionCompareTestCases_gt() {
+        return this.testCases.get("versionCompare").getAsJsonObject().get("gt").getAsJsonArray();
+    }
 
     @Override
     public JsonArray getQueryStringOverrideTestCases() {

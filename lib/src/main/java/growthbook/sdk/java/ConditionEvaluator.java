@@ -358,6 +358,41 @@ class ConditionEvaluator implements IConditionEvaluator {
                     // Ensure it's not present
                     return actual == null || actual.isJsonNull();
                 }
+            case VERSION_GT:
+                if (actual == null || expected == null) return false;
+
+                return StringUtils.paddedVersionString(actual.getAsString())
+                    .compareTo(StringUtils.paddedVersionString(expected.getAsString())) > 0;
+
+            case VERSION_GTE:
+                if (actual == null || expected == null) return false;
+
+                return StringUtils.paddedVersionString(actual.getAsString())
+                    .compareTo(StringUtils.paddedVersionString(expected.getAsString())) >= 0;
+
+            case VERSION_LT:
+                if (actual == null || expected == null) return false;
+
+                return StringUtils.paddedVersionString(actual.getAsString())
+                    .compareTo(StringUtils.paddedVersionString(expected.getAsString())) < 0;
+
+            case VERSION_LTE:
+                if (actual == null || expected == null) return false;
+
+                return StringUtils.paddedVersionString(actual.getAsString())
+                    .compareTo(StringUtils.paddedVersionString(expected.getAsString())) <= 0;
+
+            case VERSION_NE:
+                if (actual == null || expected == null) return false;
+
+                return StringUtils.paddedVersionString(actual.getAsString())
+                    .compareTo(StringUtils.paddedVersionString(expected.getAsString())) != 0;
+
+            case VERSION_EQ:
+                if (actual == null || expected == null) return false;
+
+                return StringUtils.paddedVersionString(actual.getAsString())
+                    .compareTo(StringUtils.paddedVersionString(expected.getAsString())) == 0;
 
             default:
                 return false;

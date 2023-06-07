@@ -66,6 +66,31 @@ public enum Operator {
      * $exists
      */
     EXISTS("$exists"),
+
+    /**
+     * $vgt
+     */
+    VERSION_GT("$vgt"),
+    /**
+     * $vgte
+     */
+    VERSION_GTE("$vgte"),
+    /**
+     * $vlt
+     */
+    VERSION_LT("$vlt"),
+    /**
+     * $vlte
+     */
+    VERSION_LTE("$vlte"),
+    /**
+     * $vne
+     */
+    VERSION_NE("$vne"),
+    /**
+     * $veq
+     */
+    VERSION_EQ("$veq"),
     ;
 
     private final String rawValue;
