@@ -423,6 +423,10 @@ class ConditionEvaluator implements IConditionEvaluator {
             }
         }
 
+        if (conditionValue.isJsonNull() && (attributeValue == null || attributeValue.isJsonNull())) {
+            return true;
+        }
+
         if (attributeValue == null) {
             return false;
         }
