@@ -358,6 +358,7 @@ class ConditionEvaluator implements IConditionEvaluator {
                     // Ensure it's not present
                     return actual == null || actual.isJsonNull();
                 }
+
             case VERSION_GT:
                 if (actual == null || expected == null) return false;
 
@@ -458,7 +459,10 @@ class ConditionEvaluator implements IConditionEvaluator {
             }
         }
 
-        if (conditionValue.isJsonNull() && (attributeValue == null || attributeValue.isJsonNull())) {
+        if (
+            conditionValue.isJsonNull() &&
+                (attributeValue == null || attributeValue.isJsonNull())
+        ) {
             return true;
         }
 
