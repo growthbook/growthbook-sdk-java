@@ -541,28 +541,26 @@ class ConditionEvaluator implements IConditionEvaluator {
         Type listType = new TypeToken<ArrayList<Object>>() {}.getType();
         ArrayList<JsonElement> expectedAsList = jsonUtils.gson.fromJson(expected, listType);
 
-        if (actual.isJsonArray()) {
-            JsonArray actualArr = actual.getAsJsonArray();
+        if (!actual.isJsonArray()) return expectedAsList.contains(actual);
 
-            if (actualArr.size() == 0) return false;
+        JsonArray actualArr = actual.getAsJsonArray();
 
-            DataType attributeDataType = GrowthBookJsonUtils.getElementType(actualArr.get(0));
-            ArrayList<Object> actualAsList = jsonUtils.gson.fromJson(actualArr, listType);
+        if (actualArr.size() == 0) return false;
 
-            return actualAsList.stream()
-                .anyMatch(o -> {
-                    if (
-                        attributeDataType == DataType.STRING ||
-                            attributeDataType == DataType.NUMBER ||
-                            attributeDataType == DataType.BOOLEAN
-                    ) {
-                        return expectedAsList.contains(o);
-                    }
+        DataType attributeDataType = GrowthBookJsonUtils.getElementType(actualArr.get(0));
+        ArrayList<Object> actualAsList = jsonUtils.gson.fromJson(actualArr, listType);
 
-                    return false;
-                });
-        }
+        return actualAsList.stream()
+            .anyMatch(o -> {
+                if (
+                    attributeDataType == DataType.STRING ||
+                        attributeDataType == DataType.NUMBER ||
+                        attributeDataType == DataType.BOOLEAN
+                ) {
+                    return expectedAsList.contains(o);
+                }
 
-        return expectedAsList.contains(actual);
+                return false;
+            });
     }
 }
