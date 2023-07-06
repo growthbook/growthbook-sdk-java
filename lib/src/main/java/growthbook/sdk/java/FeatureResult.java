@@ -75,6 +75,10 @@ public class FeatureResult<ValueType> {
             return (Float) value != 0.0f;
         }
 
+        if (value instanceof Double) {
+            return (Double) value != 0;
+        }
+
         return false;
     }
 
