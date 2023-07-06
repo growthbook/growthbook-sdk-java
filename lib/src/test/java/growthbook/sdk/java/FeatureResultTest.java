@@ -2,8 +2,7 @@ package growthbook.sdk.java;
 
 import org.junit.jupiter.api.Test;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.*;
 
 class FeatureResultTest {
     @Test
@@ -62,4 +61,110 @@ class FeatureResultTest {
         subject.setSource(FeatureResultSource.DEFAULT_VALUE);
         assertEquals("{\"on\":false,\"off\":true,\"source\":\"defaultValue\"}", GrowthBookJsonUtils.getInstance().gson.toJson(subject));
     }
+
+    // region isOn() isOff()
+
+    @Test
+    void featureResult_isOn_withNonZeroValue_returnsTrue_forIntegers() {
+        FeatureResult<Integer> subject = FeatureResult
+            .<Integer>builder()
+            .value(1)
+            .source(FeatureResultSource.FORCE)
+            .build();
+
+        assertTrue(subject.isOn());
+        assertFalse(subject.isOff());
+    }
+
+    @Test
+    void featureResult_isOn_withZeroValue_returnsFalse_forIntegers() {
+        FeatureResult<Integer> subject = FeatureResult
+            .<Integer>builder()
+            .value(0)
+            .source(FeatureResultSource.FORCE)
+            .build();
+
+        assertFalse(subject.isOn());
+        assertTrue(subject.isOff());
+    }
+
+    // floats
+
+    @Test
+    void featureResult_isOn_withNonZeroValue_returnsTrue_forFloats() {
+        FeatureResult<Float> subject = FeatureResult
+            .<Float>builder()
+            .value(1.0f)
+            .source(FeatureResultSource.FORCE)
+            .build();
+
+        assertTrue(subject.isOn());
+        assertFalse(subject.isOff());
+    }
+
+    @Test
+    void featureResult_isOn_withZeroValue_returnsFalse_forFloats() {
+        FeatureResult<Float> subject = FeatureResult
+            .<Float>builder()
+            .value(0.0f)
+            .source(FeatureResultSource.FORCE)
+            .build();
+
+        assertFalse(subject.isOn());
+        assertTrue(subject.isOff());
+    }
+
+    // doubles
+
+    @Test
+    void featureResult_isOn_withNonZeroValue_returnsTrue_forDoubles() {
+        FeatureResult<Double> subject = FeatureResult
+            .<Double>builder()
+            .value(1.0)
+            .source(FeatureResultSource.FORCE)
+            .build();
+
+        assertTrue(subject.isOn());
+        assertFalse(subject.isOff());
+    }
+
+    @Test
+    void featureResult_isOn_withZeroValue_returnsFalse_forDoubles() {
+        FeatureResult<Double> subject = FeatureResult
+            .<Double>builder()
+            .value(0)
+            .source(FeatureResultSource.FORCE)
+            .build();
+
+        assertFalse(subject.isOn());
+        assertTrue(subject.isOff());
+    }
+
+    // strings
+
+    @Test
+    void featureResult_isOn_withNonEmptyValue_returnsTrue_forStrings() {
+        FeatureResult<String> subject = FeatureResult
+            .<String>builder()
+            .value("hello, world!")
+            .source(FeatureResultSource.FORCE)
+            .build();
+
+        assertTrue(subject.isOn());
+        assertFalse(subject.isOff());
+    }
+
+    @Test
+    void featureResult_isOn_withEmptyValue_returnsFalse_forStrings() {
+        FeatureResult<String> subject = FeatureResult
+            .<String>builder()
+            .value("")
+            .source(FeatureResultSource.FORCE)
+            .build();
+
+        assertFalse(subject.isOn());
+        assertTrue(subject.isOff());
+    }
+
+    // endregion isOn() isOff()
 }
