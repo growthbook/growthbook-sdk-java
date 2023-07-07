@@ -10,4 +10,10 @@ public interface FeatureRefreshCallback {
      * @param featuresJson  Features as JSON string
      */
     void onRefresh(String featuresJson);
+
+    /**
+     * See {@link GBFeaturesRepository#onFeaturesRefresh(FeatureRefreshCallback)}
+     * @param throwable Exception on refreshCallback
+     */
+    void onError(Throwable throwable);
 }
