@@ -98,9 +98,8 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
 
     /**
      * Subscribe to feature refresh events
-     * This callback is called when the features are successfully refreshed.
+     * This callback is called when the features are successfully or error refreshed.
      * This is called even if the features have not changed.
-     * This will not be called if fetching the features results in a failure.
      * @param callback  This callback will be called when features are refreshed
      */
     @Override
@@ -124,6 +123,7 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
             @Override
             public void onFailure(@NotNull Call call, @NotNull IOException e) {
                 // OkHttp will auto-retry on failure
+                self.refreshFailedCallbacks(e);
             }
 
             @Override
@@ -233,9 +233,8 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
 
             this.featuresJson = refreshedFeatures;
 
-            this.refreshCallbacks.forEach(featureRefreshCallback -> {
-                featureRefreshCallback.onRefresh(this.featuresJson);
-            });
+            this.refreshSuccessfullyCallbacks(this.featuresJson);
+
         } catch (IOException | DecryptionUtils.DecryptionException e) {
             e.printStackTrace();
 
@@ -246,7 +245,15 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
         }
     }
 
+    private void refreshSuccessfullyCallbacks(String featuresJson) {
+        this.refreshCallbacks
+                .forEach(featureRefreshCallback -> featureRefreshCallback.onRefresh(featuresJson));
+    }
 
+    private void refreshFailedCallbacks(Throwable throwable) {
+        this.refreshCallbacks
+                .forEach(featureRefreshCallback -> featureRefreshCallback.onError(throwable));
+    }
 
     /**
      * Appends User-Agent info to the request headers.
