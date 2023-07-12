@@ -98,7 +98,7 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
 
     /**
      * Subscribe to feature refresh events
-     * This callback is called when the features are successfully or error refreshed.
+     * This callback is called when the features are successfully refreshed or there is an error when refreshing.
      * This is called even if the features have not changed.
      * @param callback  This callback will be called when features are refreshed
      */
