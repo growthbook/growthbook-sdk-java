@@ -7,7 +7,9 @@ import java.io.IOException;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -137,8 +139,65 @@ class GBFeaturesRepositoryTest {
         assertEquals(expected, subject.getFeaturesJson().trim());
     }
 
+    @Test
+    void refreshCallbackWhenCacheRefreshSuccess() throws IOException, FeatureFetchException, InterruptedException {
+        String fakeResponseJson = "{\"status\":200,\"features\":{\"banner_text\":{\"defaultValue\":\"Welcome to Acme Donuts!\",\"rules\":[{\"condition\":{\"country\":\"france\"},\"force\":\"Bienvenue au Beignets Acme !\"},{\"condition\":{\"country\":\"spain\"},\"force\":\"¡Bienvenidos y bienvenidas a Donas Acme!\"}]},\"dark_mode\":{\"defaultValue\":false,\"rules\":[{\"condition\":{\"loggedIn\":true},\"force\":true,\"coverage\":0.5,\"hashAttribute\":\"id\"}]},\"donut_price\":{\"defaultValue\":2.5,\"rules\":[{\"condition\":{\"employee\":true},\"force\":0}]},\"meal_overrides_gluten_free\":{\"defaultValue\":{\"meal_type\":\"standard\",\"dessert\":\"Strawberry Cheesecake\"},\"rules\":[{\"condition\":{\"dietaryRestrictions\":{\"$elemMatch\":{\"$eq\":\"gluten_free\"}}},\"force\":{\"meal_type\":\"gf\",\"dessert\":\"French Vanilla Ice Cream\"}}]}},\"dateUpdated\":\"2023-01-11T00:26:01.745Z\"}";
+        OkHttpClient mockOkHttpClient = mockHttpClient(fakeResponseJson);
+        int ttlSeconds = 0;
 
+        GBFeaturesRepository subject = new GBFeaturesRepository(
+                mockOkHttpClient,
+                "http://localhost:80",
+                null,
+                ttlSeconds
+        );
+        subject.initialize();
 
+        String expected = "{\"banner_text\":{\"defaultValue\":\"Welcome to Acme Donuts!\",\"rules\":[{\"condition\":{\"country\":\"france\"},\"force\":\"Bienvenue au Beignets Acme !\"},{\"condition\":{\"country\":\"spain\"},\"force\":\"¡Bienvenidos y bienvenidas a Donas Acme!\"}]},\"dark_mode\":{\"defaultValue\":false,\"rules\":[{\"condition\":{\"loggedIn\":true},\"force\":true,\"coverage\":0.5,\"hashAttribute\":\"id\"}]},\"donut_price\":{\"defaultValue\":2.5,\"rules\":[{\"condition\":{\"employee\":true},\"force\":0}]},\"meal_overrides_gluten_free\":{\"defaultValue\":{\"meal_type\":\"standard\",\"dessert\":\"Strawberry Cheesecake\"},\"rules\":[{\"condition\":{\"dietaryRestrictions\":{\"$elemMatch\":{\"$eq\":\"gluten_free\"}}},\"force\":{\"meal_type\":\"gf\",\"dessert\":\"French Vanilla Ice Cream\"}}]}}";
+
+        subject.onFeaturesRefresh(new FeatureRefreshCallback() {
+            @Override
+            public void onRefresh(String featuresJson) {
+                assertEquals(expected, featuresJson);
+            }
+
+            @Override
+            public void onError(Throwable throwable) {
+            }
+        });
+
+        subject.getFeaturesJson();
+    }
+
+    @Test
+    void refreshCallbackWhenCacheRefreshFailed() throws IOException, FeatureFetchException, InterruptedException {
+        String fakeResponseJson = "{\"status\":200,\"features\":{\"banner_text\":{\"defaultValue\":\"Welcome to Acme Donuts!\",\"rules\":[{\"condition\":{\"country\":\"france\"},\"force\":\"Bienvenue au Beignets Acme !\"},{\"condition\":{\"country\":\"spain\"},\"force\":\"¡Bienvenidos y bienvenidas a Donas Acme!\"}]},\"dark_mode\":{\"defaultValue\":false,\"rules\":[{\"condition\":{\"loggedIn\":true},\"force\":true,\"coverage\":0.5,\"hashAttribute\":\"id\"}]},\"donut_price\":{\"defaultValue\":2.5,\"rules\":[{\"condition\":{\"employee\":true},\"force\":0}]},\"meal_overrides_gluten_free\":{\"defaultValue\":{\"meal_type\":\"standard\",\"dessert\":\"Strawberry Cheesecake\"},\"rules\":[{\"condition\":{\"dietaryRestrictions\":{\"$elemMatch\":{\"$eq\":\"gluten_free\"}}},\"force\":{\"meal_type\":\"gf\",\"dessert\":\"French Vanilla Ice Cream\"}}]}},\"dateUpdated\":\"2023-01-11T00:26:01.745Z\"}";
+        OkHttpClient okHttpClient = mockHttpClientFailedCallback(fakeResponseJson, new IOException("Request failed"));
+        int ttlSeconds = 0;
+
+        GBFeaturesRepository subject = new GBFeaturesRepository(
+                okHttpClient,
+                "http://localhost:80",
+                null,
+                ttlSeconds
+        );
+        subject.initialize();
+
+        subject.onFeaturesRefresh(new FeatureRefreshCallback() {
+            @Override
+            public void onRefresh(String featuresJson) {
+            }
+
+            @Override
+            public void onError(Throwable throwable) {
+                assertThrows(IOException.class, () -> {
+                    throw throwable;
+                });
+            }
+        });
+
+        subject.getFeaturesJson();
+    }
     /*
     @Test
     void testUserAgentHeaders() throws FeatureFetchException {
@@ -158,19 +217,54 @@ class GBFeaturesRepositoryTest {
 
         Call remoteCall = mock(Call.class);
 
-        Response response = new Response.Builder()
-            .request(new Request.Builder().url("http://url.com").build())
-            .protocol(Protocol.HTTP_1_1)
-            .code(200).message("").body(
-                ResponseBody.create(
-                    serializedBody,
-                    MediaType.parse("application/json")
-                ))
-            .build();
-
-        when(remoteCall.execute()).thenReturn(response);
+        when(remoteCall.execute()).thenReturn(getResponse(serializedBody));
         when(okHttpClient.newCall(any())).thenReturn(remoteCall);
 
+        //required for original callback okHttpClient
+        doAnswer(invocation -> {
+            ((Callback) invocation.getArgument(0)).onResponse(remoteCall, getResponse(serializedBody));
+            return null;
+        }).when(remoteCall).enqueue(any(Callback.class));
+
         return okHttpClient;
+    }
+
+    /**
+     * Create a mock instance for failed callback of {@link OkHttpClient}
+     *
+     * @param serializedBody JSON string response
+     * @return mock {@link OkHttpClient}
+     */
+    private static OkHttpClient mockHttpClientFailedCallback(final String serializedBody, final IOException ioException) throws IOException {
+        OkHttpClient okHttpClient = mock(OkHttpClient.class);
+        Call remoteCall = mock(Call.class);
+        when(remoteCall.execute()).thenReturn(getResponse(serializedBody));
+        when(okHttpClient.newCall(any())).thenReturn(remoteCall);
+
+        doAnswer(invocation -> {
+            Callback passedCallback = invocation.getArgument(0);
+            passedCallback.onFailure(remoteCall, ioException);
+            return null;
+        }).when(remoteCall).enqueue(any(Callback.class));
+
+        return okHttpClient;
+    }
+
+    /**
+     * Create new {@link Response}
+     *
+     * @param serializedBody JSON string response
+     * @return mock {@link Response}
+     */
+    private static Response getResponse(final String serializedBody) {
+        return new Response.Builder()
+                .request(new Request.Builder().url("http://url.com").build())
+                .protocol(Protocol.HTTP_1_1)
+                .code(200).message("").body(
+                        ResponseBody.create(
+                                serializedBody,
+                                MediaType.parse("application/json")
+                        ))
+                .build();
     }
 }
