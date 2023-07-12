@@ -123,7 +123,7 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
             @Override
             public void onFailure(@NotNull Call call, @NotNull IOException e) {
                 // OkHttp will auto-retry on failure
-                self.refreshFailedCallbacks(e);
+                self.onRefreshFailed(e);
             }
 
             @Override
@@ -233,8 +233,7 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
 
             this.featuresJson = refreshedFeatures;
 
-            this.refreshSuccessfullyCallbacks(this.featuresJson);
-
+            this.onRefreshSuccess(this.featuresJson);
         } catch (IOException | DecryptionUtils.DecryptionException e) {
             e.printStackTrace();
 
@@ -245,14 +244,16 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
         }
     }
 
-    private void refreshSuccessfullyCallbacks(String featuresJson) {
-        this.refreshCallbacks
-                .forEach(featureRefreshCallback -> featureRefreshCallback.onRefresh(featuresJson));
+    private void onRefreshSuccess(String featuresJson) {
+        this.refreshCallbacks.forEach(featureRefreshCallback -> {
+            featureRefreshCallback.onRefresh(featuresJson);
+        });
     }
 
-    private void refreshFailedCallbacks(Throwable throwable) {
-        this.refreshCallbacks
-                .forEach(featureRefreshCallback -> featureRefreshCallback.onError(throwable));
+    private void onRefreshFailed(Throwable throwable) {
+        this.refreshCallbacks.forEach(featureRefreshCallback -> {
+            featureRefreshCallback.onError(throwable);
+        });
     }
 
     /**
