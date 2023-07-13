@@ -7,10 +7,12 @@ import java.io.IOException;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 class GBFeaturesRepositoryTest {
@@ -140,64 +142,51 @@ class GBFeaturesRepositoryTest {
     }
 
     @Test
-    void refreshCallbackWhenCacheRefreshSuccess() throws IOException, FeatureFetchException, InterruptedException {
+    void testOnFeaturesRefresh_Success() throws IOException, FeatureFetchException {
         String fakeResponseJson = "{\"status\":200,\"features\":{\"banner_text\":{\"defaultValue\":\"Welcome to Acme Donuts!\",\"rules\":[{\"condition\":{\"country\":\"france\"},\"force\":\"Bienvenue au Beignets Acme !\"},{\"condition\":{\"country\":\"spain\"},\"force\":\"¡Bienvenidos y bienvenidas a Donas Acme!\"}]},\"dark_mode\":{\"defaultValue\":false,\"rules\":[{\"condition\":{\"loggedIn\":true},\"force\":true,\"coverage\":0.5,\"hashAttribute\":\"id\"}]},\"donut_price\":{\"defaultValue\":2.5,\"rules\":[{\"condition\":{\"employee\":true},\"force\":0}]},\"meal_overrides_gluten_free\":{\"defaultValue\":{\"meal_type\":\"standard\",\"dessert\":\"Strawberry Cheesecake\"},\"rules\":[{\"condition\":{\"dietaryRestrictions\":{\"$elemMatch\":{\"$eq\":\"gluten_free\"}}},\"force\":{\"meal_type\":\"gf\",\"dessert\":\"French Vanilla Ice Cream\"}}]}},\"dateUpdated\":\"2023-01-11T00:26:01.745Z\"}";
         OkHttpClient mockOkHttpClient = mockHttpClient(fakeResponseJson);
-        int ttlSeconds = 0;
+        FeatureRefreshCallback featureRefreshCallback = mock(FeatureRefreshCallback.class);
 
         GBFeaturesRepository subject = new GBFeaturesRepository(
                 mockOkHttpClient,
                 "http://localhost:80",
                 null,
-                ttlSeconds
+                0
         );
         subject.initialize();
 
-        String expected = "{\"banner_text\":{\"defaultValue\":\"Welcome to Acme Donuts!\",\"rules\":[{\"condition\":{\"country\":\"france\"},\"force\":\"Bienvenue au Beignets Acme !\"},{\"condition\":{\"country\":\"spain\"},\"force\":\"¡Bienvenidos y bienvenidas a Donas Acme!\"}]},\"dark_mode\":{\"defaultValue\":false,\"rules\":[{\"condition\":{\"loggedIn\":true},\"force\":true,\"coverage\":0.5,\"hashAttribute\":\"id\"}]},\"donut_price\":{\"defaultValue\":2.5,\"rules\":[{\"condition\":{\"employee\":true},\"force\":0}]},\"meal_overrides_gluten_free\":{\"defaultValue\":{\"meal_type\":\"standard\",\"dessert\":\"Strawberry Cheesecake\"},\"rules\":[{\"condition\":{\"dietaryRestrictions\":{\"$elemMatch\":{\"$eq\":\"gluten_free\"}}},\"force\":{\"meal_type\":\"gf\",\"dessert\":\"French Vanilla Ice Cream\"}}]}}";
-
-        subject.onFeaturesRefresh(new FeatureRefreshCallback() {
-            @Override
-            public void onRefresh(String featuresJson) {
-                assertEquals(expected, featuresJson);
-            }
-
-            @Override
-            public void onError(Throwable throwable) {
-            }
-        });
+        subject.onFeaturesRefresh(featureRefreshCallback);
 
         subject.getFeaturesJson();
+
+        String expected = "{\"banner_text\":{\"defaultValue\":\"Welcome to Acme Donuts!\",\"rules\":[{\"condition\":{\"country\":\"france\"},\"force\":\"Bienvenue au Beignets Acme !\"},{\"condition\":{\"country\":\"spain\"},\"force\":\"¡Bienvenidos y bienvenidas a Donas Acme!\"}]},\"dark_mode\":{\"defaultValue\":false,\"rules\":[{\"condition\":{\"loggedIn\":true},\"force\":true,\"coverage\":0.5,\"hashAttribute\":\"id\"}]},\"donut_price\":{\"defaultValue\":2.5,\"rules\":[{\"condition\":{\"employee\":true},\"force\":0}]},\"meal_overrides_gluten_free\":{\"defaultValue\":{\"meal_type\":\"standard\",\"dessert\":\"Strawberry Cheesecake\"},\"rules\":[{\"condition\":{\"dietaryRestrictions\":{\"$elemMatch\":{\"$eq\":\"gluten_free\"}}},\"force\":{\"meal_type\":\"gf\",\"dessert\":\"French Vanilla Ice Cream\"}}]}}";
+        verify(featureRefreshCallback).onRefresh(expected);
+        verify(featureRefreshCallback, never()).onError(any(Throwable.class));
     }
 
     @Test
-    void refreshCallbackWhenCacheRefreshFailed() throws IOException, FeatureFetchException, InterruptedException {
+    void testOnFeaturesRefresh_Error() throws IOException, FeatureFetchException {
         String fakeResponseJson = "{\"status\":200,\"features\":{\"banner_text\":{\"defaultValue\":\"Welcome to Acme Donuts!\",\"rules\":[{\"condition\":{\"country\":\"france\"},\"force\":\"Bienvenue au Beignets Acme !\"},{\"condition\":{\"country\":\"spain\"},\"force\":\"¡Bienvenidos y bienvenidas a Donas Acme!\"}]},\"dark_mode\":{\"defaultValue\":false,\"rules\":[{\"condition\":{\"loggedIn\":true},\"force\":true,\"coverage\":0.5,\"hashAttribute\":\"id\"}]},\"donut_price\":{\"defaultValue\":2.5,\"rules\":[{\"condition\":{\"employee\":true},\"force\":0}]},\"meal_overrides_gluten_free\":{\"defaultValue\":{\"meal_type\":\"standard\",\"dessert\":\"Strawberry Cheesecake\"},\"rules\":[{\"condition\":{\"dietaryRestrictions\":{\"$elemMatch\":{\"$eq\":\"gluten_free\"}}},\"force\":{\"meal_type\":\"gf\",\"dessert\":\"French Vanilla Ice Cream\"}}]}},\"dateUpdated\":\"2023-01-11T00:26:01.745Z\"}";
-        OkHttpClient okHttpClient = mockHttpClientFailedCallback(fakeResponseJson, new IOException("Request failed"));
-        int ttlSeconds = 0;
+        IOException error = new IOException("Request failed");
+        OkHttpClient mockOkHttpClient = mockHttpClientFailedCallback(fakeResponseJson, error);
+        FeatureRefreshCallback featureRefreshCallback = mock(FeatureRefreshCallback.class);
 
         GBFeaturesRepository subject = new GBFeaturesRepository(
-                okHttpClient,
+                mockOkHttpClient,
                 "http://localhost:80",
                 null,
-                ttlSeconds
+                0
         );
         subject.initialize();
 
-        subject.onFeaturesRefresh(new FeatureRefreshCallback() {
-            @Override
-            public void onRefresh(String featuresJson) {
-            }
-
-            @Override
-            public void onError(Throwable throwable) {
-                assertThrows(IOException.class, () -> {
-                    throw throwable;
-                });
-            }
-        });
+        subject.onFeaturesRefresh(featureRefreshCallback);
 
         subject.getFeaturesJson();
+
+        verify(featureRefreshCallback).onError(error);
+        verify(featureRefreshCallback, never()).onRefresh(anyString());
     }
+
     /*
     @Test
     void testUserAgentHeaders() throws FeatureFetchException {
