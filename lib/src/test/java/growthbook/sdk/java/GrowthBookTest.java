@@ -12,6 +12,7 @@ import growthbook.sdk.java.testhelpers.PaperCupsConfig;
 import growthbook.sdk.java.testhelpers.TestCasesJsonHelper;
 import growthbook.sdk.java.testhelpers.TestContext;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 
 import java.lang.reflect.Type;
 import java.util.ArrayList;
@@ -141,6 +142,29 @@ class GrowthBookTest {
         System.out.printf("\n\n\n evalFeature - Failing indexes = %s", failingIndexes);
 
         assertEquals(0, failedTests.size(), "There are failing tests");
+    }
+
+    @Test
+    void test_evalFeature_callsFeatureUsageCallback() {
+        ArgumentCaptor<FeatureResult<String>> captor = ArgumentCaptor.forClass(FeatureResult.class);
+        FeatureUsageCallback featureUsageCallback = mock(FeatureUsageCallback.class);
+        String features = TestCasesJsonHelper.getInstance().getDemoFeaturesJson();
+        GBContext context = GBContext
+            .builder()
+            .featuresJson(features)
+            .featureUsageCallback(featureUsageCallback)
+            .build();
+        GrowthBook subject = new GrowthBook(context);
+
+        String value = subject.getFeatureValue("h1-title", "unknown feature key");
+
+        // verify the key
+        verify(featureUsageCallback).onFeatureUsage(eq("h1-title"), captor.capture());
+        // verify the feature result
+        FeatureResult<String> featureResult = captor.getValue();
+        assertEquals("Welcome to our app!!!", value);
+        assertEquals("Welcome to our app!!!", featureResult.getValue());
+        assertEquals(FeatureResultSource.DEFAULT_VALUE, featureResult.getSource());
     }
 
     @Test
