@@ -2,7 +2,6 @@ package growthbook.sdk.java;
 
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
-import com.google.gson.JsonPrimitive;
 
 import javax.annotation.Nullable;
 import java.net.MalformedURLException;
@@ -20,6 +19,8 @@ class FeatureEvaluator implements IFeatureEvaluator {
 
     @Override
     public <ValueType> FeatureResult<ValueType> evaluateFeature(String key, GBContext context, Class<ValueType> valueTypeClass) throws ClassCastException {
+        FeatureUsageCallback featureUsageCallback = context.getFeatureUsageCallback();
+
         FeatureResult<ValueType> emptyFeature = FeatureResult
                 .<ValueType>builder()
                 .value(null)
@@ -31,17 +32,27 @@ class FeatureEvaluator implements IFeatureEvaluator {
             if (context.getAllowUrlOverride()) {
                 ValueType forcedValue = evaluateForcedFeatureValueFromUrl(key, context.getUrl(), valueTypeClass);
                 if (forcedValue != null) {
-                    return FeatureResult
+                    FeatureResult<ValueType> urlFeatureResult = FeatureResult
                         .<ValueType>builder()
                         .value(forcedValue)
                         .source(FeatureResultSource.URL_OVERRIDE)
                         .build();
+
+                    if (featureUsageCallback != null) {
+                        featureUsageCallback.onFeatureUsage(key, urlFeatureResult);
+                    }
+
+                    return urlFeatureResult;
                 }
             }
 
             // Unknown key, return empty feature
             JsonObject featuresJson = context.getFeatures();
             if (featuresJson == null || !featuresJson.has(key)) {
+                if (featureUsageCallback != null) {
+                    featureUsageCallback.onFeatureUsage(key, emptyFeature);
+                }
+
                 return emptyFeature;
             }
 
@@ -55,24 +66,36 @@ class FeatureEvaluator implements IFeatureEvaluator {
 
             if (featureJson == null) {
                 System.out.println("featureJson is null");
+
                 // When key exists but there is no value, should be default value with null value
+                if (featureUsageCallback != null) {
+                    featureUsageCallback.onFeatureUsage(key, defaultValueFeature);
+                }
+
                 return defaultValueFeature;
             }
 
             Feature<ValueType> feature = jsonUtils.gson.fromJson(featureJson, Feature.class);
             if (feature == null) {
                 // When key exists but there is no value, should be default value with null value
+                if (featureUsageCallback != null) {
+                    featureUsageCallback.onFeatureUsage(key, defaultValueFeature);
+                }
                 return defaultValueFeature;
             }
 
             // If empty rule set, use the default value
             if (feature.getRules() == null || feature.getRules().isEmpty()) {
                 ValueType value = (ValueType) GrowthBookJsonUtils.unwrap(feature.getDefaultValue());
-                return FeatureResult
+                FeatureResult<ValueType> defaultValueFeatureForRules = FeatureResult
                         .<ValueType>builder()
                         .source(FeatureResultSource.DEFAULT_VALUE)
                         .value(value)
                         .build();
+                if (featureUsageCallback != null) {
+                    featureUsageCallback.onFeatureUsage(key, defaultValueFeatureForRules);
+                }
+                return defaultValueFeatureForRules;
             }
 
             String attributesJson = context.getAttributesJson();
@@ -137,11 +160,16 @@ class FeatureEvaluator implements IFeatureEvaluator {
                     ValueType value = (ValueType) GrowthBookJsonUtils.unwrap(rule.getForce());
 
                     // Apply the force rule
-                    return FeatureResult
+                    FeatureResult<ValueType> forcedRuleFeatureValue = FeatureResult
                             .<ValueType>builder()
                             .value(value) // TODO: Check this. - This is not right
                             .source(FeatureResultSource.FORCE)
                             .build();
+
+                    if (featureUsageCallback != null) {
+                        featureUsageCallback.onFeatureUsage(key, forcedRuleFeatureValue);
+                    }
+                    return forcedRuleFeatureValue;
                 }
 
                 // Experiment rule
@@ -171,13 +199,18 @@ class FeatureEvaluator implements IFeatureEvaluator {
                 if (result.getInExperiment() && (result.getPassThrough() == null || !result.getPassThrough())) {
                     ValueType value = (ValueType) GrowthBookJsonUtils.unwrap(result.getValue());
 
-                    return FeatureResult
+                    FeatureResult<ValueType> experimentFeatureResult = FeatureResult
                             .<ValueType>builder()
                             .value(value)
                             .source(FeatureResultSource.EXPERIMENT)
                             .experiment(experiment)
                             .experimentResult(result)
                             .build();
+
+                    if (featureUsageCallback != null) {
+                        featureUsageCallback.onFeatureUsage(key, experimentFeatureResult);
+                    }
+                    return experimentFeatureResult;
                 }
             }
 
@@ -185,11 +218,16 @@ class FeatureEvaluator implements IFeatureEvaluator {
 
             ValueType value = (ValueType) GrowthBookJsonUtils.unwrap(feature.getDefaultValue());
 
-            return FeatureResult
+            FeatureResult<ValueType> defaultValueFeatureResult = FeatureResult
                     .<ValueType>builder()
                     .source(FeatureResultSource.DEFAULT_VALUE)
                     .value(value)
                     .build();
+
+            if (featureUsageCallback != null) {
+                featureUsageCallback.onFeatureUsage(key, defaultValueFeatureResult);
+            }
+            return defaultValueFeatureResult;
         } catch (Exception e) {
             e.printStackTrace();
             return emptyFeature;
