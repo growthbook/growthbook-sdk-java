@@ -108,7 +108,7 @@ loadScripts(document, 'script');</script>
 <div class="summary-table two-column-summary">
 <div class="table-header col-first">Constructor</div>
 <div class="table-header col-last">Description</div>
-<div class="col-constructor-name even-row-color"><code><a href="#%3Cinit%3E(java.lang.String,java.lang.String,java.lang.String,java.lang.Boolean,java.lang.Boolean,java.lang.String,java.lang.Boolean,java.util.Map,growthbook.sdk.java.TrackingCallback)" class="member-name-link">GBContext</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;attributesJson,
+<div class="col-constructor-name even-row-color"><code><a href="#%3Cinit%3E(java.lang.String,java.lang.String,java.lang.String,java.lang.Boolean,java.lang.Boolean,java.lang.String,java.lang.Boolean,java.util.Map,growthbook.sdk.java.TrackingCallback,growthbook.sdk.java.FeatureUsageCallback)" class="member-name-link">GBContext</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;attributesJson,
  <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;featuresJson,
  <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;encryptionKey,
  <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Boolean.html" title="class or interface in java.lang" class="external-link">Boolean</a>&nbsp;enabled,
@@ -116,7 +116,8 @@ loadScripts(document, 'script');</script>
  <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;url,
  <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Boolean.html" title="class or interface in java.lang" class="external-link">Boolean</a>&nbsp;allowUrlOverrides,
  <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/Map.html" title="class or interface in java.util" class="external-link">Map</a>&lt;<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>,<wbr><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Integer.html" title="class or interface in java.lang" class="external-link">Integer</a>&gt;&nbsp;forcedVariationsMap,
- <a href="TrackingCallback.html" title="interface in growthbook.sdk.java">TrackingCallback</a>&nbsp;trackingCallback)</code></div>
+ <a href="TrackingCallback.html" title="interface in growthbook.sdk.java">TrackingCallback</a>&nbsp;trackingCallback,
+ <a href="FeatureUsageCallback.html" title="interface in growthbook.sdk.java">FeatureUsageCallback</a>&nbsp;featureUsageCallback)</code></div>
 <div class="col-last even-row-color">
 <div class="block">The <a href="GBContext.GBContextBuilder.html" title="class in growthbook.sdk.java"><code>GBContext.GBContextBuilder</code></a> is recommended for constructing a Context.</div>
 </div>
@@ -167,7 +168,7 @@ loadScripts(document, 'script');</script>
 <h2>Constructor Details</h2>
 <ul class="member-list">
 <li>
-<section class="detail" id="&lt;init&gt;(java.lang.String,java.lang.String,java.lang.String,java.lang.Boolean,java.lang.Boolean,java.lang.String,java.lang.Boolean,java.util.Map,growthbook.sdk.java.TrackingCallback)">
+<section class="detail" id="&lt;init&gt;(java.lang.String,java.lang.String,java.lang.String,java.lang.Boolean,java.lang.Boolean,java.lang.String,java.lang.Boolean,java.util.Map,growthbook.sdk.java.TrackingCallback,growthbook.sdk.java.FeatureUsageCallback)">
 <h3>GBContext</h3>
 <div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="element-name">GBContext</span><wbr><span class="parameters">(@Nullable
  <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;attributesJson,
@@ -184,7 +185,9 @@ loadScripts(document, 'script');</script>
  @Nullable
  <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/Map.html" title="class or interface in java.util" class="external-link">Map</a>&lt;<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>,<wbr><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Integer.html" title="class or interface in java.lang" class="external-link">Integer</a>&gt;&nbsp;forcedVariationsMap,
  @Nullable
- <a href="TrackingCallback.html" title="interface in growthbook.sdk.java">TrackingCallback</a>&nbsp;trackingCallback)</span></div>
+ <a href="TrackingCallback.html" title="interface in growthbook.sdk.java">TrackingCallback</a>&nbsp;trackingCallback,
+ @Nullable
+ <a href="FeatureUsageCallback.html" title="interface in growthbook.sdk.java">FeatureUsageCallback</a>&nbsp;featureUsageCallback)</span></div>
 <div class="block">The <a href="GBContext.GBContextBuilder.html" title="class in growthbook.sdk.java"><code>GBContext.GBContextBuilder</code></a> is recommended for constructing a Context.
  Alternatively, you can use this static method instead of the builder.</div>
 <dl class="notes">

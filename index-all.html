@@ -198,6 +198,10 @@ loadScripts(document, 'script');</script>
 </dd>
 <dt><a href="growthbook/sdk/java/FeatureRule.html#%3Cinit%3E()" class="member-name-link">FeatureRule()</a> - Constructor for class growthbook.sdk.java.<a href="growthbook/sdk/java/FeatureRule.html" title="class in growthbook.sdk.java">FeatureRule</a></dt>
 <dd>&nbsp;</dd>
+<dt><a href="growthbook/sdk/java/FeatureUsageCallback.html" class="type-name-link" title="interface in growthbook.sdk.java">FeatureUsageCallback</a> - Interface in <a href="growthbook/sdk/java/package-summary.html">growthbook.sdk.java</a></dt>
+<dd>
+<div class="block">Listen for feature usage events</div>
+</dd>
 <dt><a href="growthbook/sdk/java/Filter.html" class="type-name-link" title="class in growthbook.sdk.java">Filter</a> - Class in <a href="growthbook/sdk/java/package-summary.html">growthbook.sdk.java</a></dt>
 <dd>
 <div class="block">Object used for mutual exclusion and filtering users out of experiments based on random hashes.</div>
@@ -225,7 +229,7 @@ loadScripts(document, 'script');</script>
 <dd>
 <div class="block">Context object passed into the GrowthBook constructor.</div>
 </dd>
-<dt><a href="growthbook/sdk/java/GBContext.html#%3Cinit%3E(java.lang.String,java.lang.String,java.lang.String,java.lang.Boolean,java.lang.Boolean,java.lang.String,java.lang.Boolean,java.util.Map,growthbook.sdk.java.TrackingCallback)" class="member-name-link">GBContext(String, String, String, Boolean, Boolean, String, Boolean, Map&lt;String, Integer&gt;, TrackingCallback)</a> - Constructor for class growthbook.sdk.java.<a href="growthbook/sdk/java/GBContext.html" title="class in growthbook.sdk.java">GBContext</a></dt>
+<dt><a href="growthbook/sdk/java/GBContext.html#%3Cinit%3E(java.lang.String,java.lang.String,java.lang.String,java.lang.Boolean,java.lang.Boolean,java.lang.String,java.lang.Boolean,java.util.Map,growthbook.sdk.java.TrackingCallback,growthbook.sdk.java.FeatureUsageCallback)" class="member-name-link">GBContext(String, String, String, Boolean, Boolean, String, Boolean, Map&lt;String, Integer&gt;, TrackingCallback, FeatureUsageCallback)</a> - Constructor for class growthbook.sdk.java.<a href="growthbook/sdk/java/GBContext.html" title="class in growthbook.sdk.java">GBContext</a></dt>
 <dd>
 <div class="block">The <a href="growthbook/sdk/java/GBContext.GBContextBuilder.html" title="class in growthbook.sdk.java"><code>GBContext.GBContextBuilder</code></a> is recommended for constructing a Context.</div>
 </dd>
@@ -399,6 +403,8 @@ loadScripts(document, 'script');</script>
 <div class="block">Subscribe to feature refresh events
  This callback is called when the features are successfully refreshed.</div>
 </dd>
+<dt><a href="growthbook/sdk/java/FeatureUsageCallback.html#onFeatureUsage(java.lang.String,growthbook.sdk.java.FeatureResult)" class="member-name-link">onFeatureUsage(String, FeatureResult&lt;ValueType&gt;)</a> - Method in interface growthbook.sdk.java.<a href="growthbook/sdk/java/FeatureUsageCallback.html" title="interface in growthbook.sdk.java">FeatureUsageCallback</a></dt>
+<dd>&nbsp;</dd>
 <dt><a href="growthbook/sdk/java/FeatureRefreshCallback.html#onRefresh(java.lang.String)" class="member-name-link">onRefresh(String)</a> - Method in interface growthbook.sdk.java.<a href="growthbook/sdk/java/FeatureRefreshCallback.html" title="interface in growthbook.sdk.java">FeatureRefreshCallback</a></dt>
 <dd>
 <div class="block">See <a href="growthbook/sdk/java/GBFeaturesRepository.html#onFeaturesRefresh(growthbook.sdk.java.FeatureRefreshCallback)"><code>GBFeaturesRepository.onFeaturesRefresh(FeatureRefreshCallback)</code></a></div>
