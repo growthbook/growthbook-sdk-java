@@ -136,6 +136,9 @@ class GrowthBookUtils {
      */
     @Nullable
     public static Integer getQueryStringOverride(String id, String urlString, Integer numberOfVariations) {
+        if (urlString == null || urlString.isEmpty()) {
+            return null;
+        }
         try {
             URL url = new URL(urlString);
             return getQueryStringOverride(id, url, numberOfVariations);
