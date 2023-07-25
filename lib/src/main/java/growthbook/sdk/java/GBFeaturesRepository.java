@@ -38,6 +38,8 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
 
     private final ArrayList<FeatureRefreshCallback> refreshCallbacks = new ArrayList<>();
 
+    private Boolean initialized = false;
+
     /**
      * Allows you to get the features JSON from the provided {@link GBFeaturesRepository#getEndpoint()}.
      * You must call {@link GBFeaturesRepository#initialize()} before calling this method
@@ -139,7 +141,10 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
 
     @Override
     public void initialize() throws FeatureFetchException {
+        if (this.initialized) return;
+
         fetchFeatures();
+        this.initialized = true;
     }
 
     private OkHttpClient initializeHttpClient() {
@@ -243,25 +248,6 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
                 FeatureFetchException.FeatureFetchErrorCode.UNKNOWN,
                 e.getMessage()
             );
-        }
-    }
-
-
-
-    /**
-     * Appends User-Agent info to the request headers.
-     */
-    private static class GBFeaturesRepositoryRequestInterceptor implements Interceptor {
-
-        @NotNull
-        @Override
-        public Response intercept(@NotNull Chain chain) throws IOException {
-            Request modifiedRequest = chain.request()
-                .newBuilder()
-                .header("User-Agent", "growthbook-sdk-java/" + Version.SDK_VERSION)
-                .build();
-
-            return chain.proceed(modifiedRequest);
         }
     }
 }
