@@ -238,8 +238,8 @@ class GBFeaturesRepositoryTest {
             .protocol(Protocol.HTTP_1_1)
             .code(200).message("").body(
                 ResponseBody.create(
-                        serializedBody,
-                        MediaType.parse("application/json")
+                    serializedBody,
+                    MediaType.parse("application/json")
                 ))
             .build();
 
