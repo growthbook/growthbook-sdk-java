@@ -5,12 +5,15 @@ import com.google.gson.JsonObject;
 import lombok.Builder;
 import lombok.Getter;
 import okhttp3.*;
+import okhttp3.sse.EventSources;
 import org.jetbrains.annotations.NotNull;
 
 import javax.annotation.Nullable;
 import java.io.IOException;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Objects;
+import java.util.concurrent.TimeUnit;
 
 /**
  * This class can be created with its `builder()` or constructor.
@@ -41,9 +44,14 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
 
     private final OkHttpClient okHttpClient;
 
+    @Nullable
+    private OkHttpClient sseHttpClient;
+
     private final ArrayList<FeatureRefreshCallback> refreshCallbacks = new ArrayList<>();
 
     private Boolean initialized = false;
+
+    private Boolean sseAllowed = false;
 
     /**
      * Allows you to get the features JSON from the provided {@link GBFeaturesRepository#getFeaturesEndpoint()}.
@@ -155,8 +163,54 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
     public void initialize() throws FeatureFetchException {
         if (this.initialized) return;
 
-        fetchFeatures();
+        switch (this.refreshStrategy) {
+            case STALE_WHILE_REVALIDATE:
+                fetchFeatures();
+                break;
+
+            case SERVER_SENT_EVENTS:
+                fetchFeatures();
+                initializeSSE();
+                break;
+        }
+
         this.initialized = true;
+    }
+
+    private void initializeSSE() {
+        if (!this.sseAllowed) {
+            System.out.printf("\nNot initializing SSE because header 'X-Sse-Support: enabled' not present on resource returned at %s", this.featuresEndpoint);
+            return;
+        }
+
+        this.sseHttpClient = new OkHttpClient.Builder()
+            .connectTimeout(10, TimeUnit.SECONDS)
+            .readTimeout(0, TimeUnit.MINUTES)
+            .writeTimeout(0, TimeUnit.MINUTES)
+            .build();
+
+        Request sseRequest = new Request.Builder()
+            .url(this.eventsEndpoint)
+            .header("Accept", "application/json; q=0.5")
+            .addHeader("Accept", "text/event-stream")
+            .build();
+
+        EventSources
+            .createFactory(this.sseHttpClient)
+            .newEventSource(sseRequest, new GBEventSourceListener());
+
+        this.sseHttpClient.newCall(sseRequest).enqueue(new Callback() {
+            @Override
+            public void onFailure(@NotNull Call call, @NotNull IOException e) {
+                System.out.println("SSE connection failed");
+                e.printStackTrace();
+            }
+
+            @Override
+            public void onResponse(@NotNull Call call, @NotNull Response response) throws IOException {
+                System.out.printf("\n\n SSE onResponse: %s \n\n", response);
+            }
+        });
     }
 
     /**
@@ -196,6 +250,9 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
             .build();
 
         try (Response response = this.okHttpClient.newCall(request).execute()) {
+            String sseSupportHeader = response.header("x-sse-support");
+            this.sseAllowed = Objects.equals(sseSupportHeader, "enabled");
+
             this.onSuccess(response);
         } catch (IOException e) {
             e.printStackTrace();
