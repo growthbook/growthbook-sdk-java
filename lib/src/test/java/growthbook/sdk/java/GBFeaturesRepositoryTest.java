@@ -16,25 +16,32 @@ class GBFeaturesRepositoryTest {
     @Test
     void canBeConstructed_withNullEncryptionKey() {
         GBFeaturesRepository subject = new GBFeaturesRepository(
-            "https://cdn.growthbook.io/api/features/java_NsrWldWd5bxQJZftGsWKl7R2yD2LtAK8C8EUYh9L8",
+            "https://cdn.growthbook.io",
+            "java_NsrWldWd5bxQJZftGsWKl7R2yD2LtAK8C8EUYh9L8",
+            null,
+            null,
             null,
             null
         );
 
         assertNotNull(subject);
-        assertEquals("https://cdn.growthbook.io/api/features/java_NsrWldWd5bxQJZftGsWKl7R2yD2LtAK8C8EUYh9L8", subject.getEndpoint());
+        assertEquals("https://cdn.growthbook.io/api/features/java_NsrWldWd5bxQJZftGsWKl7R2yD2LtAK8C8EUYh9L8", subject.getFeaturesEndpoint());
+        assertEquals(FeatureRefreshStrategy.STALE_WHILE_REVALIDATE, subject.getRefreshStrategy());
     }
 
     @Test
     void canBeConstructed_withEncryptionKey() {
         GBFeaturesRepository subject = new GBFeaturesRepository(
-            "https://cdn.growthbook.io/api/features/sdk-862b5mHcP9XPugqD",
+            "https://cdn.growthbook.io",
+            "sdk-862b5mHcP9XPugqD",
             "BhB1wORFmZLTDjbvstvS8w==",
+            null,
+            null,
             null
         );
 
         assertNotNull(subject);
-        assertEquals("https://cdn.growthbook.io/api/features/sdk-862b5mHcP9XPugqD", subject.getEndpoint());
+        assertEquals("https://cdn.growthbook.io/api/features/sdk-862b5mHcP9XPugqD", subject.getFeaturesEndpoint());
         assertEquals("BhB1wORFmZLTDjbvstvS8w==", subject.getEncryptionKey());
     }
 
@@ -42,23 +49,25 @@ class GBFeaturesRepositoryTest {
     void canBeBuilt_withNullEncryptionKey() {
         GBFeaturesRepository subject = GBFeaturesRepository
             .builder()
-            .endpoint("https://cdn.growthbook.io/api/features/java_NsrWldWd5bxQJZftGsWKl7R2yD2LtAK8C8EUYh9L8")
+            .apiHost("https://cdn.growthbook.io")
+            .clientKey("java_NsrWldWd5bxQJZftGsWKl7R2yD2LtAK8C8EUYh9L8")
             .build();
 
         assertNotNull(subject);
-        assertEquals("https://cdn.growthbook.io/api/features/java_NsrWldWd5bxQJZftGsWKl7R2yD2LtAK8C8EUYh9L8", subject.getEndpoint());
+        assertEquals("https://cdn.growthbook.io/api/features/java_NsrWldWd5bxQJZftGsWKl7R2yD2LtAK8C8EUYh9L8", subject.getFeaturesEndpoint());
     }
 
     @Test
     void canBeBuilt_withEncryptionKey() {
         GBFeaturesRepository subject = GBFeaturesRepository
             .builder()
-            .endpoint("https://cdn.growthbook.io/api/features/sdk-862b5mHcP9XPugqD")
+            .apiHost("https://cdn.growthbook.io")
+            .clientKey("sdk-862b5mHcP9XPugqD")
             .encryptionKey("BhB1wORFmZLTDjbvstvS8w==")
             .build();
 
         assertNotNull(subject);
-        assertEquals("https://cdn.growthbook.io/api/features/sdk-862b5mHcP9XPugqD", subject.getEndpoint());
+        assertEquals("https://cdn.growthbook.io/api/features/sdk-862b5mHcP9XPugqD", subject.getFeaturesEndpoint());
         assertEquals("BhB1wORFmZLTDjbvstvS8w==", subject.getEncryptionKey());
     }
 
@@ -86,10 +95,12 @@ class GBFeaturesRepositoryTest {
         OkHttpClient mockOkHttpClient = mockHttpClient(fakeResponseJson);
 
         GBFeaturesRepository subject = new GBFeaturesRepository(
-            mockOkHttpClient,
             "http://localhost:80",
+            "sdk-abc123",
             null,
-            null
+            null,
+            null,
+            mockOkHttpClient
         );
         subject.initialize();
 
@@ -125,12 +136,12 @@ class GBFeaturesRepositoryTest {
         String encryptionKey = "o0maZL/O7AphxcbRvaJIzw==";
         OkHttpClient mockOkHttpClient = mockHttpClient(fakeResponseJson);
 
-        GBFeaturesRepository subject = new GBFeaturesRepository(
-            mockOkHttpClient,
-            "http://localhost:80",
-            encryptionKey,
-            null
-        );
+        GBFeaturesRepository subject = GBFeaturesRepository.builder()
+            .apiHost("http://localhost:80")
+            .okHttpClient(mockOkHttpClient)
+            .clientKey("abc-123")
+            .encryptionKey(encryptionKey)
+            .build();
         subject.initialize();
 
         String expected = "{\"targeted_percentage_rollout\":{\"defaultValue\":false,\"rules\":[{\"condition\":{\"id\":\"foo\"},\"force\":true,\"coverage\":0.5,\"hashAttribute\":\"id\"}]},\"test_feature\":{\"defaultValue\":false,\"rules\":[{\"condition\":{\"id\":{\"$not\":{\"$regex\":\"foo\"},\"$eq\":\"\"}},\"force\":true}]},\"sample_json\":{\"defaultValue\":{}},\"string_feature\":{\"defaultValue\":\"hello, world!\"},\"some_test_feature\":{\"defaultValue\":true},\"my_new_feature_jan17_5\":{\"defaultValue\":true},\"my_new_feature_jan17_13\":{\"defaultValue\":true}}";

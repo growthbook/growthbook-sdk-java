@@ -32,12 +32,13 @@ public class GBFeaturesRepositoryRefreshingTest {
             "}";
         String encryptionKey = "o0maZL/O7AphxcbRvaJIzw==";
         OkHttpClient mockOkHttpClient = mockHttpClient(fakeResponseJson);
-        GBFeaturesRepository subject = new GBFeaturesRepository(
-            mockOkHttpClient,
-            "http://localhost:80",
-            encryptionKey,
-            ttlSeconds
-        );
+        GBFeaturesRepository subject = GBFeaturesRepository.builder()
+            .apiHost("http://localhost:80")
+            .clientKey("sdk-abc123")
+            .encryptionKey(encryptionKey)
+            .swrTtlSeconds(ttlSeconds)
+            .okHttpClient(mockOkHttpClient)
+            .build();
         subject.initialize();
 
         // Advance time 3 seconds. We are still within the cache TTL so it should not trigger a refresh.
@@ -65,12 +66,13 @@ public class GBFeaturesRepositoryRefreshingTest {
             "}";
         String encryptionKey = "o0maZL/O7AphxcbRvaJIzw==";
         OkHttpClient mockOkHttpClient = mockHttpClient(fakeResponseJson);
-        GBFeaturesRepository subject = new GBFeaturesRepository(
-            mockOkHttpClient,
-            "http://localhost:80",
-            encryptionKey,
-            ttlSeconds
-        );
+        GBFeaturesRepository subject = GBFeaturesRepository.builder()
+            .apiHost("http://localhost:80")
+            .clientKey("sdk-abc123")
+            .encryptionKey(encryptionKey)
+            .swrTtlSeconds(ttlSeconds)
+            .okHttpClient(mockOkHttpClient)
+            .build();
         subject.initialize();
 
         // Advance time 2 seconds. We are still within the cache TTL so it should not trigger a refresh.
@@ -97,12 +99,13 @@ public class GBFeaturesRepositoryRefreshingTest {
             "}";
         String encryptionKey = "o0maZL/O7AphxcbRvaJIzw==";
         OkHttpClient mockOkHttpClient = mockHttpClient(fakeResponseJson);
-        GBFeaturesRepository subject = new GBFeaturesRepository(
-            mockOkHttpClient,
-            "http://localhost:80",
-            encryptionKey,
-            ttlSeconds
-        );
+        GBFeaturesRepository subject = GBFeaturesRepository.builder()
+            .apiHost("http://localhost:80")
+            .clientKey("sdk-abc123")
+            .encryptionKey(encryptionKey)
+            .swrTtlSeconds(ttlSeconds)
+            .okHttpClient(mockOkHttpClient)
+            .build();
         subject.initialize();
 
         // Advance time 3 seconds. We are still within the cache TTL so it should not trigger a refresh.

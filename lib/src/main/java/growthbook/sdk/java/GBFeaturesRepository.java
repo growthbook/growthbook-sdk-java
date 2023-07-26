@@ -11,7 +11,6 @@ import javax.annotation.Nullable;
 import java.io.IOException;
 import java.time.Instant;
 import java.util.ArrayList;
-import java.util.List;
 
 /**
  * This class can be created with its `builder()` or constructor.
@@ -23,13 +22,19 @@ import java.util.List;
 public class GBFeaturesRepository implements IGBFeaturesRepository {
 
     @Getter
-    private final String endpoint;
+    private final String featuresEndpoint;
+
+    @Getter
+    private final String eventsEndpoint;
+
+    @Getter
+    private final FeatureRefreshStrategy refreshStrategy;
 
     @Nullable @Getter
     private final String encryptionKey;
 
     @Getter
-    private final Integer ttlSeconds;
+    private final Integer swrTtlSeconds;
 
     @Getter
     private Long expiresAt;
@@ -41,7 +46,7 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
     private Boolean initialized = false;
 
     /**
-     * Allows you to get the features JSON from the provided {@link GBFeaturesRepository#getEndpoint()}.
+     * Allows you to get the features JSON from the provided {@link GBFeaturesRepository#getFeaturesEndpoint()}.
      * You must call {@link GBFeaturesRepository#initialize()} before calling this method
      * or your features would not have loaded.
      */
@@ -49,50 +54,53 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
 
     /**
      * Create a new GBFeaturesRepository
-     * @param endpoint SDK Endpoint URL
+     * @param apiHost The GrowthBook API host (default: https://cdn.growthbook.io)
+     * @param clientKey Your client ID, e.g. sdk-abc123
      * @param encryptionKey optional key for decrypting encrypted payload
-     * @param ttlSeconds How often the cache should be invalidated (default: 60)
+     * @param swrTtlSeconds How often the cache should be invalidated when using {@link FeatureRefreshStrategy#STALE_WHILE_REVALIDATE} (default: 60)
+     * @param okHttpClient HTTP client (optional)
      */
     @Builder
     public GBFeaturesRepository(
-        String endpoint,
+        @Nullable String apiHost,
+        String clientKey,
         @Nullable String encryptionKey,
-        @Nullable Integer ttlSeconds
+        @Nullable FeatureRefreshStrategy refreshStrategy,
+        @Nullable Integer swrTtlSeconds,
+        @Nullable OkHttpClient okHttpClient
     ) {
-        if (endpoint == null) {
-            throw new IllegalArgumentException("endpoint cannot be null");
+        if (clientKey == null) throw new IllegalArgumentException("clientKey cannot be null");
+
+        // Set the defaults when the user does not provide them
+        if (apiHost == null) {
+            apiHost = "https://cdn.growthbook.io";
         }
+        this.refreshStrategy = refreshStrategy == null ? FeatureRefreshStrategy.STALE_WHILE_REVALIDATE : refreshStrategy;
 
-        this.endpoint = endpoint;
-        this.encryptionKey = encryptionKey;
-        this.ttlSeconds = ttlSeconds == null ? 60 : ttlSeconds;
-        this.refreshExpiresAt();
-        this.okHttpClient = this.initializeHttpClient();
-    }
+        // Build the endpoints from the apiHost and clientKey
+        this.featuresEndpoint = apiHost + "/api/features/" + clientKey;
+        this.eventsEndpoint = apiHost + "/sub/" + clientKey;
 
-    /**
-     * INTERNAL: This constructor is for using for unit tests
-     * @param okHttpClient mock HTTP client
-     * @param endpoint SDK Endpoint URL
-     * @param encryptionKey optional key for decrypting encrypted payload
-     */
-    GBFeaturesRepository(
-        OkHttpClient okHttpClient,
-        @Nullable String endpoint,
-        @Nullable String encryptionKey,
-        @Nullable Integer ttlSeconds
-    ) {
         this.encryptionKey = encryptionKey;
-        this.endpoint = endpoint;
-        this.ttlSeconds = ttlSeconds == null ? 60 : ttlSeconds;
+        this.swrTtlSeconds = swrTtlSeconds == null ? 60 : swrTtlSeconds;
         this.refreshExpiresAt();
-        this.okHttpClient = okHttpClient;
+
+        // Use provided OkHttpClient or create a new one
+        this.okHttpClient = okHttpClient == null ? this.initializeHttpClient() : okHttpClient;
+        // TODO: Enforce the appropriate interceptor is present
     }
 
     public String getFeaturesJson() {
-        if (isCacheExpired()) {
-            this.enqueueFeatureRefreshRequest();
-            this.refreshExpiresAt();
+        switch (this.refreshStrategy) {
+            case STALE_WHILE_REVALIDATE:
+                if (isCacheExpired()) {
+                    this.enqueueFeatureRefreshRequest();
+                    this.refreshExpiresAt();
+                }
+                return this.featuresJson;
+
+            case SERVER_SENT_EVENTS:
+                return this.featuresJson;
         }
 
         return this.featuresJson;
@@ -119,7 +127,7 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
         GBFeaturesRepository self = this;
 
         Request request = new Request.Builder()
-            .url(this.endpoint)
+            .url(this.featuresEndpoint)
             .build();
 
         this.okHttpClient.newCall(request).enqueue(new Callback() {
@@ -147,6 +155,9 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
         this.initialized = true;
     }
 
+    /**
+     * @return A new {@link OkHttpClient} with an interceptor {@link GBFeaturesRepositoryRequestInterceptor}
+     */
     private OkHttpClient initializeHttpClient() {
         OkHttpClient client = new OkHttpClient.Builder()
             .addInterceptor(new GBFeaturesRepositoryRequestInterceptor())
@@ -157,7 +168,7 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
     }
 
     private void refreshExpiresAt() {
-        this.expiresAt = Instant.now().getEpochSecond() + this.ttlSeconds;
+        this.expiresAt = Instant.now().getEpochSecond() + this.swrTtlSeconds;
     }
 
     private Boolean isCacheExpired() {
@@ -172,12 +183,12 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
      * This method will attempt to decrypt the encrypted features with the provided encryptionKey.
      */
     private void fetchFeatures() throws FeatureFetchException {
-        if (this.endpoint == null) {
+        if (this.featuresEndpoint == null) {
             throw new IllegalArgumentException("endpoint cannot be null");
         }
 
         Request request = new Request.Builder()
-            .url(this.endpoint)
+            .url(this.featuresEndpoint)
             .build();
 
         try (Response response = this.okHttpClient.newCall(request).execute()) {
