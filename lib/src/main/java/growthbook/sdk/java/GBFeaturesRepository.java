@@ -86,8 +86,12 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
         this.refreshExpiresAt();
 
         // Use provided OkHttpClient or create a new one
-        this.okHttpClient = okHttpClient == null ? this.initializeHttpClient() : okHttpClient;
-        // TODO: Enforce the appropriate interceptor is present
+        if (okHttpClient == null) {
+            this.okHttpClient = this.initializeHttpClient();
+        } else {
+            // TODO: Check for valid interceptor
+            this.okHttpClient = okHttpClient;
+        }
     }
 
     public String getFeaturesJson() {
