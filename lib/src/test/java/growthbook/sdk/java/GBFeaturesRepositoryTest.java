@@ -5,8 +5,7 @@ import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -74,18 +73,14 @@ class GBFeaturesRepositoryTest {
     /*
     @Test
     void canFetchUnencryptedFeatures_real() throws FeatureFetchException {
-        GBFeaturesRepository subject = new GBFeaturesRepository(
-            "https://cdn.growthbook.io/api/features/java_NsrWldWd5bxQJZftGsWKl7R2yD2LtAK8C8EUYh9L8",
-            null,
-            null
-        );
+        GBFeaturesRepository subject = GBFeaturesRepository.builder()
+            .apiHost("https://cdn.growthbook.io")
+            .clientKey("sdk-pGmC6LrsiUoEUcpZ")
+            .build();
 
         subject.initialize();
 
-        assertEquals(
-            "{\"banner_text\":{\"defaultValue\":\"Welcome to Acme Donuts!\",\"rules\":[{\"condition\":{\"country\":\"france\"},\"force\":\"Bienvenue au Beignets Acme !\"},{\"condition\":{\"country\":\"spain\"},\"force\":\"¡Bienvenidos y bienvenidas a Donas Acme!\"}]},\"dark_mode\":{\"defaultValue\":false,\"rules\":[{\"condition\":{\"loggedIn\":true},\"force\":true,\"coverage\":0.5,\"hashAttribute\":\"id\"}]},\"donut_price\":{\"defaultValue\":2.5,\"rules\":[{\"condition\":{\"employee\":true},\"force\":0}]},\"meal_overrides_gluten_free\":{\"defaultValue\":{\"meal_type\":\"standard\",\"dessert\":\"Strawberry Cheesecake\"},\"rules\":[{\"condition\":{\"dietaryRestrictions\":{\"$elemMatch\":{\"$eq\":\"gluten_free\"}}},\"force\":{\"meal_type\":\"gf\",\"dessert\":\"French Vanilla Ice Cream\"}}]}}",
-            subject.getFeaturesJson()
-        );
+        assertTrue(subject.getFeaturesJson().startsWith("{\"banner_text\":{\"defaultValue\":\"Welcome to Acme Donuts!\""));
     }
     */
 
