@@ -66,6 +66,23 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
      * @param clientKey Your client ID, e.g. sdk-abc123
      * @param encryptionKey optional key for decrypting encrypted payload
      * @param swrTtlSeconds How often the cache should be invalidated when using {@link FeatureRefreshStrategy#STALE_WHILE_REVALIDATE} (default: 60)
+     */
+    public GBFeaturesRepository(
+        @Nullable String apiHost,
+        String clientKey,
+        @Nullable String encryptionKey,
+        @Nullable FeatureRefreshStrategy refreshStrategy,
+        @Nullable Integer swrTtlSeconds
+    ) {
+        this(apiHost, clientKey, encryptionKey, refreshStrategy, swrTtlSeconds, null);
+    }
+
+    /**
+     * Create a new GBFeaturesRepository
+     * @param apiHost The GrowthBook API host (default: https://cdn.growthbook.io)
+     * @param clientKey Your client ID, e.g. sdk-abc123
+     * @param encryptionKey optional key for decrypting encrypted payload
+     * @param swrTtlSeconds How often the cache should be invalidated when using {@link FeatureRefreshStrategy#STALE_WHILE_REVALIDATE} (default: 60)
      * @param okHttpClient HTTP client (optional)
      */
     @Builder
