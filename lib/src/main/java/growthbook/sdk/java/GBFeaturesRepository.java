@@ -177,13 +177,15 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
         this.initialized = true;
     }
 
-    private void initializeSSE() {
+    private void initializeSSE() throws FeatureFetchException {
         if (!this.sseAllowed) {
             System.out.printf("\nNot initializing SSE because header 'X-Sse-Support: enabled' not present on resource returned at %s", this.featuresEndpoint);
-            return;
+            throw new FeatureFetchException(FeatureFetchException.FeatureFetchErrorCode.SSE_CONNECTION_ERROR);
+//            return;
         }
 
         this.sseHttpClient = new OkHttpClient.Builder()
+            .addInterceptor(new GBFeaturesRepositoryRequestInterceptor())
             .connectTimeout(10, TimeUnit.SECONDS)
             .readTimeout(0, TimeUnit.MINUTES)
             .writeTimeout(0, TimeUnit.MINUTES)
@@ -242,7 +244,7 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
      */
     private void fetchFeatures() throws FeatureFetchException {
         if (this.featuresEndpoint == null) {
-            throw new IllegalArgumentException("endpoint cannot be null");
+            throw new IllegalArgumentException("features endpoint cannot be null");
         }
 
         Request request = new Request.Builder()
