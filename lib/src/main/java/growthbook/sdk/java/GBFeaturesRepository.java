@@ -308,21 +308,13 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
     }
 
     /**
-     * Handles the successful features fetching response
-     * @param response Successful response
+     * Reads the response JSON properties `features` or `encryptedFeatures`, and decrypts if necessary
+     * @param responseJsonString JSON response object
      */
-    private void onSuccess(Response response) throws FeatureFetchException {
-        // TODO: refactor to not be Response and instead the string
+    private void onResponseJson(String responseJsonString) throws FeatureFetchException {
         try {
-            ResponseBody responseBody = response.body();
-            if (responseBody == null) {
-                throw new FeatureFetchException(
-                    FeatureFetchException.FeatureFetchErrorCode.NO_RESPONSE_ERROR
-                );
-            }
-
             JsonObject jsonObject = GrowthBookJsonUtils.getInstance()
-                .gson.fromJson(responseBody.string(), JsonObject.class);
+                .gson.fromJson(responseJsonString, JsonObject.class);
 
             // Features will be refreshed as either an encrypted or un-encrypted JSON string
             String refreshedFeatures;
@@ -357,7 +349,31 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
             this.refreshCallbacks.forEach(featureRefreshCallback -> {
                 featureRefreshCallback.onRefresh(this.featuresJson);
             });
-        } catch (IOException | DecryptionUtils.DecryptionException e) {
+        } catch (DecryptionUtils.DecryptionException e) {
+            e.printStackTrace();
+
+            throw new FeatureFetchException(
+                FeatureFetchException.FeatureFetchErrorCode.UNKNOWN,
+                e.getMessage()
+            );
+        }
+    }
+
+    /**
+     * Handles the successful features fetching response
+     * @param response Successful response
+     */
+    private void onSuccess(Response response) throws FeatureFetchException {
+        try {
+            ResponseBody responseBody = response.body();
+            if (responseBody == null) {
+                throw new FeatureFetchException(
+                    FeatureFetchException.FeatureFetchErrorCode.NO_RESPONSE_ERROR
+                );
+            }
+
+            onResponseJson(responseBody.string());
+        } catch (IOException e) {
             e.printStackTrace();
 
             throw new FeatureFetchException(
