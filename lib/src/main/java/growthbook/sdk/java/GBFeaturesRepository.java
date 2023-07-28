@@ -203,7 +203,7 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
 
         this.sseHttpClient = new OkHttpClient.Builder()
             .addInterceptor(new GBFeaturesRepositoryRequestInterceptor())
-            .connectTimeout(10, TimeUnit.SECONDS)
+            .connectTimeout(0, TimeUnit.SECONDS)
             .readTimeout(0, TimeUnit.MINUTES)
             .writeTimeout(0, TimeUnit.MINUTES)
             .build();
