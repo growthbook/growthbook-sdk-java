@@ -154,19 +154,6 @@ class GBFeaturesRepositoryTest {
     }
     */
 
-/*
-    @Test
-    void testSSE() throws FeatureFetchException {
-        GBFeaturesRepository subject = GBFeaturesRepository.builder()
-            .apiHost("https://cdn.growthbook.io")
-            .clientKey("sdk-pGmC6LrsiUoEUcpZ")
-            .refreshStrategy(FeatureRefreshStrategy.SERVER_SENT_EVENTS)
-            .build();
-
-        subject.initialize();
-    }
-*/
-
 
     /**
      * Create a mock instance of {@link OkHttpClient}
