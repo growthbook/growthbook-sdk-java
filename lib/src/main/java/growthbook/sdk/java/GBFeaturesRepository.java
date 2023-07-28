@@ -33,7 +33,7 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
     private final String eventsEndpoint;
 
     @Getter
-    private final FeatureRefreshStrategy refreshStrategy;
+    private FeatureRefreshStrategy refreshStrategy;
 
     @Nullable @Getter
     private final String encryptionKey;
@@ -198,12 +198,10 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
         this.initialized = true;
     }
 
-    private void initializeSSE() throws FeatureFetchException {
+    private void initializeSSE() {
         if (!this.sseAllowed) {
-            // TODO: Fallback to SWR strategy
-            System.out.printf("\nNot initializing SSE because header 'X-Sse-Support: enabled' not present on resource returned at %s", this.featuresEndpoint);
-            throw new FeatureFetchException(FeatureFetchException.FeatureFetchErrorCode.SSE_CONNECTION_ERROR);
-//            return;
+            System.out.printf("\nFalling back to stale-while-revalidate refresh strategy. 'X-Sse-Support: enabled' not present on resource returned at %s", this.featuresEndpoint);
+            this.refreshStrategy = FeatureRefreshStrategy.STALE_WHILE_REVALIDATE;
         }
 
         createEventSourceListenerAndStartListening();
