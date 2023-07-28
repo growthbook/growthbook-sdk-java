@@ -234,12 +234,17 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
 
         this.sseEventSource = EventSources
             .createFactory(this.sseHttpClient)
-            .newEventSource(sseRequest, new GBEventSourceListener(new GBEventSourceCloseHandler() {
+            .newEventSource(sseRequest, new GBEventSourceListener(new GBEventSourceHandler() {
                 @Override
                 public void onClose(EventSource eventSource) {
                     eventSource.cancel();
                     System.out.printf("\n\nGBEventSourceCloseHandler#onClose %s \n\n", eventSource);
                     createEventSourceListenerAndStartListening();
+                }
+
+                @Override
+                public void onFeaturesResponse(String featuresJsonResponse) throws FeatureFetchException {
+                    onResponseJson(featuresJsonResponse);
                 }
             }));
         this.sseHttpClient.newCall(sseRequest).enqueue(new Callback() {
@@ -251,7 +256,7 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
 
             @Override
             public void onResponse(@NotNull Call call, @NotNull Response response) throws IOException {
-                System.out.printf("\n\n SSE onResponse: %s \n\n", response);
+                // We don't do anything with this response
             }
         });
     }
@@ -383,27 +388,35 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
         }
     }
 
-    private interface GBEventSourceCloseHandler {
+    private interface GBEventSourceHandler {
         void onClose(EventSource eventSource);
+        void onFeaturesResponse(String featuresJsonResponse) throws FeatureFetchException;
     }
 
     private static class GBEventSourceListener extends EventSourceListener {
-        private final GBEventSourceCloseHandler closeHandler;
+        private final GBEventSourceHandler handler;
 
-        public GBEventSourceListener(GBEventSourceCloseHandler closeHandler) {
-            this.closeHandler = closeHandler;
+        public GBEventSourceListener(GBEventSourceHandler handler) {
+            this.handler = handler;
         }
 
         @Override
         public void onClosed(@NotNull EventSource eventSource) {
             super.onClosed(eventSource);
-            closeHandler.onClose(eventSource);
+            handler.onClose(eventSource);
         }
 
         @Override
         public void onEvent(@NotNull EventSource eventSource, @Nullable String id, @Nullable String type, @NotNull String data) {
-            System.out.printf("\n\n eventsource = %s - id = %s - type = %s - data = %s \n\n", eventSource, id, type, data);
             super.onEvent(eventSource, id, type, data);
+
+            if (data.trim().equals("")) return;
+
+            try {
+                handler.onFeaturesResponse(data);
+            } catch (FeatureFetchException e) {
+                e.printStackTrace();
+            }
         }
 
         @Override
