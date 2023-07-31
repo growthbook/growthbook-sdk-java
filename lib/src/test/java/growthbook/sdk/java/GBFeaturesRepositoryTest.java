@@ -106,13 +106,16 @@ class GBFeaturesRepositoryTest {
     /*
     @Test
     void canFetchEncryptedFeatures_real() throws FeatureFetchException {
-        String endpoint = "https://cdn.growthbook.io/api/features/sdk-862b5mHcP9XPugqD";
         String encryptionKey = "BhB1wORFmZLTDjbvstvS8w==";
-        GBFeaturesRepository subject = new GBFeaturesRepository(endpoint, encryptionKey, null);
+        GBFeaturesRepository subject = GBFeaturesRepository.builder()
+            .apiHost("https://cdn.growthbook.io")
+            .clientKey("sdk-862b5mHcP9XPugqD")
+            .encryptionKey(encryptionKey)
+            .build();
 
         subject.initialize();
 
-        String expected = "{\"greeting\":{\"defaultValue\":\"hello\",\"rules\":[{\"condition\":{\"country\":\"france\"},\"force\":\"bonjour\"},{\"condition\":{\"country\":\"mexico\"},\"force\":\"holaaaaa\"}]}}";
+        String expected = "{\"greeting\":{\"defaultValue\":\"hello, this is a message from encrypted features!\",\"rules\":[{\"condition\":{\"country\":\"france\"},\"force\":\"bonjour\"},{\"condition\":{\"country\":\"mexico\"},\"force\":\"holaaaaa\"}]}}";
         String actual = subject.getFeaturesJson();
         System.out.println(actual);
 
@@ -131,12 +134,14 @@ class GBFeaturesRepositoryTest {
         String encryptionKey = "o0maZL/O7AphxcbRvaJIzw==";
         OkHttpClient mockOkHttpClient = mockHttpClient(fakeResponseJson);
 
-        GBFeaturesRepository subject = GBFeaturesRepository.builder()
-            .apiHost("http://localhost:80")
-            .okHttpClient(mockOkHttpClient)
-            .clientKey("abc-123")
-            .encryptionKey(encryptionKey)
-            .build();
+        GBFeaturesRepository subject = new GBFeaturesRepository(
+            "http://localhost:80",
+            "abc-123",
+            encryptionKey,
+            null,
+            null,
+            mockOkHttpClient
+        );
         subject.initialize();
 
         String expected = "{\"targeted_percentage_rollout\":{\"defaultValue\":false,\"rules\":[{\"condition\":{\"id\":\"foo\"},\"force\":true,\"coverage\":0.5,\"hashAttribute\":\"id\"}]},\"test_feature\":{\"defaultValue\":false,\"rules\":[{\"condition\":{\"id\":{\"$not\":{\"$regex\":\"foo\"},\"$eq\":\"\"}},\"force\":true}]},\"sample_json\":{\"defaultValue\":{}},\"string_feature\":{\"defaultValue\":\"hello, world!\"},\"some_test_feature\":{\"defaultValue\":true},\"my_new_feature_jan17_5\":{\"defaultValue\":true},\"my_new_feature_jan17_13\":{\"defaultValue\":true}}";

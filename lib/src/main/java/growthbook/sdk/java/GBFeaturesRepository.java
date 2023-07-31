@@ -71,6 +71,7 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
      * @param encryptionKey optional key for decrypting encrypted payload
      * @param swrTtlSeconds How often the cache should be invalidated when using {@link FeatureRefreshStrategy#STALE_WHILE_REVALIDATE} (default: 60)
      */
+    @Builder
     public GBFeaturesRepository(
         @Nullable String apiHost,
         String clientKey,
@@ -89,7 +90,6 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
      * @param swrTtlSeconds How often the cache should be invalidated when using {@link FeatureRefreshStrategy#STALE_WHILE_REVALIDATE} (default: 60)
      * @param okHttpClient HTTP client (optional)
      */
-    @Builder
     public GBFeaturesRepository(
         @Nullable String apiHost,
         String clientKey,
