@@ -238,7 +238,6 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
                 @Override
                 public void onClose(EventSource eventSource) {
                     eventSource.cancel();
-                    System.out.printf("\n\nGBEventSourceCloseHandler#onClose %s \n\n", eventSource);
                     createEventSourceListenerAndStartListening();
                 }
 
@@ -421,13 +420,11 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
 
         @Override
         public void onFailure(@NotNull EventSource eventSource, @Nullable Throwable t, @Nullable Response response) {
-            System.out.printf("\n\n eventsource = %s , error = %s , response = %s\n\n", eventSource, t, response);
             super.onFailure(eventSource, t, response);
         }
 
         @Override
         public void onOpen(@NotNull EventSource eventSource, @NotNull Response response) {
-            System.out.printf("\n\n eventsource = %s , response = %s\n\n", eventSource, response);
             super.onOpen(eventSource, response);
         }
     }
