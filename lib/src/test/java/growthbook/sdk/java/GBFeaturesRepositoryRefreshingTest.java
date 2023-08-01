@@ -33,10 +33,12 @@ public class GBFeaturesRepositoryRefreshingTest {
         String encryptionKey = "o0maZL/O7AphxcbRvaJIzw==";
         OkHttpClient mockOkHttpClient = mockHttpClient(fakeResponseJson);
         GBFeaturesRepository subject = new GBFeaturesRepository(
-            mockOkHttpClient,
             "http://localhost:80",
+            "sdk-abc123",
             encryptionKey,
-            ttlSeconds
+            FeatureRefreshStrategy.STALE_WHILE_REVALIDATE,
+            ttlSeconds,
+            mockOkHttpClient
         );
         subject.initialize();
 
@@ -65,11 +67,14 @@ public class GBFeaturesRepositoryRefreshingTest {
             "}";
         String encryptionKey = "o0maZL/O7AphxcbRvaJIzw==";
         OkHttpClient mockOkHttpClient = mockHttpClient(fakeResponseJson);
+
         GBFeaturesRepository subject = new GBFeaturesRepository(
-            mockOkHttpClient,
             "http://localhost:80",
+            "sdk-abc123",
             encryptionKey,
-            ttlSeconds
+            FeatureRefreshStrategy.STALE_WHILE_REVALIDATE,
+            ttlSeconds,
+            mockOkHttpClient
         );
         subject.initialize();
 
@@ -98,10 +103,12 @@ public class GBFeaturesRepositoryRefreshingTest {
         String encryptionKey = "o0maZL/O7AphxcbRvaJIzw==";
         OkHttpClient mockOkHttpClient = mockHttpClient(fakeResponseJson);
         GBFeaturesRepository subject = new GBFeaturesRepository(
-            mockOkHttpClient,
             "http://localhost:80",
+            "sdk-abc123",
             encryptionKey,
-            ttlSeconds
+            FeatureRefreshStrategy.STALE_WHILE_REVALIDATE,
+            ttlSeconds,
+            mockOkHttpClient
         );
         subject.initialize();
 

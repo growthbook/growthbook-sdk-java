@@ -5,8 +5,7 @@ import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -16,25 +15,32 @@ class GBFeaturesRepositoryTest {
     @Test
     void canBeConstructed_withNullEncryptionKey() {
         GBFeaturesRepository subject = new GBFeaturesRepository(
-            "https://cdn.growthbook.io/api/features/java_NsrWldWd5bxQJZftGsWKl7R2yD2LtAK8C8EUYh9L8",
+            "https://cdn.growthbook.io",
+            "java_NsrWldWd5bxQJZftGsWKl7R2yD2LtAK8C8EUYh9L8",
+            null,
+            null,
             null,
             null
         );
 
         assertNotNull(subject);
-        assertEquals("https://cdn.growthbook.io/api/features/java_NsrWldWd5bxQJZftGsWKl7R2yD2LtAK8C8EUYh9L8", subject.getEndpoint());
+        assertEquals("https://cdn.growthbook.io/api/features/java_NsrWldWd5bxQJZftGsWKl7R2yD2LtAK8C8EUYh9L8", subject.getFeaturesEndpoint());
+        assertEquals(FeatureRefreshStrategy.STALE_WHILE_REVALIDATE, subject.getRefreshStrategy());
     }
 
     @Test
     void canBeConstructed_withEncryptionKey() {
         GBFeaturesRepository subject = new GBFeaturesRepository(
-            "https://cdn.growthbook.io/api/features/sdk-862b5mHcP9XPugqD",
+            "https://cdn.growthbook.io",
+            "sdk-862b5mHcP9XPugqD",
             "BhB1wORFmZLTDjbvstvS8w==",
+            null,
+            null,
             null
         );
 
         assertNotNull(subject);
-        assertEquals("https://cdn.growthbook.io/api/features/sdk-862b5mHcP9XPugqD", subject.getEndpoint());
+        assertEquals("https://cdn.growthbook.io/api/features/sdk-862b5mHcP9XPugqD", subject.getFeaturesEndpoint());
         assertEquals("BhB1wORFmZLTDjbvstvS8w==", subject.getEncryptionKey());
     }
 
@@ -42,41 +48,39 @@ class GBFeaturesRepositoryTest {
     void canBeBuilt_withNullEncryptionKey() {
         GBFeaturesRepository subject = GBFeaturesRepository
             .builder()
-            .endpoint("https://cdn.growthbook.io/api/features/java_NsrWldWd5bxQJZftGsWKl7R2yD2LtAK8C8EUYh9L8")
+            .apiHost("https://cdn.growthbook.io")
+            .clientKey("java_NsrWldWd5bxQJZftGsWKl7R2yD2LtAK8C8EUYh9L8")
             .build();
 
         assertNotNull(subject);
-        assertEquals("https://cdn.growthbook.io/api/features/java_NsrWldWd5bxQJZftGsWKl7R2yD2LtAK8C8EUYh9L8", subject.getEndpoint());
+        assertEquals("https://cdn.growthbook.io/api/features/java_NsrWldWd5bxQJZftGsWKl7R2yD2LtAK8C8EUYh9L8", subject.getFeaturesEndpoint());
     }
 
     @Test
     void canBeBuilt_withEncryptionKey() {
         GBFeaturesRepository subject = GBFeaturesRepository
             .builder()
-            .endpoint("https://cdn.growthbook.io/api/features/sdk-862b5mHcP9XPugqD")
+            .apiHost("https://cdn.growthbook.io")
+            .clientKey("sdk-862b5mHcP9XPugqD")
             .encryptionKey("BhB1wORFmZLTDjbvstvS8w==")
             .build();
 
         assertNotNull(subject);
-        assertEquals("https://cdn.growthbook.io/api/features/sdk-862b5mHcP9XPugqD", subject.getEndpoint());
+        assertEquals("https://cdn.growthbook.io/api/features/sdk-862b5mHcP9XPugqD", subject.getFeaturesEndpoint());
         assertEquals("BhB1wORFmZLTDjbvstvS8w==", subject.getEncryptionKey());
     }
 
     /*
     @Test
     void canFetchUnencryptedFeatures_real() throws FeatureFetchException {
-        GBFeaturesRepository subject = new GBFeaturesRepository(
-            "https://cdn.growthbook.io/api/features/java_NsrWldWd5bxQJZftGsWKl7R2yD2LtAK8C8EUYh9L8",
-            null,
-            null
-        );
+        GBFeaturesRepository subject = GBFeaturesRepository.builder()
+            .apiHost("https://cdn.growthbook.io")
+            .clientKey("sdk-pGmC6LrsiUoEUcpZ")
+            .build();
 
         subject.initialize();
 
-        assertEquals(
-            "{\"banner_text\":{\"defaultValue\":\"Welcome to Acme Donuts!\",\"rules\":[{\"condition\":{\"country\":\"france\"},\"force\":\"Bienvenue au Beignets Acme !\"},{\"condition\":{\"country\":\"spain\"},\"force\":\"¡Bienvenidos y bienvenidas a Donas Acme!\"}]},\"dark_mode\":{\"defaultValue\":false,\"rules\":[{\"condition\":{\"loggedIn\":true},\"force\":true,\"coverage\":0.5,\"hashAttribute\":\"id\"}]},\"donut_price\":{\"defaultValue\":2.5,\"rules\":[{\"condition\":{\"employee\":true},\"force\":0}]},\"meal_overrides_gluten_free\":{\"defaultValue\":{\"meal_type\":\"standard\",\"dessert\":\"Strawberry Cheesecake\"},\"rules\":[{\"condition\":{\"dietaryRestrictions\":{\"$elemMatch\":{\"$eq\":\"gluten_free\"}}},\"force\":{\"meal_type\":\"gf\",\"dessert\":\"French Vanilla Ice Cream\"}}]}}",
-            subject.getFeaturesJson()
-        );
+        assertTrue(subject.getFeaturesJson().startsWith("{\"banner_text\":{\"defaultValue\":\"Welcome to Acme Donuts!\""));
     }
     */
 
@@ -86,10 +90,12 @@ class GBFeaturesRepositoryTest {
         OkHttpClient mockOkHttpClient = mockHttpClient(fakeResponseJson);
 
         GBFeaturesRepository subject = new GBFeaturesRepository(
-            mockOkHttpClient,
             "http://localhost:80",
+            "sdk-abc123",
             null,
-            null
+            null,
+            null,
+            mockOkHttpClient
         );
         subject.initialize();
 
@@ -100,13 +106,16 @@ class GBFeaturesRepositoryTest {
     /*
     @Test
     void canFetchEncryptedFeatures_real() throws FeatureFetchException {
-        String endpoint = "https://cdn.growthbook.io/api/features/sdk-862b5mHcP9XPugqD";
         String encryptionKey = "BhB1wORFmZLTDjbvstvS8w==";
-        GBFeaturesRepository subject = new GBFeaturesRepository(endpoint, encryptionKey, null);
+        GBFeaturesRepository subject = GBFeaturesRepository.builder()
+            .apiHost("https://cdn.growthbook.io")
+            .clientKey("sdk-862b5mHcP9XPugqD")
+            .encryptionKey(encryptionKey)
+            .build();
 
         subject.initialize();
 
-        String expected = "{\"greeting\":{\"defaultValue\":\"hello\",\"rules\":[{\"condition\":{\"country\":\"france\"},\"force\":\"bonjour\"},{\"condition\":{\"country\":\"mexico\"},\"force\":\"holaaaaa\"}]}}";
+        String expected = "{\"greeting\":{\"defaultValue\":\"hello, this is a message from encrypted features!\",\"rules\":[{\"condition\":{\"country\":\"france\"},\"force\":\"bonjour\"},{\"condition\":{\"country\":\"mexico\"},\"force\":\"holaaaaa\"}]}}";
         String actual = subject.getFeaturesJson();
         System.out.println(actual);
 
@@ -126,10 +135,12 @@ class GBFeaturesRepositoryTest {
         OkHttpClient mockOkHttpClient = mockHttpClient(fakeResponseJson);
 
         GBFeaturesRepository subject = new GBFeaturesRepository(
-            mockOkHttpClient,
             "http://localhost:80",
+            "abc-123",
             encryptionKey,
-            null
+            null,
+            null,
+            mockOkHttpClient
         );
         subject.initialize();
 
@@ -147,6 +158,7 @@ class GBFeaturesRepositoryTest {
         subject.initialize();
     }
     */
+
 
     /**
      * Create a mock instance of {@link OkHttpClient}

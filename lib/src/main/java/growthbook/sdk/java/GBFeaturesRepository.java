@@ -5,13 +5,17 @@ import com.google.gson.JsonObject;
 import lombok.Builder;
 import lombok.Getter;
 import okhttp3.*;
+import okhttp3.sse.EventSource;
+import okhttp3.sse.EventSourceListener;
+import okhttp3.sse.EventSources;
 import org.jetbrains.annotations.NotNull;
 
 import javax.annotation.Nullable;
 import java.io.IOException;
 import java.time.Instant;
 import java.util.ArrayList;
-import java.util.List;
+import java.util.Objects;
+import java.util.concurrent.TimeUnit;
 
 /**
  * This class can be created with its `builder()` or constructor.
@@ -23,23 +27,38 @@ import java.util.List;
 public class GBFeaturesRepository implements IGBFeaturesRepository {
 
     @Getter
-    private final String endpoint;
+    private final String featuresEndpoint;
+
+    @Getter
+    private final String eventsEndpoint;
+
+    @Getter
+    private FeatureRefreshStrategy refreshStrategy;
 
     @Nullable @Getter
     private final String encryptionKey;
 
     @Getter
-    private final Integer ttlSeconds;
+    private final Integer swrTtlSeconds;
 
     @Getter
     private Long expiresAt;
 
     private final OkHttpClient okHttpClient;
 
+    @Nullable
+    private OkHttpClient sseHttpClient;
+
     private final ArrayList<FeatureRefreshCallback> refreshCallbacks = new ArrayList<>();
 
+    private Boolean initialized = false;
+
+    private Boolean sseAllowed = false;
+    @Nullable private Request sseRequest = null;
+    @Nullable private EventSource sseEventSource = null;
+
     /**
-     * Allows you to get the features JSON from the provided {@link GBFeaturesRepository#getEndpoint()}.
+     * Allows you to get the features JSON from the provided {@link GBFeaturesRepository#getFeaturesEndpoint()}.
      * You must call {@link GBFeaturesRepository#initialize()} before calling this method
      * or your features would not have loaded.
      */
@@ -47,50 +66,74 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
 
     /**
      * Create a new GBFeaturesRepository
-     * @param endpoint SDK Endpoint URL
+     * @param apiHost The GrowthBook API host (default: https://cdn.growthbook.io)
+     * @param clientKey Your client ID, e.g. sdk-abc123
      * @param encryptionKey optional key for decrypting encrypted payload
-     * @param ttlSeconds How often the cache should be invalidated (default: 60)
+     * @param swrTtlSeconds How often the cache should be invalidated when using {@link FeatureRefreshStrategy#STALE_WHILE_REVALIDATE} (default: 60)
      */
     @Builder
     public GBFeaturesRepository(
-        String endpoint,
+        @Nullable String apiHost,
+        String clientKey,
         @Nullable String encryptionKey,
-        @Nullable Integer ttlSeconds
+        @Nullable FeatureRefreshStrategy refreshStrategy,
+        @Nullable Integer swrTtlSeconds
     ) {
-        if (endpoint == null) {
-            throw new IllegalArgumentException("endpoint cannot be null");
-        }
-
-        this.endpoint = endpoint;
-        this.encryptionKey = encryptionKey;
-        this.ttlSeconds = ttlSeconds == null ? 60 : ttlSeconds;
-        this.refreshExpiresAt();
-        this.okHttpClient = this.initializeHttpClient();
+        this(apiHost, clientKey, encryptionKey, refreshStrategy, swrTtlSeconds, null);
     }
 
     /**
-     * INTERNAL: This constructor is for using for unit tests
-     * @param okHttpClient mock HTTP client
-     * @param endpoint SDK Endpoint URL
+     * Create a new GBFeaturesRepository
+     * @param apiHost The GrowthBook API host (default: https://cdn.growthbook.io)
+     * @param clientKey Your client ID, e.g. sdk-abc123
      * @param encryptionKey optional key for decrypting encrypted payload
+     * @param swrTtlSeconds How often the cache should be invalidated when using {@link FeatureRefreshStrategy#STALE_WHILE_REVALIDATE} (default: 60)
+     * @param okHttpClient HTTP client (optional)
      */
-    GBFeaturesRepository(
-        OkHttpClient okHttpClient,
-        @Nullable String endpoint,
+    public GBFeaturesRepository(
+        @Nullable String apiHost,
+        String clientKey,
         @Nullable String encryptionKey,
-        @Nullable Integer ttlSeconds
+        @Nullable FeatureRefreshStrategy refreshStrategy,
+        @Nullable Integer swrTtlSeconds,
+        @Nullable OkHttpClient okHttpClient
     ) {
+        if (clientKey == null) throw new IllegalArgumentException("clientKey cannot be null");
+
+        // Set the defaults when the user does not provide them
+        if (apiHost == null) {
+            apiHost = "https://cdn.growthbook.io";
+        }
+        this.refreshStrategy = refreshStrategy == null ? FeatureRefreshStrategy.STALE_WHILE_REVALIDATE : refreshStrategy;
+
+        // Build the endpoints from the apiHost and clientKey
+        this.featuresEndpoint = apiHost + "/api/features/" + clientKey;
+        this.eventsEndpoint = apiHost + "/sub/" + clientKey;
+
         this.encryptionKey = encryptionKey;
-        this.endpoint = endpoint;
-        this.ttlSeconds = ttlSeconds == null ? 60 : ttlSeconds;
+        this.swrTtlSeconds = swrTtlSeconds == null ? 60 : swrTtlSeconds;
         this.refreshExpiresAt();
-        this.okHttpClient = okHttpClient;
+
+        // Use provided OkHttpClient or create a new one
+        if (okHttpClient == null) {
+            this.okHttpClient = this.initializeHttpClient();
+        } else {
+            // TODO: Check for valid interceptor
+            this.okHttpClient = okHttpClient;
+        }
     }
 
     public String getFeaturesJson() {
-        if (isCacheExpired()) {
-            this.enqueueFeatureRefreshRequest();
-            this.refreshExpiresAt();
+        switch (this.refreshStrategy) {
+            case STALE_WHILE_REVALIDATE:
+                if (isCacheExpired()) {
+                    this.enqueueFeatureRefreshRequest();
+                    this.refreshExpiresAt();
+                }
+                return this.featuresJson;
+
+            case SERVER_SENT_EVENTS:
+                return this.featuresJson;
         }
 
         return this.featuresJson;
@@ -117,7 +160,7 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
         GBFeaturesRepository self = this;
 
         Request request = new Request.Builder()
-            .url(this.endpoint)
+            .url(this.featuresEndpoint)
             .build();
 
         this.okHttpClient.newCall(request).enqueue(new Callback() {
@@ -139,9 +182,87 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
 
     @Override
     public void initialize() throws FeatureFetchException {
-        fetchFeatures();
+        if (this.initialized) return;
+
+        switch (this.refreshStrategy) {
+            case STALE_WHILE_REVALIDATE:
+                fetchFeatures();
+                break;
+
+            case SERVER_SENT_EVENTS:
+                fetchFeatures();
+                initializeSSE();
+                break;
+        }
+
+        this.initialized = true;
     }
 
+    private void initializeSSE() {
+        if (!this.sseAllowed) {
+            System.out.printf("\nFalling back to stale-while-revalidate refresh strategy. 'X-Sse-Support: enabled' not present on resource returned at %s", this.featuresEndpoint);
+            this.refreshStrategy = FeatureRefreshStrategy.STALE_WHILE_REVALIDATE;
+        }
+
+        createEventSourceListenerAndStartListening();
+    }
+
+    /**
+     * Creates an SSE HTTP client if null.
+     * Creates and enqueues a new asynchronous request to the events endpoint.
+     * Assigns a close listener to recreate the connection.
+     */
+    private void createEventSourceListenerAndStartListening() {
+        this.sseEventSource = null;
+        this.sseRequest = null;
+
+        if (this.sseHttpClient == null) {
+            this.sseHttpClient = new OkHttpClient.Builder()
+                .addInterceptor(new GBFeaturesRepositoryRequestInterceptor())
+                .retryOnConnectionFailure(true)
+                .connectTimeout(0, TimeUnit.SECONDS)
+                .readTimeout(0, TimeUnit.SECONDS)
+                .writeTimeout(0, TimeUnit.SECONDS)
+                .build();
+        }
+
+        this.sseRequest = new Request.Builder()
+            .url(this.eventsEndpoint)
+            .header("Accept", "application/json; q=0.5")
+            .addHeader("Accept", "text/event-stream")
+            .build();
+
+        this.sseEventSource = EventSources
+            .createFactory(this.sseHttpClient)
+            .newEventSource(sseRequest, new GBEventSourceListener(new GBEventSourceHandler() {
+                @Override
+                public void onClose(EventSource eventSource) {
+                    eventSource.cancel();
+                    createEventSourceListenerAndStartListening();
+                }
+
+                @Override
+                public void onFeaturesResponse(String featuresJsonResponse) throws FeatureFetchException {
+                    onResponseJson(featuresJsonResponse);
+                }
+            }));
+        this.sseHttpClient.newCall(sseRequest).enqueue(new Callback() {
+            @Override
+            public void onFailure(@NotNull Call call, @NotNull IOException e) {
+                System.out.println("SSE connection failed");
+                e.printStackTrace();
+            }
+
+            @Override
+            public void onResponse(@NotNull Call call, @NotNull Response response) throws IOException {
+                // We don't do anything with this response
+            }
+        });
+    }
+
+    /**
+     * @return A new {@link OkHttpClient} with an interceptor {@link GBFeaturesRepositoryRequestInterceptor}
+     */
     private OkHttpClient initializeHttpClient() {
         OkHttpClient client = new OkHttpClient.Builder()
             .addInterceptor(new GBFeaturesRepositoryRequestInterceptor())
@@ -152,7 +273,7 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
     }
 
     private void refreshExpiresAt() {
-        this.expiresAt = Instant.now().getEpochSecond() + this.ttlSeconds;
+        this.expiresAt = Instant.now().getEpochSecond() + this.swrTtlSeconds;
     }
 
     private Boolean isCacheExpired() {
@@ -167,15 +288,18 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
      * This method will attempt to decrypt the encrypted features with the provided encryptionKey.
      */
     private void fetchFeatures() throws FeatureFetchException {
-        if (this.endpoint == null) {
-            throw new IllegalArgumentException("endpoint cannot be null");
+        if (this.featuresEndpoint == null) {
+            throw new IllegalArgumentException("features endpoint cannot be null");
         }
 
         Request request = new Request.Builder()
-            .url(this.endpoint)
+            .url(this.featuresEndpoint)
             .build();
 
         try (Response response = this.okHttpClient.newCall(request).execute()) {
+            String sseSupportHeader = response.header("x-sse-support");
+            this.sseAllowed = Objects.equals(sseSupportHeader, "enabled");
+
             this.onSuccess(response);
         } catch (IOException e) {
             e.printStackTrace();
@@ -188,20 +312,13 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
     }
 
     /**
-     * Handles the successful features fetching response
-     * @param response Successful response
+     * Reads the response JSON properties `features` or `encryptedFeatures`, and decrypts if necessary
+     * @param responseJsonString JSON response object
      */
-    private void onSuccess(Response response) throws FeatureFetchException {
+    private void onResponseJson(String responseJsonString) throws FeatureFetchException {
         try {
-            ResponseBody responseBody = response.body();
-            if (responseBody == null) {
-                throw new FeatureFetchException(
-                    FeatureFetchException.FeatureFetchErrorCode.NO_RESPONSE_ERROR
-                );
-            }
-
             JsonObject jsonObject = GrowthBookJsonUtils.getInstance()
-                .gson.fromJson(responseBody.string(), JsonObject.class);
+                .gson.fromJson(responseJsonString, JsonObject.class);
 
             // Features will be refreshed as either an encrypted or un-encrypted JSON string
             String refreshedFeatures;
@@ -236,7 +353,7 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
             this.refreshCallbacks.forEach(featureRefreshCallback -> {
                 featureRefreshCallback.onRefresh(this.featuresJson);
             });
-        } catch (IOException | DecryptionUtils.DecryptionException e) {
+        } catch (DecryptionUtils.DecryptionException e) {
             e.printStackTrace();
 
             throw new FeatureFetchException(
@@ -246,22 +363,69 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
         }
     }
 
-
-
     /**
-     * Appends User-Agent info to the request headers.
+     * Handles the successful features fetching response
+     * @param response Successful response
      */
-    private static class GBFeaturesRepositoryRequestInterceptor implements Interceptor {
+    private void onSuccess(Response response) throws FeatureFetchException {
+        try {
+            ResponseBody responseBody = response.body();
+            if (responseBody == null) {
+                throw new FeatureFetchException(
+                    FeatureFetchException.FeatureFetchErrorCode.NO_RESPONSE_ERROR
+                );
+            }
 
-        @NotNull
+            onResponseJson(responseBody.string());
+        } catch (IOException e) {
+            e.printStackTrace();
+
+            throw new FeatureFetchException(
+                FeatureFetchException.FeatureFetchErrorCode.UNKNOWN,
+                e.getMessage()
+            );
+        }
+    }
+
+    private interface GBEventSourceHandler {
+        void onClose(EventSource eventSource);
+        void onFeaturesResponse(String featuresJsonResponse) throws FeatureFetchException;
+    }
+
+    private static class GBEventSourceListener extends EventSourceListener {
+        private final GBEventSourceHandler handler;
+
+        public GBEventSourceListener(GBEventSourceHandler handler) {
+            this.handler = handler;
+        }
+
         @Override
-        public Response intercept(@NotNull Chain chain) throws IOException {
-            Request modifiedRequest = chain.request()
-                .newBuilder()
-                .header("User-Agent", "growthbook-sdk-java/" + Version.SDK_VERSION)
-                .build();
+        public void onClosed(@NotNull EventSource eventSource) {
+            super.onClosed(eventSource);
+            handler.onClose(eventSource);
+        }
 
-            return chain.proceed(modifiedRequest);
+        @Override
+        public void onEvent(@NotNull EventSource eventSource, @Nullable String id, @Nullable String type, @NotNull String data) {
+            super.onEvent(eventSource, id, type, data);
+
+            if (data.trim().equals("")) return;
+
+            try {
+                handler.onFeaturesResponse(data);
+            } catch (FeatureFetchException e) {
+                e.printStackTrace();
+            }
+        }
+
+        @Override
+        public void onFailure(@NotNull EventSource eventSource, @Nullable Throwable t, @Nullable Response response) {
+            super.onFailure(eventSource, t, response);
+        }
+
+        @Override
+        public void onOpen(@NotNull EventSource eventSource, @NotNull Response response) {
+            super.onOpen(eventSource, response);
         }
     }
 }
