@@ -93,10 +93,21 @@ loadScripts(document, 'script');</script>
 <div class="summary-table two-column-summary">
 <div class="table-header col-first">Constructor</div>
 <div class="table-header col-last">Description</div>
-<div class="col-constructor-name even-row-color"><code><a href="#%3Cinit%3E(java.lang.String,java.lang.String,java.lang.Integer)" class="member-name-link">GBFeaturesRepository</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;endpoint,
+<div class="col-constructor-name even-row-color"><code><a href="#%3Cinit%3E(java.lang.String,java.lang.String,java.lang.String,growthbook.sdk.java.FeatureRefreshStrategy,java.lang.Integer)" class="member-name-link">GBFeaturesRepository</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;apiHost,
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;clientKey,
  <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;encryptionKey,
- <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Integer.html" title="class or interface in java.lang" class="external-link">Integer</a>&nbsp;ttlSeconds)</code></div>
+ <a href="FeatureRefreshStrategy.html" title="enum class in growthbook.sdk.java">FeatureRefreshStrategy</a>&nbsp;refreshStrategy,
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Integer.html" title="class or interface in java.lang" class="external-link">Integer</a>&nbsp;swrTtlSeconds)</code></div>
 <div class="col-last even-row-color">
+<div class="block">Create a new GBFeaturesRepository</div>
+</div>
+<div class="col-constructor-name odd-row-color"><code><a href="#%3Cinit%3E(java.lang.String,java.lang.String,java.lang.String,growthbook.sdk.java.FeatureRefreshStrategy,java.lang.Integer,okhttp3.OkHttpClient)" class="member-name-link">GBFeaturesRepository</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;apiHost,
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;clientKey,
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;encryptionKey,
+ <a href="FeatureRefreshStrategy.html" title="enum class in growthbook.sdk.java">FeatureRefreshStrategy</a>&nbsp;refreshStrategy,
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Integer.html" title="class or interface in java.lang" class="external-link">Integer</a>&nbsp;swrTtlSeconds,
+ okhttp3.OkHttpClient&nbsp;okHttpClient)</code></div>
+<div class="col-last odd-row-color">
 <div class="block">Create a new GBFeaturesRepository</div>
 </div>
 </div>
@@ -146,19 +157,49 @@ loadScripts(document, 'script');</script>
 <h2>Constructor Details</h2>
 <ul class="member-list">
 <li>
-<section class="detail" id="&lt;init&gt;(java.lang.String,java.lang.String,java.lang.Integer)">
+<section class="detail" id="&lt;init&gt;(java.lang.String,java.lang.String,java.lang.String,growthbook.sdk.java.FeatureRefreshStrategy,java.lang.Integer)">
 <h3>GBFeaturesRepository</h3>
-<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="element-name">GBFeaturesRepository</span><wbr><span class="parameters">(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;endpoint,
+<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="element-name">GBFeaturesRepository</span><wbr><span class="parameters">(@Nullable
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;apiHost,
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;clientKey,
  @Nullable
  <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;encryptionKey,
  @Nullable
- <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Integer.html" title="class or interface in java.lang" class="external-link">Integer</a>&nbsp;ttlSeconds)</span></div>
+ <a href="FeatureRefreshStrategy.html" title="enum class in growthbook.sdk.java">FeatureRefreshStrategy</a>&nbsp;refreshStrategy,
+ @Nullable
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Integer.html" title="class or interface in java.lang" class="external-link">Integer</a>&nbsp;swrTtlSeconds)</span></div>
 <div class="block">Create a new GBFeaturesRepository</div>
 <dl class="notes">
 <dt>Parameters:</dt>
-<dd><code>endpoint</code> - SDK Endpoint URL</dd>
+<dd><code>apiHost</code> - The GrowthBook API host (default: https://cdn.growthbook.io)</dd>
+<dd><code>clientKey</code> - Your client ID, e.g. sdk-abc123</dd>
 <dd><code>encryptionKey</code> - optional key for decrypting encrypted payload</dd>
-<dd><code>ttlSeconds</code> - How often the cache should be invalidated (default: 60)</dd>
+<dd><code>swrTtlSeconds</code> - How often the cache should be invalidated when using <a href="FeatureRefreshStrategy.html#STALE_WHILE_REVALIDATE"><code>FeatureRefreshStrategy.STALE_WHILE_REVALIDATE</code></a> (default: 60)</dd>
+</dl>
+</section>
+</li>
+<li>
+<section class="detail" id="&lt;init&gt;(java.lang.String,java.lang.String,java.lang.String,growthbook.sdk.java.FeatureRefreshStrategy,java.lang.Integer,okhttp3.OkHttpClient)">
+<h3>GBFeaturesRepository</h3>
+<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="element-name">GBFeaturesRepository</span><wbr><span class="parameters">(@Nullable
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;apiHost,
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;clientKey,
+ @Nullable
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;encryptionKey,
+ @Nullable
+ <a href="FeatureRefreshStrategy.html" title="enum class in growthbook.sdk.java">FeatureRefreshStrategy</a>&nbsp;refreshStrategy,
+ @Nullable
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Integer.html" title="class or interface in java.lang" class="external-link">Integer</a>&nbsp;swrTtlSeconds,
+ @Nullable
+ okhttp3.OkHttpClient&nbsp;okHttpClient)</span></div>
+<div class="block">Create a new GBFeaturesRepository</div>
+<dl class="notes">
+<dt>Parameters:</dt>
+<dd><code>apiHost</code> - The GrowthBook API host (default: https://cdn.growthbook.io)</dd>
+<dd><code>clientKey</code> - Your client ID, e.g. sdk-abc123</dd>
+<dd><code>encryptionKey</code> - optional key for decrypting encrypted payload</dd>
+<dd><code>swrTtlSeconds</code> - How often the cache should be invalidated when using <a href="FeatureRefreshStrategy.html#STALE_WHILE_REVALIDATE"><code>FeatureRefreshStrategy.STALE_WHILE_REVALIDATE</code></a> (default: 60)</dd>
+<dd><code>okHttpClient</code> - HTTP client (optional)</dd>
 </dl>
 </section>
 </li>
