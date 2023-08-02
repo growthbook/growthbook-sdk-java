@@ -181,10 +181,12 @@ class GBFeaturesRepositoryTest {
         FeatureRefreshCallback featureRefreshCallback = mock(FeatureRefreshCallback.class);
 
         GBFeaturesRepository subject = new GBFeaturesRepository(
-                mockOkHttpClient,
                 "http://localhost:80",
+                "sdk-abc123",
                 null,
-                0
+                null,
+                0,
+                mockOkHttpClient
         );
 
         subject.onFeaturesRefresh(featureRefreshCallback);
@@ -212,11 +214,14 @@ class GBFeaturesRepositoryTest {
         FeatureRefreshCallback featureRefreshCallback = mock(FeatureRefreshCallback.class);
 
         GBFeaturesRepository subject = new GBFeaturesRepository(
-                mockOkHttpClient,
                 "http://localhost:80",
+                "sdk-abc123",
                 null,
-                0
+                null,
+                0,
+                mockOkHttpClient
         );
+
         subject.onFeaturesRefresh(featureRefreshCallback);
 
         subject.getFeaturesJson();
