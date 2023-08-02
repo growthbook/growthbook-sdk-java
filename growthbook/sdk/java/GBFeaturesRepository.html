@@ -137,7 +137,7 @@ loadScripts(document, 'script');</script>
 <div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#onFeaturesRefresh(growthbook.sdk.java.FeatureRefreshCallback)" class="member-name-link">onFeaturesRefresh</a><wbr>(<a href="FeatureRefreshCallback.html" title="interface in growthbook.sdk.java">FeatureRefreshCallback</a>&nbsp;callback)</code></div>
 <div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">Subscribe to feature refresh events
- This callback is called when the features are successfully refreshed.</div>
+ This callback is called when the features are successfully refreshed or there is an error when refreshing.</div>
 </div>
 </div>
 </div>
@@ -222,9 +222,8 @@ loadScripts(document, 'script');</script>
 <h3>onFeaturesRefresh</h3>
 <div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type">void</span>&nbsp;<span class="element-name">onFeaturesRefresh</span><wbr><span class="parameters">(<a href="FeatureRefreshCallback.html" title="interface in growthbook.sdk.java">FeatureRefreshCallback</a>&nbsp;callback)</span></div>
 <div class="block">Subscribe to feature refresh events
- This callback is called when the features are successfully refreshed.
- This is called even if the features have not changed.
- This will not be called if fetching the features results in a failure.</div>
+ This callback is called when the features are successfully refreshed or there is an error when refreshing.
+ This is called even if the features have not changed.</div>
 <dl class="notes">
 <dt>Parameters:</dt>
 <dd><code>callback</code> - This callback will be called when features are refreshed</dd>
