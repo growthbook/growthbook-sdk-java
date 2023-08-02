@@ -39,6 +39,11 @@ public class FeatureFetchException extends Exception {
         NO_RESPONSE_ERROR,
 
         /**
+         * - could not establish a connection to the events (server-sent events) for feature updates
+         */
+        SSE_CONNECTION_ERROR,
+
+        /**
          *   - there was an unknown error that occurred when attempting to make the request.
          */
         UNKNOWN,

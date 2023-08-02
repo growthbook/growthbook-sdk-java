@@ -42,7 +42,8 @@ public class GBContext {
             @Nullable String url,
             Boolean allowUrlOverrides,
             @Nullable Map<String, Integer> forcedVariationsMap,
-            @Nullable TrackingCallback trackingCallback
+            @Nullable TrackingCallback trackingCallback,
+            @Nullable FeatureUsageCallback featureUsageCallback
     ) {
         this.encryptionKey = encryptionKey;
 
@@ -69,6 +70,7 @@ public class GBContext {
         this.url = url;
         this.forcedVariationsMap = forcedVariationsMap == null ? new HashMap<>() : forcedVariationsMap;
         this.trackingCallback = trackingCallback;
+        this.featureUsageCallback = featureUsageCallback;
     }
 
     @Nullable
@@ -93,6 +95,9 @@ public class GBContext {
 
     @Nullable
     private TrackingCallback trackingCallback;
+
+    @Nullable
+    private FeatureUsageCallback featureUsageCallback;
 
     @Nullable
     private String attributesJson;

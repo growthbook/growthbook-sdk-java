@@ -40,15 +40,16 @@ class GBContextTest {
         String featuresJson = "{}";
 
         GBContext subject = new GBContext(
-                sampleUserAttributes,
-                featuresJson,
-                null,
-                isEnabled,
-                isQaMode,
-                url,
-                allowUrlOverride,
-                forcedVariations,
-                trackingCallback
+            sampleUserAttributes,
+            featuresJson,
+            null,
+            isEnabled,
+            isQaMode,
+            url,
+            allowUrlOverride,
+            forcedVariations,
+            trackingCallback,
+            null
         );
 
         assertNotNull(subject);
@@ -116,15 +117,16 @@ class GBContextTest {
         String encryptionKey = "BhB1wORFmZLTDjbvstvS8w==";
 
         GBContext subject = new GBContext(
-                sampleUserAttributes,
-                encryptedFeaturesJson,
-                encryptionKey,
-                isEnabled,
-                isQaMode,
-                url,
-                allowUrlOverride,
-                forcedVariations,
-                trackingCallback
+            sampleUserAttributes,
+            encryptedFeaturesJson,
+            encryptionKey,
+            isEnabled,
+            isQaMode,
+            url,
+            allowUrlOverride,
+            forcedVariations,
+            trackingCallback,
+            null
         );
         String expectedFeaturesJson = "{\"greeting\":{\"defaultValue\":\"hello\",\"rules\":[{\"condition\":{\"country\":\"france\"},\"force\":\"bonjour\"},{\"condition\":{\"country\":\"mexico\"},\"force\":\"hola\"}]}}";
 
