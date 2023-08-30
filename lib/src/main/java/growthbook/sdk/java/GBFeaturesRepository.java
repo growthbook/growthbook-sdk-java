@@ -382,7 +382,13 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
             ResponseBody responseBody = response.body();
             if (responseBody == null) {
                 throw new FeatureFetchException(
-                    FeatureFetchException.FeatureFetchErrorCode.NO_RESPONSE_ERROR
+                        FeatureFetchException.FeatureFetchErrorCode.NO_RESPONSE_ERROR
+                );
+            }
+            if (response.code() != 200) {
+                throw new FeatureFetchException(
+                        FeatureFetchException.FeatureFetchErrorCode.UNKNOWN,
+                        "Unexpected HTTP response code: " + response.code() + ", body: " + responseBody.string()
                 );
             }
 

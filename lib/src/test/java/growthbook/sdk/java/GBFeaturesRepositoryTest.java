@@ -154,6 +154,33 @@ class GBFeaturesRepositoryTest {
     }
 
     @Test
+    void testHttpStatusError() throws IOException, FeatureFetchException {
+        String fakeResponseJson = "{" +
+                "  \"status\": 401," +
+                "  \"message\": \"No authorization token was found\"" +
+                "}";
+        OkHttpClient mockOkHttpClient = mockHttpClient(fakeResponseJson, 401);
+
+        GBFeaturesRepository subject = new GBFeaturesRepository(
+                "http://localhost:80",
+                "",
+                "o0maZL/O7AphxcbRvaJIzw==",
+                null,
+                null,
+                mockOkHttpClient
+        );
+
+        FeatureFetchException expected = new FeatureFetchException(
+                FeatureFetchException.FeatureFetchErrorCode.UNKNOWN,
+                "Unexpected HTTP response code: 401, body: " + fakeResponseJson
+        );
+
+        FeatureFetchException thrown = assertThrows(FeatureFetchException.class, subject::initialize);
+        assertEquals(expected.getErrorCode(), thrown.getErrorCode());
+        assertEquals(expected.getMessage(), thrown.getMessage());
+    }
+
+    @Test
     void testOnFeaturesRefresh_Success() {
         String fakeResponseJson = "{\"status\":200,\"features\":{\"banner_text\":{\"defaultValue\":\"Welcome to Acme Donuts!\",\"rules\":[{\"condition\":{\"country\":\"france\"},\"force\":\"Bienvenue au Beignets Acme !\"},{\"condition\":{\"country\":\"spain\"},\"force\":\"¡Bienvenidos y bienvenidas a Donas Acme!\"}]},\"dark_mode\":{\"defaultValue\":false,\"rules\":[{\"condition\":{\"loggedIn\":true},\"force\":true,\"coverage\":0.5,\"hashAttribute\":\"id\"}]},\"donut_price\":{\"defaultValue\":2.5,\"rules\":[{\"condition\":{\"employee\":true},\"force\":0}]},\"meal_overrides_gluten_free\":{\"defaultValue\":{\"meal_type\":\"standard\",\"dessert\":\"Strawberry Cheesecake\"},\"rules\":[{\"condition\":{\"dietaryRestrictions\":{\"$elemMatch\":{\"$eq\":\"gluten_free\"}}},\"force\":{\"meal_type\":\"gf\",\"dessert\":\"French Vanilla Ice Cream\"}}]}},\"dateUpdated\":\"2023-01-11T00:26:01.745Z\"}";
 
@@ -239,13 +266,27 @@ class GBFeaturesRepositoryTest {
     }
     */
 
+    /**
+     * Create a mock instance of {@link OkHttpClient} returning a successful response
+     * @param serializedBody JSON string response
+     * @return mock {@link OkHttpClient}
+     */
+    private static OkHttpClient mockHttpClient(
+            final String serializedBody
+    ) throws IOException {
+        return mockHttpClient(serializedBody, 200);
+    }
 
     /**
      * Create a mock instance of {@link OkHttpClient}
      * @param serializedBody JSON string response
+     * @param responseCode HTTP response code
      * @return mock {@link OkHttpClient}
      */
-    private static OkHttpClient mockHttpClient(final String serializedBody) throws IOException {
+    private static OkHttpClient mockHttpClient(
+            final String serializedBody,
+            final Integer responseCode
+    ) throws IOException {
         OkHttpClient okHttpClient = mock(OkHttpClient.class);
 
         Call remoteCall = mock(Call.class);
@@ -253,7 +294,7 @@ class GBFeaturesRepositoryTest {
         Response response = new Response.Builder()
             .request(new Request.Builder().url("http://url.com").build())
             .protocol(Protocol.HTTP_1_1)
-            .code(200).message("").body(
+            .code(responseCode).message("").body(
                 ResponseBody.create(
                     serializedBody,
                     MediaType.parse("application/json")
