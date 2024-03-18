@@ -378,8 +378,7 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
      * @param response Successful response
      */
     private void onSuccess(Response response) throws FeatureFetchException {
-        try {
-            ResponseBody responseBody = response.body();
+        try (ResponseBody responseBody = response.body()) {
             if (responseBody == null) {
                 throw new FeatureFetchException(
                     FeatureFetchException.FeatureFetchErrorCode.NO_RESPONSE_ERROR
