@@ -8,6 +8,10 @@ class MathUtils {
     private static final BigInteger PRIME32 = new BigInteger("01000193", 16);
     private static final BigInteger MOD32 = new BigInteger("2").pow(32);
 
+    // FNV-1a 32-bit constants
+    private static final int FNV_32_PRIME = 0x01000193;
+    private static final int FNV_32_INIT = 0x811c9dc5;
+
     /**
      * Fowler-Noll-Vo algorithm
      * fnv32a returns an integer, so we convert that to a float using a modulus
@@ -15,14 +19,14 @@ class MathUtils {
      * @param data byte list
      * @return BigInteger
      */
-    public static BigInteger fnv1a_32(byte[] data) {
-        BigInteger hash = INIT32;
-
+    public static int fnv1a_32(byte[] data) {
+        int hash = FNV_32_PRIME;
         for (byte b : data) {
-            hash = hash.xor(BigInteger.valueOf((int) b & 0xff));
-            hash = hash.multiply(PRIME32).mod(MOD32);
+            // XOR the bottom with the current octet.
+            hash ^= (b & 0xff);
+            // Multiply by the 32 bit FNV magic prime mod 2^32
+            hash *= FNV_32_INIT;
         }
-
         return hash;
     }
 
