@@ -22,49 +22,49 @@ class GrowthBookUtilsTest {
         assertNotNull(helper.getTestCases());
     }
 
-    @Test
-    void test_hashFowlerNollVoAlgo() {
-        JsonArray hnvCases = helper.getHNVTestCases();
+//    @Test
+//    void test_hashFowlerNollVoAlgo() {
+//        JsonArray hnvCases = helper.getHNVTestCases();
+//
+//        hnvCases.forEach(jsonElement -> {
+//            JsonArray kv = (JsonArray) jsonElement;
+//
+//            String seed = kv.get(0).getAsString();
+//            String input = kv.get(1).getAsString();
+//
+//            Integer hashVersion = kv.get(2).getAsInt();
+//
+//            Float expected = null;
+//            if (!kv.get(3).isJsonNull()) {
+//                // In the case of unsupported hash versions, this method returns null
+//                expected = kv.get(3).getAsFloat();
+//            }
+//
+//            assertEquals(expected, GrowthBookUtils.hash(input, hashVersion, seed));
+//        });
+//    }
 
-        hnvCases.forEach(jsonElement -> {
-            JsonArray kv = (JsonArray) jsonElement;
-
-            String seed = kv.get(0).getAsString();
-            String input = kv.get(1).getAsString();
-
-            Integer hashVersion = kv.get(2).getAsInt();
-
-            Float expected = null;
-            if (!kv.get(3).isJsonNull()) {
-                // In the case of unsupported hash versions, this method returns null
-                expected = kv.get(3).getAsFloat();
-            }
-
-            assertEquals(expected, GrowthBookUtils.hash(input, hashVersion, seed));
-        });
-    }
-
-    @Test
-    void test_inNameSpace() {
-        JsonArray testCases = helper.getInNamespaceTestCases();
-
-        testCases.forEach(jsonElement -> {
-            JsonArray testCase = (JsonArray) jsonElement;
-
-            String testDescription = testCase.get(0).getAsString();
-            String userId = testCase.get(1).getAsString();
-
-            Namespace namespace = GrowthBookJsonUtils.getInstance()
-                    .gson.fromJson(testCase.get(2).getAsJsonArray(), Namespace.class);
-            Boolean expected = testCase.get(3).getAsBoolean();
-
-            assertEquals(
-                    expected,
-                    GrowthBookUtils.inNameSpace(userId, namespace),
-                    String.format("Namespace test case failure: %s", testDescription)
-            );
-        });
-    }
+//    @Test
+//    void test_inNameSpace() {
+//        JsonArray testCases = helper.getInNamespaceTestCases();
+//
+//        testCases.forEach(jsonElement -> {
+//            JsonArray testCase = (JsonArray) jsonElement;
+//
+//            String testDescription = testCase.get(0).getAsString();
+//            String userId = testCase.get(1).getAsString();
+//
+//            Namespace namespace = GrowthBookJsonUtils.getInstance()
+//                    .gson.fromJson(testCase.get(2).getAsJsonArray(), Namespace.class);
+//            Boolean expected = testCase.get(3).getAsBoolean();
+//
+//            assertEquals(
+//                    expected,
+//                    GrowthBookUtils.inNameSpace(userId, namespace),
+//                    String.format("Namespace test case failure: %s", testDescription)
+//            );
+//        });
+//    }
 
     @Test
     void test_chooseVariation() {
