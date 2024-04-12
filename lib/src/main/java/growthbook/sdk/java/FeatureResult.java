@@ -8,6 +8,7 @@ import lombok.Data;
 
 import javax.annotation.Nullable;
 import java.lang.reflect.Type;
+import java.util.Collection;
 
 /**
  * Results for a {@link FeatureEvaluator#evaluateFeature(String, GBContext, Class)}
@@ -77,6 +78,10 @@ public class FeatureResult<ValueType> {
 
         if (value instanceof Double) {
             return (Double) value != 0;
+        }
+
+        if (value instanceof Collection<?>) {
+            return !((Collection<?>) value).isEmpty();
         }
 
         return false;

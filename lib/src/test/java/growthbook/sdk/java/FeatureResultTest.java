@@ -2,6 +2,10 @@ package growthbook.sdk.java;
 
 import org.junit.jupiter.api.Test;
 
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+
 import static org.junit.jupiter.api.Assertions.*;
 
 class FeatureResultTest {
@@ -164,6 +168,48 @@ class FeatureResultTest {
 
         assertFalse(subject.isOn());
         assertTrue(subject.isOff());
+    }
+
+    @Test
+    void featureResult_isOn_withPerceivedNotEmptyCollection() {
+        FeatureResult<Object> subject = FeatureResult
+                .builder()
+                .value(Collections.singleton("acme"))
+                .build();
+
+        assertTrue(subject.isOn());
+        assertFalse(subject.isOff());
+    }
+
+    @Test
+    void featureResult_isOff_withPerceivedEmptyCollection() {
+        FeatureResult<Object> subject = FeatureResult
+                .builder()
+                .value(Collections.emptyList())
+                .build();
+
+        assertFalse(subject.isOn());
+        assertTrue(subject.isOff());
+    }
+
+    @Test
+    void proofOfConceptCollectionTest() {
+        GBContext ctx = GBContext.builder()
+            .featuresJson(
+                "{\"test\":{\"defaultValue\":[],\"rules\":[{\"force\":[\"line1\",\"line2\"]}]}}")
+            .build();
+
+        GrowthBook growthBook = new GrowthBook(ctx);
+
+        String featureName = "test";
+
+        assertTrue(growthBook.isOn(featureName));
+        assertFalse(growthBook.isOff(featureName));
+
+        Object value = growthBook.getFeatureValue(featureName, new ArrayList<>());
+
+        assertInstanceOf(Collection.class, value);
+        assertFalse(((Collection<?>) value).isEmpty());
     }
 
     // endregion isOn() isOff()
