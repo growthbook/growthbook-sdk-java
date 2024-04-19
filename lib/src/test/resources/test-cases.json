@@ -1372,6 +1372,7 @@
     ["$in - pass", {"num": {"$in": [1, 2, 3]}}, {"num": 2}, true],
     ["$in - fail", {"num": {"$in": [1, 2, 3]}}, {"num": 4}, false],
     ["$in - not array", {"num": {"$in": 1}}, {"num": 1}, false],
+    ["$in - fail with null value", {"num": {"$in": [1, 2, 3]}}, {"num": null}, false],
     [
       "$in - array pass 1",
       {"tags": {"$in": ["a", "b"]}},
@@ -1400,6 +1401,7 @@
     ["$nin - pass", {"num": {"$nin": [1, 2, 3]}}, {"num": 4}, true],
     ["$nin - fail", {"num": {"$nin": [1, 2, 3]}}, {"num": 2}, false],
     ["$nin - not array", {"num": {"$nin": 1}}, {"num": 1}, false],
+    ["$nin - fail with null value", {"num": {"$in": [1, 2, 3]}}, {"num": null}, false],
     [
       "$nin - array fail 1",
       {"tags": {"$nin": ["a", "b"]}},
@@ -1432,9 +1434,21 @@
       true
     ],
     [
+      "$elemMatch - pass - flat arrays with null value",
+      {"nums": {"$elemMatch": {"$gt": 10}}},
+      {"nums": [0, null, -20, 15]},
+      true
+    ],
+    [
       "$elemMatch - fail - flat arrays",
       {"nums": {"$elemMatch": {"$gt": 10}}},
       {"nums": [0, 5, -20, 8]},
+      false
+    ],
+    [
+      "$elemMatch - fail - flat arrays with null value",
+      {"nums": {"$elemMatch": {"$gt": 10}}},
+      {"nums": [0, 5, -20, null]},
       false
     ],
     [
@@ -1444,8 +1458,11 @@
       false
     ],
     ["empty $or - pass", {"$or": []}, {"hello": "world"}, true],
+    ["empty $or - pass with null value", {"$or": []}, {"hello": null}, true],
     ["empty $and - pass", {"$and": []}, {"hello": "world"}, true],
+    ["empty $and - pass with null value", {"$and": []}, {"hello": null}, true],
     ["empty - pass", {}, {"hello": "world"}, true],
+    ["empty - pass with null value", {}, {"hello": null}, true],
     [
       "$eq - pass",
       {"occupation": {"$eq": "engineer"}},
@@ -1458,8 +1475,15 @@
       {"occupation": "civil engineer"},
       false
     ],
+    [
+      "$eq - fail with null value",
+      {"occupation": {"$eq": "engineer"}},
+      {"occupation": null},
+      false
+    ],
     ["$ne - pass", {"level": {"$ne": "senior"}}, {"level": "junior"}, true],
     ["$ne - fail", {"level": {"$ne": "senior"}}, {"level": "senior"}, false],
+    ["$ne - fail with null value", {"level": {"$ne": "senior"}}, {"level": null}, false],
     [
       "$regex - pass",
       {"userAgent": {"$regex": "(Mobile|Tablet)"}},
@@ -1473,6 +1497,12 @@
       false
     ],
     [
+      "$regex - fail with null value",
+      {"userAgent": {"$regex": "(Mobile|Tablet)"}},
+      {"userAgent": null},
+      false
+    ],
+    [
       "$gt/$lt numbers - pass",
       {"age": {"$gt": 30, "$lt": 60}},
       {"age": 50},
@@ -1482,6 +1512,12 @@
       "$gt/$lt numbers - fail $lt",
       {"age": {"$gt": 30, "$lt": 60}},
       {"age": 60},
+      false
+    ],
+    [
+      "$gt/$lt numbers - fail with null value",
+      {"age": {"$gt": 30, "$lt": 60}},
+      {"age": null},
       false
     ],
     [
@@ -1515,6 +1551,12 @@
       false
     ],
     [
+      "$gte/$lte numbers - fail with null value ",
+      {"age": {"$gte": 30, "$lte": 60}},
+      {"age": null},
+      false
+    ],
+    [
       "$gte/$lte numbers - fail $gte",
       {"age": {"$gt": 30, "$lt": 60}},
       {"age": 29},
@@ -1524,6 +1566,12 @@
       "$gt/$lt strings - fail $gt",
       {"word": {"$gt": "alphabet", "$lt": "zebra"}},
       {"word": "alphabet"},
+      false
+    ],
+    [
+      "$gt/$lt string - fail with null value",
+      {"word": {"$gt": "alphabet", "$lt": "zebra"}},
+      {"word": null},
       false
     ],
     [
@@ -1553,12 +1601,15 @@
     ],
     ["$type string - pass", {"a": {"$type": "string"}}, {"a": "a"}, true],
     ["$type string - fail", {"a": {"$type": "string"}}, {"a": 1}, false],
+    ["$type string - fail with null value", {"a": {"$type": "string"}}, {"a": null}, false],
     ["$type null - pass", {"a": {"$type": "null"}}, {"a": null}, true],
     ["$type null - fail", {"a": {"$type": "null"}}, {"a": 1}, false],
     ["$type boolean - pass", {"a": {"$type": "boolean"}}, {"a": false}, true],
     ["$type boolean - fail", {"a": {"$type": "boolean"}}, {"a": 1}, false],
+    ["$type boolean - fail with null value", {"a": {"$type": "boolean"}}, {"a": null}, false],
     ["$type number - pass", {"a": {"$type": "number"}}, {"a": 1}, true],
     ["$type number - fail", {"a": {"$type": "number"}}, {"a": "a"}, false],
+    ["$type number - fail with null value", {"a": {"$type": "number"}}, {"a": null}, false],
     [
       "$type object - pass",
       {"a": {"$type": "object"}},
@@ -1566,8 +1617,10 @@
       true
     ],
     ["$type object - fail", {"a": {"$type": "object"}}, {"a": 1}, false],
+    ["$type object - fail with null value", {"a": {"$type": "object"}}, {"a": null}, false],
     ["$type array - pass", {"a": {"$type": "array"}}, {"a": [1, 2]}, true],
     ["$type array - fail", {"a": {"$type": "array"}}, {"a": 1}, false],
+    ["$type array - fail with null value", {"a": {"$type": "array"}}, {"a": null}, false],
     [
       "unknown operator - pass",
       {"name": {"$regx": "hello"}},
@@ -1613,6 +1666,12 @@
       false
     ],
     [
+      "$size number - fail with null value",
+      {"tags": {"$size": 3}},
+      {"tags": null},
+      false
+    ],
+    [
       "$size nested - pass",
       {"tags": {"$size": {"$gt": 2}}},
       {"tags": [0, 1, 2]},
@@ -1622,6 +1681,12 @@
       "$size nested - fail equal",
       {"tags": {"$size": {"$gt": 2}}},
       {"tags": [0, 1]},
+      false
+    ],
+    [
+      "$size nested - fail with null value",
+      {"tags": {"$size": {"$gt": 2}}},
+      {"tags": null},
       false
     ],
     [
@@ -1642,6 +1707,13 @@
       {"tags": ["foo", "baz"]},
       false
     ],
+    [
+      "$elemMatch contains - false with null value",
+      {"tags": {"$elemMatch": {"$eq": "bar"}}},
+      {"tags": null},
+      false
+    ],
+
     [
       "$elemMatch intersection - pass",
       {"tags": {"$elemMatch": {"$in": ["a", "b"]}}},
@@ -1685,6 +1757,12 @@
       false
     ],
     [
+      "$elemMatch nested - fail with null value",
+      {"hobbies": {"$elemMatch": {"name": {"$regex": "^ping"}}}},
+      {"hobbies": [{"name": null}, {"name": null}]},
+      false
+    ],
+    [
       "$elemMatch nested - fail not array",
       {"hobbies": {"$elemMatch": {"name": {"$regex": "^ping"}}}},
       {"hobbies": "all"},
@@ -1694,6 +1772,12 @@
       "$not - pass",
       {"name": {"$not": {"$regex": "^hello"}}},
       {"name": "world"},
+      true
+    ],
+    [
+      "$not - pass with null value",
+      {"name": {"$not": {"$regex": "^hello"}}},
+      {"name": null},
       true
     ],
     [
@@ -1721,9 +1805,27 @@
       false
     ],
     [
+      "$all - fail null value",
+      {"tags": {"$all": ["one", "three"]}},
+      {"tags": null},
+      false
+    ],
+    [
       "$nor - pass",
       {"$nor": [{"name": "john"}, {"age": {"$lt": 30}}]},
       {"name": "jim", "age": 40},
+      true
+    ],
+    [
+      "$nor - pass with null value for name",
+      {"$nor": [{"name": "john"}, {"age": {"$lt": 30}}]},
+      {"name": null, "age": 40},
+      true
+    ],
+    [
+      "$nor - pass with null value for age",
+      {"$nor": [{"name": "john"}, {"age": {"$lt": 30}}]},
+      {"name": "jim", "age": null},
       true
     ],
     [
@@ -1763,6 +1865,12 @@
       false
     ],
     [
+      "equals array - fail with null value",
+      {"tags": ["hello", "world"]},
+      {"tags": null},
+      false
+    ],
+    [
       "equals array - fail extra item",
       {"tags": ["hello", "world"]},
       {"tags": ["hello", "world", "foo"]},
@@ -1784,6 +1892,12 @@
       "equals object - fail extra property",
       {"tags": {"hello": "world"}},
       {"tags": {"hello": "world", "yes": "please"}},
+      false
+    ],
+    [
+      "equals object - fail with extra property null",
+      {"tags": {"hello": "world"}},
+      {"tags": {"hello": "world", "yes": null}},
       false
     ],
     [
@@ -1823,6 +1937,12 @@
       {"version": {"$vgt": "9.99.8", "$vlt": "11.0.1"}},
       {"version": "10.12.13"},
       true
+    ],
+    [
+      "$vgt/$vlt - fail with null value",
+      {"version": {"$vgt": "9.99.8", "$vlt": "11.0.1"}},
+      {"version": null},
+      false
     ],
     [
       "$vgt/$vlt - pass - minor",
@@ -1957,6 +2077,7 @@
       false
     ],
     ["$veq - pass", {"v": {"$veq": "1.2.3"}}, {"v": "1.2.3"}, true],
+    ["$veq - fail with null value", {"v": {"$veq": "1.2.3"}}, {"v": null}, false],
     [
       "$veq - pass (with build)",
       {"v": {"$veq": "1.2.3"}},
@@ -1964,6 +2085,7 @@
       true
     ],
     ["$vne - pass", {"v": {"$vne": "1.2.3"}}, {"v": "2.2.3"}, true],
+    ["$vne - fail with null value", {"v": {"$vne": "1.2.3"}}, {"v": null}, false],
     [
       "$vne - pass (prerelease)",
       {"v": {"$vne": "1.2.3"}},
