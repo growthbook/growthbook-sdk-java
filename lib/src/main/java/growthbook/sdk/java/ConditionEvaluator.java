@@ -225,6 +225,8 @@ class ConditionEvaluator implements IConditionEvaluator {
                     ArrayList<Boolean> conditionsList = jsonUtils.gson.fromJson(expected, listType);
                     return conditionsList.contains(value);
                 }
+                break;
+
 
             case NIN:
                 if (actual == null) return false;
@@ -258,45 +260,51 @@ class ConditionEvaluator implements IConditionEvaluator {
                     ArrayList<Boolean> conditionsList = jsonUtils.gson.fromJson(expected, listType);
                     return !conditionsList.contains(value);
                 }
+                break;
+
 
             case GT:
-                if (actual == null) return false;
+                if (actual == null || DataType.NULL.equals(attributeDataType)) return false;
                 if (actual.getAsJsonPrimitive().isNumber()) {
                     return actual.getAsNumber().floatValue() > expected.getAsNumber().floatValue();
                 }
                 if (actual.getAsJsonPrimitive().isString()) {
                     return actual.getAsString().compareTo(expected.getAsString()) > 0;
                 }
+                break;
 
             case GTE:
-                if (actual == null) return false;
+                if (actual == null || DataType.NULL.equals(attributeDataType)) return false;
                 if (actual.getAsJsonPrimitive().isNumber()) {
                     return actual.getAsNumber().floatValue() >= expected.getAsNumber().floatValue();
                 }
                 if (actual.getAsJsonPrimitive().isString()) {
                     return actual.getAsString().compareTo(expected.getAsString()) >= 0;
                 }
+                break;
 
             case LT:
-                if (actual == null) return false;
+                if (actual == null || DataType.NULL.equals(attributeDataType)) return false;
                 if (actual.getAsJsonPrimitive().isNumber()) {
                     return actual.getAsNumber().floatValue() < expected.getAsNumber().floatValue();
                 }
                 if (actual.getAsJsonPrimitive().isString()) {
                     return actual.getAsString().compareTo(expected.getAsString()) < 0;
                 }
+                break;
 
             case LTE:
-                if (actual == null) return false;
+                if (actual == null || DataType.NULL.equals(attributeDataType)) return false;
                 if (actual.getAsJsonPrimitive().isNumber()) {
                     return actual.getAsNumber().floatValue() <= expected.getAsNumber().floatValue();
                 }
                 if (actual.getAsJsonPrimitive().isString()) {
                     return actual.getAsString().compareTo(expected.getAsString()) <= 0;
                 }
+                break;
 
             case REGEX:
-                if (actual == null) return false;
+                if (actual == null || DataType.NULL.equals(attributeDataType)) return false;
                 Pattern pattern = Pattern.compile(expected.getAsString());
                 Matcher matcher = pattern.matcher(actual.getAsString());
 
@@ -309,11 +317,11 @@ class ConditionEvaluator implements IConditionEvaluator {
                 return matches;
 
             case NE:
-                if (actual == null) return false;
+                if (actual == null || DataType.NULL.equals(attributeDataType)) return false;
                 return !arePrimitivesEqual(actual.getAsJsonPrimitive(), expected.getAsJsonPrimitive(), attributeDataType);
 
             case EQ:
-                if (actual == null) return false;
+                if (actual == null || DataType.NULL.equals(attributeDataType)) return false;
                 return arePrimitivesEqual(actual.getAsJsonPrimitive(), expected.getAsJsonPrimitive(), attributeDataType);
 
             case SIZE:
@@ -341,6 +349,7 @@ class ConditionEvaluator implements IConditionEvaluator {
                     }
                     if (!passed) return false;
                 }
+                return true;
 
             case NOT:
                 return !evalConditionValue(expected, actual);
@@ -360,37 +369,37 @@ class ConditionEvaluator implements IConditionEvaluator {
                 }
 
             case VERSION_GT:
-                if (actual == null || expected == null) return false;
+                if (actual == null || expected == null || DataType.NULL.equals(attributeDataType)) return false;
 
                 return StringUtils.paddedVersionString(actual.getAsString())
                     .compareTo(StringUtils.paddedVersionString(expected.getAsString())) > 0;
 
             case VERSION_GTE:
-                if (actual == null || expected == null) return false;
+                if (actual == null || expected == null || DataType.NULL.equals(attributeDataType)) return false;
 
                 return StringUtils.paddedVersionString(actual.getAsString())
                     .compareTo(StringUtils.paddedVersionString(expected.getAsString())) >= 0;
 
             case VERSION_LT:
-                if (actual == null || expected == null) return false;
+                if (actual == null || expected == null || DataType.NULL.equals(attributeDataType)) return false;
 
                 return StringUtils.paddedVersionString(actual.getAsString())
                     .compareTo(StringUtils.paddedVersionString(expected.getAsString())) < 0;
 
             case VERSION_LTE:
-                if (actual == null || expected == null) return false;
+                if (actual == null || expected == null || DataType.NULL.equals(attributeDataType)) return false;
 
                 return StringUtils.paddedVersionString(actual.getAsString())
                     .compareTo(StringUtils.paddedVersionString(expected.getAsString())) <= 0;
 
             case VERSION_NE:
-                if (actual == null || expected == null) return false;
+                if (actual == null || expected == null || DataType.NULL.equals(attributeDataType)) return false;
 
                 return StringUtils.paddedVersionString(actual.getAsString())
                     .compareTo(StringUtils.paddedVersionString(expected.getAsString())) != 0;
 
             case VERSION_EQ:
-                if (actual == null || expected == null) return false;
+                if (actual == null || expected == null || DataType.NULL.equals(attributeDataType)) return false;
 
                 return StringUtils.paddedVersionString(actual.getAsString())
                     .compareTo(StringUtils.paddedVersionString(expected.getAsString())) == 0;
@@ -398,6 +407,7 @@ class ConditionEvaluator implements IConditionEvaluator {
             default:
                 return false;
         }
+        return false;
     }
 
     /**
