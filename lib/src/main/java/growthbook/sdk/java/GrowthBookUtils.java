@@ -42,22 +42,22 @@ class GrowthBookUtils {
     }
 
     private static Float hashV1(String stringValue, String seed) {
-        BigInteger bigInt = MathUtils.fnv1a_32((stringValue + seed).getBytes());
-        BigInteger thousand = new BigInteger("1000");
-        BigInteger remainder = bigInt.remainder(thousand);
+        long hashValue = MathUtils.fnv1a_32((stringValue + seed).getBytes());
+        long thousand = 1000;
+        long remainder = hashValue % thousand;
 
-        float remainderAsFloat = Float.parseFloat(remainder.toString());
+        float remainderAsFloat = Float.parseFloat(String.valueOf(remainder));
         return remainderAsFloat / 1000f;
     }
 
     private static Float hashV2(String stringValue, String seed) {
-        BigInteger first = MathUtils.fnv1a_32((seed + stringValue).getBytes());
-        BigInteger second = MathUtils.fnv1a_32(first.toString().getBytes());
+        long first = MathUtils.fnv1a_32((seed + stringValue).getBytes());
+        long second = MathUtils.fnv1a_32(String.valueOf(first).getBytes());
 
-        BigInteger tenThousand = new BigInteger("10000");
-        BigInteger remainder = second.remainder(tenThousand);
+        long tenThousand = 10000;
+        long remainder = second % tenThousand;
 
-        float remainderAsFloat = Float.parseFloat(remainder.toString());
+        float remainderAsFloat = Float.parseFloat(String.valueOf(remainder));
         return remainderAsFloat / 10000f;
     }
 
