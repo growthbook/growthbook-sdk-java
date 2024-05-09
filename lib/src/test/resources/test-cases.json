@@ -79,6 +79,17 @@
       "result": "{\"on\":true,\"off\":false,\"source\":\"force\",\"value\":1,\"experiment\":null,\"experimentResult\":null}"
     },
     {
+      "name": "force rule - coverage with integer hash attribute",
+      "type": "integer",
+      "context": {
+        "features": "{\"feature\":{\"defaultValue\":2,\"rules\":[{\"force\":1,\"coverage\":0.5}]}}",
+        "attributes": "{\"id\":\"3\"}",
+        "forcedVariations": null
+      },
+      "feature": "feature",
+      "result": "{\"on\":true,\"off\":false,\"source\":\"force\",\"value\":1,\"experiment\":null,\"experimentResult\":null}"
+    },
+    {
       "name": "force rules - coverage excluded",
       "type": "integer",
       "context": {
@@ -1285,6 +1296,104 @@
       true
     ],
     [
+      "$groups - match",
+      {
+        "$and": [
+          {
+            "$groups": {
+              "$elemMatch": { "$eq": "a" }
+            }
+          },
+          {
+            "$groups": {
+              "$elemMatch": { "$eq": "b" }
+            }
+          },
+          {
+            "$or": [
+              {
+                "$groups": {
+                  "$elemMatch": { "$eq": "c" }
+                }
+              },
+              {
+                "$groups": {
+                  "$elemMatch": { "$eq": "e" }
+                }
+              }
+            ]
+          },
+          {
+            "$not": {
+              "$groups": {
+                "$elemMatch": { "$eq": "f" }
+              }
+            }
+          },
+          {
+            "$not": {
+              "$groups": {
+                "$elemMatch": { "$eq": "g" }
+              }
+            }
+          }
+        ]
+      },
+      {
+        "$groups": ["a", "b", "c", "d"]
+      },
+      true
+    ],
+    [
+      "$groups - no match",
+      {
+        "$and": [
+          {
+            "$groups": {
+              "$elemMatch": { "$eq": "a" }
+            }
+          },
+          {
+            "$groups": {
+              "$elemMatch": { "$eq": "b" }
+            }
+          },
+          {
+            "$or": [
+              {
+                "$groups": {
+                  "$elemMatch": { "$eq": "c" }
+                }
+              },
+              {
+                "$groups": {
+                  "$elemMatch": { "$eq": "e" }
+                }
+              }
+            ]
+          },
+          {
+            "$not": {
+              "$groups": {
+                "$elemMatch": { "$eq": "d" }
+              }
+            }
+          },
+          {
+            "$not": {
+              "$groups": {
+                "$elemMatch": { "$eq": "g" }
+              }
+            }
+          }
+        ]
+      },
+      {
+        "$groups": ["a", "b", "c", "d"]
+      },
+      false
+    ],
+    [
       "$and/$or - first or true",
       {
         "$and": [
@@ -1442,6 +1551,24 @@
       {"pets.dog.name": {"$in": ["fido"]}},
       {"hello": "world"},
       false
+    ],
+    [
+      "missing attribute with comparison operators",
+      {"age": {"$gt": -10, "$lt": 10, "$gte": -9, "$lte": 9, "$ne": 10}},
+      {},
+      true
+    ],
+    [
+      "comparing numbers and strings",
+      {"n": {"$gt": 5, "$lt": 10}},
+      {"n": "8"},
+      true
+    ],
+    [
+      "comparing numbers and strings - v2",
+      {"n": {"$gt": "5", "$lt": "10"}},
+      {"n": 8},
+      true
     ],
     ["empty $or - pass", {"$or": []}, {"hello": "world"}, true],
     ["empty $and - pass", {"$and": []}, {"hello": "world"}, true],
