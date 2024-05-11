@@ -182,6 +182,11 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
 
     @Override
     public void initialize() throws FeatureFetchException {
+        initialize(false);
+    }
+
+    @Override
+    public void initialize(Boolean retryOnFailure) throws FeatureFetchException {
         if (this.initialized) return;
 
         switch (this.refreshStrategy) {
@@ -191,20 +196,20 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
 
             case SERVER_SENT_EVENTS:
                 fetchFeatures();
-                initializeSSE();
+                initializeSSE(retryOnFailure);
                 break;
         }
 
         this.initialized = true;
     }
 
-    private void initializeSSE() {
+    private void initializeSSE(Boolean retryOnFailure) {
         if (!this.sseAllowed) {
             System.out.printf("\nFalling back to stale-while-revalidate refresh strategy. 'X-Sse-Support: enabled' not present on resource returned at %s", this.featuresEndpoint);
             this.refreshStrategy = FeatureRefreshStrategy.STALE_WHILE_REVALIDATE;
         }
 
-        createEventSourceListenerAndStartListening();
+        createEventSourceListenerAndStartListening(retryOnFailure);
     }
 
     /**
@@ -212,7 +217,7 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
      * Creates and enqueues a new asynchronous request to the events endpoint.
      * Assigns a close listener to recreate the connection.
      */
-    private void createEventSourceListenerAndStartListening() {
+    private void createEventSourceListenerAndStartListening(Boolean retryOnFailure) {
         this.sseEventSource = null;
         this.sseRequest = null;
 
@@ -232,20 +237,34 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
             .addHeader("Accept", "text/event-stream")
             .build();
 
+        GBEventSourceListener gbEventSourceListener =
+                new GBEventSourceListener(
+                        new GBEventSourceHandler() {
+                            @Override
+                            public void onClose(EventSource eventSource) {
+                                eventSource.cancel();
+                                createEventSourceListenerAndStartListening(retryOnFailure);
+                            }
+
+                            @Override
+                            public void onFeaturesResponse(String featuresJsonResponse) throws FeatureFetchException {
+                                onResponseJson(featuresJsonResponse);
+                            }
+                        }
+                ) {
+                    @Override
+                    public void onFailure(@NotNull EventSource eventSource, @Nullable Throwable t, @Nullable Response response) {
+                        super.onFailure(eventSource, t, response);
+                        if (retryOnFailure) {
+                            createEventSourceListenerAndStartListening(retryOnFailure);
+                        }
+                    }
+                };
+
         this.sseEventSource = EventSources
             .createFactory(this.sseHttpClient)
-            .newEventSource(sseRequest, new GBEventSourceListener(new GBEventSourceHandler() {
-                @Override
-                public void onClose(EventSource eventSource) {
-                    eventSource.cancel();
-                    createEventSourceListenerAndStartListening();
-                }
+            .newEventSource(sseRequest, gbEventSourceListener);
 
-                @Override
-                public void onFeaturesResponse(String featuresJsonResponse) throws FeatureFetchException {
-                    onResponseJson(featuresJsonResponse);
-                }
-            }));
         this.sseHttpClient.newCall(sseRequest).enqueue(new Callback() {
             @Override
             public void onFailure(@NotNull Call call, @NotNull IOException e) {
