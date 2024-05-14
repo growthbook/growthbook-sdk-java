@@ -328,6 +328,7 @@ class ConditionEvaluator implements IConditionEvaluator {
                 return matches;
 
             case NE:
+                if (DataType.NULL.equals(attributeDataType)) return false;
                 return !Objects.equals(actual, expected);
 
             case EQ:
