@@ -102,6 +102,8 @@ public class GBContext {
     @Nullable
     private String attributesJson;
 
+    private ExperimentHelper experimentHelper = new ExperimentHelper();
+
     /**
      * You can update the attributes JSON with new user attributes to evaluate against.
      * @param attributesJson updated user attributes

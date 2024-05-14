@@ -153,9 +153,13 @@ class ExperimentEvaluator implements IExperimentEvaluator {
         // User is in an experiment.
         // Call the tracking callback with the result.
         ExperimentResult<ValueType> result = getExperimentResult(experiment, context, assignedVariation, true, true, featureId, hash);
-        TrackingCallback trackingCallback = context.getTrackingCallback();
-        if (trackingCallback != null) {
-            trackingCallback.onTrack(experiment, result);
+
+        if (!context.getExperimentHelper().isTracked(experiment, result)) {
+            TrackingCallback trackingCallback = context.getTrackingCallback();
+
+            if (trackingCallback != null) {
+                trackingCallback.onTrack(experiment, result);
+            }
         }
 
         return result;

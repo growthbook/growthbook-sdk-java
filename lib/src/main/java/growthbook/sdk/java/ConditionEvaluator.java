@@ -264,7 +264,9 @@ class ConditionEvaluator implements IConditionEvaluator {
 
 
             case GT:
-                if (actual == null || DataType.NULL.equals(attributeDataType)) return false;
+                if (actual == null || DataType.NULL.equals(attributeDataType)) {
+                    return 0.0 > expected.getAsDouble();
+                }
                 if (actual.getAsJsonPrimitive().isNumber()) {
                     return actual.getAsNumber().floatValue() > expected.getAsNumber().floatValue();
                 }
@@ -274,7 +276,9 @@ class ConditionEvaluator implements IConditionEvaluator {
                 break;
 
             case GTE:
-                if (actual == null || DataType.NULL.equals(attributeDataType)) return false;
+                if (actual == null || DataType.NULL.equals(attributeDataType)) {
+                    return 0.0 >= expected.getAsDouble();
+                }
                 if (actual.getAsJsonPrimitive().isNumber()) {
                     return actual.getAsNumber().floatValue() >= expected.getAsNumber().floatValue();
                 }
@@ -284,7 +288,12 @@ class ConditionEvaluator implements IConditionEvaluator {
                 break;
 
             case LT:
-                if (actual == null || DataType.NULL.equals(attributeDataType)) return false;
+                if (actual == null || DataType.NULL.equals(attributeDataType)) {
+                    return 0.0 < expected.getAsDouble();
+                }
+                if (actual.getAsString().toLowerCase().matches("\\d+")) {
+                    return Double.parseDouble(actual.getAsString()) < expected.getAsDouble();
+                }
                 if (actual.getAsJsonPrimitive().isNumber()) {
                     return actual.getAsNumber().floatValue() < expected.getAsNumber().floatValue();
                 }
@@ -294,7 +303,9 @@ class ConditionEvaluator implements IConditionEvaluator {
                 break;
 
             case LTE:
-                if (actual == null || DataType.NULL.equals(attributeDataType)) return false;
+                if (actual == null || DataType.NULL.equals(attributeDataType)) {
+                    return 0.0 <= expected.getAsDouble();
+                }
                 if (actual.getAsJsonPrimitive().isNumber()) {
                     return actual.getAsNumber().floatValue() <= expected.getAsNumber().floatValue();
                 }
@@ -317,8 +328,7 @@ class ConditionEvaluator implements IConditionEvaluator {
                 return matches;
 
             case NE:
-                if (actual == null || DataType.NULL.equals(attributeDataType)) return false;
-                return !arePrimitivesEqual(actual.getAsJsonPrimitive(), expected.getAsJsonPrimitive(), attributeDataType);
+                return !Objects.equals(actual, expected);
 
             case EQ:
                 if (actual == null || DataType.NULL.equals(attributeDataType)) return false;

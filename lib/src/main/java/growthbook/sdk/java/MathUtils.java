@@ -1,26 +1,26 @@
 package growthbook.sdk.java;
 
-import java.math.BigInteger;
 import java.util.List;
 
 class MathUtils {
-    private static final BigInteger INIT32 = new BigInteger("811c9dc5", 16);
-    private static final BigInteger PRIME32 = new BigInteger("01000193", 16);
-    private static final BigInteger MOD32 = new BigInteger("2").pow(32);
+    private static final long INIT32 = 0x811c9dc5L;
+    private static final long PRIME32 = 0x01000193L;
+    private static final long MOD32 = 1L << 32;
 
     /**
      * Fowler-Noll-Vo algorithm
-     * fnv32a returns an integer, so we convert that to a float using a modulus
+     * fnv32a returns an long, so we convert that to a float using a modulus
      *
      * @param data byte list
-     * @return BigInteger
+     * @return long
      */
-    public static BigInteger fnv1a_32(byte[] data) {
-        BigInteger hash = INIT32;
+    public static long fnv1a_32(byte[] data) {
+        long hash = INIT32;
 
         for (byte b : data) {
-            hash = hash.xor(BigInteger.valueOf((int) b & 0xff));
-            hash = hash.multiply(PRIME32).mod(MOD32);
+            hash ^= (b & 0xff);
+            hash *= PRIME32;
+            hash %= MOD32;
         }
 
         return hash;
