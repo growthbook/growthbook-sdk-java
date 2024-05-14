@@ -27,7 +27,7 @@
 For now we are manually managing the version number.
 
 When making a new release, ensure the file `growthbook/sdk/java/Version.java` has the version matching the tag and release. For example, if you are releasing version `0.3.0`, the following criteria should be met:
- 
+
 - the tag should be `0.3.0`
 - the release should be `0.3.0` 
 - the contents of the `Version.java` file should include the version as `static final String SDK_VERSION = "0.3.0";`
