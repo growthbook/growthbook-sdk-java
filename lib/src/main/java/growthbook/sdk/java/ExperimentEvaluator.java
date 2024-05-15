@@ -1,10 +1,11 @@
 package growthbook.sdk.java;
 
-import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
-
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import javax.annotation.Nullable;
-import java.util.*;
+import com.google.gson.JsonObject;
 
 /**
  * <b>INTERNAL</b>: Implementation of experiment evaluation
@@ -14,21 +15,26 @@ class ExperimentEvaluator implements IExperimentEvaluator {
     private final ConditionEvaluator conditionEvaluator = new ConditionEvaluator();
 
     @Override
-    public <ValueType> ExperimentResult<ValueType> evaluateExperiment(Experiment<ValueType> experiment, GBContext context, @Nullable String featureId) {
+    public <ValueType> ExperimentResult<ValueType> evaluateExperiment(Experiment<ValueType> experiment,
+                                                                      GBContext context,
+                                                                      @Nullable String featureId,
+                                                                      JsonObject attributeOverrides) {
+
         // If less than 2 variations, return immediately (not in experiment, variation 0)
-        // If not enabled, return immediately (not in experiment, variation 0)
         ArrayList<ValueType> experimentVariations = experiment.getVariations();
         if (experimentVariations == null) {
             experimentVariations = new ArrayList<>();
         }
+
+        // If not enabled, return immediately (not in experiment, variation 0)
         if ((context.getEnabled() != null && !context.getEnabled()) || experimentVariations.size() < 2) {
-            return getExperimentResult(experiment, context, 0, false, false, featureId, null);
+            return getExperimentResult(context, experiment, -1, false, featureId, null, null, attributeOverrides);
         }
 
         // Query string overrides
         Integer override = GrowthBookUtils.getQueryStringOverride(experiment.getKey(), context.getUrl(), experimentVariations.size());
         if (override != null) {
-            return getExperimentResult(experiment, context, override, true, false, featureId, null);
+            return getExperimentResult(context, experiment, override, false, featureId, null, null, attributeOverrides);
         }
 
         // If no forced variation, not in experiment, variation 0
@@ -36,91 +42,104 @@ class ExperimentEvaluator implements IExperimentEvaluator {
         if (forcedVariations == null) {
             forcedVariations = new HashMap<>();
         }
+
+        // If context.forcedVariations[experiment.trackingKey] is defined,
+        // return immediately (not in experiment, forced variation)
         Integer forcedVariation = forcedVariations.get(experiment.getKey());
         if (forcedVariation != null) {
-            return getExperimentResult(experiment, context, forcedVariation, true, false, featureId, null);
+            return getExperimentResult(context, experiment, forcedVariation, false, featureId, null, null, attributeOverrides);
         }
 
         // If experiment is not active, not in experiment, variation 0
         if (experiment.getIsActive() != null && !experiment.getIsActive()) {
-            return getExperimentResult(experiment, context, 0, false, false, featureId, null);
+            return getExperimentResult(context, experiment, -1, false, featureId, null, null, attributeOverrides);
         }
 
-        // Get the user hash attribute and the value. If empty, not in experiment, variation 0
+        String fallBack = null;
+        if (context.getStickyBucketService() != null && !Boolean.TRUE.equals(experiment.disableStickyBucketing)) {
+            fallBack = experiment.getFallbackAttribute();
+        }
+
+        // Get the user hash attribute and value
+        // (context.attributes[experiment.hashAttribute || "id"])
+        // and if empty, return immediately (not in experiment, variationId 0)
+        HashAttributeAndHashValue hashAttribute = GrowthBookUtils.getHashAttribute(
+                context,
+                experiment.getHashAttribute(),
+                fallBack,
+                attributeOverrides
+        );
+
+        // Skip because missing hashAttribute
+        if (hashAttribute.getHashValue().isEmpty() || hashAttribute.getHashValue().equals("null")) {
+            return getExperimentResult(context, experiment, -1, false, featureId, null, null, attributeOverrides);
+        }
+
+        int assigned = -1;
+        boolean foundStickyBucket = false;
+        boolean stickyBucketVersionIsBlocked = false;
+
+        if (context.getStickyBucketService() != null && !Boolean.TRUE.equals(experiment.disableStickyBucketing)) {
+            int bucketVersion = experiment.getBucketVersion() != null ? experiment.getBucketVersion() : 0;
+            int minBucketVersion = experiment.getMinBucketVersion() != null ? experiment.getMinBucketVersion() : 0;
+            List<VariationMeta> meta = experiment.getMeta() != null ? experiment.getMeta() : new ArrayList<>();
+            StickyBucketVariation stickyBucketVariation = GrowthBookUtils.getStickyBucketVariation(
+                    context,
+                    experiment.getKey(),
+                    experiment.getHashAttribute(),
+                    experiment.getFallbackAttribute(),
+                    attributeOverrides,
+                    bucketVersion,
+                    minBucketVersion,
+                    meta
+            );
+
+            foundStickyBucket = stickyBucketVariation.getVariation() >= 0;
+            assigned = stickyBucketVariation.getVariation();
+            stickyBucketVersionIsBlocked = stickyBucketVariation.getVersionIsBlocked() != null ? stickyBucketVariation.getVersionIsBlocked() : false;
+        }
+
         JsonObject attributes = context.getAttributes();
         if (attributes == null) {
             attributes = new JsonObject();
         }
 
-        String hashAttribute = experiment.getHashAttribute();
-        if (hashAttribute == null || hashAttribute.equals("")) {
-            hashAttribute = "id";
-        }
-        JsonElement attributeValueElement = attributes.get(hashAttribute);
+        // Some checks are not needed if we already have a sticky bucket
+        if (!foundStickyBucket) {
 
-        if (
-                attributeValueElement == null ||
-                        attributeValueElement.isJsonNull() ||
-                        (attributeValueElement.isJsonPrimitive() &&
-                                attributeValueElement.getAsJsonPrimitive().isString() &&
-                                Objects.equals(attributeValueElement.getAsString(), ""))
-        ) {
-            return getExperimentResult(experiment, context, 0, false, false, featureId, null);
-        }
+            List<Filter> filters = experiment.getFilters();
+            Namespace namespace = experiment.getNamespace();
 
-        String attributeValue = attributeValueElement.getAsString();
+            if (filters != null) {
 
-        List<Filter> filters = experiment.getFilters();
-        Namespace namespace = experiment.getNamespace();
-        if (filters != null) {
-            // Exclude if user is filtered out (used to be called "namespace")
-            if (GrowthBookUtils.isFilteredOut(filters, attributes)) {
-                return getExperimentResult(experiment, context, 0, false, false, featureId, null);
+                // Exclude if user is filtered out (used to be called "namespace")
+                if (GrowthBookUtils.isFilteredOut(filters, attributeOverrides, context)) {
+                    return getExperimentResult(context, experiment, -1, false, featureId, null, null, attributeOverrides);
+                }
+            } else if (namespace != null) {
+
+                // If experiment namespace is set, check if the hash value is included in the range, and if not
+                // user is not in the experiment, variation 0.
+                Boolean isInNamespace = GrowthBookUtils.inNameSpace(hashAttribute.getHashValue(), namespace);
+                if (!isInNamespace) {
+                    return getExperimentResult(context, experiment, -1, false, featureId, null, null, attributeOverrides);
+                }
             }
-        } else if (namespace != null) {
-            // If experiment namespace is set, check if the hash value is included in the range, and if not
-            // user is not in the experiment, variation 0.
-            Boolean isInNamespace = GrowthBookUtils.inNameSpace(attributeValue, namespace);
-            if (!isInNamespace) {
-                return getExperimentResult(experiment, context, 0, false, false, featureId, null);
-            }
-        }
 
-        // Evaluate the condition JSON
-        String jsonStringCondition = experiment.getConditionJson();
-        if (jsonStringCondition != null) {
-            String attributesJson = GrowthBookJsonUtils.getInstance().gson.toJson(attributes);
-            Boolean shouldEvaluate = conditionEvaluator.evaluateCondition(attributesJson, jsonStringCondition);
-            if (!shouldEvaluate) {
-                return getExperimentResult(experiment, context, 0, false, false, featureId, null);
+            // Evaluate the condition JSON
+            String jsonStringCondition = experiment.getConditionJson();
+            if (jsonStringCondition != null) {
+                String attributesJson = GrowthBookJsonUtils.getInstance().gson.toJson(attributes);
+                Boolean shouldEvaluate = conditionEvaluator.evaluateCondition(attributesJson, jsonStringCondition);
+
+                // If experiment.condition is set and the condition evaluates to false,
+                // return immediately (not in experiment, variationId 0)
+                if (!shouldEvaluate) {
+                    return getExperimentResult(context, experiment, -1, false, featureId, null, null, attributeOverrides);
+                }
             }
         }
 
-        // Set default variation weights and coverage if not set
-        // Weights
-        ArrayList<Float> weights = experiment.getWeights();
-        if (weights == null) {
-            weights = GrowthBookUtils.getEqualWeights(experiment.getVariations().size());
-        }
-
-        // Coverage
-        Float coverage = experiment.getCoverage();
-        if (coverage == null) {
-            coverage = 1.0f;
-        }
-
-        // Bucket ranges
-        ArrayList<BucketRange> bucketRanges = experiment.getRanges();
-        if (bucketRanges == null) {
-            bucketRanges = GrowthBookUtils.getBucketRanges(
-                experiment.getVariations().size(),
-                coverage,
-                weights
-            );
-        }
-
-        // Assigned variations
-        // If not assigned a variation (-1), not in experiment, variation 0
         String seed = experiment.getSeed();
         if (seed == null) {
             seed = experiment.getKey();
@@ -129,31 +148,100 @@ class ExperimentEvaluator implements IExperimentEvaluator {
         if (hashVersion == null) {
             hashVersion = 1;
         }
-        Float hash = GrowthBookUtils.hash(attributeValue, hashVersion, seed);
+        Float hash = GrowthBookUtils.hash(hashAttribute.getHashValue(), hashVersion, seed);
+
+        // Get the variation from the sticky bucket or get bucket ranges and choose variation
         if (hash == null) {
-            return getExperimentResult(experiment, context, 0, false, false, featureId, null);
+            return getExperimentResult(context, experiment, -1, false, featureId, null, null, attributeOverrides);
         }
-        Integer assignedVariation = GrowthBookUtils.chooseVariation(hash, bucketRanges);
-        if (assignedVariation == -1) {
+
+        if (!foundStickyBucket) {
+            // Set default variation weights and coverage if not set
+            // Weights
+            ArrayList<Float> weights = experiment.getWeights();
+            if (weights == null) {
+                weights = GrowthBookUtils.getEqualWeights(experiment.getVariations().size());
+            }
+
+            // Coverage
+            Float coverage = experiment.getCoverage();
+            if (coverage == null) {
+                coverage = 1.0f;
+            }
+
+            // Bucket ranges
+            ArrayList<BucketRange> bucketRanges = experiment.getRanges();
+            if (bucketRanges == null) {
+                bucketRanges = GrowthBookUtils.getBucketRanges(
+                        experiment.getVariations().size(),
+                        coverage,
+                        weights
+                );
+            }
+
+            assigned = GrowthBookUtils.chooseVariation(hash, bucketRanges);
+
+        }
+
+        // Unenroll if any prior sticky buckets are blocked by version
+        if (stickyBucketVersionIsBlocked) {
+            return getExperimentResult(context, experiment, -1, false, featureId, null, true, attributeOverrides);
+        }
+
+        // Assigned variations
+        // If not assigned a variation (-1), not in experiment, variation 0
+        if (assigned < 0) {
             // NOTE: While a hash is used to determine if the user is assigned a variation, since they aren't, hash passed is null
-            return getExperimentResult(experiment, context, 0, false, false, featureId, null);
+            return getExperimentResult(context, experiment, -1, false, featureId, null, null, attributeOverrides);
         }
 
         // If experiment has a forced index, not in experiment, variation is the forced experiment
         Integer force = experiment.getForce();
         if (force != null) {
-            return getExperimentResult(experiment, context, force, true, false, featureId, null);
+            return getExperimentResult(context, experiment, force, false, featureId, null, null, attributeOverrides);
         }
 
         // If QA mode is enabled, not in experiment, variation 0
         if (context.getIsQaMode() != null && context.getIsQaMode()) {
-            return getExperimentResult(experiment, context, 0, false, false, featureId, null);
+            return getExperimentResult(context, experiment, -1, false, featureId, null, null, attributeOverrides);
         }
 
         // User is in an experiment.
         // Call the tracking callback with the result.
-        ExperimentResult<ValueType> result = getExperimentResult(experiment, context, assignedVariation, true, true, featureId, hash);
+        ExperimentResult<ValueType> result = getExperimentResult(context, experiment, assigned, true, featureId, hash, foundStickyBucket, attributeOverrides);
 
+        // Persist sticky bucket
+        if (context.getStickyBucketService() != null && !Boolean.TRUE.equals(experiment.disableStickyBucketing)) {
+            Map<String, String> assignments = new HashMap<>();
+            assignments.put(GrowthBookUtils.getStickyBucketExperimentKey(
+                    experiment.getKey(),
+                    experiment.getBucketVersion()), result.getKey());
+
+            GeneratedStickyBucketAssignmentDocModel generatedStickyBucketAssignmentDocModel = GrowthBookUtils.generateStickyBucketAssignmentDoc(
+                    context,
+                    hashAttribute.getHashAttribute(),
+                    hashAttribute.getHashValue(),
+                    assignments);
+
+            if (generatedStickyBucketAssignmentDocModel.isChanged()) {
+
+                // update local docs
+                if (context.getStickyBucketAssignmentDocs() == null) {
+                    context.setStickyBucketAssignmentDocs(new HashMap<>());
+                }
+
+                context.getStickyBucketAssignmentDocs().put(
+                        generatedStickyBucketAssignmentDocModel.getKey(),
+                        generatedStickyBucketAssignmentDocModel.getStickyAssignmentsDocument()
+                );
+
+                // save doc
+                context.getStickyBucketService().saveAssignments(generatedStickyBucketAssignmentDocModel.getStickyAssignmentsDocument());
+            }
+        }
+
+        // Fire context.trackingClosure if set and the combination of hashAttribute,
+        // hashValue, experiment.key, and variationId has not been tracked before
         if (!context.getExperimentHelper().isTracked(experiment, result)) {
             TrackingCallback trackingCallback = context.getTrackingCallback();
 
@@ -162,69 +250,81 @@ class ExperimentEvaluator implements IExperimentEvaluator {
             }
         }
 
+        // Return (in experiment, assigned variation)
         return result;
     }
 
     private <ValueType> ExperimentResult<ValueType> getExperimentResult(
-            Experiment<ValueType> experiment,
             GBContext context,
+            Experiment<ValueType> experiment,
             Integer variationIndex,
-            Boolean inExperiment,
             Boolean hashUsed,
             String featureId,
-            @Nullable Float hashBucket
+            @Nullable Float hashBucket,
+            @Nullable Boolean stickyBucketUsed,
+            JsonObject attributeOverrides
     ) {
+        boolean inExperiment = true;
+        Integer targetVariationIndex = variationIndex;
+
         ArrayList<ValueType> experimentVariations = experiment.getVariations();
         if (experimentVariations == null) {
             experimentVariations = new ArrayList<>();
         }
-        if (variationIndex < 0 || variationIndex >= experimentVariations.size()) {
-            variationIndex = 0;
+
+        // If assigned variation is not valid, use the baseline
+        // and mark the user as not in the experiment
+        if (targetVariationIndex < 0 || targetVariationIndex >= experimentVariations.size()) {
+
+            // Set to 0
+            targetVariationIndex = 0;
             inExperiment = false;
         }
 
+        String fallBack = null;
+        if (context.getStickyBucketService() != null && !Boolean.TRUE.equals(experiment.disableStickyBucketing)) {
+            fallBack = experiment.getFallbackAttribute();
+        }
+        HashAttributeAndHashValue hashAttribute = GrowthBookUtils.getHashAttribute(
+                context,
+                experiment.getHashAttribute(),
+                fallBack,
+                attributeOverrides);
+
+        List<VariationMeta> experimentMeta = new ArrayList<>();
+
+        if (experiment.meta != null) {
+            experimentMeta = experiment.meta;
+        }
+
+        VariationMeta meta = null;
+        if (experimentMeta.size() > targetVariationIndex) {
+            meta = experimentMeta.get(targetVariationIndex);
+        }
+
+        String key = meta != null ? meta.getKey() : targetVariationIndex + "";
+        String name = meta != null ? meta.getName() : null;
+        Boolean passThrough = meta != null ? meta.getPassThrough() : null;
+
         ValueType targetValue = null;
-
-        if (!experimentVariations.isEmpty()) {
-            targetValue = experiment.getVariations().get(variationIndex);
-        }
-
-        String hashAttribute = experiment.getHashAttribute();
-        if (hashAttribute == null) {
-            hashAttribute = "id";
-        }
-
-        String hashValue = "";
-        JsonObject attributes = context.getAttributes();
-        if (attributes != null) {
-            JsonElement hashAttributeElement = attributes.get(hashAttribute);
-            if (hashAttributeElement != null && !hashAttributeElement.isJsonNull()) {
-                hashValue = hashAttributeElement.getAsString();
-            }
-        }
-
-        VariationMeta maybeMeta = null;
-        ArrayList<VariationMeta> metaList = experiment.getMeta();
-        if (metaList == null) {
-            metaList = new ArrayList<>();
-        }
-        if (variationIndex < metaList.size()) {
-            maybeMeta = metaList.get(variationIndex);
+        if (experiment.variations.size() > targetVariationIndex) {
+            targetValue = experiment.variations.get(targetVariationIndex);
         }
 
         return ExperimentResult
                 .<ValueType>builder()
                 .inExperiment(inExperiment)
                 .variationId(variationIndex)
-                .key(maybeMeta == null ? variationIndex.toString() : maybeMeta.getKey())
-                .featureId(featureId)
-                .hashValue(hashValue)
-                .hashUsed(hashUsed)
-                .hashAttribute(hashAttribute)
                 .value(targetValue)
+                .hashAttribute(hashAttribute.getHashAttribute())
+                .hashValue(hashAttribute.getHashValue())
+                .key(key)
+                .featureId(featureId)
+                .hashUsed(hashUsed)
+                .stickyBucketUsed(stickyBucketUsed != null ? stickyBucketUsed : false)
+                .name(name)
                 .bucket(hashBucket)
-                .name(maybeMeta == null ? null : maybeMeta.getName())
-                .passThrough(maybeMeta == null ? null : maybeMeta.getPassThrough())
+                .passThrough(passThrough)
                 .build();
     }
 }

@@ -2,13 +2,15 @@ package growthbook.sdk.java;
 
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import growthbook.sdk.java.stickyBucketing.StickyAssignmentsDocument;
+import growthbook.sdk.java.stickyBucketing.StickyBucketService;
 import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Data;
 import lombok.Getter;
-
 import javax.annotation.Nullable;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -43,8 +45,11 @@ public class GBContext {
             Boolean allowUrlOverrides,
             @Nullable Map<String, Integer> forcedVariationsMap,
             @Nullable TrackingCallback trackingCallback,
-            @Nullable FeatureUsageCallback featureUsageCallback
-    ) {
+            @Nullable FeatureUsageCallback featureUsageCallback,
+            @Nullable StickyBucketService stickyBucketService,
+            @Nullable Map<String, StickyAssignmentsDocument> stickyBucketAssignmentDocs,
+            @Nullable List<String> stickyBucketIdentifierAttributes
+            ) {
         this.encryptionKey = encryptionKey;
 
         this.attributesJson = attributesJson == null ? "{}" : attributesJson;
@@ -71,6 +76,9 @@ public class GBContext {
         this.forcedVariationsMap = forcedVariationsMap == null ? new HashMap<>() : forcedVariationsMap;
         this.trackingCallback = trackingCallback;
         this.featureUsageCallback = featureUsageCallback;
+        this.stickyBucketService = stickyBucketService;
+        this.stickyBucketAssignmentDocs = stickyBucketAssignmentDocs;
+        this.stickyBucketIdentifierAttributes = stickyBucketIdentifierAttributes;
     }
 
     @Nullable
@@ -143,6 +151,15 @@ public class GBContext {
 
     @Nullable
     private Map<String, Integer> forcedVariationsMap;
+
+    @Nullable
+    private StickyBucketService stickyBucketService;
+
+    @Nullable
+    private Map<String, StickyAssignmentsDocument> stickyBucketAssignmentDocs;
+
+    @Nullable
+    private List<String> stickyBucketIdentifierAttributes;
 
     /**
      * The builder class to help create a context. You can use {@link #builder()} or the {@link GBContext} constructor

@@ -36,28 +36,23 @@ class ConditionEvaluatorTest {
         JsonArray testCases = helper.evalConditionTestCases();
 
         for (int i = 0; i < testCases.size(); i++) {
-            // Run only test at index i
-//            if (i == 71) {
-                JsonElement jsonElement = testCases.get(i);
-                JsonArray testCase = (JsonArray) jsonElement;
+            JsonElement jsonElement = testCases.get(i);
+            JsonArray testCase = (JsonArray) jsonElement;
 
-                String testDescription = testCase.get(0).getAsString();
+            String testDescription = testCase.get(0).getAsString();
 
-                // Get attributes and conditions as JSON objects then convert them to a JSON string
-                String condition = testCase.get(1).getAsJsonObject().toString();
-                String attributes = testCase.get(2).getAsJsonObject().toString();
+            // Get attributes and conditions as JSON objects then convert them to a JSON string
+            String condition = testCase.get(1).getAsJsonObject().toString();
+            String attributes = testCase.get(2).getAsJsonObject().toString();
 
-                boolean expected = testCase.get(3).getAsBoolean();
+            boolean expected = testCase.get(3).getAsBoolean();
 
-                if (expected == evaluator.evaluateCondition(attributes, condition)) {
-                    passedTests.add(testDescription);
-                } else {
-                    failingIndexes.add(i);
-                    failedTests.add(testDescription);
-                }
-
-//            }
-
+            if (expected == evaluator.evaluateCondition(attributes, condition)) {
+                passedTests.add(testDescription);
+            } else {
+                failingIndexes.add(i);
+                failedTests.add(testDescription);
+            }
         }
 
 //        System.out.printf("\n\nPassed tests: %s", passedTests);

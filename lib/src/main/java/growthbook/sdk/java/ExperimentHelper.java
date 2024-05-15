@@ -1,7 +1,5 @@
 package growthbook.sdk.java;
 
-import lombok.val;
-
 import java.util.HashSet;
 import java.util.Set;
 

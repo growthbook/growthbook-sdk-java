@@ -45,6 +45,9 @@ public class ExperimentResult<ValueType> {
     @SerializedName("passthrough")
     Boolean passThrough;
 
+    @Nullable
+    Boolean stickyBucketUsed;
+
     /**
      * The result of running an {@link Experiment} given a specific {@link GBContext}
      *
@@ -72,7 +75,8 @@ public class ExperimentResult<ValueType> {
         @Nullable String key,
         @Nullable String name,
         @Nullable Float bucket,
-        @Nullable Boolean passThrough
+        @Nullable Boolean passThrough,
+        @Nullable Boolean stickyBucketUsed
     ) {
         this.value = value;
         this.variationId = variationId;
@@ -90,6 +94,7 @@ public class ExperimentResult<ValueType> {
         this.name = name;
         this.bucket = bucket;
         this.passThrough = passThrough;
+        this.stickyBucketUsed = stickyBucketUsed;
     }
 
     // region Serialization

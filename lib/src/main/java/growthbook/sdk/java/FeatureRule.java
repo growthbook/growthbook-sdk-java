@@ -5,10 +5,8 @@ import com.google.gson.annotations.SerializedName;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
-
 import javax.annotation.Nullable;
 import java.util.ArrayList;
-import java.util.List;
 
 /**
  * Overrides the defaultValue of a Feature based on a set of requirements. Has a number of optional properties
@@ -77,6 +75,18 @@ public class FeatureRule<ValueType> {
 
     @Nullable
     String phase;
+
+    @Nullable
+    String fallbackAttribute;
+
+    @Nullable
+    Boolean disableStickyBucketing;
+
+    @Nullable
+    Integer bucketVersion;
+
+    @Nullable
+    Integer minBucketVersion;
 
     @Nullable
     ArrayList<TrackData<ValueType>> tracks;

@@ -86,6 +86,18 @@ public class Experiment<ValueType> {
     @Nullable
     String phase;
 
+    @Nullable
+    String fallbackAttribute;
+
+    @Nullable
+    Boolean disableStickyBucketing;
+
+    @Nullable
+    Integer bucketVersion;
+
+    @Nullable
+    Integer minBucketVersion;
+
     /**
      * Get a Gson JsonElement of the experiment
      * @return JsonElement

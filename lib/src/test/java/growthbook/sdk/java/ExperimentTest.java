@@ -39,6 +39,10 @@ class ExperimentTest {
                 null,
                 null,
                 null,
+                null,
+                null,
+                null,
+                null,
                 null
         );
         assertEquals(0.5f, experiment.coverage);

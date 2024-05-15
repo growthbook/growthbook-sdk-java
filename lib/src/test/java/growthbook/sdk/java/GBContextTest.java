@@ -40,16 +40,19 @@ class GBContextTest {
         String featuresJson = "{}";
 
         GBContext subject = new GBContext(
-            sampleUserAttributes,
-            featuresJson,
-            null,
-            isEnabled,
-            isQaMode,
-            url,
-            allowUrlOverride,
-            forcedVariations,
-            trackingCallback,
-            null
+                sampleUserAttributes,
+                featuresJson,
+                null,
+                isEnabled,
+                isQaMode,
+                url,
+                allowUrlOverride,
+                forcedVariations,
+                trackingCallback,
+                null,
+                null,
+                null,
+                null
         );
 
         assertNotNull(subject);
@@ -117,16 +120,19 @@ class GBContextTest {
         String encryptionKey = "BhB1wORFmZLTDjbvstvS8w==";
 
         GBContext subject = new GBContext(
-            sampleUserAttributes,
-            encryptedFeaturesJson,
-            encryptionKey,
-            isEnabled,
-            isQaMode,
-            url,
-            allowUrlOverride,
-            forcedVariations,
-            trackingCallback,
-            null
+                sampleUserAttributes,
+                encryptedFeaturesJson,
+                encryptionKey,
+                isEnabled,
+                isQaMode,
+                url,
+                allowUrlOverride,
+                forcedVariations,
+                trackingCallback,
+                null,
+                null,
+                null,
+                null
         );
         String expectedFeaturesJson = "{\"greeting\":{\"defaultValue\":\"hello\",\"rules\":[{\"condition\":{\"country\":\"france\"},\"force\":\"bonjour\"},{\"condition\":{\"country\":\"mexico\"},\"force\":\"hola\"}]}}";
 
@@ -171,11 +177,11 @@ class GBContextTest {
         String encryptionKey = "nope";
 
         GBContext subject = GBContext
-            .builder()
-            .attributesJson(sampleUserAttributes)
-            .featuresJson(encryptedFeaturesJson)
-            .encryptionKey(encryptionKey)
-            .build();
+                .builder()
+                .attributesJson(sampleUserAttributes)
+                .featuresJson(encryptedFeaturesJson)
+                .encryptionKey(encryptionKey)
+                .build();
 
         assertEquals("{}", subject.getFeaturesJson());
     }
@@ -186,11 +192,11 @@ class GBContextTest {
         String encryptionKey = "BhB1wORFmZLTDjbvstvS8w==";
 
         GBContext subject = GBContext
-            .builder()
-            .attributesJson(sampleUserAttributes)
-            .featuresJson(encryptedFeaturesJson)
-            .encryptionKey(encryptionKey)
-            .build();
+                .builder()
+                .attributesJson(sampleUserAttributes)
+                .featuresJson(encryptedFeaturesJson)
+                .encryptionKey(encryptionKey)
+                .build();
 
         assertEquals("{}", subject.getFeaturesJson());
     }
