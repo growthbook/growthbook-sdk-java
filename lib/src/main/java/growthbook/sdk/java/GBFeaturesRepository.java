@@ -16,6 +16,7 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
+import java.util.logging.Logger;
 
 /**
  * This class can be created with its `builder()` or constructor.
@@ -256,7 +257,18 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
                     public void onFailure(@NotNull EventSource eventSource, @Nullable Throwable t, @Nullable Response response) {
                         super.onFailure(eventSource, t, response);
                         if (retryOnFailure) {
-                            createEventSourceListenerAndStartListening(retryOnFailure);
+                            createEventSourceListenerAndStartListening(true);
+
+                            try {
+                                fetchFeatures();
+                            } catch (FeatureFetchException featureFetchException) {
+                                Logger.getAnonymousLogger()
+                                        .throwing(
+                                                "GBFeaturesRepository",
+                                                "createEventSourceListenerAndStartListening()",
+                                                featureFetchException
+                                        );
+                            }
                         }
                     }
                 };
