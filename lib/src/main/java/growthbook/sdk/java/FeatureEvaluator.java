@@ -7,6 +7,8 @@ import javax.annotation.Nullable;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.List;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  * <b>INTERNAL</b>: Implementation of feature evaluation
@@ -16,6 +18,7 @@ class FeatureEvaluator implements IFeatureEvaluator {
     private final GrowthBookJsonUtils jsonUtils = GrowthBookJsonUtils.getInstance();
     private final ConditionEvaluator conditionEvaluator = new ConditionEvaluator();
     private final ExperimentEvaluator experimentEvaluator = new ExperimentEvaluator();
+    private final Logger logger = Logger.getAnonymousLogger();
 
     @Override
     public <ValueType> FeatureResult<ValueType> evaluateFeature(String key, GBContext context, Class<ValueType> valueTypeClass) throws ClassCastException {
@@ -65,7 +68,7 @@ class FeatureEvaluator implements IFeatureEvaluator {
                     .build();
 
             if (featureJson == null) {
-                System.out.println("featureJson is null");
+                logger.log(Level.CONFIG, "FeatureJson is null for ", key);
 
                 // When key exists but there is no value, should be default value with null value
                 if (featureUsageCallback != null) {
@@ -107,6 +110,7 @@ class FeatureEvaluator implements IFeatureEvaluator {
                 attributes = new JsonObject();
             }
 //            System.out.printf("\n\nAttributes = %s", attributes);
+            logger.log(Level.INFO, "Attributes = ", attributes);
 
             // region Rules
 
@@ -229,7 +233,7 @@ class FeatureEvaluator implements IFeatureEvaluator {
             }
             return defaultValueFeatureResult;
         } catch (Exception e) {
-            e.printStackTrace();
+            logger.log(Level.SEVERE, "Error evaluating feature " +  key, e);
             return emptyFeature;
         }
     }
@@ -262,7 +266,8 @@ class FeatureEvaluator implements IFeatureEvaluator {
 
             return GrowthBookUtils.getForcedSerializableValueFromUrl(key, url, valueTypeClass, jsonUtils.gson);
         } catch (MalformedURLException | ClassCastException e) {
-            e.printStackTrace();
+            logger.log(Level.SEVERE, "Error evaluating forced feature "
+                    +  key + " from URL " + urlString, e);
             return null;
         }
     }

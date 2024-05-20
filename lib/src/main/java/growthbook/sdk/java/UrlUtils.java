@@ -5,8 +5,11 @@ import java.net.URLDecoder;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 class UrlUtils {
+    private static Logger logger = Logger.getLogger(UrlUtils.class.getName());
     /**
      * Parse a query string into a map of key/value pairs.
      *
@@ -30,7 +33,9 @@ class UrlUtils {
 
                 map.put(name, value);
             } catch (UnsupportedEncodingException e) {
-                e.printStackTrace();
+                logger.log(Level.SEVERE,
+                        "Unable to parse query string "
+                                + queryString, e);
             }
         }
         return map;

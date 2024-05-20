@@ -7,18 +7,20 @@ import com.google.gson.JsonPrimitive;
 import org.jetbrains.annotations.NotNull;
 
 import javax.annotation.Nullable;
-import java.math.BigInteger;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  * <b>INTERNAL</b>: Implementation of for internal utility methods to support {@link growthbook.sdk.java.GrowthBook}
  */
 class GrowthBookUtils {
+    private static final Logger logger = Logger.getLogger(GrowthBookUtils.class.getName());
     /**
      * Hashes a string to a float between 0 and 1, or null if the hash version is unsupported.
      * Uses the simple Fowler–Noll–Vo algorithm, specifically fnv32a.
@@ -143,6 +145,10 @@ class GrowthBookUtils {
             URL url = new URL(urlString);
             return getQueryStringOverride(id, url, numberOfVariations);
         } catch (MalformedURLException e) {
+            logger.log(Level.SEVERE,
+                    "MalformedURLException: with id: "
+                            + id + ", urlString: " + urlString
+                            + ", numberOfVariations: " + numberOfVariations, e);
             return null;
         }
     }
@@ -186,7 +192,10 @@ class GrowthBookUtils {
 
             return variationValue;
         } catch (NumberFormatException exception) {
-            exception.printStackTrace();
+            logger.log(Level.SEVERE,
+                    "NumberFormatException for id: "
+                            + id + ", url: " + url
+                            + ", numberOfVariations: " + numberOfVariations, exception);
             return null;
         }
     }
@@ -275,6 +284,9 @@ class GrowthBookUtils {
         try {
             return Float.parseFloat(value);
         } catch (NumberFormatException e) {
+            logger.log(Level.SEVERE,
+                    "NumberFormatException: for featureKey: "
+                            + featureKey + ", url: ", e);
             return null;
         }
     }
@@ -299,6 +311,9 @@ class GrowthBookUtils {
         try {
             return Double.parseDouble(value);
         } catch (NumberFormatException e) {
+            logger.log(Level.SEVERE,
+                    "NumberFormatException: for featureKey: "
+                            + featureKey + ", url: ", e);
             return null;
         }
     }
@@ -323,6 +338,9 @@ class GrowthBookUtils {
         try {
             return Integer.parseInt(value);
         } catch (NumberFormatException e) {
+            logger.log(Level.SEVERE,
+                    "NumberFormatException: for featureKey: "
+                            + featureKey + ", url: ", e);
             return null;
         }
     }
@@ -340,7 +358,9 @@ class GrowthBookUtils {
         try {
             return gson.fromJson(value, valueTypeClass);
         } catch (Exception e) {
-            e.printStackTrace();
+            logger.log(Level.SEVERE,
+                    "NumberFormatException: for featureKey: "
+                            + featureKey + ", url: ", e);
             return null;
         }
     }

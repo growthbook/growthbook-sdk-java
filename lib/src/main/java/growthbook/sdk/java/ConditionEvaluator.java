@@ -8,7 +8,13 @@ import com.google.gson.reflect.TypeToken;
 
 import javax.annotation.Nullable;
 import java.lang.reflect.Type;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -18,6 +24,7 @@ import java.util.regex.Pattern;
 class ConditionEvaluator implements IConditionEvaluator {
 
     private final GrowthBookJsonUtils jsonUtils = GrowthBookJsonUtils.getInstance();
+    private final Logger logger = Logger.getLogger(ConditionEvaluator.class.getName());
 
     /**
      * Evaluate a condition for a set of user attributes based on the provided condition.
@@ -66,7 +73,10 @@ class ConditionEvaluator implements IConditionEvaluator {
 
             return true;
         } catch (RuntimeException e) {
-            e.printStackTrace();
+            logger.log(Level.SEVERE,
+                    "Error evaluate condition for attributesJsonString: "
+                    + attributesJsonString +", and conditionJsonString: "
+                    + conditionJsonString, e);
             return false;
         }
     }
@@ -436,7 +446,7 @@ class ConditionEvaluator implements IConditionEvaluator {
                 //
         }
 
-        System.out.printf("\nUnsupported data type %s", dataType);
+        logger.log(Level.INFO, "Unsupported data type " + dataType);
 
         return false;
     }

@@ -4,7 +4,7 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import lombok.Builder;
 import lombok.Getter;
-import okhttp3.*;
+import okhttp3.OkHttpClient;
 import okhttp3.sse.EventSource;
 import okhttp3.sse.EventSourceListener;
 import okhttp3.sse.EventSources;
@@ -16,6 +16,8 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  * This class can be created with its `builder()` or constructor.
@@ -54,8 +56,9 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
     private Boolean initialized = false;
 
     private Boolean sseAllowed = false;
-    @Nullable private Request sseRequest = null;
+    @Nullable private okhttp3.Request sseRequest = null;
     @Nullable private EventSource sseEventSource = null;
+    private static final Logger logger = Logger.getLogger(GBFeaturesRepository.class.getName());
 
     /**
      * Allows you to get the features JSON from the provided {@link GBFeaturesRepository#getFeaturesEndpoint()}.
@@ -158,23 +161,23 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
     private void enqueueFeatureRefreshRequest() {
         GBFeaturesRepository self = this;
 
-        Request request = new Request.Builder()
+        okhttp3.Request request = new okhttp3.Request.Builder()
             .url(this.featuresEndpoint)
             .build();
 
-        this.okHttpClient.newCall(request).enqueue(new Callback() {
+        this.okHttpClient.newCall(request).enqueue(new okhttp3.Callback() {
             @Override
-            public void onFailure(@NotNull Call call, @NotNull IOException e) {
+            public void onFailure(@NotNull okhttp3.Call call, @NotNull IOException e) {
                 // OkHttp will auto-retry on failure
                 self.onRefreshFailed(e);
             }
 
             @Override
-            public void onResponse(@NotNull Call call, @NotNull Response response) throws IOException {
+            public void onResponse(@NotNull okhttp3.Call call, @NotNull okhttp3.Response response) {
                 try {
                     self.onSuccess(response);
                 } catch (FeatureFetchException e) {
-                    e.printStackTrace();
+                    logger.log(Level.SEVERE, "Error refreshing features", e);
                 }
             }
         });
@@ -200,7 +203,10 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
 
     private void initializeSSE() {
         if (!this.sseAllowed) {
-            System.out.printf("\nFalling back to stale-while-revalidate refresh strategy. 'X-Sse-Support: enabled' not present on resource returned at %s", this.featuresEndpoint);
+            logger.log(Level.INFO,
+                    "Falling back to stale-while-revalidate refresh strategy. "
+                            + "'X-Sse-Support: enabled' not present on resource returned at "
+                            + this.featuresEndpoint);
             this.refreshStrategy = FeatureRefreshStrategy.STALE_WHILE_REVALIDATE;
         }
 
@@ -226,7 +232,7 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
                 .build();
         }
 
-        this.sseRequest = new Request.Builder()
+        this.sseRequest = new okhttp3.Request.Builder()
             .url(this.eventsEndpoint)
             .header("Accept", "application/json; q=0.5")
             .addHeader("Accept", "text/event-stream")
@@ -246,15 +252,14 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
                     onResponseJson(featuresJsonResponse);
                 }
             }));
-        this.sseHttpClient.newCall(sseRequest).enqueue(new Callback() {
+        this.sseHttpClient.newCall(sseRequest).enqueue(new okhttp3.Callback() {
             @Override
-            public void onFailure(@NotNull Call call, @NotNull IOException e) {
-                System.out.println("SSE connection failed");
-                e.printStackTrace();
+            public void onFailure(@NotNull okhttp3.Call call, @NotNull IOException e) {
+                logger.log(Level.SEVERE, "SSE connection failed", e);
             }
 
             @Override
-            public void onResponse(@NotNull Call call, @NotNull Response response) throws IOException {
+            public void onResponse(@NotNull okhttp3.Call call, @NotNull okhttp3.Response response) throws IOException {
                 // We don't do anything with this response
             }
         });
@@ -289,21 +294,21 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
      */
     private void fetchFeatures() throws FeatureFetchException {
         if (this.featuresEndpoint == null) {
+            logger.log(Level.SEVERE, "features endpoint cannot be null");
             throw new IllegalArgumentException("features endpoint cannot be null");
         }
 
-        Request request = new Request.Builder()
+        okhttp3.Request request = new okhttp3.Request.Builder()
             .url(this.featuresEndpoint)
             .build();
 
-        try (Response response = this.okHttpClient.newCall(request).execute()) {
+        try (okhttp3.Response response = this.okHttpClient.newCall(request).execute()) {
             String sseSupportHeader = response.header("x-sse-support");
             this.sseAllowed = Objects.equals(sseSupportHeader, "enabled");
 
             this.onSuccess(response);
         } catch (IOException e) {
-            e.printStackTrace();
-
+            logger.log(Level.SEVERE, "Error fetching features", e);
             throw new FeatureFetchException(
                 FeatureFetchException.FeatureFetchErrorCode.UNKNOWN,
                 e.getMessage()
@@ -327,6 +332,7 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
                 // Use encrypted features at responseBody.encryptedFeatures
                 JsonElement encryptedFeaturesJsonElement = jsonObject.get("encryptedFeatures");
                 if (encryptedFeaturesJsonElement == null) {
+                    logger.log(Level.SEVERE, "Configuration Error: encryptionKey provided but endpoint not encrypted");
                     throw new FeatureFetchException(
                         FeatureFetchException.FeatureFetchErrorCode.CONFIGURATION_ERROR,
                         "encryptionKey provided but endpoint not encrypted"
@@ -339,6 +345,7 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
                 // Use unencrypted features at responseBody.features
                 JsonElement featuresJsonElement = jsonObject.get("features");
                 if (featuresJsonElement == null) {
+                    logger.log(Level.SEVERE, "Configuration Error: No features found");
                     throw new FeatureFetchException(
                         FeatureFetchException.FeatureFetchErrorCode.CONFIGURATION_ERROR,
                         "No features found"
@@ -352,8 +359,7 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
 
             this.onRefreshSuccess(this.featuresJson);
         } catch (DecryptionUtils.DecryptionException e) {
-            e.printStackTrace();
-
+            logger.log(Level.SEVERE, "Error fetching features");
             throw new FeatureFetchException(
                 FeatureFetchException.FeatureFetchErrorCode.UNKNOWN,
                 e.getMessage()
@@ -377,10 +383,11 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
      * Handles the successful features fetching response
      * @param response Successful response
      */
-    private void onSuccess(Response response) throws FeatureFetchException {
+    private void onSuccess(okhttp3.Response response) throws FeatureFetchException {
         try {
-            ResponseBody responseBody = response.body();
+            okhttp3.ResponseBody responseBody = response.body();
             if (responseBody == null) {
+                logger.log(Level.SEVERE, "Feature Fetch Exception Response Body is null");
                 throw new FeatureFetchException(
                     FeatureFetchException.FeatureFetchErrorCode.NO_RESPONSE_ERROR
                 );
@@ -388,8 +395,7 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
 
             onResponseJson(responseBody.string());
         } catch (IOException e) {
-            e.printStackTrace();
-
+            logger.log(Level.SEVERE, "Error fetching features", e);
             throw new FeatureFetchException(
                 FeatureFetchException.FeatureFetchErrorCode.UNKNOWN,
                 e.getMessage()
@@ -424,17 +430,20 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
             try {
                 handler.onFeaturesResponse(data);
             } catch (FeatureFetchException e) {
-                e.printStackTrace();
+                logger.log(Level.SEVERE,
+                        "FeatureFetch in SSE connection with EventSource "
+                                + eventSource + " and with id: "
+                                + id + " and data: " + data, e);
             }
         }
 
         @Override
-        public void onFailure(@NotNull EventSource eventSource, @Nullable Throwable t, @Nullable Response response) {
+        public void onFailure(@NotNull EventSource eventSource, @Nullable Throwable t, @Nullable okhttp3.Response response) {
             super.onFailure(eventSource, t, response);
         }
 
         @Override
-        public void onOpen(@NotNull EventSource eventSource, @NotNull Response response) {
+        public void onOpen(@NotNull EventSource eventSource, @NotNull okhttp3.Response response) {
             super.onOpen(eventSource, response);
         }
     }

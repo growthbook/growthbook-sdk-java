@@ -8,6 +8,8 @@ import com.google.gson.JsonPrimitive;
 import javax.annotation.Nullable;
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  * <b>INTERNAL</b>: This convenience class was created to help with the serialization and deserialization of custom types.
@@ -23,6 +25,7 @@ class GrowthBookJsonUtils {
     // region Initialization
 
     private static GrowthBookJsonUtils instance = null;
+    private static final Logger logger = Logger.getLogger(GrowthBookJsonUtils.class.getName());
 
     private GrowthBookJsonUtils() {
         GsonBuilder gsonBuilder = new GsonBuilder();
@@ -145,7 +148,7 @@ class GrowthBookJsonUtils {
 
             return DataType.UNKNOWN;
         } catch (RuntimeException e) {
-            e.printStackTrace();
+            logger.log(Level.SEVERE, "Error getting element type " + element, e);
             return DataType.UNKNOWN;
         }
     }
@@ -172,7 +175,7 @@ class GrowthBookJsonUtils {
 
             return GrowthBookJsonUtils.getInstance().gson.toJsonTree(object);
         } catch (Exception e) {
-            e.printStackTrace();
+            logger.log(Level.SEVERE, "Error getting json element for object " + object, e);
             return null;
         }
     }

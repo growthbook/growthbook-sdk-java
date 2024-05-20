@@ -10,6 +10,7 @@ import lombok.Getter;
 import javax.annotation.Nullable;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.logging.Logger;
 
 /**
  * Context object passed into the GrowthBook constructor.
@@ -57,7 +58,7 @@ public class GBContext {
                 String decrypted = DecryptionUtils.decrypt(featuresJson, encryptionKey);
                 this.featuresJson = decrypted.trim();
             } catch (DecryptionUtils.DecryptionException e) {
-                e.printStackTrace();
+                logger.throwing(GBContext.class.getName(), "contractor", e);
             }
         } else if (featuresJson != null) {
             // Use features
@@ -72,6 +73,8 @@ public class GBContext {
         this.trackingCallback = trackingCallback;
         this.featureUsageCallback = featureUsageCallback;
     }
+
+    private static final Logger logger = Logger.getLogger(GBContext.class.getName());
 
     @Nullable
     @Getter(AccessLevel.PACKAGE)
@@ -177,7 +180,7 @@ public class GBContext {
         try {
             return GrowthBookJsonUtils.getInstance().gson.fromJson(featuresJsonString, JsonObject.class);
         } catch (Exception e) {
-            e.printStackTrace();
+            logger.throwing(GBContext.class.getName(), "transformFeatures", e);
             return null;
         }
     }
@@ -195,7 +198,7 @@ public class GBContext {
 
             return GrowthBookJsonUtils.getInstance().gson.fromJson(attributesJsonString, JsonObject.class);
         } catch (Exception e) {
-            e.printStackTrace();
+            logger.throwing(GBContext.class.getName(), "transformAttributes", e);
             return new JsonObject();
         }
     }

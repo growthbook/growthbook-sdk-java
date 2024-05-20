@@ -14,11 +14,15 @@ import java.security.InvalidAlgorithmParameterException;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.util.Base64;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  * INTERNAL: This class is used internally to decrypt an encrypted features response
  */
 class DecryptionUtils {
+    private static final Logger logger = Logger.getLogger(DecryptionUtils.class.getName());
+
 
     public static class DecryptionException extends Exception {
         public DecryptionException(String errorMessage) {
@@ -65,7 +69,8 @@ class DecryptionUtils {
             | IllegalArgumentException
             | BadPaddingException e
         ) {
-            e.printStackTrace();
+            logger.log(Level.SEVERE, "Error during decryption", e);
+
             throw new DecryptionException(e.getMessage());
         }
     }
