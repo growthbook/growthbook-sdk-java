@@ -265,7 +265,8 @@ class ConditionEvaluator implements IConditionEvaluator {
 
             case GT:
                 if (actual == null || DataType.NULL.equals(attributeDataType)) {
-                    return 0.0 > expected.getAsDouble();
+                    return (!expected.isJsonPrimitive() || expected.getAsJsonPrimitive().isNumber())
+                        && 0.0 > expected.getAsDouble();
                 }
                 if (actual.getAsJsonPrimitive().isNumber()) {
                     return actual.getAsNumber().floatValue() > expected.getAsNumber().floatValue();
@@ -277,7 +278,8 @@ class ConditionEvaluator implements IConditionEvaluator {
 
             case GTE:
                 if (actual == null || DataType.NULL.equals(attributeDataType)) {
-                    return 0.0 >= expected.getAsDouble();
+                    return (!expected.isJsonPrimitive() || expected.getAsJsonPrimitive().isNumber())
+                        && 0.0 >= expected.getAsDouble();
                 }
                 if (actual.getAsJsonPrimitive().isNumber()) {
                     return actual.getAsNumber().floatValue() >= expected.getAsNumber().floatValue();
@@ -289,7 +291,8 @@ class ConditionEvaluator implements IConditionEvaluator {
 
             case LT:
                 if (actual == null || DataType.NULL.equals(attributeDataType)) {
-                    return 0.0 < expected.getAsDouble();
+                    return (!expected.isJsonPrimitive() || expected.getAsJsonPrimitive().isNumber())
+                        && 0.0 < expected.getAsDouble();
                 }
                 if (actual.getAsString().toLowerCase().matches("\\d+")) {
                     return Double.parseDouble(actual.getAsString()) < expected.getAsDouble();
@@ -304,7 +307,8 @@ class ConditionEvaluator implements IConditionEvaluator {
 
             case LTE:
                 if (actual == null || DataType.NULL.equals(attributeDataType)) {
-                    return 0.0 <= expected.getAsDouble();
+                    return (!expected.isJsonPrimitive() || expected.getAsJsonPrimitive().isNumber())
+                        && 0.0 <= expected.getAsDouble();
                 }
                 if (actual.getAsJsonPrimitive().isNumber()) {
                     return actual.getAsNumber().floatValue() <= expected.getAsNumber().floatValue();

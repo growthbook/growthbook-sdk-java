@@ -1953,7 +1953,7 @@
       "$nor - pass with null value for age",
       {"$nor": [{"name": "john"}, {"age": {"$lt": 30}}]},
       {"name": "jim", "age": null},
-      true
+      false
     ],
     [
       "$nor - fail both",
