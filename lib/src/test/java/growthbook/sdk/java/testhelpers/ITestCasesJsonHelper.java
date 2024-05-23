@@ -18,4 +18,5 @@ interface ITestCasesJsonHelper {
     JsonArray versionCompareTestCases_eq();
     JsonArray versionCompareTestCases_lt();
     JsonArray versionCompareTestCases_gt();
+    JsonArray getStickyBucketTestCases();
 }

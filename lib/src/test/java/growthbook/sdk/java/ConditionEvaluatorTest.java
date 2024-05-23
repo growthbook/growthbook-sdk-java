@@ -59,7 +59,7 @@ class ConditionEvaluatorTest {
 
         for (int i = 0; i < testCases.size(); i++) {
             resetErrorOutputStream();
-            // Run only test at index i
+
             JsonElement jsonElement = testCases.get(i);
             JsonArray testCase = (JsonArray) jsonElement;
             String testDescription = testCase.get(0).getAsString();
@@ -84,6 +84,7 @@ class ConditionEvaluatorTest {
                 failedTests.add(testDescription);
             }
         }
+
         System.out.printf("\n\n\nFailed tests = %s / %s . Failing = %s", failedTests.size(), testCases.size(), failedTests);
         System.out.printf("\n\n\nFailing indexes = %s", failingIndexes);
 

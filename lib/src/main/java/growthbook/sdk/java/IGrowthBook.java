@@ -1,5 +1,9 @@
 package growthbook.sdk.java;
 
+import growthbook.sdk.java.stickyBucketing.StickyBucketService;
+
+import javax.annotation.Nullable;
+
 interface IGrowthBook {
 
     <ValueType>ExperimentResult<ValueType> run(Experiment<ValueType> experiment);
@@ -24,6 +28,10 @@ interface IGrowthBook {
      * @param attributesJsonString user attributes JSON
      */
     void setAttributes(String attributesJsonString);
+
+    void setOwnStickyBucketService(@Nullable StickyBucketService stickyBucketService);
+
+    void setInMemoryStickyBucketService();
 
     Boolean isOn(String featureKey);
     Boolean isOff(String featureKey);
@@ -92,6 +100,8 @@ interface IGrowthBook {
     // region Conditions
 
     Boolean evaluateCondition(String attributesJsonString, String conditionJsonString);
+
+    void featuresAPIModelSuccessfully(String featuresDataModel);
 
     // endregion Conditions
 

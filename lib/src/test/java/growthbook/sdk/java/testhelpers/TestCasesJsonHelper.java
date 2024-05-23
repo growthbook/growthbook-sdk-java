@@ -42,7 +42,7 @@ public class TestCasesJsonHelper implements ITestCasesJsonHelper {
 
     @Override
     public JsonArray featureTestCases() {
-        return this.testCases.get("evalFeature").getAsJsonArray();
+        return this.testCases.get("feature").getAsJsonArray();
     }
 
     @Override
@@ -83,6 +83,11 @@ public class TestCasesJsonHelper implements ITestCasesJsonHelper {
     @Override
     public JsonArray getQueryStringOverrideTestCases() {
         return this.testCases.get("getQueryStringOverride").getAsJsonArray();
+    }
+
+    @Override
+    public JsonArray getStickyBucketTestCases() {
+        return this.testCases.get("stickyBucket").getAsJsonArray();
     }
 
     // region Initialization

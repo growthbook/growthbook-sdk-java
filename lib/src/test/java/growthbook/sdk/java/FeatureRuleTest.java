@@ -41,6 +41,10 @@ class FeatureRuleTest {
                 null,
                 null,
                 null,
+                null,
+                null,
+                null,
+                null,
                 null
         );
 
