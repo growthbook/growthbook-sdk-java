@@ -5,6 +5,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import javax.annotation.Nullable;
+import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 
 /**
@@ -13,6 +14,8 @@ import com.google.gson.JsonObject;
 class ExperimentEvaluator implements IExperimentEvaluator {
 
     private final ConditionEvaluator conditionEvaluator = new ConditionEvaluator();
+    private final GrowthBookJsonUtils jsonUtils = GrowthBookJsonUtils.getInstance();
+
 
     @Override
     public <ValueType> ExperimentResult<ValueType> evaluateExperiment(Experiment<ValueType> experiment,
@@ -127,10 +130,10 @@ class ExperimentEvaluator implements IExperimentEvaluator {
             }
 
             // Evaluate the condition JSON
-            String jsonStringCondition = experiment.getConditionJson();
+            JsonElement jsonStringCondition = experiment.getConditionJson();
             if (jsonStringCondition != null) {
-                String attributesJson = GrowthBookJsonUtils.getInstance().gson.toJson(attributes);
-                Boolean shouldEvaluate = conditionEvaluator.evaluateCondition(attributesJson, jsonStringCondition);
+                String attributesJson = jsonUtils.gson.toJson(attributes);
+                Boolean shouldEvaluate = conditionEvaluator.evaluateCondition(attributesJson, jsonStringCondition.toString());
 
                 // If experiment.condition is set and the condition evaluates to false,
                 // return immediately (not in experiment, variationId 0)
@@ -138,7 +141,45 @@ class ExperimentEvaluator implements IExperimentEvaluator {
                     return getExperimentResult(context, experiment, -1, false, featureId, null, null, attributeOverrides);
                 }
             }
+
+            // 10. Exclude if prerequisites are not met
+            List<ParentCondition> parenConditions = experiment.getParentConditions();
+            if (parenConditions != null) {
+                for (ParentCondition parentCondition : parenConditions) {
+                    FeatureResult<ValueType> parentResult = new FeatureEvaluator().evaluateFeature(
+                            parentCondition.getId(),
+                            context,
+                            null,
+                            jsonUtils.gson.fromJson(
+                                    parentCondition.getCondition(),
+                                    JsonObject.class
+                            )
+                    );
+
+                    if (parentResult.source.equals(FeatureResultSource.CYCLIC_PREREQUISITE)) {
+                        return getExperimentResult(context, experiment, -1, false, featureId, null, null, attributeOverrides);
+                    }
+
+                    Map<String, Object> evalObj = new HashMap<>();
+                    if (parentResult.getValue() != null) {
+                        evalObj.put("value", parentResult.getValue());
+                    }
+                    String attributesJson = GrowthBookJsonUtils.getInstance().gson.toJson(evalObj);
+
+                    boolean evalCondition = conditionEvaluator.evaluateCondition(
+                            attributesJson,
+                            parentCondition.getCondition().toString()
+                    );
+
+                    // blocking prerequisite eval failed: feature evaluation fails
+                    if (!evalCondition) {
+                        System.out.println("Feature blocked by prerequisite");
+                        return getExperimentResult(context, experiment, -1, false, featureId, null, null, attributeOverrides);
+                    }
+                }
+            }
         }
+
 
         String seed = experiment.getSeed();
         if (seed == null) {

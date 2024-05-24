@@ -2,7 +2,6 @@ package growthbook.sdk.java;
 
 import lombok.Builder;
 import lombok.Getter;
-
 import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.List;
@@ -22,9 +21,10 @@ public class Filter {
 
     /**
      * Object used for mutual exclusion and filtering users out of experiments based on random hashes.
-     * @param seed The seed used in the hash
-     * @param ranges Array of ranges that are included
-     * @param attribute The attribute to use (default: "id")
+     *
+     * @param seed        The seed used in the hash
+     * @param ranges      Array of ranges that are included
+     * @param attribute   The attribute to use (default: "id")
      * @param hashVersion The hash version to use (default: 2)
      */
     @Builder

@@ -1,11 +1,13 @@
 package growthbook.sdk.java;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import growthbook.sdk.java.testhelpers.TestCasesJsonHelper;
 import org.junit.jupiter.api.Test;
-
-import static org.junit.jupiter.api.Assertions.*;
 
 class DecryptionUtilsTest {
     final TestCasesJsonHelper helper = TestCasesJsonHelper.getInstance();

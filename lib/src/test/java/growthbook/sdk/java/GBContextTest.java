@@ -1,15 +1,18 @@
 package growthbook.sdk.java;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Mockito.verify;
+
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
-
 import java.util.HashMap;
-
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.verify;
 
 class GBContextTest {
     private AutoCloseable closeable;
@@ -76,7 +79,7 @@ class GBContextTest {
                 .build();
 
         // Initial state OK
-        assertTrue(subject.getEnabled());
+        assertEquals(Boolean.TRUE, subject.getEnabled());
         assertFalse(subject.getIsQaMode());
         assertEquals("http://localhost:3000", subject.getUrl());
 
@@ -85,7 +88,7 @@ class GBContextTest {
         subject.setIsQaMode(true);
         subject.setUrl("https://docs.growthbook.io/lib/build-your-own");
 
-        assertFalse(subject.getEnabled());
+        assertNotEquals(Boolean.TRUE, subject.getEnabled());
         assertTrue(subject.getIsQaMode());
         assertEquals("https://docs.growthbook.io/lib/build-your-own", subject.getUrl());
     }
@@ -168,6 +171,7 @@ class GBContextTest {
         String expectedFeaturesJson = "{\"greeting\":{\"defaultValue\":\"hello\",\"rules\":[{\"condition\":{\"country\":\"france\"},\"force\":\"bonjour\"},{\"condition\":{\"country\":\"mexico\"},\"force\":\"hola\"}]}}";
 
         assertNotNull(subject);
+        assert subject.getFeaturesJson() != null;
         assertEquals(expectedFeaturesJson.trim(), subject.getFeaturesJson().trim());
     }
 

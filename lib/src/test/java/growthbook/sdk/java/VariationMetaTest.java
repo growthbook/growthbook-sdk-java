@@ -1,18 +1,18 @@
 package growthbook.sdk.java;
 
-import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import static org.junit.jupiter.api.Assertions.*;
+import org.junit.jupiter.api.Test;
 
 class VariationMetaTest {
     @Test
     void canBeBuilt() {
         VariationMeta subject = VariationMeta
-            .builder()
-            .key("my-key")
-            .name("my-name")
-            .passThrough(true)
-            .build();
+                .builder()
+                .key("my-key")
+                .name("my-name")
+                .passThrough(true)
+                .build();
 
         assertEquals("my-key", subject.getKey());
         assertEquals("my-name", subject.getName());

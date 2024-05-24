@@ -3,8 +3,11 @@ package growthbook.sdk.java.testhelpers;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
 import com.sun.net.httpserver.HttpServer;
-import growthbook.sdk.java.*;
-
+import growthbook.sdk.java.FeatureFetchException;
+import growthbook.sdk.java.FeatureRefreshStrategy;
+import growthbook.sdk.java.GBContext;
+import growthbook.sdk.java.GBFeaturesRepository;
+import growthbook.sdk.java.GrowthBook;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.net.InetSocketAddress;
@@ -16,10 +19,10 @@ public class SSETestServer {
     public static void main(String[] args) throws IOException, FeatureFetchException {
         // Unencrypted
         GBFeaturesRepository featuresRepository = GBFeaturesRepository.builder()
-            .apiHost("https://cdn.growthbook.io")
-            .clientKey("sdk-pGmC6LrsiUoEUcpZ")
-            .refreshStrategy(FeatureRefreshStrategy.SERVER_SENT_EVENTS)
-            .build();
+                .apiHost("https://cdn.growthbook.io")
+                .clientKey("sdk-pGmC6LrsiUoEUcpZ")
+                .refreshStrategy(FeatureRefreshStrategy.SERVER_SENT_EVENTS)
+                .build();
 
         // Encrypted
 //        GBFeaturesRepository featuresRepository = GBFeaturesRepository.builder()
@@ -50,8 +53,8 @@ public class SSETestServer {
         public void handle(HttpExchange exchange) throws IOException {
             // Setup GrowthBook SDK
             GBContext context = GBContext.builder()
-                .featuresJson(featuresRepository.getFeaturesJson())
-                .build();
+                    .featuresJson(featuresRepository.getFeaturesJson())
+                    .build();
             GrowthBook growthBook = new GrowthBook(context);
 
             // Get a feature value

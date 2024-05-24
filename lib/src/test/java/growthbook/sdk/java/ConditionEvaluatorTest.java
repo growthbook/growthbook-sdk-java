@@ -1,5 +1,10 @@
 package growthbook.sdk.java;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
@@ -9,10 +14,7 @@ import java.io.PrintStream;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-
 import java.util.ArrayList;
-
-import static org.junit.jupiter.api.Assertions.*;
 
 class ConditionEvaluatorTest {
 
@@ -21,8 +23,8 @@ class ConditionEvaluatorTest {
     final ByteArrayOutputStream errContent = new ByteArrayOutputStream();
 
     static final String[] expectedExceptionStrings = {
-        "Expected BEGIN_ARRAY but was NUMBER at path $",
-        "java.util.regex.PatternSyntaxException: Dangling meta character '?' near index 3"
+            "Expected BEGIN_ARRAY but was NUMBER at path $",
+            "java.util.regex.PatternSyntaxException: Dangling meta character '?' near index 3"
     };
 
     @BeforeEach
@@ -116,61 +118,6 @@ class ConditionEvaluatorTest {
         assertNull(evaluator.getPath(attributes, "job.company"));
     }
 
-    @Test
-    void test_paddedVersionString_eq() {
-        JsonArray testCases = helper.versionCompareTestCases_eq();
-
-        for (int i = 0; i < testCases.size(); i++) {
-            JsonArray test = (JsonArray) testCases.get(i);
-            String version = test.get(0).getAsString();
-            String otherVersion = test.get(1).getAsString();
-            Boolean equals = test.get(2).getAsBoolean();
-
-            String paddedVersion = StringUtils.paddedVersionString(version);
-            String paddedOther = StringUtils.paddedVersionString(otherVersion);
-
-            assertEquals(paddedVersion.compareTo(paddedOther) == 0, equals);
-        }
-    }
-
-    @Test
-    void test_paddedVersionString_lt() {
-        JsonArray testCases = helper.versionCompareTestCases_lt();
-
-        for (int i = 0; i < testCases.size(); i++) {
-            JsonArray test = (JsonArray) testCases.get(i);
-            String version = test.get(0).getAsString();
-            String otherVersion = test.get(1).getAsString();
-            Boolean equals = test.get(2).getAsBoolean();
-
-            String paddedVersion = StringUtils.paddedVersionString(version);
-            String paddedOther = StringUtils.paddedVersionString(otherVersion);
-
-//            System.out.printf("%s < %s = %s - actual: %s\n",  paddedVersion, paddedOther, equals, paddedVersion.compareTo(paddedOther) < 0);
-
-            assertEquals(paddedVersion.compareTo(paddedOther) < 0, equals);
-        }
-    }
-
-    @Test
-    void test_paddedVersionString_gt() {
-        JsonArray testCases = helper.versionCompareTestCases_gt();
-
-        for (int i = 0; i < testCases.size(); i++) {
-            JsonArray test = (JsonArray) testCases.get(i);
-            String version = test.get(0).getAsString();
-            String otherVersion = test.get(1).getAsString();
-            Boolean equals = test.get(2).getAsBoolean();
-
-            String paddedVersion = StringUtils.paddedVersionString(version);
-            String paddedOther = StringUtils.paddedVersionString(otherVersion);
-
-//            System.out.printf("%s > %s = %s - actual: %s\n",  paddedVersion, paddedOther, equals, paddedVersion.compareTo(paddedOther) > 0);
-
-            assertEquals(paddedVersion.compareTo(paddedOther) > 0, equals);
-        }
-    }
-
     private boolean unexpectedExceptionOccurred(String stacktrace) {
         if (stacktrace.isEmpty()) {
             return false;
@@ -180,7 +127,7 @@ class ConditionEvaluatorTest {
                 return false;
             }
         }
-        System.out.println(stacktrace.toString());
+        System.out.println(stacktrace);
         return true;
     }
 

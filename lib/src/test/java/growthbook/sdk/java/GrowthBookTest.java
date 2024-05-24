@@ -3,6 +3,16 @@
  */
 package growthbook.sdk.java;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
@@ -13,14 +23,10 @@ import growthbook.sdk.java.testhelpers.TestCasesJsonHelper;
 import growthbook.sdk.java.testhelpers.TestContext;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
-
 import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Objects;
-
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.*;
 
 class GrowthBookTest {
 
@@ -129,8 +135,8 @@ class GrowthBookTest {
                 System.out.printf("\n  Actual result = %s", result);
 
                 System.out.printf(
-                    "\n\n valuePasses = %s, onPasses = %s, offPasses = %s, sourcePasses = %s, hashValuePasses = %s, keyPasses = %s, bucketPasses = %s",
-                    valuePasses, onPasses, offPasses, sourcePasses, hashValuePasses, keyPasses, bucketPasses
+                        "\n\n valuePasses = %s, onPasses = %s, offPasses = %s, sourcePasses = %s, hashValuePasses = %s, keyPasses = %s, bucketPasses = %s",
+                        valuePasses, onPasses, offPasses, sourcePasses, hashValuePasses, keyPasses, bucketPasses
                 );
 //                System.out.println("\n\n-------------------------------");
 
@@ -152,10 +158,10 @@ class GrowthBookTest {
         FeatureUsageCallback featureUsageCallback = mock(FeatureUsageCallback.class);
         String features = TestCasesJsonHelper.getInstance().getDemoFeaturesJson();
         GBContext context = GBContext
-            .builder()
-            .featuresJson(features)
-            .featureUsageCallback(featureUsageCallback)
-            .build();
+                .builder()
+                .featuresJson(features)
+                .featureUsageCallback(featureUsageCallback)
+                .build();
         GrowthBook subject = new GrowthBook(context);
 
         String value = subject.getFeatureValue("h1-title", "unknown feature key");
@@ -209,7 +215,7 @@ class GrowthBookTest {
         for (int i = 0; i < testCases.size(); i++) {
 
             JsonArray itemArray = (JsonArray) testCases.get(i);
-            if (itemArray instanceof JsonArray) {
+            if (itemArray != null) {
                 String testDescription = itemArray.get(0).getAsString();
 
                 JsonElement featuresJson = itemArray.get(1).getAsJsonObject().get("features");
@@ -242,8 +248,7 @@ class GrowthBookTest {
                     JsonObject experimentObject = jsonUtils.gson.fromJson(experimentElement.getAsJsonObject(), JsonObject.class);
                     JsonElement conditionElement = experimentObject.get("condition");
                     if (conditionElement != null) {
-                        String conditionJson = conditionElement.toString();
-                        experiment.setConditionJson(conditionJson);
+                        experiment.setConditionJson(conditionElement);
                     }
                 }
 
@@ -297,8 +302,10 @@ class GrowthBookTest {
                 .build();
         GrowthBook subject = new GrowthBook(context);
 
-        assertTrue(subject.isOn(featureKey));
-        assertFalse(subject.isOff(featureKey));
+        FeatureResult feature = subject.evalFeature(featureKey, Object.class);
+
+        assertTrue(feature.isOn());
+        assertFalse(feature.isOff());
     }
 
     @Test
@@ -642,12 +649,12 @@ class GrowthBookTest {
         String url = "http://localhost:8080/url-feature-force?gb~meal_overrides_gluten_free=%7B%22meal_type%22%3A%20%22gf%22%2C%20%22dessert%22%3A%20%22French%20Vanilla%20Ice%20Cream%22%7D&gb~dark_mode=true&gb~donut_price=3.33&gb~banner_text=Hello%2C%20everyone!%20I%20hope%20you%20are%20all%20doing%20well!";
 
         GBContext context = GBContext
-            .builder()
-            .featuresJson(featuresJson)
-            .attributesJson(attributes)
-            .url(url)
-            .allowUrlOverrides(true)
-            .build();
+                .builder()
+                .featuresJson(featuresJson)
+                .attributesJson(attributes)
+                .url(url)
+                .allowUrlOverrides(true)
+                .build();
         GrowthBook subject = new GrowthBook(context);
 
         Boolean result = subject.getFeatureValue("dark_mode", false);
@@ -662,12 +669,12 @@ class GrowthBookTest {
         String url = "http://localhost:8080/url-feature-force?gb~meal_overrides_gluten_free=%7B%22meal_type%22%3A%20%22gf%22%2C%20%22dessert%22%3A%20%22French%20Vanilla%20Ice%20Cream%22%7D&gb~dark_mode=on&gb~donut_price=3.33&gb~banner_text=Hello%2C%20everyone!%20I%20hope%20you%20are%20all%20doing%20well!";
 
         GBContext context = GBContext
-            .builder()
-            .featuresJson(featuresJson)
-            .attributesJson(attributes)
-            .url(url)
-            .allowUrlOverrides(true)
-            .build();
+                .builder()
+                .featuresJson(featuresJson)
+                .attributesJson(attributes)
+                .url(url)
+                .allowUrlOverrides(true)
+                .build();
         GrowthBook subject = new GrowthBook(context);
 
         Boolean result = subject.getFeatureValue("dark_mode", false);
@@ -682,12 +689,12 @@ class GrowthBookTest {
         String url = "http://localhost:8080/url-feature-force?gb~meal_overrides_gluten_free=%7B%22meal_type%22%3A%20%22gf%22%2C%20%22dessert%22%3A%20%22French%20Vanilla%20Ice%20Cream%22%7D&gb~dark_mode=1&gb~donut_price=3.33&gb~banner_text=Hello%2C%20everyone!%20I%20hope%20you%20are%20all%20doing%20well!";
 
         GBContext context = GBContext
-            .builder()
-            .featuresJson(featuresJson)
-            .attributesJson(attributes)
-            .url(url)
-            .allowUrlOverrides(true)
-            .build();
+                .builder()
+                .featuresJson(featuresJson)
+                .attributesJson(attributes)
+                .url(url)
+                .allowUrlOverrides(true)
+                .build();
         GrowthBook subject = new GrowthBook(context);
 
         Boolean result = subject.getFeatureValue("dark_mode", false);
@@ -702,12 +709,12 @@ class GrowthBookTest {
         String url = "http://localhost:8080/url-feature-force?gb~meal_overrides_gluten_free=%7B%22meal_type%22%3A%20%22gf%22%2C%20%22dessert%22%3A%20%22French%20Vanilla%20Ice%20Cream%22%7D&gb~dark_mode=false&gb~donut_price=3.33&gb~banner_text=Hello%2C%20everyone!%20I%20hope%20you%20are%20all%20doing%20well!";
 
         GBContext context = GBContext
-            .builder()
-            .featuresJson(featuresJson)
-            .attributesJson(attributes)
-            .url(url)
-            .allowUrlOverrides(true)
-            .build();
+                .builder()
+                .featuresJson(featuresJson)
+                .attributesJson(attributes)
+                .url(url)
+                .allowUrlOverrides(true)
+                .build();
         GrowthBook subject = new GrowthBook(context);
 
         Boolean result = subject.getFeatureValue("dark_mode", true);
@@ -722,12 +729,12 @@ class GrowthBookTest {
         String url = "http://localhost:8080/url-feature-force?gb~meal_overrides_gluten_free=%7B%22meal_type%22%3A%20%22gf%22%2C%20%22dessert%22%3A%20%22French%20Vanilla%20Ice%20Cream%22%7D&gb~dark_mode=off&gb~donut_price=3.33&gb~banner_text=Hello%2C%20everyone!%20I%20hope%20you%20are%20all%20doing%20well!";
 
         GBContext context = GBContext
-            .builder()
-            .featuresJson(featuresJson)
-            .attributesJson(attributes)
-            .url(url)
-            .allowUrlOverrides(true)
-            .build();
+                .builder()
+                .featuresJson(featuresJson)
+                .attributesJson(attributes)
+                .url(url)
+                .allowUrlOverrides(true)
+                .build();
         GrowthBook subject = new GrowthBook(context);
 
         Boolean result = subject.getFeatureValue("dark_mode", true);
@@ -742,12 +749,12 @@ class GrowthBookTest {
         String url = "http://localhost:8080/url-feature-force?gb~meal_overrides_gluten_free=%7B%22meal_type%22%3A%20%22gf%22%2C%20%22dessert%22%3A%20%22French%20Vanilla%20Ice%20Cream%22%7D&gb~dark_mode=0&gb~donut_price=3.33&gb~banner_text=Hello%2C%20everyone!%20I%20hope%20you%20are%20all%20doing%20well!";
 
         GBContext context = GBContext
-            .builder()
-            .featuresJson(featuresJson)
-            .attributesJson(attributes)
-            .url(url)
-            .allowUrlOverrides(true)
-            .build();
+                .builder()
+                .featuresJson(featuresJson)
+                .attributesJson(attributes)
+                .url(url)
+                .allowUrlOverrides(true)
+                .build();
         GrowthBook subject = new GrowthBook(context);
 
         Boolean result = subject.getFeatureValue("dark_mode", true);
@@ -762,12 +769,12 @@ class GrowthBookTest {
         String url = "http://localhost:8080/url-feature-force?gb~meal_overrides_gluten_free=%7B%22meal_type%22%3A%20%22gf%22%2C%20%22dessert%22%3A%20%22French%20Vanilla%20Ice%20Cream%22%7D&gb~dark_mode=true&gb~donut_price=2&gb~banner_text=Hello%2C%20everyone!%20I%20hope%20you%20are%20all%20doing%20well!";
 
         GBContext context = GBContext
-            .builder()
-            .featuresJson(featuresJson)
-            .attributesJson(attributes)
-            .url(url)
-            .allowUrlOverrides(true)
-            .build();
+                .builder()
+                .featuresJson(featuresJson)
+                .attributesJson(attributes)
+                .url(url)
+                .allowUrlOverrides(true)
+                .build();
         GrowthBook subject = new GrowthBook(context);
 
         Integer result = subject.getFeatureValue("donut_price", 999);
@@ -781,12 +788,12 @@ class GrowthBookTest {
         String attributes = "{}";
         String url = "http://localhost:8080/url-feature-force?gb~meal_overrides_gluten_free=%7B%22meal_type%22%3A%20%22gf%22%2C%20%22dessert%22%3A%20%22French%20Vanilla%20Ice%20Cream%22%7D&gb~dark_mode=true&gb~donut_price=3.33&gb~banner_text=Hello%2C%20everyone!%20I%20hope%20you%20are%20all%20doing%20well!";
         GBContext context = GBContext
-            .builder()
-            .featuresJson(featuresJson)
-            .attributesJson(attributes)
-            .url(url)
-            .allowUrlOverrides(true)
-            .build();
+                .builder()
+                .featuresJson(featuresJson)
+                .attributesJson(attributes)
+                .url(url)
+                .allowUrlOverrides(true)
+                .build();
         GrowthBook subject = new GrowthBook(context);
 
         Float result = subject.getFeatureValue("donut_price", 9999f);
@@ -800,12 +807,12 @@ class GrowthBookTest {
         String attributes = "{}";
         String url = "http://localhost:8080/url-feature-force?gb~meal_overrides_gluten_free=%7B%22meal_type%22%3A%20%22gf%22%2C%20%22dessert%22%3A%20%22French%20Vanilla%20Ice%20Cream%22%7D&gb~dark_mode=true&gb~donut_price=3.33&gb~banner_text=Hello%2C%20everyone!%20I%20hope%20you%20are%20all%20doing%20well!";
         GBContext context = GBContext
-            .builder()
-            .featuresJson(featuresJson)
-            .attributesJson(attributes)
-            .url(url)
-            .allowUrlOverrides(true)
-            .build();
+                .builder()
+                .featuresJson(featuresJson)
+                .attributesJson(attributes)
+                .url(url)
+                .allowUrlOverrides(true)
+                .build();
         GrowthBook subject = new GrowthBook(context);
 
         String result = subject.getFeatureValue("banner_text", "???");
@@ -820,12 +827,12 @@ class GrowthBookTest {
         String url = "http://localhost:8080/url-feature-force?gb~meal_overrides_gluten_free=%7B%22meal_type%22%3A%20%22gf%22%2C%20%22dessert%22%3A%20%22French%20Vanilla%20Ice%20Cream%22%7D&gb~dark_mode=true&gb~donut_price=3.33&gb~banner_text=Hello%2C%20everyone!%20I%20hope%20you%20are%20all%20doing%20well!";
 
         GBContext context = GBContext
-            .builder()
-            .featuresJson(featuresJson)
-            .attributesJson(attributes)
-            .url(url)
-            .allowUrlOverrides(true)
-            .build();
+                .builder()
+                .featuresJson(featuresJson)
+                .attributesJson(attributes)
+                .url(url)
+                .allowUrlOverrides(true)
+                .build();
         GrowthBook subject = new GrowthBook(context);
 
         MealOrder emptyMealOrder = new MealOrder(MealType.STANDARD, "Donut");
@@ -844,12 +851,12 @@ class GrowthBookTest {
         String url = "http://localhost:8080/url-feature-force?gb~meal_overrides_gluten_free=%7B%22meal_type%22%3A%20%22gf%22%2C%20%22dessert%22%3A%20%22French%20Vanilla%20Ice%20Cream%22%7D&gb~dark_mode=true&gb~donut_price=3.33&gb~banner_text=Hello%2C%20everyone!%20I%20hope%20you%20are%20all%20doing%20well!";
 
         GBContext context = GBContext
-            .builder()
-            .featuresJson(featuresJson)
-            .attributesJson(attributes)
-            .url(url)
-            .allowUrlOverrides(true)
-            .build();
+                .builder()
+                .featuresJson(featuresJson)
+                .attributesJson(attributes)
+                .url(url)
+                .allowUrlOverrides(true)
+                .build();
         GrowthBook subject = new GrowthBook(context);
 
         String resultAsString = (String) subject.getFeatureValue("meal_overrides_gluten_free", "{\"meal_type\": \"standard\", \"dessert\": \"Donut\"}");
@@ -867,12 +874,12 @@ class GrowthBookTest {
         String url = "http://localhost:8080/url-feature-force?gb~meal_overrides_gluten_free=%7B%22meal_type%22%3A%20%22gf%22%2C%20%22dessert%22%3A%20%22French%20Vanilla%20Ice%20Cream%22%7D&gb~dark_mode=true&gb~donut_price=3.33&gb~banner_text=Hello%2C%20everyone!%20I%20hope%20you%20are%20all%20doing%20well!";
 
         GBContext context = GBContext
-            .builder()
-            .featuresJson(featuresJson)
-            .attributesJson(attributes)
-            .url(url)
-            .allowUrlOverrides(true)
-            .build();
+                .builder()
+                .featuresJson(featuresJson)
+                .attributesJson(attributes)
+                .url(url)
+                .allowUrlOverrides(true)
+                .build();
         GrowthBook subject = new GrowthBook(context);
 
         // We try to deserialize an unsupported class from the URL but it cannot deserialize properly, so we get the default value
@@ -924,7 +931,8 @@ class GrowthBookTest {
     }
 
     static class GBTestingFoo {
-        @SerializedName("foo") String foo = "FOO!";
+        @SerializedName("foo")
+        String foo = "FOO!";
 
         @Override
         public boolean equals(Object obj) {
@@ -945,12 +953,12 @@ class GrowthBookTest {
         String attributes = "{}";
         String url = "http://localhost:8080/url-feature-force?gb~meal_overrides_gluten_free=%7B%22meal_type%22%3A%20%22gf%22%2C%20%22dessert%22%3A%20%22French%20Vanilla%20Ice%20Cream%22%7D&gb~dark_mode=true&gb~donut_price=3.33&gb~banner_text=Hello%2C%20everyone!%20I%20hope%20you%20are%20all%20doing%20well!";
         GBContext context = GBContext
-            .builder()
-            .featuresJson(featuresJson)
-            .attributesJson(attributes)
-            .url(url)
-            .allowUrlOverrides(true)
-            .build();
+                .builder()
+                .featuresJson(featuresJson)
+                .attributesJson(attributes)
+                .url(url)
+                .allowUrlOverrides(true)
+                .build();
         GrowthBook subject = new GrowthBook(context);
 
         FeatureResult<Boolean> result = subject.evalFeature("dark_mode", Boolean.class);
@@ -965,12 +973,12 @@ class GrowthBookTest {
         String attributes = "{}";
         String url = "http://localhost:8080/url-feature-force?gb~meal_overrides_gluten_free=%7B%22meal_type%22%3A%20%22gf%22%2C%20%22dessert%22%3A%20%22French%20Vanilla%20Ice%20Cream%22%7D&gb~dark_mode=true&gb~donut_price=3.33&gb~banner_text=Hello%2C%20everyone!%20I%20hope%20you%20are%20all%20doing%20well!";
         GBContext context = GBContext
-            .builder()
-            .featuresJson(featuresJson)
-            .attributesJson(attributes)
-            .url(url)
-            .allowUrlOverrides(true)
-            .build();
+                .builder()
+                .featuresJson(featuresJson)
+                .attributesJson(attributes)
+                .url(url)
+                .allowUrlOverrides(true)
+                .build();
         GrowthBook subject = new GrowthBook(context);
 
         FeatureResult<String> result = subject.evalFeature("banner_text", String.class);
@@ -985,12 +993,12 @@ class GrowthBookTest {
         String attributes = "{}";
         String url = "http://localhost:8080/url-feature-force?gb~meal_overrides_gluten_free=%7B%22meal_type%22%3A%20%22gf%22%2C%20%22dessert%22%3A%20%22French%20Vanilla%20Ice%20Cream%22%7D&gb~dark_mode=true&gb~donut_price=3.33&gb~banner_text=Hello%2C%20everyone!%20I%20hope%20you%20are%20all%20doing%20well!";
         GBContext context = GBContext
-            .builder()
-            .featuresJson(featuresJson)
-            .attributesJson(attributes)
-            .url(url)
-            .allowUrlOverrides(true)
-            .build();
+                .builder()
+                .featuresJson(featuresJson)
+                .attributesJson(attributes)
+                .url(url)
+                .allowUrlOverrides(true)
+                .build();
         GrowthBook subject = new GrowthBook(context);
 
         FeatureResult<Float> result = subject.evalFeature("donut_price", Float.class);
@@ -1005,12 +1013,12 @@ class GrowthBookTest {
         String attributes = "{}";
         String url = "http://localhost:8080/url-feature-force?gb~meal_overrides_gluten_free=%7B%22meal_type%22%3A%20%22gf%22%2C%20%22dessert%22%3A%20%22French%20Vanilla%20Ice%20Cream%22%7D&gb~dark_mode=true&gb~donut_price=4&gb~banner_text=Hello%2C%20everyone!%20I%20hope%20you%20are%20all%20doing%20well!";
         GBContext context = GBContext
-            .builder()
-            .featuresJson(featuresJson)
-            .attributesJson(attributes)
-            .url(url)
-            .allowUrlOverrides(true)
-            .build();
+                .builder()
+                .featuresJson(featuresJson)
+                .attributesJson(attributes)
+                .url(url)
+                .allowUrlOverrides(true)
+                .build();
         GrowthBook subject = new GrowthBook(context);
 
         FeatureResult<Integer> result = subject.evalFeature("donut_price", Integer.class);

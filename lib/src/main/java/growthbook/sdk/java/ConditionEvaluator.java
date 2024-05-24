@@ -5,10 +5,13 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
 import com.google.gson.reflect.TypeToken;
-
 import javax.annotation.Nullable;
 import java.lang.reflect.Type;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -84,7 +87,7 @@ class ConditionEvaluator implements IConditionEvaluator {
 
         Set<Map.Entry<String, JsonElement>> entries = ((JsonObject) object).entrySet();
 
-        if (entries.size() == 0) {
+        if (entries.isEmpty()) {
             return true;
         }
 
@@ -98,10 +101,10 @@ class ConditionEvaluator implements IConditionEvaluator {
 
     /**
      * Given attributes and a dot-separated path string,
-     * @return the value at that path (or null if the path doesn't exist)
      *
      * @param attributes User attributes
      * @param path       String path, e.g. path.to.something
+     * @return the value at that path (or null if the path doesn't exist)
      */
     @Nullable
     Object getPath(JsonElement attributes, String path) {
@@ -144,7 +147,7 @@ class ConditionEvaluator implements IConditionEvaluator {
      *   }
      * }
      * </pre>
-     *
+     * <p>
      * And the following attributes:
      *
      * <pre>
@@ -161,7 +164,7 @@ class ConditionEvaluator implements IConditionEvaluator {
      * i.e. <code>$eq, $ne, $lt, $lte, $gt, $gte, $regex</code>
      * </p>
      *
-     *<p>
+     * <p>
      * There are 2 operators where conditionValue is an array,
      * i.e. <code>$in, $nin</code>
      * </p>
@@ -181,9 +184,9 @@ class ConditionEvaluator implements IConditionEvaluator {
      * i.e. <code>$exists, $type, $not</code>
      * </p>
      *
-     * @param actual Nullable JSON element
+     * @param actual         Nullable JSON element
      * @param operatorString String value of the operator
-     * @param expected The conditions to use to verify that the attributes match, based on the operator
+     * @param expected       The conditions to use to verify that the attributes match, based on the operator
      * @return if it's a match
      */
     Boolean evalOperatorCondition(String operatorString, @Nullable JsonElement actual, JsonElement expected) {
@@ -207,21 +210,24 @@ class ConditionEvaluator implements IConditionEvaluator {
 
                 if (DataType.STRING == attributeDataType) {
                     String value = actual.getAsString();
-                    Type listType = new TypeToken<ArrayList<String>>() {}.getType();
+                    Type listType = new TypeToken<ArrayList<String>>() {
+                    }.getType();
                     ArrayList<String> conditionsList = jsonUtils.gson.fromJson(expected, listType);
                     return conditionsList.contains(value);
                 }
 
                 if (DataType.NUMBER == attributeDataType) {
                     Float value = actual.getAsFloat();
-                    Type listType = new TypeToken<ArrayList<Float>>() {}.getType();
+                    Type listType = new TypeToken<ArrayList<Float>>() {
+                    }.getType();
                     ArrayList<Float> conditionsList = jsonUtils.gson.fromJson(expected, listType);
                     return conditionsList.contains(value);
                 }
 
                 if (DataType.BOOLEAN == attributeDataType) {
                     Boolean value = actual.getAsBoolean();
-                    Type listType = new TypeToken<ArrayList<Boolean>>() {}.getType();
+                    Type listType = new TypeToken<ArrayList<Boolean>>() {
+                    }.getType();
                     ArrayList<Boolean> conditionsList = jsonUtils.gson.fromJson(expected, listType);
                     return conditionsList.contains(value);
                 }
@@ -242,21 +248,24 @@ class ConditionEvaluator implements IConditionEvaluator {
 
                 if (DataType.STRING == attributeDataType) {
                     String value = actual.getAsString();
-                    Type listType = new TypeToken<ArrayList<String>>() {}.getType();
+                    Type listType = new TypeToken<ArrayList<String>>() {
+                    }.getType();
                     ArrayList<String> conditionsList = jsonUtils.gson.fromJson(expected, listType);
                     return !conditionsList.contains(value);
                 }
 
                 if (DataType.NUMBER == attributeDataType) {
                     Float value = actual.getAsFloat();
-                    Type listType = new TypeToken<ArrayList<Float>>() {}.getType();
+                    Type listType = new TypeToken<ArrayList<Float>>() {
+                    }.getType();
                     ArrayList<Float> conditionsList = jsonUtils.gson.fromJson(expected, listType);
                     return !conditionsList.contains(value);
                 }
 
                 if (DataType.BOOLEAN == attributeDataType) {
                     Boolean value = actual.getAsBoolean();
-                    Type listType = new TypeToken<ArrayList<Boolean>>() {}.getType();
+                    Type listType = new TypeToken<ArrayList<Boolean>>() {
+                    }.getType();
                     ArrayList<Boolean> conditionsList = jsonUtils.gson.fromJson(expected, listType);
                     return !conditionsList.contains(value);
                 }
@@ -266,7 +275,7 @@ class ConditionEvaluator implements IConditionEvaluator {
             case GT:
                 if (actual == null || DataType.NULL.equals(attributeDataType)) {
                     return (!expected.isJsonPrimitive() || expected.getAsJsonPrimitive().isNumber())
-                        && 0.0 > expected.getAsDouble();
+                            && 0.0 > expected.getAsDouble();
                 }
                 if (actual.getAsJsonPrimitive().isNumber()) {
                     return actual.getAsNumber().floatValue() > expected.getAsNumber().floatValue();
@@ -279,7 +288,7 @@ class ConditionEvaluator implements IConditionEvaluator {
             case GTE:
                 if (actual == null || DataType.NULL.equals(attributeDataType)) {
                     return (!expected.isJsonPrimitive() || expected.getAsJsonPrimitive().isNumber())
-                        && 0.0 >= expected.getAsDouble();
+                            && 0.0 >= expected.getAsDouble();
                 }
                 if (actual.getAsJsonPrimitive().isNumber()) {
                     return actual.getAsNumber().floatValue() >= expected.getAsNumber().floatValue();
@@ -292,7 +301,7 @@ class ConditionEvaluator implements IConditionEvaluator {
             case LT:
                 if (actual == null || DataType.NULL.equals(attributeDataType)) {
                     return (!expected.isJsonPrimitive() || expected.getAsJsonPrimitive().isNumber())
-                        && 0.0 < expected.getAsDouble();
+                            && 0.0 < expected.getAsDouble();
                 }
                 if (actual.getAsString().toLowerCase().matches("\\d+")) {
                     return Double.parseDouble(actual.getAsString()) < expected.getAsDouble();
@@ -308,7 +317,7 @@ class ConditionEvaluator implements IConditionEvaluator {
             case LTE:
                 if (actual == null || DataType.NULL.equals(attributeDataType)) {
                     return (!expected.isJsonPrimitive() || expected.getAsJsonPrimitive().isNumber())
-                        && 0.0 <= expected.getAsDouble();
+                            && 0.0 <= expected.getAsDouble();
                 }
                 if (actual.getAsJsonPrimitive().isNumber()) {
                     return actual.getAsNumber().floatValue() <= expected.getAsNumber().floatValue();
@@ -384,40 +393,46 @@ class ConditionEvaluator implements IConditionEvaluator {
                 }
 
             case VERSION_GT:
-                if (actual == null || expected == null || DataType.NULL.equals(attributeDataType)) return false;
+                if (actual == null || expected == null || DataType.NULL.equals(attributeDataType))
+                    return false;
 
                 return StringUtils.paddedVersionString(actual.getAsString())
-                    .compareTo(StringUtils.paddedVersionString(expected.getAsString())) > 0;
+                        .compareTo(StringUtils.paddedVersionString(expected.getAsString())) > 0;
 
             case VERSION_GTE:
-                if (actual == null || expected == null || DataType.NULL.equals(attributeDataType)) return false;
+                if (actual == null || expected == null || DataType.NULL.equals(attributeDataType))
+                    return false;
 
                 return StringUtils.paddedVersionString(actual.getAsString())
-                    .compareTo(StringUtils.paddedVersionString(expected.getAsString())) >= 0;
+                        .compareTo(StringUtils.paddedVersionString(expected.getAsString())) >= 0;
 
             case VERSION_LT:
-                if (actual == null || expected == null || DataType.NULL.equals(attributeDataType)) return false;
+                if (actual == null || expected == null || DataType.NULL.equals(attributeDataType))
+                    return false;
 
                 return StringUtils.paddedVersionString(actual.getAsString())
-                    .compareTo(StringUtils.paddedVersionString(expected.getAsString())) < 0;
+                        .compareTo(StringUtils.paddedVersionString(expected.getAsString())) < 0;
 
             case VERSION_LTE:
-                if (actual == null || expected == null || DataType.NULL.equals(attributeDataType)) return false;
+                if (actual == null || expected == null || DataType.NULL.equals(attributeDataType))
+                    return false;
 
                 return StringUtils.paddedVersionString(actual.getAsString())
-                    .compareTo(StringUtils.paddedVersionString(expected.getAsString())) <= 0;
+                        .compareTo(StringUtils.paddedVersionString(expected.getAsString())) <= 0;
 
             case VERSION_NE:
-                if (actual == null || expected == null || DataType.NULL.equals(attributeDataType)) return false;
+                if (actual == null || expected == null || DataType.NULL.equals(attributeDataType))
+                    return false;
 
                 return StringUtils.paddedVersionString(actual.getAsString())
-                    .compareTo(StringUtils.paddedVersionString(expected.getAsString())) != 0;
+                        .compareTo(StringUtils.paddedVersionString(expected.getAsString())) != 0;
 
             case VERSION_EQ:
-                if (actual == null || expected == null || DataType.NULL.equals(attributeDataType)) return false;
+                if (actual == null || expected == null || DataType.NULL.equals(attributeDataType))
+                    return false;
 
                 return StringUtils.paddedVersionString(actual.getAsString())
-                    .compareTo(StringUtils.paddedVersionString(expected.getAsString())) == 0;
+                        .compareTo(StringUtils.paddedVersionString(expected.getAsString())) == 0;
 
             default:
                 return false;
@@ -427,6 +442,7 @@ class ConditionEvaluator implements IConditionEvaluator {
 
     /**
      * Compares two primitives for equality.
+     *
      * @param a left side primitive
      * @param b right side primitive
      * @param dataType The data type of the primitives
@@ -528,7 +544,7 @@ class ConditionEvaluator implements IConditionEvaluator {
      * @return if matches
      */
     Boolean evalOr(JsonElement attributes, JsonArray conditions) {
-        if (conditions.size() == 0) {
+        if (conditions.isEmpty()) {
             return true;
         }
 
@@ -570,7 +586,7 @@ class ConditionEvaluator implements IConditionEvaluator {
 
         JsonArray actualArr = actual.getAsJsonArray();
 
-        if (actualArr.size() == 0) return false;
+        if (actualArr.isEmpty()) return false;
 
         DataType attributeDataType = GrowthBookJsonUtils.getElementType(actualArr.get(0));
         ArrayList<Object> actualAsList = jsonUtils.gson.fromJson(actualArr, listType);

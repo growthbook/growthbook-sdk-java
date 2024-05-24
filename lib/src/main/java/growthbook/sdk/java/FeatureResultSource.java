@@ -32,7 +32,17 @@ public enum FeatureResultSource {
      * When the value is assigned due to an experiment condition
      */
     @SerializedName("experiment") EXPERIMENT("experiment"),
-    ;
+
+    /**
+     * CyclicPrerequisite Value for the Feature is being processed
+     */
+    @SerializedName("cyclicPrerequisite") CYCLIC_PREREQUISITE("cyclicPrerequisite"),
+
+    /**
+     * Prerequisite Value for the Feature is being processed
+     */
+    @SerializedName("prerequisite") PREREQUISITE("prerequisite");
+
     private final String rawValue;
 
     FeatureResultSource(String rawValue) {
@@ -47,6 +57,7 @@ public enum FeatureResultSource {
 
     /**
      * Get a nullable enum Operator from the string value. Use this instead of valueOf()
+     *
      * @param stringValue string to try to parse as an operator
      * @return nullable Operator
      */
