@@ -1,18 +1,23 @@
 package growthbook.sdk.java;
 
-import com.google.gson.*;
-
+import com.google.gson.Gson;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonPrimitive;
 import growthbook.sdk.java.stickyBucketing.StickyAssignmentsDocument;
 import growthbook.sdk.java.stickyBucketing.StickyBucketService;
-import lombok.val;
 import org.jetbrains.annotations.NotNull;
-
 import javax.annotation.Nullable;
 import java.net.MalformedURLException;
 import java.net.URL;
-
-// 8 references from java.util package are used in this file
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
 
 /**
  * <b>INTERNAL</b>: Implementation of for internal utility methods to support {@link growthbook.sdk.java.GrowthBook}
@@ -550,7 +555,7 @@ class GrowthBookUtils {
         JsonElement features = featuresJsonElement != null ? featuresJsonElement : context.getFeatures();
 
         if (features != null) {
-            for (val id : features.getAsJsonObject().keySet()) {
+            for (String id : features.getAsJsonObject().keySet()) {
                 Feature<ValueType> feature = GrowthBookJsonUtils
                         .getInstance()
                         .gson
@@ -638,9 +643,9 @@ class GrowthBookUtils {
             }
         }
 
-            if (stickyAssignmentsDocuments.get(hashKey) != null) {
-                mergedAssignments.putAll(stickyAssignmentsDocuments.get(hashKey).getAssignments());
-            }
+        if (stickyAssignmentsDocuments.get(hashKey) != null) {
+            mergedAssignments.putAll(stickyAssignmentsDocuments.get(hashKey).getAssignments());
+        }
 
         return mergedAssignments;
     }

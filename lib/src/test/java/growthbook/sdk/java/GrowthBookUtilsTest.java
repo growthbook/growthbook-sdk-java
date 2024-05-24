@@ -1,17 +1,17 @@
 package growthbook.sdk.java;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+
 import com.google.gson.JsonArray;
 import com.google.gson.reflect.TypeToken;
 import growthbook.sdk.java.testhelpers.TestCasesJsonHelper;
 import org.junit.jupiter.api.Test;
-
 import javax.annotation.Nullable;
 import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.List;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 class GrowthBookUtilsTest {
     final TestCasesJsonHelper helper = TestCasesJsonHelper.getInstance();
@@ -29,15 +29,15 @@ class GrowthBookUtilsTest {
         hnvCases.forEach(jsonElement -> {
             JsonArray kv = (JsonArray) jsonElement;
 
-            String seed = kv.get(3).getAsString();
-            String input = kv.get(0).getAsString();
+            String seed = kv.get(0).getAsString();
+            String input = kv.get(1).getAsString();
 
             Integer hashVersion = kv.get(2).getAsInt();
 
             Float expected = null;
-            if (!kv.get(1).isJsonNull()) {
+            if (!kv.get(3).isJsonNull()) {
                 // In the case of unsupported hash versions, this method returns null
-                expected = kv.get(1).getAsFloat();
+                expected = kv.get(3).getAsFloat();
             }
 
             assertEquals(expected, GrowthBookUtils.hash(input, hashVersion, seed));

@@ -5,14 +5,14 @@ import lombok.Getter;
 /**
  * This error is thrown by {@link GBFeaturesRepository}
  * You can call getErrorCode() to get an enum of various error types you can handle.
- *
+ * <p>
  * CONFIGURATION_ERROR:
- *   - an encryptionKey was provided but the endpoint does not support encryption so decryption fails
- *   - no features were found for an unencrypted endpoint
+ * - an encryptionKey was provided but the endpoint does not support encryption so decryption fails
+ * - no features were found for an unencrypted endpoint
  * NO_RESPONSE_ERROR:
- *   - there was no response body
+ * - there was no response body
  * UNKNOWN:
- *   - there was an unknown error that occurred when attempting to make the request.
+ * - there was an unknown error that occurred when attempting to make the request.
  */
 public class FeatureFetchException extends Exception {
 
@@ -28,13 +28,13 @@ public class FeatureFetchException extends Exception {
      */
     public enum FeatureFetchErrorCode {
         /**
-         *   - an encryptionKey was provided but the endpoint does not support encryption so decryption fails
-         *   - no features were found for an unencrypted endpoint
+         * - an encryptionKey was provided but the endpoint does not support encryption so decryption fails
+         * - no features were found for an unencrypted endpoint
          */
         CONFIGURATION_ERROR,
 
         /**
-         *   - there was no response body
+         * - there was no response body
          */
         NO_RESPONSE_ERROR,
 
@@ -44,7 +44,7 @@ public class FeatureFetchException extends Exception {
         SSE_CONNECTION_ERROR,
 
         /**
-         *   - there was an unknown error that occurred when attempting to make the request.
+         * - there was an unknown error that occurred when attempting to make the request.
          */
         UNKNOWN,
     }
@@ -52,7 +52,8 @@ public class FeatureFetchException extends Exception {
 
     /**
      * Create an exception with error code and custom message
-     * @param errorCode {@link FeatureFetchErrorCode}
+     *
+     * @param errorCode    {@link FeatureFetchErrorCode}
      * @param errorMessage Custom error message string
      */
     public FeatureFetchException(FeatureFetchErrorCode errorCode, String errorMessage) {
@@ -62,6 +63,7 @@ public class FeatureFetchException extends Exception {
 
     /**
      * Create an exception with error code
+     *
      * @param errorCode {@link FeatureFetchErrorCode}
      */
     public FeatureFetchException(FeatureFetchErrorCode errorCode) {

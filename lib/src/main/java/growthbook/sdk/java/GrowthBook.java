@@ -3,7 +3,6 @@ package growthbook.sdk.java;
 import com.google.gson.JsonObject;
 import growthbook.sdk.java.stickyBucketing.InMemoryStickyBucketServiceImpl;
 import growthbook.sdk.java.stickyBucketing.StickyBucketService;
-
 import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -29,6 +28,7 @@ public class GrowthBook implements IGrowthBook {
 
     /**
      * Initialize the GrowthBook SDK with a provided {@link GBContext}
+     *
      * @param context {@link GBContext}
      */
     public GrowthBook(GBContext context) {
@@ -57,9 +57,9 @@ public class GrowthBook implements IGrowthBook {
     /**
      * <b>INTERNAL:</b> Constructor with injected dependencies. Useful for testing but not intended to be used
      *
-     * @param context Context
-     * @param featureEvaluator FeatureEvaluator
-     * @param conditionEvaluator ConditionEvaluator
+     * @param context             Context
+     * @param featureEvaluator    FeatureEvaluator
+     * @param conditionEvaluator  ConditionEvaluator
      * @param experimentEvaluator ExperimentEvaluator
      */
     GrowthBook(GBContext context, FeatureEvaluator featureEvaluator, ConditionEvaluator conditionEvaluator, ExperimentEvaluator experimentEvaluator) {
@@ -86,10 +86,10 @@ public class GrowthBook implements IGrowthBook {
     }
 
     @Override
-    public <ValueType>ExperimentResult<ValueType> run(Experiment<ValueType> experiment) {
+    public <ValueType> ExperimentResult<ValueType> run(Experiment<ValueType> experiment) {
         ExperimentResult<ValueType> result = experimentEvaluatorEvaluator.evaluateExperiment(experiment, this.context, null, attributeOverrides);
 
-        this.callbacks.forEach( callback -> {
+        this.callbacks.forEach(callback -> {
             callback.onRun(result);
         });
 
@@ -162,17 +162,18 @@ public class GrowthBook implements IGrowthBook {
     @Override
     public Integer getFeatureValue(String featureKey, Integer defaultValue) {
         try {
-            // Type erasure occurs so a Double ends up being returned
-            Double maybeValue = (Double) this.featureEvaluator.evaluateFeature(featureKey, context, Double.class, attributeOverrides).getValue();
+            Object maybeValue = this.featureEvaluator.evaluateFeature(featureKey, context, Object.class, attributeOverrides).getValue();
 
             if (maybeValue == null) {
                 return defaultValue;
             }
 
-            try {
-                return maybeValue.intValue();
-            } catch (NumberFormatException e) {
-                return defaultValue;
+            if (maybeValue instanceof Double) {
+                return ((Double) maybeValue).intValue();
+            } else if (maybeValue instanceof Long) {
+                return ((Long) maybeValue).intValue();
+            } else {
+                return defaultValue; // или можно бросить исключение, если требуется строгое соответствие типу Integer
             }
         } catch (Exception e) {
             e.printStackTrace();
@@ -216,8 +217,19 @@ public class GrowthBook implements IGrowthBook {
     @Override
     public Double getFeatureValue(String featureKey, Double defaultValue) {
         try {
-            Double maybeValue = (Double) this.featureEvaluator.evaluateFeature(featureKey, context, Double.class, attributeOverrides).getValue();
-            return maybeValue == null ? defaultValue : maybeValue;
+            Object maybeValue = this.featureEvaluator.evaluateFeature(featureKey, context, Object.class, attributeOverrides).getValue();
+
+            if (maybeValue == null) {
+                return defaultValue;
+            }
+
+            if (maybeValue instanceof Double) {
+                return (Double) maybeValue;
+            } else if (maybeValue instanceof Long) {
+                return ((Long) maybeValue).doubleValue();
+            } else {
+                return defaultValue;
+            }
         } catch (Exception e) {
             e.printStackTrace();
             return defaultValue;

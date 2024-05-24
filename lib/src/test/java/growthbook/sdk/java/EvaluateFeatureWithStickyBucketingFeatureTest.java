@@ -1,5 +1,7 @@
 package growthbook.sdk.java;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
 import com.google.common.reflect.TypeToken;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
@@ -11,10 +13,11 @@ import growthbook.sdk.java.testhelpers.TestCasesJsonHelper;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-
-import java.util.*;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 
 public class EvaluateFeatureWithStickyBucketingFeatureTest {
     private static TestCasesJsonHelper helper;
@@ -36,9 +39,9 @@ public class EvaluateFeatureWithStickyBucketingFeatureTest {
 
     @Test
     void testsStickyBucketingFeature() {
-        ArrayList<String> passedTests = new ArrayList<>();
-        ArrayList<String> failedTests = new ArrayList<>();
-        ArrayList<Integer> failingIndexes = new ArrayList<>();
+        List<String> passedTests = new ArrayList<>();
+        List<String> failedTests = new ArrayList<>();
+        List<Integer> failingIndexes = new ArrayList<>();
         JsonArray stickyBucketTestCases = helper.getStickyBucketTestCases();
         for (int i = 0; i < stickyBucketTestCases.size(); i++) {
             JsonArray testCase = stickyBucketTestCases.get(i).getAsJsonArray();
@@ -99,8 +102,8 @@ public class EvaluateFeatureWithStickyBucketingFeatureTest {
                     }.getType()
             );
 
-            String status = "\n" + testCase.get(0).getAsString() + expectedExperimentResult + "&" + expectedStickyAssignmentsDocument + "\n\n"
-                    + "\n" + actualExperimentResult + "&" + context.getStickyBucketAssignmentDocs();
+            String status = "\n" + description + expectedExperimentResult + "&" + expectedStickyAssignmentsDocument + "\n\n"
+                    + "\n" + actualExperimentResult + "&" + actualStickyBucketAssignmentDocs;
 
             if (Objects.equals(actualExperimentResult, expectedExperimentResult) && expectedStickyAssignmentsDocument.equals(context.getStickyBucketAssignmentDocs())) {
                 passedTests.add(status);
@@ -114,6 +117,5 @@ public class EvaluateFeatureWithStickyBucketingFeatureTest {
 
         }
         assertEquals(0, failedTests.size());
-
     }
 }

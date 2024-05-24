@@ -1,12 +1,13 @@
 package growthbook.sdk.java;
 
-import com.google.gson.*;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonDeserializer;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonSerializer;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import org.apache.commons.math3.util.Precision;
-
-import java.lang.reflect.Type;
 import java.util.Objects;
 
 /**
@@ -37,6 +38,7 @@ public class BucketRange {
 
     /**
      * Converts the bucket range to the serialized tuple
+     *
      * @return JSON string of the bucket range
      */
     public String toJson() {
@@ -88,23 +90,13 @@ public class BucketRange {
      * @return serializer for {@link BucketRange}
      */
     public static JsonSerializer<BucketRange> getSerializer() {
-        return new JsonSerializer<BucketRange>() {
-            @Override
-            public JsonElement serialize(BucketRange src, Type typeOfSrc, JsonSerializationContext context) {
-                return BucketRange.getJson(src);
-            }
-        };
+        return (src, typeOfSrc, context) -> BucketRange.getJson(src);
     }
 
     /**
      * @return deserializer for {@link BucketRange}
      */
     public static JsonDeserializer<BucketRange> getDeserializer() {
-        return new JsonDeserializer<BucketRange>() {
-            @Override
-            public BucketRange deserialize(JsonElement json, Type typeOfT, JsonDeserializationContext context) throws JsonParseException {
-                return BucketRange.fromJson(json);
-            }
-        };
+        return (json, typeOfT, context) -> BucketRange.fromJson(json);
     }
 }

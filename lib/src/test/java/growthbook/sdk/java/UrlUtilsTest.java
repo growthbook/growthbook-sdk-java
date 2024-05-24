@@ -1,14 +1,11 @@
 package growthbook.sdk.java;
 
-import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import org.junit.jupiter.api.Test;
 import java.net.MalformedURLException;
-import java.net.URI;
-import java.net.URISyntaxException;
 import java.net.URL;
 import java.util.Map;
-
-import static org.junit.jupiter.api.Assertions.*;
 
 class UrlUtilsTest {
 

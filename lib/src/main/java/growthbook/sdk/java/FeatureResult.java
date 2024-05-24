@@ -1,13 +1,14 @@
 package growthbook.sdk.java;
 
-import com.google.gson.*;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonPrimitive;
+import com.google.gson.JsonSerializer;
 import com.google.gson.annotations.SerializedName;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
-
 import javax.annotation.Nullable;
-import java.lang.reflect.Type;
 
 /**
  * Results for a {@link FeatureEvaluator#evaluateFeature(String, GBContext, Class, JsonObject)}
@@ -46,6 +47,7 @@ public class FeatureResult<ValueType> {
 
     /**
      * Get a Gson JsonElement of the {@link FeatureResult}
+     *
      * @return a Gson JsonElement
      */
     public String toJson() {
@@ -54,6 +56,7 @@ public class FeatureResult<ValueType> {
 
     /**
      * Evaluates to true when the feature is on
+     *
      * @return Boolean
      */
     public Boolean isOn() {
@@ -84,6 +87,7 @@ public class FeatureResult<ValueType> {
 
     /**
      * Evaluates to true when the feature is off
+     *
      * @return Boolean
      */
     public Boolean isOff() {
@@ -92,9 +96,10 @@ public class FeatureResult<ValueType> {
 
     /**
      * Get a Gson JsonElement of the {@link FeatureResult}
-     * @param object {@link FeatureResult}
-     * @return a Gson JsonElement
+     *
+     * @param object      {@link FeatureResult}
      * @param <ValueType> value type for the feature
+     * @return a Gson JsonElement
      */
     public static <ValueType> JsonElement getJson(FeatureResult<ValueType> object) {
         JsonObject jsonObject = new JsonObject();
@@ -126,15 +131,11 @@ public class FeatureResult<ValueType> {
 
     /**
      * a Gson serializer for {@link FeatureResult}
-     * @return Gson serializer
+     *
      * @param <ValueType> {@link FeatureResult}
+     * @return Gson serializer
      */
     public static <ValueType> JsonSerializer<FeatureResult<ValueType>> getSerializer() {
-        return new JsonSerializer<FeatureResult<ValueType>>() {
-            @Override
-            public JsonElement serialize(FeatureResult<ValueType> src, Type typeOfSrc, JsonSerializationContext context) {
-                return FeatureResult.getJson(src);
-            }
-        };
+        return (src, typeOfSrc, context) -> FeatureResult.getJson(src);
     }
 }
