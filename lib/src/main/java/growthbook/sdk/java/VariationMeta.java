@@ -4,7 +4,6 @@ import com.google.gson.annotations.SerializedName;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
-
 import javax.annotation.Nullable;
 
 
@@ -15,10 +14,13 @@ import javax.annotation.Nullable;
 @Builder
 @AllArgsConstructor
 public class VariationMeta {
-    @Nullable String key;
+    @Nullable
+    String key;
 
-    @Nullable String name;
+    @Nullable
+    String name;
 
     @SerializedName("passthrough")
-    @Nullable Boolean passThrough;
+    @Nullable
+    Boolean passThrough;
 }

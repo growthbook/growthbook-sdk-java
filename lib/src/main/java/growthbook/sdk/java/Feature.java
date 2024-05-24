@@ -9,6 +9,7 @@ import java.util.ArrayList;
  * <li>defaultValue (any) - The default value (should use null if not specified)</li>
  * <li>rules (FeatureRule[]) - Array of FeatureRule objects that determine when and how the defaultValue gets overridden</li>
  * </ul>
+ *
  * @param <ValueType> value type for the feature
  */
 public class Feature<ValueType> {
@@ -20,6 +21,7 @@ public class Feature<ValueType> {
 
     /**
      * The default value for a feature evaluation
+     *
      * @return value of the feature
      */
     public Object getDefaultValue() {
@@ -28,6 +30,7 @@ public class Feature<ValueType> {
 
     /**
      * Returns the rules for evaluating the feature
+     *
      * @return rules list
      */
     @Nullable

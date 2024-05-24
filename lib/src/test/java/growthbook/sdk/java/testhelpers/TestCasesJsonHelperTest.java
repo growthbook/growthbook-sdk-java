@@ -1,10 +1,10 @@
 package growthbook.sdk.java.testhelpers;
 
-import com.google.gson.JsonObject;
-import org.junit.jupiter.api.Test;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+
+import com.google.gson.JsonObject;
+import org.junit.jupiter.api.Test;
 
 class TestCasesJsonHelperTest {
 
@@ -21,6 +21,6 @@ class TestCasesJsonHelperTest {
         JsonObject testCases = TestCasesJsonHelper.getInstance().getTestCases();
 
         assertNotNull(testCases);
-        assertEquals("0.5.0", testCases.get("specVersion").getAsString());
+        assertEquals("0.6.0", testCases.get("specVersion").getAsString());
     }
 }

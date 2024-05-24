@@ -3,6 +3,16 @@
  */
 package growthbook.sdk.java;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
@@ -13,14 +23,10 @@ import growthbook.sdk.java.testhelpers.TestCasesJsonHelper;
 import growthbook.sdk.java.testhelpers.TestContext;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
-
 import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Objects;
-
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.*;
 
 class GrowthBookTest {
 
@@ -36,15 +42,17 @@ class GrowthBookTest {
         ArrayList<Integer> failingIndexes = new ArrayList<>();
 
         for (int i = 0; i < testCases.size(); i++) {
-            JsonObject testCase = (JsonObject) testCases.get(i);
-            String testDescription = testCase.get("name").getAsString();
+            JsonArray testCase = (JsonArray) testCases.get(i);
+            String testDescription = testCase.get(0).getAsString();
 
-            String featuresJson = testCase.get("context").getAsJsonObject().get("features").getAsString();
+            JsonElement featuresJson = testCase.get(1).getAsJsonObject().get("features");
+            String featureJsonAsStringOrNull = featuresJson == null ? null : featuresJson.toString();
 
-            String attributesJson = testCase.get("context").getAsJsonObject().get("attributes").getAsString();
+            JsonElement attributesJson = testCase.get(1).getAsJsonObject().get("attributes");
+            String attributesJsonAsStringOrNull = attributesJson == null ? null : attributesJson.toString();
 
             Type forcedVariationsType = new TypeToken<HashMap<String, Integer>>() {}.getType();
-            HashMap<String, Integer> forcedVariations = jsonUtils.gson.fromJson(testCase.get("context").getAsJsonObject().get("forcedVariations"), forcedVariationsType);
+            HashMap<String, Integer> forcedVariations = jsonUtils.gson.fromJson(testCase.get(1).getAsJsonObject().get("forcedVariations"), forcedVariationsType);
 
 //            System.out.println("\n\n--------------------------");
 //            System.out.printf("evalFeature test: %s (index = %s)", testDescription, i);
@@ -53,19 +61,19 @@ class GrowthBookTest {
 
             GBContext context = GBContext
                     .builder()
-                    .featuresJson(featuresJson)
-                    .attributesJson(attributesJson)
+                    .featuresJson(featureJsonAsStringOrNull)
+                    .attributesJson(attributesJsonAsStringOrNull)
                     .forcedVariationsMap(forcedVariations)
                     .build();
 
 //            System.out.printf("\n context: %s", context);
-            String featureKey = testCase.get("feature").getAsString();
+            String featureKey = testCase.get(2).getAsString();
 //            String type = testCase.get("type").getAsString();
 
             GrowthBook subject = new GrowthBook(context);
-            String expectedString = testCase.get("result").getAsString();
+            JsonElement expected = testCase.get(3).getAsJsonObject();
 //            System.out.printf("\n\n Expected result (string): %s", expectedString);
-            FeatureResult expectedResult = jsonUtils.gson.fromJson(expectedString, FeatureResult.class);
+            FeatureResult expectedResult = jsonUtils.gson.fromJson(expected, FeatureResult.class);
 
             FeatureResult<Object> result = subject.evalFeature(featureKey, Object.class);
 //            System.out.printf("\n\n Eval Feature actual: %s - JSON: %s", result, result.toJson());
@@ -127,8 +135,8 @@ class GrowthBookTest {
                 System.out.printf("\n  Actual result = %s", result);
 
                 System.out.printf(
-                    "\n\n valuePasses = %s, onPasses = %s, offPasses = %s, sourcePasses = %s, hashValuePasses = %s, keyPasses = %s, bucketPasses = %s",
-                    valuePasses, onPasses, offPasses, sourcePasses, hashValuePasses, keyPasses, bucketPasses
+                        "\n\n valuePasses = %s, onPasses = %s, offPasses = %s, sourcePasses = %s, hashValuePasses = %s, keyPasses = %s, bucketPasses = %s",
+                        valuePasses, onPasses, offPasses, sourcePasses, hashValuePasses, keyPasses, bucketPasses
                 );
 //                System.out.println("\n\n-------------------------------");
 
@@ -150,10 +158,10 @@ class GrowthBookTest {
         FeatureUsageCallback featureUsageCallback = mock(FeatureUsageCallback.class);
         String features = TestCasesJsonHelper.getInstance().getDemoFeaturesJson();
         GBContext context = GBContext
-            .builder()
-            .featuresJson(features)
-            .featureUsageCallback(featureUsageCallback)
-            .build();
+                .builder()
+                .featuresJson(features)
+                .featureUsageCallback(featureUsageCallback)
+                .build();
         GrowthBook subject = new GrowthBook(context);
 
         String value = subject.getFeatureValue("h1-title", "unknown feature key");
@@ -205,57 +213,74 @@ class GrowthBookTest {
         ArrayList<Integer> failingIndexes = new ArrayList<>();
 
         for (int i = 0; i < testCases.size(); i++) {
-            JsonObject testCase = (JsonObject) testCases.get(i);
-            String testDescription = testCase.get("name").getAsString();
 
-            TestContext testContext = jsonUtils.gson.fromJson(testCase.get("context").getAsJsonObject(), TestContext.class);
+            JsonArray itemArray = (JsonArray) testCases.get(i);
+            if (itemArray != null) {
+                String testDescription = itemArray.get(0).getAsString();
 
-            GBContext context = GBContext
-                    .builder()
-                    .featuresJson(testContext.features)
-                    .attributesJson(testContext.attributes)
-                    .forcedVariationsMap(testContext.forcedVariations)
-                    .isQaMode(testContext.qaMode)
-                    .enabled(testContext.enabled)
-                    .url(testContext.url)
-                    .build();
+                JsonElement featuresJson = itemArray.get(1).getAsJsonObject().get("features");
+                String featuresJsonString = featuresJson == null ? "{}" : featuresJson.toString();
 
-            Experiment experiment = jsonUtils.gson.fromJson(testCase.get("experiment").getAsString(), Experiment.class);
-            ExperimentResult expectedResult = jsonUtils.gson.fromJson(testCase.get("result"), ExperimentResult.class);
-            JsonElement experimentElement = jsonUtils.gson.fromJson(testCase.get("experiment"), JsonElement.class);
-            if (experimentElement != null) {
+                JsonElement attributesJson = itemArray.get(1).getAsJsonObject().get("attributes");
+                String attributesJsonString = attributesJson == null ? "null" : attributesJson.toString();
+
+                Type forcedVariationsType = new TypeToken<HashMap<String, Integer>>() {}.getType();
+                HashMap<String, Integer> forcedVariations = jsonUtils.gson.fromJson(itemArray.get(1).getAsJsonObject().get("forcedVariations"), forcedVariationsType);
+
+
+                TestContext testContext = jsonUtils.gson.fromJson(itemArray.get(1).getAsJsonObject(), TestContext.class);
+                GBContext context = GBContext
+                        .builder()
+                        .featuresJson(featuresJsonString)
+                        .attributesJson(attributesJsonString)
+                        .forcedVariationsMap(forcedVariations)
+                        .isQaMode(testContext.qaMode)
+                        .enabled(testContext.enabled)
+                        .url(testContext.url)
+                        .build();
+
+                Experiment experiment = jsonUtils.gson.fromJson(itemArray.get(2).getAsJsonObject(), Experiment.class);
+//                ExperimentResult expectedResult = jsonUtils.gson.fromJson(itemArray.get(3), ExperimentResult.class);
+                JsonElement experimentElement = jsonUtils.gson.fromJson(itemArray.get(2), JsonElement.class);
+
+                if (experimentElement != null) {
 //                System.out.printf("\n\n HERE: Experiment %s (index = %s)", experiment, i);
-                JsonObject experimentObject = jsonUtils.gson.fromJson(experimentElement.getAsString(), JsonObject.class);
-                JsonElement conditionElement = experimentObject.get("condition");
-                if (conditionElement != null) {
-                    String conditionJson = conditionElement.toString();
-                    experiment.setConditionJson(conditionJson);
+                    JsonObject experimentObject = jsonUtils.gson.fromJson(experimentElement.getAsJsonObject(), JsonObject.class);
+                    JsonElement conditionElement = experimentObject.get("condition");
+                    if (conditionElement != null) {
+                        experiment.setConditionJson(conditionElement);
+                    }
+                }
+
+                GrowthBook subject = new GrowthBook(context);
+                ExperimentResult result = subject.run(experiment);
+                ExperimentResult expectedResult = new ExperimentResult<>(itemArray.get(3), null, itemArray.get(4).getAsBoolean(), null, null, null, itemArray.get(5).getAsBoolean(), null, null, null, null, null);
+                String json = expectedResult.toJson();
+                ExperimentResult experimentResult11111 = jsonUtils.gson.fromJson(json, ExperimentResult.class);
+
+
+                boolean valueMatches = Objects.equals(result.getValue(), experimentResult11111.getValue());
+                boolean inExperimentMatches = Objects.equals(result.getInExperiment(), experimentResult11111.getInExperiment());
+                boolean hashUsed = Objects.equals(result.getHashUsed(), experimentResult11111.getHashUsed());
+
+                boolean passes = valueMatches && inExperimentMatches && hashUsed;
+
+                if (passes) {
+                    passedTests.add(testDescription);
+                } else {
+                    System.out.println("-----");
+                    System.out.printf("\n\n Test %s - (index = %s) Testing with context: %s", testDescription, i, context);
+                    System.out.printf("\n\n Experiment: %s", experiment);
+
+                    System.out.printf("\n\nExpected result = %s", itemArray.get(3));
+                    System.out.printf("\n  Actual result = %s", result);
+
+                    failedTests.add(testDescription);
+                    failingIndexes.add(i);
                 }
             }
-
-            GrowthBook subject = new GrowthBook(context);
-            ExperimentResult result = subject.run(experiment);
-
-            boolean valueMatches = Objects.equals(result.getValue(), expectedResult.getValue());
-            boolean inExperimentMatches = Objects.equals(result.getInExperiment(), expectedResult.getInExperiment());
-            boolean hashUsed = Objects.equals(result.getHashUsed(), expectedResult.getHashUsed());
-
-            boolean passes = valueMatches && inExperimentMatches && hashUsed;
-
-            if (passes) {
-                passedTests.add(testDescription);
-            } else {
-                System.out.println("-----");
-                System.out.printf("\n\n Test %s - (index = %s) Testing with context: %s", testDescription, i, context);
-                System.out.printf("\n\n Experiment: %s", experiment);
-
-                System.out.printf("\n\nExpected result = %s", expectedResult);
-                System.out.printf("\n  Actual result = %s", result);
-
-                failedTests.add(testDescription);
-                failingIndexes.add(i);
-            }
         }
+
 
         System.out.printf("\n\n✅ run Experiment - Passed tests: %s", passedTests);
         System.out.printf("\n\n\n❗️ run Experiment - Failed tests = %s / %s . Failing = %s", failedTests.size(), testCases.size(), failedTests);
@@ -277,8 +302,10 @@ class GrowthBookTest {
                 .build();
         GrowthBook subject = new GrowthBook(context);
 
-        assertTrue(subject.isOn(featureKey));
-        assertFalse(subject.isOff(featureKey));
+        FeatureResult feature = subject.evalFeature(featureKey, Object.class);
+
+        assertTrue(feature.isOn());
+        assertFalse(feature.isOff());
     }
 
     @Test
@@ -622,12 +649,12 @@ class GrowthBookTest {
         String url = "http://localhost:8080/url-feature-force?gb~meal_overrides_gluten_free=%7B%22meal_type%22%3A%20%22gf%22%2C%20%22dessert%22%3A%20%22French%20Vanilla%20Ice%20Cream%22%7D&gb~dark_mode=true&gb~donut_price=3.33&gb~banner_text=Hello%2C%20everyone!%20I%20hope%20you%20are%20all%20doing%20well!";
 
         GBContext context = GBContext
-            .builder()
-            .featuresJson(featuresJson)
-            .attributesJson(attributes)
-            .url(url)
-            .allowUrlOverrides(true)
-            .build();
+                .builder()
+                .featuresJson(featuresJson)
+                .attributesJson(attributes)
+                .url(url)
+                .allowUrlOverrides(true)
+                .build();
         GrowthBook subject = new GrowthBook(context);
 
         Boolean result = subject.getFeatureValue("dark_mode", false);
@@ -642,12 +669,12 @@ class GrowthBookTest {
         String url = "http://localhost:8080/url-feature-force?gb~meal_overrides_gluten_free=%7B%22meal_type%22%3A%20%22gf%22%2C%20%22dessert%22%3A%20%22French%20Vanilla%20Ice%20Cream%22%7D&gb~dark_mode=on&gb~donut_price=3.33&gb~banner_text=Hello%2C%20everyone!%20I%20hope%20you%20are%20all%20doing%20well!";
 
         GBContext context = GBContext
-            .builder()
-            .featuresJson(featuresJson)
-            .attributesJson(attributes)
-            .url(url)
-            .allowUrlOverrides(true)
-            .build();
+                .builder()
+                .featuresJson(featuresJson)
+                .attributesJson(attributes)
+                .url(url)
+                .allowUrlOverrides(true)
+                .build();
         GrowthBook subject = new GrowthBook(context);
 
         Boolean result = subject.getFeatureValue("dark_mode", false);
@@ -662,12 +689,12 @@ class GrowthBookTest {
         String url = "http://localhost:8080/url-feature-force?gb~meal_overrides_gluten_free=%7B%22meal_type%22%3A%20%22gf%22%2C%20%22dessert%22%3A%20%22French%20Vanilla%20Ice%20Cream%22%7D&gb~dark_mode=1&gb~donut_price=3.33&gb~banner_text=Hello%2C%20everyone!%20I%20hope%20you%20are%20all%20doing%20well!";
 
         GBContext context = GBContext
-            .builder()
-            .featuresJson(featuresJson)
-            .attributesJson(attributes)
-            .url(url)
-            .allowUrlOverrides(true)
-            .build();
+                .builder()
+                .featuresJson(featuresJson)
+                .attributesJson(attributes)
+                .url(url)
+                .allowUrlOverrides(true)
+                .build();
         GrowthBook subject = new GrowthBook(context);
 
         Boolean result = subject.getFeatureValue("dark_mode", false);
@@ -682,12 +709,12 @@ class GrowthBookTest {
         String url = "http://localhost:8080/url-feature-force?gb~meal_overrides_gluten_free=%7B%22meal_type%22%3A%20%22gf%22%2C%20%22dessert%22%3A%20%22French%20Vanilla%20Ice%20Cream%22%7D&gb~dark_mode=false&gb~donut_price=3.33&gb~banner_text=Hello%2C%20everyone!%20I%20hope%20you%20are%20all%20doing%20well!";
 
         GBContext context = GBContext
-            .builder()
-            .featuresJson(featuresJson)
-            .attributesJson(attributes)
-            .url(url)
-            .allowUrlOverrides(true)
-            .build();
+                .builder()
+                .featuresJson(featuresJson)
+                .attributesJson(attributes)
+                .url(url)
+                .allowUrlOverrides(true)
+                .build();
         GrowthBook subject = new GrowthBook(context);
 
         Boolean result = subject.getFeatureValue("dark_mode", true);
@@ -702,12 +729,12 @@ class GrowthBookTest {
         String url = "http://localhost:8080/url-feature-force?gb~meal_overrides_gluten_free=%7B%22meal_type%22%3A%20%22gf%22%2C%20%22dessert%22%3A%20%22French%20Vanilla%20Ice%20Cream%22%7D&gb~dark_mode=off&gb~donut_price=3.33&gb~banner_text=Hello%2C%20everyone!%20I%20hope%20you%20are%20all%20doing%20well!";
 
         GBContext context = GBContext
-            .builder()
-            .featuresJson(featuresJson)
-            .attributesJson(attributes)
-            .url(url)
-            .allowUrlOverrides(true)
-            .build();
+                .builder()
+                .featuresJson(featuresJson)
+                .attributesJson(attributes)
+                .url(url)
+                .allowUrlOverrides(true)
+                .build();
         GrowthBook subject = new GrowthBook(context);
 
         Boolean result = subject.getFeatureValue("dark_mode", true);
@@ -722,12 +749,12 @@ class GrowthBookTest {
         String url = "http://localhost:8080/url-feature-force?gb~meal_overrides_gluten_free=%7B%22meal_type%22%3A%20%22gf%22%2C%20%22dessert%22%3A%20%22French%20Vanilla%20Ice%20Cream%22%7D&gb~dark_mode=0&gb~donut_price=3.33&gb~banner_text=Hello%2C%20everyone!%20I%20hope%20you%20are%20all%20doing%20well!";
 
         GBContext context = GBContext
-            .builder()
-            .featuresJson(featuresJson)
-            .attributesJson(attributes)
-            .url(url)
-            .allowUrlOverrides(true)
-            .build();
+                .builder()
+                .featuresJson(featuresJson)
+                .attributesJson(attributes)
+                .url(url)
+                .allowUrlOverrides(true)
+                .build();
         GrowthBook subject = new GrowthBook(context);
 
         Boolean result = subject.getFeatureValue("dark_mode", true);
@@ -742,12 +769,12 @@ class GrowthBookTest {
         String url = "http://localhost:8080/url-feature-force?gb~meal_overrides_gluten_free=%7B%22meal_type%22%3A%20%22gf%22%2C%20%22dessert%22%3A%20%22French%20Vanilla%20Ice%20Cream%22%7D&gb~dark_mode=true&gb~donut_price=2&gb~banner_text=Hello%2C%20everyone!%20I%20hope%20you%20are%20all%20doing%20well!";
 
         GBContext context = GBContext
-            .builder()
-            .featuresJson(featuresJson)
-            .attributesJson(attributes)
-            .url(url)
-            .allowUrlOverrides(true)
-            .build();
+                .builder()
+                .featuresJson(featuresJson)
+                .attributesJson(attributes)
+                .url(url)
+                .allowUrlOverrides(true)
+                .build();
         GrowthBook subject = new GrowthBook(context);
 
         Integer result = subject.getFeatureValue("donut_price", 999);
@@ -761,12 +788,12 @@ class GrowthBookTest {
         String attributes = "{}";
         String url = "http://localhost:8080/url-feature-force?gb~meal_overrides_gluten_free=%7B%22meal_type%22%3A%20%22gf%22%2C%20%22dessert%22%3A%20%22French%20Vanilla%20Ice%20Cream%22%7D&gb~dark_mode=true&gb~donut_price=3.33&gb~banner_text=Hello%2C%20everyone!%20I%20hope%20you%20are%20all%20doing%20well!";
         GBContext context = GBContext
-            .builder()
-            .featuresJson(featuresJson)
-            .attributesJson(attributes)
-            .url(url)
-            .allowUrlOverrides(true)
-            .build();
+                .builder()
+                .featuresJson(featuresJson)
+                .attributesJson(attributes)
+                .url(url)
+                .allowUrlOverrides(true)
+                .build();
         GrowthBook subject = new GrowthBook(context);
 
         Float result = subject.getFeatureValue("donut_price", 9999f);
@@ -780,12 +807,12 @@ class GrowthBookTest {
         String attributes = "{}";
         String url = "http://localhost:8080/url-feature-force?gb~meal_overrides_gluten_free=%7B%22meal_type%22%3A%20%22gf%22%2C%20%22dessert%22%3A%20%22French%20Vanilla%20Ice%20Cream%22%7D&gb~dark_mode=true&gb~donut_price=3.33&gb~banner_text=Hello%2C%20everyone!%20I%20hope%20you%20are%20all%20doing%20well!";
         GBContext context = GBContext
-            .builder()
-            .featuresJson(featuresJson)
-            .attributesJson(attributes)
-            .url(url)
-            .allowUrlOverrides(true)
-            .build();
+                .builder()
+                .featuresJson(featuresJson)
+                .attributesJson(attributes)
+                .url(url)
+                .allowUrlOverrides(true)
+                .build();
         GrowthBook subject = new GrowthBook(context);
 
         String result = subject.getFeatureValue("banner_text", "???");
@@ -800,12 +827,12 @@ class GrowthBookTest {
         String url = "http://localhost:8080/url-feature-force?gb~meal_overrides_gluten_free=%7B%22meal_type%22%3A%20%22gf%22%2C%20%22dessert%22%3A%20%22French%20Vanilla%20Ice%20Cream%22%7D&gb~dark_mode=true&gb~donut_price=3.33&gb~banner_text=Hello%2C%20everyone!%20I%20hope%20you%20are%20all%20doing%20well!";
 
         GBContext context = GBContext
-            .builder()
-            .featuresJson(featuresJson)
-            .attributesJson(attributes)
-            .url(url)
-            .allowUrlOverrides(true)
-            .build();
+                .builder()
+                .featuresJson(featuresJson)
+                .attributesJson(attributes)
+                .url(url)
+                .allowUrlOverrides(true)
+                .build();
         GrowthBook subject = new GrowthBook(context);
 
         MealOrder emptyMealOrder = new MealOrder(MealType.STANDARD, "Donut");
@@ -824,12 +851,12 @@ class GrowthBookTest {
         String url = "http://localhost:8080/url-feature-force?gb~meal_overrides_gluten_free=%7B%22meal_type%22%3A%20%22gf%22%2C%20%22dessert%22%3A%20%22French%20Vanilla%20Ice%20Cream%22%7D&gb~dark_mode=true&gb~donut_price=3.33&gb~banner_text=Hello%2C%20everyone!%20I%20hope%20you%20are%20all%20doing%20well!";
 
         GBContext context = GBContext
-            .builder()
-            .featuresJson(featuresJson)
-            .attributesJson(attributes)
-            .url(url)
-            .allowUrlOverrides(true)
-            .build();
+                .builder()
+                .featuresJson(featuresJson)
+                .attributesJson(attributes)
+                .url(url)
+                .allowUrlOverrides(true)
+                .build();
         GrowthBook subject = new GrowthBook(context);
 
         String resultAsString = (String) subject.getFeatureValue("meal_overrides_gluten_free", "{\"meal_type\": \"standard\", \"dessert\": \"Donut\"}");
@@ -847,12 +874,12 @@ class GrowthBookTest {
         String url = "http://localhost:8080/url-feature-force?gb~meal_overrides_gluten_free=%7B%22meal_type%22%3A%20%22gf%22%2C%20%22dessert%22%3A%20%22French%20Vanilla%20Ice%20Cream%22%7D&gb~dark_mode=true&gb~donut_price=3.33&gb~banner_text=Hello%2C%20everyone!%20I%20hope%20you%20are%20all%20doing%20well!";
 
         GBContext context = GBContext
-            .builder()
-            .featuresJson(featuresJson)
-            .attributesJson(attributes)
-            .url(url)
-            .allowUrlOverrides(true)
-            .build();
+                .builder()
+                .featuresJson(featuresJson)
+                .attributesJson(attributes)
+                .url(url)
+                .allowUrlOverrides(true)
+                .build();
         GrowthBook subject = new GrowthBook(context);
 
         // We try to deserialize an unsupported class from the URL but it cannot deserialize properly, so we get the default value
@@ -904,7 +931,8 @@ class GrowthBookTest {
     }
 
     static class GBTestingFoo {
-        @SerializedName("foo") String foo = "FOO!";
+        @SerializedName("foo")
+        String foo = "FOO!";
 
         @Override
         public boolean equals(Object obj) {
@@ -925,12 +953,12 @@ class GrowthBookTest {
         String attributes = "{}";
         String url = "http://localhost:8080/url-feature-force?gb~meal_overrides_gluten_free=%7B%22meal_type%22%3A%20%22gf%22%2C%20%22dessert%22%3A%20%22French%20Vanilla%20Ice%20Cream%22%7D&gb~dark_mode=true&gb~donut_price=3.33&gb~banner_text=Hello%2C%20everyone!%20I%20hope%20you%20are%20all%20doing%20well!";
         GBContext context = GBContext
-            .builder()
-            .featuresJson(featuresJson)
-            .attributesJson(attributes)
-            .url(url)
-            .allowUrlOverrides(true)
-            .build();
+                .builder()
+                .featuresJson(featuresJson)
+                .attributesJson(attributes)
+                .url(url)
+                .allowUrlOverrides(true)
+                .build();
         GrowthBook subject = new GrowthBook(context);
 
         FeatureResult<Boolean> result = subject.evalFeature("dark_mode", Boolean.class);
@@ -945,12 +973,12 @@ class GrowthBookTest {
         String attributes = "{}";
         String url = "http://localhost:8080/url-feature-force?gb~meal_overrides_gluten_free=%7B%22meal_type%22%3A%20%22gf%22%2C%20%22dessert%22%3A%20%22French%20Vanilla%20Ice%20Cream%22%7D&gb~dark_mode=true&gb~donut_price=3.33&gb~banner_text=Hello%2C%20everyone!%20I%20hope%20you%20are%20all%20doing%20well!";
         GBContext context = GBContext
-            .builder()
-            .featuresJson(featuresJson)
-            .attributesJson(attributes)
-            .url(url)
-            .allowUrlOverrides(true)
-            .build();
+                .builder()
+                .featuresJson(featuresJson)
+                .attributesJson(attributes)
+                .url(url)
+                .allowUrlOverrides(true)
+                .build();
         GrowthBook subject = new GrowthBook(context);
 
         FeatureResult<String> result = subject.evalFeature("banner_text", String.class);
@@ -965,12 +993,12 @@ class GrowthBookTest {
         String attributes = "{}";
         String url = "http://localhost:8080/url-feature-force?gb~meal_overrides_gluten_free=%7B%22meal_type%22%3A%20%22gf%22%2C%20%22dessert%22%3A%20%22French%20Vanilla%20Ice%20Cream%22%7D&gb~dark_mode=true&gb~donut_price=3.33&gb~banner_text=Hello%2C%20everyone!%20I%20hope%20you%20are%20all%20doing%20well!";
         GBContext context = GBContext
-            .builder()
-            .featuresJson(featuresJson)
-            .attributesJson(attributes)
-            .url(url)
-            .allowUrlOverrides(true)
-            .build();
+                .builder()
+                .featuresJson(featuresJson)
+                .attributesJson(attributes)
+                .url(url)
+                .allowUrlOverrides(true)
+                .build();
         GrowthBook subject = new GrowthBook(context);
 
         FeatureResult<Float> result = subject.evalFeature("donut_price", Float.class);
@@ -985,12 +1013,12 @@ class GrowthBookTest {
         String attributes = "{}";
         String url = "http://localhost:8080/url-feature-force?gb~meal_overrides_gluten_free=%7B%22meal_type%22%3A%20%22gf%22%2C%20%22dessert%22%3A%20%22French%20Vanilla%20Ice%20Cream%22%7D&gb~dark_mode=true&gb~donut_price=4&gb~banner_text=Hello%2C%20everyone!%20I%20hope%20you%20are%20all%20doing%20well!";
         GBContext context = GBContext
-            .builder()
-            .featuresJson(featuresJson)
-            .attributesJson(attributes)
-            .url(url)
-            .allowUrlOverrides(true)
-            .build();
+                .builder()
+                .featuresJson(featuresJson)
+                .attributesJson(attributes)
+                .url(url)
+                .allowUrlOverrides(true)
+                .build();
         GrowthBook subject = new GrowthBook(context);
 
         FeatureResult<Integer> result = subject.evalFeature("donut_price", Integer.class);

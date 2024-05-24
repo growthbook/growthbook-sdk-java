@@ -5,7 +5,6 @@ import com.google.gson.annotations.SerializedName;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
-
 import javax.annotation.Nullable;
 import java.util.ArrayList;
 
@@ -48,9 +47,18 @@ public class Experiment<ValueType> {
     /**
      * Optional targeting condition
      */
-    String conditionJson;
+    JsonElement conditionJson;
+
+    /**
+     * Each item defines a prerequisite where a `condition` must evaluate against
+     * a parent feature's value (identified by `id`). If `gate` is true, then this is a blocking
+     * feature-level prerequisite; otherwise it applies to the current rule only.
+     */
+    @Nullable
+    ArrayList<ParentCondition> parentConditions;
 
     @Nullable
+    @Deprecated
     Namespace namespace;
 
     /**
@@ -86,8 +94,21 @@ public class Experiment<ValueType> {
     @Nullable
     String phase;
 
+    @Nullable
+    String fallbackAttribute;
+
+    @Nullable
+    Boolean disableStickyBucketing;
+
+    @Nullable
+    Integer bucketVersion;
+
+    @Nullable
+    Integer minBucketVersion;
+
     /**
      * Get a Gson JsonElement of the experiment
+     *
      * @return JsonElement
      */
     public String toJson() {
@@ -104,7 +125,8 @@ public class Experiment<ValueType> {
 
     /**
      * Get a Gson JsonElement of the experiment
-     * @param object experiment
+     *
+     * @param object      experiment
      * @param <ValueType> value type for the experiment
      * @return JsonElement
      */

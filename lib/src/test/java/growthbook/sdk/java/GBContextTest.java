@@ -1,15 +1,18 @@
 package growthbook.sdk.java;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Mockito.verify;
+
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
-
 import java.util.HashMap;
-
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.verify;
 
 class GBContextTest {
     private AutoCloseable closeable;
@@ -40,16 +43,19 @@ class GBContextTest {
         String featuresJson = "{}";
 
         GBContext subject = new GBContext(
-            sampleUserAttributes,
-            featuresJson,
-            null,
-            isEnabled,
-            isQaMode,
-            url,
-            allowUrlOverride,
-            forcedVariations,
-            trackingCallback,
-            null
+                sampleUserAttributes,
+                featuresJson,
+                null,
+                isEnabled,
+                isQaMode,
+                url,
+                allowUrlOverride,
+                forcedVariations,
+                trackingCallback,
+                null,
+                null,
+                null,
+                null
         );
 
         assertNotNull(subject);
@@ -73,7 +79,7 @@ class GBContextTest {
                 .build();
 
         // Initial state OK
-        assertTrue(subject.getEnabled());
+        assertEquals(Boolean.TRUE, subject.getEnabled());
         assertFalse(subject.getIsQaMode());
         assertEquals("http://localhost:3000", subject.getUrl());
 
@@ -82,7 +88,7 @@ class GBContextTest {
         subject.setIsQaMode(true);
         subject.setUrl("https://docs.growthbook.io/lib/build-your-own");
 
-        assertFalse(subject.getEnabled());
+        assertNotEquals(Boolean.TRUE, subject.getEnabled());
         assertTrue(subject.getIsQaMode());
         assertEquals("https://docs.growthbook.io/lib/build-your-own", subject.getUrl());
     }
@@ -117,16 +123,19 @@ class GBContextTest {
         String encryptionKey = "BhB1wORFmZLTDjbvstvS8w==";
 
         GBContext subject = new GBContext(
-            sampleUserAttributes,
-            encryptedFeaturesJson,
-            encryptionKey,
-            isEnabled,
-            isQaMode,
-            url,
-            allowUrlOverride,
-            forcedVariations,
-            trackingCallback,
-            null
+                sampleUserAttributes,
+                encryptedFeaturesJson,
+                encryptionKey,
+                isEnabled,
+                isQaMode,
+                url,
+                allowUrlOverride,
+                forcedVariations,
+                trackingCallback,
+                null,
+                null,
+                null,
+                null
         );
         String expectedFeaturesJson = "{\"greeting\":{\"defaultValue\":\"hello\",\"rules\":[{\"condition\":{\"country\":\"france\"},\"force\":\"bonjour\"},{\"condition\":{\"country\":\"mexico\"},\"force\":\"hola\"}]}}";
 
@@ -162,6 +171,7 @@ class GBContextTest {
         String expectedFeaturesJson = "{\"greeting\":{\"defaultValue\":\"hello\",\"rules\":[{\"condition\":{\"country\":\"france\"},\"force\":\"bonjour\"},{\"condition\":{\"country\":\"mexico\"},\"force\":\"hola\"}]}}";
 
         assertNotNull(subject);
+        assert subject.getFeaturesJson() != null;
         assertEquals(expectedFeaturesJson.trim(), subject.getFeaturesJson().trim());
     }
 
@@ -171,11 +181,11 @@ class GBContextTest {
         String encryptionKey = "nope";
 
         GBContext subject = GBContext
-            .builder()
-            .attributesJson(sampleUserAttributes)
-            .featuresJson(encryptedFeaturesJson)
-            .encryptionKey(encryptionKey)
-            .build();
+                .builder()
+                .attributesJson(sampleUserAttributes)
+                .featuresJson(encryptedFeaturesJson)
+                .encryptionKey(encryptionKey)
+                .build();
 
         assertEquals("{}", subject.getFeaturesJson());
     }
@@ -186,11 +196,11 @@ class GBContextTest {
         String encryptionKey = "BhB1wORFmZLTDjbvstvS8w==";
 
         GBContext subject = GBContext
-            .builder()
-            .attributesJson(sampleUserAttributes)
-            .featuresJson(encryptedFeaturesJson)
-            .encryptionKey(encryptionKey)
-            .build();
+                .builder()
+                .attributesJson(sampleUserAttributes)
+                .featuresJson(encryptedFeaturesJson)
+                .encryptionKey(encryptionKey)
+                .build();
 
         assertEquals("{}", subject.getFeaturesJson());
     }

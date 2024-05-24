@@ -4,7 +4,7 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonPrimitive;
-
+import com.google.gson.ToNumberPolicy;
 import javax.annotation.Nullable;
 import java.math.BigDecimal;
 import java.math.BigInteger;
@@ -38,11 +38,14 @@ class GrowthBookJsonUtils {
         // FeatureResult
         gsonBuilder.registerTypeAdapter(FeatureResult.class, FeatureResult.getSerializer());
 
+        gsonBuilder.setObjectToNumberStrategy(ToNumberPolicy.LONG_OR_DOUBLE);
+
         gson = gsonBuilder.create();
     }
 
     /**
      * The JSON utils singleton
+     *
      * @return an instance of {@link GrowthBookJsonUtils}
      */
     public static GrowthBookJsonUtils getInstance() {
@@ -58,6 +61,7 @@ class GrowthBookJsonUtils {
 
     /**
      * Unwrap an object. If it's not a JsonElement, you'll get the object right back
+     *
      * @param o the JSON element to unwrap.
      * @return unwrapped or original object
      */
@@ -101,7 +105,7 @@ class GrowthBookJsonUtils {
             if (bigDecimal.scale() <= 0) {
                 if (bigDecimal.abs().compareTo(new BigDecimal(Integer.MAX_VALUE)) <= 0) {
                     unwrapped = bigDecimal.intValue();
-                } else if (bigDecimal.abs().compareTo(new BigDecimal(Long.MAX_VALUE)) <= 0){
+                } else if (bigDecimal.abs().compareTo(new BigDecimal(Long.MAX_VALUE)) <= 0) {
                     unwrapped = bigDecimal.longValue();
                 } else {
                     unwrapped = bigDecimal;
@@ -122,6 +126,7 @@ class GrowthBookJsonUtils {
 
     /**
      * A convenience method to help work with types of JSON elements
+     *
      * @param element unknown JsonElement
      * @return {@link DataType}
      */

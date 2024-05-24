@@ -2,13 +2,15 @@ package growthbook.sdk.java;
 
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import growthbook.sdk.java.stickyBucketing.StickyAssignmentsDocument;
+import growthbook.sdk.java.stickyBucketing.StickyBucketService;
 import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Data;
 import lombok.Getter;
-
 import javax.annotation.Nullable;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -22,15 +24,16 @@ public class GBContext {
     /**
      * The {@link GBContextBuilder} is recommended for constructing a Context.
      * Alternatively, you can use this static method instead of the builder.
-     * @param attributesJson User attributes as JSON string
-     * @param featuresJson Features response as JSON string, or the encrypted payload. Encrypted payload requires `encryptionKey`
-     * @param encryptionKey Optional encryption key. If this is not null, featuresJson should be an encrypted payload.
-     * @param enabled Whether globally all experiments are enabled (default: true)
-     * @param isQaMode If true, random assignment is disabled and only explicitly forced variations are used.
-     * @param url A URL string that is used for experiment evaluation, as well as forcing feature values.
-     * @param allowUrlOverrides Boolean flag to allow URL overrides (default: false)
+     *
+     * @param attributesJson      User attributes as JSON string
+     * @param featuresJson        Features response as JSON string, or the encrypted payload. Encrypted payload requires `encryptionKey`
+     * @param encryptionKey       Optional encryption key. If this is not null, featuresJson should be an encrypted payload.
+     * @param enabled             Whether globally all experiments are enabled (default: true)
+     * @param isQaMode            If true, random assignment is disabled and only explicitly forced variations are used.
+     * @param url                 A URL string that is used for experiment evaluation, as well as forcing feature values.
+     * @param allowUrlOverrides   Boolean flag to allow URL overrides (default: false)
      * @param forcedVariationsMap Force specific experiments to always assign a specific variation (used for QA)
-     * @param trackingCallback A function that takes {@link Experiment} and {@link ExperimentResult} as arguments.
+     * @param trackingCallback    A function that takes {@link Experiment} and {@link ExperimentResult} as arguments.
      */
     @Builder
     public GBContext(
@@ -43,8 +46,11 @@ public class GBContext {
             Boolean allowUrlOverrides,
             @Nullable Map<String, Integer> forcedVariationsMap,
             @Nullable TrackingCallback trackingCallback,
-            @Nullable FeatureUsageCallback featureUsageCallback
-    ) {
+            @Nullable FeatureUsageCallback featureUsageCallback,
+            @Nullable StickyBucketService stickyBucketService,
+            @Nullable Map<String, StickyAssignmentsDocument> stickyBucketAssignmentDocs,
+            @Nullable List<String> stickyBucketIdentifierAttributes
+            ) {
         this.encryptionKey = encryptionKey;
 
         this.attributesJson = attributesJson == null ? "{}" : attributesJson;
@@ -71,6 +77,9 @@ public class GBContext {
         this.forcedVariationsMap = forcedVariationsMap == null ? new HashMap<>() : forcedVariationsMap;
         this.trackingCallback = trackingCallback;
         this.featureUsageCallback = featureUsageCallback;
+        this.stickyBucketService = stickyBucketService;
+        this.stickyBucketAssignmentDocs = stickyBucketAssignmentDocs;
+        this.stickyBucketIdentifierAttributes = stickyBucketIdentifierAttributes;
     }
 
     @Nullable
@@ -102,8 +111,11 @@ public class GBContext {
     @Nullable
     private String attributesJson;
 
+    private ExperimentHelper experimentHelper = new ExperimentHelper();
+
     /**
      * You can update the attributes JSON with new user attributes to evaluate against.
+     *
      * @param attributesJson updated user attributes
      */
     public void setAttributesJson(String attributesJson) {
@@ -129,6 +141,7 @@ public class GBContext {
 
     /**
      * You can update the features JSON with new features to evaluate against.
+     *
      * @param featuresJson updated features
      */
 
@@ -142,13 +155,24 @@ public class GBContext {
     @Nullable
     private Map<String, Integer> forcedVariationsMap;
 
+    @Nullable
+    private StickyBucketService stickyBucketService;
+
+    @Nullable
+    private Map<String, StickyAssignmentsDocument> stickyBucketAssignmentDocs;
+
+    @Nullable
+    private List<String> stickyBucketIdentifierAttributes;
+
     /**
      * The builder class to help create a context. You can use {@link #builder()} or the {@link GBContext} constructor
      */
-    public static class GBContextBuilder {} // This stub is required for JavaDoc and is filled by Lombuk
+    public static class GBContextBuilder {
+    } // This stub is required for JavaDoc and is filled by Lombuk
 
     /**
      * The builder class to help create a context. You can use this builder or the constructor
+     *
      * @return {@link CustomGBContextBuilder}
      */
     public static GBContextBuilder builder() {

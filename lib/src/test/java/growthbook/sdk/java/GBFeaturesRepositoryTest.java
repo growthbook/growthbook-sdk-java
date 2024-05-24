@@ -1,11 +1,7 @@
 package growthbook.sdk.java;
 
-import okhttp3.*;
-import org.junit.jupiter.api.Test;
-
-import java.io.IOException;
-
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.doAnswer;
@@ -15,17 +11,28 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import okhttp3.Call;
+import okhttp3.Callback;
+import okhttp3.MediaType;
+import okhttp3.OkHttpClient;
+import okhttp3.Protocol;
+import okhttp3.Request;
+import okhttp3.Response;
+import okhttp3.ResponseBody;
+import org.junit.jupiter.api.Test;
+import java.io.IOException;
+
 class GBFeaturesRepositoryTest {
 
     @Test
     void canBeConstructed_withNullEncryptionKey() {
         GBFeaturesRepository subject = new GBFeaturesRepository(
-            "https://cdn.growthbook.io",
-            "java_NsrWldWd5bxQJZftGsWKl7R2yD2LtAK8C8EUYh9L8",
-            null,
-            null,
-            null,
-            null
+                "https://cdn.growthbook.io",
+                "java_NsrWldWd5bxQJZftGsWKl7R2yD2LtAK8C8EUYh9L8",
+                null,
+                null,
+                null,
+                null
         );
 
         assertNotNull(subject);
@@ -36,12 +43,12 @@ class GBFeaturesRepositoryTest {
     @Test
     void canBeConstructed_withEncryptionKey() {
         GBFeaturesRepository subject = new GBFeaturesRepository(
-            "https://cdn.growthbook.io",
-            "sdk-862b5mHcP9XPugqD",
-            "BhB1wORFmZLTDjbvstvS8w==",
-            null,
-            null,
-            null
+                "https://cdn.growthbook.io",
+                "sdk-862b5mHcP9XPugqD",
+                "BhB1wORFmZLTDjbvstvS8w==",
+                null,
+                null,
+                null
         );
 
         assertNotNull(subject);
@@ -52,10 +59,10 @@ class GBFeaturesRepositoryTest {
     @Test
     void canBeBuilt_withNullEncryptionKey() {
         GBFeaturesRepository subject = GBFeaturesRepository
-            .builder()
-            .apiHost("https://cdn.growthbook.io")
-            .clientKey("java_NsrWldWd5bxQJZftGsWKl7R2yD2LtAK8C8EUYh9L8")
-            .build();
+                .builder()
+                .apiHost("https://cdn.growthbook.io")
+                .clientKey("java_NsrWldWd5bxQJZftGsWKl7R2yD2LtAK8C8EUYh9L8")
+                .build();
 
         assertNotNull(subject);
         assertEquals("https://cdn.growthbook.io/api/features/java_NsrWldWd5bxQJZftGsWKl7R2yD2LtAK8C8EUYh9L8", subject.getFeaturesEndpoint());
@@ -64,11 +71,11 @@ class GBFeaturesRepositoryTest {
     @Test
     void canBeBuilt_withEncryptionKey() {
         GBFeaturesRepository subject = GBFeaturesRepository
-            .builder()
-            .apiHost("https://cdn.growthbook.io")
-            .clientKey("sdk-862b5mHcP9XPugqD")
-            .encryptionKey("BhB1wORFmZLTDjbvstvS8w==")
-            .build();
+                .builder()
+                .apiHost("https://cdn.growthbook.io")
+                .clientKey("sdk-862b5mHcP9XPugqD")
+                .encryptionKey("BhB1wORFmZLTDjbvstvS8w==")
+                .build();
 
         assertNotNull(subject);
         assertEquals("https://cdn.growthbook.io/api/features/sdk-862b5mHcP9XPugqD", subject.getFeaturesEndpoint());
@@ -95,12 +102,12 @@ class GBFeaturesRepositoryTest {
         OkHttpClient mockOkHttpClient = mockHttpClient(fakeResponseJson);
 
         GBFeaturesRepository subject = new GBFeaturesRepository(
-            "http://localhost:80",
-            "sdk-abc123",
-            null,
-            null,
-            null,
-            mockOkHttpClient
+                "http://localhost:80",
+                "sdk-abc123",
+                null,
+                null,
+                null,
+                mockOkHttpClient
         );
         subject.initialize();
 
@@ -131,21 +138,21 @@ class GBFeaturesRepositoryTest {
     @Test
     void canFetchEncryptedFeatures_mockedResponse() throws IOException, FeatureFetchException {
         String fakeResponseJson = "{\n" +
-            "  \"status\": 200,\n" +
-            "  \"features\": {},\n" +
-            "  \"dateUpdated\": \"2023-01-25T00:51:26.772Z\",\n" +
-            "  \"encryptedFeatures\": \"jfLnSxjChWcbyHaIF30RNw==.iz8DywkSk4+WhNqnIwvr/PdvAwaRNjN3RE30JeOezGAQ/zZ2yoVyVo4w0nLHYqOje5MbhmL0ssvlH0ojk/BxqdSzXD4Wzo3DXfKV81Nzi1aSdiCMnVAIYEzjPl1IKZC3fl88YDBNV3F6YnR9Lemy9yzT03cvMZ0NZ9t5LZO2xS2MhpPYNcAfAlfxXhBGXj6UFDoNKGAtGKdc/zmJsUVQGLtHmqLspVynnJlPPo9nXG+87bt6SjSfQfySUgHm28hb4VmDhVmCx0N37buolVr3pzjZ1QK+tyMKIV7x4/Gu06k8sm0eU4HjG5DFsPgTR7qDu/N5Nk5UTRpG7aSXTUErxhHSJ7MQaxH/Dp/71zVEicaJ0qZE3oPRnU187QVBfdVLLRbqq2QU7Yu0GyJ1jjuf6TA+759OgifHdm17SX43L94Qe62CMU7JQyAqt7h7XmTTQBG664HYwgHJ0ju/9jySC4KUlRxNsixH1tJfznnEXqxgSozn4J61UprTqcmlxLZ1hZPCcRew3mm9DMAG9+YEiL8MhaIwsw8oVq9GirN1S8G3m/6UxQHxZVraPvMRXpGt5VpzEDJ0Po+phrIAhPuIbNpgb08b6Ej4Xh9XXeOLtIcpuj+gNpc4pR4tqF2IOwET\"\n" +
-            "}";
+                "  \"status\": 200,\n" +
+                "  \"features\": {},\n" +
+                "  \"dateUpdated\": \"2023-01-25T00:51:26.772Z\",\n" +
+                "  \"encryptedFeatures\": \"jfLnSxjChWcbyHaIF30RNw==.iz8DywkSk4+WhNqnIwvr/PdvAwaRNjN3RE30JeOezGAQ/zZ2yoVyVo4w0nLHYqOje5MbhmL0ssvlH0ojk/BxqdSzXD4Wzo3DXfKV81Nzi1aSdiCMnVAIYEzjPl1IKZC3fl88YDBNV3F6YnR9Lemy9yzT03cvMZ0NZ9t5LZO2xS2MhpPYNcAfAlfxXhBGXj6UFDoNKGAtGKdc/zmJsUVQGLtHmqLspVynnJlPPo9nXG+87bt6SjSfQfySUgHm28hb4VmDhVmCx0N37buolVr3pzjZ1QK+tyMKIV7x4/Gu06k8sm0eU4HjG5DFsPgTR7qDu/N5Nk5UTRpG7aSXTUErxhHSJ7MQaxH/Dp/71zVEicaJ0qZE3oPRnU187QVBfdVLLRbqq2QU7Yu0GyJ1jjuf6TA+759OgifHdm17SX43L94Qe62CMU7JQyAqt7h7XmTTQBG664HYwgHJ0ju/9jySC4KUlRxNsixH1tJfznnEXqxgSozn4J61UprTqcmlxLZ1hZPCcRew3mm9DMAG9+YEiL8MhaIwsw8oVq9GirN1S8G3m/6UxQHxZVraPvMRXpGt5VpzEDJ0Po+phrIAhPuIbNpgb08b6Ej4Xh9XXeOLtIcpuj+gNpc4pR4tqF2IOwET\"\n" +
+                "}";
         String encryptionKey = "o0maZL/O7AphxcbRvaJIzw==";
         OkHttpClient mockOkHttpClient = mockHttpClient(fakeResponseJson);
 
         GBFeaturesRepository subject = new GBFeaturesRepository(
-            "http://localhost:80",
-            "abc-123",
-            encryptionKey,
-            null,
-            null,
-            mockOkHttpClient
+                "http://localhost:80",
+                "abc-123",
+                encryptionKey,
+                null,
+                null,
+                mockOkHttpClient
         );
         subject.initialize();
 
@@ -242,6 +249,7 @@ class GBFeaturesRepositoryTest {
 
     /**
      * Create a mock instance of {@link OkHttpClient}
+     *
      * @param serializedBody JSON string response
      * @return mock {@link OkHttpClient}
      */
@@ -251,14 +259,14 @@ class GBFeaturesRepositoryTest {
         Call remoteCall = mock(Call.class);
 
         Response response = new Response.Builder()
-            .request(new Request.Builder().url("http://url.com").build())
-            .protocol(Protocol.HTTP_1_1)
-            .code(200).message("").body(
-                ResponseBody.create(
-                    serializedBody,
-                    MediaType.parse("application/json")
-                ))
-            .build();
+                .request(new Request.Builder().url("http://url.com").build())
+                .protocol(Protocol.HTTP_1_1)
+                .code(200).message("").body(
+                        ResponseBody.create(
+                                serializedBody,
+                                MediaType.parse("application/json")
+                        ))
+                .build();
 
         when(remoteCall.execute()).thenReturn(response);
         when(okHttpClient.newCall(any())).thenReturn(remoteCall);

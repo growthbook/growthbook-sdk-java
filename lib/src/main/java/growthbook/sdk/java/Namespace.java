@@ -1,12 +1,13 @@
 package growthbook.sdk.java;
 
-import com.google.gson.*;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonDeserializer;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonSerializer;
 import com.google.gson.annotations.Expose;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
-
-import java.lang.reflect.Type;
 
 /**
  * A tuple that specifies what part of a namespace an experiment includes. If two experiments are in the same namespace and their ranges don't overlap, they wil be mutually exclusive.
@@ -59,6 +60,7 @@ public class Namespace {
 
     /**
      * A JSON string for the namespace, resulting in a triple value [id, rangeStart, rangeEnd]
+     *
      * @return JSON string
      */
     public String toJson() {
@@ -72,27 +74,19 @@ public class Namespace {
 
     /**
      * a Gson deserializer for {@link Namespace}
+     *
      * @return a deserializer for {@link Namespace}
      */
     public static JsonDeserializer<Namespace> getDeserializer() {
-        return new JsonDeserializer<Namespace>() {
-            @Override
-            public Namespace deserialize(JsonElement json, Type typeOfT, JsonDeserializationContext context) throws JsonParseException {
-                return Namespace.fromJson(json);
-            }
-        };
+        return (json, typeOfT, context) -> Namespace.fromJson(json);
     }
 
     /**
      * a Gson serializer for {@link Namespace}
+     *
      * @return a serializer for {@link Namespace}
      */
     public static JsonSerializer<Namespace> getSerializer() {
-        return new JsonSerializer<Namespace>() {
-            @Override
-            public JsonElement serialize(Namespace src, Type typeOfSrc, JsonSerializationContext context) {
-                return Namespace.getJson(src);
-            }
-        };
+        return (src, typeOfSrc, context) -> Namespace.getJson(src);
     }
 }
