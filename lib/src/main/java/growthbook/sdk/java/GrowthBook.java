@@ -173,7 +173,7 @@ public class GrowthBook implements IGrowthBook {
             } else if (maybeValue instanceof Long) {
                 return ((Long) maybeValue).intValue();
             } else {
-                return defaultValue; // или можно бросить исключение, если требуется строгое соответствие типу Integer
+                return defaultValue;
             }
         } catch (Exception e) {
             e.printStackTrace();
