@@ -1,7 +1,9 @@
 package growthbook.sdk.java;
 
-import java.io.UnsupportedEncodingException;
+import com.google.common.base.Splitter;
+
 import java.net.URLDecoder;
+import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
@@ -14,24 +16,20 @@ class UrlUtils {
      * @return key/value pairs mapping to the items in the query string
      */
     public static Map<String, String> parseQueryString(String queryString) {
-        Map<String, String> map = new HashMap<String, String>();
-        if ((queryString == null) || (queryString.equals(""))) {
+        Map<String, String> map = new HashMap<>();
+        if ((queryString == null) || queryString.isEmpty()) {
             return map;
         }
-        String[] params = queryString.split("&");
+        Iterable<String> params = Splitter.on('&').split(queryString);
         for (String param : params) {
-            try {
-                String[] keyValuePair = param.split("=", 2);
-                String name = URLDecoder.decode(keyValuePair[0], "UTF-8");
-                if (Objects.equals(name, "")) {
-                    continue;
-                }
-                String value = keyValuePair.length > 1 ? URLDecoder.decode(keyValuePair[1], "UTF-8") : "";
-
-                map.put(name, value);
-            } catch (UnsupportedEncodingException e) {
-                e.printStackTrace();
+            String[] keyValuePair = param.split("=", 2);
+            String name = URLDecoder.decode(keyValuePair[0], StandardCharsets.UTF_8);
+            if (Objects.equals(name, "")) {
+                continue;
             }
+            String value = keyValuePair.length > 1 ? URLDecoder.decode(keyValuePair[1], StandardCharsets.UTF_8) : "";
+
+            map.put(name, value);
         }
         return map;
     }

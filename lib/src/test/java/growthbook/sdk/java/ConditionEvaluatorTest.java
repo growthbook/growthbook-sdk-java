@@ -14,7 +14,9 @@ import java.io.PrintStream;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.List;
 
 class ConditionEvaluatorTest {
 
@@ -50,10 +52,10 @@ class ConditionEvaluatorTest {
 
     @Test
     void test_evaluateCondition_testCases() {
-        ArrayList<String> passedTests = new ArrayList<>();
-        ArrayList<String> failedTests = new ArrayList<>();
+        List<String> passedTests = new ArrayList<>();
+        List<String> failedTests = new ArrayList<>();
 
-        ArrayList<Integer> failingIndexes = new ArrayList<>();
+        List<Integer> failingIndexes = new ArrayList<>();
 
         ConditionEvaluator evaluator = new ConditionEvaluator();
 
@@ -73,7 +75,7 @@ class ConditionEvaluatorTest {
 
             boolean evaluationResult = evaluator.evaluateCondition(attributes, condition);
 
-            if (unexpectedExceptionOccurred(errContent.toString())) {
+            if (unexpectedExceptionOccurred(errContent.toString(StandardCharsets.UTF_8))) {
                 failingIndexes.add(i);
                 failedTests.add(String.format("Unexpected Exception: %s", testDescription));
                 continue;
@@ -91,6 +93,7 @@ class ConditionEvaluatorTest {
         System.out.printf("\n\n\nFailing indexes = %s", failingIndexes);
 
         assertEquals(0, failedTests.size(), "There are failing tests");
+        assertFalse(passedTests.isEmpty());
     }
 
     @Test

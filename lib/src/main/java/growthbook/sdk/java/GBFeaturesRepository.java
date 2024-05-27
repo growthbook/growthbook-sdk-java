@@ -133,6 +133,7 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
         }
     }
 
+    @Override
     public String getFeaturesJson() {
         switch (this.refreshStrategy) {
             case STALE_WHILE_REVALIDATE:
@@ -181,11 +182,11 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
             }
 
             @Override
-            public void onResponse(@NotNull Call call, @NotNull Response response) throws IOException {
+            public void onResponse(@NotNull Call call, @NotNull Response response) {
                 try {
                     self.onSuccess(response);
                 } catch (FeatureFetchException e) {
-                    e.printStackTrace();
+                    throw new RuntimeException(e.getMessage());
                 }
             }
         });
@@ -463,12 +464,12 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
         public void onEvent(@NotNull EventSource eventSource, @Nullable String id, @Nullable String type, @NotNull String data) {
             super.onEvent(eventSource, id, type, data);
 
-            if (data.trim().equals("")) return;
+            if (data.trim().isEmpty()) return;
 
             try {
                 handler.onFeaturesResponse(data);
             } catch (FeatureFetchException e) {
-                e.printStackTrace();
+                throw new RuntimeException(e.getMessage());
             }
         }
 

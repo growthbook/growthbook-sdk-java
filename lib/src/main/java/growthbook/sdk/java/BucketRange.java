@@ -53,17 +53,18 @@ public class BucketRange {
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
+        if (!(o instanceof BucketRange)) return false;
 
         BucketRange that = (BucketRange) o;
-        return Objects.equals(
-                Precision.round(this.rangeStart, BUCKET_RANGE_FLOAT_PRECISION),
-                Precision.round(that.rangeStart, BUCKET_RANGE_FLOAT_PRECISION)
-        ) && Objects.equals(
-                Precision.round(this.rangeEnd, BUCKET_RANGE_FLOAT_PRECISION),
-                Precision.round(that.rangeEnd, BUCKET_RANGE_FLOAT_PRECISION)
+        return (Precision.round(
+                this.rangeStart, BUCKET_RANGE_FLOAT_PRECISION) == Precision.round(
+                that.rangeStart, BUCKET_RANGE_FLOAT_PRECISION)
+        ) && (Precision.round(
+                this.rangeEnd, BUCKET_RANGE_FLOAT_PRECISION) == Precision.round(
+                that.rangeEnd, BUCKET_RANGE_FLOAT_PRECISION)
         );
     }
+
 
     @Override
     public int hashCode() {

@@ -60,7 +60,7 @@ public class GBFeaturesRepositoryRefreshingTest {
         // Calls:
         //  1 = initial .execute()
         //  2 = refresh .enqueue()
-        verify(mockOkHttpClient.newCall(any()), times(2));
+        verify(mockOkHttpClient, times(2)).newCall(any());
     }
 
     @Test()

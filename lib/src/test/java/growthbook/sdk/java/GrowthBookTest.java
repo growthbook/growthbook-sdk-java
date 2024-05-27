@@ -79,7 +79,7 @@ class GrowthBookTest {
 //            System.out.printf("\n\n Eval Feature actual: %s - JSON: %s", result, result.toJson());
 //            System.out.printf("\n\n Eval Feature expected: %s - JSON: %s", expectedResult, expectedResult.toJson());
 
-            boolean valuePasses = Objects.equals(expectedResult.getValue(), result.getValue());
+            boolean valuePasses = Objects.equals(expectedResult.getValue(), Objects.requireNonNull(result).getValue());
             if (!valuePasses) {
                 System.out.printf("\n\nExpected value: %s, Actual value: %s", expectedResult.getValue(), result.getValue());
             }
@@ -102,7 +102,7 @@ class GrowthBookTest {
             boolean keyPasses = true;
             if (expectedResult.getExperimentResult() != null) {
                 System.out.printf("\n\nHas an experiment result: %s (index = %s)", testDescription, i);
-                ExperimentResult actualResult = result.getExperimentResult();
+                ExperimentResult<Object> actualResult = result.getExperimentResult();
                 String actualHashValue = actualResult != null ? actualResult.getHashValue() : null;
                 hashValuePasses = Objects.equals(expectedResult.getExperimentResult().getHashValue(), actualHashValue);
                 if (!hashValuePasses) {
@@ -941,6 +941,11 @@ class GrowthBookTest {
             }
 
             return false;
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hashCode(foo);
         }
     }
 

@@ -10,11 +10,13 @@ import org.jetbrains.annotations.NotNull;
 import javax.annotation.Nullable;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
@@ -46,7 +48,7 @@ class GrowthBookUtils {
     }
 
     private static Float hashV1(String stringValue, String seed) {
-        long hashValue = MathUtils.fnv1a_32((stringValue + seed).getBytes());
+        long hashValue = MathUtils.fnv1a_32((stringValue + seed).getBytes(StandardCharsets.UTF_8));
         long thousand = 1000;
         long remainder = hashValue % thousand;
 
@@ -55,8 +57,8 @@ class GrowthBookUtils {
     }
 
     private static Float hashV2(String stringValue, String seed) {
-        long first = MathUtils.fnv1a_32((seed + stringValue).getBytes());
-        long second = MathUtils.fnv1a_32(String.valueOf(first).getBytes());
+        long first = MathUtils.fnv1a_32((seed + stringValue).getBytes(StandardCharsets.UTF_8));
+        long second = MathUtils.fnv1a_32(String.valueOf(first).getBytes(StandardCharsets.UTF_8));
 
         long tenThousand = 10000;
         long remainder = second % tenThousand;
@@ -91,7 +93,7 @@ class GrowthBookUtils {
      * @param bucketRanges list of {@link BucketRange}
      * @return index of the {@link BucketRange} list to assign
      */
-    public static Integer chooseVariation(@NotNull Float n, ArrayList<BucketRange> bucketRanges) {
+    public static Integer chooseVariation(@NotNull Float n, List<BucketRange> bucketRanges) {
         for (int i = 0; i < bucketRanges.size(); i++) {
             BucketRange range = bucketRanges.get(i);
             if (inRange(n, range)) {
@@ -109,7 +111,7 @@ class GrowthBookUtils {
      * @param numberOfVariations The number of variations you would like
      * @return A list of variations
      */
-    public static ArrayList<Float> getEqualWeights(Integer numberOfVariations) {
+    public static List<Float> getEqualWeights(Integer numberOfVariations) {
         // Accommodate -1 number of variations
         int size = Math.max(0, numberOfVariations);
         if (size == 0) {
@@ -238,7 +240,7 @@ class GrowthBookUtils {
 
         if (value == null) return null;
 
-        value = value.toLowerCase();
+        value = value.toLowerCase(Locale.getDefault());
 
         if (value.equals("true") || value.equals("1") || value.equals("on")) {
             return true;
@@ -372,15 +374,15 @@ class GrowthBookUtils {
      * @param weights            List of weights. If these do not sum to 1, equal weights will be applied.
      * @return list of {@link BucketRange}
      */
-    public static ArrayList<BucketRange> getBucketRanges(
+    public static List<BucketRange> getBucketRanges(
             Integer numberOfVariations,
             @NotNull Float coverage,
-            @Nullable ArrayList<Float> weights
+            @Nullable List<Float> weights
     ) {
         float clampedCoverage = MathUtils.clamp(coverage, 0.0f, 1.0f);
 
         // When the number of variations doesn't match the weights provided, ignore the weights and get equal weights.
-        ArrayList<Float> adjustedWeights = weights;
+        List<Float> adjustedWeights = weights;
         if (weights == null || numberOfVariations != weights.size()) {
             adjustedWeights = getEqualWeights(numberOfVariations);
         }
@@ -393,7 +395,7 @@ class GrowthBookUtils {
 
         float start = 0.0f;
         float cumulative = 0.0f;
-        ArrayList<BucketRange> bucketRanges = new ArrayList<>();
+        List<BucketRange> bucketRanges = new ArrayList<>();
 
         for (float weight : adjustedWeights) {
             start = cumulative;

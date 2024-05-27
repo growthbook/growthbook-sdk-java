@@ -1,7 +1,9 @@
 package growthbook.sdk.java;
 
+import lombok.Getter;
 import javax.annotation.Nullable;
 import java.util.ArrayList;
+import java.util.List;
 
 /**
  * The feature with a generic value type.
@@ -17,16 +19,14 @@ public class Feature<ValueType> {
     @Nullable
     private final ArrayList<FeatureRule<ValueType>> rules = new ArrayList<>();
 
-    private final Object defaultValue = null;
-
     /**
      * The default value for a feature evaluation
+     * <p>
      *
-     * @return value of the feature
+     * return value of the feature
      */
-    public Object getDefaultValue() {
-        return this.defaultValue;
-    }
+    @Getter
+    private final Object defaultValue = null;
 
     /**
      * Returns the rules for evaluating the feature
@@ -34,7 +34,7 @@ public class Feature<ValueType> {
      * @return rules list
      */
     @Nullable
-    public ArrayList<FeatureRule<ValueType>> getRules() {
+    public List<FeatureRule<ValueType>> getRules() {
         return this.rules;
     }
 }

@@ -80,7 +80,8 @@ class GrowthBookUtilsTest {
 
             // Bucket Range input (2nd arg)
             JsonArray bucketRangeTuples = testCase.get(2).getAsJsonArray();
-            Type bucketRangeListType = new TypeToken<ArrayList<BucketRange>>() {}.getType();
+            Type bucketRangeListType = new TypeToken<ArrayList<BucketRange>>() {
+            }.getType();
             ArrayList<BucketRange> bucketRanges = GrowthBookJsonUtils.getInstance().gson.fromJson(bucketRangeTuples, bucketRangeListType);
 
             Integer expected = testCase.get(3).getAsInt();
@@ -105,10 +106,11 @@ class GrowthBookUtilsTest {
 
             // Expected
             JsonArray expectedArray = testCase.get(1).getAsJsonArray();
-            Type floatListType = new TypeToken<List<Float>>() {}.getType();
+            Type floatListType = new TypeToken<List<Float>>() {
+            }.getType();
             List<Float> expected = GrowthBookJsonUtils.getInstance().gson.fromJson(expectedArray, floatListType);
 
-            ArrayList<Float> result = GrowthBookUtils.getEqualWeights(numberOfVariations);
+            List<Float> result = GrowthBookUtils.getEqualWeights(numberOfVariations);
 
             assertEquals(expected, result);
         });
@@ -147,8 +149,10 @@ class GrowthBookUtilsTest {
     void test_getBucketRanges() {
         JsonArray testCases = helper.getBucketRangeTestCases();
 
-        Type floatList = new TypeToken<List<Float>>() {}.getType();
-        Type bucketRangeList = new TypeToken<List<BucketRange>>() {}.getType();
+        Type floatList = new TypeToken<List<Float>>() {
+        }.getType();
+        Type bucketRangeList = new TypeToken<List<BucketRange>>() {
+        }.getType();
 
         testCases.forEach(jsonElement -> {
             JsonArray testCase = (JsonArray) jsonElement;

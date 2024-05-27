@@ -199,7 +199,7 @@ class ExperimentEvaluator implements IExperimentEvaluator {
         if (!foundStickyBucket) {
             // Set default variation weights and coverage if not set
             // Weights
-            ArrayList<Float> weights = experiment.getWeights();
+            List<Float> weights = experiment.getWeights();
             if (weights == null) {
                 weights = GrowthBookUtils.getEqualWeights(experiment.getVariations().size());
             }
@@ -211,7 +211,7 @@ class ExperimentEvaluator implements IExperimentEvaluator {
             }
 
             // Bucket ranges
-            ArrayList<BucketRange> bucketRanges = experiment.getRanges();
+            List<BucketRange> bucketRanges = experiment.getRanges();
             if (bucketRanges == null) {
                 bucketRanges = GrowthBookUtils.getBucketRanges(
                         experiment.getVariations().size(),

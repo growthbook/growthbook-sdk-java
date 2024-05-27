@@ -12,6 +12,8 @@ import javax.annotation.Nullable;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  * Context object passed into the GrowthBook constructor.
@@ -63,16 +65,19 @@ public class GBContext {
                 String decrypted = DecryptionUtils.decrypt(featuresJson, encryptionKey);
                 this.featuresJson = decrypted.trim();
             } catch (DecryptionUtils.DecryptionException e) {
-                e.printStackTrace();
+                Logger.getAnonymousLogger().log(
+                        Level.WARNING,
+                        "DecryptionException exception occur: " + e.getMessage()
+                );
             }
         } else if (featuresJson != null) {
             // Use features
             this.featuresJson = featuresJson;
         }
 
-        this.enabled = enabled == null ? true : enabled;
-        this.isQaMode = isQaMode == null ? false : isQaMode;
-        this.allowUrlOverride = allowUrlOverrides == null ? false : allowUrlOverrides;
+        this.enabled = enabled == null || enabled;
+        this.isQaMode = isQaMode != null && isQaMode;
+        this.allowUrlOverride = allowUrlOverrides != null && allowUrlOverrides;
         this.url = url;
         this.forcedVariationsMap = forcedVariationsMap == null ? new HashMap<>() : forcedVariationsMap;
         this.trackingCallback = trackingCallback;
@@ -199,7 +204,7 @@ public class GBContext {
         try {
             return GrowthBookJsonUtils.getInstance().gson.fromJson(featuresJsonString, JsonObject.class);
         } catch (Exception e) {
-            e.printStackTrace();
+            Logger.getAnonymousLogger().log(Level.WARNING, e.getMessage());
             return null;
         }
     }
@@ -217,7 +222,7 @@ public class GBContext {
 
             return GrowthBookJsonUtils.getInstance().gson.fromJson(attributesJsonString, JsonObject.class);
         } catch (Exception e) {
-            e.printStackTrace();
+            Logger.getAnonymousLogger().log(Level.WARNING, e.getMessage());
             return new JsonObject();
         }
     }

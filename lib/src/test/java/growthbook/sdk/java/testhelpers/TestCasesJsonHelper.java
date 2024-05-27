@@ -4,6 +4,9 @@ import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.nio.file.Path;
@@ -105,8 +108,8 @@ public class TestCasesJsonHelper implements ITestCasesJsonHelper {
 
         Gson gson = new Gson();
         try {
-            return (JsonObject) gson.fromJson(new FileReader(absolutePath + "/test-cases.json"), JsonElement.class);
-        } catch (FileNotFoundException e) {
+            return (JsonObject) gson.fromJson(Files.newBufferedReader(Paths.get(absolutePath + "/test-cases.json"), StandardCharsets.UTF_8), JsonElement.class);
+        } catch (IOException e) {
             throw new RuntimeException(e);
         }
     }
@@ -116,9 +119,9 @@ public class TestCasesJsonHelper implements ITestCasesJsonHelper {
 
         Gson gson = new Gson();
         try {
-            JsonObject features = gson.fromJson(new FileReader(absolutePath + "/demo-features-001.json"), JsonObject.class);
+            JsonObject features = gson.fromJson(Files.newBufferedReader(Paths.get(absolutePath + "/demo-features-001.json"), StandardCharsets.UTF_8), JsonObject.class);
             return features.toString();
-        } catch (FileNotFoundException e) {
+        } catch (IOException e) {
             throw new RuntimeException(e);
         }
     }

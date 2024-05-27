@@ -10,7 +10,7 @@ class FeatureRuleTest {
 
     @Test
     void canBeConstructed() {
-        ArrayList<Float> weights = new ArrayList<Float>();
+        ArrayList<Float> weights = new ArrayList<>();
         weights.add(0.3f);
         weights.add(0.7f);
 
@@ -23,7 +23,7 @@ class FeatureRuleTest {
                 .rangeEnd(0.6f)
                 .build();
 
-        FeatureRule<Integer> subject = new FeatureRule<Integer>(
+        FeatureRule<Integer> subject = new FeatureRule<>(
                 null,
                 "my-key",
                 0.5f,
@@ -63,11 +63,9 @@ class FeatureRuleTest {
 
     @Test
     void canBeBuilt() {
-        ArrayList<Float> weights = new ArrayList<Float>();
+        ArrayList<Float> weights = new ArrayList<>();
         weights.add(0.3f);
         weights.add(0.7f);
-
-        ArrayList<String> variations = new ArrayList<>();
 
         Namespace namespace = Namespace
                 .builder()

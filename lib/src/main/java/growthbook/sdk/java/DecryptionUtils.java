@@ -1,5 +1,6 @@
 package growthbook.sdk.java;
 
+import com.google.common.base.Splitter;
 import javax.crypto.BadPaddingException;
 import javax.crypto.Cipher;
 import javax.crypto.IllegalBlockSizeException;
@@ -14,6 +15,9 @@ import java.security.InvalidAlgorithmParameterException;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.util.Base64;
+import java.util.List;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  * INTERNAL: This class is used internally to decrypt an encrypted features response
@@ -32,10 +36,10 @@ class DecryptionUtils {
         }
 
         try {
-            String[] parts = payload.split("\\.");
+            List<String> parts = Splitter.on('.').splitToList(payload);
 
-            String iv = parts[0];
-            String cipherText = parts[1];
+            String iv = parts.get(0);
+            String cipherText = parts.get(1);
 
             byte[] decodedIv = Base64.getDecoder().decode(iv.getBytes(StandardCharsets.UTF_8));
             IvParameterSpec ivParameterSpec = new IvParameterSpec(decodedIv);
@@ -48,22 +52,22 @@ class DecryptionUtils {
 
             // This decoder ensures no malformed input due to using a mismatching iv key
             StandardCharsets.UTF_8
-                .newDecoder()
-                .onMalformedInput(CodingErrorAction.REPORT)
-                .decode(ByteBuffer.wrap(plainText));
+                    .newDecoder()
+                    .onMalformedInput(CodingErrorAction.REPORT)
+                    .decode(ByteBuffer.wrap(plainText));
 
-            return new String(plainText);
+            return new String(plainText, StandardCharsets.UTF_8);
         } catch (InvalidAlgorithmParameterException e) {
             throw new DecryptionException("Invalid payload");
         } catch (InvalidKeyException e) {
             throw new DecryptionException("Invalid encryption key");
         } catch (
-            NoSuchAlgorithmException
-            | NoSuchPaddingException
-            | IllegalBlockSizeException
-            | CharacterCodingException
-            | IllegalArgumentException
-            | BadPaddingException e
+                NoSuchAlgorithmException
+                | NoSuchPaddingException
+                | IllegalBlockSizeException
+                | CharacterCodingException
+                | IllegalArgumentException
+                | BadPaddingException e
         ) {
             e.printStackTrace();
             throw new DecryptionException(e.getMessage());

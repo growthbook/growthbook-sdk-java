@@ -11,6 +11,7 @@ import growthbook.sdk.java.GrowthBook;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.net.InetSocketAddress;
+import java.nio.charset.StandardCharsets;
 
 /**
  * Run this to test an actual SSE implementation end-to-end.
@@ -67,7 +68,7 @@ public class SSETestServer {
             // Send response
             exchange.sendResponseHeaders(200, response.length());
             OutputStream os = exchange.getResponseBody();
-            os.write(response.getBytes());
+            os.write(response.getBytes(StandardCharsets.UTF_8));
             os.close();
         }
     }

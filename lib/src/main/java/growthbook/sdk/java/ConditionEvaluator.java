@@ -12,6 +12,7 @@ import java.util.Collections;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.Locale;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -303,7 +304,7 @@ class ConditionEvaluator implements IConditionEvaluator {
                     return (!expected.isJsonPrimitive() || expected.getAsJsonPrimitive().isNumber())
                             && 0.0 < expected.getAsDouble();
                 }
-                if (actual.getAsString().toLowerCase().matches("\\d+")) {
+                if (actual.getAsString().toLowerCase(Locale.ROOT).matches("\\d+")) {
                     return Double.parseDouble(actual.getAsString()) < expected.getAsDouble();
                 }
                 if (actual.getAsJsonPrimitive().isNumber()) {
@@ -501,8 +502,8 @@ class ConditionEvaluator implements IConditionEvaluator {
         }
 
         if (
-            conditionValue.isJsonNull() &&
-                (attributeValue == null || attributeValue.isJsonNull())
+                conditionValue.isJsonNull() &&
+                        (attributeValue == null || attributeValue.isJsonNull())
         ) {
             return true;
         }
@@ -528,8 +529,7 @@ class ConditionEvaluator implements IConditionEvaluator {
                 if (evalConditionValue(expected, actualElement)) {
                     return true;
                 }
-            }
-            else if (evaluateCondition(actualElement.toString(), expected.toString())) {
+            } else if (evaluateCondition(actualElement.toString(), expected.toString())) {
                 return true;
             }
         }
@@ -592,16 +592,16 @@ class ConditionEvaluator implements IConditionEvaluator {
         ArrayList<Object> actualAsList = jsonUtils.gson.fromJson(actualArr, listType);
 
         return actualAsList.stream()
-            .anyMatch(o -> {
-                if (
-                    attributeDataType == DataType.STRING ||
-                        attributeDataType == DataType.NUMBER ||
-                        attributeDataType == DataType.BOOLEAN
-                ) {
-                    return expectedAsList.contains(o);
-                }
+                .anyMatch(o -> {
+                    if (
+                            attributeDataType == DataType.STRING ||
+                                    attributeDataType == DataType.NUMBER ||
+                                    attributeDataType == DataType.BOOLEAN
+                    ) {
+                        return expectedAsList.contains(o);
+                    }
 
-                return false;
-            });
+                    return false;
+                });
     }
 }
