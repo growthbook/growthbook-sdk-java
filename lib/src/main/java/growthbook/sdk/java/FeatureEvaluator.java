@@ -303,6 +303,8 @@ class FeatureEvaluator implements IFeatureEvaluator {
                     if (featureUsageCallback != null) {
                         featureUsageCallback.onFeatureUsage(key, forcedRuleFeatureValue);
                     }
+
+                    goOutFromCircularLoop();
                     return forcedRuleFeatureValue;
                 } else {
 
@@ -418,5 +420,10 @@ class FeatureEvaluator implements IFeatureEvaluator {
             e.printStackTrace();
             return null;
         }
+    }
+
+    private void goOutFromCircularLoop() {
+        featureEvalContext.setId(null);
+        featureEvalContext.getEvaluatedFeatures().clear();
     }
 }
