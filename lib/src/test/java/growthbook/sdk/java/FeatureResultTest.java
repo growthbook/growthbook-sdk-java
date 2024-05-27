@@ -1,8 +1,16 @@
 package growthbook.sdk.java;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+
 import org.junit.jupiter.api.Test;
 
-import static org.junit.jupiter.api.Assertions.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
 
 class FeatureResultTest {
     @Test
@@ -21,7 +29,7 @@ class FeatureResultTest {
 
     @Test
     void canBeBuilt() {
-        FeatureResult subject = FeatureResult
+        FeatureResult<String> subject = FeatureResult
                 .<String>builder()
                 .value("hello")
                 .experiment(null)
@@ -67,10 +75,10 @@ class FeatureResultTest {
     @Test
     void featureResult_isOn_withNonZeroValue_returnsTrue_forIntegers() {
         FeatureResult<Integer> subject = FeatureResult
-            .<Integer>builder()
-            .value(1)
-            .source(FeatureResultSource.FORCE)
-            .build();
+                .<Integer>builder()
+                .value(1)
+                .source(FeatureResultSource.FORCE)
+                .build();
 
         assertTrue(subject.isOn());
         assertFalse(subject.isOff());
@@ -79,10 +87,10 @@ class FeatureResultTest {
     @Test
     void featureResult_isOn_withZeroValue_returnsFalse_forIntegers() {
         FeatureResult<Integer> subject = FeatureResult
-            .<Integer>builder()
-            .value(0)
-            .source(FeatureResultSource.FORCE)
-            .build();
+                .<Integer>builder()
+                .value(0)
+                .source(FeatureResultSource.FORCE)
+                .build();
 
         assertFalse(subject.isOn());
         assertTrue(subject.isOff());
@@ -93,10 +101,10 @@ class FeatureResultTest {
     @Test
     void featureResult_isOn_withNonZeroValue_returnsTrue_forFloats() {
         FeatureResult<Float> subject = FeatureResult
-            .<Float>builder()
-            .value(1.0f)
-            .source(FeatureResultSource.FORCE)
-            .build();
+                .<Float>builder()
+                .value(1.0f)
+                .source(FeatureResultSource.FORCE)
+                .build();
 
         assertTrue(subject.isOn());
         assertFalse(subject.isOff());
@@ -105,10 +113,10 @@ class FeatureResultTest {
     @Test
     void featureResult_isOn_withZeroValue_returnsFalse_forFloats() {
         FeatureResult<Float> subject = FeatureResult
-            .<Float>builder()
-            .value(0.0f)
-            .source(FeatureResultSource.FORCE)
-            .build();
+                .<Float>builder()
+                .value(0.0f)
+                .source(FeatureResultSource.FORCE)
+                .build();
 
         assertFalse(subject.isOn());
         assertTrue(subject.isOff());
@@ -119,10 +127,10 @@ class FeatureResultTest {
     @Test
     void featureResult_isOn_withNonZeroValue_returnsTrue_forDoubles() {
         FeatureResult<Double> subject = FeatureResult
-            .<Double>builder()
-            .value(1.0)
-            .source(FeatureResultSource.FORCE)
-            .build();
+                .<Double>builder()
+                .value(1.0)
+                .source(FeatureResultSource.FORCE)
+                .build();
 
         assertTrue(subject.isOn());
         assertFalse(subject.isOff());
@@ -131,10 +139,10 @@ class FeatureResultTest {
     @Test
     void featureResult_isOn_withZeroValue_returnsFalse_forDoubles() {
         FeatureResult<Double> subject = FeatureResult
-            .<Double>builder()
-            .value(0)
-            .source(FeatureResultSource.FORCE)
-            .build();
+                .<Double>builder()
+                .value(0)
+                .source(FeatureResultSource.FORCE)
+                .build();
 
         assertFalse(subject.isOn());
         assertTrue(subject.isOff());
@@ -145,10 +153,10 @@ class FeatureResultTest {
     @Test
     void featureResult_isOn_withNonEmptyValue_returnsTrue_forStrings() {
         FeatureResult<String> subject = FeatureResult
-            .<String>builder()
-            .value("hello, world!")
-            .source(FeatureResultSource.FORCE)
-            .build();
+                .<String>builder()
+                .value("hello, world!")
+                .source(FeatureResultSource.FORCE)
+                .build();
 
         assertTrue(subject.isOn());
         assertFalse(subject.isOff());
@@ -157,13 +165,55 @@ class FeatureResultTest {
     @Test
     void featureResult_isOn_withEmptyValue_returnsFalse_forStrings() {
         FeatureResult<String> subject = FeatureResult
-            .<String>builder()
-            .value("")
-            .source(FeatureResultSource.FORCE)
-            .build();
+                .<String>builder()
+                .value("")
+                .source(FeatureResultSource.FORCE)
+                .build();
 
         assertFalse(subject.isOn());
         assertTrue(subject.isOff());
+    }
+
+    @Test
+    void featureResult_isOn_withPerceivedNotEmptyCollection() {
+        FeatureResult<Object> subject = FeatureResult
+                .builder()
+                .value(Collections.singleton("acme"))
+                .build();
+
+        assertTrue(subject.isOn());
+        assertFalse(subject.isOff());
+    }
+
+    @Test
+    void featureResult_isOff_withPerceivedEmptyCollection() {
+        FeatureResult<Object> subject = FeatureResult
+                .builder()
+                .value(Collections.emptyList())
+                .build();
+
+        assertFalse(subject.isOn());
+        assertTrue(subject.isOff());
+    }
+
+    @Test
+    void proofOfConceptCollectionTest() {
+        GBContext ctx = GBContext.builder()
+            .featuresJson(
+                "{\"test\":{\"defaultValue\":[],\"rules\":[{\"force\":[\"line1\",\"line2\"]}]}}")
+            .build();
+
+        GrowthBook growthBook = new GrowthBook(ctx);
+
+        String featureName = "test";
+
+        assertTrue(growthBook.isOn(featureName));
+        assertFalse(growthBook.isOff(featureName));
+
+        Object value = growthBook.getFeatureValue(featureName, new ArrayList<>());
+
+        assertInstanceOf(Collection.class, value);
+        assertFalse(((Collection<?>) value).isEmpty());
     }
 
     // endregion isOn() isOff()

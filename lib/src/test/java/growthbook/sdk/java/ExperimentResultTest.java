@@ -1,11 +1,12 @@
 package growthbook.sdk.java;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
+
 import com.google.gson.reflect.TypeToken;
 import org.junit.jupiter.api.Test;
-
 import java.lang.reflect.Type;
-
-import static org.junit.jupiter.api.Assertions.*;
 
 class ExperimentResultTest {
     final GrowthBookJsonUtils jsonUtils = GrowthBookJsonUtils.getInstance();
@@ -59,6 +60,7 @@ class ExperimentResultTest {
                 "123",
                 "my_feature",
                 true,
+                null,
                 null,
                 null,
                 null,

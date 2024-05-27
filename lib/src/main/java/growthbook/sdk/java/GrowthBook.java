@@ -1,7 +1,11 @@
 package growthbook.sdk.java;
 
+import com.google.gson.JsonObject;
+import growthbook.sdk.java.stickyBucketing.InMemoryStickyBucketServiceImpl;
+import growthbook.sdk.java.stickyBucketing.StickyBucketService;
 import javax.annotation.Nullable;
 import java.util.ArrayList;
+import java.util.HashMap;
 
 /**
  * GrowthBook SDK class.
@@ -20,9 +24,11 @@ public class GrowthBook implements IGrowthBook {
     private final GrowthBookJsonUtils jsonUtils = GrowthBookJsonUtils.getInstance();
 
     private ArrayList<ExperimentRunCallback> callbacks = new ArrayList<>();
+    private JsonObject attributeOverrides = new JsonObject();
 
     /**
      * Initialize the GrowthBook SDK with a provided {@link GBContext}
+     *
      * @param context {@link GBContext}
      */
     public GrowthBook(GBContext context) {
@@ -31,6 +37,7 @@ public class GrowthBook implements IGrowthBook {
         this.featureEvaluator = new FeatureEvaluator();
         this.conditionEvaluator = new ConditionEvaluator();
         this.experimentEvaluatorEvaluator = new ExperimentEvaluator();
+        this.attributeOverrides = context.getAttributes();
     }
 
     /**
@@ -44,14 +51,15 @@ public class GrowthBook implements IGrowthBook {
         this.featureEvaluator = new FeatureEvaluator();
         this.conditionEvaluator = new ConditionEvaluator();
         this.experimentEvaluatorEvaluator = new ExperimentEvaluator();
+        this.attributeOverrides = context.getAttributes();
     }
 
     /**
      * <b>INTERNAL:</b> Constructor with injected dependencies. Useful for testing but not intended to be used
      *
-     * @param context Context
-     * @param featureEvaluator FeatureEvaluator
-     * @param conditionEvaluator ConditionEvaluator
+     * @param context             Context
+     * @param featureEvaluator    FeatureEvaluator
+     * @param conditionEvaluator  ConditionEvaluator
      * @param experimentEvaluator ExperimentEvaluator
      */
     GrowthBook(GBContext context, FeatureEvaluator featureEvaluator, ConditionEvaluator conditionEvaluator, ExperimentEvaluator experimentEvaluator) {
@@ -64,7 +72,7 @@ public class GrowthBook implements IGrowthBook {
     @Nullable
     @Override
     public <ValueType> FeatureResult<ValueType> evalFeature(String key, Class<ValueType> valueTypeClass) {
-        return featureEvaluator.evaluateFeature(key, this.context, valueTypeClass);
+        return featureEvaluator.evaluateFeature(key, this.context, valueTypeClass, attributeOverrides);
     }
 
     @Override
@@ -78,10 +86,10 @@ public class GrowthBook implements IGrowthBook {
     }
 
     @Override
-    public <ValueType>ExperimentResult<ValueType> run(Experiment<ValueType> experiment) {
-        ExperimentResult<ValueType> result = experimentEvaluatorEvaluator.evaluateExperiment(experiment, this.context, null);
+    public <ValueType> ExperimentResult<ValueType> run(Experiment<ValueType> experiment) {
+        ExperimentResult<ValueType> result = experimentEvaluatorEvaluator.evaluateExperiment(experiment, this.context, null, attributeOverrides);
 
-        this.callbacks.forEach( callback -> {
+        this.callbacks.forEach(callback -> {
             callback.onRun(result);
         });
 
@@ -89,19 +97,29 @@ public class GrowthBook implements IGrowthBook {
     }
 
     @Override
+    public void setOwnStickyBucketService(@Nullable StickyBucketService stickyBucketService) {
+        this.context.setStickyBucketService(stickyBucketService);
+    }
+
+    @Override
+    public void setInMemoryStickyBucketService() {
+        this.context.setStickyBucketService(new InMemoryStickyBucketServiceImpl(new HashMap<>()));
+    }
+
+    @Override
     public Boolean isOn(String featureKey) {
-        return this.featureEvaluator.evaluateFeature(featureKey, context, Object.class).isOn();
+        return this.featureEvaluator.evaluateFeature(featureKey, context, Object.class, attributeOverrides).isOn();
     }
 
     @Override
     public Boolean isOff(String featureKey) {
-        return this.featureEvaluator.evaluateFeature(featureKey, context, Object.class).isOff();
+        return this.featureEvaluator.evaluateFeature(featureKey, context, Object.class, attributeOverrides).isOff();
     }
 
     @Override
     public Boolean getFeatureValue(String featureKey, Boolean defaultValue) {
         try {
-            Boolean maybeValue = (Boolean) this.featureEvaluator.evaluateFeature(featureKey, context, Boolean.class).getValue();
+            Boolean maybeValue = (Boolean) this.featureEvaluator.evaluateFeature(featureKey, context, Boolean.class, attributeOverrides).getValue();
             return maybeValue == null ? defaultValue : maybeValue;
         } catch (Exception e) {
             e.printStackTrace();
@@ -112,7 +130,7 @@ public class GrowthBook implements IGrowthBook {
     @Override
     public String getFeatureValue(String featureKey, String defaultValue) {
         try {
-            String maybeValue = (String) this.featureEvaluator.evaluateFeature(featureKey, context, String.class).getValue();
+            String maybeValue = (String) this.featureEvaluator.evaluateFeature(featureKey, context, String.class, attributeOverrides).getValue();
             return maybeValue == null ? defaultValue : maybeValue;
         } catch (Exception e) {
             e.printStackTrace();
@@ -124,7 +142,7 @@ public class GrowthBook implements IGrowthBook {
     public Float getFeatureValue(String featureKey, Float defaultValue) {
         try {
             // Type erasure occurs so a Double ends up being returned
-            Double maybeValue = (Double) this.featureEvaluator.evaluateFeature(featureKey, context, Double.class).getValue();
+            Double maybeValue = (Double) this.featureEvaluator.evaluateFeature(featureKey, context, Double.class, attributeOverrides).getValue();
 
             if (maybeValue == null) {
                 return defaultValue;
@@ -144,16 +162,17 @@ public class GrowthBook implements IGrowthBook {
     @Override
     public Integer getFeatureValue(String featureKey, Integer defaultValue) {
         try {
-            // Type erasure occurs so a Double ends up being returned
-            Double maybeValue = (Double) this.featureEvaluator.evaluateFeature(featureKey, context, Double.class).getValue();
+            Object maybeValue = this.featureEvaluator.evaluateFeature(featureKey, context, Object.class, attributeOverrides).getValue();
 
             if (maybeValue == null) {
                 return defaultValue;
             }
 
-            try {
-                return maybeValue.intValue();
-            } catch (NumberFormatException e) {
+            if (maybeValue instanceof Double) {
+                return ((Double) maybeValue).intValue();
+            } else if (maybeValue instanceof Long) {
+                return ((Long) maybeValue).intValue();
+            } else {
                 return defaultValue;
             }
         } catch (Exception e) {
@@ -165,7 +184,7 @@ public class GrowthBook implements IGrowthBook {
     @Override
     public Object getFeatureValue(String featureKey, Object defaultValue) {
         try {
-            Object maybeValue = this.featureEvaluator.evaluateFeature(featureKey, context, defaultValue.getClass()).getValue();
+            Object maybeValue = this.featureEvaluator.evaluateFeature(featureKey, context, defaultValue.getClass(), attributeOverrides).getValue();
             return maybeValue == null ? defaultValue : maybeValue;
         } catch (Exception e) {
             e.printStackTrace();
@@ -176,7 +195,7 @@ public class GrowthBook implements IGrowthBook {
     @Override
     public <ValueType> ValueType getFeatureValue(String featureKey, ValueType defaultValue, Class<ValueType> gsonDeserializableClass) {
         try {
-            Object maybeValue = this.featureEvaluator.evaluateFeature(featureKey, context, gsonDeserializableClass).getValue();
+            Object maybeValue = this.featureEvaluator.evaluateFeature(featureKey, context, gsonDeserializableClass, attributeOverrides).getValue();
             if (maybeValue == null) {
                 return defaultValue;
             }
@@ -198,8 +217,19 @@ public class GrowthBook implements IGrowthBook {
     @Override
     public Double getFeatureValue(String featureKey, Double defaultValue) {
         try {
-            Double maybeValue = (Double) this.featureEvaluator.evaluateFeature(featureKey, context, Double.class).getValue();
-            return maybeValue == null ? defaultValue : maybeValue;
+            Object maybeValue = this.featureEvaluator.evaluateFeature(featureKey, context, Object.class, attributeOverrides).getValue();
+
+            if (maybeValue == null) {
+                return defaultValue;
+            }
+
+            if (maybeValue instanceof Double) {
+                return (Double) maybeValue;
+            } else if (maybeValue instanceof Long) {
+                return ((Long) maybeValue).doubleValue();
+            } else {
+                return defaultValue;
+            }
         } catch (Exception e) {
             e.printStackTrace();
             return defaultValue;
@@ -214,5 +244,16 @@ public class GrowthBook implements IGrowthBook {
     @Override
     public void subscribe(ExperimentRunCallback callback) {
         this.callbacks.add(callback);
+    }
+
+    @Override
+    public void featuresAPIModelSuccessfully(String featuresDataModel) {
+        refreshStickyBucketService(featuresDataModel);
+    }
+
+    private void refreshStickyBucketService(@Nullable String featuresDataModel) {
+        if (context.getStickyBucketService() != null) {
+            GrowthBookUtils.refreshStickyBuckets(context, featuresDataModel, attributeOverrides);
+        }
     }
 }

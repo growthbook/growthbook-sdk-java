@@ -5,6 +5,7 @@ package growthbook.sdk.java;
  */
 interface IGBFeaturesRepository {
     void initialize() throws FeatureFetchException;
+    void initialize(Boolean retryOnFailure) throws FeatureFetchException;
 
     /**
      * Required implementation to get the featuresJson

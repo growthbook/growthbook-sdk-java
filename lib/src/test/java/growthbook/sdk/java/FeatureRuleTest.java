@@ -1,11 +1,10 @@
 package growthbook.sdk.java;
 
-import org.junit.jupiter.api.Test;
-
-import java.util.ArrayList;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
+
+import org.junit.jupiter.api.Test;
+import java.util.ArrayList;
 
 class FeatureRuleTest {
 
@@ -25,6 +24,7 @@ class FeatureRuleTest {
                 .build();
 
         FeatureRule<Integer> subject = new FeatureRule<Integer>(
+                null,
                 "my-key",
                 0.5f,
                 100,
@@ -32,6 +32,11 @@ class FeatureRuleTest {
                 weights,
                 namespace,
                 "_id",
+                null,
+                null,
+                null,
+                null,
+                null,
                 null,
                 null,
                 null,

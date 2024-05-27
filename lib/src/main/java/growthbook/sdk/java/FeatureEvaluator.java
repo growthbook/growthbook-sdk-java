@@ -2,23 +2,43 @@ package growthbook.sdk.java;
 
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
-
 import javax.annotation.Nullable;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.HashSet;
+import java.util.Map;
 
 /**
  * <b>INTERNAL</b>: Implementation of feature evaluation
+ */
+
+/**
+ * Feature Evaluator Class
+ * Takes Context and Feature Key
+ * Returns Calculated Feature Result against that key
  */
 class FeatureEvaluator implements IFeatureEvaluator {
 
     private final GrowthBookJsonUtils jsonUtils = GrowthBookJsonUtils.getInstance();
     private final ConditionEvaluator conditionEvaluator = new ConditionEvaluator();
     private final ExperimentEvaluator experimentEvaluator = new ExperimentEvaluator();
+    private final FeatureEvalContext featureEvalContext = new FeatureEvalContext(null, new HashSet<>());
 
+    // Takes Context and Feature Key
+    // Returns Calculated Feature Result against that key
     @Override
-    public <ValueType> FeatureResult<ValueType> evaluateFeature(String key, GBContext context, Class<ValueType> valueTypeClass) throws ClassCastException {
+    public <ValueType> FeatureResult<ValueType> evaluateFeature(
+            String key,
+            GBContext context,
+            Class<ValueType> valueTypeClass,
+            JsonObject attributeOverrides
+    ) throws ClassCastException {
+        featureEvalContext.setId(key);
+
+        // This callback serves for listening for feature usage events
         FeatureUsageCallback featureUsageCallback = context.getFeatureUsageCallback();
 
         FeatureResult<ValueType> emptyFeature = FeatureResult
@@ -28,15 +48,32 @@ class FeatureEvaluator implements IFeatureEvaluator {
                 .build();
 
         try {
+            // block that handle recursion
+            System.out.println("evaluateFeature: circular dependency detected:");
+            if (featureEvalContext.getEvaluatedFeatures().contains(key)) {
+                FeatureResult<ValueType> featureResultWhenCircularDependencyDetected = FeatureResult
+                        .<ValueType>builder()
+                        .value(null)
+                        .source(FeatureResultSource.CYCLIC_PREREQUISITE)
+                        .build();
+                if (featureUsageCallback != null) {
+                    featureUsageCallback.onFeatureUsage(key, featureResultWhenCircularDependencyDetected);
+                }
+
+                return featureResultWhenCircularDependencyDetected;
+            }
+
+            featureEvalContext.getEvaluatedFeatures().add(key);
+
             // Check for feature values forced by URL
             if (context.getAllowUrlOverride()) {
                 ValueType forcedValue = evaluateForcedFeatureValueFromUrl(key, context.getUrl(), valueTypeClass);
                 if (forcedValue != null) {
                     FeatureResult<ValueType> urlFeatureResult = FeatureResult
-                        .<ValueType>builder()
-                        .value(forcedValue)
-                        .source(FeatureResultSource.URL_OVERRIDE)
-                        .build();
+                            .<ValueType>builder()
+                            .value(forcedValue)
+                            .source(FeatureResultSource.URL_OVERRIDE)
+                            .build();
 
                     if (featureUsageCallback != null) {
                         featureUsageCallback.onFeatureUsage(key, urlFeatureResult);
@@ -108,23 +145,96 @@ class FeatureEvaluator implements IFeatureEvaluator {
             }
 //            System.out.printf("\n\nAttributes = %s", attributes);
 
-            // region Rules
+            // Loop through the feature rules (if any)
 
             for (FeatureRule<ValueType> rule : feature.getRules()) {
-                // If the rule has a condition, and it evaluates to false, skip this rule and continue to the next one
-                if (rule.getCondition() != null) {
-                    if (!conditionEvaluator.evaluateCondition(attributesJson, rule.getCondition().toString())) {
-                        continue;
+                // If there are prerequisite flag(s), evaluate them
+                if (rule.getParentConditions() != null) {
+                    for (ParentCondition parentCondition : rule.getParentConditions()) {
+                        FeatureResult<ValueType> parentResult = evaluateFeature(
+                                parentCondition.getId(),
+                                context,
+                                valueTypeClass,
+                                attributeOverrides);
+
+                        // break out for cyclic prerequisites
+                        if (parentResult.getSource().equals(FeatureResultSource.CYCLIC_PREREQUISITE)) {
+                            FeatureResult<ValueType> featureResultWhenCircularDependencyDetected =
+                                    FeatureResult
+                                            .<ValueType>builder()
+                                            .value(null)
+                                            .source(FeatureResultSource.CYCLIC_PREREQUISITE)
+                                            .build();
+
+                            if (featureUsageCallback != null) {
+                                featureUsageCallback.onFeatureUsage(key, featureResultWhenCircularDependencyDetected);
+                            }
+                            return featureResultWhenCircularDependencyDetected;
+                        }
+
+                        Map<String, Object> evalObj = new HashMap<>();
+                        if (parentResult.getValue() != null) {
+                            evalObj.put("value", parentResult.getValue());
+                        }
+                        String attributesJsonString = GrowthBookJsonUtils.getInstance().gson.toJson(evalObj);
+
+                        boolean evalCondition = conditionEvaluator.evaluateCondition(
+                                attributesJsonString,
+                                String.valueOf(parentCondition.getCondition())
+                        );
+
+                        // blocking prerequisite eval failed: feature evaluation fails
+                        if (!evalCondition) {
+                            // blocking prerequisite eval failed: feature evaluation fails
+                            if (parentCondition.getGate()) {
+                                System.out.println("Feature blocked by prerequisite");
+
+                                FeatureResult<ValueType> featureResultWhenBlockedByPrerequisite =
+                                        FeatureResult
+                                                .<ValueType>builder()
+                                                .value(null)
+                                                .source(FeatureResultSource.PREREQUISITE)
+                                                .build();
+
+                                if (featureUsageCallback != null) {
+                                    featureUsageCallback.onFeatureUsage(key, featureResultWhenBlockedByPrerequisite);
+                                }
+                                return featureResultWhenBlockedByPrerequisite;
+                            }
+                            // non-blocking prerequisite eval failed: break out
+                            // of parentConditions loop, jump to the next rule
+
+                            continue;
+                        }
                     }
                 }
 
                 // If there are filters for who is included (e.g. namespaces)
                 List<Filter> filters = rule.getFilters();
-                if (GrowthBookUtils.isFilteredOut(filters, attributes)) {
+                if (GrowthBookUtils.isFilteredOut(filters, attributes, context)) {
+
+                    // Skip rule because of filters
                     continue;
                 }
 
+                // Feature value is being forced
                 if (rule.getForce() != null) {
+
+                    // If the rule has a condition, and it evaluates to false, skip this rule and continue to the next one
+                    if (rule.getCondition() != null) {
+                        if (!conditionEvaluator.evaluateCondition(attributesJson, rule.getCondition().toString())) {
+
+                            // Skip rule because of condition
+                            continue;
+                        }
+                    }
+
+                    boolean gate1 = context.getStickyBucketService() != null;
+                    boolean gate2 = !Boolean.TRUE.equals(rule.disableStickyBucketing);
+                    boolean shouldFallbackAttributeBePassed = gate1 && gate2;
+
+                    String fallback = shouldFallbackAttributeBePassed ? rule.getFallbackAttribute() : null;
+
                     String ruleKey = rule.getHashAttribute();
                     if (ruleKey == null) {
                         ruleKey = "id";
@@ -135,26 +245,50 @@ class FeatureEvaluator implements IFeatureEvaluator {
                         seed = key;
                     }
 
+                    // If this is a percentage rollout, skip if not included
                     if (
-                        !GrowthBookUtils.isIncludedInRollout(
-                            attributes,
-                            seed,
-                            ruleKey,
-                            rule.getRange(),
-                            rule.getCoverage(),
-                            rule.getHashVersion()
-                        )
+                            !GrowthBookUtils.isIncludedInRollout(
+                                    attributes,
+                                    seed,
+                                    ruleKey,
+                                    fallback,
+                                    rule.getRange(),
+                                    rule.getCoverage(),
+                                    rule.getHashVersion(),
+                                    context
+                            )
                     ) {
+
+                        // Skip rule because user not included in rollout
                         continue;
                     }
 
                     // Call the tracking callback with all the track data
                     List<TrackData<ValueType>> trackData = rule.getTracks();
                     TrackingCallback trackingCallback = context.getTrackingCallback();
+
+                    // If this was a remotely evaluated experiment, fire the tracking callbacks
                     if (trackData != null && trackingCallback != null) {
                         trackData.forEach(t -> {
                             trackingCallback.onTrack(t.getExperiment(), t.getExperimentResult());
                         });
+                    }
+
+                    if (rule.getRange() == null) {
+                        if (rule.getCoverage() != null) {
+//                            String key = ruleKey;
+                            String attributeValue = context.getAttributes().get(ruleKey) == null ? null : context.getAttributes().get(ruleKey).getAsString();
+                            if (attributeValue == null || attributeValue.isEmpty()) {
+                                continue;
+                            }
+                            Float hashFNV = GrowthBookUtils.hash(attributeValue, 1, key);
+                            if (hashFNV == null) {
+                                hashFNV = 0f;
+                            }
+                            if (hashFNV > rule.getCoverage()) {
+                                continue;
+                            }
+                        }
                     }
 
                     ValueType value = (ValueType) GrowthBookJsonUtils.unwrap(rule.getForce());
@@ -169,48 +303,64 @@ class FeatureEvaluator implements IFeatureEvaluator {
                     if (featureUsageCallback != null) {
                         featureUsageCallback.onFeatureUsage(key, forcedRuleFeatureValue);
                     }
+
+                    goOutFromCircularLoop();
                     return forcedRuleFeatureValue;
-                }
+                } else {
 
-                // Experiment rule
-                String experimentKey = rule.getKey();
-                if (experimentKey == null) {
-                    experimentKey = key;
-                }
+                    ArrayList<ValueType> variations = rule.getVariations();
+                    if (variations != null) {
 
-                Experiment<ValueType> experiment = Experiment
-                        .<ValueType>builder()
-                        .key(experimentKey)
-                        .coverage(rule.getCoverage())
-                        .weights(rule.getWeights())
-                        .hashAttribute(rule.getHashAttribute())
-                        .namespace(rule.getNamespace())
-                        .variations(rule.getVariations())
-                        .meta(rule.getMeta())
-                        .ranges(rule.getRanges())
-                        .name(rule.getName())
-                        .phase(rule.getPhase())
-                        .seed(rule.getSeed())
-                        .hashVersion(rule.getHashVersion())
-                        .filters(rule.getFilters())
-                        .build();
+                        // Experiment rule
+                        String experimentKey = rule.getKey();
+                        if (experimentKey == null) {
+                            experimentKey = key;
+                        }
 
-                ExperimentResult<ValueType> result = experimentEvaluator.evaluateExperiment(experiment, context, key);
-                if (result.getInExperiment() && (result.getPassThrough() == null || !result.getPassThrough())) {
-                    ValueType value = (ValueType) GrowthBookJsonUtils.unwrap(result.getValue());
+                        // For experiment rules, run an experiment
+                        Experiment<ValueType> experiment = Experiment
+                                .<ValueType>builder()
+                                .key(experimentKey)
+                                .coverage(rule.getCoverage())
+                                .weights(rule.getWeights())
+                                .hashAttribute(rule.getHashAttribute())
+                                .namespace(rule.getNamespace())
+                                .variations(rule.getVariations())
+                                .meta(rule.getMeta())
+                                .ranges(rule.getRanges())
+                                .name(rule.getName())
+                                .phase(rule.getPhase())
+                                .seed(rule.getSeed())
+                                .hashVersion(rule.getHashVersion())
+                                .filters(rule.getFilters())
+                                .variations(variations)
+                                .minBucketVersion(rule.getMinBucketVersion())
+                                .bucketVersion(rule.getBucketVersion())
+                                .disableStickyBucketing(rule.getDisableStickyBucketing())
+                                .fallbackAttribute(rule.getFallbackAttribute())
+                                .build();
 
-                    FeatureResult<ValueType> experimentFeatureResult = FeatureResult
-                            .<ValueType>builder()
-                            .value(value)
-                            .source(FeatureResultSource.EXPERIMENT)
-                            .experiment(experiment)
-                            .experimentResult(result)
-                            .build();
+                        // Only return a value if the user is part of the experiment
+                        ExperimentResult<ValueType> result = experimentEvaluator.evaluateExperiment(experiment, context, key, attributeOverrides);
+                        if (result.getInExperiment() && (result.getPassThrough() == null || !result.getPassThrough())) {
+                            ValueType value = (ValueType) GrowthBookJsonUtils.unwrap(result.getValue());
 
-                    if (featureUsageCallback != null) {
-                        featureUsageCallback.onFeatureUsage(key, experimentFeatureResult);
+                            FeatureResult<ValueType> experimentFeatureResult = FeatureResult
+                                    .<ValueType>builder()
+                                    .value(value)
+                                    .source(FeatureResultSource.EXPERIMENT)
+                                    .experiment(experiment)
+                                    .experimentResult(result)
+                                    .build();
+
+                            if (featureUsageCallback != null) {
+                                featureUsageCallback.onFeatureUsage(key, experimentFeatureResult);
+                            }
+                            return experimentFeatureResult;
+                        }
+                    } else {
+                        continue;
                     }
-                    return experimentFeatureResult;
                 }
             }
 
@@ -227,9 +377,14 @@ class FeatureEvaluator implements IFeatureEvaluator {
             if (featureUsageCallback != null) {
                 featureUsageCallback.onFeatureUsage(key, defaultValueFeatureResult);
             }
+
+            // Return (value = defaultValue or null, source = defaultValue)
             return defaultValueFeatureResult;
         } catch (Exception e) {
             e.printStackTrace();
+
+            // If the key doesn't exist in context.features, return immediately
+            // (value = null, source = unknownFeature).
             return emptyFeature;
         }
     }
@@ -265,5 +420,10 @@ class FeatureEvaluator implements IFeatureEvaluator {
             e.printStackTrace();
             return null;
         }
+    }
+
+    private void goOutFromCircularLoop() {
+        featureEvalContext.setId(null);
+        featureEvalContext.getEvaluatedFeatures().clear();
     }
 }

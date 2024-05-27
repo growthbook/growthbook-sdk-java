@@ -4,7 +4,6 @@ import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
-
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.nio.file.Path;
@@ -42,7 +41,7 @@ public class TestCasesJsonHelper implements ITestCasesJsonHelper {
 
     @Override
     public JsonArray featureTestCases() {
-        return this.testCases.get("evalFeature").getAsJsonArray();
+        return this.testCases.get("feature").getAsJsonArray();
     }
 
     @Override
@@ -66,23 +65,13 @@ public class TestCasesJsonHelper implements ITestCasesJsonHelper {
     }
 
     @Override
-    public JsonArray versionCompareTestCases_eq() {
-        return this.testCases.get("versionCompare").getAsJsonObject().get("eq").getAsJsonArray();
-    }
-
-    @Override
-    public JsonArray versionCompareTestCases_lt() {
-        return this.testCases.get("versionCompare").getAsJsonObject().get("lt").getAsJsonArray();
-    }
-
-    @Override
-    public JsonArray versionCompareTestCases_gt() {
-        return this.testCases.get("versionCompare").getAsJsonObject().get("gt").getAsJsonArray();
-    }
-
-    @Override
     public JsonArray getQueryStringOverrideTestCases() {
         return this.testCases.get("getQueryStringOverride").getAsJsonArray();
+    }
+
+    @Override
+    public JsonArray getStickyBucketTestCases() {
+        return this.testCases.get("stickyBucket").getAsJsonArray();
     }
 
     // region Initialization
@@ -135,7 +124,7 @@ public class TestCasesJsonHelper implements ITestCasesJsonHelper {
     }
 
     private String getResourceDirectoryPath() {
-        Path resourceDirectory = Paths.get("src","test","resources");
+        Path resourceDirectory = Paths.get("src", "test", "resources");
         String absolutePath = resourceDirectory.toFile().getAbsolutePath();
         System.out.println(absolutePath);
         return absolutePath;

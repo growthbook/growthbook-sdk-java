@@ -5,10 +5,8 @@ import com.google.gson.annotations.SerializedName;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
-
 import javax.annotation.Nullable;
 import java.util.ArrayList;
-import java.util.List;
 
 /**
  * Overrides the defaultValue of a Feature based on a set of requirements. Has a number of optional properties
@@ -23,12 +21,16 @@ import java.util.List;
  * <li>namespace (Namespace) - Adds the experiment to a namespace</li>
  * <li>hashAttribute (string) - What user attribute should be used to assign variations (defaults to id)</li>
  * </ul>
+ *
  * @param <ValueType> generic type for the value type for this experiment's variations.
  */
 @Data
 @Builder
 @AllArgsConstructor
 public class FeatureRule<ValueType> {
+    @Nullable
+    String id;
+
     @Nullable
     String key;
 
@@ -54,6 +56,9 @@ public class FeatureRule<ValueType> {
     JsonElement condition;
 
     @Nullable
+    ArrayList<ParentCondition> parentConditions;
+
+    @Nullable
     Integer hashVersion;
 
     @Nullable
@@ -77,6 +82,18 @@ public class FeatureRule<ValueType> {
 
     @Nullable
     String phase;
+
+    @Nullable
+    String fallbackAttribute;
+
+    @Nullable
+    Boolean disableStickyBucketing;
+
+    @Nullable
+    Integer bucketVersion;
+
+    @Nullable
+    Integer minBucketVersion;
 
     @Nullable
     ArrayList<TrackData<ValueType>> tracks;

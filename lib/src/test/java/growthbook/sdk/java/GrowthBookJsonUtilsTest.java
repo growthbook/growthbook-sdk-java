@@ -1,10 +1,10 @@
 package growthbook.sdk.java;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
 import com.google.gson.Gson;
 import com.google.gson.JsonElement;
 import org.junit.jupiter.api.Test;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
 
 class GrowthBookJsonUtilsTest {
     final GrowthBookJsonUtils subject = GrowthBookJsonUtils.getInstance();

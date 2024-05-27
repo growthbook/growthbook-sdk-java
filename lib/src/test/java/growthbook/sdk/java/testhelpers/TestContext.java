@@ -1,5 +1,6 @@
 package growthbook.sdk.java.testhelpers;
 
+import com.google.gson.JsonObject;
 import javax.annotation.Nullable;
 import java.util.HashMap;
 
@@ -7,10 +8,10 @@ import java.util.HashMap;
  * A test Context that deserializes from the test case JSON data
  */
 public class TestContext {
-    public String attributes;
+    public JsonObject attributes;
 
     @Nullable
-    public String features;
+    public JsonObject features;
 
     @Nullable
     public Boolean enabled;

@@ -1,12 +1,13 @@
 package growthbook.sdk.java;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
+
+import com.google.gson.JsonObject;
 import com.google.gson.reflect.TypeToken;
 import org.junit.jupiter.api.Test;
-
 import java.lang.reflect.Type;
 import java.util.ArrayList;
-
-import static org.junit.jupiter.api.Assertions.*;
 
 class ExperimentTest {
 
@@ -21,7 +22,6 @@ class ExperimentTest {
         ArrayList<Float> variations = new ArrayList<>();
 
         Namespace namespace = Namespace.builder().build();
-        String conditionJson = "{}";
 
         Experiment<Float> experiment = new Experiment<Float>(
                 "my_experiment",
@@ -29,10 +29,15 @@ class ExperimentTest {
                 weights,
                 true,
                 0.5f,
-                conditionJson,
+                new JsonObject(),
+                null,
                 namespace,
                 1,
                 "_id",
+                null,
+                null,
+                null,
+                null,
                 null,
                 null,
                 null,
@@ -49,10 +54,11 @@ class ExperimentTest {
         assertEquals("my_experiment", experiment.getKey());
         assertEquals("_id", experiment.hashAttribute);
         assertEquals("_id", experiment.getHashAttribute());
+        assert experiment.weights != null;
         assertEquals(0.3f, experiment.weights.get(0));
         assertEquals(0.7f, experiment.weights.get(1));
-        assertTrue(experiment.isActive);
-        assertTrue(experiment.getIsActive());
+        assertEquals(Boolean.TRUE, experiment.isActive);
+        assertEquals(Boolean.TRUE, experiment.getIsActive());
     }
 
     @Test
@@ -81,8 +87,8 @@ class ExperimentTest {
         assertEquals("my_experiment", experiment.getKey());
         assertEquals("_id", experiment.hashAttribute);
         assertEquals("_id", experiment.getHashAttribute());
-        assertTrue(experiment.isActive);
-        assertTrue(experiment.getIsActive());
+        assertEquals(Boolean.TRUE, experiment.isActive);
+        assertEquals(Boolean.TRUE, experiment.getIsActive());
     }
 
     @Test
@@ -123,13 +129,13 @@ class ExperimentTest {
                 .weights(weights)
                 .isActive(true)
                 .coverage(0.5f)
-                .conditionJson("{}")
+                .conditionJson(new JsonObject())
                 .namespace(namespace)
                 .force(1)
                 .hashAttribute("_id")
                 .build();
 
-        assertEquals("{\"key\":\"my_experiment\",\"variations\":[100,200],\"weights\":[0.3,0.7],\"active\":true,\"coverage\":0.5,\"conditionJson\":\"{}\",\"namespace\":[\"pricing\",0.0,1.0],\"force\":1,\"hashAttribute\":\"_id\"}", subject.toJson());
+        assertEquals("{\"key\":\"my_experiment\",\"variations\":[100,200],\"weights\":[0.3,0.7],\"active\":true,\"coverage\":0.5,\"conditionJson\":{},\"namespace\":[\"pricing\",0.0,1.0],\"force\":1,\"hashAttribute\":\"_id\"}", subject.toJson());
     }
 
     @Test
@@ -138,8 +144,9 @@ class ExperimentTest {
 
         Experiment<Integer> subject = jsonUtils.gson.fromJson("{\"key\":\"my_experiment\",\"variations\":[100,200],\"weights\":[0.3,0.7],\"active\":true,\"coverage\":0.5,\"namespace\":[\"pricing\",0.0,1.0],\"force\":1,\"hashAttribute\":\"_id\"}", experimentType);
 
+        assert subject.getNamespace() != null;
         assertEquals("pricing", subject.getNamespace().getId());
-        assertTrue(subject.getIsActive());
+        assertEquals(Boolean.TRUE, subject.getIsActive());
         assertEquals(100, subject.getVariations().get(0));
         assertEquals(200, subject.getVariations().get(1));
     }
