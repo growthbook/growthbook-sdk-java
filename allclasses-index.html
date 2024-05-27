@@ -31,7 +31,8 @@ loadScripts(document, 'script');</script>
 <div class="top-nav" id="navbar-top">
 <div class="skip-nav"><a href="#skip-navbar-top" title="Skip navigation links">Skip navigation links</a></div>
 <ul id="navbar-top-firstrow" class="nav-list" title="Navigation">
-<li><a href="growthbook/sdk/java/package-summary.html">Package</a></li>
+<li><a href="index.html">Overview</a></li>
+<li>Package</li>
 <li>Class</li>
 <li><a href="overview-tree.html">Tree</a></li>
 <li><a href="deprecated-list.html">Deprecated</a></li>
@@ -71,18 +72,22 @@ loadScripts(document, 'script');</script>
 <div class="col-last even-row-color all-classes-table all-classes-table-tab2">
 <div class="block">Defines a single Experiment</div>
 </div>
-<div class="col-first odd-row-color all-classes-table all-classes-table-tab2"><a href="growthbook/sdk/java/ExperimentResult.html" title="class in growthbook.sdk.java">ExperimentResult</a>&lt;<a href="growthbook/sdk/java/ExperimentResult.html" title="type parameter in ExperimentResult">ValueType</a>&gt;</div>
-<div class="col-last odd-row-color all-classes-table all-classes-table-tab2">
+<div class="col-first odd-row-color all-classes-table all-classes-table-tab2"><a href="growthbook/sdk/java/ExperimentHelper.html" title="class in growthbook.sdk.java">ExperimentHelper</a></div>
+<div class="col-last odd-row-color all-classes-table all-classes-table-tab2">&nbsp;</div>
+<div class="col-first even-row-color all-classes-table all-classes-table-tab2"><a href="growthbook/sdk/java/ExperimentResult.html" title="class in growthbook.sdk.java">ExperimentResult</a>&lt;<a href="growthbook/sdk/java/ExperimentResult.html" title="type parameter in ExperimentResult">ValueType</a>&gt;</div>
+<div class="col-last even-row-color all-classes-table all-classes-table-tab2">
 <div class="block">The result of an <a href="growthbook/sdk/java/GrowthBook.html#run(growthbook.sdk.java.Experiment)"><code>GrowthBook.run(Experiment)</code></a> call</div>
 </div>
-<div class="col-first even-row-color all-classes-table all-classes-table-tab1"><a href="growthbook/sdk/java/ExperimentRunCallback.html" title="interface in growthbook.sdk.java">ExperimentRunCallback</a></div>
-<div class="col-last even-row-color all-classes-table all-classes-table-tab1">
+<div class="col-first odd-row-color all-classes-table all-classes-table-tab1"><a href="growthbook/sdk/java/ExperimentRunCallback.html" title="interface in growthbook.sdk.java">ExperimentRunCallback</a></div>
+<div class="col-last odd-row-color all-classes-table all-classes-table-tab1">
 <div class="block">A callback to be executed with an <a href="growthbook/sdk/java/ExperimentResult.html" title="class in growthbook.sdk.java"><code>ExperimentResult</code></a> whenever an experiment is run.</div>
 </div>
-<div class="col-first odd-row-color all-classes-table all-classes-table-tab2"><a href="growthbook/sdk/java/Feature.html" title="class in growthbook.sdk.java">Feature</a>&lt;<a href="growthbook/sdk/java/Feature.html" title="type parameter in Feature">ValueType</a>&gt;</div>
-<div class="col-last odd-row-color all-classes-table all-classes-table-tab2">
+<div class="col-first even-row-color all-classes-table all-classes-table-tab2"><a href="growthbook/sdk/java/Feature.html" title="class in growthbook.sdk.java">Feature</a>&lt;<a href="growthbook/sdk/java/Feature.html" title="type parameter in Feature">ValueType</a>&gt;</div>
+<div class="col-last even-row-color all-classes-table all-classes-table-tab2">
 <div class="block">The feature with a generic value type.</div>
 </div>
+<div class="col-first odd-row-color all-classes-table all-classes-table-tab2"><a href="growthbook/sdk/java/FeatureEvalContext.html" title="class in growthbook.sdk.java">FeatureEvalContext</a></div>
+<div class="col-last odd-row-color all-classes-table all-classes-table-tab2">&nbsp;</div>
 <div class="col-first even-row-color all-classes-table all-classes-table-tab5"><a href="growthbook/sdk/java/FeatureFetchException.html" title="class in growthbook.sdk.java">FeatureFetchException</a></div>
 <div class="col-last even-row-color all-classes-table all-classes-table-tab5">
 <div class="block">This error is thrown by <a href="growthbook/sdk/java/GBFeaturesRepository.html" title="class in growthbook.sdk.java"><code>GBFeaturesRepository</code></a>
@@ -100,7 +105,7 @@ loadScripts(document, 'script');</script>
 <div class="col-last odd-row-color all-classes-table all-classes-table-tab3">&nbsp;</div>
 <div class="col-first even-row-color all-classes-table all-classes-table-tab2"><a href="growthbook/sdk/java/FeatureResult.html" title="class in growthbook.sdk.java">FeatureResult</a>&lt;<a href="growthbook/sdk/java/FeatureResult.html" title="type parameter in FeatureResult">ValueType</a>&gt;</div>
 <div class="col-last even-row-color all-classes-table all-classes-table-tab2">
-<div class="block">Results for a <code>IFeatureEvaluator.evaluateFeature(String, GBContext, Class)</code>
+<div class="block">Results for a <code>IFeatureEvaluator.evaluateFeature(String, GBContext, Class, JsonObject)</code>
 
  
  value (any) - The assigned value of the feature
@@ -143,32 +148,46 @@ loadScripts(document, 'script');</script>
 <div class="col-last even-row-color all-classes-table all-classes-table-tab2">
 <div class="block">Appends User-Agent info to the request headers.</div>
 </div>
-<div class="col-first odd-row-color all-classes-table all-classes-table-tab2"><a href="growthbook/sdk/java/GrowthBook.html" title="class in growthbook.sdk.java">GrowthBook</a></div>
-<div class="col-last odd-row-color all-classes-table all-classes-table-tab2">
+<div class="col-first odd-row-color all-classes-table all-classes-table-tab2"><a href="growthbook/sdk/java/GeneratedStickyBucketAssignmentDocModel.html" title="class in growthbook.sdk.java">GeneratedStickyBucketAssignmentDocModel</a></div>
+<div class="col-last odd-row-color all-classes-table all-classes-table-tab2">&nbsp;</div>
+<div class="col-first even-row-color all-classes-table all-classes-table-tab2"><a href="growthbook/sdk/java/GrowthBook.html" title="class in growthbook.sdk.java">GrowthBook</a></div>
+<div class="col-last even-row-color all-classes-table all-classes-table-tab2">
 <div class="block">GrowthBook SDK class.</div>
 </div>
-<div class="col-first even-row-color all-classes-table all-classes-table-tab2"><a href="growthbook/sdk/java/Namespace.html" title="class in growthbook.sdk.java">Namespace</a></div>
-<div class="col-last even-row-color all-classes-table all-classes-table-tab2">Deprecated.</div>
-<div class="col-first odd-row-color all-classes-table all-classes-table-tab3"><a href="growthbook/sdk/java/Operator.html" title="enum class in growthbook.sdk.java">Operator</a></div>
-<div class="col-last odd-row-color all-classes-table all-classes-table-tab3">
+<div class="col-first odd-row-color all-classes-table all-classes-table-tab2"><a href="growthbook/sdk/java/HashAttributeAndHashValue.html" title="class in growthbook.sdk.java">HashAttributeAndHashValue</a></div>
+<div class="col-last odd-row-color all-classes-table all-classes-table-tab2">&nbsp;</div>
+<div class="col-first even-row-color all-classes-table all-classes-table-tab2"><a href="growthbook/sdk/java/stickyBucketing/InMemoryStickyBucketServiceImpl.html" title="class in growthbook.sdk.java.stickyBucketing">InMemoryStickyBucketServiceImpl</a></div>
+<div class="col-last even-row-color all-classes-table all-classes-table-tab2">&nbsp;</div>
+<div class="col-first odd-row-color all-classes-table all-classes-table-tab2"><a href="growthbook/sdk/java/Namespace.html" title="class in growthbook.sdk.java">Namespace</a></div>
+<div class="col-last odd-row-color all-classes-table all-classes-table-tab2">Deprecated.</div>
+<div class="col-first even-row-color all-classes-table all-classes-table-tab3"><a href="growthbook/sdk/java/Operator.html" title="enum class in growthbook.sdk.java">Operator</a></div>
+<div class="col-last even-row-color all-classes-table all-classes-table-tab3">
 <div class="block">Operator for use in the condition JSON</div>
 </div>
-<div class="col-first even-row-color all-classes-table all-classes-table-tab2"><a href="growthbook/sdk/java/StringUtils.html" title="class in growthbook.sdk.java">StringUtils</a></div>
+<div class="col-first odd-row-color all-classes-table all-classes-table-tab2"><a href="growthbook/sdk/java/ParentCondition.html" title="class in growthbook.sdk.java">ParentCondition</a></div>
+<div class="col-last odd-row-color all-classes-table all-classes-table-tab2">&nbsp;</div>
+<div class="col-first even-row-color all-classes-table all-classes-table-tab2"><a href="growthbook/sdk/java/stickyBucketing/StickyAssignmentsDocument.html" title="class in growthbook.sdk.java.stickyBucketing">StickyAssignmentsDocument</a></div>
 <div class="col-last even-row-color all-classes-table all-classes-table-tab2">&nbsp;</div>
-<div class="col-first odd-row-color all-classes-table all-classes-table-tab2"><a href="growthbook/sdk/java/TrackData.html" title="class in growthbook.sdk.java">TrackData</a>&lt;<a href="growthbook/sdk/java/TrackData.html" title="type parameter in TrackData">ValueType</a>&gt;</div>
-<div class="col-last odd-row-color all-classes-table all-classes-table-tab2">
+<div class="col-first odd-row-color all-classes-table all-classes-table-tab1"><a href="growthbook/sdk/java/stickyBucketing/StickyBucketService.html" title="interface in growthbook.sdk.java.stickyBucketing">StickyBucketService</a></div>
+<div class="col-last odd-row-color all-classes-table all-classes-table-tab1">&nbsp;</div>
+<div class="col-first even-row-color all-classes-table all-classes-table-tab2"><a href="growthbook/sdk/java/StickyBucketVariation.html" title="class in growthbook.sdk.java">StickyBucketVariation</a></div>
+<div class="col-last even-row-color all-classes-table all-classes-table-tab2">&nbsp;</div>
+<div class="col-first odd-row-color all-classes-table all-classes-table-tab2"><a href="growthbook/sdk/java/StringUtils.html" title="class in growthbook.sdk.java">StringUtils</a></div>
+<div class="col-last odd-row-color all-classes-table all-classes-table-tab2">&nbsp;</div>
+<div class="col-first even-row-color all-classes-table all-classes-table-tab2"><a href="growthbook/sdk/java/TrackData.html" title="class in growthbook.sdk.java">TrackData</a>&lt;<a href="growthbook/sdk/java/TrackData.html" title="type parameter in TrackData">ValueType</a>&gt;</div>
+<div class="col-last even-row-color all-classes-table all-classes-table-tab2">
 <div class="block">Used for remote feature evaluation to trigger the <a href="growthbook/sdk/java/TrackingCallback.html" title="interface in growthbook.sdk.java"><code>TrackingCallback</code></a></div>
 </div>
-<div class="col-first even-row-color all-classes-table all-classes-table-tab1"><a href="growthbook/sdk/java/TrackingCallback.html" title="interface in growthbook.sdk.java">TrackingCallback</a></div>
-<div class="col-last even-row-color all-classes-table all-classes-table-tab1">
+<div class="col-first odd-row-color all-classes-table all-classes-table-tab1"><a href="growthbook/sdk/java/TrackingCallback.html" title="interface in growthbook.sdk.java">TrackingCallback</a></div>
+<div class="col-last odd-row-color all-classes-table all-classes-table-tab1">
 <div class="block">This callback is called with the <a href="growthbook/sdk/java/Experiment.html" title="class in growthbook.sdk.java"><code>Experiment</code></a> and <a href="growthbook/sdk/java/ExperimentResult.html" title="class in growthbook.sdk.java"><code>ExperimentResult</code></a> when an experiment is evaluated.</div>
 </div>
-<div class="col-first odd-row-color all-classes-table all-classes-table-tab2"><a href="growthbook/sdk/java/VariationMeta.html" title="class in growthbook.sdk.java">VariationMeta</a></div>
-<div class="col-last odd-row-color all-classes-table all-classes-table-tab2">
+<div class="col-first even-row-color all-classes-table all-classes-table-tab2"><a href="growthbook/sdk/java/VariationMeta.html" title="class in growthbook.sdk.java">VariationMeta</a></div>
+<div class="col-last even-row-color all-classes-table all-classes-table-tab2">
 <div class="block">Meta info about an experiment variation</div>
 </div>
-<div class="col-first even-row-color all-classes-table all-classes-table-tab2"><a href="growthbook/sdk/java/Version.html" title="class in growthbook.sdk.java">Version</a></div>
-<div class="col-last even-row-color all-classes-table all-classes-table-tab2">
+<div class="col-first odd-row-color all-classes-table all-classes-table-tab2"><a href="growthbook/sdk/java/Version.html" title="class in growthbook.sdk.java">Version</a></div>
+<div class="col-last odd-row-color all-classes-table all-classes-table-tab2">
 <div class="block">Tag for the published GrowthBook SDK version</div>
 </div>
 </div>

@@ -31,6 +31,7 @@ loadScripts(document, 'script');</script>
 <div class="top-nav" id="navbar-top">
 <div class="skip-nav"><a href="#skip-navbar-top" title="Skip navigation links">Skip navigation links</a></div>
 <ul id="navbar-top-firstrow" class="nav-list" title="Navigation">
+<li><a href="../../../index.html">Overview</a></li>
 <li><a href="package-summary.html">Package</a></li>
 <li class="nav-bar-cell1-rev">Class</li>
 <li><a href="package-tree.html">Tree</a></li>
@@ -104,17 +105,25 @@ loadScripts(document, 'script');</script>
 <div class="summary-table two-column-summary">
 <div class="table-header col-first">Enum Constant</div>
 <div class="table-header col-last">Description</div>
-<div class="col-first even-row-color"><code><a href="#DEFAULT_VALUE" class="member-name-link">DEFAULT_VALUE</a></code></div>
+<div class="col-first even-row-color"><code><a href="#CYCLIC_PREREQUISITE" class="member-name-link">CYCLIC_PREREQUISITE</a></code></div>
 <div class="col-last even-row-color">
+<div class="block">CyclicPrerequisite Value for the Feature is being processed</div>
+</div>
+<div class="col-first odd-row-color"><code><a href="#DEFAULT_VALUE" class="member-name-link">DEFAULT_VALUE</a></code></div>
+<div class="col-last odd-row-color">
 <div class="block">When the value is assigned due to a default value condition</div>
 </div>
-<div class="col-first odd-row-color"><code><a href="#EXPERIMENT" class="member-name-link">EXPERIMENT</a></code></div>
-<div class="col-last odd-row-color">
+<div class="col-first even-row-color"><code><a href="#EXPERIMENT" class="member-name-link">EXPERIMENT</a></code></div>
+<div class="col-last even-row-color">
 <div class="block">When the value is assigned due to an experiment condition</div>
 </div>
-<div class="col-first even-row-color"><code><a href="#FORCE" class="member-name-link">FORCE</a></code></div>
-<div class="col-last even-row-color">
+<div class="col-first odd-row-color"><code><a href="#FORCE" class="member-name-link">FORCE</a></code></div>
+<div class="col-last odd-row-color">
 <div class="block">When the value is assigned due to a forced condition</div>
+</div>
+<div class="col-first even-row-color"><code><a href="#PREREQUISITE" class="member-name-link">PREREQUISITE</a></code></div>
+<div class="col-last even-row-color">
+<div class="block">Prerequisite Value for the Feature is being processed</div>
 </div>
 <div class="col-first odd-row-color"><code><a href="#UNKNOWN_FEATURE" class="member-name-link">UNKNOWN_FEATURE</a></code></div>
 <div class="col-last odd-row-color">
@@ -215,6 +224,22 @@ the order they are declared.</div>
 <div class="member-signature"><span class="annotations">@SerializedName("experiment")
 </span><span class="modifiers">public static final</span>&nbsp;<span class="return-type"><a href="FeatureResultSource.html" title="enum class in growthbook.sdk.java">FeatureResultSource</a></span>&nbsp;<span class="element-name">EXPERIMENT</span></div>
 <div class="block">When the value is assigned due to an experiment condition</div>
+</section>
+</li>
+<li>
+<section class="detail" id="CYCLIC_PREREQUISITE">
+<h3>CYCLIC_PREREQUISITE</h3>
+<div class="member-signature"><span class="annotations">@SerializedName("cyclicPrerequisite")
+</span><span class="modifiers">public static final</span>&nbsp;<span class="return-type"><a href="FeatureResultSource.html" title="enum class in growthbook.sdk.java">FeatureResultSource</a></span>&nbsp;<span class="element-name">CYCLIC_PREREQUISITE</span></div>
+<div class="block">CyclicPrerequisite Value for the Feature is being processed</div>
+</section>
+</li>
+<li>
+<section class="detail" id="PREREQUISITE">
+<h3>PREREQUISITE</h3>
+<div class="member-signature"><span class="annotations">@SerializedName("prerequisite")
+</span><span class="modifiers">public static final</span>&nbsp;<span class="return-type"><a href="FeatureResultSource.html" title="enum class in growthbook.sdk.java">FeatureResultSource</a></span>&nbsp;<span class="element-name">PREREQUISITE</span></div>
+<div class="block">Prerequisite Value for the Feature is being processed</div>
 </section>
 </li>
 </ul>
