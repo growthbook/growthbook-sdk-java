@@ -5,8 +5,11 @@ import java.net.URLDecoder;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 class UrlUtils {
+
     /**
      * Parse a query string into a map of key/value pairs.
      *
@@ -30,7 +33,7 @@ class UrlUtils {
 
                 map.put(name, value);
             } catch (UnsupportedEncodingException e) {
-                e.printStackTrace();
+                log.error(e.getMessage(), e);
             }
         }
         return map;

@@ -14,13 +14,13 @@ import lombok.Getter;
  * UNKNOWN:
  * - there was an unknown error that occurred when attempting to make the request.
  */
+@Getter
 public class FeatureFetchException extends Exception {
 
     /**
      * Allows you to identify an error by its unique error code.
      * Separate from the custom message.
      */
-    @Getter
     private final FeatureFetchErrorCode errorCode;
 
     /**

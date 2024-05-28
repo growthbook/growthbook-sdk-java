@@ -14,10 +14,12 @@ import java.security.InvalidAlgorithmParameterException;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.util.Base64;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * INTERNAL: This class is used internally to decrypt an encrypted features response
  */
+@Slf4j
 class DecryptionUtils {
 
     public static class DecryptionException extends Exception {
@@ -28,6 +30,7 @@ class DecryptionUtils {
 
     public static String decrypt(String payload, String encryptionKey) throws DecryptionException {
         if (!payload.contains(".")) {
+            log.error("DecryptionException: Invalid payload");
             throw new DecryptionException("Invalid payload");
         }
 
@@ -54,8 +57,10 @@ class DecryptionUtils {
 
             return new String(plainText);
         } catch (InvalidAlgorithmParameterException e) {
+            log.error("DecryptionException: Invalid payload", e);
             throw new DecryptionException("Invalid payload");
         } catch (InvalidKeyException e) {
+            log.error("DecryptionException: Invalid encryption key", e);
             throw new DecryptionException("Invalid encryption key");
         } catch (
             NoSuchAlgorithmException
@@ -65,7 +70,7 @@ class DecryptionUtils {
             | IllegalArgumentException
             | BadPaddingException e
         ) {
-            e.printStackTrace();
+            log.error(e.getMessage(), e);
             throw new DecryptionException(e.getMessage());
         }
     }
