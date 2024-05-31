@@ -49,7 +49,7 @@ class FeatureEvaluator implements IFeatureEvaluator {
 
         try {
             // block that handle recursion
-            System.out.println("evaluateFeature: circular dependency detected:");
+            // System.out.println("evaluateFeature: circular dependency detected:");
             if (featureEvalContext.getEvaluatedFeatures().contains(key)) {
                 FeatureResult<ValueType> featureResultWhenCircularDependencyDetected = FeatureResult
                         .<ValueType>builder()
