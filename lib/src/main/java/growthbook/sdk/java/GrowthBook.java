@@ -251,6 +251,15 @@ public class GrowthBook implements IGrowthBook {
         refreshStickyBucketService(featuresDataModel);
     }
 
+    // if feature enabled by environment it would be present in context
+    @Override
+    public Boolean isFeatureEnabled(String featureKey) {
+        if (context.getFeatures() != null) {
+            return context.getFeatures().keySet().contains(featureKey);
+        }
+        return false;
+    }
+
     private void refreshStickyBucketService(@Nullable String featuresDataModel) {
         if (context.getStickyBucketService() != null) {
             GrowthBookUtils.refreshStickyBuckets(context, featuresDataModel, attributeOverrides);
