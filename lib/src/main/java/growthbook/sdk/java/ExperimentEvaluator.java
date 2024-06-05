@@ -5,6 +5,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import javax.annotation.Nullable;
+
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 
@@ -16,7 +17,15 @@ class ExperimentEvaluator implements IExperimentEvaluator {
     private final ConditionEvaluator conditionEvaluator = new ConditionEvaluator();
     private final GrowthBookJsonUtils jsonUtils = GrowthBookJsonUtils.getInstance();
 
-
+    /**
+     * Takes Context & Experiment & returns Experiment Result
+     *
+     * @param experiment         Experiment
+     * @param context            GBContext
+     * @param featureId          String(can be null)
+     * @param attributeOverrides JsonObject
+     * @return ExperimentResult
+     */
     @Override
     public <ValueType> ExperimentResult<ValueType> evaluateExperiment(Experiment<ValueType> experiment,
                                                                       GBContext context,

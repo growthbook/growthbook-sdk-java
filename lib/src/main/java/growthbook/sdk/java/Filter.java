@@ -2,6 +2,7 @@ package growthbook.sdk.java;
 
 import lombok.Builder;
 import lombok.Getter;
+
 import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.List;
@@ -11,12 +12,24 @@ import java.util.List;
  */
 @Getter
 public class Filter {
+    /**
+     * The seed used in the hash
+     */
     String seed;
 
+    /**
+     * Array of ranges that are included
+     */
     List<BucketRange> ranges;
 
+    /**
+     * The attribute to use (default to "id")
+     */
     String attribute;
 
+    /**
+     * The hash version to use (default to 2)
+     */
     Integer hashVersion;
 
     /**
@@ -29,10 +42,10 @@ public class Filter {
      */
     @Builder
     public Filter(
-        @Nullable String seed,
-        List<BucketRange> ranges,
-        String attribute,
-        Integer hashVersion
+            @Nullable String seed,
+            List<BucketRange> ranges,
+            String attribute,
+            Integer hashVersion
     ) {
         this.seed = seed == null ? "" : seed;
         this.ranges = ranges == null ? new ArrayList<>() : ranges;

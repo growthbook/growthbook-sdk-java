@@ -2,6 +2,7 @@ package growthbook.sdk.java;
 
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+
 import javax.annotation.Nullable;
 import java.net.MalformedURLException;
 import java.net.URL;
@@ -12,12 +13,7 @@ import java.util.HashSet;
 import java.util.Map;
 
 /**
- * <b>INTERNAL</b>: Implementation of feature evaluation
- */
-
-/**
- * Feature Evaluator Class
- * Takes Context and Feature Key
+ * <b>INTERNAL</b>: Implementation of feature evaluation. Takes Context and Feature Key.
  * Returns Calculated Feature Result against that key
  */
 class FeatureEvaluator implements IFeatureEvaluator {

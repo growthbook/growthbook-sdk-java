@@ -1,5 +1,7 @@
 package growthbook.sdk.java;
 
+import lombok.Data;
+
 import javax.annotation.Nullable;
 import java.util.ArrayList;
 
@@ -12,29 +14,17 @@ import java.util.ArrayList;
  *
  * @param <ValueType> value type for the feature
  */
+@Data
 public class Feature<ValueType> {
 
+    /**
+     * Array of Rule objects that determine when and how the defaultValue gets overridden
+     */
     @Nullable
     private final ArrayList<FeatureRule<ValueType>> rules = new ArrayList<>();
 
+    /**
+     * The default value (should use null if not specified)
+     */
     private final Object defaultValue = null;
-
-    /**
-     * The default value for a feature evaluation
-     *
-     * @return value of the feature
-     */
-    public Object getDefaultValue() {
-        return this.defaultValue;
-    }
-
-    /**
-     * Returns the rules for evaluating the feature
-     *
-     * @return rules list
-     */
-    @Nullable
-    public ArrayList<FeatureRule<ValueType>> getRules() {
-        return this.rules;
-    }
 }

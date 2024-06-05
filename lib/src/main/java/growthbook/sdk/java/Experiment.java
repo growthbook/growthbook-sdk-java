@@ -5,6 +5,7 @@ import com.google.gson.annotations.SerializedName;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
+
 import javax.annotation.Nullable;
 import java.util.ArrayList;
 
@@ -57,6 +58,9 @@ public class Experiment<ValueType> {
     @Nullable
     ArrayList<ParentCondition> parentConditions;
 
+    /**
+     * A tuple that contains the namespace identifier, plus a range of coverage for the experiment
+     */
     @Nullable
     @Deprecated
     Namespace namespace;
@@ -68,41 +72,79 @@ public class Experiment<ValueType> {
 
     /**
      * What user attribute should be used to assign variations (defaults to `id`)
+     * All users included in the experiment will be forced into the specific variation index
      */
     @Builder.Default
     String hashAttribute = "id";
 
+    //new properties v0.4.0
+    /**
+     * The hash version to use (default to 1)
+     */
     @Nullable
     Integer hashVersion;
 
+    /**
+     * Array of ranges, one per variation
+     */
     @Nullable
     ArrayList<BucketRange> ranges;
 
+    /**
+     * Meta info about the variations
+     */
     @Nullable
     @SerializedName("meta")
     ArrayList<VariationMeta> meta;
 
+    /**
+     * Array of filters to apply
+     */
     @Nullable
     ArrayList<Filter> filters;
 
+    /**
+     * The hash seed to use
+     */
     @Nullable
     String seed;
 
+    /**
+     * Human-readable name for the experiment
+     */
     @Nullable
     String name;
 
+    /**
+     * Identifier of the current experiment phase
+     */
     @Nullable
     String phase;
 
+    /**
+     * When using sticky bucketing, can be used as a fallback to assign variations
+     */
     @Nullable
     String fallbackAttribute;
 
+    /**
+     * If true, sticky bucketing will be disabled for this experiment.
+     * (Note: sticky bucketing is only available
+     * if a StickyBucketingService is provided in the Context)
+     */
     @Nullable
     Boolean disableStickyBucketing;
 
+    /**
+     * The sticky bucket version number that can be used to force a re-bucketing
+     * of users (default to 0)
+     */
     @Nullable
     Integer bucketVersion;
 
+    /**
+     * Any users with a sticky bucket version less than this will be excluded from the experiment
+     */
     @Nullable
     Integer minBucketVersion;
 
