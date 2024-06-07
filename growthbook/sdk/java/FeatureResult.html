@@ -44,7 +44,7 @@ loadScripts(document, 'script');</script>
 <div>
 <ul class="sub-nav-list">
 <li>Summary:&nbsp;</li>
-<li>Nested&nbsp;|&nbsp;</li>
+<li><a href="#nested-class-summary">Nested</a>&nbsp;|&nbsp;</li>
 <li>Field&nbsp;|&nbsp;</li>
 <li><a href="#constructor-summary">Constr</a>&nbsp;|&nbsp;</li>
 <li><a href="#method-summary">Method</a></li>
@@ -95,6 +95,21 @@ loadScripts(document, 'script');</script>
 </section>
 <section class="summary">
 <ul class="summary-list">
+<!-- ======== NESTED CLASS SUMMARY ======== -->
+<li>
+<section class="nested-class-summary" id="nested-class-summary">
+<h2>Nested Class Summary</h2>
+<div class="caption"><span>Nested Classes</span></div>
+<div class="summary-table three-column-summary">
+<div class="table-header col-first">Modifier and Type</div>
+<div class="table-header col-second">Class</div>
+<div class="table-header col-last">Description</div>
+<div class="col-first even-row-color"><code>static class&nbsp;</code></div>
+<div class="col-second even-row-color"><code><a href="FeatureResult.FeatureResultBuilder.html" class="type-name-link" title="class in growthbook.sdk.java">FeatureResult.FeatureResultBuilder</a>&lt;<a href="FeatureResult.FeatureResultBuilder.html" title="type parameter in FeatureResult.FeatureResultBuilder">ValueType</a>&gt;</code></div>
+<div class="col-last even-row-color">&nbsp;</div>
+</div>
+</section>
+</li>
 <!-- ======== CONSTRUCTOR SUMMARY ======== -->
 <li>
 <section class="constructor-summary" id="constructor-summary">
@@ -103,7 +118,11 @@ loadScripts(document, 'script');</script>
 <div class="summary-table two-column-summary">
 <div class="table-header col-first">Constructor</div>
 <div class="table-header col-last">Description</div>
-<div class="col-constructor-name even-row-color"><code><a href="#%3Cinit%3E()" class="member-name-link">FeatureResult</a>()</code></div>
+<div class="col-constructor-name even-row-color"><code><a href="#%3Cinit%3E(java.lang.Object,growthbook.sdk.java.FeatureResultSource,growthbook.sdk.java.Experiment,growthbook.sdk.java.ExperimentResult,java.lang.String)" class="member-name-link">FeatureResult</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html" title="class or interface in java.lang" class="external-link">Object</a>&nbsp;value,
+ <a href="FeatureResultSource.html" title="enum class in growthbook.sdk.java">FeatureResultSource</a>&nbsp;source,
+ <a href="Experiment.html" title="class in growthbook.sdk.java">Experiment</a>&lt;<a href="FeatureResult.html" title="type parameter in FeatureResult">ValueType</a>&gt;&nbsp;experiment,
+ <a href="ExperimentResult.html" title="class in growthbook.sdk.java">ExperimentResult</a>&lt;<a href="FeatureResult.html" title="type parameter in FeatureResult">ValueType</a>&gt;&nbsp;experimentResult,
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;ruleId)</code></div>
 <div class="col-last even-row-color">&nbsp;</div>
 </div>
 </section>
@@ -119,16 +138,51 @@ loadScripts(document, 'script');</script>
 <div class="table-header col-first">Modifier and Type</div>
 <div class="table-header col-second">Method</div>
 <div class="table-header col-last">Description</div>
+<div class="col-first even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code>static &lt;ValueType&gt;<br><a href="FeatureResult.FeatureResultBuilder.html" title="class in growthbook.sdk.java">FeatureResult.FeatureResultBuilder</a>&lt;ValueType&gt;</code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code><a href="#builder()" class="member-name-link">builder</a>()</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4">&nbsp;</div>
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>boolean</code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#equals(java.lang.Object)" class="member-name-link">equals</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html" title="class or interface in java.lang" class="external-link">Object</a>&nbsp;o)</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">&nbsp;</div>
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="Experiment.html" title="class in growthbook.sdk.java">Experiment</a>&lt;<a href="FeatureResult.html" title="type parameter in FeatureResult">ValueType</a>&gt;</code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#getExperiment()" class="member-name-link">getExperiment</a>()</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="block">When source is "experiment", this will be the Experiment object used</div>
+</div>
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="ExperimentResult.html" title="class in growthbook.sdk.java">ExperimentResult</a>&lt;<a href="FeatureResult.html" title="type parameter in FeatureResult">ValueType</a>&gt;</code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#getExperimentResult()" class="member-name-link">getExperimentResult</a>()</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="block">When source is "experiment", this will be an ExperimentResult object</div>
+</div>
 <div class="col-first even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code>static &lt;ValueType&gt;<br>com.google.gson.JsonElement</code></div>
 <div class="col-second even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code><a href="#getJson(growthbook.sdk.java.FeatureResult)" class="member-name-link">getJson</a><wbr>(<a href="FeatureResult.html" title="class in growthbook.sdk.java">FeatureResult</a>&lt;ValueType&gt;&nbsp;object)</code></div>
 <div class="col-last even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4">
 <div class="block">Get a Gson JsonElement of the <a href="FeatureResult.html" title="class in growthbook.sdk.java"><code>FeatureResult</code></a></div>
 </div>
-<div class="col-first odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code>static &lt;ValueType&gt;<br>com.google.gson.JsonSerializer&lt;<a href="FeatureResult.html" title="class in growthbook.sdk.java">FeatureResult</a>&lt;ValueType&gt;&gt;</code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code><a href="#getSerializer()" class="member-name-link">getSerializer</a>()</code></div>
-<div class="col-last odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4">
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a></code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#getRuleId()" class="member-name-link">getRuleId</a>()</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="block">Unique identifier of rule</div>
+</div>
+<div class="col-first even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code>static &lt;ValueType&gt;<br>com.google.gson.JsonSerializer&lt;<a href="FeatureResult.html" title="class in growthbook.sdk.java">FeatureResult</a>&lt;ValueType&gt;&gt;</code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code><a href="#getSerializer()" class="member-name-link">getSerializer</a>()</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4">
 <div class="block">a Gson serializer for <a href="FeatureResult.html" title="class in growthbook.sdk.java"><code>FeatureResult</code></a></div>
 </div>
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="FeatureResultSource.html" title="enum class in growthbook.sdk.java">FeatureResultSource</a></code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#getSource()" class="member-name-link">getSource</a>()</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="block">One of "unknownFeature", "defaultValue", "force", "experiment",
+ "cyclicPrerequisite" or "prerequisite"</div>
+</div>
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html" title="class or interface in java.lang" class="external-link">Object</a></code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#getValue()" class="member-name-link">getValue</a>()</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="block">The assigned value of the feature</div>
+</div>
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>int</code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#hashCode()" class="member-name-link">hashCode</a>()</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">&nbsp;</div>
 <div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Boolean.html" title="class or interface in java.lang" class="external-link">Boolean</a></code></div>
 <div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#isOff()" class="member-name-link">isOff</a>()</code></div>
 <div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
@@ -139,17 +193,46 @@ loadScripts(document, 'script');</script>
 <div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">Evaluates to true when the feature is on</div>
 </div>
-<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a></code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#toJson()" class="member-name-link">toJson</a>()</code></div>
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>void</code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#setExperiment(growthbook.sdk.java.Experiment)" class="member-name-link">setExperiment</a><wbr>(<a href="Experiment.html" title="class in growthbook.sdk.java">Experiment</a>&lt;<a href="FeatureResult.html" title="type parameter in FeatureResult">ValueType</a>&gt;&nbsp;experiment)</code></div>
 <div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="block">When source is "experiment", this will be the Experiment object used</div>
+</div>
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>void</code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#setExperimentResult(growthbook.sdk.java.ExperimentResult)" class="member-name-link">setExperimentResult</a><wbr>(<a href="ExperimentResult.html" title="class in growthbook.sdk.java">ExperimentResult</a>&lt;<a href="FeatureResult.html" title="type parameter in FeatureResult">ValueType</a>&gt;&nbsp;experimentResult)</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="block">When source is "experiment", this will be an ExperimentResult object</div>
+</div>
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>void</code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#setRuleId(java.lang.String)" class="member-name-link">setRuleId</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;ruleId)</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="block">Unique identifier of rule</div>
+</div>
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>void</code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#setSource(growthbook.sdk.java.FeatureResultSource)" class="member-name-link">setSource</a><wbr>(<a href="FeatureResultSource.html" title="enum class in growthbook.sdk.java">FeatureResultSource</a>&nbsp;source)</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="block">One of "unknownFeature", "defaultValue", "force", "experiment",
+ "cyclicPrerequisite" or "prerequisite"</div>
+</div>
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>void</code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#setValue(java.lang.Object)" class="member-name-link">setValue</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html" title="class or interface in java.lang" class="external-link">Object</a>&nbsp;value)</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="block">The assigned value of the feature</div>
+</div>
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a></code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#toJson()" class="member-name-link">toJson</a>()</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">Get a Gson JsonElement of the <a href="FeatureResult.html" title="class in growthbook.sdk.java"><code>FeatureResult</code></a></div>
 </div>
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a></code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#toString()" class="member-name-link">toString</a>()</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">&nbsp;</div>
 </div>
 </div>
 </div>
 <div class="inherited-list">
 <h3 id="methods-inherited-from-class-java.lang.Object">Methods inherited from class&nbsp;java.lang.<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html" title="class or interface in java.lang" class="external-link">Object</a></h3>
-<code><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html#equals(java.lang.Object)" title="class or interface in java.lang" class="external-link">equals</a>, <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html#getClass()" title="class or interface in java.lang" class="external-link">getClass</a>, <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html#hashCode()" title="class or interface in java.lang" class="external-link">hashCode</a>, <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html#notify()" title="class or interface in java.lang" class="external-link">notify</a>, <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html#notifyAll()" title="class or interface in java.lang" class="external-link">notifyAll</a>, <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html#toString()" title="class or interface in java.lang" class="external-link">toString</a>, <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html#wait()" title="class or interface in java.lang" class="external-link">wait</a>, <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html#wait(long)" title="class or interface in java.lang" class="external-link">wait</a>, <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html#wait(long,int)" title="class or interface in java.lang" class="external-link">wait</a></code></div>
+<code><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html#getClass()" title="class or interface in java.lang" class="external-link">getClass</a>, <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html#notify()" title="class or interface in java.lang" class="external-link">notify</a>, <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html#notifyAll()" title="class or interface in java.lang" class="external-link">notifyAll</a>, <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html#wait()" title="class or interface in java.lang" class="external-link">wait</a>, <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html#wait(long)" title="class or interface in java.lang" class="external-link">wait</a>, <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html#wait(long,int)" title="class or interface in java.lang" class="external-link">wait</a></code></div>
 </section>
 </li>
 </ul>
@@ -162,9 +245,18 @@ loadScripts(document, 'script');</script>
 <h2>Constructor Details</h2>
 <ul class="member-list">
 <li>
-<section class="detail" id="&lt;init&gt;()">
+<section class="detail" id="&lt;init&gt;(java.lang.Object,growthbook.sdk.java.FeatureResultSource,growthbook.sdk.java.Experiment,growthbook.sdk.java.ExperimentResult,java.lang.String)">
 <h3>FeatureResult</h3>
-<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="element-name">FeatureResult</span>()</div>
+<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="element-name">FeatureResult</span><wbr><span class="parameters">(@Nullable
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html" title="class or interface in java.lang" class="external-link">Object</a>&nbsp;value,
+ @Nullable
+ <a href="FeatureResultSource.html" title="enum class in growthbook.sdk.java">FeatureResultSource</a>&nbsp;source,
+ @Nullable
+ <a href="Experiment.html" title="class in growthbook.sdk.java">Experiment</a>&lt;<a href="FeatureResult.html" title="type parameter in FeatureResult">ValueType</a>&gt;&nbsp;experiment,
+ @Nullable
+ <a href="ExperimentResult.html" title="class in growthbook.sdk.java">ExperimentResult</a>&lt;<a href="FeatureResult.html" title="type parameter in FeatureResult">ValueType</a>&gt;&nbsp;experimentResult,
+ @Nullable
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;ruleId)</span></div>
 </section>
 </li>
 </ul>
@@ -235,6 +327,125 @@ loadScripts(document, 'script');</script>
 <dd><code>ValueType</code> - <a href="FeatureResult.html" title="class in growthbook.sdk.java"><code>FeatureResult</code></a></dd>
 <dt>Returns:</dt>
 <dd>Gson serializer</dd>
+</dl>
+</section>
+</li>
+<li>
+<section class="detail" id="builder()">
+<h3>builder</h3>
+<div class="member-signature"><span class="modifiers">public static</span>&nbsp;<span class="type-parameters">&lt;ValueType&gt;</span>
+<span class="return-type"><a href="FeatureResult.FeatureResultBuilder.html" title="class in growthbook.sdk.java">FeatureResult.FeatureResultBuilder</a>&lt;ValueType&gt;</span>&nbsp;<span class="element-name">builder</span>()</div>
+</section>
+</li>
+<li>
+<section class="detail" id="getValue()">
+<h3>getValue</h3>
+<div class="member-signature"><span class="annotations">@Nullable
+</span><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html" title="class or interface in java.lang" class="external-link">Object</a></span>&nbsp;<span class="element-name">getValue</span>()</div>
+<div class="block">The assigned value of the feature</div>
+</section>
+</li>
+<li>
+<section class="detail" id="getSource()">
+<h3>getSource</h3>
+<div class="member-signature"><span class="annotations">@Nullable
+</span><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="FeatureResultSource.html" title="enum class in growthbook.sdk.java">FeatureResultSource</a></span>&nbsp;<span class="element-name">getSource</span>()</div>
+<div class="block">One of "unknownFeature", "defaultValue", "force", "experiment",
+ "cyclicPrerequisite" or "prerequisite"</div>
+</section>
+</li>
+<li>
+<section class="detail" id="getExperiment()">
+<h3>getExperiment</h3>
+<div class="member-signature"><span class="annotations">@Nullable
+</span><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="Experiment.html" title="class in growthbook.sdk.java">Experiment</a>&lt;<a href="FeatureResult.html" title="type parameter in FeatureResult">ValueType</a>&gt;</span>&nbsp;<span class="element-name">getExperiment</span>()</div>
+<div class="block">When source is "experiment", this will be the Experiment object used</div>
+</section>
+</li>
+<li>
+<section class="detail" id="getExperimentResult()">
+<h3>getExperimentResult</h3>
+<div class="member-signature"><span class="annotations">@Nullable
+</span><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="ExperimentResult.html" title="class in growthbook.sdk.java">ExperimentResult</a>&lt;<a href="FeatureResult.html" title="type parameter in FeatureResult">ValueType</a>&gt;</span>&nbsp;<span class="element-name">getExperimentResult</span>()</div>
+<div class="block">When source is "experiment", this will be an ExperimentResult object</div>
+</section>
+</li>
+<li>
+<section class="detail" id="getRuleId()">
+<h3>getRuleId</h3>
+<div class="member-signature"><span class="annotations">@Nullable
+</span><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a></span>&nbsp;<span class="element-name">getRuleId</span>()</div>
+<div class="block">Unique identifier of rule</div>
+</section>
+</li>
+<li>
+<section class="detail" id="setValue(java.lang.Object)">
+<h3>setValue</h3>
+<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type">void</span>&nbsp;<span class="element-name">setValue</span><wbr><span class="parameters">(@Nullable
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html" title="class or interface in java.lang" class="external-link">Object</a>&nbsp;value)</span></div>
+<div class="block">The assigned value of the feature</div>
+</section>
+</li>
+<li>
+<section class="detail" id="setSource(growthbook.sdk.java.FeatureResultSource)">
+<h3>setSource</h3>
+<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type">void</span>&nbsp;<span class="element-name">setSource</span><wbr><span class="parameters">(@Nullable
+ <a href="FeatureResultSource.html" title="enum class in growthbook.sdk.java">FeatureResultSource</a>&nbsp;source)</span></div>
+<div class="block">One of "unknownFeature", "defaultValue", "force", "experiment",
+ "cyclicPrerequisite" or "prerequisite"</div>
+</section>
+</li>
+<li>
+<section class="detail" id="setExperiment(growthbook.sdk.java.Experiment)">
+<h3>setExperiment</h3>
+<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type">void</span>&nbsp;<span class="element-name">setExperiment</span><wbr><span class="parameters">(@Nullable
+ <a href="Experiment.html" title="class in growthbook.sdk.java">Experiment</a>&lt;<a href="FeatureResult.html" title="type parameter in FeatureResult">ValueType</a>&gt;&nbsp;experiment)</span></div>
+<div class="block">When source is "experiment", this will be the Experiment object used</div>
+</section>
+</li>
+<li>
+<section class="detail" id="setExperimentResult(growthbook.sdk.java.ExperimentResult)">
+<h3>setExperimentResult</h3>
+<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type">void</span>&nbsp;<span class="element-name">setExperimentResult</span><wbr><span class="parameters">(@Nullable
+ <a href="ExperimentResult.html" title="class in growthbook.sdk.java">ExperimentResult</a>&lt;<a href="FeatureResult.html" title="type parameter in FeatureResult">ValueType</a>&gt;&nbsp;experimentResult)</span></div>
+<div class="block">When source is "experiment", this will be an ExperimentResult object</div>
+</section>
+</li>
+<li>
+<section class="detail" id="setRuleId(java.lang.String)">
+<h3>setRuleId</h3>
+<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type">void</span>&nbsp;<span class="element-name">setRuleId</span><wbr><span class="parameters">(@Nullable
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;ruleId)</span></div>
+<div class="block">Unique identifier of rule</div>
+</section>
+</li>
+<li>
+<section class="detail" id="equals(java.lang.Object)">
+<h3>equals</h3>
+<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type">boolean</span>&nbsp;<span class="element-name">equals</span><wbr><span class="parameters">(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html" title="class or interface in java.lang" class="external-link">Object</a>&nbsp;o)</span></div>
+<dl class="notes">
+<dt>Overrides:</dt>
+<dd><code><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html#equals(java.lang.Object)" title="class or interface in java.lang" class="external-link">equals</a></code>&nbsp;in class&nbsp;<code><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html" title="class or interface in java.lang" class="external-link">Object</a></code></dd>
+</dl>
+</section>
+</li>
+<li>
+<section class="detail" id="hashCode()">
+<h3>hashCode</h3>
+<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type">int</span>&nbsp;<span class="element-name">hashCode</span>()</div>
+<dl class="notes">
+<dt>Overrides:</dt>
+<dd><code><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html#hashCode()" title="class or interface in java.lang" class="external-link">hashCode</a></code>&nbsp;in class&nbsp;<code><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html" title="class or interface in java.lang" class="external-link">Object</a></code></dd>
+</dl>
+</section>
+</li>
+<li>
+<section class="detail" id="toString()">
+<h3>toString</h3>
+<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a></span>&nbsp;<span class="element-name">toString</span>()</div>
+<dl class="notes">
+<dt>Overrides:</dt>
+<dd><code><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html#toString()" title="class or interface in java.lang" class="external-link">toString</a></code>&nbsp;in class&nbsp;<code><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html" title="class or interface in java.lang" class="external-link">Object</a></code></dd>
 </dl>
 </section>
 </li>

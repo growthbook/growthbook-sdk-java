@@ -83,6 +83,7 @@ loadScripts(document, 'script');</script>
 <div class="type-signature"><span class="modifiers">public class </span><span class="element-name type-name-label">InMemoryStickyBucketServiceImpl</span>
 <span class="extends-implements">extends <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html" title="class or interface in java.lang" class="external-link">Object</a>
 implements <a href="StickyBucketService.html" title="interface in growthbook.sdk.java.stickyBucketing">StickyBucketService</a></span></div>
+<div class="block">For simple bucket persistence using the in memory's storage(Map) (can be polyfilled for other environments)</div>
 </section>
 <section class="summary">
 <ul class="summary-list">
@@ -112,14 +113,20 @@ implements <a href="StickyBucketService.html" title="interface in growthbook.sdk
 <div class="table-header col-last">Description</div>
 <div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/Map.html" title="class or interface in java.util" class="external-link">Map</a>&lt;<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>,<wbr><a href="StickyAssignmentsDocument.html" title="class in growthbook.sdk.java.stickyBucketing">StickyAssignmentsDocument</a>&gt;</code></div>
 <div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#getAllAssignments(java.util.Map)" class="member-name-link">getAllAssignments</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/Map.html" title="class or interface in java.util" class="external-link">Map</a>&lt;<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>,<wbr><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&gt;&nbsp;attributes)</code></div>
-<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">&nbsp;</div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="block">Method for getting sticky bucket assignments from attributes of context</div>
+</div>
 <div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="StickyAssignmentsDocument.html" title="class in growthbook.sdk.java.stickyBucketing">StickyAssignmentsDocument</a></code></div>
 <div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#getAssignments(java.lang.String,java.lang.String)" class="member-name-link">getAssignments</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;attributeName,
  <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;attributeValue)</code></div>
-<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">&nbsp;</div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="block">Method for saving assignments document to cache</div>
+</div>
 <div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>void</code></div>
 <div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#saveAssignments(growthbook.sdk.java.stickyBucketing.StickyAssignmentsDocument)" class="member-name-link">saveAssignments</a><wbr>(<a href="StickyAssignmentsDocument.html" title="class in growthbook.sdk.java.stickyBucketing">StickyAssignmentsDocument</a>&nbsp;doc)</code></div>
-<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">&nbsp;</div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="block">Method for saving assignments document to cache</div>
+</div>
 </div>
 </div>
 </div>
@@ -156,9 +163,17 @@ implements <a href="StickyBucketService.html" title="interface in growthbook.sdk
 <h3>getAssignments</h3>
 <div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="StickyAssignmentsDocument.html" title="class in growthbook.sdk.java.stickyBucketing">StickyAssignmentsDocument</a></span>&nbsp;<span class="element-name">getAssignments</span><wbr><span class="parameters">(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;attributeName,
  <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;attributeValue)</span></div>
+<div class="block">Method for saving assignments document to cache</div>
 <dl class="notes">
 <dt>Specified by:</dt>
 <dd><code><a href="StickyBucketService.html#getAssignments(java.lang.String,java.lang.String)">getAssignments</a></code>&nbsp;in interface&nbsp;<code><a href="StickyBucketService.html" title="interface in growthbook.sdk.java.stickyBucketing">StickyBucketService</a></code></dd>
+<dt>Parameters:</dt>
+<dd><code>attributeName</code> - attributeName with attributeValue together present
+                       a key that us for find proper StickyAssignmentsDocument</dd>
+<dd><code>attributeValue</code> - attributeName with attributeValue together present
+                       a key that us for find proper StickyAssignmentsDocument</dd>
+<dt>Returns:</dt>
+<dd>StickyAssignmentsDocument</dd>
 </dl>
 </section>
 </li>
@@ -166,9 +181,12 @@ implements <a href="StickyBucketService.html" title="interface in growthbook.sdk
 <section class="detail" id="saveAssignments(growthbook.sdk.java.stickyBucketing.StickyAssignmentsDocument)">
 <h3>saveAssignments</h3>
 <div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type">void</span>&nbsp;<span class="element-name">saveAssignments</span><wbr><span class="parameters">(<a href="StickyAssignmentsDocument.html" title="class in growthbook.sdk.java.stickyBucketing">StickyAssignmentsDocument</a>&nbsp;doc)</span></div>
+<div class="block">Method for saving assignments document to cache</div>
 <dl class="notes">
 <dt>Specified by:</dt>
 <dd><code><a href="StickyBucketService.html#saveAssignments(growthbook.sdk.java.stickyBucketing.StickyAssignmentsDocument)">saveAssignments</a></code>&nbsp;in interface&nbsp;<code><a href="StickyBucketService.html" title="interface in growthbook.sdk.java.stickyBucketing">StickyBucketService</a></code></dd>
+<dt>Parameters:</dt>
+<dd><code>doc</code> - StickyAssignmentsDocument</dd>
 </dl>
 </section>
 </li>
@@ -176,9 +194,14 @@ implements <a href="StickyBucketService.html" title="interface in growthbook.sdk
 <section class="detail" id="getAllAssignments(java.util.Map)">
 <h3>getAllAssignments</h3>
 <div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/Map.html" title="class or interface in java.util" class="external-link">Map</a>&lt;<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>,<wbr><a href="StickyAssignmentsDocument.html" title="class in growthbook.sdk.java.stickyBucketing">StickyAssignmentsDocument</a>&gt;</span>&nbsp;<span class="element-name">getAllAssignments</span><wbr><span class="parameters">(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/Map.html" title="class or interface in java.util" class="external-link">Map</a>&lt;<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>,<wbr><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&gt;&nbsp;attributes)</span></div>
+<div class="block">Method for getting sticky bucket assignments from attributes of context</div>
 <dl class="notes">
 <dt>Specified by:</dt>
 <dd><code><a href="StickyBucketService.html#getAllAssignments(java.util.Map)">getAllAssignments</a></code>&nbsp;in interface&nbsp;<code><a href="StickyBucketService.html" title="interface in growthbook.sdk.java.stickyBucketing">StickyBucketService</a></code></dd>
+<dt>Parameters:</dt>
+<dd><code>attributes</code> - Map of String key and String value that you have in GBContext</dd>
+<dt>Returns:</dt>
+<dd>Map with key String and value StickyAssignmentsDocument</dd>
 </dl>
 </section>
 </li>
