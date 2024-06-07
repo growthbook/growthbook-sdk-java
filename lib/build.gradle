@@ -6,11 +6,23 @@
  * User Manual available at https://docs.gradle.org/7.5.1/userguide/building_java_projects.html
  */
 
+buildscript {
+    repositories {
+        maven {
+            url "https://plugins.gradle.org/m2/"
+        }
+    }
+    dependencies {
+        classpath "io.freefair.gradle:lombok-plugin:8.6"
+    }
+}
+
 plugins {
     // Apply the java-library plugin for API and implementation separation.
     id 'java-library'
     id 'maven-publish'
     id 'jacoco'
+    id "io.freefair.lombok" version "8.6"
 }
 
 sourceCompatibility = JavaVersion.VERSION_1_8
@@ -45,8 +57,13 @@ dependencies {
     // Adds getter, setter and builder boilerplate
     // https://projectlombok.org/
     // https://mvnrepository.com/artifact/org.projectlombok/lombok
-    compileOnly 'org.projectlombok:lombok:1.18.24'
-    annotationProcessor 'org.projectlombok:lombok:1.18.24'
+    compileOnly 'org.projectlombok:lombok:1.18.32'
+    annotationProcessor 'org.projectlombok:lombok:1.18.32'
+
+    // logging
+    implementation 'org.slf4j:slf4j-api:2.0.7'
+    implementation 'com.github.tony19:logback-android:3.0.0'
+    testImplementation 'ch.qos.logback:logback-classic:1.2.11'
 }
 
 publishing {
@@ -94,4 +111,8 @@ jacocoTestReport {
         csv.required = false
         html.outputLocation = layout.buildDirectory.dir('jacocoHtml')
     }
+}
+
+configurations.testImplementation {
+    exclude module: 'logback-android'
 }

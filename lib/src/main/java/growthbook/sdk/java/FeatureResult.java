@@ -8,8 +8,8 @@ import com.google.gson.annotations.SerializedName;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
+
 import javax.annotation.Nullable;
-import java.lang.reflect.Type;
 import java.util.Collection;
 
 /**
@@ -31,19 +31,35 @@ import java.util.Collection;
 @AllArgsConstructor
 public class FeatureResult<ValueType> {
 
+    /**
+     * The assigned value of the feature
+     */
     @Nullable
     @SerializedName("value")
     Object value;
 
+    /**
+     * One of "unknownFeature", "defaultValue", "force", "experiment",
+     * "cyclicPrerequisite" or "prerequisite"
+     */
     @Nullable
     FeatureResultSource source;
 
+    /**
+     * When source is "experiment", this will be the Experiment object used
+     */
     @Nullable
     Experiment<ValueType> experiment;
 
+    /**
+     * When source is "experiment", this will be an ExperimentResult object
+     */
     @Nullable
     ExperimentResult<ValueType> experimentResult;
 
+    /**
+     * Unique identifier of rule
+     */
     @Nullable
     String ruleId;
 

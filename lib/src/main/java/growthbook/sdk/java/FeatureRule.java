@@ -5,6 +5,7 @@ import com.google.gson.annotations.SerializedName;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
+
 import javax.annotation.Nullable;
 import java.util.ArrayList;
 
@@ -28,45 +29,91 @@ import java.util.ArrayList;
 @Builder
 @AllArgsConstructor
 public class FeatureRule<ValueType> {
+    /**
+     * Unique feature rule id
+     */
     @Nullable
     String id;
 
+    /**
+     * The globally unique tracking key for the experiment (default to the feature key)
+     */
     @Nullable
     String key;
 
+    /**
+     * What percent of users should be included in the experiment (between 0 and 1, inclusive)
+     */
     @Nullable
     Float coverage;
 
+    /**
+     * Immediately force a specific value (ignore every other option besides condition and coverage)
+     */
     @Nullable
     ValueType force;
 
+    /**
+     * Run an experiment (A/B test) and randomly choose between these variations
+     */
     @Nullable
     ArrayList<ValueType> variations;
 
+    /**
+     * How to weight traffic between variations. Must add to 1.
+     */
     @Nullable
     ArrayList<Float> weights;
 
+    /**
+     * A tuple that contains the namespace identifier, plus a range of coverage for the experiment.
+     */
     @Nullable
+    @Deprecated
     Namespace namespace;
 
+    /**
+     * What user attribute should be used to assign variations (defaults to id)
+     */
     @Builder.Default
     String hashAttribute = "id";
 
+    /**
+     * Optional targeting condition
+     */
     @Nullable
     JsonElement condition;
 
+    /**
+     * Each item defines a prerequisite where a `condition` must evaluate against
+     * a parent feature's value (identified by `id`). If `gate` is true, then this is a blocking
+     * feature-level prerequisite; otherwise it applies to the current rule only.
+     */
     @Nullable
     ArrayList<ParentCondition> parentConditions;
 
+    // new properties v0.4.0
+    /**
+     * The hash version to use (default to 1)
+     */
     @Nullable
     Integer hashVersion;
 
+    /**
+     * A more precise version of coverage
+     */
     @Nullable
     BucketRange range;
 
+    /**
+     * Ranges for experiment variations
+     */
     @Nullable
     ArrayList<BucketRange> ranges;
 
+    /**
+     * Meta info about the experiment variations
+     */
     @Nullable
     @SerializedName("meta")
     ArrayList<VariationMeta> meta;

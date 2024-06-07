@@ -6,7 +6,9 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
 import growthbook.sdk.java.stickyBucketing.StickyAssignmentsDocument;
 import growthbook.sdk.java.stickyBucketing.StickyBucketService;
+import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.NotNull;
+
 import javax.annotation.Nullable;
 import java.net.MalformedURLException;
 import java.net.URL;
@@ -22,6 +24,7 @@ import java.util.Set;
 /**
  * <b>INTERNAL</b>: Implementation of for internal utility methods to support {@link growthbook.sdk.java.GrowthBook}
  */
+@Slf4j
 class GrowthBookUtils {
     /**
      * Hashes a string to a float between 0 and 1, or null if the hash version is unsupported.
@@ -152,6 +155,7 @@ class GrowthBookUtils {
             URL url = new URL(urlString);
             return getQueryStringOverride(id, url, numberOfVariations);
         } catch (MalformedURLException e) {
+            log.error(e.getMessage(), e);
             return null;
         }
     }
@@ -194,8 +198,8 @@ class GrowthBookUtils {
             }
 
             return variationValue;
-        } catch (NumberFormatException exception) {
-            exception.printStackTrace();
+        } catch (NumberFormatException e) {
+            log.error(e.getMessage(), e);
             return null;
         }
     }
@@ -287,6 +291,7 @@ class GrowthBookUtils {
         try {
             return Float.parseFloat(value);
         } catch (NumberFormatException e) {
+            log.error(e.getMessage(), e);
             return null;
         }
     }
@@ -312,6 +317,7 @@ class GrowthBookUtils {
         try {
             return Double.parseDouble(value);
         } catch (NumberFormatException e) {
+            log.error(e.getMessage(), e);
             return null;
         }
     }
@@ -337,6 +343,7 @@ class GrowthBookUtils {
         try {
             return Integer.parseInt(value);
         } catch (NumberFormatException e) {
+            log.error(e.getMessage(), e);
             return null;
         }
     }
@@ -354,7 +361,7 @@ class GrowthBookUtils {
         try {
             return gson.fromJson(value, valueTypeClass);
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error(e.getMessage(), e);
             return null;
         }
     }
@@ -412,6 +419,7 @@ class GrowthBookUtils {
     }
 
     /**
+     * Determines if a number n is within the provided range.
      * Verifies if the provided float is within the lower (inclusive) and upper (exclusive) bounds of
      * the provided {@link BucketRange}.
      *
@@ -424,6 +432,24 @@ class GrowthBookUtils {
         return n >= range.getRangeStart() && n < range.getRangeEnd();
     }
 
+    /**
+     * This is a helper method to evaluate filters for both feature flags and experiments.
+     * This method:
+     * <ul>
+     *     <li>Loop through filters array
+     *          <li>Get the hashAttribute and hashValue</li>
+     *          <li>If hashValue is empty, return true</li>
+     *          <li>Determine the bucket for the user</li>
+     *          <li>If inRange(n, range) is false for every range in filter.ranges, return true</li>
+     *      </li>
+     *      <li>If you made it through the entire array without returning early, return false now</li>
+     * </ul>
+     *
+     * @param filters            List<Filters></Filters>
+     * @param attributeOverrides JsonObject
+     * @param context            GBContext
+     * @return check if user filtered
+     */
     public static Boolean isFilteredOut(List<Filter> filters, JsonObject attributeOverrides, GBContext context) {
         if (filters == null) return false;
         if (attributeOverrides == null) return false;
@@ -463,6 +489,25 @@ class GrowthBookUtils {
         });
     }
 
+    /**
+     * Determines if the user is part of a gradual feature rollout.
+     * <ul>
+     *     <li>Either coverage or range are required. If both are null, return true immediately</li>
+     *     <li>If range is null and coverage is zero, return false immediately.
+     *     This catches an edge case where the bucket is zero and users are let through when they shouldn't be</li>
+     *     <li>If hashValue is empty, return false immediately</li>
+     * </ul>
+     *
+     * @param attributeOverrides JsonObject
+     * @param seed               String
+     * @param hashAttribute      String
+     * @param fallbackAttribute  String
+     * @param range              BucketRange
+     * @param coverage           Float
+     * @param hashVersion        Integer
+     * @param context            GBContext
+     * @return Boolean - check if user is included
+     */
     public static Boolean isIncludedInRollout(
             JsonObject attributeOverrides,
             String seed,
@@ -474,13 +519,17 @@ class GrowthBookUtils {
             GBContext context
     ) {
         if (range == null && coverage == null) return true;
+        if (range == null && coverage == 0) return false;
 
         if (hashVersion == null) {
             hashVersion = 1;
         }
+
+        //Get the hashAttribute and hashValue
         HashAttributeAndHashValue hashAttributeAndHashValue = GrowthBookUtils
                 .getHashAttribute(context, hashAttribute, fallbackAttribute, attributeOverrides);
 
+        // Determine the bucket for the user
         Float hash = GrowthBookUtils.hash(
                 hashAttributeAndHashValue.getHashValue(),
                 hashVersion,
@@ -491,13 +540,19 @@ class GrowthBookUtils {
 
         if (range != null) {
             return GrowthBookUtils.inRange(hash, range);
-        } else if (coverage != null) {
-            return hash <= coverage;
         } else {
-            return true;
+            return hash <= coverage;
         }
     }
 
+    /**
+     * Method that get cached assignments
+     * and set it to Context's Sticky Bucket Assignments documents
+     *
+     * @param context            GBContext
+     * @param featuresDataModel  String
+     * @param attributeOverrides JsonObject
+     */
     public static void refreshStickyBuckets(GBContext context,
                                             String featuresDataModel,
                                             JsonObject attributeOverrides) {
@@ -519,6 +574,14 @@ class GrowthBookUtils {
         );
     }
 
+    /**
+     * Supportive method for get attribute value from Context
+     *
+     * @param context            GBContext
+     * @param featuresDataModel  String
+     * @param attributeOverrides JsonObject
+     * @return create a map of sticky bucket attributes
+     */
     public static Map<String, String> getStickyBucketAttributes(GBContext context,
                                                                 String featuresDataModel,
                                                                 JsonObject attributeOverrides) {
@@ -542,10 +605,18 @@ class GrowthBookUtils {
         return attributes;
     }
 
+    /**
+     * Supportive method for get attribute value from Context if identifiers missed
+     *
+     * @param context          GBContext
+     * @param featureDataModel String
+     * @param <ValueType>
+     * @return list of sticky bucket identifier
+     */
     private static @Nullable <ValueType> List<String> deriveStickyBucketIdentifierAttributes
-            (GBContext context,
-             String featureDataModel
-            ) {
+    (GBContext context,
+     String featureDataModel
+    ) {
         Set<String> attributes = new HashSet<>();
 
         JsonObject jsonObject = GrowthBookJsonUtils.getInstance()
@@ -583,6 +654,16 @@ class GrowthBookUtils {
         return new ArrayList<>(attributes);
     }
 
+    /**
+     * Method to get actual Sticky Bucket assignments.
+     * Also, this method handle if assignments belong to user
+     *
+     * @param context              GBContext
+     * @param expHashAttribute     String
+     * @param expFallbackAttribute String
+     * @param attributeOverrides   JsonObject
+     * @return Map(StickyBucketAssignments)
+     */
     public static Map<String, String> getStickyBucketAssignments(
             GBContext context,
             @Nullable String expHashAttribute,
@@ -632,8 +713,7 @@ class GrowthBookUtils {
         }
 
         if (context.getStickyBucketAssignmentDocs() != null) {
-            context.getStickyBucketAssignmentDocs().entrySet().stream()
-                    .map(Map.Entry::getValue)
+            context.getStickyBucketAssignmentDocs().values()
                     .forEach(it -> mergedAssignments.putAll(it.getAssignments()));
         }
 
@@ -650,6 +730,19 @@ class GrowthBookUtils {
         return mergedAssignments;
     }
 
+    /**
+     * Method to get {@link StickyBucketVariation}: variation and versionIsBlocked
+     *
+     * @param context                     GBContext
+     * @param experimentKey               String
+     * @param experimentHashAttribute     String
+     * @param experimentFallbackAttribute String
+     * @param attributeOverrides          JsonObject
+     * @param experimentBucketVersion     Integer
+     * @param minExperimentBucketVersion  Integer
+     * @param meta                        List<VariationMeta>
+     * @return {@link StickyBucketVariation}
+     */
     public static StickyBucketVariation getStickyBucketVariation(
             GBContext context,
             String experimentKey,
@@ -698,17 +791,13 @@ class GrowthBookUtils {
         }
     }
 
-    private static int findVariationIndex(List<VariationMeta> meta, String variationKey) {
-        for (int i = 0; i < meta.size(); i++) {
-            if (meta.get(i).getKey() != null) {
-                if (meta.get(i).getKey().equals(variationKey)) {
-                    return i;
-                }
-            }
-        }
-        return -1;
-    }
-
+    /**
+     * Method to get Experiment key from cache
+     *
+     * @param experimentKey           String
+     * @param experimentBucketVersion Integer
+     * @return key in String format
+     */
     public static String getStickyBucketExperimentKey(
             String experimentKey,
             @Nullable Integer experimentBucketVersion
@@ -719,6 +808,15 @@ class GrowthBookUtils {
         return experimentKey + "__" + experimentBucketVersion;
     }
 
+    /**
+     * Method for generate Sticky Bucket Assignment document
+     *
+     * @param context        GBContext
+     * @param attributeName  String
+     * @param attributeValue String
+     * @param assignments    Map<String, String>
+     * @return {@link GeneratedStickyBucketAssignmentDocModel}
+     */
     public static GeneratedStickyBucketAssignmentDocModel generateStickyBucketAssignmentDoc(
             GBContext context,
             String attributeName,
@@ -740,6 +838,15 @@ class GrowthBookUtils {
         return new GeneratedStickyBucketAssignmentDocModel(key, stickyAssignmentsDocument, changed);
     }
 
+    /**
+     * Method for get hash value by identifier. User attribute used for hashing, defaulting to id if not set.
+     *
+     * @param context            GBContext
+     * @param attr               String
+     * @param fallbackAttribute  String
+     * @param attributeOverrides JsonObject
+     * @return {@link HashAttributeAndHashValue}
+     */
     public static HashAttributeAndHashValue getHashAttribute(
             GBContext context,
             @Nullable String attr,
@@ -751,14 +858,18 @@ class GrowthBookUtils {
 
         if (attributeOverrides.get(hashAttribute) != null && !attributeOverrides.get(hashAttribute).isJsonNull()) {
             hashValue = attributeOverrides.get(hashAttribute).getAsString();
-        } else if (context.getAttributes().get(hashAttribute) != null && !context.getAttributes().get(hashAttribute).isJsonNull()) {
+        } else if (context.getAttributes().get(hashAttribute) != null
+                && !context.getAttributes().get(hashAttribute).isJsonNull()) {
             hashValue = context.getAttributes().get(hashAttribute).getAsString();
         }
 
         if (hashValue.isEmpty() && fallbackAttribute != null) {
-            if (attributeOverrides.get(fallbackAttribute) != null && !attributeOverrides.get(fallbackAttribute).isJsonNull()) {
+            if (attributeOverrides.get(fallbackAttribute) != null
+                    && !attributeOverrides.get(fallbackAttribute).isJsonNull()) {
                 hashValue = attributeOverrides.get(fallbackAttribute).getAsString();
-            } else if (context.getAttributes().get(fallbackAttribute) != null && !context.getAttributes().get(fallbackAttribute).isJsonNull()) {
+            } else if (context.getAttributes() != null
+                    && context.getAttributes().get(fallbackAttribute) != null
+                    && !context.getAttributes().get(fallbackAttribute).isJsonNull()) {
                 hashValue = context.getAttributes().get(fallbackAttribute).getAsString();
             }
 
@@ -768,5 +879,16 @@ class GrowthBookUtils {
         }
 
         return new HashAttributeAndHashValue(hashAttribute, hashValue);
+    }
+
+    private static int findVariationIndex(List<VariationMeta> meta, String variationKey) {
+        for (int i = 0; i < meta.size(); i++) {
+            if (meta.get(i).getKey() != null) {
+                if (meta.get(i).getKey().equals(variationKey)) {
+                    return i;
+                }
+            }
+        }
+        return -1;
     }
 }

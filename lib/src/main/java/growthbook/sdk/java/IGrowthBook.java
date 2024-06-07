@@ -30,12 +30,30 @@ interface IGrowthBook {
      */
     void setAttributes(String attributesJsonString);
 
+    /**
+     * Setting your own implementation of StickyBucketService interface
+     * @param stickyBucketService StickyBucketService
+     */
     void setOwnStickyBucketService(@Nullable StickyBucketService stickyBucketService);
 
+    /**
+     * Setting default in memory implementation of StickyBucketService interface
+     */
     void setInMemoryStickyBucketService();
 
+    /**
+     * Returns true if the value is a truthy value
+     * @param featureKey String
+     * @return true if the value is a truthy value
+     */
     Boolean isOn(String featureKey);
 
+    /**
+     * Returns true if the value is a falsy value. Only the following values
+     * are considered to be "falsy": null, false, "", 0.
+     * @param featureKey String
+     * @return Returns true if the value is a falsy value
+     */
     Boolean isOff(String featureKey);
 
     /**
@@ -111,6 +129,9 @@ interface IGrowthBook {
     Boolean evaluateCondition(String attributesJsonString, String conditionJsonString);
 
     void featuresAPIModelSuccessfully(String featuresDataModel);
+
+    // if feature enabled by environment it would be present in context
+    Boolean isFeatureEnabled(String featureKey);
 
     // endregion Conditions
 
