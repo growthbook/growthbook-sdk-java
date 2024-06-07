@@ -130,6 +130,9 @@ interface IGrowthBook {
 
     void featuresAPIModelSuccessfully(String featuresDataModel);
 
+    // if feature enabled by environment it would be present in context
+    Boolean isFeatureEnabled(String featureKey);
+
     // endregion Conditions
 
     // TODO: getAllResults (not required)
