@@ -6,6 +6,7 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
 import growthbook.sdk.java.stickyBucketing.StickyAssignmentsDocument;
 import growthbook.sdk.java.stickyBucketing.StickyBucketService;
+import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.NotNull;
 
 import javax.annotation.Nullable;
@@ -23,6 +24,7 @@ import java.util.Set;
 /**
  * <b>INTERNAL</b>: Implementation of for internal utility methods to support {@link growthbook.sdk.java.GrowthBook}
  */
+@Slf4j
 class GrowthBookUtils {
     /**
      * Hashes a string to a float between 0 and 1, or null if the hash version is unsupported.
@@ -153,6 +155,7 @@ class GrowthBookUtils {
             URL url = new URL(urlString);
             return getQueryStringOverride(id, url, numberOfVariations);
         } catch (MalformedURLException e) {
+            log.error(e.getMessage(), e);
             return null;
         }
     }
@@ -195,8 +198,8 @@ class GrowthBookUtils {
             }
 
             return variationValue;
-        } catch (NumberFormatException exception) {
-            exception.printStackTrace();
+        } catch (NumberFormatException e) {
+            log.error(e.getMessage(), e);
             return null;
         }
     }
@@ -288,6 +291,7 @@ class GrowthBookUtils {
         try {
             return Float.parseFloat(value);
         } catch (NumberFormatException e) {
+            log.error(e.getMessage(), e);
             return null;
         }
     }
@@ -313,6 +317,7 @@ class GrowthBookUtils {
         try {
             return Double.parseDouble(value);
         } catch (NumberFormatException e) {
+            log.error(e.getMessage(), e);
             return null;
         }
     }
@@ -338,6 +343,7 @@ class GrowthBookUtils {
         try {
             return Integer.parseInt(value);
         } catch (NumberFormatException e) {
+            log.error(e.getMessage(), e);
             return null;
         }
     }
@@ -355,7 +361,7 @@ class GrowthBookUtils {
         try {
             return gson.fromJson(value, valueTypeClass);
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error(e.getMessage(), e);
             return null;
         }
     }

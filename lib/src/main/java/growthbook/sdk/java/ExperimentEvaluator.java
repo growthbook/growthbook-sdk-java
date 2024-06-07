@@ -8,10 +8,12 @@ import javax.annotation.Nullable;
 
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * <b>INTERNAL</b>: Implementation of experiment evaluation
  */
+@Slf4j
 class ExperimentEvaluator implements IExperimentEvaluator {
 
     private final ConditionEvaluator conditionEvaluator = new ConditionEvaluator();
@@ -120,6 +122,7 @@ class ExperimentEvaluator implements IExperimentEvaluator {
         if (!foundStickyBucket) {
 
             List<Filter> filters = experiment.getFilters();
+            @Deprecated
             Namespace namespace = experiment.getNamespace();
 
             if (filters != null) {
@@ -165,8 +168,10 @@ class ExperimentEvaluator implements IExperimentEvaluator {
                             )
                     );
 
-                    if (parentResult.source.equals(FeatureResultSource.CYCLIC_PREREQUISITE)) {
-                        return getExperimentResult(context, experiment, -1, false, featureId, null, null, attributeOverrides);
+                    if (parentResult.getSource() != null) {
+                        if (parentResult.getSource().equals(FeatureResultSource.CYCLIC_PREREQUISITE)) {
+                            return getExperimentResult(context, experiment, -1, false, featureId, null, null, attributeOverrides);
+                        }
                     }
 
                     Map<String, Object> evalObj = new HashMap<>();
@@ -182,7 +187,7 @@ class ExperimentEvaluator implements IExperimentEvaluator {
 
                     // blocking prerequisite eval failed: feature evaluation fails
                     if (!evalCondition) {
-                        System.out.println("Feature blocked by prerequisite");
+                        log.info("Feature blocked by prerequisite");
                         return getExperimentResult(context, experiment, -1, false, featureId, null, null, attributeOverrides);
                     }
                 }

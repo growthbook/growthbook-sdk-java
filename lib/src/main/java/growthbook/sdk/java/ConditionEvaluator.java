@@ -5,6 +5,7 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
 import com.google.gson.reflect.TypeToken;
+import lombok.extern.slf4j.Slf4j;
 import javax.annotation.Nullable;
 import java.lang.reflect.Type;
 import java.util.ArrayList;
@@ -18,6 +19,7 @@ import java.util.regex.Pattern;
 /**
  * <b>INTERNAL</b>: Implementation of condition evaluation
  */
+@Slf4j
 class ConditionEvaluator implements IConditionEvaluator {
 
     private final GrowthBookJsonUtils jsonUtils = GrowthBookJsonUtils.getInstance();
@@ -69,7 +71,7 @@ class ConditionEvaluator implements IConditionEvaluator {
 
             return true;
         } catch (RuntimeException e) {
-            e.printStackTrace();
+            log.error(e.getMessage(), e);
             return false;
         }
     }
@@ -467,7 +469,7 @@ class ConditionEvaluator implements IConditionEvaluator {
                 //
         }
 
-        System.out.printf("\nUnsupported data type %s", dataType);
+        log.info("\nUnsupported data type {}", dataType);
 
         return false;
     }

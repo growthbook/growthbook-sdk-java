@@ -8,7 +8,7 @@ import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Data;
 import lombok.Getter;
-
+import lombok.extern.slf4j.Slf4j;
 import javax.annotation.Nullable;
 import java.util.HashMap;
 import java.util.List;
@@ -20,6 +20,7 @@ import java.util.Map;
  * Alternatively, you can use the class's constructor.
  */
 @Data
+@Slf4j
 public class GBContext {
 
     /**
@@ -69,7 +70,7 @@ public class GBContext {
                 String decrypted = DecryptionUtils.decrypt(featuresJson, encryptionKey);
                 this.featuresJson = decrypted.trim();
             } catch (DecryptionUtils.DecryptionException e) {
-                e.printStackTrace();
+                log.error(e.getMessage(), e);
             }
         } else if (featuresJson != null) {
             // Use features
@@ -250,7 +251,7 @@ public class GBContext {
         try {
             return GrowthBookJsonUtils.getInstance().gson.fromJson(featuresJsonString, JsonObject.class);
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error(e.getMessage(), e);
             return null;
         }
     }
@@ -268,7 +269,7 @@ public class GBContext {
 
             return GrowthBookJsonUtils.getInstance().gson.fromJson(attributesJsonString, JsonObject.class);
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error(e.getMessage(), e);
             return new JsonObject();
         }
     }
