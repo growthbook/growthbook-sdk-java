@@ -54,6 +54,11 @@ dependencies {
     // https://mvnrepository.com/artifact/org.projectlombok/lombok
     compileOnly 'org.projectlombok:lombok:1.18.24'
     annotationProcessor 'org.projectlombok:lombok:1.18.24'
+
+    // logging
+    implementation 'org.slf4j:slf4j-api:2.0.7'
+    implementation 'com.github.tony19:logback-android:3.0.0'
+    testImplementation 'ch.qos.logback:logback-classic:1.2.11'
 }
 
 publishing {
@@ -101,4 +106,8 @@ jacocoTestReport {
         csv.required = false
         html.outputLocation = layout.buildDirectory.dir('jacocoHtml')
     }
+}
+
+configurations.testImplementation {
+    exclude module: 'logback-android'
 }
