@@ -4,6 +4,7 @@ import com.google.gson.JsonElement;
 import com.google.gson.annotations.SerializedName;
 import lombok.Builder;
 import lombok.Data;
+
 import javax.annotation.Nullable;
 
 /**
@@ -13,38 +14,75 @@ import javax.annotation.Nullable;
  */
 @Data
 public class ExperimentResult<ValueType> {
+    /**
+     * The array value of the assigned variation
+     */
     @Nullable
     ValueType value;
 
+    /**
+     * The array index of the assigned variation
+     */
     @Nullable
     Integer variationId;
 
+    /**
+     * Whether the user is part of the experiment
+     */
     Boolean inExperiment;
 
+    /**
+     * The user attribute used to assign a variation
+     */
     @Nullable
     String hashAttribute;
 
+    /**
+     * The value of that attribute
+     */
     @Nullable
     String hashValue;
 
+    /**
+     * The id of the feature (if any) that the experiment came from
+     */
     @Nullable
     String featureId;
 
+    /**
+     * If a hash was used to assign a variation
+     */
     Boolean hashUsed;
 
+    //new properties v0.4.0
+    /**
+     * The unique key for the assigned variation
+     */
     @Nullable
     String key;
 
+    /**
+     * The human-readable name of the assigned variation
+     */
     @Nullable
     String name;
 
+    /**
+     * The hash value used to assign a variation (float from 0 to 1)
+     */
     @Nullable
     Float bucket;
 
+    /**
+     * Used for holdout groups
+     */
     @Nullable
     @SerializedName("passthrough")
     Boolean passThrough;
 
+    /**
+     * If sticky bucketing was used to assign a variation
+     */
     @Nullable
     Boolean stickyBucketUsed;
 
@@ -65,18 +103,18 @@ public class ExperimentResult<ValueType> {
      */
     @Builder
     public ExperimentResult(
-        @Nullable ValueType value,
-        @Nullable Integer variationId,
-        Boolean inExperiment,
-        @Nullable String hashAttribute,
-        @Nullable String hashValue,
-        @Nullable String featureId,
-        Boolean hashUsed,
-        @Nullable String key,
-        @Nullable String name,
-        @Nullable Float bucket,
-        @Nullable Boolean passThrough,
-        @Nullable Boolean stickyBucketUsed
+            @Nullable ValueType value,
+            @Nullable Integer variationId,
+            Boolean inExperiment,
+            @Nullable String hashAttribute,
+            @Nullable String hashValue,
+            @Nullable String featureId,
+            Boolean hashUsed,
+            @Nullable String key,
+            @Nullable String name,
+            @Nullable Float bucket,
+            @Nullable Boolean passThrough,
+            @Nullable Boolean stickyBucketUsed
     ) {
         this.value = value;
         this.variationId = variationId;

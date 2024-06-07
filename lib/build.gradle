@@ -7,6 +7,11 @@
  */
 
 buildscript {
+    repositories {
+        maven {
+            url "https://plugins.gradle.org/m2/"
+        }
+    }
     dependencies {
         classpath "io.freefair.gradle:lombok-plugin:8.6"
     }
@@ -52,8 +57,8 @@ dependencies {
     // Adds getter, setter and builder boilerplate
     // https://projectlombok.org/
     // https://mvnrepository.com/artifact/org.projectlombok/lombok
-    compileOnly 'org.projectlombok:lombok:1.18.24'
-    annotationProcessor 'org.projectlombok:lombok:1.18.24'
+    compileOnly 'org.projectlombok:lombok:1.18.32'
+    annotationProcessor 'org.projectlombok:lombok:1.18.32'
 
     // logging
     implementation 'org.slf4j:slf4j-api:2.0.7'

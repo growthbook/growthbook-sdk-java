@@ -13,10 +13,8 @@ import java.util.HashSet;
 import java.util.Map;
 
 /**
- * <b>INTERNAL</b>: Implementation of feature evaluation
- * <p>
- * Feature Evaluator Class
- * Takes Context and Feature Key
+ * <b>INTERNAL</b>: Implementation of feature evaluation.
+ * Takes Context and Feature Key.
  * Returns Calculated Feature Result against that key
  */
 @Slf4j
@@ -358,6 +356,8 @@ class FeatureEvaluator implements IFeatureEvaluator {
                             }
                             return experimentFeatureResult;
                         }
+                    } else {
+                        continue;
                     }
                 }
             }

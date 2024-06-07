@@ -8,6 +8,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import org.apache.commons.math3.util.Precision;
+
 import java.util.Objects;
 
 /**
@@ -24,6 +25,12 @@ public class BucketRange {
     Float rangeStart;
     Float rangeEnd;
 
+    /**
+     * This method help to convert BucketRange object from JsonElement
+     *
+     * @param jsonElement json element
+     * @return BucketRange object
+     */
     static BucketRange fromJson(JsonElement jsonElement) {
         JsonArray array = (JsonArray) jsonElement;
         float start = array.get(0).getAsFloat();

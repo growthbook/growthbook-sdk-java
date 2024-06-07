@@ -27,15 +27,20 @@ public class GBContext {
      * The {@link GBContextBuilder} is recommended for constructing a Context.
      * Alternatively, you can use this static method instead of the builder.
      *
-     * @param attributesJson      User attributes as JSON string
-     * @param featuresJson        Features response as JSON string, or the encrypted payload. Encrypted payload requires `encryptionKey`
-     * @param encryptionKey       Optional encryption key. If this is not null, featuresJson should be an encrypted payload.
-     * @param enabled             Whether globally all experiments are enabled (default: true)
-     * @param isQaMode            If true, random assignment is disabled and only explicitly forced variations are used.
-     * @param url                 A URL string that is used for experiment evaluation, as well as forcing feature values.
-     * @param allowUrlOverrides   Boolean flag to allow URL overrides (default: false)
-     * @param forcedVariationsMap Force specific experiments to always assign a specific variation (used for QA)
-     * @param trackingCallback    A function that takes {@link Experiment} and {@link ExperimentResult} as arguments.
+     * @param attributesJson                   User attributes as JSON string
+     * @param featuresJson                     Features response as JSON string, or the encrypted payload. Encrypted payload requires `encryptionKey`
+     * @param encryptionKey                    Optional encryption key. If this is not null, featuresJson should be an encrypted payload.
+     * @param enabled                          Whether globally all experiments are enabled (default: true)
+     * @param isQaMode                         If true, random assignment is disabled and only explicitly forced variations are used.
+     * @param url                              A URL string that is used for experiment evaluation, as well as forcing feature values.
+     * @param allowUrlOverrides                Boolean flag to allow URL overrides (default: false)
+     * @param forcedVariationsMap              Force specific experiments to always assign a specific variation (used for QA)
+     * @param trackingCallback                 A function that takes {@link Experiment} and {@link ExperimentResult} as arguments.
+     * @param featureUsageCallback             A function that takes {@link String} and {@link FeatureResult} as arguments.
+     *                                         A callback that will be invoked every time a feature is viewed. Listen for feature usage events
+     * @param stickyBucketService              Service that provide functionality of Sticky Bucketing.
+     * @param stickyBucketAssignmentDocs       Map of Sticky Bucket documents.
+     * @param stickyBucketIdentifierAttributes List of user's attributes keys.
      */
     @Builder
     public GBContext(
@@ -52,7 +57,7 @@ public class GBContext {
             @Nullable StickyBucketService stickyBucketService,
             @Nullable Map<String, StickyAssignmentsDocument> stickyBucketAssignmentDocs,
             @Nullable List<String> stickyBucketIdentifierAttributes
-            ) {
+    ) {
         this.encryptionKey = encryptionKey;
 
         this.attributesJson = attributesJson == null ? "{}" : attributesJson;
@@ -84,6 +89,10 @@ public class GBContext {
         this.stickyBucketIdentifierAttributes = stickyBucketIdentifierAttributes;
     }
 
+    /**
+     * Keys are unique identifiers for the features and the values are Feature objects.
+     * Feature definitions - To be pulled from API / Cache
+     */
     @Nullable
     @Getter(AccessLevel.PACKAGE)
     private JsonObject features;
@@ -92,24 +101,44 @@ public class GBContext {
         this.features = features;
     }
 
+    /**
+     * Switch to globally disable all experiments. Default true.
+     */
     @Nullable
     private Boolean enabled;
 
-    private Integer hashVersion;
-
+    /**
+     * The URL of the current page
+     */
     @Nullable
     private String url;
 
+    /**
+     * If true, random assignment is disabled and only explicitly forced variations are used.
+     */
     private Boolean isQaMode;
 
+    /**
+     * Boolean flag to allow URL overrides (default: false)
+     */
     private Boolean allowUrlOverride;
 
+    /**
+     * A function that takes {@link Experiment} and {@link ExperimentResult} as arguments.
+     */
     @Nullable
     private TrackingCallback trackingCallback;
 
+    /**
+     * A function that takes {@link String} and {@link FeatureResult} as arguments.
+     * A callback that will be invoked every time a feature is viewed. Listen for feature usage events
+     */
     @Nullable
     private FeatureUsageCallback featureUsageCallback;
 
+    /**
+     * String format of user attributes that are used to assign variations
+     */
     @Nullable
     private String attributesJson;
 
@@ -127,6 +156,9 @@ public class GBContext {
         }
     }
 
+    /**
+     * Map of user attributes that are used to assign variations
+     */
     @Nullable
     @Getter(AccessLevel.PACKAGE)
     private JsonObject attributes;
@@ -135,9 +167,15 @@ public class GBContext {
         this.attributes = attributes;
     }
 
+    /**
+     * Feature definitions (usually pulled from an API or cache)
+     */
     @Nullable
     private String featuresJson;
 
+    /**
+     * Optional encryption key. If this is not null, featuresJson should be an encrypted payload.
+     */
     @Nullable
     private String encryptionKey;
 
@@ -154,15 +192,27 @@ public class GBContext {
         }
     }
 
+    /**
+     * Force specific experiments to always assign a specific variation (used for QA)
+     */
     @Nullable
     private Map<String, Integer> forcedVariationsMap;
 
+    /**
+     * Service that provide functionality of Sticky Bucketing
+     */
     @Nullable
     private StickyBucketService stickyBucketService;
 
+    /**
+     * Map of Sticky Bucket documents
+     */
     @Nullable
     private Map<String, StickyAssignmentsDocument> stickyBucketAssignmentDocs;
 
+    /**
+     * List of user's attributes keys
+     */
     @Nullable
     private List<String> stickyBucketIdentifierAttributes;
 
