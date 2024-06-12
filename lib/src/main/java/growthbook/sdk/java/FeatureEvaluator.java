@@ -319,11 +319,15 @@ class FeatureEvaluator implements IFeatureEvaluator {
                         Experiment<ValueType> experiment = Experiment
                                 .<ValueType>builder()
                                 .key(experimentKey)
+                                .variations(variations)
                                 .coverage(rule.getCoverage())
                                 .weights(rule.getWeights())
                                 .hashAttribute(rule.getHashAttribute())
+                                .fallbackAttribute(rule.getFallbackAttribute())
+                                .disableStickyBucketing(rule.getDisableStickyBucketing())
+                                .bucketVersion(rule.getBucketVersion())
+                                .minBucketVersion(rule.getMinBucketVersion())
                                 .namespace(rule.getNamespace())
-                                .variations(rule.getVariations())
                                 .meta(rule.getMeta())
                                 .ranges(rule.getRanges())
                                 .name(rule.getName())
@@ -331,11 +335,8 @@ class FeatureEvaluator implements IFeatureEvaluator {
                                 .seed(rule.getSeed())
                                 .hashVersion(rule.getHashVersion())
                                 .filters(rule.getFilters())
-                                .variations(variations)
-                                .minBucketVersion(rule.getMinBucketVersion())
-                                .bucketVersion(rule.getBucketVersion())
-                                .disableStickyBucketing(rule.getDisableStickyBucketing())
-                                .fallbackAttribute(rule.getFallbackAttribute())
+                                .conditionJson(rule.getCondition())
+                                .parentConditions(rule.getParentConditions())
                                 .build();
 
                         // Only return a value if the user is part of the experiment
