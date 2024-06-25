@@ -235,8 +235,9 @@ public class GBContext {
         @Override
         public GBContext build() {
             GBContext context = super.build();
-
-            if (context.featuresJson != null) {
+            if (context.features != null) {
+                context.setFeatures(context.features);
+            } else if (context.featuresJson != null) {
                 context.setFeatures(GBContext.transformFeatures(context.featuresJson));
             }
 
