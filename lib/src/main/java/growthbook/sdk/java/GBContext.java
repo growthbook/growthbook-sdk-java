@@ -193,6 +193,15 @@ public class GBContext {
     }
 
     /**
+     * Set the features JSON as a JsonObject
+     *
+     * @param featuresJson updated features
+     */
+    public void setFeatureJson(JsonObject featuresJson) {
+        this.features = featuresJson;
+    }
+
+    /**
      * Force specific experiments to always assign a specific variation (used for QA)
      */
     @Nullable
