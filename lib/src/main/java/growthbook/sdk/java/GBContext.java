@@ -96,10 +96,6 @@ public class GBContext {
     @Nullable
     private JsonObject features;
 
-    private void setFeatures(@Nullable JsonObject features) {
-        this.features = features;
-    }
-
     /**
      * Switch to globally disable all experiments. Default true.
      */
