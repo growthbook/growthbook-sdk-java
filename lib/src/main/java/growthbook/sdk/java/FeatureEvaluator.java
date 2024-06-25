@@ -34,8 +34,6 @@ class FeatureEvaluator implements IFeatureEvaluator {
             Class<ValueType> valueTypeClass,
             JsonObject attributeOverrides
     ) throws ClassCastException {
-        featureEvalContext.setId(key);
-
         // This callback serves for listening for feature usage events
         FeatureUsageCallback featureUsageCallback = context.getFeatureUsageCallback();
 
@@ -46,9 +44,14 @@ class FeatureEvaluator implements IFeatureEvaluator {
                 .build();
 
         try {
-            // block that handle recursion
-            log.info("evaluateFeature: circular dependency detected:");
             if (featureEvalContext.getEvaluatedFeatures().contains(key)) {
+                // block that handle recursion
+                log.info(
+                        "evaluateFeature: circular dependency detected: {} -> {}. { from: {}, to: {} }",
+                        featureEvalContext.getId(), key,
+                        featureEvalContext.getId(), key
+                );
+
                 FeatureResult<ValueType> featureResultWhenCircularDependencyDetected = FeatureResult
                         .<ValueType>builder()
                         .value(null)
@@ -62,6 +65,7 @@ class FeatureEvaluator implements IFeatureEvaluator {
             }
 
             featureEvalContext.getEvaluatedFeatures().add(key);
+            featureEvalContext.setId(key);
 
             // Check for feature values forced by URL
             if (context.getAllowUrlOverride()) {
