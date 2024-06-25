@@ -94,7 +94,6 @@ public class GBContext {
      * Feature definitions - To be pulled from API / Cache
      */
     @Nullable
-    @Getter(AccessLevel.PACKAGE)
     private JsonObject features;
 
     private void setFeatures(@Nullable JsonObject features) {
