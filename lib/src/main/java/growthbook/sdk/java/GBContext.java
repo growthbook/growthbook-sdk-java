@@ -263,7 +263,7 @@ public class GBContext {
         }
     }
 
-    private static JsonObject convertStringToJsonObject(
+    public static JsonObject convertStringToJsonObject(
             @Nullable String featuresJson,
             @Nullable String encryptionKey
     ) {
