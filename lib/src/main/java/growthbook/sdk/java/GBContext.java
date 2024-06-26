@@ -29,7 +29,6 @@ public class GBContext {
      *
      * @param attributesJson                   User attributes as JSON string
      * @param featuresJson                     Features response as JSON string, or the encrypted payload. Encrypted payload requires `encryptionKey`
-     * @param features                         Features response as JSON Object, either set this or `featuresJson`
      * @param encryptionKey                    Optional encryption key. If this is not null, featuresJson should be an encrypted payload.
      * @param enabled                          Whether globally all experiments are enabled (default: true)
      * @param isQaMode                         If true, random assignment is disabled and only explicitly forced variations are used.
@@ -47,6 +46,48 @@ public class GBContext {
     public GBContext(
             @Nullable String attributesJson,
             @Nullable String featuresJson,
+            @Nullable String encryptionKey,
+            @Nullable Boolean enabled,
+            Boolean isQaMode,
+            @Nullable String url,
+            Boolean allowUrlOverrides,
+            @Nullable Map<String, Integer> forcedVariationsMap,
+            @Nullable TrackingCallback trackingCallback,
+            @Nullable FeatureUsageCallback featureUsageCallback,
+            @Nullable StickyBucketService stickyBucketService,
+            @Nullable Map<String, StickyAssignmentsDocument> stickyBucketAssignmentDocs,
+            @Nullable List<String> stickyBucketIdentifierAttributes
+    ) {
+        this(
+                attributesJson, convertStringToJsonObject(featuresJson, encryptionKey),
+                encryptionKey, enabled, isQaMode, url, allowUrlOverrides, forcedVariationsMap,
+                trackingCallback, featureUsageCallback, stickyBucketService,
+                stickyBucketAssignmentDocs,stickyBucketIdentifierAttributes
+        );
+    }
+
+    /**
+     * The {@link GBContextBuilder} is recommended for constructing a Context.
+     * Alternatively, you can use this static method instead of the builder.
+     *
+     * @param attributesJson                   User attributes as JSON string
+     * @param features                         Features response as JSON Object, either set this or `featuresJson`
+     * @param encryptionKey                    Optional encryption key. If this is not null, featuresJson should be an encrypted payload.
+     * @param enabled                          Whether globally all experiments are enabled (default: true)
+     * @param isQaMode                         If true, random assignment is disabled and only explicitly forced variations are used.
+     * @param url                              A URL string that is used for experiment evaluation, as well as forcing feature values.
+     * @param allowUrlOverrides                Boolean flag to allow URL overrides (default: false)
+     * @param forcedVariationsMap              Force specific experiments to always assign a specific variation (used for QA)
+     * @param trackingCallback                 A function that takes {@link Experiment} and {@link ExperimentResult} as arguments.
+     * @param featureUsageCallback             A function that takes {@link String} and {@link FeatureResult} as arguments.
+     *                                         A callback that will be invoked every time a feature is viewed. Listen for feature usage events
+     * @param stickyBucketService              Service that provide functionality of Sticky Bucketing.
+     * @param stickyBucketAssignmentDocs       Map of Sticky Bucket documents.
+     * @param stickyBucketIdentifierAttributes List of user's attributes keys.
+     */
+    @Builder
+    public GBContext(
+            @Nullable String attributesJson,
             @Nullable JsonObject features,
             @Nullable String encryptionKey,
             @Nullable Boolean enabled,
@@ -64,21 +105,10 @@ public class GBContext {
 
         this.attributesJson = attributesJson == null ? "{}" : attributesJson;
 
-        // Features start as empty JSON
-        this.featuresJson = "{}";
         if (features != null) {
             this.features = features;
-        } else if (encryptionKey != null && featuresJson != null) {
-            // Attempt to decrypt payload
-            try {
-                String decrypted = DecryptionUtils.decrypt(featuresJson, encryptionKey);
-                this.featuresJson = decrypted.trim();
-            } catch (DecryptionUtils.DecryptionException e) {
-                log.error(e.getMessage(), e);
-            }
-        } else if (featuresJson != null) {
-            // Use features
-            this.featuresJson = featuresJson;
+        } else {
+            this.features = new JsonObject();
         }
 
         this.enabled = enabled == null ? true : enabled;
@@ -167,12 +197,6 @@ public class GBContext {
     }
 
     /**
-     * Feature definitions (usually pulled from an API or cache)
-     */
-    @Nullable
-    private String featuresJson;
-
-    /**
      * Optional encryption key. If this is not null, featuresJson should be an encrypted payload.
      */
     @Nullable
@@ -185,7 +209,6 @@ public class GBContext {
      */
 
     public void setFeaturesJson(String featuresJson) {
-        this.featuresJson = featuresJson;
         if (featuresJson != null) {
             this.setFeatures(GBContext.transformFeatures(featuresJson));
         }
@@ -234,16 +257,35 @@ public class GBContext {
         @Override
         public GBContext build() {
             GBContext context = super.build();
-            if (context.features != null) {
-                context.setFeatures(context.features);
-            } else if (context.featuresJson != null) {
-                context.setFeatures(GBContext.transformFeatures(context.featuresJson));
-            }
-
             context.setAttributesJson(context.attributesJson);
 
             return context;
         }
+    }
+
+    private static JsonObject convertStringToJsonObject(
+            @Nullable String featuresJson,
+            @Nullable String encryptionKey
+    ) {
+        // Features start as empty JSON
+        JsonObject jsonObject = new JsonObject();
+
+        if (encryptionKey != null && featuresJson != null) {
+            // Attempt to decrypt payload
+            try {
+                String decrypted = DecryptionUtils.decrypt(featuresJson, encryptionKey);
+                String featuresJsonDecrypted = decrypted.trim();
+                jsonObject = GBContext.transformFeatures(featuresJsonDecrypted);
+
+            } catch (DecryptionUtils.DecryptionException e) {
+                log.error(e.getMessage(), e);
+
+            }
+        } else if (featuresJson != null) {
+            jsonObject = GBContext.transformFeatures(featuresJson);
+        }
+
+        return jsonObject;
     }
 
     @Nullable
