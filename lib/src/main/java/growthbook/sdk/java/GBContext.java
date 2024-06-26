@@ -29,6 +29,7 @@ public class GBContext {
      *
      * @param attributesJson                   User attributes as JSON string
      * @param featuresJson                     Features response as JSON string, or the encrypted payload. Encrypted payload requires `encryptionKey`
+     * @param features                         Features response as JSON Object, either set this or `featuresJson`
      * @param encryptionKey                    Optional encryption key. If this is not null, featuresJson should be an encrypted payload.
      * @param enabled                          Whether globally all experiments are enabled (default: true)
      * @param isQaMode                         If true, random assignment is disabled and only explicitly forced variations are used.
@@ -46,6 +47,7 @@ public class GBContext {
     public GBContext(
             @Nullable String attributesJson,
             @Nullable String featuresJson,
+            @Nullable JsonObject features,
             @Nullable String encryptionKey,
             @Nullable Boolean enabled,
             Boolean isQaMode,
@@ -64,7 +66,9 @@ public class GBContext {
 
         // Features start as empty JSON
         this.featuresJson = "{}";
-        if (encryptionKey != null && featuresJson != null) {
+        if (features != null) {
+            this.features = features;
+        } else if (encryptionKey != null && featuresJson != null) {
             // Attempt to decrypt payload
             try {
                 String decrypted = DecryptionUtils.decrypt(featuresJson, encryptionKey);

@@ -46,6 +46,7 @@ class GBContextTest {
                 sampleUserAttributes,
                 featuresJson,
                 null,
+                null,
                 isEnabled,
                 isQaMode,
                 url,
@@ -125,6 +126,7 @@ class GBContextTest {
         GBContext subject = new GBContext(
                 sampleUserAttributes,
                 encryptedFeaturesJson,
+                null,
                 encryptionKey,
                 isEnabled,
                 isQaMode,
