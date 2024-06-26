@@ -289,7 +289,7 @@ public class GBContext {
     }
 
     @Nullable
-    private static JsonObject transformFeatures(String featuresJsonString) {
+    public static JsonObject transformFeatures(String featuresJsonString) {
         try {
             return GrowthBookJsonUtils.getInstance().gson.fromJson(featuresJsonString, JsonObject.class);
         } catch (Exception e) {
