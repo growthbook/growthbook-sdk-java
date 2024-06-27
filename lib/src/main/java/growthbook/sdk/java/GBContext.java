@@ -63,7 +63,7 @@ public class GBContext {
         this.attributesJson = attributesJson == null ? "{}" : attributesJson;
 
         if (featuresJson != null) {
-            this.features = convertStringToJsonObject(featuresJson, encryptionKey);
+            this.features = transformEncryptedFeatures(featuresJson, encryptionKey);
         }
         if (features != null) {
             this.features = features;
@@ -221,7 +221,17 @@ public class GBContext {
         }
     }
 
-    public static JsonObject convertStringToJsonObject(
+    @Nullable
+    public static JsonObject transformFeatures(String featuresJsonString) {
+        try {
+            return GrowthBookJsonUtils.getInstance().gson.fromJson(featuresJsonString, JsonObject.class);
+        } catch (Exception e) {
+            log.error(e.getMessage(), e);
+            return null;
+        }
+    }
+
+    public static JsonObject transformEncryptedFeatures(
             @Nullable String featuresJson,
             @Nullable String encryptionKey
     ) {
@@ -244,16 +254,6 @@ public class GBContext {
         }
 
         return jsonObject;
-    }
-
-    @Nullable
-    public static JsonObject transformFeatures(String featuresJsonString) {
-        try {
-            return GrowthBookJsonUtils.getInstance().gson.fromJson(featuresJsonString, JsonObject.class);
-        } catch (Exception e) {
-            log.error(e.getMessage(), e);
-            return null;
-        }
     }
 
     private static JsonObject transformAttributes(@Nullable String attributesJsonString) {
