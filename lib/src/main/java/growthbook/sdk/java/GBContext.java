@@ -29,6 +29,7 @@ public class GBContext {
      *
      * @param attributesJson                   User attributes as JSON string
      * @param featuresJson                     Features response as JSON string, or the encrypted payload. Encrypted payload requires `encryptionKey`
+     * @param features                         Features response as JSON Object, either set this or `featuresJson`
      * @param encryptionKey                    Optional encryption key. If this is not null, featuresJson should be an encrypted payload.
      * @param enabled                          Whether globally all experiments are enabled (default: true)
      * @param isQaMode                         If true, random assignment is disabled and only explicitly forced variations are used.
@@ -46,6 +47,7 @@ public class GBContext {
     public GBContext(
             @Nullable String attributesJson,
             @Nullable String featuresJson,
+            @Nullable JsonObject features,
             @Nullable String encryptionKey,
             @Nullable Boolean enabled,
             Boolean isQaMode,
@@ -59,22 +61,13 @@ public class GBContext {
             @Nullable List<String> stickyBucketIdentifierAttributes
     ) {
         this.encryptionKey = encryptionKey;
-
         this.attributesJson = attributesJson == null ? "{}" : attributesJson;
 
-        // Features start as empty JSON
-        this.featuresJson = "{}";
-        if (encryptionKey != null && featuresJson != null) {
-            // Attempt to decrypt payload
-            try {
-                String decrypted = DecryptionUtils.decrypt(featuresJson, encryptionKey);
-                this.featuresJson = decrypted.trim();
-            } catch (DecryptionUtils.DecryptionException e) {
-                log.error(e.getMessage(), e);
-            }
-        } else if (featuresJson != null) {
-            // Use features
-            this.featuresJson = featuresJson;
+        if (featuresJson != null) {
+            this.features = transformEncryptedFeatures(featuresJson, encryptionKey);
+        }
+        if (features != null) {
+            this.features = features;
         }
 
         this.enabled = enabled == null ? true : enabled;
@@ -94,12 +87,7 @@ public class GBContext {
      * Feature definitions - To be pulled from API / Cache
      */
     @Nullable
-    @Getter(AccessLevel.PACKAGE)
     private JsonObject features;
-
-    private void setFeatures(@Nullable JsonObject features) {
-        this.features = features;
-    }
 
     /**
      * Switch to globally disable all experiments. Default true.
@@ -168,12 +156,6 @@ public class GBContext {
     }
 
     /**
-     * Feature definitions (usually pulled from an API or cache)
-     */
-    @Nullable
-    private String featuresJson;
-
-    /**
      * Optional encryption key. If this is not null, featuresJson should be an encrypted payload.
      */
     @Nullable
@@ -186,7 +168,6 @@ public class GBContext {
      */
 
     public void setFeaturesJson(String featuresJson) {
-        this.featuresJson = featuresJson;
         if (featuresJson != null) {
             this.setFeatures(GBContext.transformFeatures(featuresJson));
         }
@@ -235,11 +216,6 @@ public class GBContext {
         @Override
         public GBContext build() {
             GBContext context = super.build();
-
-            if (context.featuresJson != null) {
-                context.setFeatures(GBContext.transformFeatures(context.featuresJson));
-            }
-
             context.setAttributesJson(context.attributesJson);
 
             return context;
@@ -247,13 +223,38 @@ public class GBContext {
     }
 
     @Nullable
-    private static JsonObject transformFeatures(String featuresJsonString) {
+    public static JsonObject transformFeatures(String featuresJsonString) {
         try {
             return GrowthBookJsonUtils.getInstance().gson.fromJson(featuresJsonString, JsonObject.class);
         } catch (Exception e) {
             log.error(e.getMessage(), e);
             return null;
         }
+    }
+
+    public static JsonObject transformEncryptedFeatures(
+            @Nullable String featuresJson,
+            @Nullable String encryptionKey
+    ) {
+        // Features start as empty JSON
+        JsonObject jsonObject = new JsonObject();
+
+        if (encryptionKey != null && featuresJson != null) {
+            // Attempt to decrypt payload
+            try {
+                String decrypted = DecryptionUtils.decrypt(featuresJson, encryptionKey);
+                String featuresJsonDecrypted = decrypted.trim();
+                jsonObject = GBContext.transformFeatures(featuresJsonDecrypted);
+
+            } catch (DecryptionUtils.DecryptionException e) {
+                log.error(e.getMessage(), e);
+
+            }
+        } else if (featuresJson != null) {
+            jsonObject = GBContext.transformFeatures(featuresJson);
+        }
+
+        return jsonObject;
     }
 
     private static JsonObject transformAttributes(@Nullable String attributesJsonString) {
