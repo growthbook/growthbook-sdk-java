@@ -28,6 +28,7 @@ public class GBContext {
      * Alternatively, you can use this static method instead of the builder.
      *
      * @param attributesJson                   User attributes as JSON string
+     * @param featuresJson                     Features response as JSON string, or the encrypted payload. Encrypted payload requires `encryptionKey`
      * @param features                         Features response as JSON Object, either set this or `featuresJson`
      * @param encryptionKey                    Optional encryption key. If this is not null, featuresJson should be an encrypted payload.
      * @param enabled                          Whether globally all experiments are enabled (default: true)
