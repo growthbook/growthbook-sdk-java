@@ -28,49 +28,6 @@ public class GBContext {
      * Alternatively, you can use this static method instead of the builder.
      *
      * @param attributesJson                   User attributes as JSON string
-     * @param featuresJson                     Features response as JSON string, or the encrypted payload. Encrypted payload requires `encryptionKey`
-     * @param encryptionKey                    Optional encryption key. If this is not null, featuresJson should be an encrypted payload.
-     * @param enabled                          Whether globally all experiments are enabled (default: true)
-     * @param isQaMode                         If true, random assignment is disabled and only explicitly forced variations are used.
-     * @param url                              A URL string that is used for experiment evaluation, as well as forcing feature values.
-     * @param allowUrlOverrides                Boolean flag to allow URL overrides (default: false)
-     * @param forcedVariationsMap              Force specific experiments to always assign a specific variation (used for QA)
-     * @param trackingCallback                 A function that takes {@link Experiment} and {@link ExperimentResult} as arguments.
-     * @param featureUsageCallback             A function that takes {@link String} and {@link FeatureResult} as arguments.
-     *                                         A callback that will be invoked every time a feature is viewed. Listen for feature usage events
-     * @param stickyBucketService              Service that provide functionality of Sticky Bucketing.
-     * @param stickyBucketAssignmentDocs       Map of Sticky Bucket documents.
-     * @param stickyBucketIdentifierAttributes List of user's attributes keys.
-     */
-    @Builder
-    public GBContext(
-            @Nullable String attributesJson,
-            @Nullable String featuresJson,
-            @Nullable String encryptionKey,
-            @Nullable Boolean enabled,
-            Boolean isQaMode,
-            @Nullable String url,
-            Boolean allowUrlOverrides,
-            @Nullable Map<String, Integer> forcedVariationsMap,
-            @Nullable TrackingCallback trackingCallback,
-            @Nullable FeatureUsageCallback featureUsageCallback,
-            @Nullable StickyBucketService stickyBucketService,
-            @Nullable Map<String, StickyAssignmentsDocument> stickyBucketAssignmentDocs,
-            @Nullable List<String> stickyBucketIdentifierAttributes
-    ) {
-        this(
-                attributesJson, convertStringToJsonObject(featuresJson, encryptionKey),
-                encryptionKey, enabled, isQaMode, url, allowUrlOverrides, forcedVariationsMap,
-                trackingCallback, featureUsageCallback, stickyBucketService,
-                stickyBucketAssignmentDocs,stickyBucketIdentifierAttributes
-        );
-    }
-
-    /**
-     * The {@link GBContextBuilder} is recommended for constructing a Context.
-     * Alternatively, you can use this static method instead of the builder.
-     *
-     * @param attributesJson                   User attributes as JSON string
      * @param features                         Features response as JSON Object, either set this or `featuresJson`
      * @param encryptionKey                    Optional encryption key. If this is not null, featuresJson should be an encrypted payload.
      * @param enabled                          Whether globally all experiments are enabled (default: true)
@@ -88,6 +45,7 @@ public class GBContext {
     @Builder
     public GBContext(
             @Nullable String attributesJson,
+            @Nullable String featuresJson,
             @Nullable JsonObject features,
             @Nullable String encryptionKey,
             @Nullable Boolean enabled,
@@ -102,13 +60,13 @@ public class GBContext {
             @Nullable List<String> stickyBucketIdentifierAttributes
     ) {
         this.encryptionKey = encryptionKey;
-
         this.attributesJson = attributesJson == null ? "{}" : attributesJson;
 
+        if (featuresJson != null) {
+            this.features = convertStringToJsonObject(featuresJson, encryptionKey);
+        }
         if (features != null) {
             this.features = features;
-        } else {
-            this.features = new JsonObject();
         }
 
         this.enabled = enabled == null ? true : enabled;
