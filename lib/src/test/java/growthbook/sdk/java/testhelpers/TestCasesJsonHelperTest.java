@@ -21,6 +21,6 @@ class TestCasesJsonHelperTest {
         JsonObject testCases = TestCasesJsonHelper.getInstance().getTestCases();
 
         assertNotNull(testCases);
-        assertEquals("0.6.0", testCases.get("specVersion").getAsString());
+        assertEquals("0.6.1", testCases.get("specVersion").getAsString());
     }
 }
