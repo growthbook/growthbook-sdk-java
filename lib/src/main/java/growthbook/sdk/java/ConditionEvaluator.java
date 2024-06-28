@@ -7,6 +7,8 @@ import com.google.gson.JsonPrimitive;
 import com.google.gson.reflect.TypeToken;
 import lombok.extern.slf4j.Slf4j;
 import javax.annotation.Nullable;
+
+import java.io.IOException;
 import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -39,39 +41,67 @@ class ConditionEvaluator implements IConditionEvaluator {
             JsonElement attributesJson = jsonUtils.gson.fromJson(attributesJsonString, JsonElement.class);
             JsonObject conditionJson = jsonUtils.gson.fromJson(conditionJsonString, JsonObject.class);
 
-            if (conditionJson.has("$or")) {
-                JsonArray targetItems = conditionJson.get("$or").getAsJsonArray();
-                return evalOr(attributesJson, targetItems);
-            }
+            // Loop through the conditionObj key/value pairs
+            for (Map.Entry<String, JsonElement> entry : conditionJson.entrySet()) {
+                String key = entry.getKey();
+                JsonElement value = entry.getValue();
 
-            if (conditionJson.has("$nor")) {
-                JsonArray targetItems = conditionJson.get("$nor").getAsJsonArray();
-                return !evalOr(attributesJson, targetItems);
-            }
-
-            if (conditionJson.has("$and")) {
-                JsonArray targetItems = conditionJson.get("$and").getAsJsonArray();
-                return evalAnd(attributesJson, targetItems);
-            }
-
-            if (conditionJson.has("$not")) {
-                JsonElement targetItem = conditionJson.get("$not");
-                return !evaluateCondition(attributesJsonString, targetItem.toString());
-            }
-
-            Set<Map.Entry<String, JsonElement>> conditionEntries = conditionJson.entrySet();
-            for (Map.Entry<String, JsonElement> entry : conditionEntries) {
-                JsonElement element = (JsonElement) getPath(attributesJson, entry.getKey());
-                if (entry.getValue() != null) {
-                    if (!evalConditionValue(entry.getValue(), element)) {
-                        return false;
-                    }
+                switch (key) {
+                    case "$or":
+                        // If conditionObj has a key $or, return evalOr(attributes, condition["$or"])
+                        JsonArray orTargetItems = value.getAsJsonArray();
+                        if (orTargetItems != null) {
+                            if (!evalOr(attributesJson, orTargetItems)) {
+                                return false;
+                            }
+                        }
+                        break;
+                    case "$nor":
+                        // If conditionObj has a key $nor, return !evalOr(attributes, condition["$nor"])
+                        JsonArray norTargetItems = value.getAsJsonArray();
+                        if (norTargetItems != null) {
+                            if (evalOr(attributesJson, norTargetItems)) {
+                                return false;
+                            }
+                        }
+                        break;
+                    case "$and":
+                        // If conditionObj has a key $and, return !evalAnd(attributes, condition["$and"])
+                        JsonArray andTargetItems = value.getAsJsonArray();
+                        if (andTargetItems != null) {
+                            if (!evalAnd(attributesJson, andTargetItems)) {
+                                return false;
+                            }
+                        }
+                        break;
+                    case "$not":
+                        // If conditionObj has a key $not, return !evalCondition(attributes, condition["$not"])
+                        if (value != null) {
+                            if (evaluateCondition(attributesJsonString, value.toString())) {
+                                return false;
+                            }
+                        }
+                        break;
+                    default:
+                        JsonElement element = (JsonElement) getPath(attributesJson, key);
+                        // If evalConditionValue(value, getPath(attributes, key)) is false,
+                        // break out of loop and return false
+                        if (!evalConditionValue(value, element)) {
+                            return false;
+                        }
+                        break;
                 }
             }
-
+            // If none of the entries failed their checks, `evalCondition` returns true
             return true;
-        } catch (RuntimeException e) {
-            log.error(e.getMessage(), e);
+        } catch (com.google.gson.JsonSyntaxException jsonSyntaxException) {
+            log.error(jsonSyntaxException.getMessage(), jsonSyntaxException);
+            return false;
+        } catch (java.util.regex.PatternSyntaxException patternSyntaxException) {
+            log.error(patternSyntaxException.getMessage(), patternSyntaxException);
+            return false;
+        } catch (Exception exception) { // for the case if something was missed
+            log.error(exception.getMessage(), exception);
             return false;
         }
     }
@@ -445,8 +475,8 @@ class ConditionEvaluator implements IConditionEvaluator {
     /**
      * Compares two primitives for equality.
      *
-     * @param a left side primitive
-     * @param b right side primitive
+     * @param a        left side primitive
+     * @param b        right side primitive
      * @param dataType The data type of the primitives
      * @return if they are equal
      */
@@ -503,8 +533,8 @@ class ConditionEvaluator implements IConditionEvaluator {
         }
 
         if (
-            conditionValue.isJsonNull() &&
-                (attributeValue == null || attributeValue.isJsonNull())
+                conditionValue.isJsonNull() &&
+                        (attributeValue == null || attributeValue.isJsonNull())
         ) {
             return true;
         }
@@ -530,8 +560,7 @@ class ConditionEvaluator implements IConditionEvaluator {
                 if (evalConditionValue(expected, actualElement)) {
                     return true;
                 }
-            }
-            else if (evaluateCondition(actualElement.toString(), expected.toString())) {
+            } else if (evaluateCondition(actualElement.toString(), expected.toString())) {
                 return true;
             }
         }
@@ -581,7 +610,8 @@ class ConditionEvaluator implements IConditionEvaluator {
     }
 
     private Boolean isIn(JsonElement actual, JsonArray expected) {
-        Type listType = new TypeToken<ArrayList<Object>>() {}.getType();
+        Type listType = new TypeToken<ArrayList<Object>>() {
+        }.getType();
         ArrayList<JsonElement> expectedAsList = jsonUtils.gson.fromJson(expected, listType);
 
         if (!actual.isJsonArray()) return expectedAsList.contains(actual);
@@ -594,16 +624,16 @@ class ConditionEvaluator implements IConditionEvaluator {
         ArrayList<Object> actualAsList = jsonUtils.gson.fromJson(actualArr, listType);
 
         return actualAsList.stream()
-            .anyMatch(o -> {
-                if (
-                    attributeDataType == DataType.STRING ||
-                        attributeDataType == DataType.NUMBER ||
-                        attributeDataType == DataType.BOOLEAN
-                ) {
-                    return expectedAsList.contains(o);
-                }
+                .anyMatch(o -> {
+                    if (
+                            attributeDataType == DataType.STRING ||
+                                    attributeDataType == DataType.NUMBER ||
+                                    attributeDataType == DataType.BOOLEAN
+                    ) {
+                        return expectedAsList.contains(o);
+                    }
 
-                return false;
-            });
+                    return false;
+                });
     }
 }
