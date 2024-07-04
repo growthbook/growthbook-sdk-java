@@ -134,6 +134,8 @@ class FeatureEvaluator implements IFeatureEvaluator {
                 if (featureUsageCallback != null) {
                     featureUsageCallback.onFeatureUsage(key, defaultValueFeatureForRules);
                 }
+                
+                goOutFromCircularLoop();
                 return defaultValueFeatureForRules;
             }
 
@@ -359,6 +361,8 @@ class FeatureEvaluator implements IFeatureEvaluator {
                             if (featureUsageCallback != null) {
                                 featureUsageCallback.onFeatureUsage(key, experimentFeatureResult);
                             }
+                            
+                            goOutFromCircularLoop();
                             return experimentFeatureResult;
                         }
                     } else {
@@ -381,11 +385,13 @@ class FeatureEvaluator implements IFeatureEvaluator {
                 featureUsageCallback.onFeatureUsage(key, defaultValueFeatureResult);
             }
 
+            goOutFromCircularLoop();
             // Return (value = defaultValue or null, source = defaultValue)
             return defaultValueFeatureResult;
         } catch (Exception e) {
             log.error(e.getMessage(), e);
 
+            goOutFromCircularLoop();
             // If the key doesn't exist in context.features, return immediately
             // (value = null, source = unknownFeature).
             return emptyFeature;
