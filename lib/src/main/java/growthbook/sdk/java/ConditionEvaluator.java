@@ -36,12 +36,6 @@ class ConditionEvaluator implements IConditionEvaluator {
     @Override
     public Boolean evaluateCondition(JsonObject attributesJson, JsonObject conditionJson) {
         try {
-            //System.out.println("AttributesJsonString = " + attributesJsonString);
-            //System.out.println("ConditionJsonString = " + conditionJsonString);
-            //JsonElement attributesJson = jsonUtils.gson.fromJson(attributesJsonString, JsonElement.class);
-            //System.out.println(attributesJson.getClass());
-//            JsonObject conditionJson = jsonUtils.gson.fromJson(conditionElement, JsonObject.class);
-
             // Loop through the conditionObj key/value pairs
             for (Map.Entry<String, JsonElement> entry : conditionJson.entrySet()) {
                 String key = entry.getKey();
