@@ -145,7 +145,6 @@ class ExperimentEvaluator implements IExperimentEvaluator {
             // can it be instead JsonObject
             JsonObject conditionJson = experiment.getConditionJson();
             if (conditionJson != null) {
-                String attributesJson = jsonUtils.gson.toJson(attributes);
                 Boolean shouldEvaluate = conditionEvaluator.evaluateCondition(attributes, conditionJson);
 
                 // If experiment.condition is set and the condition evaluates to false,
