@@ -142,10 +142,11 @@ class ExperimentEvaluator implements IExperimentEvaluator {
             }
 
             // Evaluate the condition JSON
-            JsonElement jsonStringCondition = experiment.getConditionJson();
-            if (jsonStringCondition != null) {
+            // can it be instead JsonObject
+            JsonObject conditionJson = experiment.getConditionJson();
+            if (conditionJson != null) {
                 String attributesJson = jsonUtils.gson.toJson(attributes);
-                Boolean shouldEvaluate = conditionEvaluator.evaluateCondition(attributesJson, jsonStringCondition.toString());
+                Boolean shouldEvaluate = conditionEvaluator.evaluateCondition(attributes, conditionJson);
 
                 // If experiment.condition is set and the condition evaluates to false,
                 // return immediately (not in experiment, variationId 0)
@@ -178,11 +179,11 @@ class ExperimentEvaluator implements IExperimentEvaluator {
                     if (parentResult.getValue() != null) {
                         evalObj.put("value", parentResult.getValue());
                     }
-                    String attributesJson = GrowthBookJsonUtils.getInstance().gson.toJson(evalObj);
+                    JsonObject attributesJson = GrowthBookJsonUtils.getInstance().gson.toJsonTree(evalObj).getAsJsonObject();
 
                     boolean evalCondition = conditionEvaluator.evaluateCondition(
                             attributesJson,
-                            parentCondition.getCondition().toString()
+                            parentCondition.getCondition()
                     );
 
                     // blocking prerequisite eval failed: feature evaluation fails

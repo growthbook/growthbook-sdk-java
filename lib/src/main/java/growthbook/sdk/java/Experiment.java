@@ -1,6 +1,7 @@
 package growthbook.sdk.java;
 
 import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
 import com.google.gson.annotations.SerializedName;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -48,7 +49,7 @@ public class Experiment<ValueType> {
     /**
      * Optional targeting condition
      */
-    JsonElement conditionJson;
+    JsonObject conditionJson;
 
     /**
      * Each item defines a prerequisite where a `condition` must evaluate against
