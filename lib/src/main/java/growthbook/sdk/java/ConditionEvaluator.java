@@ -30,7 +30,7 @@ class ConditionEvaluator implements IConditionEvaluator {
      * This is defined in the Feature's targeting conditions' Advanced settings.
      *
      * @param attributesJson A JsonObject of the user attributes to evaluate
-     * @param conditionJson  A JsonObject string of the condition
+     * @param conditionJson  A JsonObject of the condition
      * @return Whether the condition should be true for the user
      */
     @Override
