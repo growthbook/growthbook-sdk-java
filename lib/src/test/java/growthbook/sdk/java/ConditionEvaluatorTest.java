@@ -37,19 +37,6 @@ class ConditionEvaluatorTest {
         System.setErr(originalErrorOutputStream);
     }
 
-
-    @Test
-    void test_evaluateCondition_returnsFalseIfWrongShape() {
-//        ConditionEvaluator evaluator = new ConditionEvaluator();
-//
-//        String attributes = "{\"name\": \"world\"}";
-//        String condition = "[\"$not\": { \"name\": \"hello\" }]";
-//
-//        JsonObject attributesJson = GrowthBookJsonUtils.getInstance().gson.fromJson(attributes, JsonObject.class);
-//        JsonObject conditionJson = GrowthBookJsonUtils.getInstance().gson.fromJson(condition, JsonObject.class);
-//        assertFalse(evaluator.evaluateCondition(attributesJson, conditionJson));
-    }
-
     @Test
     void test_evaluateCondition_testCases() {
         ArrayList<String> passedTests = new ArrayList<>();

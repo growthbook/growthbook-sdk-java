@@ -519,6 +519,15 @@ class GrowthBookTest {
     }
 
     @Test
+    void test_evaluateCondition_returnsFalseIfWrongShape() {
+        String attributes = "{\"name\": \"world\"}";
+        String condition = "[\"$not\": { \"name\": \"hello\" }]";
+
+        GrowthBook growthBook = new GrowthBook();
+        assertFalse(growthBook.evaluateCondition(attributes, condition));
+    }
+
+    @Test
     void test_destroyClearsCallbacks() {
         GrowthBook subject = new GrowthBook();
         ExperimentRunCallback mockCallback1 = mock(ExperimentRunCallback.class);
