@@ -247,7 +247,7 @@ class GrowthBookTest {
                 if (experimentElement != null) {
 //                System.out.printf("\n\n HERE: Experiment %s (index = %s)", experiment, i);
                     JsonObject experimentObject = jsonUtils.gson.fromJson(experimentElement.getAsJsonObject(), JsonObject.class);
-                    JsonElement conditionElement = experimentObject.get("condition");
+                    JsonObject conditionElement = experimentObject.getAsJsonObject("condition");
                     if (conditionElement != null) {
                         experiment.setConditionJson(conditionElement);
                     }
@@ -524,14 +524,27 @@ class GrowthBookTest {
         FeatureEvaluator mockFeatureEvaluator = mock(FeatureEvaluator.class);
         GBContext context = GBContext.builder().build();
 
-        String attrJson = "{ id: 1 }";
-        String conditionJson = "{}";
+        String attrJsonStr = "{ id: 1 }";
+        String conditionJsonStr = "{}";
+        JsonObject attributesJson = GrowthBookJsonUtils.getInstance().gson.fromJson(attrJsonStr, JsonObject.class);
+        JsonObject conditionJson = GrowthBookJsonUtils.getInstance().gson.fromJson(conditionJsonStr, JsonObject.class);
+
+
 
         GrowthBook subject = new GrowthBook(context, mockFeatureEvaluator, mockConditionEvaluator, mockExperimentEvaluator);
 
-        subject.evaluateCondition(attrJson, conditionJson);
+        subject.evaluateCondition(attrJsonStr, conditionJsonStr);
 
-        verify(mockConditionEvaluator).evaluateCondition(attrJson, conditionJson);
+        verify(mockConditionEvaluator).evaluateCondition(attributesJson, conditionJson);
+    }
+
+    @Test
+    void test_evaluateCondition_returnsFalseIfWrongShape() {
+        String attributes = "{\"name\": \"world\"}";
+        String condition = "[\"$not\": { \"name\": \"hello\" }]";
+
+        GrowthBook growthBook = new GrowthBook();
+        assertFalse(growthBook.evaluateCondition(attributes, condition));
     }
 
     @Test

@@ -177,11 +177,11 @@ class FeatureEvaluator implements IFeatureEvaluator {
                         if (parentResult.getValue() != null) {
                             evalObj.put("value", parentResult.getValue());
                         }
-                        String attributesJsonString = GrowthBookJsonUtils.getInstance().gson.toJson(evalObj);
+                        JsonObject parentAttributesJson = GrowthBookJsonUtils.getInstance().gson.toJsonTree(evalObj).getAsJsonObject();
 
                         boolean evalCondition = conditionEvaluator.evaluateCondition(
-                                attributesJsonString,
-                                String.valueOf(parentCondition.getCondition())
+                                parentAttributesJson,
+                                parentCondition.getCondition()
                         );
 
                         // blocking prerequisite eval failed: feature evaluation fails
@@ -221,7 +221,7 @@ class FeatureEvaluator implements IFeatureEvaluator {
 
                     // If the rule has a condition, and it evaluates to false, skip this rule and continue to the next one
                     if (rule.getCondition() != null) {
-                        if (!conditionEvaluator.evaluateCondition(attributesJson, rule.getCondition().toString())) {
+                        if (!conditionEvaluator.evaluateCondition(attributes, rule.getCondition())) {
 
                             // Skip rule because of condition
                             continue;

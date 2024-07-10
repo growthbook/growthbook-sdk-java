@@ -1,5 +1,7 @@
 package growthbook.sdk.java;
 
+import com.google.gson.JsonObject;
+
 interface IConditionEvaluator {
-    Boolean evaluateCondition(String attributesJsonString, String conditionJsonString);
+    Boolean evaluateCondition(JsonObject attributesJson, JsonObject conditionJson);
 }
