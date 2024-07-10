@@ -143,10 +143,8 @@ class FeatureEvaluator implements IFeatureEvaluator {
             if (attributes == null) {
                 attributes = new JsonObject();
             }
-            log.info("\n\nAttributes = {}", attributes);
 
             // Loop through the feature rules (if any)
-
             for (FeatureRule<ValueType> rule : feature.getRules()) {
                 // If there are prerequisite flag(s), evaluate them
                 if (rule.getParentConditions() != null) {
