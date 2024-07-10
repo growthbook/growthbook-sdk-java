@@ -28,6 +28,7 @@ public class GBContext {
      * Alternatively, you can use this static method instead of the builder.
      *
      * @param attributesJson                   User attributes as JSON string
+     * @param attributes                       User attributes as JSON Object, either set this or `attributesJson`
      * @param featuresJson                     Features response as JSON string, or the encrypted payload. Encrypted payload requires `encryptionKey`
      * @param features                         Features response as JSON Object, either set this or `featuresJson`
      * @param encryptionKey                    Optional encryption key. If this is not null, featuresJson should be an encrypted payload.
@@ -46,6 +47,7 @@ public class GBContext {
     @Builder
     public GBContext(
             @Nullable String attributesJson,
+            @Nullable JsonObject attributes,
             @Nullable String featuresJson,
             @Nullable JsonObject features,
             @Nullable String encryptionKey,
@@ -62,6 +64,7 @@ public class GBContext {
     ) {
         this.encryptionKey = encryptionKey;
         this.attributesJson = attributesJson == null ? "{}" : attributesJson;
+        this.attributes = attributes == null ? new JsonObject() : attributes;
 
         if (featuresJson != null) {
             this.features = transformEncryptedFeatures(featuresJson, encryptionKey);
@@ -148,11 +151,15 @@ public class GBContext {
      * Map of user attributes that are used to assign variations
      */
     @Nullable
-    @Getter(AccessLevel.PACKAGE)
     private JsonObject attributes;
 
-    private void setAttributes(@Nullable JsonObject attributes) {
-        this.attributes = attributes;
+    /**
+     * You can update the attributes with new user attributes to evaluate against.
+     *
+     * @param attributes updated user attributes
+     */
+    public void setAttributes(@Nullable JsonObject attributes) {
+        this.attributes = (attributes == null) ? new JsonObject() : attributes;
     }
 
     /**

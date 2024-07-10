@@ -29,16 +29,13 @@ class ConditionEvaluator implements IConditionEvaluator {
      * The condition syntax closely resembles MongoDB's syntax.
      * This is defined in the Feature's targeting conditions' Advanced settings.
      *
-     * @param attributesJsonString A JSON string of the user attributes to evaluate
-     * @param conditionJsonString  A JSON string of the condition
+     * @param attributesJson A JsonObject of the user attributes to evaluate
+     * @param conditionJson  A JsonObject of the condition
      * @return Whether the condition should be true for the user
      */
     @Override
-    public Boolean evaluateCondition(String attributesJsonString, String conditionJsonString) {
+    public Boolean evaluateCondition(JsonObject attributesJson, JsonObject conditionJson) {
         try {
-            JsonElement attributesJson = jsonUtils.gson.fromJson(attributesJsonString, JsonElement.class);
-            JsonObject conditionJson = jsonUtils.gson.fromJson(conditionJsonString, JsonObject.class);
-
             // Loop through the conditionObj key/value pairs
             for (Map.Entry<String, JsonElement> entry : conditionJson.entrySet()) {
                 String key = entry.getKey();
@@ -75,7 +72,7 @@ class ConditionEvaluator implements IConditionEvaluator {
                     case "$not":
                         // If conditionObj has a key $not, return !evalCondition(attributes, condition["$not"])
                         if (value != null) {
-                            if (evaluateCondition(attributesJsonString, value.toString())) {
+                            if (evaluateCondition(attributesJson, value.getAsJsonObject())) {
                                 return false;
                             }
                         }
@@ -559,7 +556,7 @@ class ConditionEvaluator implements IConditionEvaluator {
                     return true;
                 }
             }
-            else if (evaluateCondition(actualElement.toString(), expected.toString())) {
+            else if (evaluateCondition(actualElement.getAsJsonObject(), expected.getAsJsonObject())) {
                 return true;
             }
         }
@@ -579,8 +576,8 @@ class ConditionEvaluator implements IConditionEvaluator {
         }
 
         for (JsonElement condition : conditions) {
-            String attributesString = attributes == null ? "{}" : attributes.toString();
-            Boolean matches = evaluateCondition(attributesString, condition.toString());
+            JsonObject attributesObj = (null == attributes) ? new JsonObject() : attributes.getAsJsonObject();
+            Boolean matches = evaluateCondition(attributesObj, condition.getAsJsonObject());
 
             if (matches) {
                 return true;
@@ -597,8 +594,8 @@ class ConditionEvaluator implements IConditionEvaluator {
      */
     Boolean evalAnd(JsonElement attributes, JsonArray conditions) {
         for (JsonElement condition : conditions) {
-            String attributesString = attributes == null ? "{}" : attributes.toString();
-            Boolean matches = evaluateCondition(attributesString, condition.toString());
+            JsonObject attributesObj = (null == attributes) ? new JsonObject() : attributes.getAsJsonObject();
+            Boolean matches = evaluateCondition(attributesObj, condition.getAsJsonObject());
 
             if (!matches) {
                 return false;

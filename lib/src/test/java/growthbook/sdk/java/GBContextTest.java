@@ -44,6 +44,7 @@ class GBContextTest {
 
         GBContext subject = new GBContext(
                 sampleUserAttributes,
+                null,
                 featuresJson,
                 null,
                 null,
@@ -125,6 +126,7 @@ class GBContextTest {
 
         GBContext subject = new GBContext(
                 sampleUserAttributes,
+                null,
                 encryptedFeaturesJson,
                 null,
                 encryptionKey,

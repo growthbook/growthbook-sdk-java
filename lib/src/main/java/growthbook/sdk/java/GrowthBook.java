@@ -213,7 +213,14 @@ public class GrowthBook implements IGrowthBook {
 
     @Override
     public Boolean evaluateCondition(String attributesJsonString, String conditionJsonString) {
-        return conditionEvaluator.evaluateCondition(attributesJsonString, conditionJsonString);
+        try {
+            JsonObject attributesJson = jsonUtils.gson.fromJson(attributesJsonString, JsonObject.class);
+            JsonObject conditionJson = jsonUtils.gson.fromJson(conditionJsonString, JsonObject.class);
+            return conditionEvaluator.evaluateCondition(attributesJson, conditionJson);
+        } catch (Exception e) {
+            log.error(e.getMessage(), e);
+            return false;
+        }
     }
 
     @Override

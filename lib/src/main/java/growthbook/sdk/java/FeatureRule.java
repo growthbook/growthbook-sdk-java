@@ -1,6 +1,7 @@
 package growthbook.sdk.java;
 
 import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
 import com.google.gson.annotations.SerializedName;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -82,7 +83,7 @@ public class FeatureRule<ValueType> {
      * Optional targeting condition
      */
     @Nullable
-    JsonElement condition;
+    JsonObject condition;
 
     /**
      * Each item defines a prerequisite where a `condition` must evaluate against

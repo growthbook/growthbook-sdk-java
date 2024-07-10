@@ -60,12 +60,10 @@ class FeatureEvaluator implements IFeatureEvaluator {
                 if (featureUsageCallback != null) {
                     featureUsageCallback.onFeatureUsage(key, featureResultWhenCircularDependencyDetected);
                 }
-
+                
+                leaveCircularLoop();
                 return featureResultWhenCircularDependencyDetected;
             }
-
-            featureEvalContext.getEvaluatedFeatures().add(key);
-            featureEvalContext.setId(key);
 
             // Check for feature values forced by URL
             if (context.getAllowUrlOverride()) {
@@ -145,14 +143,13 @@ class FeatureEvaluator implements IFeatureEvaluator {
             if (attributes == null) {
                 attributes = new JsonObject();
             }
-            log.info("\n\nAttributes = {}", attributes);
 
             // Loop through the feature rules (if any)
-
             for (FeatureRule<ValueType> rule : feature.getRules()) {
                 // If there are prerequisite flag(s), evaluate them
                 if (rule.getParentConditions() != null) {
                     for (ParentCondition parentCondition : rule.getParentConditions()) {
+                        enterCircularLoop(key);
                         FeatureResult<ValueType> parentResult = evaluateFeature(
                                 parentCondition.getId(),
                                 context,
@@ -180,11 +177,11 @@ class FeatureEvaluator implements IFeatureEvaluator {
                         if (parentResult.getValue() != null) {
                             evalObj.put("value", parentResult.getValue());
                         }
-                        String attributesJsonString = GrowthBookJsonUtils.getInstance().gson.toJson(evalObj);
+                        JsonObject parentAttributesJson = GrowthBookJsonUtils.getInstance().gson.toJsonTree(evalObj).getAsJsonObject();
 
                         boolean evalCondition = conditionEvaluator.evaluateCondition(
-                                attributesJsonString,
-                                String.valueOf(parentCondition.getCondition())
+                                parentAttributesJson,
+                                parentCondition.getCondition()
                         );
 
                         // blocking prerequisite eval failed: feature evaluation fails
@@ -224,7 +221,7 @@ class FeatureEvaluator implements IFeatureEvaluator {
 
                     // If the rule has a condition, and it evaluates to false, skip this rule and continue to the next one
                     if (rule.getCondition() != null) {
-                        if (!conditionEvaluator.evaluateCondition(attributesJson, rule.getCondition().toString())) {
+                        if (!conditionEvaluator.evaluateCondition(attributes, rule.getCondition())) {
 
                             // Skip rule because of condition
                             continue;
@@ -305,8 +302,7 @@ class FeatureEvaluator implements IFeatureEvaluator {
                     if (featureUsageCallback != null) {
                         featureUsageCallback.onFeatureUsage(key, forcedRuleFeatureValue);
                     }
-
-                    goOutFromCircularLoop();
+                    
                     return forcedRuleFeatureValue;
                 } else {
 
@@ -424,8 +420,13 @@ class FeatureEvaluator implements IFeatureEvaluator {
             return null;
         }
     }
-
-    private void goOutFromCircularLoop() {
+    
+    private void enterCircularLoop(String featureKey) {
+        featureEvalContext.getEvaluatedFeatures().add(featureKey);
+        featureEvalContext.setId(featureKey);
+    }
+    
+    private void leaveCircularLoop() {
         featureEvalContext.setId(null);
         featureEvalContext.getEvaluatedFeatures().clear();
     }
