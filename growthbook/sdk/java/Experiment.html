@@ -105,12 +105,12 @@ loadScripts(document, 'script');</script>
 <div class="summary-table two-column-summary">
 <div class="table-header col-first">Constructor</div>
 <div class="table-header col-last">Description</div>
-<div class="col-constructor-name even-row-color"><code><a href="#%3Cinit%3E(java.lang.String,java.util.ArrayList,java.util.ArrayList,java.lang.Boolean,java.lang.Float,com.google.gson.JsonElement,java.util.ArrayList,growthbook.sdk.java.Namespace,java.lang.Integer,java.lang.String,java.lang.Integer,java.util.ArrayList,java.util.ArrayList,java.util.ArrayList,java.lang.String,java.lang.String,java.lang.String,java.lang.String,java.lang.Boolean,java.lang.Integer,java.lang.Integer)" class="member-name-link">Experiment</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;key,
+<div class="col-constructor-name even-row-color"><code><a href="#%3Cinit%3E(java.lang.String,java.util.ArrayList,java.util.ArrayList,java.lang.Boolean,java.lang.Float,com.google.gson.JsonObject,java.util.ArrayList,growthbook.sdk.java.Namespace,java.lang.Integer,java.lang.String,java.lang.Integer,java.util.ArrayList,java.util.ArrayList,java.util.ArrayList,java.lang.String,java.lang.String,java.lang.String,java.lang.String,java.lang.Boolean,java.lang.Integer,java.lang.Integer)" class="member-name-link">Experiment</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;key,
  <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/ArrayList.html" title="class or interface in java.util" class="external-link">ArrayList</a>&lt;<a href="Experiment.html" title="type parameter in Experiment">ValueType</a>&gt;&nbsp;variations,
  <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/ArrayList.html" title="class or interface in java.util" class="external-link">ArrayList</a>&lt;<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Float.html" title="class or interface in java.lang" class="external-link">Float</a>&gt;&nbsp;weights,
  <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Boolean.html" title="class or interface in java.lang" class="external-link">Boolean</a>&nbsp;isActive,
  <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Float.html" title="class or interface in java.lang" class="external-link">Float</a>&nbsp;coverage,
- com.google.gson.JsonElement&nbsp;conditionJson,
+ com.google.gson.JsonObject&nbsp;conditionJson,
  <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/ArrayList.html" title="class or interface in java.util" class="external-link">ArrayList</a>&lt;<a href="ParentCondition.html" title="class in growthbook.sdk.java">ParentCondition</a>&gt;&nbsp;parentConditions,
  <a href="Namespace.html" title="class in growthbook.sdk.java">Namespace</a>&nbsp;namespace,
  <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Integer.html" title="class or interface in java.lang" class="external-link">Integer</a>&nbsp;force,
@@ -153,7 +153,7 @@ loadScripts(document, 'script');</script>
 <div class="block">The sticky bucket version number that can be used to force a re-bucketing
  of users (default to 0)</div>
 </div>
-<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>com.google.gson.JsonElement</code></div>
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>com.google.gson.JsonObject</code></div>
 <div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#getConditionJson()" class="member-name-link">getConditionJson</a>()</code></div>
 <div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">Optional targeting condition</div>
@@ -270,7 +270,7 @@ loadScripts(document, 'script');</script>
  of users (default to 0)</div>
 </div>
 <div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>void</code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#setConditionJson(com.google.gson.JsonElement)" class="member-name-link">setConditionJson</a><wbr>(com.google.gson.JsonElement&nbsp;conditionJson)</code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#setConditionJson(com.google.gson.JsonObject)" class="member-name-link">setConditionJson</a><wbr>(com.google.gson.JsonObject&nbsp;conditionJson)</code></div>
 <div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">Optional targeting condition</div>
 </div>
@@ -397,7 +397,7 @@ loadScripts(document, 'script');</script>
 <h2>Constructor Details</h2>
 <ul class="member-list">
 <li>
-<section class="detail" id="&lt;init&gt;(java.lang.String,java.util.ArrayList,java.util.ArrayList,java.lang.Boolean,java.lang.Float,com.google.gson.JsonElement,java.util.ArrayList,growthbook.sdk.java.Namespace,java.lang.Integer,java.lang.String,java.lang.Integer,java.util.ArrayList,java.util.ArrayList,java.util.ArrayList,java.lang.String,java.lang.String,java.lang.String,java.lang.String,java.lang.Boolean,java.lang.Integer,java.lang.Integer)">
+<section class="detail" id="&lt;init&gt;(java.lang.String,java.util.ArrayList,java.util.ArrayList,java.lang.Boolean,java.lang.Float,com.google.gson.JsonObject,java.util.ArrayList,growthbook.sdk.java.Namespace,java.lang.Integer,java.lang.String,java.lang.Integer,java.util.ArrayList,java.util.ArrayList,java.util.ArrayList,java.lang.String,java.lang.String,java.lang.String,java.lang.String,java.lang.Boolean,java.lang.Integer,java.lang.Integer)">
 <h3>Experiment</h3>
 <div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="element-name">Experiment</span><wbr><span class="parameters">(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;key,
  <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/ArrayList.html" title="class or interface in java.util" class="external-link">ArrayList</a>&lt;<a href="Experiment.html" title="type parameter in Experiment">ValueType</a>&gt;&nbsp;variations,
@@ -406,7 +406,7 @@ loadScripts(document, 'script');</script>
  @Nullable
  <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Boolean.html" title="class or interface in java.lang" class="external-link">Boolean</a>&nbsp;isActive,
  <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Float.html" title="class or interface in java.lang" class="external-link">Float</a>&nbsp;coverage,
- com.google.gson.JsonElement&nbsp;conditionJson,
+ com.google.gson.JsonObject&nbsp;conditionJson,
  @Nullable
  <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/ArrayList.html" title="class or interface in java.util" class="external-link">ArrayList</a>&lt;<a href="ParentCondition.html" title="class in growthbook.sdk.java">ParentCondition</a>&gt;&nbsp;parentConditions,
  @Nullable
@@ -529,7 +529,7 @@ loadScripts(document, 'script');</script>
 <li>
 <section class="detail" id="getConditionJson()">
 <h3>getConditionJson</h3>
-<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type">com.google.gson.JsonElement</span>&nbsp;<span class="element-name">getConditionJson</span>()</div>
+<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type">com.google.gson.JsonObject</span>&nbsp;<span class="element-name">getConditionJson</span>()</div>
 <div class="block">Optional targeting condition</div>
 </section>
 </li>
@@ -697,9 +697,9 @@ loadScripts(document, 'script');</script>
 </section>
 </li>
 <li>
-<section class="detail" id="setConditionJson(com.google.gson.JsonElement)">
+<section class="detail" id="setConditionJson(com.google.gson.JsonObject)">
 <h3>setConditionJson</h3>
-<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type">void</span>&nbsp;<span class="element-name">setConditionJson</span><wbr><span class="parameters">(com.google.gson.JsonElement&nbsp;conditionJson)</span></div>
+<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type">void</span>&nbsp;<span class="element-name">setConditionJson</span><wbr><span class="parameters">(com.google.gson.JsonObject&nbsp;conditionJson)</span></div>
 <div class="block">Optional targeting condition</div>
 </section>
 </li>
