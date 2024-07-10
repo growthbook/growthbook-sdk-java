@@ -16,6 +16,7 @@ import static org.mockito.Mockito.verify;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import com.google.gson.JsonPrimitive;
 import com.google.gson.annotations.SerializedName;
 import com.google.gson.reflect.TypeToken;
 import growthbook.sdk.java.testhelpers.PaperCupsConfig;
@@ -323,6 +324,25 @@ class GrowthBookTest {
 
         assertFalse(subject.isOn(featureKey));
         assertTrue(subject.isOff(featureKey));
+    }
+    
+    @Test
+    void test_isOn_should_be_stable() {
+        String featureKey = "flag";
+        
+        JsonObject jsonObject1 = new JsonObject();
+        JsonObject jsonObject2 = new JsonObject();
+        jsonObject2.add("defaultValue", new JsonPrimitive(true));
+        jsonObject1.add(featureKey, jsonObject2);
+        
+        GBContext context = GBContext
+        .builder()
+        .features(jsonObject1)
+        .build();
+        
+        GrowthBook subject = new GrowthBook(context);
+        assertTrue(subject.isOn(featureKey));
+        assertTrue(subject.isOn(featureKey));
     }
 
     @Test
