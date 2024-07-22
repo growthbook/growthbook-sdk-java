@@ -140,7 +140,7 @@ class FeatureResultTest {
     void featureResult_isOn_withZeroValue_returnsFalse_forDoubles() {
         FeatureResult<Double> subject = FeatureResult
                 .<Double>builder()
-                .value(0)
+                .value(0.0)
                 .source(FeatureResultSource.FORCE)
                 .build();
 

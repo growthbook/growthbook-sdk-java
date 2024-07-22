@@ -36,7 +36,7 @@ public class FeatureResult<ValueType> {
      */
     @Nullable
     @SerializedName("value")
-    Object value;
+    ValueType value;
 
     /**
      * One of "unknownFeature", "defaultValue", "force", "experiment",
