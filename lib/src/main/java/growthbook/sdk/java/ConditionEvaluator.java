@@ -34,7 +34,7 @@ class ConditionEvaluator implements IConditionEvaluator {
      * @return Whether the condition should be true for the user
      */
     @Override
-    public Boolean evaluateCondition(JsonObject attributesJson, JsonObject conditionJson) {
+    public Boolean evaluateCondition(JsonObject attributesJson, JsonObject conditionJson, @Nullable JsonObject savedGroups) {
         try {
             // Loop through the conditionObj key/value pairs
             for (Map.Entry<String, JsonElement> entry : conditionJson.entrySet()) {
@@ -46,7 +46,7 @@ class ConditionEvaluator implements IConditionEvaluator {
                         // If conditionObj has a key $or, return evalOr(attributes, condition["$or"])
                         JsonArray orTargetItems = value.getAsJsonArray();
                         if (orTargetItems != null) {
-                            if (!evalOr(attributesJson, orTargetItems)) {
+                            if (!evalOr(attributesJson, orTargetItems, savedGroups)) {
                                 return false;
                             }
                         }
@@ -55,7 +55,7 @@ class ConditionEvaluator implements IConditionEvaluator {
                         // If conditionObj has a key $nor, return !evalOr(attributes, condition["$nor"])
                         JsonArray norTargetItems = value.getAsJsonArray();
                         if (norTargetItems != null) {
-                            if (evalOr(attributesJson, norTargetItems)) {
+                            if (evalOr(attributesJson, norTargetItems, savedGroups)) {
                                 return false;
                             }
                         }
@@ -64,7 +64,7 @@ class ConditionEvaluator implements IConditionEvaluator {
                         // If conditionObj has a key $and, return !evalAnd(attributes, condition["$and"])
                         JsonArray andTargetItems = value.getAsJsonArray();
                         if (andTargetItems != null) {
-                            if (!evalAnd(attributesJson, andTargetItems)) {
+                            if (!evalAnd(attributesJson, andTargetItems, savedGroups)) {
                                 return false;
                             }
                         }
@@ -72,7 +72,7 @@ class ConditionEvaluator implements IConditionEvaluator {
                     case "$not":
                         // If conditionObj has a key $not, return !evalCondition(attributes, condition["$not"])
                         if (value != null) {
-                            if (evaluateCondition(attributesJson, value.getAsJsonObject())) {
+                            if (evaluateCondition(attributesJson, value.getAsJsonObject(), savedGroups)) {
                                 return false;
                             }
                         }
@@ -81,7 +81,7 @@ class ConditionEvaluator implements IConditionEvaluator {
                         JsonElement element = (JsonElement) getPath(attributesJson, key);
                         // If evalConditionValue(value, getPath(attributes, key)) is false,
                         // break out of loop and return false
-                        if (!evalConditionValue(value, element)) {
+                        if (!evalConditionValue(value, element, savedGroups)) {
                             return false;
                         }
                         break;
@@ -216,7 +216,7 @@ class ConditionEvaluator implements IConditionEvaluator {
      * @param expected       The conditions to use to verify that the attributes match, based on the operator
      * @return if it's a match
      */
-    Boolean evalOperatorCondition(String operatorString, @Nullable JsonElement actual, JsonElement expected) {
+    Boolean evalOperatorCondition(String operatorString, @Nullable JsonElement actual, JsonElement expected, @Nullable JsonObject savedGroups) {
         Operator operator = Operator.fromString(operatorString);
         if (operator == null) return false;
 
@@ -379,11 +379,11 @@ class ConditionEvaluator implements IConditionEvaluator {
                 if (actual == null || !actual.isJsonArray()) return false;
                 JsonArray attributeValueArrayForSize = (JsonArray) actual;
                 JsonElement size = new JsonPrimitive(attributeValueArrayForSize.size());
-                return evalConditionValue(expected, size);
+                return evalConditionValue(expected, size, savedGroups);
 
             case ELEMENT_MATCH:
                 if (actual == null) return false;
-                return elemMatch(actual, expected);
+                return elemMatch(actual, expected, savedGroups);
 
             case ALL:
                 if (actual == null || !actual.isJsonArray()) return false;
@@ -393,7 +393,7 @@ class ConditionEvaluator implements IConditionEvaluator {
                 for (int i = 0; i < expectedArrayForAll.size(); i++) {
                     boolean passed = false;
                     for (int j = 0; j < actualArrayForAll.size(); j++) {
-                        if (evalConditionValue(expectedArrayForAll.get(i), actualArrayForAll.get(j))) {
+                        if (evalConditionValue(expectedArrayForAll.get(i), actualArrayForAll.get(j), savedGroups)) {
                             passed = true;
                             break;
                         }
@@ -403,7 +403,7 @@ class ConditionEvaluator implements IConditionEvaluator {
                 return true;
 
             case NOT:
-                return !evalConditionValue(expected, actual);
+                return !evalConditionValue(expected, actual, savedGroups);
 
             case TYPE:
                 return GrowthBookJsonUtils.getElementType(actual).toString().equals(expected.getAsString());
@@ -461,6 +461,22 @@ class ConditionEvaluator implements IConditionEvaluator {
                 return StringUtils.paddedVersionString(actual.getAsString())
                         .compareTo(StringUtils.paddedVersionString(expected.getAsString())) == 0;
 
+            case IN_GROUP:
+                if (actual != null && expected != null) {
+                    JsonElement jsonElement = savedGroups.get(expected.getAsString());
+                    if (jsonElement != null) {
+                        return isIn(actual, jsonElement.getAsJsonArray());
+                    }
+                    return isIn(actual, new JsonArray());
+                }
+            case NOT_IN_GROUP:
+                if (actual != null && expected != null) {
+                    JsonElement jsonElement = savedGroups.get(expected.getAsString());
+                    if (jsonElement != null) {
+                        return !isIn(actual, jsonElement.getAsJsonArray());
+                    }
+                    return !isIn(actual, new JsonArray());
+                }
             default:
                 return false;
         }
@@ -510,7 +526,7 @@ class ConditionEvaluator implements IConditionEvaluator {
      * @param attributeValue Object or primitive
      * @return true if equal
      */
-    Boolean evalConditionValue(JsonElement conditionValue, @Nullable JsonElement attributeValue) {
+    Boolean evalConditionValue(JsonElement conditionValue, @Nullable JsonElement attributeValue, @Nullable JsonObject savedGroups) {
         if (conditionValue.isJsonObject()) {
             JsonObject conditionValueObject = (JsonObject) conditionValue;
 
@@ -518,7 +534,7 @@ class ConditionEvaluator implements IConditionEvaluator {
                 Set<Map.Entry<String, JsonElement>> entries = conditionValueObject.entrySet();
 
                 for (Map.Entry<String, JsonElement> entry : entries) {
-                    if (!evalOperatorCondition(entry.getKey(), attributeValue, entry.getValue())) {
+                    if (!evalOperatorCondition(entry.getKey(), attributeValue, entry.getValue(), savedGroups)) {
                         return false;
                     }
                 }
@@ -541,7 +557,7 @@ class ConditionEvaluator implements IConditionEvaluator {
         return conditionValue.toString().equals(attributeValue.toString());
     }
 
-    Boolean elemMatch(JsonElement actual, JsonElement expected) {
+    Boolean elemMatch(JsonElement actual, JsonElement expected, @Nullable JsonObject savedGroups) {
         if (!actual.isJsonArray()) {
             return false;
         }
@@ -552,11 +568,11 @@ class ConditionEvaluator implements IConditionEvaluator {
 
         for (JsonElement actualElement : actualArray) {
             if (isOperator) {
-                if (evalConditionValue(expected, actualElement)) {
+                if (evalConditionValue(expected, actualElement, savedGroups)) {
                     return true;
                 }
             }
-            else if (evaluateCondition(actualElement.getAsJsonObject(), expected.getAsJsonObject())) {
+            else if (evaluateCondition(actualElement.getAsJsonObject(), expected.getAsJsonObject(), savedGroups)) {
                 return true;
             }
         }
@@ -570,14 +586,14 @@ class ConditionEvaluator implements IConditionEvaluator {
      * @param conditions an array of condition objects
      * @return if matches
      */
-    Boolean evalOr(JsonElement attributes, JsonArray conditions) {
+    Boolean evalOr(JsonElement attributes, JsonArray conditions, @Nullable JsonObject savedGroups) {
         if (conditions.isEmpty()) {
             return true;
         }
 
         for (JsonElement condition : conditions) {
             JsonObject attributesObj = (null == attributes) ? new JsonObject() : attributes.getAsJsonObject();
-            Boolean matches = evaluateCondition(attributesObj, condition.getAsJsonObject());
+            Boolean matches = evaluateCondition(attributesObj, condition.getAsJsonObject(), savedGroups);
 
             if (matches) {
                 return true;
@@ -592,10 +608,10 @@ class ConditionEvaluator implements IConditionEvaluator {
      * @param conditions an array of condition objects
      * @return if matches
      */
-    Boolean evalAnd(JsonElement attributes, JsonArray conditions) {
+    Boolean evalAnd(JsonElement attributes, JsonArray conditions, @Nullable JsonObject savedGroups) {
         for (JsonElement condition : conditions) {
             JsonObject attributesObj = (null == attributes) ? new JsonObject() : attributes.getAsJsonObject();
-            Boolean matches = evaluateCondition(attributesObj, condition.getAsJsonObject());
+            Boolean matches = evaluateCondition(attributesObj, condition.getAsJsonObject(), savedGroups);
 
             if (!matches) {
                 return false;
@@ -610,7 +626,7 @@ class ConditionEvaluator implements IConditionEvaluator {
         }.getType();
         ArrayList<JsonElement> expectedAsList = jsonUtils.gson.fromJson(expected, listType);
 
-        if (!actual.isJsonArray()) return expectedAsList.contains(actual);
+        if (!actual.isJsonArray()) return expected.contains(actual);
 
         JsonArray actualArr = actual.getAsJsonArray();
 

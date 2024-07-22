@@ -66,6 +66,9 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
     private Request sseRequest = null;
     @Nullable
     private EventSource sseEventSource = null;
+    @Getter
+    @Nullable
+    private String savedGroupsJson = "{}";
 
     /**
      * Allows you to get the features JSON from the provided {@link GBFeaturesRepository#getFeaturesEndpoint()}.
@@ -364,10 +367,12 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
 
             // Features will be refreshed as either an encrypted or un-encrypted JSON string
             String refreshedFeatures;
+            String refreshedSavedGroups = "";
 
             if (this.encryptionKey != null) {
                 // Use encrypted features at responseBody.encryptedFeatures
                 JsonElement encryptedFeaturesJsonElement = jsonObject.get("encryptedFeatures");
+                JsonElement encryptedSavedGroupsJsonElement = jsonObject.get("encryptedSavedGroups");
                 if (encryptedFeaturesJsonElement == null) {
                     log.error(
                             "FeatureFetchException: CONFIGURATION_ERROR feature fetch error code: "
@@ -377,12 +382,25 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
                             "encryptionKey provided but endpoint not encrypted"
                     );
                 }
+                if (encryptedSavedGroupsJsonElement == null) {
+                    log.error(
+                            "FeatureFetchException: CONFIGURATION_ERROR encryptedSavedGroupsJsonElement fetch error code: "
+                                    + "encryptionKey provided but endpoint not encrypted");
+                }
 
                 String encryptedFeaturesJson = encryptedFeaturesJsonElement.getAsString();
+                String encryptedSavedGroupsJson = null;
+                if (encryptedSavedGroupsJsonElement != null) {
+                    encryptedSavedGroupsJson = encryptedSavedGroupsJsonElement.getAsString();
+                    refreshedSavedGroups = DecryptionUtils.decrypt(encryptedSavedGroupsJson, this.encryptionKey).trim();
+                }
+
                 refreshedFeatures = DecryptionUtils.decrypt(encryptedFeaturesJson, this.encryptionKey).trim();
             } else {
                 // Use unencrypted features at responseBody.features
                 JsonElement featuresJsonElement = jsonObject.get("features");
+                JsonElement savedGroupsJsonElement = jsonObject.get("savedGroups");
+
                 if (featuresJsonElement == null) {
                     log.error(
                             "FeatureFetchException: CONFIGURATION_ERROR feature fetch error code: "
@@ -394,10 +412,19 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
                     );
                 }
 
+                if (savedGroupsJsonElement == null) {
+                    log.error(
+                            "FeatureFetchException: CONFIGURATION_ERROR savedGroupsJsonElement fetch error code: "
+                                    + "No features found");
+
+                }
+
                 refreshedFeatures = featuresJsonElement.toString().trim();
+                refreshedSavedGroups = savedGroupsJsonElement != null ? savedGroupsJsonElement.toString().trim() : null;
             }
 
             this.featuresJson = refreshedFeatures;
+            this.savedGroupsJson = refreshedSavedGroups;
 
             this.onRefreshSuccess(this.featuresJson);
         } catch (DecryptionUtils.DecryptionException e) {

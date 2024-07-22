@@ -27,6 +27,7 @@ public class GrowthBook implements IGrowthBook {
 
     private ArrayList<ExperimentRunCallback> callbacks = new ArrayList<>();
     private JsonObject attributeOverrides = new JsonObject();
+    private JsonObject savedGroups = new JsonObject();
 
     /**
      * Initialize the GrowthBook SDK with a provided {@link GBContext}
@@ -40,6 +41,7 @@ public class GrowthBook implements IGrowthBook {
         this.conditionEvaluator = new ConditionEvaluator();
         this.experimentEvaluatorEvaluator = new ExperimentEvaluator();
         this.attributeOverrides = context.getAttributes();
+        this.savedGroups = context.getSavedGroups();
     }
 
     /**
@@ -54,6 +56,7 @@ public class GrowthBook implements IGrowthBook {
         this.conditionEvaluator = new ConditionEvaluator();
         this.experimentEvaluatorEvaluator = new ExperimentEvaluator();
         this.attributeOverrides = context.getAttributes();
+        this.savedGroups = context.getSavedGroups();
     }
 
     /**
@@ -80,6 +83,11 @@ public class GrowthBook implements IGrowthBook {
     @Override
     public void setFeatures(String featuresJsonString) {
         this.context.setFeaturesJson(featuresJsonString);
+    }
+
+    @Override
+    public void setSavedGroups(JsonObject savedGroups) {
+        this.context.setSavedGroups(savedGroups);
     }
 
     @Override
@@ -216,7 +224,8 @@ public class GrowthBook implements IGrowthBook {
         try {
             JsonObject attributesJson = jsonUtils.gson.fromJson(attributesJsonString, JsonObject.class);
             JsonObject conditionJson = jsonUtils.gson.fromJson(conditionJsonString, JsonObject.class);
-            return conditionEvaluator.evaluateCondition(attributesJson, conditionJson);
+            JsonObject savedGroupsJson = jsonUtils.gson.fromJson(savedGroups, JsonObject.class);
+            return conditionEvaluator.evaluateCondition(attributesJson, conditionJson, savedGroupsJson);
         } catch (Exception e) {
             log.error(e.getMessage(), e);
             return false;

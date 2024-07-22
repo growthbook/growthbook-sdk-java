@@ -1,5 +1,6 @@
 package growthbook.sdk.java;
 
+import com.google.gson.JsonObject;
 import growthbook.sdk.java.stickyBucketing.StickyBucketService;
 import javax.annotation.Nullable;
 
@@ -22,6 +23,8 @@ interface IGrowthBook {
      * @param featuresJsonString features JSON from the GrowthBook API
      */
     void setFeatures(String featuresJsonString);
+
+    void setSavedGroups(JsonObject savedGroups);
 
     /**
      * Update the user's attributes
