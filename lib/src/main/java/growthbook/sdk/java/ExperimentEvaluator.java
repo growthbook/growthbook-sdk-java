@@ -5,8 +5,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import javax.annotation.Nullable;
-
-import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import lombok.extern.slf4j.Slf4j;
 
@@ -145,7 +143,7 @@ class ExperimentEvaluator implements IExperimentEvaluator {
             // can it be instead JsonObject
             JsonObject conditionJson = experiment.getConditionJson();
             if (conditionJson != null) {
-                Boolean shouldEvaluate = conditionEvaluator.evaluateCondition(attributes, conditionJson);
+                Boolean shouldEvaluate = conditionEvaluator.evaluateCondition(attributes, conditionJson, context.getSavedGroups());
 
                 // If experiment.condition is set and the condition evaluates to false,
                 // return immediately (not in experiment, variationId 0)
@@ -182,7 +180,8 @@ class ExperimentEvaluator implements IExperimentEvaluator {
 
                     boolean evalCondition = conditionEvaluator.evaluateCondition(
                             attributesJson,
-                            parentCondition.getCondition()
+                            parentCondition.getCondition(),
+                            context.getSavedGroups()
                     );
 
                     // blocking prerequisite eval failed: feature evaluation fails

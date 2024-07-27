@@ -4,10 +4,8 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import growthbook.sdk.java.stickyBucketing.StickyAssignmentsDocument;
 import growthbook.sdk.java.stickyBucketing.StickyBucketService;
-import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Data;
-import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import javax.annotation.Nullable;
 import java.util.HashMap;
@@ -60,7 +58,8 @@ public class GBContext {
             @Nullable FeatureUsageCallback featureUsageCallback,
             @Nullable StickyBucketService stickyBucketService,
             @Nullable Map<String, StickyAssignmentsDocument> stickyBucketAssignmentDocs,
-            @Nullable List<String> stickyBucketIdentifierAttributes
+            @Nullable List<String> stickyBucketIdentifierAttributes,
+            @Nullable JsonObject savedGroups
     ) {
         this.encryptionKey = encryptionKey;
         this.attributesJson = attributesJson == null ? "{}" : attributesJson;
@@ -83,6 +82,7 @@ public class GBContext {
         this.stickyBucketService = stickyBucketService;
         this.stickyBucketAssignmentDocs = stickyBucketAssignmentDocs;
         this.stickyBucketIdentifierAttributes = stickyBucketIdentifierAttributes;
+        this.savedGroups = savedGroups;
     }
 
     /**
@@ -134,6 +134,9 @@ public class GBContext {
     private String attributesJson;
 
     private ExperimentHelper experimentHelper = new ExperimentHelper();
+
+    @Nullable
+    private JsonObject savedGroups;
 
     /**
      * You can update the attributes JSON with new user attributes to evaluate against.

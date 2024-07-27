@@ -55,6 +55,9 @@ class GrowthBookTest {
             Type forcedVariationsType = new TypeToken<HashMap<String, Integer>>() {}.getType();
             HashMap<String, Integer> forcedVariations = jsonUtils.gson.fromJson(testCase.get(1).getAsJsonObject().get("forcedVariations"), forcedVariationsType);
 
+            JsonElement savedGroupsJson = testCase.get(1).getAsJsonObject().get("savedGroups");
+            JsonObject savedGroups = savedGroupsJson == null ? null : (JsonObject) savedGroupsJson;
+
 //            System.out.println("\n\n--------------------------");
 //            System.out.printf("evalFeature test: %s (index = %s)", testDescription, i);
 //            System.out.printf("\n features: %s", featuresJson);
@@ -65,6 +68,7 @@ class GrowthBookTest {
                     .featuresJson(featureJsonAsStringOrNull)
                     .attributesJson(attributesJsonAsStringOrNull)
                     .forcedVariationsMap(forcedVariations)
+                    .savedGroups(savedGroups)
                     .build();
 
 //            System.out.printf("\n context: %s", context);
@@ -228,6 +232,9 @@ class GrowthBookTest {
                 Type forcedVariationsType = new TypeToken<HashMap<String, Integer>>() {}.getType();
                 HashMap<String, Integer> forcedVariations = jsonUtils.gson.fromJson(itemArray.get(1).getAsJsonObject().get("forcedVariations"), forcedVariationsType);
 
+                JsonElement savedGroups = itemArray.get(1).getAsJsonObject().get("savedGroups");
+                JsonObject savedGroupToPass = savedGroups == null ? null : savedGroups.getAsJsonObject();
+
 
                 TestContext testContext = jsonUtils.gson.fromJson(itemArray.get(1).getAsJsonObject(), TestContext.class);
                 GBContext context = GBContext
@@ -238,6 +245,7 @@ class GrowthBookTest {
                         .isQaMode(testContext.qaMode)
                         .enabled(testContext.enabled)
                         .url(testContext.url)
+                        .savedGroups(savedGroupToPass)
                         .build();
 
                 Experiment experiment = jsonUtils.gson.fromJson(itemArray.get(2).getAsJsonObject(), Experiment.class);
@@ -535,7 +543,7 @@ class GrowthBookTest {
 
         subject.evaluateCondition(attrJsonStr, conditionJsonStr);
 
-        verify(mockConditionEvaluator).evaluateCondition(attributesJson, conditionJson);
+        verify(mockConditionEvaluator).evaluateCondition(attributesJson, conditionJson, new JsonObject());
     }
 
     @Test

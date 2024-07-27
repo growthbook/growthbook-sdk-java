@@ -59,11 +59,15 @@ class ConditionEvaluatorTest {
             String condition = testCase.get(1).getAsJsonObject().toString();
             String attributes = testCase.get(2).getAsJsonObject().toString();
             boolean expected = testCase.get(3).getAsBoolean();
+            JsonObject savedGroups = null;
+            if (testCase.size() > 4) {
+                savedGroups = testCase.get(4).getAsJsonObject();
+            }
 
             JsonObject attributesJson = GrowthBookJsonUtils.getInstance().gson.fromJson(attributes, JsonObject.class);
             JsonObject conditionJson = GrowthBookJsonUtils.getInstance().gson.fromJson(condition, JsonObject.class);
 
-            boolean evaluationResult = evaluator.evaluateCondition(attributesJson, conditionJson);
+            boolean evaluationResult = evaluator.evaluateCondition(attributesJson, conditionJson, savedGroups);
 
             if (unexpectedExceptionOccurred(errContent.toString())) {
                 failingIndexes.add(i);
