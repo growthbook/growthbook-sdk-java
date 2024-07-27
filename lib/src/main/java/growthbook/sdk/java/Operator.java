@@ -91,6 +91,14 @@ public enum Operator {
      * $veq
      */
     VERSION_EQ("$veq"),
+    /**
+     * $inGroup
+     */
+    IN_GROUP("$inGroup"),
+    /**
+     * $notInGroup
+     */
+    NOT_IN_GROUP("$notInGroup")
     ;
 
     private final String rawValue;

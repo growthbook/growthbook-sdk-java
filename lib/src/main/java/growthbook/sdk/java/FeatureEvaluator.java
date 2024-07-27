@@ -181,7 +181,8 @@ class FeatureEvaluator implements IFeatureEvaluator {
 
                         boolean evalCondition = conditionEvaluator.evaluateCondition(
                                 parentAttributesJson,
-                                parentCondition.getCondition()
+                                parentCondition.getCondition(),
+                                context.getSavedGroups()
                         );
 
                         // blocking prerequisite eval failed: feature evaluation fails
@@ -221,7 +222,7 @@ class FeatureEvaluator implements IFeatureEvaluator {
 
                     // If the rule has a condition, and it evaluates to false, skip this rule and continue to the next one
                     if (rule.getCondition() != null) {
-                        if (!conditionEvaluator.evaluateCondition(attributes, rule.getCondition())) {
+                        if (!conditionEvaluator.evaluateCondition(attributes, rule.getCondition(), context.getSavedGroups())) {
 
                             // Skip rule because of condition
                             continue;
