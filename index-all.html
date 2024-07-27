@@ -423,7 +423,7 @@ loadScripts(document, 'script');</script>
 <dd>
 <div class="block">Context object passed into the GrowthBook constructor.</div>
 </dd>
-<dt><a href="growthbook/sdk/java/GBContext.html#%3Cinit%3E(java.lang.String,com.google.gson.JsonObject,java.lang.String,com.google.gson.JsonObject,java.lang.String,java.lang.Boolean,java.lang.Boolean,java.lang.String,java.lang.Boolean,java.util.Map,growthbook.sdk.java.TrackingCallback,growthbook.sdk.java.FeatureUsageCallback,growthbook.sdk.java.stickyBucketing.StickyBucketService,java.util.Map,java.util.List)" class="member-name-link">GBContext(String, JsonObject, String, JsonObject, String, Boolean, Boolean, String, Boolean, Map&lt;String, Integer&gt;, TrackingCallback, FeatureUsageCallback, StickyBucketService, Map&lt;String, StickyAssignmentsDocument&gt;, List&lt;String&gt;)</a> - Constructor for class growthbook.sdk.java.<a href="growthbook/sdk/java/GBContext.html" title="class in growthbook.sdk.java">GBContext</a></dt>
+<dt><a href="growthbook/sdk/java/GBContext.html#%3Cinit%3E(java.lang.String,com.google.gson.JsonObject,java.lang.String,com.google.gson.JsonObject,java.lang.String,java.lang.Boolean,java.lang.Boolean,java.lang.String,java.lang.Boolean,java.util.Map,growthbook.sdk.java.TrackingCallback,growthbook.sdk.java.FeatureUsageCallback,growthbook.sdk.java.stickyBucketing.StickyBucketService,java.util.Map,java.util.List,com.google.gson.JsonObject)" class="member-name-link">GBContext(String, JsonObject, String, JsonObject, String, Boolean, Boolean, String, Boolean, Map&lt;String, Integer&gt;, TrackingCallback, FeatureUsageCallback, StickyBucketService, Map&lt;String, StickyAssignmentsDocument&gt;, List&lt;String&gt;, JsonObject)</a> - Constructor for class growthbook.sdk.java.<a href="growthbook/sdk/java/GBContext.html" title="class in growthbook.sdk.java">GBContext</a></dt>
 <dd>
 <div class="block">The <a href="growthbook/sdk/java/GBContext.GBContextBuilder.html" title="class in growthbook.sdk.java"><code>GBContext.GBContextBuilder</code></a> is recommended for constructing a Context.</div>
 </dd>
@@ -842,6 +842,10 @@ loadScripts(document, 'script');</script>
 <dd>
 <div class="block">Array of Rule objects that determine when and how the defaultValue gets overridden</div>
 </dd>
+<dt><a href="growthbook/sdk/java/GBContext.html#getSavedGroups()" class="member-name-link">getSavedGroups()</a> - Method in class growthbook.sdk.java.<a href="growthbook/sdk/java/GBContext.html" title="class in growthbook.sdk.java">GBContext</a></dt>
+<dd>&nbsp;</dd>
+<dt><a href="growthbook/sdk/java/GBFeaturesRepository.html#getSavedGroupsJson()" class="member-name-link">getSavedGroupsJson()</a> - Method in class growthbook.sdk.java.<a href="growthbook/sdk/java/GBFeaturesRepository.html" title="class in growthbook.sdk.java">GBFeaturesRepository</a></dt>
+<dd>&nbsp;</dd>
 <dt><a href="growthbook/sdk/java/Experiment.html#getSeed()" class="member-name-link">getSeed()</a> - Method in class growthbook.sdk.java.<a href="growthbook/sdk/java/Experiment.html" title="class in growthbook.sdk.java">Experiment</a></dt>
 <dd>
 <div class="block">The hash seed to use</div>
@@ -1042,6 +1046,10 @@ loadScripts(document, 'script');</script>
 <dd>
 <div class="block">$in</div>
 </dd>
+<dt><a href="growthbook/sdk/java/Operator.html#IN_GROUP" class="member-name-link">IN_GROUP</a> - Enum constant in enum class growthbook.sdk.java.<a href="growthbook/sdk/java/Operator.html" title="enum class in growthbook.sdk.java">Operator</a></dt>
+<dd>
+<div class="block">$inGroup</div>
+</dd>
 <dt><a href="growthbook/sdk/java/ExperimentResult.ExperimentResultBuilder.html#inExperiment(java.lang.Boolean)" class="member-name-link">inExperiment(Boolean)</a> - Method in class growthbook.sdk.java.<a href="growthbook/sdk/java/ExperimentResult.ExperimentResultBuilder.html" title="class in growthbook.sdk.java">ExperimentResult.ExperimentResultBuilder</a></dt>
 <dd>&nbsp;</dd>
 <dt><a href="growthbook/sdk/java/GBFeaturesRepository.html#initialize()" class="member-name-link">initialize()</a> - Method in class growthbook.sdk.java.<a href="growthbook/sdk/java/GBFeaturesRepository.html" title="class in growthbook.sdk.java">GBFeaturesRepository</a></dt>
@@ -1178,6 +1186,10 @@ loadScripts(document, 'script');</script>
 <dd>
 <div class="block">$not</div>
 </dd>
+<dt><a href="growthbook/sdk/java/Operator.html#NOT_IN_GROUP" class="member-name-link">NOT_IN_GROUP</a> - Enum constant in enum class growthbook.sdk.java.<a href="growthbook/sdk/java/Operator.html" title="enum class in growthbook.sdk.java">Operator</a></dt>
+<dd>
+<div class="block">$notInGroup</div>
+</dd>
 <dt><a href="growthbook/sdk/java/DataType.html#NULL" class="member-name-link">NULL</a> - Enum constant in enum class growthbook.sdk.java.<a href="growthbook/sdk/java/DataType.html" title="enum class in growthbook.sdk.java">DataType</a></dt>
 <dd>
 <div class="block">when the type is a JSON null</div>
@@ -1313,6 +1325,8 @@ loadScripts(document, 'script');</script>
 <dd>
 <div class="block">Insert new record if not exists, otherwise update</div>
 </dd>
+<dt><a href="growthbook/sdk/java/GBContext.GBContextBuilder.html#savedGroups(com.google.gson.JsonObject)" class="member-name-link">savedGroups(JsonObject)</a> - Method in class growthbook.sdk.java.<a href="growthbook/sdk/java/GBContext.GBContextBuilder.html" title="class in growthbook.sdk.java">GBContext.GBContextBuilder</a></dt>
+<dd>&nbsp;</dd>
 <dt><a href="growthbook/sdk/java/Experiment.ExperimentBuilder.html#seed(java.lang.String)" class="member-name-link">seed(String)</a> - Method in class growthbook.sdk.java.<a href="growthbook/sdk/java/Experiment.ExperimentBuilder.html" title="class in growthbook.sdk.java">Experiment.ExperimentBuilder</a></dt>
 <dd>
 <div class="block">The hash seed to use</div>
@@ -1637,6 +1651,10 @@ loadScripts(document, 'script');</script>
 <dd>
 <div class="block">Unique identifier of rule</div>
 </dd>
+<dt><a href="growthbook/sdk/java/GBContext.html#setSavedGroups(com.google.gson.JsonObject)" class="member-name-link">setSavedGroups(JsonObject)</a> - Method in class growthbook.sdk.java.<a href="growthbook/sdk/java/GBContext.html" title="class in growthbook.sdk.java">GBContext</a></dt>
+<dd>&nbsp;</dd>
+<dt><a href="growthbook/sdk/java/GrowthBook.html#setSavedGroups(com.google.gson.JsonObject)" class="member-name-link">setSavedGroups(JsonObject)</a> - Method in class growthbook.sdk.java.<a href="growthbook/sdk/java/GrowthBook.html" title="class in growthbook.sdk.java">GrowthBook</a></dt>
+<dd>&nbsp;</dd>
 <dt><a href="growthbook/sdk/java/Experiment.html#setSeed(java.lang.String)" class="member-name-link">setSeed(String)</a> - Method in class growthbook.sdk.java.<a href="growthbook/sdk/java/Experiment.html" title="class in growthbook.sdk.java">Experiment</a></dt>
 <dd>
 <div class="block">The hash seed to use</div>
