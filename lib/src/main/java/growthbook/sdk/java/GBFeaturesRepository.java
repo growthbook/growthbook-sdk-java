@@ -382,14 +382,9 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
                             "encryptionKey provided but endpoint not encrypted"
                     );
                 }
-                if (encryptedSavedGroupsJsonElement == null) {
-                    log.error(
-                            "FeatureFetchException: CONFIGURATION_ERROR encryptedSavedGroupsJsonElement fetch error code: "
-                                    + "encryptionKey provided but endpoint not encrypted");
-                }
 
                 String encryptedFeaturesJson = encryptedFeaturesJsonElement.getAsString();
-                String encryptedSavedGroupsJson = null;
+                String encryptedSavedGroupsJson;
                 if (encryptedSavedGroupsJsonElement != null) {
                     encryptedSavedGroupsJson = encryptedSavedGroupsJsonElement.getAsString();
                     refreshedSavedGroups = DecryptionUtils.decrypt(encryptedSavedGroupsJson, this.encryptionKey).trim();
@@ -410,13 +405,6 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
                             FeatureFetchException.FeatureFetchErrorCode.CONFIGURATION_ERROR,
                             "No features found"
                     );
-                }
-
-                if (savedGroupsJsonElement == null) {
-                    log.error(
-                            "FeatureFetchException: CONFIGURATION_ERROR savedGroupsJsonElement fetch error code: "
-                                    + "No features found");
-
                 }
 
                 refreshedFeatures = featuresJsonElement.toString().trim();
