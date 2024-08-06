@@ -439,11 +439,15 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
     }
 
     private void onRefreshSuccess(String featuresJson) {
-        this.refreshCallbacks.forEach(featureRefreshCallback -> featureRefreshCallback.onRefresh(featuresJson));
+        for (FeatureRefreshCallback callback: this.refreshCallbacks) {
+            callback.onRefresh(featuresJson);
+        }
     }
 
     private void onRefreshFailed(Throwable throwable) {
-        this.refreshCallbacks.forEach(featureRefreshCallback -> featureRefreshCallback.onError(throwable));
+        for (FeatureRefreshCallback callback: this.refreshCallbacks) {
+            callback.onError(throwable);
+        }
     }
 
     /**
