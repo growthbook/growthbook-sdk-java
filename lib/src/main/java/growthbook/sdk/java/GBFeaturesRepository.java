@@ -296,11 +296,12 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
             @Override
             public void onFailure(@NotNull Call call, @NotNull IOException e) {
                 log.error("SSE connection failed: {}", e.getMessage(), e);
+                call.cancel();
             }
 
             @Override
             public void onResponse(@NotNull Call call, @NotNull Response response) {
-                // We don't do anything with this response
+                response.close();
             }
         });
     }
@@ -382,14 +383,9 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
                             "encryptionKey provided but endpoint not encrypted"
                     );
                 }
-                if (encryptedSavedGroupsJsonElement == null) {
-                    log.error(
-                            "FeatureFetchException: CONFIGURATION_ERROR encryptedSavedGroupsJsonElement fetch error code: "
-                                    + "encryptionKey provided but endpoint not encrypted");
-                }
 
                 String encryptedFeaturesJson = encryptedFeaturesJsonElement.getAsString();
-                String encryptedSavedGroupsJson = null;
+                String encryptedSavedGroupsJson;
                 if (encryptedSavedGroupsJsonElement != null) {
                     encryptedSavedGroupsJson = encryptedSavedGroupsJsonElement.getAsString();
                     refreshedSavedGroups = DecryptionUtils.decrypt(encryptedSavedGroupsJson, this.encryptionKey).trim();
@@ -412,15 +408,11 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
                     );
                 }
 
-                if (savedGroupsJsonElement == null) {
-                    log.error(
-                            "FeatureFetchException: CONFIGURATION_ERROR savedGroupsJsonElement fetch error code: "
-                                    + "No features found");
-
+                if (savedGroupsJsonElement != null) {
+                    refreshedSavedGroups = savedGroupsJsonElement.toString().trim();
                 }
 
                 refreshedFeatures = featuresJsonElement.toString().trim();
-                refreshedSavedGroups = savedGroupsJsonElement != null ? savedGroupsJsonElement.toString().trim() : null;
             }
 
             this.featuresJson = refreshedFeatures;
@@ -439,11 +431,15 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
     }
 
     private void onRefreshSuccess(String featuresJson) {
-        this.refreshCallbacks.forEach(featureRefreshCallback -> featureRefreshCallback.onRefresh(featuresJson));
+        for (FeatureRefreshCallback callback: this.refreshCallbacks) {
+            callback.onRefresh(featuresJson);
+        }
     }
 
     private void onRefreshFailed(Throwable throwable) {
-        this.refreshCallbacks.forEach(featureRefreshCallback -> featureRefreshCallback.onError(throwable));
+        for (FeatureRefreshCallback callback: this.refreshCallbacks) {
+            callback.onError(throwable);
+        }
     }
 
     /**
@@ -513,6 +509,28 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
         @Override
         public void onOpen(@NotNull EventSource eventSource, @NotNull Response response) {
             super.onOpen(eventSource, response);
+        }
+    }
+
+    public void shutdown() {
+        if (this.sseEventSource != null) {
+            this.sseEventSource.cancel();
+            this.sseEventSource = null;
+            log.info("SseEventSource cancel");
+        }
+        if (this.sseHttpClient != null) {
+            this.sseHttpClient.dispatcher().cancelAll();
+            this.sseHttpClient.connectionPool().evictAll();
+            if (this.sseHttpClient.cache() != null) {
+                try {
+                    this.sseHttpClient.cache().close();
+                } catch (IOException e) {
+                    log.error(e.getMessage(), e);
+                }
+            }
+            this.sseHttpClient = null;
+            log.info("SseHttpClient shutdown");
+
         }
     }
 }
