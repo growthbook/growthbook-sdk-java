@@ -1,8 +1,10 @@
 package growthbook.sdk.java;
 
+/*
 import okhttp3.Interceptor;
 import okhttp3.Request;
 import okhttp3.Response;
+*/
 import org.jetbrains.annotations.NotNull;
 
 import java.io.IOException;
@@ -10,6 +12,7 @@ import java.io.IOException;
 /**
  * Appends User-Agent info to the request headers.
  */
+/*
 public class GBFeaturesRepositoryRequestInterceptor implements Interceptor {
     @NotNull
     @Override
@@ -22,3 +25,4 @@ public class GBFeaturesRepositoryRequestInterceptor implements Interceptor {
         return chain.proceed(modifiedRequest);
     }
 }
+*/
