@@ -9,6 +9,7 @@ import cloud.prefab.sse.events.Event;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonSyntaxException;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import javax.annotation.Nullable;
@@ -55,7 +56,7 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
     private String featuresJson = "{}";
     private final ArrayList<FeatureRefreshCallback> refreshCallbacks = new ArrayList<>();
     
-    
+    @Builder
     public GBFeaturesRepository(
     @Nullable String apiHost,
     String clientKey,
