@@ -22,7 +22,7 @@ public class LocalGbFeatureRepository implements IGBFeaturesRepository {
 
     /**
      * Method for initializing {@link LocalGbFeatureRepository} by fetching features from user's json file
-     * {@throws} FeatureFetchException
+     * throws FeatureFetchException
      */
     @Override
     public void initialize() throws FeatureFetchException {
