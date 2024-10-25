@@ -1,19 +1,25 @@
 package growthbook.sdk.java.stickyBucketing;
 
-import lombok.RequiredArgsConstructor;
-
 import java.util.HashMap;
 import java.util.Map;
 
 /**
  * For simple bucket persistence using the in memory's storage(Map) (can be polyfilled for other environments)
  */
-@RequiredArgsConstructor
 public class InMemoryStickyBucketServiceImpl implements StickyBucketService {
     private final Map<String, StickyAssignmentsDocument> localStorage;
 
     /**
-     * Method for saving assignments document to cache
+     * Constructs a new {@code InMemoryStickyBucketServiceImpl} with the specified local storage.
+     *
+     * @param localStorage a map to store sticky assignments documents in memory.
+     */
+    public InMemoryStickyBucketServiceImpl(Map<String, StickyAssignmentsDocument> localStorage) {
+        this.localStorage = localStorage;
+    }
+
+    /**
+     * Method for getting all assignments document from cache (in memory: hashmap)
      *
      * @param attributeName  attributeName with attributeValue together present
      *                       a key that us for find proper StickyAssignmentsDocument
@@ -27,7 +33,7 @@ public class InMemoryStickyBucketServiceImpl implements StickyBucketService {
     }
 
     /**
-     * Method for saving assignments document to cache
+     * Method for saving assignments document to cache (in memory: hashmap)
      *
      * @param doc StickyAssignmentsDocument
      */
@@ -37,7 +43,7 @@ public class InMemoryStickyBucketServiceImpl implements StickyBucketService {
     }
 
     /**
-     * Method for getting sticky bucket assignments from attributes of context
+     * Method for getting sticky bucket assignments from cache (in memory: hashmap) by attributes of context
      *
      * @param attributes Map of String key and String value that you have in GBContext
      * @return Map with key String and value StickyAssignmentsDocument

@@ -4,7 +4,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.stream.Collectors;
 
-public class StringUtils {
+class StringUtils {
     public static String padLeftZeros(String inputString, Integer length) {
         if (inputString.length() >= length) {
             return inputString;
@@ -37,7 +37,7 @@ public class StringUtils {
         // Then, join back together into a single string
         return parts.stream()
             .map(part -> part.matches("^[0-9]+$") ? StringUtils.padLeftZeros(part, 5) : part)
-            .filter(s -> !s.equals(""))
+            .filter(s -> !s.isEmpty())
             .collect(Collectors.joining("-"));
     }
 }

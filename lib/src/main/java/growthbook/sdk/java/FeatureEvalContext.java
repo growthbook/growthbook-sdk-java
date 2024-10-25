@@ -12,7 +12,7 @@ import lombok.RequiredArgsConstructor;
 @Data
 @AllArgsConstructor
 @RequiredArgsConstructor
-public class FeatureEvalContext {
+class FeatureEvalContext {
     /**
      * Unique feature identifier
      */

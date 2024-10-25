@@ -33,39 +33,78 @@ import java.util.logging.Logger;
 @Slf4j
 public class GBFeaturesRepository implements IGBFeaturesRepository {
 
+    /**
+     * Endpoint for GET request
+     */
     @Getter
     private final String featuresEndpoint;
 
+    /**
+     * Endpoint for SSE request
+     */
     @Getter
     private final String eventsEndpoint;
 
+    /**
+     * Strategy for building url
+     */
     @Getter
     private FeatureRefreshStrategy refreshStrategy;
 
+    /**
+     * The key used to decrypt encrypted features from the API
+     */
     @Nullable
     @Getter
     private final String encryptionKey;
 
+    /**
+     * The standard cache TTL to use (60 seconds)
+     */
     @Getter
     private final Integer swrTtlSeconds;
 
+    /**
+     * Seconds after that cache is expired
+     */
     @Getter
     private Long expiresAt;
 
+    /**
+     * Http request client for send GET request
+     */
     private final OkHttpClient okHttpClient;
 
+    /**
+     * Http request client for establish SSE connection
+     */
     @Nullable
     private OkHttpClient sseHttpClient;
 
+    /**
+     * Optional callbacks for getting updates when features are refreshed
+     */
     private final ArrayList<FeatureRefreshCallback> refreshCallbacks = new ArrayList<>();
 
+    /**
+     * Flag to know whether GBFeatureRepository is initialized
+     */
     private Boolean initialized = false;
 
+    /**
+     * Flag to know whether sse connection is allowed
+     */
     private Boolean sseAllowed = false;
     @Nullable
     private Request sseRequest = null;
     @Nullable
     private EventSource sseEventSource = null;
+
+    /**
+     * Allows you to get the saved groups JSON from the provided {@link GBFeaturesRepository#getFeaturesEndpoint()}.
+     * You must call {@link GBFeaturesRepository#initialize()} before calling this method
+     * or your saved groups would not have loaded.
+     */
     @Getter
     @Nullable
     private String savedGroupsJson = "{}";

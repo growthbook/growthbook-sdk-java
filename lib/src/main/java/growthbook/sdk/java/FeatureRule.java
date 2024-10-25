@@ -1,6 +1,5 @@
 package growthbook.sdk.java;
 
-import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.annotations.SerializedName;
 import lombok.AllArgsConstructor;
@@ -119,30 +118,58 @@ public class FeatureRule<ValueType> {
     @SerializedName("meta")
     ArrayList<VariationMeta> meta;
 
+    /**
+     * Array of filters to apply to the rule
+     */
     @Nullable
     ArrayList<Filter> filters;
 
+    /**
+     * Seed to use for hashing
+     */
     @Nullable
     String seed;
 
+    /**
+     * Human-readable name for the experiment
+     */
     @Nullable
     String name;
 
+    /**
+     * The phase id of the experiment
+     */
     @Nullable
     String phase;
 
+    /**
+     * When using sticky bucketing, can be used as a fallback to assign variations
+     */
     @Nullable
     String fallbackAttribute;
 
+    /**
+     * If true, sticky bucketing will be disabled for this experiment.
+     * (Note: sticky bucketing is only available if a StickyBucketingService is provided in the Context)
+     */
     @Nullable
     Boolean disableStickyBucketing;
 
+    /**
+     * An sticky bucket version number that can be used to force a re-bucketing of users (default to 0)
+     */
     @Nullable
     Integer bucketVersion;
 
+    /**
+     * Any users with a sticky bucket version less than this will be excluded from the experiment
+     */
     @Nullable
     Integer minBucketVersion;
 
+    /**
+     * Array of tracking calls to fire
+     */
     @Nullable
     ArrayList<TrackData<ValueType>> tracks;
 }

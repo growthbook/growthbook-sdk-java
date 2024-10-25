@@ -11,7 +11,7 @@ import lombok.RequiredArgsConstructor;
 @Data
 @AllArgsConstructor
 @RequiredArgsConstructor
-public class GeneratedStickyBucketAssignmentDocModel {
+class GeneratedStickyBucketAssignmentDocModel {
     /**
      * Unique key of StickyAssignment Document in format: "attributeName||attributeValue"
      */

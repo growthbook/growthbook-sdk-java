@@ -3,7 +3,7 @@ package growthbook.sdk.java;
 import java.util.HashSet;
 import java.util.Set;
 
-public class ExperimentHelper {
+class ExperimentHelper {
     private final Set<String> trackedExperiments = new HashSet<>();
 
     public <ValueType> boolean isTracked(Experiment<ValueType> experiment, ExperimentResult<ValueType> result) {
