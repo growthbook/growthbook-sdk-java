@@ -238,7 +238,7 @@ public class NativeJavaGbFeatureRepository implements IGBFeaturesRepository {
         try {
             URL url = new URL(this.featuresEndpoint);
             connection = (HttpURLConnection) url.openConnection();
-            connection.setRequestMethod(Constants.GET_METHOD);
+            connection.setRequestMethod(HttpMethods.GET.getMethod());
 
             if (connection.getResponseCode() == HttpURLConnection.HTTP_OK) {
                 reader = new BufferedReader(new InputStreamReader(connection.getInputStream()));
@@ -249,11 +249,11 @@ public class NativeJavaGbFeatureRepository implements IGBFeaturesRepository {
                 }
                 reader.close();
                 String responseBody = responseBuilder.toString();
-                String sseSupportHeader = connection.getHeaderField(Constants.X_SSE_SUPPORT);
+                String sseSupportHeader = connection.getHeaderField(HttpHeaders.X_SSE_SUPPORT.getHeader());
                 if (sseSupportHeader == null) {
                     throw new FeatureFetchException(FeatureFetchException.FeatureFetchErrorCode.UNKNOWN);
                 }
-                this.sseAllowed = Constants.ENABLED.equals(sseSupportHeader);
+                this.sseAllowed = GbConstants.ENABLED.equals(sseSupportHeader);
                 this.onSuccess(responseBody);
             }
         } catch (IOException e) {
@@ -307,8 +307,8 @@ public class NativeJavaGbFeatureRepository implements IGBFeaturesRepository {
                 String refreshedSavedGroups = "";
 
                 if (this.encryptionKey != null) {
-                    JsonElement encryptedFeaturesJsonElement = jsonObject.get(Constants.ENCRYPTED_FEATURES_KEY);
-                    JsonElement encryptedSavedGroupsJsonElement = jsonObject.get(Constants.ENCRYPTED_SAVED_GROUPS_KEY);
+                    JsonElement encryptedFeaturesJsonElement = jsonObject.get(FeatureResponseKey.ENCRYPTED_FEATURES_KEY.getKey());
+                    JsonElement encryptedSavedGroupsJsonElement = jsonObject.get(FeatureResponseKey.ENCRYPTED_SAVED_GROUPS_KEY.getKey());
                     if (encryptedFeaturesJsonElement == null) {
                         log.error("encryptionKey provided but endpoint not encrypted");
 
@@ -325,8 +325,8 @@ public class NativeJavaGbFeatureRepository implements IGBFeaturesRepository {
                     String encryptedFeaturesJson = encryptedFeaturesJsonElement.getAsString();
                     refreshedFeatures = DecryptionUtils.decrypt(encryptedFeaturesJson, this.encryptionKey).trim();
                 } else {
-                    JsonElement featuresJsonElement = jsonObject.get(Constants.FEATURE_KEY);
-                    JsonElement savedGroupJsonElement = jsonObject.get(Constants.SAVED_GROUP_KEY);
+                    JsonElement featuresJsonElement = jsonObject.get(FeatureResponseKey.FEATURE_KEY.getKey());
+                    JsonElement savedGroupJsonElement = jsonObject.get(FeatureResponseKey.SAVED_GROUP_KEY.getKey());
 
                     if (featuresJsonElement == null) {
                         log.error("No features found");
@@ -389,8 +389,8 @@ public class NativeJavaGbFeatureRepository implements IGBFeaturesRepository {
                     StringBuilder dataBuffer = new StringBuilder();
 
                     while ((line = reader.readLine()) != null) {
-                        if (line.startsWith(Constants.DATA_SSE_KEY)) {
-                            dataBuffer.append(line.substring(Constants.QUANTITY_TO_CUT_SSE).trim()).append("\n");
+                        if (line.startsWith(SseKey.DATA.getKey())) {
+                            dataBuffer.append(line.substring(GbConstants.QUANTITY_TO_CUT_SSE).trim()).append("\n");
                         } else if (line.isEmpty()) {
                             String data = dataBuffer.toString();
                             if (!data.isEmpty()) {
@@ -424,8 +424,8 @@ public class NativeJavaGbFeatureRepository implements IGBFeaturesRepository {
         try {
             url = new URL(sseEndPoint);
             connection = (HttpURLConnection) url.openConnection();
-            connection.setRequestMethod(Constants.GET_METHOD);
-            connection.setRequestProperty(Constants.ACCEPT, Constants.SSE_HEADER);
+            connection.setRequestMethod(HttpMethods.GET.getMethod());
+            connection.setRequestProperty(HttpHeaders.ACCEPT.getHeader(), HttpHeaders.SSE_HEADER.getHeader());
             connection.setDoInput(true);
             connection.connect();
 

@@ -249,8 +249,8 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
 
         this.sseRequest = new Request.Builder()
                 .url(this.eventsEndpoint)
-                .header("Accept", "application/json; q=0.5")
-                .addHeader("Accept", "text/event-stream")
+                .header(HttpHeaders.ACCEPT.getHeader(), HttpHeaders.APPLICATION_JSON.getHeader())
+                .addHeader(HttpHeaders.ACCEPT.getHeader(), HttpHeaders.SSE_HEADER.getHeader())
                 .build();
 
         GBEventSourceListener gbEventSourceListener =
@@ -342,8 +342,8 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
                 .build();
 
         try (Response response = this.okHttpClient.newCall(request).execute()) {
-            String sseSupportHeader = response.header("x-sse-support");
-            this.sseAllowed = Objects.equals(sseSupportHeader, "enabled");
+            String sseSupportHeader = response.header(HttpHeaders.X_SSE_SUPPORT.getHeader());
+            this.sseAllowed = Objects.equals(sseSupportHeader, GbConstants.ENABLED);
 
             this.onSuccess(response);
         } catch (IOException e) {
@@ -372,8 +372,8 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
 
             if (this.encryptionKey != null) {
                 // Use encrypted features at responseBody.encryptedFeatures
-                JsonElement encryptedFeaturesJsonElement = jsonObject.get("encryptedFeatures");
-                JsonElement encryptedSavedGroupsJsonElement = jsonObject.get("encryptedSavedGroups");
+                JsonElement encryptedFeaturesJsonElement = jsonObject.get(FeatureResponseKey.ENCRYPTED_FEATURES_KEY.getKey());
+                JsonElement encryptedSavedGroupsJsonElement = jsonObject.get(FeatureResponseKey.ENCRYPTED_SAVED_GROUPS_KEY.getKey());
                 if (encryptedFeaturesJsonElement == null) {
                     log.error(
                             "FeatureFetchException: CONFIGURATION_ERROR feature fetch error code: "
@@ -394,8 +394,8 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
                 refreshedFeatures = DecryptionUtils.decrypt(encryptedFeaturesJson, this.encryptionKey).trim();
             } else {
                 // Use unencrypted features at responseBody.features
-                JsonElement featuresJsonElement = jsonObject.get("features");
-                JsonElement savedGroupsJsonElement = jsonObject.get("savedGroups");
+                JsonElement featuresJsonElement = jsonObject.get(FeatureResponseKey.FEATURE_KEY.getKey());
+                JsonElement savedGroupsJsonElement = jsonObject.get(FeatureResponseKey.SAVED_GROUP_KEY.getKey());
 
                 if (featuresJsonElement == null) {
                     log.error(
