@@ -3,6 +3,7 @@ package growthbook.sdk.java;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import lombok.extern.slf4j.Slf4j;
+
 import javax.annotation.Nullable;
 import java.net.MalformedURLException;
 import java.net.URL;
@@ -32,7 +33,8 @@ class FeatureEvaluator implements IFeatureEvaluator {
             String key,
             GBContext context,
             Class<ValueType> valueTypeClass,
-            JsonObject attributeOverrides
+            JsonObject attributeOverrides,
+            Map<String, JsonElement> forcedFeatures
     ) throws ClassCastException {
         // This callback serves for listening for feature usage events
         FeatureUsageCallback featureUsageCallback = context.getFeatureUsageCallback();
@@ -44,6 +46,16 @@ class FeatureEvaluator implements IFeatureEvaluator {
                 .build();
 
         try {
+            // Global override
+            if (forcedFeatures.containsKey(key)) {
+                log.info("Global override for forced feature with key: {} and value {}", key, forcedFeatures.get(key));
+                return FeatureResult
+                        .<ValueType>builder()
+                        .value(forcedFeatures.get(key))
+                        .source(FeatureResultSource.OVERRIDE)
+                        .build();
+            }
+
             if (featureEvalContext.getEvaluatedFeatures().contains(key)) {
                 // block that handle recursion
                 log.info(
@@ -154,7 +166,7 @@ class FeatureEvaluator implements IFeatureEvaluator {
                                 parentCondition.getId(),
                                 context,
                                 valueTypeClass,
-                                attributeOverrides);
+                                attributeOverrides, forcedFeatures);
 
                         // break out for cyclic prerequisites
                         if (parentResult.getSource() != null) {

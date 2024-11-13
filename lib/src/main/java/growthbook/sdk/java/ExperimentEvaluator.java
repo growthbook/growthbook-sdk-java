@@ -163,7 +163,8 @@ class ExperimentEvaluator implements IExperimentEvaluator {
                             jsonUtils.gson.fromJson(
                                     parentCondition.getCondition(),
                                     JsonObject.class
-                            )
+                            ),
+                            new HashMap<>()
                     );
 
                     if (parentResult.getSource() != null) {

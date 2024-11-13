@@ -1,6 +1,8 @@
 package growthbook.sdk.java;
 
+import java.util.Map;
 import com.google.gson.JsonObject;
+import com.google.gson.JsonElement;
 
 interface IFeatureEvaluator {
     /**
@@ -12,5 +14,5 @@ interface IFeatureEvaluator {
      * @return feature result
      * @throws ClassCastException When a value type fails to cast to the provided type, this can throw an exception
      */
-    <ValueType> FeatureResult<ValueType> evaluateFeature(String key, GBContext context, Class<ValueType> valueTypeClass, JsonObject attributeOverrides);
+    <ValueType> FeatureResult<ValueType> evaluateFeature(String key, GBContext context, Class<ValueType> valueTypeClass, JsonObject attributeOverrides, Map<String, JsonElement> forcedFeatures);
 }

@@ -39,9 +39,15 @@ public enum FeatureResultSource {
     @SerializedName("cyclicPrerequisite") CYCLIC_PREREQUISITE("cyclicPrerequisite"),
 
     /**
+     * Override Value for the Feature is being processed
+     */
+    @SerializedName("override") OVERRIDE("override"),
+
+    /**
      * Prerequisite Value for the Feature is being processed
      */
-    @SerializedName("prerequisite") PREREQUISITE("prerequisite");
+    @SerializedName("prerequisite")
+    PREREQUISITE("prerequisite");
 
     private final String rawValue;
 

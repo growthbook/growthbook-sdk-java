@@ -13,7 +13,7 @@ import javax.annotation.Nullable;
 import java.util.Collection;
 
 /**
- * Results for a {@link FeatureEvaluator#evaluateFeature(String, GBContext, Class, JsonObject)}
+ * Results for a {@link FeatureEvaluator#evaluateFeature(String, GBContext, Class, JsonObject, java.util.Map)}
  *
  * <ul>
  * <li>value (any) - The assigned value of the feature</li>
