@@ -281,19 +281,20 @@ public class FeatureEvaluator implements IFeatureEvaluator {
                     if (rule.getRange() == null) {
                         if (rule.getCoverage() != null) {
 //                            String key = ruleKey;
-                            JsonElement attrValElement = context.getUser().getAttributes().get(ruleKey);
-                            if (attrValElement != null) {
-                                String attributeValue = attrValElement.getAsString();
-                                if (attributeValue == null || attributeValue.isEmpty()) {
-                                    continue;
-                                }
-                                Float hashFNV = GrowthBookUtils.hash(attributeValue, 1, key);
-                                if (hashFNV == null) {
-                                    hashFNV = 0f;
-                                }
-                                if (hashFNV > rule.getCoverage()) {
-                                    continue;
-                                }
+
+                            String attributeValue = context.getUser().getAttributes().get(ruleKey) == null
+                                    ? null : context.getUser().getAttributes().get(ruleKey).getAsString();
+                            
+                            if (attributeValue == null || attributeValue.isEmpty()) {
+                                continue;
+                            }
+
+                            Float hashFNV = GrowthBookUtils.hash(attributeValue, 1, key);
+                            if (hashFNV == null) {
+                                hashFNV = 0f;
+                            }
+                            if (hashFNV > rule.getCoverage()) {
+                                continue;
                             }
                         }
                     }
