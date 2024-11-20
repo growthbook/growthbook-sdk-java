@@ -1,6 +1,7 @@
 package growthbook.sdk.java.multiusermode.configurations;
 
 import com.google.gson.JsonObject;
+import growthbook.sdk.java.multiusermode.util.TransformationUtil;
 import growthbook.sdk.java.stickyBucketing.StickyAssignmentsDocument;
 import lombok.Builder;
 import lombok.Data;
@@ -30,6 +31,9 @@ public class UserContext {
     @Nullable
     private Map<String, Object> forcedFeatureValues;
 
+    @Nullable
+    private String attributesJson;
+
     public JsonObject getAttributes() {
         if (this.attributes == null) {
             return new JsonObject();
@@ -40,5 +44,10 @@ public class UserContext {
 
     public Map<String, Integer> getForcedVariationsMap() {
         return this.forcedVariationsMap == null ? new HashMap<>() : this.forcedVariationsMap;
+    }
+
+    public void setAttributesJson(String attributesJson) {
+        this.attributesJson = attributesJson;
+        this.attributes = TransformationUtil.transformAttributes(attributesJson);
     }
 }
