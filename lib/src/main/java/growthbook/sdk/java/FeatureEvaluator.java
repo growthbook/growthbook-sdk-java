@@ -2,6 +2,9 @@ package growthbook.sdk.java;
 
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import growthbook.sdk.java.multiusermode.configurations.EvaluationContext;
+import growthbook.sdk.java.multiusermode.usage.FeatureUsageCallbackWithUser;
+import growthbook.sdk.java.multiusermode.usage.TrackingCallbackWithUser;
 import lombok.extern.slf4j.Slf4j;
 import javax.annotation.Nullable;
 import java.net.MalformedURLException;
@@ -9,7 +12,6 @@ import java.net.URL;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
-import java.util.HashSet;
 import java.util.Map;
 
 /**
@@ -18,24 +20,24 @@ import java.util.Map;
  * Returns Calculated Feature Result against that key
  */
 @Slf4j
-class FeatureEvaluator implements IFeatureEvaluator {
+public class FeatureEvaluator implements IFeatureEvaluator {
 
     private final GrowthBookJsonUtils jsonUtils = GrowthBookJsonUtils.getInstance();
     private final ConditionEvaluator conditionEvaluator = new ConditionEvaluator();
     private final ExperimentEvaluator experimentEvaluator = new ExperimentEvaluator();
-    private final FeatureEvalContext featureEvalContext = new FeatureEvalContext(null, new HashSet<>());
+    //private final FeatureEvalContext featureEvalContext = new FeatureEvalContext(null, new HashSet<>());
 
     // Takes Context and Feature Key
     // Returns Calculated Feature Result against that key
     @Override
     public <ValueType> FeatureResult<ValueType> evaluateFeature(
             String key,
-            GBContext context,
-            Class<ValueType> valueTypeClass,
-            JsonObject attributeOverrides
+            EvaluationContext context,
+            Class<ValueType> valueTypeClass
     ) throws ClassCastException {
         // This callback serves for listening for feature usage events
-        FeatureUsageCallback featureUsageCallback = context.getFeatureUsageCallback();
+        FeatureUsageCallbackWithUser featureUsageCallbackWithUser = context.getOptions()
+                .getFeatureUsageCallbackWithUser();
 
         FeatureResult<ValueType> emptyFeature = FeatureResult
                 .<ValueType>builder()
@@ -44,12 +46,12 @@ class FeatureEvaluator implements IFeatureEvaluator {
                 .build();
 
         try {
-            if (featureEvalContext.getEvaluatedFeatures().contains(key)) {
+            if (context.getStack().getEvaluatedFeatures().contains(key)) {
                 // block that handle recursion
                 log.info(
                         "evaluateFeature: circular dependency detected: {} -> {}. { from: {}, to: {} }",
-                        featureEvalContext.getId(), key,
-                        featureEvalContext.getId(), key
+                        context.getStack().getId(), key,
+                        context.getStack().getId(), key
                 );
 
                 FeatureResult<ValueType> featureResultWhenCircularDependencyDetected = FeatureResult
@@ -57,17 +59,17 @@ class FeatureEvaluator implements IFeatureEvaluator {
                         .value(null)
                         .source(FeatureResultSource.CYCLIC_PREREQUISITE)
                         .build();
-                if (featureUsageCallback != null) {
-                    featureUsageCallback.onFeatureUsage(key, featureResultWhenCircularDependencyDetected);
+                if (featureUsageCallbackWithUser != null) {
+                    featureUsageCallbackWithUser.onFeatureUsage(key, featureResultWhenCircularDependencyDetected, context.getUser());
                 }
                 
-                leaveCircularLoop();
+                leaveCircularLoop(context);
                 return featureResultWhenCircularDependencyDetected;
             }
 
             // Check for feature values forced by URL
-            if (context.getAllowUrlOverride()) {
-                ValueType forcedValue = evaluateForcedFeatureValueFromUrl(key, context.getUrl(), valueTypeClass);
+            if (context.getOptions().getAllowUrlOverrides()) {
+                ValueType forcedValue = evaluateForcedFeatureValueFromUrl(key, context.getOptions().getUrl(), valueTypeClass);
                 if (forcedValue != null) {
                     FeatureResult<ValueType> urlFeatureResult = FeatureResult
                             .<ValueType>builder()
@@ -75,8 +77,8 @@ class FeatureEvaluator implements IFeatureEvaluator {
                             .source(FeatureResultSource.URL_OVERRIDE)
                             .build();
 
-                    if (featureUsageCallback != null) {
-                        featureUsageCallback.onFeatureUsage(key, urlFeatureResult);
+                    if (featureUsageCallbackWithUser != null) {
+                        featureUsageCallbackWithUser.onFeatureUsage(key, urlFeatureResult, context.getUser());
                     }
 
                     return urlFeatureResult;
@@ -84,17 +86,17 @@ class FeatureEvaluator implements IFeatureEvaluator {
             }
 
             // Unknown key, return empty feature
-            JsonObject featuresJson = context.getFeatures();
-            if (featuresJson == null || !featuresJson.has(key)) {
-                if (featureUsageCallback != null) {
-                    featureUsageCallback.onFeatureUsage(key, emptyFeature);
+            JsonObject features = context.getGlobal().getFeatures();
+            if (features == null || !features.has(key)) {
+                if (featureUsageCallbackWithUser != null) {
+                    featureUsageCallbackWithUser.onFeatureUsage(key, emptyFeature, context.getUser());
                 }
 
                 return emptyFeature;
             }
 
             // The key exists
-            JsonElement featureJson = featuresJson.get(key);
+            JsonElement featureJson = features.get(key);
             FeatureResult<ValueType> defaultValueFeature = FeatureResult
                     .<ValueType>builder()
                     .value(null)
@@ -105,8 +107,8 @@ class FeatureEvaluator implements IFeatureEvaluator {
                 log.info("featureJson is null");
 
                 // When key exists but there is no value, should be default value with null value
-                if (featureUsageCallback != null) {
-                    featureUsageCallback.onFeatureUsage(key, defaultValueFeature);
+                if (featureUsageCallbackWithUser != null) {
+                    featureUsageCallbackWithUser.onFeatureUsage(key, defaultValueFeature, context.getUser());
                 }
 
                 return defaultValueFeature;
@@ -115,8 +117,8 @@ class FeatureEvaluator implements IFeatureEvaluator {
             Feature<ValueType> feature = jsonUtils.gson.fromJson(featureJson, Feature.class);
             if (feature == null) {
                 // When key exists but there is no value, should be default value with null value
-                if (featureUsageCallback != null) {
-                    featureUsageCallback.onFeatureUsage(key, defaultValueFeature);
+                if (featureUsageCallbackWithUser != null) {
+                    featureUsageCallbackWithUser.onFeatureUsage(key, defaultValueFeature, context.getUser());
                 }
                 return defaultValueFeature;
             }
@@ -129,32 +131,31 @@ class FeatureEvaluator implements IFeatureEvaluator {
                         .source(FeatureResultSource.DEFAULT_VALUE)
                         .value(value)
                         .build();
-                if (featureUsageCallback != null) {
-                    featureUsageCallback.onFeatureUsage(key, defaultValueFeatureForRules);
+                if (featureUsageCallbackWithUser != null) {
+                    featureUsageCallbackWithUser.onFeatureUsage(key, defaultValueFeatureForRules, context.getUser());
                 }
                 return defaultValueFeatureForRules;
             }
 
-            String attributesJson = context.getAttributesJson();
+            /*String attributesJson = context.getAttributesJson();
             if (attributesJson == null) {
                 attributesJson = "{}";
             }
             JsonObject attributes = context.getAttributes();
             if (attributes == null) {
                 attributes = new JsonObject();
-            }
+            }*/
 
             // Loop through the feature rules (if any)
             for (FeatureRule<ValueType> rule : feature.getRules()) {
                 // If there are prerequisite flag(s), evaluate them
                 if (rule.getParentConditions() != null) {
                     for (ParentCondition parentCondition : rule.getParentConditions()) {
-                        enterCircularLoop(key);
+                        enterCircularLoop(key, context);
                         FeatureResult<ValueType> parentResult = evaluateFeature(
                                 parentCondition.getId(),
                                 context,
-                                valueTypeClass,
-                                attributeOverrides);
+                                valueTypeClass);
 
                         // break out for cyclic prerequisites
                         if (parentResult.getSource() != null) {
@@ -166,8 +167,10 @@ class FeatureEvaluator implements IFeatureEvaluator {
                                                 .source(FeatureResultSource.CYCLIC_PREREQUISITE)
                                                 .build();
 
-                                if (featureUsageCallback != null) {
-                                    featureUsageCallback.onFeatureUsage(key, featureResultWhenCircularDependencyDetected);
+                                if (featureUsageCallbackWithUser != null) {
+                                    featureUsageCallbackWithUser.onFeatureUsage(key,
+                                            featureResultWhenCircularDependencyDetected,
+                                            context.getUser());
                                 }
                                 return featureResultWhenCircularDependencyDetected;
                             }
@@ -182,7 +185,7 @@ class FeatureEvaluator implements IFeatureEvaluator {
                         boolean evalCondition = conditionEvaluator.evaluateCondition(
                                 parentAttributesJson,
                                 parentCondition.getCondition(),
-                                context.getSavedGroups()
+                                context.getGlobal().getSavedGroups()
                         );
 
                         // blocking prerequisite eval failed: feature evaluation fails
@@ -198,8 +201,10 @@ class FeatureEvaluator implements IFeatureEvaluator {
                                                 .source(FeatureResultSource.PREREQUISITE)
                                                 .build();
 
-                                if (featureUsageCallback != null) {
-                                    featureUsageCallback.onFeatureUsage(key, featureResultWhenBlockedByPrerequisite);
+                                if (featureUsageCallbackWithUser != null) {
+                                    featureUsageCallbackWithUser.onFeatureUsage(key,
+                                            featureResultWhenBlockedByPrerequisite,
+                                            context.getUser());
                                 }
                                 return featureResultWhenBlockedByPrerequisite;
                             }
@@ -211,7 +216,7 @@ class FeatureEvaluator implements IFeatureEvaluator {
 
                 // If there are filters for who is included (e.g. namespaces)
                 List<Filter> filters = rule.getFilters();
-                if (GrowthBookUtils.isFilteredOut(filters, attributes, context)) {
+                if (GrowthBookUtils.isFilteredOut(filters, context.getUser().getAttributes())) {
 
                     // Skip rule because of filters
                     continue;
@@ -222,17 +227,19 @@ class FeatureEvaluator implements IFeatureEvaluator {
 
                     // If the rule has a condition, and it evaluates to false, skip this rule and continue to the next one
                     if (rule.getCondition() != null) {
-                        if (!conditionEvaluator.evaluateCondition(attributes, rule.getCondition(), context.getSavedGroups())) {
+                        if (!conditionEvaluator.evaluateCondition(context.getUser().getAttributes(),
+                                rule.getCondition(), context.getGlobal().getSavedGroups())) {
 
                             // Skip rule because of condition
                             continue;
                         }
                     }
 
-                    boolean gate1 = context.getStickyBucketService() != null;
+                    boolean gate1 = context.getOptions().getStickyBucketService() != null;
                     boolean gate2 = !Boolean.TRUE.equals(rule.disableStickyBucketing);
                     boolean shouldFallbackAttributeBePassed = gate1 && gate2;
 
+                    // Pass fallback attribute if sticky bucketing is enabled.
                     String fallback = shouldFallbackAttributeBePassed ? rule.getFallbackAttribute() : null;
 
                     String ruleKey = rule.getHashAttribute();
@@ -248,14 +255,13 @@ class FeatureEvaluator implements IFeatureEvaluator {
                     // If this is a percentage rollout, skip if not included
                     if (
                             !GrowthBookUtils.isIncludedInRollout(
-                                    attributes,
+                                    context.getUser().getAttributes(),
                                     seed,
                                     ruleKey,
                                     fallback,
                                     rule.getRange(),
                                     rule.getCoverage(),
-                                    rule.getHashVersion(),
-                                    context
+                                    rule.getHashVersion()
                             )
                     ) {
 
@@ -265,28 +271,29 @@ class FeatureEvaluator implements IFeatureEvaluator {
 
                     // Call the tracking callback with all the track data
                     List<TrackData<ValueType>> trackData = rule.getTracks();
-                    TrackingCallback trackingCallback = context.getTrackingCallback();
+                    TrackingCallbackWithUser trackingCallBackWithUser = context.getOptions().getTrackingCallBackWithUser();
 
                     // If this was a remotely evaluated experiment, fire the tracking callbacks
-                    if (trackData != null && trackingCallback != null) {
-                        trackData.forEach(t -> {
-                            trackingCallback.onTrack(t.getExperiment(), t.getExperimentResult());
-                        });
+                    if (trackData != null && trackingCallBackWithUser != null) {
+                        trackData.forEach(t -> trackingCallBackWithUser.onTrack(t.getExperiment(), t.getExperimentResult(), context.getUser()));
                     }
 
                     if (rule.getRange() == null) {
                         if (rule.getCoverage() != null) {
 //                            String key = ruleKey;
-                            String attributeValue = context.getAttributes().get(ruleKey) == null ? null : context.getAttributes().get(ruleKey).getAsString();
-                            if (attributeValue == null || attributeValue.isEmpty()) {
-                                continue;
-                            }
-                            Float hashFNV = GrowthBookUtils.hash(attributeValue, 1, key);
-                            if (hashFNV == null) {
-                                hashFNV = 0f;
-                            }
-                            if (hashFNV > rule.getCoverage()) {
-                                continue;
+                            JsonElement attrValElement = context.getUser().getAttributes().get(ruleKey);
+                            if (attrValElement != null) {
+                                String attributeValue = attrValElement.getAsString();
+                                if (attributeValue == null || attributeValue.isEmpty()) {
+                                    continue;
+                                }
+                                Float hashFNV = GrowthBookUtils.hash(attributeValue, 1, key);
+                                if (hashFNV == null) {
+                                    hashFNV = 0f;
+                                }
+                                if (hashFNV > rule.getCoverage()) {
+                                    continue;
+                                }
                             }
                         }
                     }
@@ -300,8 +307,8 @@ class FeatureEvaluator implements IFeatureEvaluator {
                             .source(FeatureResultSource.FORCE)
                             .build();
 
-                    if (featureUsageCallback != null) {
-                        featureUsageCallback.onFeatureUsage(key, forcedRuleFeatureValue);
+                    if (featureUsageCallbackWithUser != null) {
+                        featureUsageCallbackWithUser.onFeatureUsage(key, forcedRuleFeatureValue, context.getUser());
                     }
                     
                     return forcedRuleFeatureValue;
@@ -341,7 +348,7 @@ class FeatureEvaluator implements IFeatureEvaluator {
                                 .build();
 
                         // Only return a value if the user is part of the experiment
-                        ExperimentResult<ValueType> result = experimentEvaluator.evaluateExperiment(experiment, context, key, attributeOverrides);
+                        ExperimentResult<ValueType> result = experimentEvaluator.evaluateExperiment(experiment, context, key);
                         if (result.getInExperiment() && (result.getPassThrough() == null || !result.getPassThrough())) {
                             ValueType value = (ValueType) GrowthBookJsonUtils.unwrap(result.getValue());
 
@@ -353,8 +360,8 @@ class FeatureEvaluator implements IFeatureEvaluator {
                                     .experimentResult(result)
                                     .build();
 
-                            if (featureUsageCallback != null) {
-                                featureUsageCallback.onFeatureUsage(key, experimentFeatureResult);
+                            if (featureUsageCallbackWithUser != null) {
+                                featureUsageCallbackWithUser.onFeatureUsage(key, experimentFeatureResult, context.getUser());
                             }
                             return experimentFeatureResult;
                         }
@@ -374,13 +381,14 @@ class FeatureEvaluator implements IFeatureEvaluator {
                     .value(value)
                     .build();
 
-            if (featureUsageCallback != null) {
-                featureUsageCallback.onFeatureUsage(key, defaultValueFeatureResult);
+            if (featureUsageCallbackWithUser != null) {
+                featureUsageCallbackWithUser.onFeatureUsage(key, defaultValueFeatureResult, context.getUser());
             }
 
             // Return (value = defaultValue or null, source = defaultValue)
             return defaultValueFeatureResult;
         } catch (Exception e) {
+            e.printStackTrace();
             log.error(e.getMessage(), e);
 
             // If the key doesn't exist in context.features, return immediately
@@ -422,13 +430,13 @@ class FeatureEvaluator implements IFeatureEvaluator {
         }
     }
     
-    private void enterCircularLoop(String featureKey) {
-        featureEvalContext.getEvaluatedFeatures().add(featureKey);
-        featureEvalContext.setId(featureKey);
+    private void enterCircularLoop(String featureKey, EvaluationContext context) {
+        context.getStack().getEvaluatedFeatures().add(featureKey);
+        context.getStack().setId(featureKey);
     }
     
-    private void leaveCircularLoop() {
-        featureEvalContext.setId(null);
-        featureEvalContext.getEvaluatedFeatures().clear();
+    private void leaveCircularLoop(EvaluationContext context) {
+        context.getStack().setId(null);
+        context.getStack().getEvaluatedFeatures().clear();
     }
 }

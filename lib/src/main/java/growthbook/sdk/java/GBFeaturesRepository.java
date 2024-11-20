@@ -57,7 +57,7 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
      */
     @Nullable
     @Getter
-    private final String encryptionKey;
+    private final String decryptionKey;
 
     /**
      * The standard cache TTL to use (60 seconds)
@@ -122,18 +122,18 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
      *
      * @param apiHost       The GrowthBook API host (default: <a href="https://cdn.growthbook.io">...</a>)
      * @param clientKey     Your client ID, e.g. sdk-abc123
-     * @param encryptionKey optional key for decrypting encrypted payload
+     * @param decryptionKey optional key for decrypting encrypted payload
      * @param swrTtlSeconds How often the cache should be invalidated when using {@link FeatureRefreshStrategy#STALE_WHILE_REVALIDATE} (default: 60)
      */
     @Builder
     public GBFeaturesRepository(
             @Nullable String apiHost,
             String clientKey,
-            @Nullable String encryptionKey,
+            @Nullable String decryptionKey,
             @Nullable FeatureRefreshStrategy refreshStrategy,
             @Nullable Integer swrTtlSeconds
     ) {
-        this(apiHost, clientKey, encryptionKey, refreshStrategy, swrTtlSeconds, null);
+        this(apiHost, clientKey, decryptionKey, refreshStrategy, swrTtlSeconds, null);
     }
 
     /**
@@ -141,14 +141,14 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
      *
      * @param apiHost       The GrowthBook API host (default: <a href="https://cdn.growthbook.io">...</a>)
      * @param clientKey     Your client ID, e.g. sdk-abc123
-     * @param encryptionKey optional key for decrypting encrypted payload
+     * @param decryptionKey optional key for decrypting encrypted payload
      * @param swrTtlSeconds How often the cache should be invalidated when using {@link FeatureRefreshStrategy#STALE_WHILE_REVALIDATE} (default: 60)
      * @param okHttpClient  HTTP client (optional)
      */
     public GBFeaturesRepository(
             @Nullable String apiHost,
             String clientKey,
-            @Nullable String encryptionKey,
+            @Nullable String decryptionKey,
             @Nullable FeatureRefreshStrategy refreshStrategy,
             @Nullable Integer swrTtlSeconds,
             @Nullable OkHttpClient okHttpClient
@@ -165,7 +165,7 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
         this.featuresEndpoint = apiHost + "/api/features/" + clientKey;
         this.eventsEndpoint = apiHost + "/sub/" + clientKey;
 
-        this.encryptionKey = encryptionKey;
+        this.decryptionKey = decryptionKey;
         this.swrTtlSeconds = swrTtlSeconds == null ? 60 : swrTtlSeconds;
         this.refreshExpiresAt();
 
@@ -410,7 +410,7 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
             String refreshedFeatures;
             String refreshedSavedGroups = "";
 
-            if (this.encryptionKey != null) {
+            if (this.decryptionKey != null) {
                 // Use encrypted features at responseBody.encryptedFeatures
                 JsonElement encryptedFeaturesJsonElement = jsonObject.get(FeatureResponseKey.ENCRYPTED_FEATURES_KEY.getKey());
                 JsonElement encryptedSavedGroupsJsonElement = jsonObject.get(FeatureResponseKey.ENCRYPTED_SAVED_GROUPS_KEY.getKey());
@@ -428,10 +428,10 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
                 String encryptedSavedGroupsJson;
                 if (encryptedSavedGroupsJsonElement != null) {
                     encryptedSavedGroupsJson = encryptedSavedGroupsJsonElement.getAsString();
-                    refreshedSavedGroups = DecryptionUtils.decrypt(encryptedSavedGroupsJson, this.encryptionKey).trim();
+                    refreshedSavedGroups = DecryptionUtils.decrypt(encryptedSavedGroupsJson, this.decryptionKey).trim();
                 }
 
-                refreshedFeatures = DecryptionUtils.decrypt(encryptedFeaturesJson, this.encryptionKey).trim();
+                refreshedFeatures = DecryptionUtils.decrypt(encryptedFeaturesJson, this.decryptionKey).trim();
             } else {
                 // Use unencrypted features at responseBody.features
                 JsonElement featuresJsonElement = jsonObject.get(FeatureResponseKey.FEATURE_KEY.getKey());

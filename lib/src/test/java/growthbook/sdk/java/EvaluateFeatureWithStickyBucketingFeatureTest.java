@@ -48,6 +48,10 @@ public class EvaluateFeatureWithStickyBucketingFeatureTest {
             // name of testcase
             String description = testCase.get(0).getAsString();
 
+            /*if (!description.equalsIgnoreCase("use fallbackAttribute when missing hashAttribute")) {
+                continue;
+            }*/
+
             // create features json for context
             JsonElement featuresJson = testCase.get(1).getAsJsonObject().get("features");
             String featuresJsonAsStringOrNull = featuresJson == null ? null : featuresJson.toString();
@@ -88,7 +92,7 @@ public class EvaluateFeatureWithStickyBucketingFeatureTest {
                     Object.class
             );
             ExperimentResult<Object> actualExperimentResult = actualFeatureResult == null ? null : actualFeatureResult.getExperimentResult();
-            Map<String, StickyAssignmentsDocument> actualStickyBucketAssignmentDocs = context.getStickyBucketAssignmentDocs();
+            Map<String, StickyAssignmentsDocument> actualStickyBucketAssignmentDocs = subject.evaluationContext.getUser().getStickyBucketAssignmentDocs();
 
             // initialize expected data
             ExperimentResult expectedExperimentResult = (testCase.get(4) instanceof JsonNull) ? null : utils.gson.fromJson(
@@ -105,7 +109,13 @@ public class EvaluateFeatureWithStickyBucketingFeatureTest {
             String status = "\n" + description + expectedExperimentResult + "&" + expectedStickyAssignmentsDocument + "\n\n"
                     + "\n" + actualExperimentResult + "&" + actualStickyBucketAssignmentDocs;
 
-            if (Objects.equals(actualExperimentResult, expectedExperimentResult) && expectedStickyAssignmentsDocument.equals(context.getStickyBucketAssignmentDocs())) {
+            System.out.println("actual result " + actualExperimentResult);
+            System.out.println("expected result " + expectedExperimentResult);
+
+            System.out.println("\n\nactual result " + actualStickyBucketAssignmentDocs);
+            System.out.println("expected result " + expectedStickyAssignmentsDocument);
+
+            if (Objects.equals(actualExperimentResult, expectedExperimentResult) && expectedStickyAssignmentsDocument.equals(actualStickyBucketAssignmentDocs)) {
                 passedTests.add(status);
             } else {
                 failingIndexes.add(i);
