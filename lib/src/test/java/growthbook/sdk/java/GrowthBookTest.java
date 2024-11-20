@@ -836,7 +836,6 @@ class GrowthBookTest {
                 .allowUrlOverrides(true)
                 .build();
         GrowthBook subject = new GrowthBook(context);
-        System.out.println(subject.evaluationContext);
 
         Float result = subject.getFeatureValue("donut_price", 9999f);
 
