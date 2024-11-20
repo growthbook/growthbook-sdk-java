@@ -14,7 +14,6 @@ public class GrowthBookMultiUser {
 
     private final Options options;
     private final FeatureEvaluator featureEvaluator;
-    //private final ConditionEvaluator conditionEvaluator;
     private final ExperimentEvaluator experimentEvaluatorEvaluator;
     private static GBFeaturesRepository repository;
     private final ArrayList<ExperimentRunCallback> callbacks;
@@ -35,7 +34,7 @@ public class GrowthBookMultiUser {
         this.callbacks = new ArrayList<>();
     }
 
-    private void initialize() {
+    public void initialize() {
         try {
             // load features, experiments, sticky bucket thing whatever!
             if (!this.options.getIsCacheDisabled()) {
@@ -48,7 +47,10 @@ public class GrowthBookMultiUser {
                         .clientKey(this.options.getClientKey())
                         .decryptionKey(this.options.getDecryptionKey())
                         .refreshStrategy(this.options.getRefreshStrategy())
-                        .build(); // should we add featureRefreshCallback?
+                        .build();
+
+                // Add featureRefreshCallback
+                repository.onFeaturesRefresh(this.options.getFeatureRefreshCallback());
 
                 try {
                     repository.initialize();
@@ -58,9 +60,8 @@ public class GrowthBookMultiUser {
                 }
             }
 
-
-            // features JSON
-            repository.getFeaturesJson();
+            // load features JSON
+            //repository.getFeaturesJson();
 
         } catch (Exception e) {
             log.error("Failed to initialize growthbook instance", e);
@@ -68,9 +69,12 @@ public class GrowthBookMultiUser {
     }
 
     private GlobalContext getGlobalContext() {
-        return GlobalContext.builder()
+        GlobalContext globalContext =  GlobalContext.builder()
             .featuresJson(repository.getFeaturesJson())
             .build();
+
+        globalContext.loadEncryptedFeatures(this.options.getDecryptionKey());
+        return globalContext;
     }
 
     private EvaluationContext getEvalContext(UserContext userContext) {

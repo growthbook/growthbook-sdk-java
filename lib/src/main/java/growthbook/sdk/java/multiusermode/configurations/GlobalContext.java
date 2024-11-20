@@ -33,10 +33,16 @@ public class GlobalContext {
     public JsonObject getFeatures() {
         if (this.features == null) {
             this.features = TransformationUtil.transformFeatures(this.featuresJson);
-
-            // TODO:M read saved Groups
-            // TODO: experiments
+            // Both are constructed then n there at the time of processing. Restructure them?
+            // TBD:M read saved Groups
+            // TBD:M experiments
         }
         return this.features;
+    }
+
+    public void loadEncryptedFeatures(String decryptionKey) {
+        if (this.features == null) {
+            this.features = TransformationUtil.transformEncryptedFeatures(this.featuresJson, decryptionKey);
+        }
     }
 }
