@@ -48,10 +48,6 @@ public class EvaluateFeatureWithStickyBucketingFeatureTest {
             // name of testcase
             String description = testCase.get(0).getAsString();
 
-            /*if (!description.equalsIgnoreCase("use fallbackAttribute when missing hashAttribute")) {
-                continue;
-            }*/
-
             // create features json for context
             JsonElement featuresJson = testCase.get(1).getAsJsonObject().get("features");
             String featuresJsonAsStringOrNull = featuresJson == null ? null : featuresJson.toString();
@@ -108,12 +104,6 @@ public class EvaluateFeatureWithStickyBucketingFeatureTest {
 
             String status = "\n" + description + expectedExperimentResult + "&" + expectedStickyAssignmentsDocument + "\n\n"
                     + "\n" + actualExperimentResult + "&" + actualStickyBucketAssignmentDocs;
-
-            System.out.println("actual result " + actualExperimentResult);
-            System.out.println("expected result " + expectedExperimentResult);
-
-            System.out.println("\n\nactual result " + actualStickyBucketAssignmentDocs);
-            System.out.println("expected result " + expectedStickyAssignmentsDocument);
 
             if (Objects.equals(actualExperimentResult, expectedExperimentResult) && expectedStickyAssignmentsDocument.equals(actualStickyBucketAssignmentDocs)) {
                 passedTests.add(status);
