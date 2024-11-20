@@ -1,9 +1,6 @@
 package growthbook.sdk.java.multiusermode.configurations;
 
-import growthbook.sdk.java.Experiment;
-import growthbook.sdk.java.ExperimentResult;
-import growthbook.sdk.java.FeatureRefreshStrategy;
-import growthbook.sdk.java.FeatureResult;
+import growthbook.sdk.java.*;
 import growthbook.sdk.java.multiusermode.usage.FeatureUsageCallbackWithUser;
 import growthbook.sdk.java.multiusermode.usage.TrackingCallbackWithUser;
 import growthbook.sdk.java.stickyBucketing.InMemoryStickyBucketServiceImpl;
@@ -33,7 +30,8 @@ public class Options {
                    @Nullable StickyBucketService stickyBucketService,
                    @Nullable TrackingCallbackWithUser trackingCallBackWithUser,
                    @Nullable FeatureUsageCallbackWithUser featureUsageCallbackWithUser,
-                   @Nullable FeatureRefreshStrategy refreshStrategy) {
+                   @Nullable FeatureRefreshStrategy refreshStrategy,
+                   @Nullable FeatureRefreshCallback featureRefreshCallback) {
         this.enabled = enabled == null || enabled;
         this.isQaMode = isQaMode != null && isQaMode;
         this.isCacheDisabled = isCacheDisabled == null || isCacheDisabled;
@@ -47,9 +45,9 @@ public class Options {
         this.trackingCallBackWithUser = trackingCallBackWithUser;
         this.featureUsageCallbackWithUser = featureUsageCallbackWithUser;
         this.refreshStrategy = refreshStrategy;
+        this.featureRefreshCallback = featureRefreshCallback;
     }
 
-    // ##### Common Options #######
     /**
      * Whether globally all experiments are enabled (default: true)
      * Switch to globally disable all experiments.
@@ -62,7 +60,8 @@ public class Options {
      */
     private Boolean isQaMode;
 
-    private Boolean isCacheDisabled; // No existing java implementation (NEJI). - default - true!
+    // Default - true. NEIJ
+    private Boolean isCacheDisabled;
 
     /**
      * Boolean flag to allow URL overrides (default: false)
@@ -85,15 +84,13 @@ public class Options {
     // Why do you need attributes here?
     //attributes?: Attributes;
 
-    // debug?: boolean; - No implementation at all? What happens when debug is on? Why Java SDK doesn't implement it?
+    // debug?: boolean; // NEIJ
 
     /**
      * Optional decryption Key. If this is not null, featuresJson should be an encrypted payload.
      */
     @Nullable
     private String decryptionKey;
-
-    // ##### Common Options #######
 
     /**
      * List of user's attributes keys.
@@ -129,6 +126,9 @@ public class Options {
         }
         return this.refreshStrategy;
     }
+
+    @Nullable
+    private FeatureRefreshCallback featureRefreshCallback;
 
     @Nullable
     public StickyBucketService getStickyBucketService() {
