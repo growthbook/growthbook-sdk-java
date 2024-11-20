@@ -53,7 +53,7 @@ class GBFeaturesRepositoryTest {
 
         assertNotNull(subject);
         assertEquals("https://cdn.growthbook.io/api/features/sdk-862b5mHcP9XPugqD", subject.getFeaturesEndpoint());
-        assertEquals("BhB1wORFmZLTDjbvstvS8w==", subject.getEncryptionKey());
+        assertEquals("BhB1wORFmZLTDjbvstvS8w==", subject.getDecryptionKey());
     }
 
     @Test
@@ -74,12 +74,12 @@ class GBFeaturesRepositoryTest {
                 .builder()
                 .apiHost("https://cdn.growthbook.io")
                 .clientKey("sdk-862b5mHcP9XPugqD")
-                .encryptionKey("BhB1wORFmZLTDjbvstvS8w==")
+                .decryptionKey("BhB1wORFmZLTDjbvstvS8w==")
                 .build();
 
         assertNotNull(subject);
         assertEquals("https://cdn.growthbook.io/api/features/sdk-862b5mHcP9XPugqD", subject.getFeaturesEndpoint());
-        assertEquals("BhB1wORFmZLTDjbvstvS8w==", subject.getEncryptionKey());
+        assertEquals("BhB1wORFmZLTDjbvstvS8w==", subject.getDecryptionKey());
     }
 
     /*

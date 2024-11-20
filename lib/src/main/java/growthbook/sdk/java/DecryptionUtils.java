@@ -20,7 +20,7 @@ import lombok.extern.slf4j.Slf4j;
  * INTERNAL: This class is used internally to decrypt an encrypted features response
  */
 @Slf4j
-class DecryptionUtils {
+public class DecryptionUtils {
 
     public static class DecryptionException extends Exception {
         public DecryptionException(String errorMessage) {

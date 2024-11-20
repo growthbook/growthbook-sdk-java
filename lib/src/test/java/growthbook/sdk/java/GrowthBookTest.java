@@ -45,6 +45,9 @@ class GrowthBookTest {
         for (int i = 0; i < testCases.size(); i++) {
             JsonArray testCase = (JsonArray) testCases.get(i);
             String testDescription = testCase.get(0).getAsString();
+            /*if (!testDescription.equalsIgnoreCase("force rules - coverage missing hashAttribute")) {
+                continue;
+            }*/
 
             JsonElement featuresJson = testCase.get(1).getAsJsonObject().get("features");
             String featureJsonAsStringOrNull = featuresJson == null ? null : featuresJson.toString();
@@ -58,10 +61,10 @@ class GrowthBookTest {
             JsonElement savedGroupsJson = testCase.get(1).getAsJsonObject().get("savedGroups");
             JsonObject savedGroups = savedGroupsJson == null ? null : (JsonObject) savedGroupsJson;
 
-//            System.out.println("\n\n--------------------------");
-//            System.out.printf("evalFeature test: %s (index = %s)", testDescription, i);
-//            System.out.printf("\n features: %s", featuresJson);
-//            System.out.printf("\n attributesJson: %s", attributesJson);
+            System.out.println("\n\n--------------------------");
+            System.out.printf("evalFeature test: %s (index = %s)", testDescription, i);
+            System.out.printf("\n features: %s", featuresJson);
+            System.out.printf("\n attributesJson: %s", attributesJson);
 
             GBContext context = GBContext
                     .builder()
@@ -836,6 +839,7 @@ class GrowthBookTest {
                 .allowUrlOverrides(true)
                 .build();
         GrowthBook subject = new GrowthBook(context);
+        System.out.println(subject.evaluationContext);
 
         Float result = subject.getFeatureValue("donut_price", 9999f);
 
