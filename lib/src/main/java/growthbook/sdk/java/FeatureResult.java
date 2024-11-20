@@ -5,6 +5,7 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
 import com.google.gson.JsonSerializer;
 import com.google.gson.annotations.SerializedName;
+import growthbook.sdk.java.multiusermode.configurations.EvaluationContext;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -13,7 +14,7 @@ import javax.annotation.Nullable;
 import java.util.Collection;
 
 /**
- * Results for a {@link FeatureEvaluator#evaluateFeature(String, GBContext, Class, JsonObject)}
+ * Results for a {@link FeatureEvaluator#evaluateFeature(String, EvaluationContext, Class)}
  *
  * <ul>
  * <li>value (any) - The assigned value of the feature</li>

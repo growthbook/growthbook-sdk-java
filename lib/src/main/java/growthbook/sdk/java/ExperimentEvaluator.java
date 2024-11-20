@@ -19,10 +19,10 @@ public class ExperimentEvaluator implements IExperimentEvaluator {
     private final Set<String> trackedExperiments = new HashSet<>();
 
     /**
-     * Takes Context & Experiment & returns Experiment Result
+     * Takes Context, Experiment and returns Experiment Result
      *
      * @param experiment         Experiment
-     * @param context            GBContext
+     * @param context            EvaluationContext
      * @param featureId          String(can be null)
      * @return ExperimentResult
      */
