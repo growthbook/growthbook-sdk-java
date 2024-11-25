@@ -16,7 +16,7 @@ import javax.annotation.Nullable;
 @Builder
 @AllArgsConstructor
 @RequiredArgsConstructor
-public class VariationMeta {
+class VariationMeta {
     /**
      * A unique key for this variation
      */

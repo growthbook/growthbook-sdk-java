@@ -10,7 +10,7 @@ import lombok.RequiredArgsConstructor;
 @Data
 @AllArgsConstructor
 @RequiredArgsConstructor
-public class HashAttributeAndHashValue {
+class HashAttributeAndHashValue {
     /**
      * All users included in the experiment will be forced into the specific variation index
      */

@@ -610,12 +610,12 @@ class GrowthBookUtils {
      *
      * @param context          GBContext
      * @param featureDataModel String
-     * @param <ValueType>
+     * @param <ValueType> Feature class
      * @return list of sticky bucket identifier
      */
-    private static @Nullable <ValueType> List<String> deriveStickyBucketIdentifierAttributes
-    (GBContext context,
-     String featureDataModel
+    private static @Nullable <ValueType> List<String> deriveStickyBucketIdentifierAttributes(
+            GBContext context,
+            String featureDataModel
     ) {
         Set<String> attributes = new HashSet<>();
 
