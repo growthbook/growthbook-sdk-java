@@ -389,7 +389,6 @@ public class FeatureEvaluator implements IFeatureEvaluator {
             // Return (value = defaultValue or null, source = defaultValue)
             return defaultValueFeatureResult;
         } catch (Exception e) {
-            e.printStackTrace();
             log.error(e.getMessage(), e);
 
             // If the key doesn't exist in context.features, return immediately
