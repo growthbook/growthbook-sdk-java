@@ -27,7 +27,9 @@ import java.util.concurrent.locks.ReentrantLock;
  */
 @Slf4j
 public class NativeJavaGbFeatureRepository implements IGBFeaturesRepository {
-
+    private static final String ENABLED = "enabled";
+    private static final int QUANTITY_TO_CUT_SSE = 5;
+    
     /**
      * Endpoint for GET request
      */
@@ -253,7 +255,7 @@ public class NativeJavaGbFeatureRepository implements IGBFeaturesRepository {
                 if (sseSupportHeader == null) {
                     throw new FeatureFetchException(FeatureFetchException.FeatureFetchErrorCode.UNKNOWN);
                 }
-                this.sseAllowed = GbConstants.ENABLED.equals(sseSupportHeader);
+                this.sseAllowed = ENABLED.equals(sseSupportHeader);
                 this.onSuccess(responseBody);
             }
         } catch (IOException e) {
@@ -390,7 +392,7 @@ public class NativeJavaGbFeatureRepository implements IGBFeaturesRepository {
 
                     while ((line = reader.readLine()) != null) {
                         if (line.startsWith(SseKey.DATA.getKey())) {
-                            dataBuffer.append(line.substring(GbConstants.QUANTITY_TO_CUT_SSE).trim()).append("\n");
+                            dataBuffer.append(line.substring(QUANTITY_TO_CUT_SSE).trim()).append("\n");
                         } else if (line.isEmpty()) {
                             String data = dataBuffer.toString();
                             if (!data.isEmpty()) {

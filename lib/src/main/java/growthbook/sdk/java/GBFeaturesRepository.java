@@ -32,7 +32,8 @@ import java.util.logging.Logger;
  */
 @Slf4j
 public class GBFeaturesRepository implements IGBFeaturesRepository {
-
+    private static final String ENABLED = "enabled";
+    
     /**
      * Endpoint for GET request
      */
@@ -382,7 +383,7 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
 
         try (Response response = this.okHttpClient.newCall(request).execute()) {
             String sseSupportHeader = response.header(HttpHeaders.X_SSE_SUPPORT.getHeader());
-            this.sseAllowed = Objects.equals(sseSupportHeader, GbConstants.ENABLED);
+            this.sseAllowed = Objects.equals(sseSupportHeader, ENABLED);
 
             this.onSuccess(response);
         } catch (IOException e) {
