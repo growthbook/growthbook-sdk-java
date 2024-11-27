@@ -3,6 +3,7 @@ package growthbook.sdk.java;
 import java.util.*;
 import javax.annotation.Nullable;
 import com.google.gson.JsonObject;
+import growthbook.sdk.java.multiusermode.ExperimentTracker;
 import growthbook.sdk.java.multiusermode.configurations.EvaluationContext;
 import growthbook.sdk.java.multiusermode.configurations.UserContext;
 import growthbook.sdk.java.multiusermode.usage.TrackingCallbackWithUser;
@@ -16,7 +17,8 @@ public class ExperimentEvaluator implements IExperimentEvaluator {
 
     private final ConditionEvaluator conditionEvaluator = new ConditionEvaluator();
     private final GrowthBookJsonUtils jsonUtils = GrowthBookJsonUtils.getInstance();
-    private final Set<String> trackedExperiments = new HashSet<>();
+    private final ExperimentTracker experimentTracker = new ExperimentTracker();
+
 
     /**
      * Takes Context, Experiment and returns Experiment Result
@@ -385,8 +387,8 @@ public class ExperimentEvaluator implements IExperimentEvaluator {
                 .build();
     }
 
+    //  Track experiments to trigger callbacks.
     private <ValueType> boolean isExperimentTracked(Experiment<ValueType> experiment, ExperimentResult<ValueType> result) {
-        // TODO:M Always returns false? -- What's the point?
         String experimentKey = experiment.key;
 
         String key = (
@@ -394,10 +396,16 @@ public class ExperimentEvaluator implements IExperimentEvaluator {
                 + (result.getHashValue() != null ? result.getHashValue() : "")
                 + (experimentKey + result.getVariationId());
 
-        if (trackedExperiments.contains(key)) {
+        // Add the experiment to the tracker if it doesn't exist.
+        if (!experimentTracker.isExperimentTracked(key)) {
+            experimentTracker.trackExperiment(key);
+        }
+
+        /*if (trackedExperiments.contains(key)) {
             return false;
         }
-        trackedExperiments.add(key);
+        trackedExperiments.add(key);*/
+
         return false;
     }
 
