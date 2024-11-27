@@ -42,6 +42,13 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
     @Getter
     private FeatureRefreshStrategy refreshStrategy;
 
+    /**
+     * @deprecated Use decryptionKey instead.
+     */
+    @Nullable
+    @Deprecated
+    private final String encryptionKey;
+
     @Nullable
     @Getter
     private final String decryptionKey;
@@ -82,18 +89,36 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
      *
      * @param apiHost       The GrowthBook API host (default: <a href="https://cdn.growthbook.io">...</a>)
      * @param clientKey     Your client ID, e.g. sdk-abc123
-     * @param decryptionKey optional key for decrypting encrypted payload
+     * @param encryptionKey optional key for decrypting encrypted payload
      * @param swrTtlSeconds How often the cache should be invalidated when using {@link FeatureRefreshStrategy#STALE_WHILE_REVALIDATE} (default: 60)
+     */
+    //@Builder
+    @Deprecated
+    public GBFeaturesRepository(
+            @Nullable String apiHost,
+            String clientKey,
+            @Deprecated @Nullable String encryptionKey,
+            @Nullable FeatureRefreshStrategy refreshStrategy,
+            @Nullable Integer swrTtlSeconds
+    ) {
+        this(apiHost, clientKey, encryptionKey, refreshStrategy, swrTtlSeconds, null);
+    }
+
+    /**
+     * New constructor that explicitly supports decryptionKey.
      */
     @Builder
     public GBFeaturesRepository(
             @Nullable String apiHost,
             String clientKey,
-            @Nullable String decryptionKey,
+            @Deprecated @Nullable String encryptionKey,
             @Nullable FeatureRefreshStrategy refreshStrategy,
-            @Nullable Integer swrTtlSeconds
+            @Nullable Integer swrTtlSeconds,
+            @Nullable OkHttpClient okHttpClient,
+            @Nullable String decryptionKey
     ) {
-        this(apiHost, clientKey, decryptionKey, refreshStrategy, swrTtlSeconds, null);
+        this(apiHost, clientKey, (decryptionKey != null) ? decryptionKey : encryptionKey,
+                refreshStrategy, swrTtlSeconds, okHttpClient);
     }
 
     /**
@@ -102,6 +127,7 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
      * @param apiHost       The GrowthBook API host (default: <a href="https://cdn.growthbook.io">...</a>)
      * @param clientKey     Your client ID, e.g. sdk-abc123
      * @param decryptionKey optional key for decrypting encrypted payload
+     *
      * @param swrTtlSeconds How often the cache should be invalidated when using {@link FeatureRefreshStrategy#STALE_WHILE_REVALIDATE} (default: 60)
      * @param okHttpClient  HTTP client (optional)
      */
@@ -125,7 +151,9 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
         this.featuresEndpoint = apiHost + "/api/features/" + clientKey;
         this.eventsEndpoint = apiHost + "/sub/" + clientKey;
 
+        this.encryptionKey = decryptionKey;
         this.decryptionKey = decryptionKey;
+        
         this.swrTtlSeconds = swrTtlSeconds == null ? 60 : swrTtlSeconds;
         this.refreshExpiresAt();
 
@@ -136,6 +164,13 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
             // TODO: Check for valid interceptor
             this.okHttpClient = okHttpClient;
         }
+    }
+
+    // Getter for deprecated encryptionKey
+    @Deprecated
+    @Nullable
+    public String getEncryptionKey() {
+        return encryptionKey;
     }
 
     public String getFeaturesJson() {
