@@ -18,6 +18,10 @@ public class GrowthBookMultiUser {
     private static GBFeaturesRepository repository;
     private final ArrayList<ExperimentRunCallback> callbacks;
 
+    public GrowthBookMultiUser() {
+        this(Options.builder().build());
+    }
+
     public GrowthBookMultiUser(Options opts) {
         this.options = opts == null ? Options.builder().build() : opts;
 
@@ -26,13 +30,6 @@ public class GrowthBookMultiUser {
         this.callbacks = new ArrayList<>();
     }
 
-    public GrowthBookMultiUser() {
-        this.options = Options.builder().build();
-
-        this.featureEvaluator = new FeatureEvaluator();
-        this.experimentEvaluatorEvaluator = new ExperimentEvaluator();
-        this.callbacks = new ArrayList<>();
-    }
 
     public void initialize() {
         try {
