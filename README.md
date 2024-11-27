@@ -40,7 +40,7 @@ GrowthBookMultiUser gb = new GrowthBookMultiUser(options);
 gb.initialize();
 
 gb.isOn("featureKey", UserContext.builder()
-    .attributesJson("{\"id\" : \"req.user.id\"}").build()
+    .attributesJson("{\"id\" : \"123\"}").build()
 );
 ```
 
