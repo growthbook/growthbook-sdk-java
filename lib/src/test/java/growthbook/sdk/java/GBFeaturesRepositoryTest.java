@@ -74,7 +74,7 @@ class GBFeaturesRepositoryTest {
                 .builder()
                 .apiHost("https://cdn.growthbook.io")
                 .clientKey("sdk-862b5mHcP9XPugqD")
-                .decryptionKey("BhB1wORFmZLTDjbvstvS8w==")
+                .encryptionKey("BhB1wORFmZLTDjbvstvS8w==")
                 .build();
 
         assertNotNull(subject);
