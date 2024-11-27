@@ -5,6 +5,7 @@ import growthbook.sdk.java.multiusermode.configurations.EvaluationContext;
 import growthbook.sdk.java.multiusermode.configurations.GlobalContext;
 import growthbook.sdk.java.multiusermode.configurations.Options;
 import growthbook.sdk.java.multiusermode.configurations.UserContext;
+import growthbook.sdk.java.multiusermode.util.TransformationUtil;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.ArrayList;
@@ -17,6 +18,7 @@ public class GrowthBookMultiUser {
     private final ExperimentEvaluator experimentEvaluatorEvaluator;
     private static GBFeaturesRepository repository;
     private final ArrayList<ExperimentRunCallback> callbacks;
+    private GlobalContext globalContext;
 
     public GrowthBookMultiUser() {
         this(Options.builder().build());
@@ -29,7 +31,6 @@ public class GrowthBookMultiUser {
         this.experimentEvaluatorEvaluator = new ExperimentEvaluator();
         this.callbacks = new ArrayList<>();
     }
-
 
     public void initialize() {
         try {
@@ -49,33 +50,52 @@ public class GrowthBookMultiUser {
                 // Add featureRefreshCallback
                 repository.onFeaturesRefresh(this.options.getFeatureRefreshCallback());
 
+                // Add a callback to refresh the global context
+                repository.onFeaturesRefresh(this.refreshGlobalContext());
+
                 try {
                     repository.initialize();
                 } catch (FeatureFetchException e) {
                     log.error("Failed to initialize features repository", e);
                     throw new RuntimeException(e);
                 }
+
+                // instantiate a global context that holds features & savedGroups.
+                this.globalContext = GlobalContext.builder()
+                        .features(TransformationUtil.transformFeatures(repository.getFeaturesJson()))
+                        .build();
             }
-
-            // load features JSON
-            //repository.getFeaturesJson();
-
         } catch (Exception e) {
             log.error("Failed to initialize growthbook instance", e);
         }
     }
 
-    private GlobalContext getGlobalContext() {
-        GlobalContext globalContext =  GlobalContext.builder()
-            .featuresJson(repository.getFeaturesJson())
-            .build();
+    private FeatureRefreshCallback refreshGlobalContext() {
+        return new FeatureRefreshCallback() {
+            @Override
+            public void onRefresh(String featuresJson) {
+                // refer the global context with latest features & saved groups
+                if (globalContext != null) {
+                    globalContext.setFeatures(TransformationUtil.transformFeatures(featuresJson));
+                    globalContext.setSavedGroups(TransformationUtil.transformFeatures(repository.getSavedGroupsJson()));
+                } else {
+                    // TBD:M This should never happen! Just to be cautious about race conditions at the time of initialization
+                    globalContext = GlobalContext.builder()
+                            .features(TransformationUtil.transformFeatures(featuresJson))
+                            .savedGroups(TransformationUtil.transformFeatures(repository.getSavedGroupsJson()))
+                            .build();
+                }
+            }
 
-        globalContext.loadEncryptedFeatures(this.options.getDecryptionKey());
-        return globalContext;
+            @Override
+            public void onError(Throwable throwable) {
+                log.warn("Unable to refresh global context with latest features", throwable);
+            }
+        };
     }
 
     private EvaluationContext getEvalContext(UserContext userContext) {
-        return new EvaluationContext(getGlobalContext(), userContext, new EvaluationContext.StackContext(), this.options);
+        return new EvaluationContext(this.globalContext, userContext, new EvaluationContext.StackContext(), this.options);
     }
 
 
