@@ -11,7 +11,7 @@ import lombok.extern.slf4j.Slf4j;
 import java.util.ArrayList;
 
 @Slf4j
-public class GrowthBookMultiUser {
+public class GrowthBookClient {
 
     private final Options options;
     private final FeatureEvaluator featureEvaluator;
@@ -20,11 +20,11 @@ public class GrowthBookMultiUser {
     private final ArrayList<ExperimentRunCallback> callbacks;
     private GlobalContext globalContext;
 
-    public GrowthBookMultiUser() {
+    public GrowthBookClient() {
         this(Options.builder().build());
     }
 
-    public GrowthBookMultiUser(Options opts) {
+    public GrowthBookClient(Options opts) {
         this.options = opts == null ? Options.builder().build() : opts;
 
         this.featureEvaluator = new FeatureEvaluator();
