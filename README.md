@@ -19,9 +19,9 @@
 - [Usage Guide](https://docs.growthbook.io/lib/java)
 - [JavaDoc class documentation](https://growthbook.github.io/growthbook-sdk-java/)
 
-### GrowthBookMultiUser
-GrowthBookMultiUser lets you share the same instance for all requests with an ability to accept the user attributes 
-while calling the feature methods like `isOn()`. This GrowthBookMultiUser instance is decoupled from the `GBContext`, 
+### GrowthBookClient
+`GrowthBookClient` lets you share the same instance for all requests with an ability to accept the user attributes 
+while calling the feature methods like `isOn()`. This `GrowthBookClient` instance is decoupled from the `GBContext`, 
 creates a singleton featureRepository based on your refreshStrategy and uses the latest features at the time of
 evaluation, all managed internally.
 
@@ -34,7 +34,7 @@ Options options = Options.builder()
         .build();
 
 // Create growthbook instance using the options you need
-GrowthBookMultiUser gb = new GrowthBookMultiUser(options);
+GrowthBookClient gb = new GrowthBookClient(options);
 
 // call the init method to load features 
 gb.initialize();
