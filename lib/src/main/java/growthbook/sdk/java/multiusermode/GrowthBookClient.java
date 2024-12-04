@@ -32,7 +32,8 @@ public class GrowthBookClient {
         this.callbacks = new ArrayList<>();
     }
 
-    public void initialize() {
+    public boolean initialize() {
+        boolean isReady = false;
         try {
             // load features, experiments, sticky bucket thing whatever!
             if (!this.options.getIsCacheDisabled()) {
@@ -64,10 +65,13 @@ public class GrowthBookClient {
                 this.globalContext = GlobalContext.builder()
                         .features(TransformationUtil.transformFeatures(repository.getFeaturesJson()))
                         .build();
+
+                isReady = repository.getInitialized();
             }
         } catch (Exception e) {
             log.error("Failed to initialize growthbook instance", e);
         }
+        return isReady;
     }
 
     private FeatureRefreshCallback refreshGlobalContext() {

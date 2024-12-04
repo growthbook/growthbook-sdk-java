@@ -66,6 +66,7 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
 
     private final ArrayList<FeatureRefreshCallback> refreshCallbacks = new ArrayList<>();
 
+    @Getter
     private Boolean initialized = false;
 
     private Boolean sseAllowed = false;
