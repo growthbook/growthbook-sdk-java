@@ -1,13 +1,13 @@
 package growthbook.sdk.java;
 
-import java.util.*;
-import javax.annotation.Nullable;
 import com.google.gson.JsonObject;
 import growthbook.sdk.java.multiusermode.ExperimentTracker;
 import growthbook.sdk.java.multiusermode.configurations.EvaluationContext;
-import growthbook.sdk.java.multiusermode.configurations.UserContext;
 import growthbook.sdk.java.multiusermode.usage.TrackingCallbackWithUser;
 import lombok.extern.slf4j.Slf4j;
+
+import javax.annotation.Nullable;
+import java.util.*;
 
 /**
  * <b>INTERNAL</b>: Implementation of experiment evaluation
@@ -111,11 +111,6 @@ public class ExperimentEvaluator implements IExperimentEvaluator {
             stickyBucketVersionIsBlocked = stickyBucketVariation.getVersionIsBlocked() != null ? stickyBucketVariation.getVersionIsBlocked() : false;
         }
 
-        /*JsonObject attributes = context.getAttributes();
-        if (attributes == null) {
-            attributes = new JsonObject();
-        }*/
-
         // Some checks are not needed if we already have a sticky bucket
         if (!foundStickyBucket) {
 
@@ -157,21 +152,10 @@ public class ExperimentEvaluator implements IExperimentEvaluator {
             if (parenConditions != null) {
                 for (ParentCondition parentCondition : parenConditions) {
 
-                    UserContext user = UserContext.builder()
-                            .attributes(jsonUtils.gson.fromJson(parentCondition.getCondition(), JsonObject.class))
-                            .build();
-
-                    EvaluationContext subContext = new EvaluationContext(context.getGlobal(), user, context.getStack(), context.getOptions());
-
                     FeatureResult<ValueType> parentResult = new FeatureEvaluator().evaluateFeature(
                             parentCondition.getId(),
-                            subContext,
+                            context,
                             null
-                            // TODO:M Created a subContext. Verify the behavior!
-//                            jsonUtils.gson.fromJson(
-//                                    parentCondition.getCondition(),
-//                                    JsonObject.class
-//                            )
                     );
 
                     if (parentResult.getSource() != null) {
@@ -400,11 +384,6 @@ public class ExperimentEvaluator implements IExperimentEvaluator {
         if (!experimentTracker.isExperimentTracked(key)) {
             experimentTracker.trackExperiment(key);
         }
-
-        /*if (trackedExperiments.contains(key)) {
-            return false;
-        }
-        trackedExperiments.add(key);*/
 
         return false;
     }

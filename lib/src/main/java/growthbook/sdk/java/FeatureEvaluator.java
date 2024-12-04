@@ -39,7 +39,7 @@ public class FeatureEvaluator implements IFeatureEvaluator {
         FeatureUsageCallbackWithUser featureUsageCallbackWithUser = context.getOptions()
                 .getFeatureUsageCallbackWithUser();
 
-        FeatureResult<ValueType> emptyFeature = FeatureResult
+        FeatureResult<ValueType> unknownFeatureResult = FeatureResult
                 .<ValueType>builder()
                 .value(null)
                 .source(FeatureResultSource.UNKNOWN_FEATURE)
@@ -62,10 +62,13 @@ public class FeatureEvaluator implements IFeatureEvaluator {
                 if (featureUsageCallbackWithUser != null) {
                     featureUsageCallbackWithUser.onFeatureUsage(key, featureResultWhenCircularDependencyDetected, context.getUser());
                 }
-                
+
                 leaveCircularLoop(context);
                 return featureResultWhenCircularDependencyDetected;
             }
+
+            // Add the current feature being evaluated to the stack
+            addFeatureToEvalStack(key, context);
 
             // Check for feature values forced by URL
             if (context.getOptions().getAllowUrlOverrides()) {
@@ -89,10 +92,10 @@ public class FeatureEvaluator implements IFeatureEvaluator {
             JsonObject features = context.getGlobal().getFeatures();
             if (features == null || !features.has(key)) {
                 if (featureUsageCallbackWithUser != null) {
-                    featureUsageCallbackWithUser.onFeatureUsage(key, emptyFeature, context.getUser());
+                    featureUsageCallbackWithUser.onFeatureUsage(key, unknownFeatureResult, context.getUser());
                 }
 
-                return emptyFeature;
+                return unknownFeatureResult;
             }
 
             // The key exists
@@ -137,43 +140,32 @@ public class FeatureEvaluator implements IFeatureEvaluator {
                 return defaultValueFeatureForRules;
             }
 
-            /*String attributesJson = context.getAttributesJson();
-            if (attributesJson == null) {
-                attributesJson = "{}";
-            }
-            JsonObject attributes = context.getAttributes();
-            if (attributes == null) {
-                attributes = new JsonObject();
-            }*/
-
             // Loop through the feature rules (if any)
             for (FeatureRule<ValueType> rule : feature.getRules()) {
                 // If there are prerequisite flag(s), evaluate them
                 if (rule.getParentConditions() != null) {
                     for (ParentCondition parentCondition : rule.getParentConditions()) {
-                        enterCircularLoop(key, context);
+                        //enterCircularLoop(key, context);
                         FeatureResult<ValueType> parentResult = evaluateFeature(
                                 parentCondition.getId(),
                                 context,
                                 valueTypeClass);
 
                         // break out for cyclic prerequisites
-                        if (parentResult.getSource() != null) {
-                            if (parentResult.getSource().equals(FeatureResultSource.CYCLIC_PREREQUISITE)) {
-                                FeatureResult<ValueType> featureResultWhenCircularDependencyDetected =
-                                        FeatureResult
-                                                .<ValueType>builder()
-                                                .value(null)
-                                                .source(FeatureResultSource.CYCLIC_PREREQUISITE)
-                                                .build();
+                        if (FeatureResultSource.CYCLIC_PREREQUISITE.equals(parentResult.getSource())) {
+                            FeatureResult<ValueType> featureResultWhenCircularDependencyDetected =
+                                    FeatureResult
+                                            .<ValueType>builder()
+                                            .value(null)
+                                            .source(FeatureResultSource.CYCLIC_PREREQUISITE)
+                                            .build();
 
-                                if (featureUsageCallbackWithUser != null) {
-                                    featureUsageCallbackWithUser.onFeatureUsage(key,
-                                            featureResultWhenCircularDependencyDetected,
-                                            context.getUser());
-                                }
-                                return featureResultWhenCircularDependencyDetected;
+                            if (featureUsageCallbackWithUser != null) {
+                                featureUsageCallbackWithUser.onFeatureUsage(key,
+                                        featureResultWhenCircularDependencyDetected,
+                                        context.getUser());
                             }
+                            return featureResultWhenCircularDependencyDetected;
                         }
 
                         Map<String, Object> evalObj = new HashMap<>();
@@ -393,7 +385,7 @@ public class FeatureEvaluator implements IFeatureEvaluator {
 
             // If the key doesn't exist in context.features, return immediately
             // (value = null, source = unknownFeature).
-            return emptyFeature;
+            return unknownFeatureResult;
         }
     }
 
@@ -430,13 +422,13 @@ public class FeatureEvaluator implements IFeatureEvaluator {
         }
     }
     
-    private void enterCircularLoop(String featureKey, EvaluationContext context) {
-        context.getStack().getEvaluatedFeatures().add(featureKey);
-        context.getStack().setId(featureKey);
-    }
-    
     private void leaveCircularLoop(EvaluationContext context) {
         context.getStack().setId(null);
         context.getStack().getEvaluatedFeatures().clear();
+    }
+
+    private void addFeatureToEvalStack(String featureKey, EvaluationContext context) {
+        context.getStack().setId(featureKey);
+        context.getStack().getEvaluatedFeatures().add(featureKey);
     }
 }
