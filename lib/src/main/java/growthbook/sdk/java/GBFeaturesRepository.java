@@ -33,7 +33,7 @@ import java.util.logging.Logger;
 @Slf4j
 public class GBFeaturesRepository implements IGBFeaturesRepository {
     private static final String ENABLED = "enabled";
-    
+
     /**
      * Endpoint for GET request
      */
@@ -53,11 +53,18 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
     private FeatureRefreshStrategy refreshStrategy;
 
     /**
+     * @deprecated Use decryptionKey instead.
+     */
+    @Nullable
+    @Deprecated
+    private final String encryptionKey;
+
+    /**
      * The key used to decrypt encrypted features from the API
      */
     @Nullable
     @Getter
-    private final String encryptionKey;
+    private final String decryptionKey;
 
     /**
      * The standard cache TTL to use (60 seconds)
@@ -90,6 +97,7 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
     /**
      * Flag to know whether GBFeatureRepository is initialized
      */
+    @Getter
     private Boolean initialized = false;
 
     /**
@@ -125,11 +133,12 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
      * @param encryptionKey optional key for decrypting encrypted payload
      * @param swrTtlSeconds How often the cache should be invalidated when using {@link FeatureRefreshStrategy#STALE_WHILE_REVALIDATE} (default: 60)
      */
-    @Builder
+    //@Builder
+    @Deprecated
     public GBFeaturesRepository(
             @Nullable String apiHost,
             String clientKey,
-            @Nullable String encryptionKey,
+            @Deprecated @Nullable String encryptionKey,
             @Nullable FeatureRefreshStrategy refreshStrategy,
             @Nullable Integer swrTtlSeconds
     ) {
@@ -137,18 +146,35 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
     }
 
     /**
+     * New constructor that explicitly supports decryptionKey.
+     */
+    @Builder
+    public GBFeaturesRepository(
+            @Nullable String apiHost,
+            String clientKey,
+            @Deprecated @Nullable String encryptionKey,
+            @Nullable FeatureRefreshStrategy refreshStrategy,
+            @Nullable Integer swrTtlSeconds,
+            @Nullable OkHttpClient okHttpClient,
+            @Nullable String decryptionKey
+    ) {
+        this(apiHost, clientKey, (decryptionKey != null) ? decryptionKey : encryptionKey,
+                refreshStrategy, swrTtlSeconds, okHttpClient);
+    }
+
+    /**
      * Create a new GBFeaturesRepository
      *
      * @param apiHost       The GrowthBook API host (default: <a href="https://cdn.growthbook.io">...</a>)
      * @param clientKey     Your client ID, e.g. sdk-abc123
-     * @param encryptionKey optional key for decrypting encrypted payload
+     * @param decryptionKey optional key for decrypting encrypted payload
      * @param swrTtlSeconds How often the cache should be invalidated when using {@link FeatureRefreshStrategy#STALE_WHILE_REVALIDATE} (default: 60)
      * @param okHttpClient  HTTP client (optional)
      */
     public GBFeaturesRepository(
             @Nullable String apiHost,
             String clientKey,
-            @Nullable String encryptionKey,
+            @Nullable String decryptionKey,
             @Nullable FeatureRefreshStrategy refreshStrategy,
             @Nullable Integer swrTtlSeconds,
             @Nullable OkHttpClient okHttpClient
@@ -165,7 +191,9 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
         this.featuresEndpoint = apiHost + "/api/features/" + clientKey;
         this.eventsEndpoint = apiHost + "/sub/" + clientKey;
 
-        this.encryptionKey = encryptionKey;
+        this.encryptionKey = decryptionKey;
+        this.decryptionKey = decryptionKey;
+
         this.swrTtlSeconds = swrTtlSeconds == null ? 60 : swrTtlSeconds;
         this.refreshExpiresAt();
 
@@ -176,6 +204,13 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
             // TODO: Check for valid interceptor
             this.okHttpClient = okHttpClient;
         }
+    }
+
+    // Getter for deprecated encryptionKey
+    @Deprecated
+    @Nullable
+    public String getEncryptionKey() {
+        return encryptionKey;
     }
 
     public String getFeaturesJson() {
@@ -410,7 +445,7 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
             String refreshedFeatures;
             String refreshedSavedGroups = "";
 
-            if (this.encryptionKey != null) {
+            if (this.decryptionKey != null) {
                 // Use encrypted features at responseBody.encryptedFeatures
                 JsonElement encryptedFeaturesJsonElement = jsonObject.get(FeatureResponseKey.ENCRYPTED_FEATURES_KEY.getKey());
                 JsonElement encryptedSavedGroupsJsonElement = jsonObject.get(FeatureResponseKey.ENCRYPTED_SAVED_GROUPS_KEY.getKey());
@@ -428,10 +463,10 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
                 String encryptedSavedGroupsJson;
                 if (encryptedSavedGroupsJsonElement != null) {
                     encryptedSavedGroupsJson = encryptedSavedGroupsJsonElement.getAsString();
-                    refreshedSavedGroups = DecryptionUtils.decrypt(encryptedSavedGroupsJson, this.encryptionKey).trim();
+                    refreshedSavedGroups = DecryptionUtils.decrypt(encryptedSavedGroupsJson, this.decryptionKey).trim();
                 }
 
-                refreshedFeatures = DecryptionUtils.decrypt(encryptedFeaturesJson, this.encryptionKey).trim();
+                refreshedFeatures = DecryptionUtils.decrypt(encryptedFeaturesJson, this.decryptionKey).trim();
             } else {
                 // Use unencrypted features at responseBody.features
                 JsonElement featuresJsonElement = jsonObject.get(FeatureResponseKey.FEATURE_KEY.getKey());

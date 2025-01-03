@@ -2,6 +2,7 @@ package growthbook.sdk.java;
 
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import growthbook.sdk.java.multiusermode.util.TransformationUtil;
 import growthbook.sdk.java.stickyBucketing.StickyAssignmentsDocument;
 import growthbook.sdk.java.stickyBucketing.StickyBucketService;
 import lombok.Builder;
@@ -66,7 +67,7 @@ public class GBContext {
         this.attributes = attributes == null ? new JsonObject() : attributes;
 
         if (featuresJson != null) {
-            this.features = transformEncryptedFeatures(featuresJson, encryptionKey);
+            this.features = TransformationUtil.transformEncryptedFeatures(featuresJson, encryptionKey);
         }
         if (features != null) {
             this.features = features;
@@ -158,7 +159,7 @@ public class GBContext {
     public void setAttributesJson(String attributesJson) {
         this.attributesJson = attributesJson;
         if (attributesJson != null) {
-            this.setAttributes(GBContext.transformAttributes(attributesJson));
+            this.setAttributes(TransformationUtil.transformAttributes(attributesJson));
         }
     }
 
@@ -191,7 +192,7 @@ public class GBContext {
 
     public void setFeaturesJson(String featuresJson) {
         if (featuresJson != null) {
-            this.setFeatures(GBContext.transformFeatures(featuresJson));
+            this.setFeatures(TransformationUtil.transformFeatures(featuresJson));
         }
     }
 
@@ -241,59 +242,6 @@ public class GBContext {
             context.setAttributesJson(context.attributesJson);
 
             return context;
-        }
-    }
-
-    @Nullable
-    public static JsonObject transformFeatures(String featuresJsonString) {
-        try {
-            return GrowthBookJsonUtils.getInstance().gson.fromJson(featuresJsonString, JsonObject.class);
-        } catch (Exception e) {
-            log.error(e.getMessage(), e);
-            return null;
-        }
-    }
-
-    public static JsonObject transformEncryptedFeatures(
-            @Nullable String featuresJson,
-            @Nullable String encryptionKey
-    ) {
-        // Features start as empty JSON
-        JsonObject jsonObject = new JsonObject();
-
-        if (encryptionKey != null && featuresJson != null) {
-            // Attempt to decrypt payload
-            try {
-                String decrypted = DecryptionUtils.decrypt(featuresJson, encryptionKey);
-                String featuresJsonDecrypted = decrypted.trim();
-                jsonObject = GBContext.transformFeatures(featuresJsonDecrypted);
-
-            } catch (DecryptionUtils.DecryptionException e) {
-                log.error(e.getMessage(), e);
-
-            }
-        } else if (featuresJson != null) {
-            jsonObject = GBContext.transformFeatures(featuresJson);
-        }
-
-        return jsonObject;
-    }
-
-    private static JsonObject transformAttributes(@Nullable String attributesJsonString) {
-        try {
-            if (attributesJsonString == null) {
-                return new JsonObject();
-            }
-
-            JsonElement element = GrowthBookJsonUtils.getInstance().gson.fromJson(attributesJsonString, JsonElement.class);
-            if (element == null || element.isJsonNull()) {
-                return new JsonObject();
-            }
-
-            return GrowthBookJsonUtils.getInstance().gson.fromJson(attributesJsonString, JsonObject.class);
-        } catch (Exception e) {
-            log.error(e.getMessage(), e);
-            return new JsonObject();
         }
     }
 }

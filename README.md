@@ -19,6 +19,31 @@
 - [Usage Guide](https://docs.growthbook.io/lib/java)
 - [JavaDoc class documentation](https://growthbook.github.io/growthbook-sdk-java/)
 
+### GrowthBookClient
+`GrowthBookClient` lets you share the same instance for all requests with an ability to accept the user attributes 
+while calling the feature methods like `isOn()`. This `GrowthBookClient` instance is decoupled from the `GBContext`, 
+creates a singleton featureRepository based on your refreshStrategy and uses the latest features at the time of
+evaluation, all managed internally.
+
+```java
+
+// build options to configure your Growthbook instance
+Options options = Options.builder()
+        .apiHost("https://cdn.growthbook.io")
+        .clientKey("sdk-abc123")
+        .build();
+
+// Create growthbook instance using the options you need
+GrowthBookClient gb = new GrowthBookClient(options);
+
+// call the init method to load features 
+gb.initialize();
+
+gb.isOn("featureKey", UserContext.builder()
+    .attributesJson("{\"id\" : \"123\"}").build()
+);
+```
+
 
 ## Contributing
 

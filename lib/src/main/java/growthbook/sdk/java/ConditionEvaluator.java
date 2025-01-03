@@ -20,7 +20,7 @@ import java.util.regex.Pattern;
  * <b>INTERNAL</b>: Implementation of condition evaluation
  */
 @Slf4j
-class ConditionEvaluator implements IConditionEvaluator {
+public class ConditionEvaluator implements IConditionEvaluator {
 
     private final GrowthBookJsonUtils jsonUtils = GrowthBookJsonUtils.getInstance();
 
@@ -29,12 +29,12 @@ class ConditionEvaluator implements IConditionEvaluator {
      * The condition syntax closely resembles MongoDB's syntax.
      * This is defined in the Feature's targeting conditions' Advanced settings.
      *
-     * @param attributesJson A JsonObject of the user attributes to evaluate
+     * @param attributes A JsonObject of the user attributes to evaluate
      * @param conditionJson  A JsonObject of the condition
      * @return Whether the condition should be true for the user
      */
     @Override
-    public Boolean evaluateCondition(JsonObject attributesJson, JsonObject conditionJson, @Nullable JsonObject savedGroups) {
+    public Boolean evaluateCondition(JsonObject attributes, JsonObject conditionJson, @Nullable JsonObject savedGroups) {
         try {
             // Loop through the conditionObj key/value pairs
             for (Map.Entry<String, JsonElement> entry : conditionJson.entrySet()) {
@@ -46,7 +46,7 @@ class ConditionEvaluator implements IConditionEvaluator {
                         // If conditionObj has a key $or, return evalOr(attributes, condition["$or"])
                         JsonArray orTargetItems = value.getAsJsonArray();
                         if (orTargetItems != null) {
-                            if (!evalOr(attributesJson, orTargetItems, savedGroups)) {
+                            if (!evalOr(attributes, orTargetItems, savedGroups)) {
                                 return false;
                             }
                         }
@@ -55,7 +55,7 @@ class ConditionEvaluator implements IConditionEvaluator {
                         // If conditionObj has a key $nor, return !evalOr(attributes, condition["$nor"])
                         JsonArray norTargetItems = value.getAsJsonArray();
                         if (norTargetItems != null) {
-                            if (evalOr(attributesJson, norTargetItems, savedGroups)) {
+                            if (evalOr(attributes, norTargetItems, savedGroups)) {
                                 return false;
                             }
                         }
@@ -64,7 +64,7 @@ class ConditionEvaluator implements IConditionEvaluator {
                         // If conditionObj has a key $and, return !evalAnd(attributes, condition["$and"])
                         JsonArray andTargetItems = value.getAsJsonArray();
                         if (andTargetItems != null) {
-                            if (!evalAnd(attributesJson, andTargetItems, savedGroups)) {
+                            if (!evalAnd(attributes, andTargetItems, savedGroups)) {
                                 return false;
                             }
                         }
@@ -72,13 +72,13 @@ class ConditionEvaluator implements IConditionEvaluator {
                     case "$not":
                         // If conditionObj has a key $not, return !evalCondition(attributes, condition["$not"])
                         if (value != null) {
-                            if (evaluateCondition(attributesJson, value.getAsJsonObject(), savedGroups)) {
+                            if (evaluateCondition(attributes, value.getAsJsonObject(), savedGroups)) {
                                 return false;
                             }
                         }
                         break;
                     default:
-                        JsonElement element = (JsonElement) getPath(attributesJson, key);
+                        JsonElement element = (JsonElement) getPath(attributes, key);
                         // If evalConditionValue(value, getPath(attributes, key)) is false,
                         // break out of loop and return false
                         if (!evalConditionValue(value, element, savedGroups)) {
