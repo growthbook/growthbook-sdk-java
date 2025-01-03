@@ -94,10 +94,10 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
      */
     private final ArrayList<FeatureRefreshCallback> refreshCallbacks = new ArrayList<>();
 
-    @Getter
     /**
      * Flag to know whether GBFeatureRepository is initialized
      */
+    @Getter
     private Boolean initialized = false;
 
     /**
