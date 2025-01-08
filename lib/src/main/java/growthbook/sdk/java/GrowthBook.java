@@ -1,5 +1,9 @@
 package growthbook.sdk.java;
 
+import java.util.Map;
+import java.util.HashMap;
+import java.util.ArrayList;
+import javax.annotation.Nullable;
 import com.google.gson.JsonObject;
 import growthbook.sdk.java.multiusermode.configurations.EvaluationContext;
 import growthbook.sdk.java.multiusermode.configurations.GlobalContext;
@@ -9,10 +13,9 @@ import growthbook.sdk.java.multiusermode.usage.FeatureUsageCallbackAdapter;
 import growthbook.sdk.java.multiusermode.usage.TrackingCallbackAdapter;
 import growthbook.sdk.java.stickyBucketing.InMemoryStickyBucketServiceImpl;
 import growthbook.sdk.java.stickyBucketing.StickyBucketService;
+import lombok.Getter;
+import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
-import javax.annotation.Nullable;
-import java.util.ArrayList;
-import java.util.HashMap;
 
 /**
  * GrowthBook SDK class.
@@ -35,7 +38,7 @@ public class GrowthBook implements IGrowthBook {
     private JsonObject attributeOverrides = new JsonObject();
     private JsonObject savedGroups = new JsonObject();
     public EvaluationContext evaluationContext = null;
-
+    @Getter @Setter private Map<String, Object> forcedFeatureValues;
     /**
      * Initialize the GrowthBook SDK with a provided {@link GBContext}
      *
@@ -111,6 +114,7 @@ public class GrowthBook implements IGrowthBook {
                 .attributes(this.context.getAttributes())
                 .stickyBucketAssignmentDocs(this.context.getStickyBucketAssignmentDocs())
                 .forcedVariationsMap(this.context.getForcedVariationsMap())
+                .forcedFeatureValues(this.forcedFeatureValues)
                 .build();
 
         this.evaluationContext = new EvaluationContext(globalContext, userContext,

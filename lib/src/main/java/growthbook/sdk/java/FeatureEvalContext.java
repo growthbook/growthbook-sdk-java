@@ -8,8 +8,10 @@ import lombok.RequiredArgsConstructor;
 
 /**
  * Model consist already evaluated features
+ * Can be deleted because of no usage
  */
 @Data
+@Deprecated
 @AllArgsConstructor
 @RequiredArgsConstructor
 class FeatureEvalContext {
