@@ -15,10 +15,13 @@ class TrackDataTest {
                 .inExperiment(true)
                 .key("my_experiment")
                 .build();
+        FeatureResult<Integer> featureResult = FeatureResult.<Integer>builder()
+                .experimentResult(experimentResult)
+                .build();
 
-        TrackData<Integer> subject = new TrackData<>(experiment, experimentResult);
+        TrackData<Integer> subject = new TrackData<>(experiment, featureResult);
 
         assertEquals(experiment, subject.getExperiment());
-        assertEquals(experimentResult, subject.getExperimentResult());
+        assertEquals(experimentResult, subject.getResult().getExperimentResult());
     }
 }

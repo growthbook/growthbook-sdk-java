@@ -5,20 +5,18 @@ import com.google.gson.JsonObject;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
-import okhttp3.Call;
-import okhttp3.Callback;
-import okhttp3.OkHttpClient;
-import okhttp3.Request;
-import okhttp3.Response;
-import okhttp3.ResponseBody;
+import okhttp3.*;
 import okhttp3.sse.EventSource;
 import okhttp3.sse.EventSourceListener;
 import okhttp3.sse.EventSources;
 import org.jetbrains.annotations.NotNull;
+
 import javax.annotation.Nullable;
 import java.io.IOException;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
@@ -126,6 +124,20 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
     private String featuresJson = "{}";
 
     /**
+     * Request body for that be sent with POST request for remote eval feature
+     */
+    @Nullable
+    @Getter
+    private final Map<String, Object> requestBodyForRemoteEval;
+
+    /**
+     * Endpoint for POST request
+     */
+    @Getter
+    private String remoteEvalEndPoint;
+
+
+    /**
      * Create a new GBFeaturesRepository
      *
      * @param apiHost       The GrowthBook API host (default: <a href="https://cdn.growthbook.io">...</a>)
@@ -142,7 +154,7 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
             @Nullable FeatureRefreshStrategy refreshStrategy,
             @Nullable Integer swrTtlSeconds
     ) {
-        this(apiHost, clientKey, encryptionKey, refreshStrategy, swrTtlSeconds, null);
+        this(apiHost, clientKey, encryptionKey, refreshStrategy, swrTtlSeconds, null, new HashMap<>());
     }
 
     /**
@@ -156,10 +168,11 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
             @Nullable FeatureRefreshStrategy refreshStrategy,
             @Nullable Integer swrTtlSeconds,
             @Nullable OkHttpClient okHttpClient,
-            @Nullable String decryptionKey
+            @Nullable String decryptionKey,
+            @Nullable Map<String, Object> requestBodyForRemoteEval
     ) {
         this(apiHost, clientKey, (decryptionKey != null) ? decryptionKey : encryptionKey,
-                refreshStrategy, swrTtlSeconds, okHttpClient);
+                refreshStrategy, swrTtlSeconds, okHttpClient, (requestBodyForRemoteEval != null) ? requestBodyForRemoteEval : new HashMap<>());
     }
 
     /**
@@ -177,7 +190,8 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
             @Nullable String decryptionKey,
             @Nullable FeatureRefreshStrategy refreshStrategy,
             @Nullable Integer swrTtlSeconds,
-            @Nullable OkHttpClient okHttpClient
+            @Nullable OkHttpClient okHttpClient,
+            @Nullable Map<String, Object> requestBodyForRemoteEval
     ) {
         if (clientKey == null) throw new IllegalArgumentException("clientKey cannot be null");
 
@@ -190,11 +204,13 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
         // Build the endpoints from the apiHost and clientKey
         this.featuresEndpoint = apiHost + "/api/features/" + clientKey;
         this.eventsEndpoint = apiHost + "/sub/" + clientKey;
+        this.remoteEvalEndPoint = apiHost + "/api/eval/" + clientKey;
 
         this.encryptionKey = decryptionKey;
         this.decryptionKey = decryptionKey;
 
         this.swrTtlSeconds = swrTtlSeconds == null ? 60 : swrTtlSeconds;
+        this.requestBodyForRemoteEval = requestBodyForRemoteEval != null ? requestBodyForRemoteEval : new HashMap<>();
         this.refreshExpiresAt();
 
         // Use provided OkHttpClient or create a new one
@@ -223,6 +239,9 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
                 return this.featuresJson;
 
             case SERVER_SENT_EVENTS:
+                return this.featuresJson;
+
+            case REMOTE_EVAL_STRATEGY:
                 return this.featuresJson;
         }
 
@@ -288,6 +307,10 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
             case SERVER_SENT_EVENTS:
                 fetchFeatures();
                 initializeSSE(retryOnFailure);
+                break;
+
+            case REMOTE_EVAL_STRATEGY:
+                fetchForRemoteEval(this.requestBodyForRemoteEval);
                 break;
         }
 
@@ -506,13 +529,13 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
     }
 
     private void onRefreshSuccess(String featuresJson) {
-        for (FeatureRefreshCallback callback: this.refreshCallbacks) {
+        for (FeatureRefreshCallback callback : this.refreshCallbacks) {
             callback.onRefresh(featuresJson);
         }
     }
 
     private void onRefreshFailed(Throwable throwable) {
-        for (FeatureRefreshCallback callback: this.refreshCallbacks) {
+        for (FeatureRefreshCallback callback : this.refreshCallbacks) {
             callback.onError(throwable);
         }
     }
@@ -605,7 +628,32 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
             }
             this.sseHttpClient = null;
             log.info("SseHttpClient shutdown");
+        }
+    }
 
+    private void fetchForRemoteEval(Map<String, Object> paramsForRemoteEvalRequest) throws FeatureFetchException {
+        if (this.remoteEvalEndPoint == null) {
+            throw new IllegalArgumentException("remote eval features endpoint cannot be null");
+        }
+        String jsonBody = GrowthBookJsonUtils.getInstance().gson.toJson(paramsForRemoteEvalRequest);
+        RequestBody requestBody = RequestBody.create(
+                jsonBody,
+                MediaType.parse("application/json")
+        );
+        Request request = new Request.Builder()
+                .url(this.remoteEvalEndPoint)
+                .post(requestBody)
+                .build();
+
+        try (Response response = this.okHttpClient.newCall(request).execute()) {
+            if (response.isSuccessful() && response.code() == 200) {
+                onSuccess(response);
+            } else {
+                onRefreshFailed(new Throwable("Response is not success, response code is:" + response.code() + ". And message is: " + response.message()));
+            }
+        } catch (IOException e) {
+            log.error(e.getMessage(), e);
+            throw new FeatureFetchException(FeatureFetchException.FeatureFetchErrorCode.NO_RESPONSE_ERROR, e.getMessage());
         }
     }
 }

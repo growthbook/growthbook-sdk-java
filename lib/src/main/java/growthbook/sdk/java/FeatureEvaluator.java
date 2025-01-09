@@ -267,7 +267,7 @@ public class FeatureEvaluator implements IFeatureEvaluator {
 
                     // If this was a remotely evaluated experiment, fire the tracking callbacks
                     if (trackData != null && trackingCallBackWithUser != null) {
-                        trackData.forEach(t -> trackingCallBackWithUser.onTrack(t.getExperiment(), t.getExperimentResult(), context.getUser()));
+                        trackData.forEach(t -> trackingCallBackWithUser.onTrack(t.getExperiment(), t.getResult().getExperimentResult(), context.getUser()));
                     }
 
                     if (rule.getRange() == null) {

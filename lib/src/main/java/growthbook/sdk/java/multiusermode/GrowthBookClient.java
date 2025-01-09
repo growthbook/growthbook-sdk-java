@@ -9,6 +9,8 @@ import growthbook.sdk.java.multiusermode.util.TransformationUtil;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
 
 @Slf4j
 public class GrowthBookClient {
@@ -19,6 +21,7 @@ public class GrowthBookClient {
     private static GBFeaturesRepository repository;
     private final ArrayList<ExperimentRunCallback> callbacks;
     private GlobalContext globalContext;
+    private Map<String, Object> requestBodyForRemoteEval;
 
     public GrowthBookClient() {
         this(Options.builder().build());
@@ -30,6 +33,7 @@ public class GrowthBookClient {
         this.featureEvaluator = new FeatureEvaluator();
         this.experimentEvaluatorEvaluator = new ExperimentEvaluator();
         this.callbacks = new ArrayList<>();
+        this.requestBodyForRemoteEval = new HashMap<>();
     }
 
     public boolean initialize() {
@@ -46,6 +50,7 @@ public class GrowthBookClient {
                         .clientKey(this.options.getClientKey())
                         .decryptionKey(this.options.getDecryptionKey())
                         .refreshStrategy(this.options.getRefreshStrategy())
+                        .requestBodyForRemoteEval(this.requestBodyForRemoteEval)
                         .build();
 
                 // Add featureRefreshCallback
@@ -149,4 +154,12 @@ public class GrowthBookClient {
     public void subscribe(ExperimentRunCallback callback) {
         this.callbacks.add(callback);
     }
- }
+
+    public Map<String, Object> getRequestBodyForRemoteEval() {
+        return requestBodyForRemoteEval;
+    }
+
+    public void setRequestBodyForRemoteEval(Map<String, Object> requestBodyForRemoteEval) {
+        this.requestBodyForRemoteEval = requestBodyForRemoteEval;
+    }
+}
