@@ -141,7 +141,9 @@ public class FeatureEvaluator implements IFeatureEvaluator {
             }
 
             // Loop through the feature rules (if any)
-            for (FeatureRule<ValueType> rule : feature.getRules()) {
+            List<FeatureRule<ValueType>> featureRules = feature.getRules();
+            for (int i = 0; i < featureRules.size(); i++) {
+                FeatureRule<ValueType> rule = featureRules.get(i);
                 // If there are prerequisite flag(s), evaluate them
                 if (rule.getParentConditions() != null) {
                     for (ParentCondition parentCondition : rule.getParentConditions()) {
@@ -215,7 +217,7 @@ public class FeatureEvaluator implements IFeatureEvaluator {
                 }
 
                 // Feature value is being forced
-                if (rule.getForce() != null) {
+                if (hasForceProperty(featureJson, i)) {
 
                     // If the rule has a condition, and it evaluates to false, skip this rule and continue to the next one
                     if (rule.getCondition() != null) {
@@ -430,5 +432,9 @@ public class FeatureEvaluator implements IFeatureEvaluator {
     private void addFeatureToEvalStack(String featureKey, EvaluationContext context) {
         context.getStack().setId(featureKey);
         context.getStack().getEvaluatedFeatures().add(featureKey);
+    }
+
+    private static boolean hasForceProperty(JsonElement featureJson, int i) {
+        return featureJson.getAsJsonObject().get("rules").getAsJsonArray().get(i).getAsJsonObject().has("force");
     }
 }
