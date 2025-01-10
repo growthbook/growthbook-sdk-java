@@ -9,6 +9,9 @@ import growthbook.sdk.java.multiusermode.util.TransformationUtil;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Objects;
 
 @Slf4j
 public class GrowthBookClient {
@@ -18,6 +21,8 @@ public class GrowthBookClient {
     private final ExperimentEvaluator experimentEvaluatorEvaluator;
     private static GBFeaturesRepository repository;
     private final ArrayList<ExperimentRunCallback> callbacks;
+    private final Map<String, AssignedExperiment> assigned = new HashMap<>();
+
     private GlobalContext globalContext;
 
     public GrowthBookClient() {
@@ -141,12 +146,30 @@ public class GrowthBookClient {
         ExperimentResult<ValueType> result = experimentEvaluatorEvaluator
                 .evaluateExperiment(experiment, getEvalContext(userContext), null);
 
-        this.callbacks.forEach(callback -> callback.onRun(result));
+        fireSubscriptions(experiment, result);
 
         return result;
     }
 
     public void subscribe(ExperimentRunCallback callback) {
         this.callbacks.add(callback);
+    }
+
+    private <ValueType> void fireSubscriptions(Experiment<ValueType> experiment, ExperimentResult<ValueType> result) {
+        String key = experiment.getKey();
+        // If assigned variation has changed, fire subscriptions
+        AssignedExperiment prev = this.assigned.get(key);
+        if (prev == null
+                || !Objects.equals(prev.getExperimentResult().getInExperiment(), result.getInExperiment())
+                || !Objects.equals(prev.getExperimentResult().getVariationId(), result.getVariationId())) {
+            this.assigned.put(key, new AssignedExperiment<>(experiment, result));
+            for (ExperimentRunCallback cb : this.callbacks) {
+                try {
+                    cb.onRun(experiment, result);
+                } catch (Exception e) {
+                    log.error(e.getMessage());
+                }
+            }
+        }
     }
  }
