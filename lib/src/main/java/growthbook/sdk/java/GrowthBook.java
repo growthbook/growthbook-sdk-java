@@ -37,10 +37,12 @@ public class GrowthBook implements IGrowthBook {
     private final GrowthBookJsonUtils jsonUtils = GrowthBookJsonUtils.getInstance();
 
     private List<ExperimentRunCallback> callbacks;
-    private JsonObject attributeOverrides = new JsonObject();
+    @Getter @Setter
+    private JsonObject attributeOverrides;
+
     private JsonObject savedGroups;
     public EvaluationContext evaluationContext = null;
-    private Map<String, AssignedExperiment> assigned;
+    private final Map<String, AssignedExperiment> assigned;
 
     @Getter @Setter private Map<String, Object> forcedFeatureValues;
     /**
@@ -54,8 +56,8 @@ public class GrowthBook implements IGrowthBook {
         this.featureEvaluator = new FeatureEvaluator();
         this.conditionEvaluator = new ConditionEvaluator();
         this.experimentEvaluatorEvaluator = new ExperimentEvaluator();
-        this.attributeOverrides = context.getAttributes();
-        this.savedGroups = context.getSavedGroups();
+        this.attributeOverrides = context.getAttributes() == null ? new JsonObject() : context.getAttributes();
+        this.savedGroups = context.getSavedGroups() == null ? new JsonObject() : context.getSavedGroups();
         this.callbacks = new ArrayList<>();
         this.assigned = new HashMap<>();
 
@@ -73,8 +75,8 @@ public class GrowthBook implements IGrowthBook {
         this.featureEvaluator = new FeatureEvaluator();
         this.conditionEvaluator = new ConditionEvaluator();
         this.experimentEvaluatorEvaluator = new ExperimentEvaluator();
-        this.attributeOverrides = context.getAttributes();
-        this.savedGroups = context.getSavedGroups();
+        this.attributeOverrides = context.getAttributes() == null ? new JsonObject() : context.getAttributes();
+        this.savedGroups = context.getSavedGroups() == null ? new JsonObject() : context.getSavedGroups();
         this.callbacks = new ArrayList<>();
         this.assigned = new HashMap<>();
 
@@ -94,8 +96,8 @@ public class GrowthBook implements IGrowthBook {
         this.conditionEvaluator = conditionEvaluator;
         this.experimentEvaluatorEvaluator = experimentEvaluator;
         this.context = context;
-        this.attributeOverrides = context.getAttributes();
-        this.savedGroups = context.getSavedGroups();
+        this.attributeOverrides = context.getAttributes() == null ? new JsonObject() : context.getAttributes();
+        this.savedGroups = context.getSavedGroups() == null ? new JsonObject() : context.getSavedGroups();
         this.callbacks = new ArrayList<>();
         this.assigned = new HashMap<>();
 
@@ -170,6 +172,7 @@ public class GrowthBook implements IGrowthBook {
     @Override
     public void setFeatures(String featuresJsonString) {
         this.context.setFeaturesJson(featuresJsonString);
+        initializeEvalContext();
     }
 
     /**
@@ -179,6 +182,8 @@ public class GrowthBook implements IGrowthBook {
     @Override
     public void setSavedGroups(JsonObject savedGroups) {
         this.context.setSavedGroups(savedGroups);
+        this.savedGroups = savedGroups;
+        initializeEvalContext();
     }
 
     /**
@@ -189,6 +194,7 @@ public class GrowthBook implements IGrowthBook {
     @Override
     public void setAttributes(String attributesJsonString) {
         this.context.setAttributesJson(attributesJsonString);
+        initializeEvalContext();
     }
 
     /**
@@ -241,6 +247,7 @@ public class GrowthBook implements IGrowthBook {
     @Override
     public void setOwnStickyBucketService(@Nullable StickyBucketService stickyBucketService) {
         this.context.setStickyBucketService(stickyBucketService);
+        initializeEvalContext();
     }
 
     /**
@@ -249,6 +256,7 @@ public class GrowthBook implements IGrowthBook {
     @Override
     public void setInMemoryStickyBucketService() {
         this.context.setStickyBucketService(new InMemoryStickyBucketServiceImpl(new HashMap<>()));
+        initializeEvalContext();
     }
 
     /**
