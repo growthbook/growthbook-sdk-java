@@ -9,6 +9,11 @@ import growthbook.sdk.java.multiusermode.configurations.UserContext;
 import growthbook.sdk.java.multiusermode.util.TransformationUtil;
 import lombok.extern.slf4j.Slf4j;
 
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Objects;
+
 @Slf4j
 public class GrowthBookClient {
 
@@ -27,10 +32,10 @@ public class GrowthBookClient {
     public GrowthBookClient(Options opts) {
         this.options = opts == null ? Options.builder().build() : opts;
 
+        this.assigned = new HashMap<>();
+        this.callbacks = new ArrayList<>();
         this.featureEvaluator = new FeatureEvaluator();
         this.experimentEvaluatorEvaluator = new ExperimentEvaluator();
-        this.callbacks = new ArrayList<>();
-        this.assigned = new HashMap<>();
     }
 
     public boolean initialize() {

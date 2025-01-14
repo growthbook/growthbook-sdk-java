@@ -7,6 +7,9 @@ import java.util.List;
 import java.util.Objects;
 import javax.annotation.Nullable;
 import com.google.gson.JsonObject;
+import lombok.Getter;
+import lombok.Setter;
+import lombok.extern.slf4j.Slf4j;
 import growthbook.sdk.java.multiusermode.configurations.EvaluationContext;
 import growthbook.sdk.java.multiusermode.configurations.GlobalContext;
 import growthbook.sdk.java.multiusermode.configurations.Options;
@@ -15,9 +18,6 @@ import growthbook.sdk.java.multiusermode.usage.FeatureUsageCallbackAdapter;
 import growthbook.sdk.java.multiusermode.usage.TrackingCallbackAdapter;
 import growthbook.sdk.java.stickyBucketing.InMemoryStickyBucketServiceImpl;
 import growthbook.sdk.java.stickyBucketing.StickyBucketService;
-import lombok.Getter;
-import lombok.Setter;
-import lombok.extern.slf4j.Slf4j;
 
 /**
  * GrowthBook SDK class.
@@ -37,8 +37,7 @@ public class GrowthBook implements IGrowthBook {
     private final GrowthBookJsonUtils jsonUtils = GrowthBookJsonUtils.getInstance();
 
     private List<ExperimentRunCallback> callbacks;
-    @Getter @Setter
-    private JsonObject attributeOverrides;
+    @Getter @Setter private JsonObject attributeOverrides;
 
     private JsonObject savedGroups;
     public EvaluationContext evaluationContext = null;
@@ -52,14 +51,14 @@ public class GrowthBook implements IGrowthBook {
      */
     public GrowthBook(GBContext context) {
         this.context = context;
-
+        
+        this.assigned = new HashMap<>();
+        this.callbacks = new ArrayList<>();
         this.featureEvaluator = new FeatureEvaluator();
         this.conditionEvaluator = new ConditionEvaluator();
         this.experimentEvaluatorEvaluator = new ExperimentEvaluator();
         this.attributeOverrides = context.getAttributes() == null ? new JsonObject() : context.getAttributes();
         this.savedGroups = context.getSavedGroups() == null ? new JsonObject() : context.getSavedGroups();
-        this.callbacks = new ArrayList<>();
-        this.assigned = new HashMap<>();
 
         this.initializeEvalContext();
     }
@@ -72,13 +71,14 @@ public class GrowthBook implements IGrowthBook {
         this.context = GBContext.builder().build();
 
         // dependencies
+        this.assigned = new HashMap<>();
+        this.callbacks = new ArrayList<>();
         this.featureEvaluator = new FeatureEvaluator();
         this.conditionEvaluator = new ConditionEvaluator();
         this.experimentEvaluatorEvaluator = new ExperimentEvaluator();
         this.attributeOverrides = context.getAttributes() == null ? new JsonObject() : context.getAttributes();
         this.savedGroups = context.getSavedGroups() == null ? new JsonObject() : context.getSavedGroups();
-        this.callbacks = new ArrayList<>();
-        this.assigned = new HashMap<>();
+
 
         this.initializeEvalContext();
     }
@@ -96,10 +96,10 @@ public class GrowthBook implements IGrowthBook {
         this.conditionEvaluator = conditionEvaluator;
         this.experimentEvaluatorEvaluator = experimentEvaluator;
         this.context = context;
+        this.assigned = new HashMap<>();
+        this.callbacks = new ArrayList<>();
         this.attributeOverrides = context.getAttributes() == null ? new JsonObject() : context.getAttributes();
         this.savedGroups = context.getSavedGroups() == null ? new JsonObject() : context.getSavedGroups();
-        this.callbacks = new ArrayList<>();
-        this.assigned = new HashMap<>();
 
         this.initializeEvalContext();
     }
