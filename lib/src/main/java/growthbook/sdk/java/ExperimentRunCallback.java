@@ -9,5 +9,5 @@ public interface ExperimentRunCallback {
      *
      * @param experimentResult {@link ExperimentResult}
      */
-    void onRun(ExperimentResult experimentResult);
+    <ValueType> void onRun(Experiment<ValueType> experiment, ExperimentResult<ValueType> experimentResult);
 }
