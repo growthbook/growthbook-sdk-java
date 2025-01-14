@@ -16,6 +16,7 @@ import growthbook.sdk.java.stickyBucketing.StickyBucketService;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
+import java.util.Objects;
 
 /**
  * GrowthBook SDK class.
@@ -38,6 +39,8 @@ public class GrowthBook implements IGrowthBook {
     private JsonObject attributeOverrides = new JsonObject();
     private JsonObject savedGroups = new JsonObject();
     public EvaluationContext evaluationContext = null;
+    private final Map<String, AssignedExperiment> assigned = new HashMap<>();
+
     @Getter @Setter private Map<String, Object> forcedFeatureValues;
     /**
      * Initialize the GrowthBook SDK with a provided {@link GBContext}
@@ -216,7 +219,7 @@ public class GrowthBook implements IGrowthBook {
         ExperimentResult<ValueType> result = experimentEvaluatorEvaluator
                 .evaluateExperiment(experiment, getEvaluationContext(), null);
 
-        this.callbacks.forEach(callback -> callback.onRun(result));
+        fireSubscriptions(experiment, result);
 
         return result;
     }
@@ -528,6 +531,24 @@ public class GrowthBook implements IGrowthBook {
     private void refreshStickyBucketService(@Nullable String featuresDataModel) {
         if (context.getStickyBucketService() != null) {
             GrowthBookUtils.refreshStickyBuckets(context, featuresDataModel, attributeOverrides);
+        }
+    }
+
+    private <ValueType> void fireSubscriptions(Experiment<ValueType> experiment, ExperimentResult<ValueType> result) {
+        String key = experiment.getKey();
+        // If assigned variation has changed, fire subscriptions
+        AssignedExperiment prev = this.assigned.get(key);
+        if (prev == null
+                || !Objects.equals(prev.getExperimentResult().getInExperiment(), result.getInExperiment())
+                || !Objects.equals(prev.getExperimentResult().getVariationId(), result.getVariationId())) {
+            this.assigned.put(key, new AssignedExperiment<>(experiment, result));
+            for (ExperimentRunCallback cb : this.callbacks) {
+                try {
+                    cb.onRun(experiment, result);
+                } catch (Exception e) {
+                    log.error(e.getMessage());
+                }
+            }
         }
     }
 }
