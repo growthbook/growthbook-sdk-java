@@ -1,18 +1,13 @@
 package growthbook.sdk.java.multiusermode;
 
-import java.util.Map;
-import java.util.ArrayList;
+import java.util.*;
 import growthbook.sdk.java.*;
 import growthbook.sdk.java.multiusermode.configurations.EvaluationContext;
 import growthbook.sdk.java.multiusermode.configurations.GlobalContext;
 import growthbook.sdk.java.multiusermode.configurations.Options;
 import growthbook.sdk.java.multiusermode.configurations.UserContext;
 import growthbook.sdk.java.multiusermode.util.TransformationUtil;
-import lombok.Getter;
-import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
-import java.util.HashMap;
-import java.util.Objects;
 
 @Slf4j
 public class GrowthBookClient {
@@ -21,11 +16,9 @@ public class GrowthBookClient {
     private final FeatureEvaluator featureEvaluator;
     private final ExperimentEvaluator experimentEvaluatorEvaluator;
     private static GBFeaturesRepository repository;
-    private final ArrayList<ExperimentRunCallback> callbacks;
-    private final Map<String, AssignedExperiment> assigned = new HashMap<>();
-
+    private final List<ExperimentRunCallback> callbacks;
+    private final Map<String, AssignedExperiment> assigned;
     private GlobalContext globalContext;
-    @Getter @Setter private Map<String, Object> forcedFeatureValues;
 
     public GrowthBookClient() {
         this(Options.builder().build());
@@ -37,6 +30,7 @@ public class GrowthBookClient {
         this.featureEvaluator = new FeatureEvaluator();
         this.experimentEvaluatorEvaluator = new ExperimentEvaluator();
         this.callbacks = new ArrayList<>();
+        this.assigned = new HashMap<>();
     }
 
     public boolean initialize() {

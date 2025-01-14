@@ -622,20 +622,24 @@ class GrowthBookTest {
         ConditionEvaluator mockConditionEvaluator = mock(ConditionEvaluator.class);
         ExperimentEvaluator mockExperimentEvaluator = mock(ExperimentEvaluator.class);
         FeatureEvaluator mockFeatureEvaluator = mock(FeatureEvaluator.class);
-        GBContext context = GBContext.builder().build();
 
         String attrJsonStr = "{ id: 1 }";
         String conditionJsonStr = "{}";
+        String savedGroups = "{}";
         JsonObject attributesJson = GrowthBookJsonUtils.getInstance().gson.fromJson(attrJsonStr, JsonObject.class);
         JsonObject conditionJson = GrowthBookJsonUtils.getInstance().gson.fromJson(conditionJsonStr, JsonObject.class);
+        JsonObject savedGroupsJson = GrowthBookJsonUtils.getInstance().gson.fromJson(savedGroups, JsonObject.class);
 
-
+        GBContext context = GBContext.builder()
+                .savedGroups(savedGroupsJson)
+                .attributes(attributesJson)
+                .build();
 
         GrowthBook subject = new GrowthBook(context, mockFeatureEvaluator, mockConditionEvaluator, mockExperimentEvaluator);
 
         subject.evaluateCondition(attrJsonStr, conditionJsonStr);
 
-        verify(mockConditionEvaluator).evaluateCondition(attributesJson, conditionJson, new JsonObject());
+        verify(mockConditionEvaluator).evaluateCondition(attributesJson, conditionJson, savedGroupsJson);
     }
 
     @Test
