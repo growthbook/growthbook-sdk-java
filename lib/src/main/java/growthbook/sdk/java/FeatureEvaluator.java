@@ -217,7 +217,7 @@ public class FeatureEvaluator implements IFeatureEvaluator {
                 }
 
                 // Feature value is being forced
-                if (hasForceProperty(featureJson, i)) {
+                if (rule.getForce().isPresent()) {
 
                     // If the rule has a condition, and it evaluates to false, skip this rule and continue to the next one
                     if (rule.getCondition() != null) {
@@ -293,7 +293,7 @@ public class FeatureEvaluator implements IFeatureEvaluator {
                         }
                     }
 
-                    ValueType value = (ValueType) GrowthBookJsonUtils.unwrap(rule.getForce());
+                    ValueType value = (ValueType) GrowthBookJsonUtils.unwrap(rule.getForce().getValue());
 
                     // Apply the force rule
                     FeatureResult<ValueType> forcedRuleFeatureValue = FeatureResult
@@ -432,9 +432,5 @@ public class FeatureEvaluator implements IFeatureEvaluator {
     private void addFeatureToEvalStack(String featureKey, EvaluationContext context) {
         context.getStack().setId(featureKey);
         context.getStack().getEvaluatedFeatures().add(featureKey);
-    }
-
-    private static boolean hasForceProperty(JsonElement featureJson, int i) {
-        return featureJson.getAsJsonObject().get("rules").getAsJsonArray().get(i).getAsJsonObject().has("force");
     }
 }
