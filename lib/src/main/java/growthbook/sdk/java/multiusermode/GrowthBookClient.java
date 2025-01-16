@@ -1,5 +1,6 @@
 package growthbook.sdk.java.multiusermode;
 
+import java.util.*;
 import growthbook.sdk.java.*;
 import growthbook.sdk.java.multiusermode.configurations.EvaluationContext;
 import growthbook.sdk.java.multiusermode.configurations.GlobalContext;
@@ -20,9 +21,8 @@ public class GrowthBookClient {
     private final FeatureEvaluator featureEvaluator;
     private final ExperimentEvaluator experimentEvaluatorEvaluator;
     private static GBFeaturesRepository repository;
-    private final ArrayList<ExperimentRunCallback> callbacks;
-    private final Map<String, AssignedExperiment> assigned = new HashMap<>();
-
+    private final List<ExperimentRunCallback> callbacks;
+    private final Map<String, AssignedExperiment> assigned;
     private GlobalContext globalContext;
 
     public GrowthBookClient() {
@@ -32,9 +32,10 @@ public class GrowthBookClient {
     public GrowthBookClient(Options opts) {
         this.options = opts == null ? Options.builder().build() : opts;
 
+        this.assigned = new HashMap<>();
+        this.callbacks = new ArrayList<>();
         this.featureEvaluator = new FeatureEvaluator();
         this.experimentEvaluatorEvaluator = new ExperimentEvaluator();
-        this.callbacks = new ArrayList<>();
     }
 
     public boolean initialize() {
