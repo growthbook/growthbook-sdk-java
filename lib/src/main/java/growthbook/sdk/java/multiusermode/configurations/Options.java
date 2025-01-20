@@ -1,8 +1,10 @@
 package growthbook.sdk.java.multiusermode.configurations;
 
+import com.google.gson.JsonObject;
 import growthbook.sdk.java.*;
 import growthbook.sdk.java.multiusermode.usage.FeatureUsageCallbackWithUser;
 import growthbook.sdk.java.multiusermode.usage.TrackingCallbackWithUser;
+import growthbook.sdk.java.multiusermode.util.TransformationUtil;
 import growthbook.sdk.java.stickyBucketing.InMemoryStickyBucketServiceImpl;
 import growthbook.sdk.java.stickyBucketing.StickyBucketService;
 import lombok.Builder;
@@ -12,6 +14,7 @@ import lombok.extern.slf4j.Slf4j;
 import javax.annotation.Nullable;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @Data
 @Slf4j
@@ -31,7 +34,12 @@ public class Options {
                    @Nullable TrackingCallbackWithUser trackingCallBackWithUser,
                    @Nullable FeatureUsageCallbackWithUser featureUsageCallbackWithUser,
                    @Nullable FeatureRefreshStrategy refreshStrategy,
-                   @Nullable FeatureRefreshCallback featureRefreshCallback) {
+                   @Nullable FeatureRefreshCallback featureRefreshCallback,
+                   @Nullable JsonObject attributes,
+                   @Nullable Map<String, Object> forcedFeatureValues,
+                   @Nullable Map<String, Integer> forcedVariationsMap
+
+    ) {
         this.enabled = enabled == null || enabled;
         this.isQaMode = isQaMode != null && isQaMode;
         this.isCacheDisabled = isCacheDisabled == null || isCacheDisabled;
@@ -46,6 +54,9 @@ public class Options {
         this.featureUsageCallbackWithUser = featureUsageCallbackWithUser;
         this.refreshStrategy = refreshStrategy;
         this.featureRefreshCallback = featureRefreshCallback;
+        this.attributes = attributes;
+        this.forcedFeatureValues = forcedFeatureValues;
+        this.forcedVariationsMap = forcedVariationsMap;
     }
 
     /**
@@ -117,8 +128,35 @@ public class Options {
     @Nullable
     private FeatureUsageCallbackWithUser featureUsageCallbackWithUser;
 
+    /**
+     * Strategy for building url
+     */
     @Nullable
     private FeatureRefreshStrategy refreshStrategy;
+
+    /**
+     * Map of user attributes that are used to assign variations
+     */
+    @Nullable
+    private JsonObject attributes;
+
+    /**
+     * String format of user attributes that are used to assign variations
+     */
+    @Nullable
+    private String attributesJson;
+
+    /**
+     * Manual force feature values
+     */
+    @Nullable
+    private Map<String, Object> forcedFeatureValues;
+
+    /**
+     * Force specific experiments to always assign a specific variation (used for QA)
+     */
+    @Nullable
+    private Map<String, Integer> forcedVariationsMap;
 
     public FeatureRefreshStrategy getRefreshingStrategy() {
         if (this.refreshStrategy == null) {
@@ -137,5 +175,10 @@ public class Options {
 
     public void setInMemoryStickyBucketService() {
         this.setStickyBucketService(new InMemoryStickyBucketServiceImpl(new HashMap<>()));
+    }
+
+    public void setAttributes(@Nullable String attributesJson) {
+        this.attributesJson = attributesJson;
+        this.attributes = TransformationUtil.transformAttributes(attributesJson);
     }
 }

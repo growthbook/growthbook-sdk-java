@@ -9,10 +9,7 @@ import lombok.extern.slf4j.Slf4j;
 import javax.annotation.Nullable;
 import java.net.MalformedURLException;
 import java.net.URL;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * <b>INTERNAL</b>: Implementation of feature evaluation.
@@ -46,14 +43,15 @@ public class FeatureEvaluator implements IFeatureEvaluator {
                 .build();
 
         try {
-            if (context.getUser().getForcedFeatureValues() != null
-                    && context.getUser().getForcedFeatureValues().containsKey(key)) {
+            Map<String, Object> forcedFeatureValues = getForcedFeatureValues(context);
+            if (forcedFeatureValues.containsKey(key)) {
+                ValueType unwrapForceFeatureValue = (ValueType) GrowthBookJsonUtils.unwrap(forcedFeatureValues.get(key));
                 log.info("Global override for forced feature with key: {} and value {}", key,
-                        context.getUser().getForcedFeatureValues().get(key));
+                        forcedFeatureValues.get(key).toString());
 
                 return FeatureResult
                         .<ValueType>builder()
-                        .value(context.getUser().getForcedFeatureValues().get(key))
+                        .value(unwrapForceFeatureValue)
                         .source(FeatureResultSource.OVERRIDE)
                         .build();
             }
@@ -442,5 +440,10 @@ public class FeatureEvaluator implements IFeatureEvaluator {
     private void addFeatureToEvalStack(String featureKey, EvaluationContext context) {
         context.getStack().setId(featureKey);
         context.getStack().getEvaluatedFeatures().add(featureKey);
+    }
+
+    private Map<String, Object> getForcedFeatureValues(EvaluationContext evaluationContext) {
+        return GrowthBookUtils.mergeMaps(Arrays.asList(evaluationContext.getGlobal().getForcedFeatureValues(),
+                evaluationContext.getUser().getForcedFeatureValues()));
     }
 }

@@ -20,6 +20,15 @@ public class TransformationUtil {
         }
     }
 
+    public static JsonObject transformSavedGroups(String savedGroupsJsonString) {
+        try {
+            return GrowthBookJsonUtils.getInstance().gson.fromJson(savedGroupsJsonString, JsonObject.class);
+        } catch (Exception e) {
+            log.error(e.getMessage(), e);
+            return null;
+        }
+    }
+
     public static JsonObject transformEncryptedFeatures(
             @Nullable String featuresJson,
             @Nullable String encryptionKey

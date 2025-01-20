@@ -10,6 +10,7 @@ import lombok.extern.slf4j.Slf4j;
 
 import javax.annotation.Nullable;
 import java.util.List;
+import java.util.Map;
 
 @Data
 @Builder
@@ -28,5 +29,23 @@ public class GlobalContext {
     @Nullable
     private JsonObject savedGroups;
 
+    @Getter
+    @Nullable
     private List<Experiment> experiments;
+
+    @Getter
+    @Nullable
+    private Boolean enabled;
+
+    @Getter
+    @Nullable
+    private Boolean qaMode;
+
+    @Getter
+    @Nullable
+    private Map<String, Integer> forcedVariations;
+
+    @Getter
+    @Nullable
+    private Map<String, Object> forcedFeatureValues;
 }

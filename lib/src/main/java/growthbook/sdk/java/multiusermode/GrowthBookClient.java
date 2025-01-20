@@ -15,6 +15,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
+import java.util.stream.Collectors;
 
 @Slf4j
 public class GrowthBookClient {
@@ -28,7 +29,7 @@ public class GrowthBookClient {
     private GlobalContext globalContext;
     @Getter
     @Setter
-    private Map<String, Object> requestBodyForRemoteEval;
+    private Payload payload;
 
     public GrowthBookClient() {
         this(Options.builder().build());
@@ -42,7 +43,7 @@ public class GrowthBookClient {
         this.featureEvaluator = new FeatureEvaluator();
         this.experimentEvaluatorEvaluator = new ExperimentEvaluator();
         this.callbacks = new ArrayList<>();
-        this.requestBodyForRemoteEval = new HashMap<>();
+        this.payload = new Payload();
     }
 
     public boolean initialize() {
@@ -59,7 +60,7 @@ public class GrowthBookClient {
                         .clientKey(this.options.getClientKey())
                         .decryptionKey(this.options.getDecryptionKey())
                         .refreshStrategy(this.options.getRefreshStrategy())
-                        .requestBodyForRemoteEval(this.requestBodyForRemoteEval)
+                        .payload(configurePayloadForRemoteEval(this.options))
                         .build();
 
                 // Add featureRefreshCallback
@@ -78,6 +79,11 @@ public class GrowthBookClient {
                 // instantiate a global context that holds features & savedGroups.
                 this.globalContext = GlobalContext.builder()
                         .features(TransformationUtil.transformFeatures(repository.getFeaturesJson()))
+                        .savedGroups(TransformationUtil.transformSavedGroups(repository.getSavedGroupsJson()))
+                        .enabled(this.options.getEnabled())
+                        .qaMode(this.options.getIsQaMode())
+                        .forcedFeatureValues(this.options.getForcedFeatureValues())
+                        .forcedVariations(this.options.getForcedVariationsMap())
                         .build();
 
                 isReady = repository.getInitialized();
@@ -88,6 +94,16 @@ public class GrowthBookClient {
         return isReady;
     }
 
+    private Payload configurePayloadForRemoteEval(Options options) {
+        List<List<Object>> forceFeaturesForPayload = new ArrayList<>();
+        if(options.getForcedFeatureValues() != null) {
+            forceFeaturesForPayload = options.getForcedFeatureValues().entrySet().stream()
+                    .map(entry -> Arrays.asList(entry.getKey(), entry.getValue()))
+                    .collect(Collectors.toList());
+        }
+        return new Payload(options.getAttributes(), forceFeaturesForPayload, options.getForcedVariationsMap(), options.getUrl());
+    }
+
     private FeatureRefreshCallback refreshGlobalContext() {
         return new FeatureRefreshCallback() {
             @Override
@@ -95,12 +111,17 @@ public class GrowthBookClient {
                 // refer the global context with latest features & saved groups
                 if (globalContext != null) {
                     globalContext.setFeatures(TransformationUtil.transformFeatures(featuresJson));
-                    globalContext.setSavedGroups(TransformationUtil.transformFeatures(repository.getSavedGroupsJson()));
+                    globalContext.setSavedGroups(TransformationUtil.transformSavedGroups(repository.getSavedGroupsJson()));
                 } else {
                     // TBD:M This should never happen! Just to be cautious about race conditions at the time of initialization
                     globalContext = GlobalContext.builder()
                             .features(TransformationUtil.transformFeatures(featuresJson))
                             .savedGroups(TransformationUtil.transformFeatures(repository.getSavedGroupsJson()))
+                            .savedGroups(TransformationUtil.transformSavedGroups(repository.getSavedGroupsJson()))
+                            .enabled(options.getEnabled())
+                            .qaMode(options.getIsQaMode())
+                            .forcedFeatureValues(options.getForcedFeatureValues())
+                            .forcedVariations(options.getForcedVariationsMap())
                             .build();
                 }
             }

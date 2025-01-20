@@ -128,8 +128,7 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
      */
     @Nullable
     @Getter
-    private final Map<String, Object> requestBodyForRemoteEval;
-
+    private final Payload payload;
     /**
      * Endpoint for POST request
      */
@@ -154,7 +153,27 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
             @Nullable FeatureRefreshStrategy refreshStrategy,
             @Nullable Integer swrTtlSeconds
     ) {
-        this(apiHost, clientKey, encryptionKey, refreshStrategy, swrTtlSeconds, null, new HashMap<>());
+        this(apiHost, clientKey, encryptionKey, refreshStrategy, swrTtlSeconds, null, null);
+    }
+
+    /**
+     * New constructor that support payload for remote eval
+     * @param apiHost       The GrowthBook API host (default: <a href="https://cdn.growthbook.io">...</a>)
+     * @param clientKey     Your client ID, e.g. sdk-abc123
+     * @param encryptionKey optional key for decrypting encrypted payload
+     * @param refreshStrategy Strategy for building url
+     * @param swrTtlSeconds How often the cache should be invalidated when using {@link FeatureRefreshStrategy#STALE_WHILE_REVALIDATE} (default: 60)
+     * @param payload       Payload that would be sent with POST request when repository configure with Remote evalStrategy  {@link FeatureRefreshStrategy#REMOTE_EVAL_STRATEGY} (default: 60)
+     */
+    public GBFeaturesRepository(
+            @Nullable String apiHost,
+            String clientKey,
+            @Deprecated @Nullable String encryptionKey,
+            @Nullable FeatureRefreshStrategy refreshStrategy,
+            @Nullable Integer swrTtlSeconds,
+            @Nullable Payload payload
+    ) {
+        this(apiHost, clientKey, encryptionKey, refreshStrategy, swrTtlSeconds, null, payload);
     }
 
     /**
@@ -169,10 +188,10 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
             @Nullable Integer swrTtlSeconds,
             @Nullable OkHttpClient okHttpClient,
             @Nullable String decryptionKey,
-            @Nullable Map<String, Object> requestBodyForRemoteEval
+            @Nullable Payload payload
     ) {
         this(apiHost, clientKey, (decryptionKey != null) ? decryptionKey : encryptionKey,
-                refreshStrategy, swrTtlSeconds, okHttpClient, (requestBodyForRemoteEval != null) ? requestBodyForRemoteEval : new HashMap<>());
+                refreshStrategy, swrTtlSeconds, okHttpClient, (payload != null) ? payload : new Payload());
     }
 
     /**
@@ -183,6 +202,7 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
      * @param decryptionKey optional key for decrypting encrypted payload
      * @param swrTtlSeconds How often the cache should be invalidated when using {@link FeatureRefreshStrategy#STALE_WHILE_REVALIDATE} (default: 60)
      * @param okHttpClient  HTTP client (optional)
+     * @param payload Payload that would be sent with POST request when repository configure with Remote evalStrategy {@link FeatureRefreshStrategy#REMOTE_EVAL_STRATEGY}
      */
     public GBFeaturesRepository(
             @Nullable String apiHost,
@@ -191,7 +211,7 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
             @Nullable FeatureRefreshStrategy refreshStrategy,
             @Nullable Integer swrTtlSeconds,
             @Nullable OkHttpClient okHttpClient,
-            @Nullable Map<String, Object> requestBodyForRemoteEval
+            @Nullable Payload payload
     ) {
         if (clientKey == null) throw new IllegalArgumentException("clientKey cannot be null");
 
@@ -210,7 +230,7 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
         this.decryptionKey = decryptionKey;
 
         this.swrTtlSeconds = swrTtlSeconds == null ? 60 : swrTtlSeconds;
-        this.requestBodyForRemoteEval = requestBodyForRemoteEval != null ? requestBodyForRemoteEval : new HashMap<>();
+        this.payload = payload != null ? payload : new Payload();
         this.refreshExpiresAt();
 
         // Use provided OkHttpClient or create a new one
@@ -310,7 +330,7 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
                 break;
 
             case REMOTE_EVAL_STRATEGY:
-                fetchForRemoteEval(this.requestBodyForRemoteEval);
+                fetchForRemoteEval(this.payload);
                 break;
         }
 
@@ -631,11 +651,11 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
         }
     }
 
-    private void fetchForRemoteEval(Map<String, Object> paramsForRemoteEvalRequest) throws FeatureFetchException {
+    private void fetchForRemoteEval(Payload payload) throws FeatureFetchException {
         if (this.remoteEvalEndPoint == null) {
             throw new IllegalArgumentException("remote eval features endpoint cannot be null");
         }
-        String jsonBody = GrowthBookJsonUtils.getInstance().gson.toJson(paramsForRemoteEvalRequest);
+        String jsonBody = GrowthBookJsonUtils.getInstance().gson.toJson(payload);
         RequestBody requestBody = RequestBody.create(
                 jsonBody,
                 MediaType.parse("application/json")

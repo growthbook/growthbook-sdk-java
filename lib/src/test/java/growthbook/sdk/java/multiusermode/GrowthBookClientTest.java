@@ -48,7 +48,7 @@ class GrowthBookClientTest {
             Options options = createDefaultOptions(mockCallback);
 
             GrowthBookClient client = new GrowthBookClient(options);
-            client.setRequestBodyForRemoteEval(new HashMap<>());
+            client.setPayload(new Payload());
             assertTrue(client.initialize());
 
             verify(mockRepository).initialize();
@@ -147,7 +147,7 @@ class GrowthBookClientTest {
         when(builder.clientKey(anyString())).thenReturn(builder);
         when(builder.decryptionKey(anyString())).thenReturn(builder);
         when(builder.refreshStrategy(any())).thenReturn(builder);
-        when(builder.requestBodyForRemoteEval(anyMap())).thenReturn(builder);
+        when(builder.payload(any())).thenReturn(builder);
         when(builder.build()).thenReturn(repository);
 
         return builder;

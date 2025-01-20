@@ -115,12 +115,14 @@ public class GrowthBook implements IGrowthBook {
                 .stickyBucketService(this.context.getStickyBucketService())
                 .trackingCallBackWithUser(new TrackingCallbackAdapter(this.context.getTrackingCallback()))
                 .featureUsageCallbackWithUser(new FeatureUsageCallbackAdapter(this.context.getFeatureUsageCallback()))
+                .forcedFeatureValues(this.forcedFeatureValues)
                 .build();
 
         // build global
         GlobalContext globalContext = GlobalContext.builder()
                 .features(this.context.getFeatures())
                 .savedGroups(this.context.getSavedGroups())
+                .forcedFeatureValues(this.forcedFeatureValues)
                 .build();
 
         // build user context

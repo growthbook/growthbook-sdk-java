@@ -116,7 +116,7 @@ public class NativeJavaGbFeatureRepository implements IGBFeaturesRepository {
      */
     @Nullable
     @Getter
-    private final Map<String, Object> paramsForRemoteEvalRequest;
+    private final Payload payload;
 
     /**
      * Create a new GBFeaturesRepository
@@ -125,6 +125,7 @@ public class NativeJavaGbFeatureRepository implements IGBFeaturesRepository {
      * @param clientKey     Your client ID, e.g. sdk-abc123
      * @param encryptionKey optional key for decrypting encrypted payload
      * @param swrTtlSeconds How often the cache should be invalidated when using {@link FeatureRefreshStrategy#STALE_WHILE_REVALIDATE} (default: 60)
+     * @param payload       Payload that would be sent with POST request when repository configure with Remote evalStrategy {@link FeatureRefreshStrategy#REMOTE_EVAL_STRATEGY}
      */
     @Builder
     public NativeJavaGbFeatureRepository(@Nullable String apiHost,
@@ -132,7 +133,7 @@ public class NativeJavaGbFeatureRepository implements IGBFeaturesRepository {
                                          @Nullable String encryptionKey,
                                          @Nullable FeatureRefreshStrategy refreshStrategy,
                                          @Nullable Integer swrTtlSeconds,
-                                         @Nullable Map<String, Object> paramsForRemoteEvalRequest
+                                         @Nullable Payload payload
     ) {
         if (clientKey == null) {
             throw new IllegalArgumentException("clientKey cannot be null");
@@ -144,7 +145,7 @@ public class NativeJavaGbFeatureRepository implements IGBFeaturesRepository {
         this.featuresEndpoint = apiHost + "/api/features/" + clientKey;
         this.eventsEndpoint = apiHost + "/sub/" + clientKey;
         this.remoteEvalEndPoint = apiHost + "/api/eval/" + clientKey;
-        this.paramsForRemoteEvalRequest = paramsForRemoteEvalRequest;
+        this.payload = payload;
 
         this.encryptionKey = encryptionKey;
         this.swrTtlSeconds = swrTtlSeconds == null ? new AtomicInteger(60) : new AtomicInteger(swrTtlSeconds);
@@ -198,7 +199,7 @@ public class NativeJavaGbFeatureRepository implements IGBFeaturesRepository {
                     break;
 
                 case REMOTE_EVAL_STRATEGY:
-                    fetchForRemoteEval(this.paramsForRemoteEvalRequest);
+                    fetchForRemoteEval(this.payload);
                     break;
             }
 
@@ -406,6 +407,7 @@ public class NativeJavaGbFeatureRepository implements IGBFeaturesRepository {
             callback.onRefresh(featuresJson);
         }
     }
+
     void onRefreshFailed(Throwable throwable) {
         for (FeatureRefreshCallback callback : this.refreshCallbacks) {
             callback.onError(throwable);
@@ -465,10 +467,10 @@ public class NativeJavaGbFeatureRepository implements IGBFeaturesRepository {
         new Thread(sseTask).start();
     }
 
-    private void fetchForRemoteEval(Map<String, Object> paramsForRemoteEvalRequest) throws FeatureFetchException {
+    private void fetchForRemoteEval(Payload payload) throws FeatureFetchException {
         HttpURLConnection urlConnection = null;
         try {
-            String body = GrowthBookJsonUtils.getInstance().gson.toJson(paramsForRemoteEvalRequest);
+            String body = GrowthBookJsonUtils.getInstance().gson.toJson(payload);
 
             URL url = new URL(this.remoteEvalEndPoint);
             urlConnection = (HttpURLConnection) url.openConnection();
@@ -487,7 +489,7 @@ public class NativeJavaGbFeatureRepository implements IGBFeaturesRepository {
                 String inputLine;
                 StringBuilder builder = new StringBuilder();
 
-                while ((inputLine = bufferedReader.readLine())!= null) {
+                while ((inputLine = bufferedReader.readLine()) != null) {
                     builder.append(inputLine);
                 }
                 bufferedReader.close();
