@@ -23,7 +23,7 @@ public class GrowthBookClient {
     private final FeatureEvaluator featureEvaluator;
     private final ExperimentEvaluator experimentEvaluatorEvaluator;
     private static GBFeaturesRepository repository;
-    private final List<ExperimentRunCallback> callbacks;
+    private List<ExperimentRunCallback> callbacks;
     private final Map<String, AssignedExperiment> assigned;
     private GlobalContext globalContext;
     @Getter
@@ -169,9 +169,15 @@ public class GrowthBookClient {
         // If assigned variation has changed, fire subscriptions
         AssignedExperiment prev = this.assigned.get(key);
         if (prev == null
-                || !Objects.equals(prev.getExperimentResult().getInExperiment(), result.getInExperiment())
-                || !Objects.equals(prev.getExperimentResult().getVariationId(), result.getVariationId())) {
-            this.assigned.put(key, new AssignedExperiment<>(experiment, result));
+                || !Objects.equals(prev.getInExperiment(), result.getInExperiment())
+                || !Objects.equals(prev.getVariationId(), result.getVariationId())) {
+            AssignedExperiment current = new AssignedExperiment(
+                    experiment.getKey(),
+                    result.getInExperiment(),
+                    result.getVariationId()
+            );
+            this.assigned.put(key, current);
+
             for (ExperimentRunCallback cb : this.callbacks) {
                 try {
                     cb.onRun(experiment, result);

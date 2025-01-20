@@ -18,12 +18,6 @@ import growthbook.sdk.java.multiusermode.usage.FeatureUsageCallbackAdapter;
 import growthbook.sdk.java.multiusermode.usage.TrackingCallbackAdapter;
 import growthbook.sdk.java.stickyBucketing.InMemoryStickyBucketServiceImpl;
 import growthbook.sdk.java.stickyBucketing.StickyBucketService;
-import lombok.extern.slf4j.Slf4j;
-import javax.annotation.Nullable;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Objects;
 
 /**
  * GrowthBook SDK class.
@@ -562,9 +556,15 @@ public class GrowthBook implements IGrowthBook {
         // If assigned variation has changed, fire subscriptions
         AssignedExperiment prev = this.assigned.get(key);
         if (prev == null
-                || !Objects.equals(prev.getExperimentResult().getInExperiment(), result.getInExperiment())
-                || !Objects.equals(prev.getExperimentResult().getVariationId(), result.getVariationId())) {
-            this.assigned.put(key, new AssignedExperiment<>(experiment, result));
+                || !Objects.equals(prev.getInExperiment(), result.getInExperiment())
+                || !Objects.equals(prev.getVariationId(), result.getVariationId())) {
+            AssignedExperiment current = new AssignedExperiment(
+                    experiment.getKey(),
+                    result.getInExperiment(),
+                    result.getVariationId()
+            );
+            this.assigned.put(key, current);
+
             for (ExperimentRunCallback cb : this.callbacks) {
                 try {
                     cb.onRun(experiment, result);
