@@ -1,6 +1,15 @@
 package growthbook.sdk.java;
 
+import java.util.Map;
+import java.util.HashMap;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Objects;
+import javax.annotation.Nullable;
 import com.google.gson.JsonObject;
+import lombok.Getter;
+import lombok.Setter;
+import lombok.extern.slf4j.Slf4j;
 import growthbook.sdk.java.multiusermode.configurations.EvaluationContext;
 import growthbook.sdk.java.multiusermode.configurations.GlobalContext;
 import growthbook.sdk.java.multiusermode.configurations.Options;
@@ -33,12 +42,14 @@ public class GrowthBook implements IGrowthBook {
 
     private final GrowthBookJsonUtils jsonUtils = GrowthBookJsonUtils.getInstance();
 
-    private ArrayList<ExperimentRunCallback> callbacks = new ArrayList<>();
-    private JsonObject attributeOverrides = new JsonObject();
-    private JsonObject savedGroups = new JsonObject();
-    public EvaluationContext evaluationContext = null;
-    private final Map<String, AssignedExperiment> assigned = new HashMap<>();
+    private List<ExperimentRunCallback> callbacks;
+    @Getter @Setter private JsonObject attributeOverrides;
 
+    private JsonObject savedGroups;
+    public EvaluationContext evaluationContext = null;
+    private final Map<String, AssignedExperiment> assigned;
+
+    @Getter @Setter private Map<String, Object> forcedFeatureValues;
     /**
      * Initialize the GrowthBook SDK with a provided {@link GBContext}
      *
@@ -47,11 +58,13 @@ public class GrowthBook implements IGrowthBook {
     public GrowthBook(GBContext context) {
         this.context = context;
 
+        this.assigned = new HashMap<>();
+        this.callbacks = new ArrayList<>();
         this.featureEvaluator = new FeatureEvaluator();
         this.conditionEvaluator = new ConditionEvaluator();
         this.experimentEvaluatorEvaluator = new ExperimentEvaluator();
-        this.attributeOverrides = context.getAttributes();
-        this.savedGroups = context.getSavedGroups();
+        this.attributeOverrides = context.getAttributes() == null ? new JsonObject() : context.getAttributes();
+        this.savedGroups = context.getSavedGroups() == null ? new JsonObject() : context.getSavedGroups();
 
         this.initializeEvalContext();
     }
@@ -64,11 +77,14 @@ public class GrowthBook implements IGrowthBook {
         this.context = GBContext.builder().build();
 
         // dependencies
+        this.assigned = new HashMap<>();
+        this.callbacks = new ArrayList<>();
         this.featureEvaluator = new FeatureEvaluator();
         this.conditionEvaluator = new ConditionEvaluator();
         this.experimentEvaluatorEvaluator = new ExperimentEvaluator();
-        this.attributeOverrides = context.getAttributes();
-        this.savedGroups = context.getSavedGroups();
+        this.attributeOverrides = context.getAttributes() == null ? new JsonObject() : context.getAttributes();
+        this.savedGroups = context.getSavedGroups() == null ? new JsonObject() : context.getSavedGroups();
+
 
         this.initializeEvalContext();
     }
@@ -86,6 +102,10 @@ public class GrowthBook implements IGrowthBook {
         this.conditionEvaluator = conditionEvaluator;
         this.experimentEvaluatorEvaluator = experimentEvaluator;
         this.context = context;
+        this.assigned = new HashMap<>();
+        this.callbacks = new ArrayList<>();
+        this.attributeOverrides = context.getAttributes() == null ? new JsonObject() : context.getAttributes();
+        this.savedGroups = context.getSavedGroups() == null ? new JsonObject() : context.getSavedGroups();
 
         this.initializeEvalContext();
     }
@@ -114,6 +134,7 @@ public class GrowthBook implements IGrowthBook {
                 .attributes(this.context.getAttributes())
                 .stickyBucketAssignmentDocs(this.context.getStickyBucketAssignmentDocs())
                 .forcedVariationsMap(this.context.getForcedVariationsMap())
+                .forcedFeatureValues(this.forcedFeatureValues)
                 .build();
 
         this.evaluationContext = new EvaluationContext(globalContext, userContext,
@@ -157,6 +178,7 @@ public class GrowthBook implements IGrowthBook {
     @Override
     public void setFeatures(String featuresJsonString) {
         this.context.setFeaturesJson(featuresJsonString);
+        initializeEvalContext();
     }
 
     /**
@@ -166,6 +188,8 @@ public class GrowthBook implements IGrowthBook {
     @Override
     public void setSavedGroups(JsonObject savedGroups) {
         this.context.setSavedGroups(savedGroups);
+        this.savedGroups = savedGroups;
+        initializeEvalContext();
     }
 
     /**
@@ -176,6 +200,7 @@ public class GrowthBook implements IGrowthBook {
     @Override
     public void setAttributes(String attributesJsonString) {
         this.context.setAttributesJson(attributesJsonString);
+        initializeEvalContext();
     }
 
     /**
@@ -228,6 +253,7 @@ public class GrowthBook implements IGrowthBook {
     @Override
     public void setOwnStickyBucketService(@Nullable StickyBucketService stickyBucketService) {
         this.context.setStickyBucketService(stickyBucketService);
+        initializeEvalContext();
     }
 
     /**
@@ -236,6 +262,7 @@ public class GrowthBook implements IGrowthBook {
     @Override
     public void setInMemoryStickyBucketService() {
         this.context.setStickyBucketService(new InMemoryStickyBucketServiceImpl(new HashMap<>()));
+        initializeEvalContext();
     }
 
     /**

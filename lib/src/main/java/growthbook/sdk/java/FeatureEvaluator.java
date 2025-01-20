@@ -46,6 +46,18 @@ public class FeatureEvaluator implements IFeatureEvaluator {
                 .build();
 
         try {
+            if (context.getUser().getForcedFeatureValues() != null
+                    && context.getUser().getForcedFeatureValues().containsKey(key)) {
+                log.info("Global override for forced feature with key: {} and value {}", key,
+                        context.getUser().getForcedFeatureValues().get(key));
+
+                return FeatureResult
+                        .<ValueType>builder()
+                        .value(context.getUser().getForcedFeatureValues().get(key))
+                        .source(FeatureResultSource.OVERRIDE)
+                        .build();
+            }
+
             if (context.getStack().getEvaluatedFeatures().contains(key)) {
                 // block that handle recursion
                 log.info(
