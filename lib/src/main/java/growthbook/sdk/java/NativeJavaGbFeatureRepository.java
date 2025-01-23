@@ -14,6 +14,7 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 import java.time.Instant;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -29,7 +30,10 @@ import java.util.concurrent.locks.ReentrantLock;
 public class NativeJavaGbFeatureRepository implements IGBFeaturesRepository {
     private static final String ENABLED = "enabled";
     private static final int QUANTITY_TO_CUT_SSE = 5;
-    
+    private static final String FILE_NAME_FOR_CACHE = "FEATURE_CACHE.json";
+    public static final String FILE_PATH_FOR_CACHE = "src/main/resources";
+    public static final String EMPTY_JSON_OBJECT_STRING = "{}";
+
     /**
      * Endpoint for GET request
      */
@@ -82,14 +86,14 @@ public class NativeJavaGbFeatureRepository implements IGBFeaturesRepository {
      * You must call {@link NativeJavaGbFeatureRepository#initialize()} before calling this method
      * or your saved groups would not have loaded.
      */
-    private final AtomicReference<String> savedGroupsJson = new AtomicReference<>("{}");
+    private final AtomicReference<String> savedGroupsJson = new AtomicReference<>(EMPTY_JSON_OBJECT_STRING);
 
     /**
      * Allows you to get the features JSON from the provided {@link NativeJavaGbFeatureRepository#getFeaturesEndpoint()}.
      * You must call {@link NativeJavaGbFeatureRepository#initialize()} before calling this method
      * or your features would not have loaded.
      */
-    private final AtomicReference<String> featuresJson = new AtomicReference<>("{}");
+    private final AtomicReference<String> featuresJson = new AtomicReference<>(EMPTY_JSON_OBJECT_STRING);
     /**
      * Optional callbacks for getting updates when features are refreshed
      */
@@ -98,6 +102,14 @@ public class NativeJavaGbFeatureRepository implements IGBFeaturesRepository {
      * Lock for synchronize code and avoid race condition
      */
     private final ReentrantLock lock = new ReentrantLock(true);
+    /**
+     * CachingManger allows to cache features data to file
+     */
+    private AtomicReference<CachingManager> cachingManager;
+    /**
+     * Flag that enable CachingManager
+     */
+    private final AtomicBoolean isCacheDisabled;
 
     /**
      * Create a new GBFeaturesRepository
@@ -112,8 +124,10 @@ public class NativeJavaGbFeatureRepository implements IGBFeaturesRepository {
                                          String clientKey,
                                          @Nullable String encryptionKey,
                                          @Nullable FeatureRefreshStrategy refreshStrategy,
-                                         @Nullable Integer swrTtlSeconds
+                                         @Nullable Integer swrTtlSeconds,
+                                         @Nullable Boolean isCacheDisabled
     ) {
+        this.isCacheDisabled = new AtomicBoolean(Boolean.TRUE.equals(isCacheDisabled));
         if (clientKey == null) {
             throw new IllegalArgumentException("clientKey cannot be null");
         }
@@ -126,12 +140,16 @@ public class NativeJavaGbFeatureRepository implements IGBFeaturesRepository {
         this.encryptionKey = encryptionKey;
         this.swrTtlSeconds = swrTtlSeconds == null ? 60 : swrTtlSeconds;
         this.refreshExpiresAt();
+            if (!this.isCacheDisabled.get()) {
+                this.cachingManager = new AtomicReference<>(new CachingManager(FILE_PATH_FOR_CACHE));
+            }
+
     }
 
     /**
      * Method for initialize {@link NativeJavaGbFeatureRepository}. Depends on {@link FeatureRefreshStrategy}
      * connection would be established for SSE or for just GET request
-     * @throws FeatureFetchException
+     * @throws FeatureFetchException during initialize function
      */
     @Override
     public void initialize() throws FeatureFetchException {
@@ -152,7 +170,7 @@ public class NativeJavaGbFeatureRepository implements IGBFeaturesRepository {
      * Method for initialize {@link NativeJavaGbFeatureRepository}. Depends on {@link FeatureRefreshStrategy}
      * connection would be established for SSE or for just GET request
      * @param retryOnFailure:  Boolean argument that responsible whether SSE connection need to be reconnected
-     * @throws FeatureFetchException
+     * @throws FeatureFetchException during fetchFeatures function
      */
     @Override
     public void initialize(Boolean retryOnFailure) throws FeatureFetchException {
@@ -259,9 +277,17 @@ public class NativeJavaGbFeatureRepository implements IGBFeaturesRepository {
                 this.onSuccess(responseBody);
             }
         } catch (IOException e) {
-            log.error(e.getMessage(), e);
-            throw new FeatureFetchException(FeatureFetchException.FeatureFetchErrorCode.UNKNOWN,
-                    e.getMessage());
+            if (!isCacheDisabled.get()) {
+                if (cachingManager.get().loadCache(FILE_NAME_FOR_CACHE) != null) {
+                    log.warn("HTTP request is not successful. The message was {}. Try to get data from cache...", e.getMessage(), e);
+                    onResponseJson(cachingManager.get().loadCache(FILE_NAME_FOR_CACHE));
+                } else {
+                    log.error(e.getMessage(), e);
+                    throw new FeatureFetchException(FeatureFetchException.FeatureFetchErrorCode.UNKNOWN,
+                            e.getMessage());
+                }
+            }
+
         } finally {
             if (reader != null) {
                 try {
@@ -278,12 +304,22 @@ public class NativeJavaGbFeatureRepository implements IGBFeaturesRepository {
 
 
     private void onSuccess(String response) throws FeatureFetchException {
+        String responseJsonString = response;
         if (response == null) {
-            throw new FeatureFetchException(
-                    FeatureFetchException.FeatureFetchErrorCode.NO_RESPONSE_ERROR
-            );
+            if (!isCacheDisabled.get()) {
+                log.error("FeatureFetchException: FeatureFetchErrorCode.NO_RESPONSE_ERROR");
+                log.info("Fetching data from cache...");
+                if (cachingManager.get().loadCache(FILE_NAME_FOR_CACHE) == null) {
+                    log.error("FeatureFetchException: No Features from Cache");
+
+                    throw new FeatureFetchException(
+                            FeatureFetchException.FeatureFetchErrorCode.NO_RESPONSE_ERROR
+                    );
+                }
+                responseJsonString = cachingManager.get().loadCache(FILE_NAME_FOR_CACHE);
+            }
         }
-        onResponseJson(response);
+        onResponseJson(responseJsonString);
     }
 
     private void onResponseJson(String responseJsonString) throws FeatureFetchException {
@@ -293,9 +329,15 @@ public class NativeJavaGbFeatureRepository implements IGBFeaturesRepository {
                 return;
             }
 
+            String data = responseJsonString;
+            if (!isCacheDisabled.get()) {
+                cachingManager.get().saveContent(FILE_NAME_FOR_CACHE, responseJsonString);
+                data = cachingManager.get().loadCache(FILE_NAME_FOR_CACHE);
+            }
+
             try {
                 JsonObject jsonObject = GrowthBookJsonUtils.getInstance()
-                        .gson.fromJson(responseJsonString, JsonObject.class);
+                        .gson.fromJson(data, JsonObject.class);
 
                 if (jsonObject == null) {
                     log.error("JSON response is null or invalid");
@@ -357,7 +399,7 @@ public class NativeJavaGbFeatureRepository implements IGBFeaturesRepository {
                         e.getMessage()
                 );
             }
-        }finally {
+        } finally {
             lock.unlock();
         }
     }

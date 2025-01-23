@@ -32,7 +32,8 @@ class GBFeaturesRepositoryTest {
                 null,
                 null,
                 null,
-                null
+                null,
+                true
         );
 
         assertNotNull(subject);
@@ -48,7 +49,8 @@ class GBFeaturesRepositoryTest {
                 "BhB1wORFmZLTDjbvstvS8w==",
                 null,
                 null,
-                null
+                null,
+                true
         );
 
         assertNotNull(subject);
@@ -107,7 +109,8 @@ class GBFeaturesRepositoryTest {
                 null,
                 null,
                 null,
-                mockOkHttpClient
+                mockOkHttpClient,
+                true
         );
         subject.initialize();
 
@@ -152,7 +155,8 @@ class GBFeaturesRepositoryTest {
                 encryptionKey,
                 null,
                 null,
-                mockOkHttpClient
+                mockOkHttpClient,
+                true
         );
         subject.initialize();
 
@@ -193,7 +197,8 @@ class GBFeaturesRepositoryTest {
                 null,
                 null,
                 0,
-                mockOkHttpClient
+                mockOkHttpClient,
+                true
         );
 
         subject.onFeaturesRefresh(featureRefreshCallback);
@@ -226,7 +231,8 @@ class GBFeaturesRepositoryTest {
                 null,
                 null,
                 0,
-                mockOkHttpClient
+                mockOkHttpClient,
+                true
         );
 
         subject.onFeaturesRefresh(featureRefreshCallback);

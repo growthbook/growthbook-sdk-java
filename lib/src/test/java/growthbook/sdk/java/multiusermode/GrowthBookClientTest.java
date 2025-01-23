@@ -145,6 +145,7 @@ class GrowthBookClientTest {
         when(builder.clientKey(anyString())).thenReturn(builder);
         when(builder.decryptionKey(anyString())).thenReturn(builder);
         when(builder.refreshStrategy(any())).thenReturn(builder);
+        when(builder.isCacheDisabled(anyBoolean())).thenReturn(builder);
         when(builder.build()).thenReturn(repository);
 
         return builder;

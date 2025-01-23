@@ -41,10 +41,6 @@ public class GrowthBookClient {
     public boolean initialize() {
         boolean isReady = false;
         try {
-            // load features, experiments, sticky bucket thing whatever!
-            if (!this.options.getIsCacheDisabled()) {
-                // enable cache? is there anything we could do here!
-            }
 
             if (repository == null) {
                 repository = GBFeaturesRepository.builder()
@@ -52,6 +48,7 @@ public class GrowthBookClient {
                         .clientKey(this.options.getClientKey())
                         .decryptionKey(this.options.getDecryptionKey())
                         .refreshStrategy(this.options.getRefreshStrategy())
+                        .isCacheDisabled(this.options.getIsCacheDisabled())
                         .build();
 
                 // Add featureRefreshCallback
