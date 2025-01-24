@@ -1,7 +1,6 @@
 package growthbook.sdk.java;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.doAnswer;
@@ -235,6 +234,42 @@ class GBFeaturesRepositoryTest {
 
         verify(featureRefreshCallback).onError(requestFailed);
         verify(featureRefreshCallback, never()).onRefresh(anyString());
+    }
+
+    @Test()
+    void testOnInitializeHttpError() throws FeatureFetchException, IOException {
+        OkHttpClient mockOkHttpClient = mock(OkHttpClient.class);
+
+        String errorResponseJson = "{\"status\": 400, \"error\": \"Invalid API Key\"}";
+        Response response = new Response.Builder()
+                .request(new Request.Builder().url("http://url.com").build())
+                .protocol(Protocol.HTTP_1_1)
+                .code(400).message("").body(
+                        ResponseBody.create(
+                                errorResponseJson,
+                                MediaType.parse("application/json")
+                        ))
+                .build();
+
+        Call mockCall = mock(Call.class);
+        doReturn(mockCall).when(mockOkHttpClient).newCall(any(Request.class));
+        doReturn(response).when(mockCall).execute();
+
+        GBFeaturesRepository subject = new GBFeaturesRepository(
+                "http://localhost:80",
+                "sdk-abc123",
+                null,
+                null,
+                0,
+                mockOkHttpClient
+        );
+
+        assertThrows(
+                FeatureFetchException.class,
+                () -> subject.initialize(),
+                "HTTP_RESPONSE_ERROR : responded with status 400"
+        );
+
     }
 
     /*

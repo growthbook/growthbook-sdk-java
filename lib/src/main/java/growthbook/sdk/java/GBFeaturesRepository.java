@@ -450,10 +450,20 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
     private void onSuccess(Response response) throws FeatureFetchException {
         try {
             ResponseBody responseBody = response.body();
+
             if (responseBody == null) {
-                log.error("FeatureFetchException: FeatureFetchErrorCode.NO_RESPONSE_ERROR");
+                log.error("FeatureFetchException: FeatureFetchErrorCode.NO_RESPONSE_ERROR (HTTP status {})", response.code());
                 throw new FeatureFetchException(
                         FeatureFetchException.FeatureFetchErrorCode.NO_RESPONSE_ERROR
+                );
+            }
+
+            if (response.code() != 200) {
+                log.error("FeatureFetchException: HTTP_RESPONSE_ERROR with status {}, response: {}", response.code(), responseBody.string());
+
+                throw new FeatureFetchException(
+                        FeatureFetchException.FeatureFetchErrorCode.HTTP_RESPONSE_ERROR,
+                        "responded with status " + response.code()
                 );
             }
 
