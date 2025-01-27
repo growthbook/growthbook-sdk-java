@@ -115,7 +115,7 @@ public class GrowthBook implements IGrowthBook {
                 .stickyBucketService(this.context.getStickyBucketService())
                 .trackingCallBackWithUser(new TrackingCallbackAdapter(this.context.getTrackingCallback()))
                 .featureUsageCallbackWithUser(new FeatureUsageCallbackAdapter(this.context.getFeatureUsageCallback()))
-                .forcedFeatureValues(this.forcedFeatureValues)
+                .globalForcedFeatureValues(this.forcedFeatureValues)
                 .build();
 
         // build global

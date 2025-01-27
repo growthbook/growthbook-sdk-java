@@ -35,9 +35,9 @@ public class Options {
                    @Nullable FeatureUsageCallbackWithUser featureUsageCallbackWithUser,
                    @Nullable FeatureRefreshStrategy refreshStrategy,
                    @Nullable FeatureRefreshCallback featureRefreshCallback,
-                   @Nullable JsonObject attributes,
-                   @Nullable Map<String, Object> forcedFeatureValues,
-                   @Nullable Map<String, Integer> forcedVariationsMap
+                   @Nullable JsonObject globalAttributes,
+                   @Nullable Map<String, Object> globalForcedFeatureValues,
+                   @Nullable Map<String, Integer> globalForcedVariationsMap
 
     ) {
         this.enabled = enabled == null || enabled;
@@ -54,9 +54,9 @@ public class Options {
         this.featureUsageCallbackWithUser = featureUsageCallbackWithUser;
         this.refreshStrategy = refreshStrategy;
         this.featureRefreshCallback = featureRefreshCallback;
-        this.attributes = attributes;
-        this.forcedFeatureValues = forcedFeatureValues;
-        this.forcedVariationsMap = forcedVariationsMap;
+        this.globalAttributes = globalAttributes;
+        this.globalForcedFeatureValues = globalForcedFeatureValues;
+        this.globalForcedVariationsMap = globalForcedVariationsMap;
     }
 
     /**
@@ -138,7 +138,7 @@ public class Options {
      * Map of user attributes that are used to assign variations
      */
     @Nullable
-    private JsonObject attributes;
+    private JsonObject globalAttributes;
 
     /**
      * String format of user attributes that are used to assign variations
@@ -150,13 +150,13 @@ public class Options {
      * Manual force feature values
      */
     @Nullable
-    private Map<String, Object> forcedFeatureValues;
+    private Map<String, Object> globalForcedFeatureValues;
 
     /**
      * Force specific experiments to always assign a specific variation (used for QA)
      */
     @Nullable
-    private Map<String, Integer> forcedVariationsMap;
+    private Map<String, Integer> globalForcedVariationsMap;
 
     public FeatureRefreshStrategy getRefreshingStrategy() {
         if (this.refreshStrategy == null) {
@@ -177,8 +177,8 @@ public class Options {
         this.setStickyBucketService(new InMemoryStickyBucketServiceImpl(new HashMap<>()));
     }
 
-    public void setAttributes(@Nullable String attributesJson) {
+    public void setGlobalAttributes(@Nullable String attributesJson) {
         this.attributesJson = attributesJson;
-        this.attributes = TransformationUtil.transformAttributes(attributesJson);
+        this.globalAttributes = TransformationUtil.transformAttributes(attributesJson);
     }
 }

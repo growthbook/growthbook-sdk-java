@@ -15,7 +15,6 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
-import java.util.Map;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -116,7 +115,7 @@ public class NativeJavaGbFeatureRepository implements IGBFeaturesRepository {
      */
     @Nullable
     @Getter
-    private final Payload payload;
+    private final RequestBodyForRemoteEval requestBodyForRemoteEval;
 
     /**
      * Create a new GBFeaturesRepository
@@ -125,7 +124,7 @@ public class NativeJavaGbFeatureRepository implements IGBFeaturesRepository {
      * @param clientKey     Your client ID, e.g. sdk-abc123
      * @param encryptionKey optional key for decrypting encrypted payload
      * @param swrTtlSeconds How often the cache should be invalidated when using {@link FeatureRefreshStrategy#STALE_WHILE_REVALIDATE} (default: 60)
-     * @param payload       Payload that would be sent with POST request when repository configure with Remote evalStrategy {@link FeatureRefreshStrategy#REMOTE_EVAL_STRATEGY}
+     * @param requestBodyForRemoteEval       Payload that would be sent with POST request when repository configure with Remote evalStrategy {@link FeatureRefreshStrategy#REMOTE_EVAL_STRATEGY}
      */
     @Builder
     public NativeJavaGbFeatureRepository(@Nullable String apiHost,
@@ -133,7 +132,7 @@ public class NativeJavaGbFeatureRepository implements IGBFeaturesRepository {
                                          @Nullable String encryptionKey,
                                          @Nullable FeatureRefreshStrategy refreshStrategy,
                                          @Nullable Integer swrTtlSeconds,
-                                         @Nullable Payload payload
+                                         @Nullable RequestBodyForRemoteEval requestBodyForRemoteEval
     ) {
         if (clientKey == null) {
             throw new IllegalArgumentException("clientKey cannot be null");
@@ -145,7 +144,7 @@ public class NativeJavaGbFeatureRepository implements IGBFeaturesRepository {
         this.featuresEndpoint = apiHost + "/api/features/" + clientKey;
         this.eventsEndpoint = apiHost + "/sub/" + clientKey;
         this.remoteEvalEndPoint = apiHost + "/api/eval/" + clientKey;
-        this.payload = payload;
+        this.requestBodyForRemoteEval = requestBodyForRemoteEval;
 
         this.encryptionKey = encryptionKey;
         this.swrTtlSeconds = swrTtlSeconds == null ? new AtomicInteger(60) : new AtomicInteger(swrTtlSeconds);
@@ -199,7 +198,7 @@ public class NativeJavaGbFeatureRepository implements IGBFeaturesRepository {
                     break;
 
                 case REMOTE_EVAL_STRATEGY:
-                    fetchForRemoteEval(this.payload);
+                    fetchForRemoteEval(this.requestBodyForRemoteEval);
                     break;
             }
 
@@ -467,10 +466,10 @@ public class NativeJavaGbFeatureRepository implements IGBFeaturesRepository {
         new Thread(sseTask).start();
     }
 
-    private void fetchForRemoteEval(Payload payload) throws FeatureFetchException {
+    private void fetchForRemoteEval(RequestBodyForRemoteEval requestBodyForRemoteEval) throws FeatureFetchException {
         HttpURLConnection urlConnection = null;
         try {
-            String body = GrowthBookJsonUtils.getInstance().gson.toJson(payload);
+            String body = GrowthBookJsonUtils.getInstance().gson.toJson(requestBodyForRemoteEval);
 
             URL url = new URL(this.remoteEvalEndPoint);
             urlConnection = (HttpURLConnection) url.openConnection();

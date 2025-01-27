@@ -15,8 +15,6 @@ import javax.annotation.Nullable;
 import java.io.IOException;
 import java.time.Instant;
 import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
@@ -128,7 +126,7 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
      */
     @Nullable
     @Getter
-    private final Payload payload;
+    private final RequestBodyForRemoteEval requestBodyForRemoteEval;
     /**
      * Endpoint for POST request
      */
@@ -163,7 +161,7 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
      * @param encryptionKey optional key for decrypting encrypted payload
      * @param refreshStrategy Strategy for building url
      * @param swrTtlSeconds How often the cache should be invalidated when using {@link FeatureRefreshStrategy#STALE_WHILE_REVALIDATE} (default: 60)
-     * @param payload       Payload that would be sent with POST request when repository configure with Remote evalStrategy  {@link FeatureRefreshStrategy#REMOTE_EVAL_STRATEGY} (default: 60)
+     * @param requestBodyForRemoteEval       Payload that would be sent with POST request when repository configure with Remote evalStrategy  {@link FeatureRefreshStrategy#REMOTE_EVAL_STRATEGY} (default: 60)
      */
     public GBFeaturesRepository(
             @Nullable String apiHost,
@@ -171,9 +169,9 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
             @Deprecated @Nullable String encryptionKey,
             @Nullable FeatureRefreshStrategy refreshStrategy,
             @Nullable Integer swrTtlSeconds,
-            @Nullable Payload payload
+            @Nullable RequestBodyForRemoteEval requestBodyForRemoteEval
     ) {
-        this(apiHost, clientKey, encryptionKey, refreshStrategy, swrTtlSeconds, null, payload);
+        this(apiHost, clientKey, encryptionKey, refreshStrategy, swrTtlSeconds, null, requestBodyForRemoteEval);
     }
 
     /**
@@ -188,10 +186,10 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
             @Nullable Integer swrTtlSeconds,
             @Nullable OkHttpClient okHttpClient,
             @Nullable String decryptionKey,
-            @Nullable Payload payload
+            @Nullable RequestBodyForRemoteEval requestBodyForRemoteEval
     ) {
         this(apiHost, clientKey, (decryptionKey != null) ? decryptionKey : encryptionKey,
-                refreshStrategy, swrTtlSeconds, okHttpClient, (payload != null) ? payload : new Payload());
+                refreshStrategy, swrTtlSeconds, okHttpClient, (requestBodyForRemoteEval != null) ? requestBodyForRemoteEval : new RequestBodyForRemoteEval());
     }
 
     /**
@@ -202,7 +200,7 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
      * @param decryptionKey optional key for decrypting encrypted payload
      * @param swrTtlSeconds How often the cache should be invalidated when using {@link FeatureRefreshStrategy#STALE_WHILE_REVALIDATE} (default: 60)
      * @param okHttpClient  HTTP client (optional)
-     * @param payload Payload that would be sent with POST request when repository configure with Remote evalStrategy {@link FeatureRefreshStrategy#REMOTE_EVAL_STRATEGY}
+     * @param requestBodyForRemoteEval Payload that would be sent with POST request when repository configure with Remote evalStrategy {@link FeatureRefreshStrategy#REMOTE_EVAL_STRATEGY}
      */
     public GBFeaturesRepository(
             @Nullable String apiHost,
@@ -211,7 +209,7 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
             @Nullable FeatureRefreshStrategy refreshStrategy,
             @Nullable Integer swrTtlSeconds,
             @Nullable OkHttpClient okHttpClient,
-            @Nullable Payload payload
+            @Nullable RequestBodyForRemoteEval requestBodyForRemoteEval
     ) {
         if (clientKey == null) throw new IllegalArgumentException("clientKey cannot be null");
 
@@ -230,7 +228,7 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
         this.decryptionKey = decryptionKey;
 
         this.swrTtlSeconds = swrTtlSeconds == null ? 60 : swrTtlSeconds;
-        this.payload = payload != null ? payload : new Payload();
+        this.requestBodyForRemoteEval = requestBodyForRemoteEval != null ? requestBodyForRemoteEval : new RequestBodyForRemoteEval();
         this.refreshExpiresAt();
 
         // Use provided OkHttpClient or create a new one
@@ -330,7 +328,7 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
                 break;
 
             case REMOTE_EVAL_STRATEGY:
-                fetchForRemoteEval(this.payload);
+                fetchForRemoteEval(this.requestBodyForRemoteEval);
                 break;
         }
 
@@ -450,7 +448,7 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
      * If an encryptionKey is provided, it is assumed the features endpoint is using encrypted features.
      * This method will attempt to decrypt the encrypted features with the provided encryptionKey.
      */
-    private void fetchFeatures() throws FeatureFetchException {
+    public void fetchFeatures() throws FeatureFetchException {
         if (this.featuresEndpoint == null) {
             throw new IllegalArgumentException("features endpoint cannot be null");
         }
@@ -651,11 +649,11 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
         }
     }
 
-    private void fetchForRemoteEval(Payload payload) throws FeatureFetchException {
+    public void fetchForRemoteEval(RequestBodyForRemoteEval requestBodyForRemoteEval) throws FeatureFetchException {
         if (this.remoteEvalEndPoint == null) {
             throw new IllegalArgumentException("remote eval features endpoint cannot be null");
         }
-        String jsonBody = GrowthBookJsonUtils.getInstance().gson.toJson(payload);
+        String jsonBody = GrowthBookJsonUtils.getInstance().gson.toJson(requestBodyForRemoteEval);
         RequestBody requestBody = RequestBody.create(
                 jsonBody,
                 MediaType.parse("application/json")

@@ -11,7 +11,6 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.MockedStatic;
 
 import java.lang.reflect.Field;
-import java.util.HashMap;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -48,7 +47,6 @@ class GrowthBookClientTest {
             Options options = createDefaultOptions(mockCallback);
 
             GrowthBookClient client = new GrowthBookClient(options);
-            client.setPayload(new Payload());
             assertTrue(client.initialize());
 
             verify(mockRepository).initialize();
@@ -147,7 +145,7 @@ class GrowthBookClientTest {
         when(builder.clientKey(anyString())).thenReturn(builder);
         when(builder.decryptionKey(anyString())).thenReturn(builder);
         when(builder.refreshStrategy(any())).thenReturn(builder);
-        when(builder.payload(any())).thenReturn(builder);
+        when(builder.requestBodyForRemoteEval(any())).thenReturn(builder);
         when(builder.build()).thenReturn(repository);
 
         return builder;

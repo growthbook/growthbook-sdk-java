@@ -1,14 +1,14 @@
 package growthbook.sdk.java.multiusermode;
 
 import java.util.*;
+
+import com.google.gson.JsonElement;
 import growthbook.sdk.java.*;
 import growthbook.sdk.java.multiusermode.configurations.EvaluationContext;
 import growthbook.sdk.java.multiusermode.configurations.GlobalContext;
 import growthbook.sdk.java.multiusermode.configurations.Options;
 import growthbook.sdk.java.multiusermode.configurations.UserContext;
 import growthbook.sdk.java.multiusermode.util.TransformationUtil;
-import lombok.Getter;
-import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.ArrayList;
@@ -27,9 +27,6 @@ public class GrowthBookClient {
     private List<ExperimentRunCallback> callbacks;
     private final Map<String, AssignedExperiment> assigned;
     private GlobalContext globalContext;
-    @Getter
-    @Setter
-    private Payload payload;
 
     public GrowthBookClient() {
         this(Options.builder().build());
@@ -43,7 +40,6 @@ public class GrowthBookClient {
         this.featureEvaluator = new FeatureEvaluator();
         this.experimentEvaluatorEvaluator = new ExperimentEvaluator();
         this.callbacks = new ArrayList<>();
-        this.payload = new Payload();
     }
 
     public boolean initialize() {
@@ -60,7 +56,7 @@ public class GrowthBookClient {
                         .clientKey(this.options.getClientKey())
                         .decryptionKey(this.options.getDecryptionKey())
                         .refreshStrategy(this.options.getRefreshStrategy())
-                        .payload(configurePayloadForRemoteEval(this.options))
+                        .requestBodyForRemoteEval(configurePayloadForRemoteEval(this.options)) // if we don't want to pre-fetch for remote eval we can delete this line
                         .build();
 
                 // Add featureRefreshCallback
@@ -82,8 +78,8 @@ public class GrowthBookClient {
                         .savedGroups(TransformationUtil.transformSavedGroups(repository.getSavedGroupsJson()))
                         .enabled(this.options.getEnabled())
                         .qaMode(this.options.getIsQaMode())
-                        .forcedFeatureValues(this.options.getForcedFeatureValues())
-                        .forcedVariations(this.options.getForcedVariationsMap())
+                        .forcedFeatureValues(this.options.getGlobalForcedFeatureValues())
+                        .forcedVariations(this.options.getGlobalForcedVariationsMap())
                         .build();
 
                 isReady = repository.getInitialized();
@@ -94,49 +90,33 @@ public class GrowthBookClient {
         return isReady;
     }
 
-    private Payload configurePayloadForRemoteEval(Options options) {
-        List<List<Object>> forceFeaturesForPayload = new ArrayList<>();
-        if(options.getForcedFeatureValues() != null) {
-            forceFeaturesForPayload = options.getForcedFeatureValues().entrySet().stream()
-                    .map(entry -> Arrays.asList(entry.getKey(), entry.getValue()))
-                    .collect(Collectors.toList());
+    public void setGlobalAttributes(String attributes) {
+        this.options.setGlobalAttributes(attributes);
+    }
+
+    public void setGlobalForceFeatures(Map<String, Object> forceFeatures) {
+        this.options.setGlobalForcedFeatureValues(forceFeatures);
+    }
+
+    public void setGlobalForceVariations(Map<String, Integer> forceVariations) {
+        this.options.setGlobalForcedVariationsMap(forceVariations);
+    }
+
+    public void refreshFeature() {
+        try {
+            repository.fetchFeatures();
+        } catch (FeatureFetchException e) {
+            log.error("Refreshing wasn't successful. Message is: {}", e.getMessage(), e);
         }
-        return new Payload(options.getAttributes(), forceFeaturesForPayload, options.getForcedVariationsMap(), options.getUrl());
     }
 
-    private FeatureRefreshCallback refreshGlobalContext() {
-        return new FeatureRefreshCallback() {
-            @Override
-            public void onRefresh(String featuresJson) {
-                // refer the global context with latest features & saved groups
-                if (globalContext != null) {
-                    globalContext.setFeatures(TransformationUtil.transformFeatures(featuresJson));
-                    globalContext.setSavedGroups(TransformationUtil.transformSavedGroups(repository.getSavedGroupsJson()));
-                } else {
-                    // TBD:M This should never happen! Just to be cautious about race conditions at the time of initialization
-                    globalContext = GlobalContext.builder()
-                            .features(TransformationUtil.transformFeatures(featuresJson))
-                            .savedGroups(TransformationUtil.transformFeatures(repository.getSavedGroupsJson()))
-                            .savedGroups(TransformationUtil.transformSavedGroups(repository.getSavedGroupsJson()))
-                            .enabled(options.getEnabled())
-                            .qaMode(options.getIsQaMode())
-                            .forcedFeatureValues(options.getForcedFeatureValues())
-                            .forcedVariations(options.getForcedVariationsMap())
-                            .build();
-                }
-            }
-
-            @Override
-            public void onError(Throwable throwable) {
-                log.warn("Unable to refresh global context with latest features", throwable);
-            }
-        };
+    public void refreshForRemoteEval() {
+        try {
+            repository.fetchForRemoteEval(configurePayloadForRemoteEval(options));
+        } catch (FeatureFetchException e) {
+            log.error("Refreshing for remote eval wasn't successful. Message is: {}", e.getMessage(), e);
+        }
     }
-
-    private EvaluationContext getEvalContext(UserContext userContext) {
-        return new EvaluationContext(this.globalContext, userContext, new EvaluationContext.StackContext(), this.options);
-    }
-
 
     public <ValueType> FeatureResult<ValueType> evalFeature(String key,
                                                             Class<ValueType> valueTypeClass,
@@ -208,4 +188,69 @@ public class GrowthBookClient {
             }
         }
     }
- }
+
+    private FeatureRefreshCallback refreshGlobalContext() {
+        return new FeatureRefreshCallback() {
+            @Override
+            public void onRefresh(String featuresJson) {
+                // refer the global context with latest features & saved groups
+                if (globalContext != null) {
+                    globalContext.setFeatures(TransformationUtil.transformFeatures(featuresJson));
+                    globalContext.setSavedGroups(TransformationUtil.transformSavedGroups(repository.getSavedGroupsJson()));
+                } else {
+                    // TBD:M This should never happen! Just to be cautious about race conditions at the time of initialization
+                    globalContext = GlobalContext.builder()
+                            .features(TransformationUtil.transformFeatures(featuresJson))
+                            .savedGroups(TransformationUtil.transformFeatures(repository.getSavedGroupsJson()))
+                            .savedGroups(TransformationUtil.transformSavedGroups(repository.getSavedGroupsJson()))
+                            .enabled(options.getEnabled())
+                            .qaMode(options.getIsQaMode())
+                            .forcedFeatureValues(options.getGlobalForcedFeatureValues())
+                            .forcedVariations(options.getGlobalForcedVariationsMap())
+                            .build();
+                }
+            }
+
+            @Override
+            public void onError(Throwable throwable) {
+                log.warn("Unable to refresh global context with latest features", throwable);
+            }
+        };
+    }
+
+    private EvaluationContext getEvalContext(UserContext userContext) {
+        HashMap<String, JsonElement> globalAttributes = null;
+        if (this.options.getGlobalAttributes() != null) {
+            globalAttributes = GrowthBookJsonUtils.getInstance().gson.fromJson(this.options.getGlobalAttributes(), HashMap.class);
+        }
+
+        HashMap<String, JsonElement> userAttributes = null;
+        if (userContext.getAttributes() != null) {
+            userAttributes = GrowthBookJsonUtils.getInstance().gson.fromJson(userContext.getAttributes(), HashMap.class);
+        }
+
+        if (globalAttributes != null) {
+            if (userAttributes != null) {
+                globalAttributes.putAll(userAttributes);
+            }
+        } else {
+            globalAttributes = userAttributes;
+        }
+
+        String attributesJson = GrowthBookJsonUtils.getInstance().gson.toJson(globalAttributes);
+
+        userContext.setAttributesJson(attributesJson);
+
+        return new EvaluationContext(this.globalContext, userContext, new EvaluationContext.StackContext(), this.options);
+    }
+
+    private RequestBodyForRemoteEval configurePayloadForRemoteEval(Options options) {
+        List<List<Object>> forceFeaturesForPayload = new ArrayList<>();
+        if (options.getGlobalForcedFeatureValues() != null) {
+            forceFeaturesForPayload = options.getGlobalForcedFeatureValues().entrySet().stream()
+                    .map(entry -> Arrays.asList(entry.getKey(), entry.getValue()))
+                    .collect(Collectors.toList());
+        }
+        return new RequestBodyForRemoteEval(options.getGlobalAttributes(), forceFeaturesForPayload, options.getGlobalForcedVariationsMap(), options.getUrl());
+    }
+}
