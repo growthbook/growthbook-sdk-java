@@ -19,6 +19,44 @@
 - [Usage Guide](https://docs.growthbook.io/lib/java)
 - [JavaDoc class documentation](https://growthbook.github.io/growthbook-sdk-java/)
 
+## Installation
+
+### Gradle
+To install in a Gradle project, add Jitpack to your repositories, and then add the dependency with the latest version to your project's dependencies.
+```groovy
+allprojects {
+    repositories {
+        maven { url 'https://jitpack.io' }
+    }
+}
+
+dependencies {
+    implementation 'com.github.growthbook:growthbook-sdk-java:0.5.0'
+}
+```
+
+### Maven
+To install in a Maven project, add Jitpack to your repositories:
+```java
+<repositories>
+    <repository>
+        <id>jitpack.io</id>
+        <url>https://jitpack.io</url>
+    </repository>
+</repositories>
+```
+Next, add the dependency with the latest version to your project's dependencies:
+
+```java
+<dependency>
+    <groupId>com.github.growthbook</groupId>
+    <artifactId>growthbook-sdk-java</artifactId>
+    <version>0.5.0</version>
+</dependency>
+```
+
+> We are proposing two way of initializing SDK:
+
 ### GrowthBookClient
 `GrowthBookClient` lets you share the same instance for all requests with an ability to accept the user attributes 
 while calling the feature methods like `isOn()`. This `GrowthBookClient` instance is decoupled from the `GBContext`, 
@@ -44,6 +82,189 @@ gb.isOn("featureKey", UserContext.builder()
 );
 ```
 
+### Manually create separate instance of GBContext, Repository and Growthbook classes
+
+```java
+GBFeaturesRepository featuresRepository = GBFeaturesRepository
+    .builder()
+    .apiHost("https://cdn.growthbook.io")
+    .clientKey("<environment_key>") // replace with your client key
+    .encryptionKey("<client-key-for-decrypting>") // optional, nullable
+    .refreshStrategy(FeatureRefreshStrategy.SERVER_SENT_EVENTS) // optional; options: STALE_WHILE_REVALIDATE, SERVER_SENT_EVENTS (default: STALE_WHILE_REVALIDATE)
+    .build();
+
+// Optional callback for getting updates when features are refreshed
+featuresRepository.onFeaturesRefresh(new FeatureRefreshCallback() {
+    @Override
+    public void onRefresh(String featuresJson) {
+        System.out.println("Features have been refreshed");
+        System.out.println(featuresJson);
+    }
+});
+
+try {
+    featuresRepository.initialize();
+} catch (FeatureFetchException e) {
+    // TODO: handle the exception
+    e.printStackTrace();
+}
+
+// Initialize the GrowthBook SDK with the GBContext and features
+GBContext context = GBContext
+    .builder()
+    .featuresJson(featuresRepository.getFeaturesJson())
+    .attributesJson(userAttributesJson)
+    .build();
+
+GrowthBook growthBook = new GrowthBook(context);
+
+growthBook.isOn("featureKey");
+```
+## Usage
+
+ * The `evalFeature()` method evaluates a feature based on the provided parameters. 
+It takes three arguments: a string representing the unique identifier of the feature, 
+a generic class valueTypeClass that specifies the type of the result value (e.g., Integer, String, Boolean),
+an UserContext object, which contains attributes such as forceVariations and forceFeatureValues to provide a more flexible way of evaluating features.
+The method returns a FeatureResult object, which contains the evaluated result of the feature along with any additional metadata.
+```java
+public <ValueType> FeatureResult<ValueType> evalFeature(String key, Class<ValueType> valueTypeClass, UserContext userContext);
+```
+
+*  `getFeatureValue()` the same purpose as in `evalFeature()` but have ability to provide default value)
+```java
+public <ValueType> ValueType getFeatureValue(String featureKey, ValueType defaultValue, Class<ValueType> gsonDeserializableClass, UserContext userContext);
+```
+
+* The `isOn()` / `isOff()` method takes a single string argument, which is the unique identifier for the feature and returns the feature state on/off
+
+```java
+public Boolean isOn(String featureKey, UserContext userContext);
+
+public Boolean isOff(String featureKey, UserContext userContext);
+```
+* The `run()` method takes an Experiment object and UserContext. Function returns an ExperimentResult
+```java
+public <ValueType> ExperimentResult<ValueType> run(Experiment<ValueType> experiment, UserContext userContext);
+```
+
+* If you changed, added or removed any features, you can call the `refreshCache()` / `refreshCacheForRemoteEval()` method to clear the cache and download the latest feature definitions.
+```java
+public void refreshFeature();
+
+public void refreshForRemoteEval(RequestBodyForRemoteEval requestBodyForRemoteEval);
+```
+
+## Remote Evaluation
+
+This mode brings the security benefits of a backend SDK to the front end by evaluating feature flags exclusively on a
+private server. Using Remote Evaluation ensures that any sensitive information within targeting rules or unused feature
+variations are never seen by the client. Note that Remote Evaluation should not be used in a backend context.
+
+You must enable Remote Evaluation in your SDK Connection settings. Cloud customers are also required to self-host a
+GrowthBook Proxy Server or custom remote evaluation backend.
+
+To use Remote Evaluation, set the `FeatureRefreshStrategy = REMOTE_EVAL_STRATEGY` property to your Repository or Options instance. A new evaluation API call will be
+made any time a user attribute or other dependency changes.
+
+> If you would like to implement Sticky Bucketing while using Remote Evaluation, you must configure your remote evaluation
+> backend to support Sticky Bucketing. You will not need to provide a StickyBucketService instance to the client side SDK.
+
+## Sticky Bucketing
+
+By default, GrowthBook does not persist assigned experiment variations for a user.
+We rely on deterministic hashing to ensure that the same user attributes always map to the same experiment variation.
+However, there are cases where this isn't good enough. For example, if you change targeting conditions
+in the middle of an experiment, users may stop being shown a variation even if they were previously bucketed into it.
+Sticky Bucketing is a solution to these issues. You can provide a Sticky Bucket Service to the GrowthBook instance
+to persist previously seen variations and ensure that the user experience remains consistent for your users.
+
+Sticky bucketing ensures that users see the same experiment variant, even when user session, user login status, or
+experiment parameters change. See the [Sticky Bucketing docs](https://docs.growthbook.io/app/sticky-bucketing) for more
+information. If your organization and experiment supports sticky bucketing, you can implement an instance of
+the `StickyBucketService` to use Sticky Bucketing. For simple bucket persistence using the CachingLayer.
+
+Sticky Bucket documents contain three fields:
+* attributeName - The name of the attribute used to identify the user (e.g. id, cookie_id, etc.)
+* attributeValue - The value of the attribute (e.g. 123)
+* assignments - A dictionary of persisted experiment assignments. For example: {"exp1__0":"control"}
+
+The attributeName/attributeValue combo is the primary key.
+
+Here's an example implementation using a theoretical db object:
+```java
+public class InMemoryStickyBucketServiceImpl implements StickyBucketService {
+    private final Map<String, StickyAssignmentsDocument> localStorage;
+
+    /**
+     * Constructs a new {@code InMemoryStickyBucketServiceImpl} with the specified local storage.
+     *
+     * @param localStorage a map to store sticky assignments documents in memory.
+     */
+    public InMemoryStickyBucketServiceImpl(Map<String, StickyAssignmentsDocument> localStorage) {
+        this.localStorage = localStorage;
+    }
+
+    /**
+     * Method for getting all assignments document from cache (in memory: hashmap)
+     *
+     * @param attributeName  attributeName with attributeValue together present
+     *                       a key that us for find proper StickyAssignmentsDocument
+     * @param attributeValue attributeName with attributeValue together present
+     *                       a key that us for find proper StickyAssignmentsDocument
+     * @return StickyAssignmentsDocument
+     */
+    @Override
+    public StickyAssignmentsDocument getAssignments(String attributeName, String attributeValue) {
+        return localStorage.get(attributeName + "||" + attributeValue);
+    }
+
+    /**
+     * Method for saving assignments document to cache (in memory: hashmap)
+     *
+     * @param doc StickyAssignmentsDocument
+     */
+    @Override
+    public void saveAssignments(StickyAssignmentsDocument doc) {
+        localStorage.put(doc.getAttributeName() + "||" + doc.getAttributeValue(), doc);
+    }
+
+    /**
+     * Method for getting sticky bucket assignments from cache (in memory: hashmap) by attributes of context
+     *
+     * @param attributes Map of String key and String value that you have in GBContext
+     * @return Map with key String and value StickyAssignmentsDocument
+     */
+    @Override
+    public Map<String, StickyAssignmentsDocument> getAllAssignments(Map<String, String> attributes) {
+        Map<String, StickyAssignmentsDocument> docs = new HashMap<>();
+
+        for (Map.Entry<String, String> entry : attributes.entrySet()) {
+            String key = entry.getKey();
+            String value = entry.getValue();
+            StickyAssignmentsDocument doc = getAssignments(key, value);
+
+            if (doc != null) {
+                String docKey = doc.getAttributeName() + "||" + doc.getAttributeValue();
+                docs.put(docKey, doc);
+            }
+        }
+
+        return docs;
+    }
+}
+```
+## Changelog
+- **v0.0.92** 2024-02-DD
+  - Provide new way of initialization SDK through Options and GrowthBookClient
+  - Add ability to maintenance of remote evaluation feature
+  - Add ability to cache data from HTTP response to the file
+  - Fix evaluating force property in rule when rule is JsonObject and defined as null
+  - Update guava dependency
+  - Change logic of subscriptions
+  - Add ability to evaluate manual force feature
+  - add new implementations of  IGBFeaturesRepository : NativeJavaGbFeatureRepository and LocalGbFeatureRepository
+  - Providing better error handling for non-200 HTTP responses
 
 ## Contributing
 

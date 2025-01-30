@@ -110,9 +110,9 @@ public class GrowthBookClient {
         }
     }
 
-    public void refreshForRemoteEval() {
+    public void refreshForRemoteEval(RequestBodyForRemoteEval requestBodyForRemoteEval) {
         try {
-            repository.fetchForRemoteEval(configurePayloadForRemoteEval(options));
+            repository.fetchForRemoteEval(requestBodyForRemoteEval);
         } catch (FeatureFetchException e) {
             log.error("Refreshing for remote eval wasn't successful. Message is: {}", e.getMessage(), e);
         }
