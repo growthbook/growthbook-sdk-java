@@ -274,18 +274,13 @@ public class NativeJavaGbFeatureRepository implements IGBFeaturesRepository {
                     throw new FeatureFetchException(FeatureFetchException.FeatureFetchErrorCode.UNKNOWN);
                 }
                 this.sseAllowed = ENABLED.equals(sseSupportHeader);
-                this.onSuccess(responseBody);
+                this.onSuccess(responseBody, false);
             }
         } catch (IOException e) {
+            log.error(e.getMessage(), e);
             if (!isCacheDisabled.get()) {
-                if (cachingManager.get().loadCache(FILE_NAME_FOR_CACHE) != null) {
-                    log.warn("HTTP request is not successful. The message was {}. Try to get data from cache...", e.getMessage(), e);
-                    onResponseJson(cachingManager.get().loadCache(FILE_NAME_FOR_CACHE));
-                } else {
-                    log.error(e.getMessage(), e);
-                    throw new FeatureFetchException(FeatureFetchException.FeatureFetchErrorCode.UNKNOWN,
-                            e.getMessage());
-                }
+                String cachedData = getCachedFeatures();
+                onResponseJson(cachedData, true);
             }
 
         } finally {
@@ -303,41 +298,33 @@ public class NativeJavaGbFeatureRepository implements IGBFeaturesRepository {
     }
 
 
-    private void onSuccess(String response) throws FeatureFetchException {
-        String responseJsonString = response;
-        if (response == null) {
-            if (!isCacheDisabled.get()) {
-                log.error("FeatureFetchException: FeatureFetchErrorCode.NO_RESPONSE_ERROR");
-                log.info("Fetching data from cache...");
-                if (cachingManager.get().loadCache(FILE_NAME_FOR_CACHE) == null) {
-                    log.error("FeatureFetchException: No Features from Cache");
-
-                    throw new FeatureFetchException(
-                            FeatureFetchException.FeatureFetchErrorCode.NO_RESPONSE_ERROR
-                    );
-                }
-                responseJsonString = cachingManager.get().loadCache(FILE_NAME_FOR_CACHE);
-            }
+    private void onSuccess(String response, boolean isFromCache) throws FeatureFetchException {
+        String responseJsonString = null;
+        if (response != null) {
+            responseJsonString = response;
+        }else {
+            log.error("FeatureFetchException: FeatureFetchErrorCode.NO_RESPONSE_ERROR");
+            log.info("Fetching data from cache...");
+            responseJsonString = getCachedFeatures();
+            isFromCache = true;
         }
-        onResponseJson(responseJsonString);
+        onResponseJson(responseJsonString, isFromCache);
     }
 
-    private void onResponseJson(String responseJsonString) throws FeatureFetchException {
+    private void onResponseJson(String responseJsonString, boolean isFromCache) throws FeatureFetchException {
         try {
             lock.lock();
             if (responseJsonString == null || responseJsonString.trim().isEmpty()) {
                 return;
             }
 
-            String data = responseJsonString;
-            if (!isCacheDisabled.get()) {
+            if (!isFromCache && !isCacheDisabled.get()) {
                 cachingManager.get().saveContent(FILE_NAME_FOR_CACHE, responseJsonString);
-                data = cachingManager.get().loadCache(FILE_NAME_FOR_CACHE);
             }
 
             try {
                 JsonObject jsonObject = GrowthBookJsonUtils.getInstance()
-                        .gson.fromJson(data, JsonObject.class);
+                        .gson.fromJson(responseJsonString, JsonObject.class);
 
                 if (jsonObject == null) {
                     log.error("JSON response is null or invalid");
@@ -480,5 +467,13 @@ public class NativeJavaGbFeatureRepository implements IGBFeaturesRepository {
                     e.getMessage());
         }
         return connection;
+    }
+    private String getCachedFeatures() throws FeatureFetchException {
+        String cachedData = cachingManager.get().loadCache(FILE_NAME_FOR_CACHE);
+        if (cachedData == null) {
+            log.error("FeatureFetchException: No Features from Cache");
+            throw new FeatureFetchException(FeatureFetchException.FeatureFetchErrorCode.NO_RESPONSE_ERROR);
+        }
+        return cachedData;
     }
 }
