@@ -32,6 +32,7 @@ class GBFeaturesRepositoryTest {
                 null,
                 null,
                 null,
+                null,
                 null
         );
 
@@ -46,6 +47,7 @@ class GBFeaturesRepositoryTest {
                 "https://cdn.growthbook.io",
                 "sdk-862b5mHcP9XPugqD",
                 "BhB1wORFmZLTDjbvstvS8w==",
+                null,
                 null,
                 null,
                 null
@@ -107,7 +109,8 @@ class GBFeaturesRepositoryTest {
                 null,
                 null,
                 null,
-                mockOkHttpClient
+                mockOkHttpClient,
+                null
         );
         subject.initialize();
 
@@ -152,7 +155,8 @@ class GBFeaturesRepositoryTest {
                 encryptionKey,
                 null,
                 null,
-                mockOkHttpClient
+                mockOkHttpClient,
+                null
         );
         subject.initialize();
 
@@ -193,7 +197,8 @@ class GBFeaturesRepositoryTest {
                 null,
                 null,
                 0,
-                mockOkHttpClient
+                mockOkHttpClient,
+                null
         );
 
         subject.onFeaturesRefresh(featureRefreshCallback);
@@ -226,7 +231,8 @@ class GBFeaturesRepositoryTest {
                 null,
                 null,
                 0,
-                mockOkHttpClient
+                mockOkHttpClient,
+                null
         );
 
         subject.onFeaturesRefresh(featureRefreshCallback);

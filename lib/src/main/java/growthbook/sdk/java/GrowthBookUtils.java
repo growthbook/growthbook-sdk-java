@@ -21,6 +21,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
  * <b>INTERNAL</b>: Implementation of for internal utility methods to support {@link growthbook.sdk.java.GrowthBook}
@@ -866,5 +867,19 @@ class GrowthBookUtils {
             }
         }
         return -1;
+    }
+
+    public static  <K, V> Map<K, V> mergeMaps(List<Map<K, V>> maps) {
+        return maps.stream()
+                .filter(Objects::nonNull)
+                .flatMap(map -> map.entrySet()
+                        .stream())
+                .collect(Collectors.toMap(
+                                Map.Entry::getKey,
+                                Map.Entry::getValue,
+                                (v1, v2) -> v2
+                        )
+                );
+
     }
 }

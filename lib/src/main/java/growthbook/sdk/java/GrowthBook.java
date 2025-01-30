@@ -51,7 +51,7 @@ public class GrowthBook implements IGrowthBook {
      */
     public GrowthBook(GBContext context) {
         this.context = context;
-        
+
         this.assigned = new HashMap<>();
         this.callbacks = new ArrayList<>();
         this.featureEvaluator = new FeatureEvaluator();
@@ -115,12 +115,14 @@ public class GrowthBook implements IGrowthBook {
                 .stickyBucketService(this.context.getStickyBucketService())
                 .trackingCallBackWithUser(new TrackingCallbackAdapter(this.context.getTrackingCallback()))
                 .featureUsageCallbackWithUser(new FeatureUsageCallbackAdapter(this.context.getFeatureUsageCallback()))
+                .globalForcedFeatureValues(this.forcedFeatureValues)
                 .build();
 
         // build global
         GlobalContext globalContext = GlobalContext.builder()
                 .features(this.context.getFeatures())
                 .savedGroups(this.context.getSavedGroups())
+                .forcedFeatureValues(this.forcedFeatureValues)
                 .build();
 
         // build user context
@@ -556,9 +558,15 @@ public class GrowthBook implements IGrowthBook {
         // If assigned variation has changed, fire subscriptions
         AssignedExperiment prev = this.assigned.get(key);
         if (prev == null
-                || !Objects.equals(prev.getExperimentResult().getInExperiment(), result.getInExperiment())
-                || !Objects.equals(prev.getExperimentResult().getVariationId(), result.getVariationId())) {
-            this.assigned.put(key, new AssignedExperiment<>(experiment, result));
+                || !Objects.equals(prev.getInExperiment(), result.getInExperiment())
+                || !Objects.equals(prev.getVariationId(), result.getVariationId())) {
+            AssignedExperiment current = new AssignedExperiment(
+                    experiment.getKey(),
+                    result.getInExperiment(),
+                    result.getVariationId()
+            );
+            this.assigned.put(key, current);
+
             for (ExperimentRunCallback cb : this.callbacks) {
                 try {
                     cb.onRun(experiment, result);

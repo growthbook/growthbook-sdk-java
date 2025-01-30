@@ -52,7 +52,7 @@ public class ExperimentEvaluator implements IExperimentEvaluator {
         }
 
         // If no forced variation, not in experiment, variation 0
-        Map<String, Integer> forcedVariations = context.getUser().getForcedVariationsMap();
+        Map<String, Integer> forcedVariations = getForcedVariations(context);
         if (forcedVariations == null) {
             forcedVariations = new HashMap<>();
         }
@@ -392,5 +392,10 @@ public class ExperimentEvaluator implements IExperimentEvaluator {
                                                                       Experiment<ValueType> experiment) {
         return context.getOptions().getStickyBucketService() != null
                 && !Boolean.TRUE.equals(experiment.disableStickyBucketing);
+    }
+
+    private Map<String, Integer> getForcedVariations(EvaluationContext evaluationContext) {
+        return GrowthBookUtils.mergeMaps(Arrays.asList(evaluationContext.getGlobal().getForcedVariations(),
+                evaluationContext.getUser().getForcedVariationsMap()));
     }
 }
