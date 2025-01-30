@@ -2,15 +2,18 @@ package growthbook.sdk.java;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.google.gson.JsonObject;
 import okhttp3.Call;
 import okhttp3.Callback;
 import okhttp3.MediaType;
@@ -20,7 +23,12 @@ import okhttp3.Request;
 import okhttp3.Response;
 import okhttp3.ResponseBody;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
+
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Objects;
 
 class GBFeaturesRepositoryTest {
 
@@ -241,6 +249,156 @@ class GBFeaturesRepositoryTest {
 
         verify(featureRefreshCallback).onError(requestFailed);
         verify(featureRefreshCallback, never()).onRefresh(anyString());
+    }
+
+
+    @Test
+    void test_fetchForRemoteEval_success() throws FeatureFetchException, IOException {
+        OkHttpClient mockHttpClient = mock(OkHttpClient.class);
+        Call mockCall = mock(Call.class);
+        Response mockResponse = mock(Response.class);
+        ResponseBody mockResponseBody = mock(ResponseBody.class);
+        // Arrange
+        GBFeaturesRepository repository = spy(new GBFeaturesRepository(
+                "https://cdn.growthbook.io",
+                "sdk-abc123",
+                null,
+                FeatureRefreshStrategy.REMOTE_EVAL_STRATEGY,
+                60,
+                mockHttpClient,
+                null
+        ));
+
+        RequestBodyForRemoteEval requestBody = new RequestBodyForRemoteEval();
+        String expectedResponse = "{\"features\": {}}";
+
+
+
+        when(mockHttpClient.newCall(any(Request.class))).thenReturn(mockCall);
+        when(mockCall.execute()).thenReturn(mockResponse);
+        when(mockResponse.isSuccessful()).thenReturn(true);
+        when(mockResponse.code()).thenReturn(200);
+        when(mockResponse.body()).thenReturn(mockResponseBody);
+        when(mockResponseBody.string()).thenReturn(expectedResponse);
+
+
+        // Act
+        repository.fetchForRemoteEval(requestBody);
+
+        // Assert
+        verify(mockHttpClient).newCall(any(Request.class));
+        verify(mockCall).execute();
+        verify(mockResponseBody).string();
+        assertEquals("{}", repository.getFeaturesJson());
+    }
+
+    @Test
+    void test_fetchForRemoteEval_networkError() throws IOException {
+        // Arrange
+        OkHttpClient mockHttpClient = mock(OkHttpClient.class);
+        Call mockCall = mock(Call.class);
+
+        GBFeaturesRepository repository = spy(new GBFeaturesRepository(
+                "https://cdn.growthbook.io",
+                "sdk-abc123",
+                null,
+                FeatureRefreshStrategy.REMOTE_EVAL_STRATEGY,
+                60,
+                mockHttpClient,
+                null
+        ));
+
+        RequestBodyForRemoteEval requestBody = new RequestBodyForRemoteEval();
+
+
+
+        when(mockHttpClient.newCall(any(Request.class))).thenReturn(mockCall);
+        when(mockCall.execute()).thenThrow(new IOException("Network error"));
+
+        // Act & Assert
+        assertThrows(FeatureFetchException.class, () -> repository.fetchForRemoteEval(requestBody));
+    }
+
+    @Test
+    void test_fetchForRemoteEval_invalidResponse() throws IOException, FeatureFetchException {
+        // Arrange
+        OkHttpClient mockHttpClient = mock(OkHttpClient.class);
+        Call mockCall = mock(Call.class);
+        Response mockResponse = mock(Response.class);
+
+        FeatureRefreshCallback mockCallback = mock(FeatureRefreshCallback.class);
+
+        GBFeaturesRepository repository = spy(new GBFeaturesRepository(
+                "https://cdn.growthbook.io",
+                "sdk-abc123",
+                null,
+                FeatureRefreshStrategy.REMOTE_EVAL_STRATEGY,
+                60,
+                mockHttpClient,
+                null
+        ));
+
+        repository.onFeaturesRefresh(mockCallback);
+
+        RequestBodyForRemoteEval requestBody = new RequestBodyForRemoteEval();
+
+        when(mockHttpClient.newCall(any(Request.class))).thenReturn(mockCall);
+        when(mockCall.execute()).thenReturn(mockResponse);
+        when(mockResponse.isSuccessful()).thenReturn(false);
+        when(mockResponse.code()).thenReturn(500);
+        when(mockResponse.message()).thenReturn("Internal Server Error");
+
+        // Act
+        repository.fetchForRemoteEval(requestBody);
+
+        // Assert
+        ArgumentCaptor<Throwable> throwableCaptor = ArgumentCaptor.forClass(Throwable.class);
+        verify(mockCallback).onError(throwableCaptor.capture());
+
+        Throwable capturedThrowable = throwableCaptor.getValue();
+        assertEquals("Response is not success, response code is:500. And message is: Internal Server Error", capturedThrowable.getMessage());
+    }
+
+    @Test
+    void test_fetchForRemoteEval_requestBody() throws FeatureFetchException, IOException {
+        RequestBodyForRemoteEval requestBody = new RequestBodyForRemoteEval();
+        requestBody.setAttributes(new JsonObject());
+        requestBody.setUrl("");
+        requestBody.setForcedFeatures(new ArrayList<>());
+        requestBody.setForcedVariations(new HashMap<>());
+
+        OkHttpClient mockHttpClient = mock(OkHttpClient.class);
+        Call mockCall = mock(Call.class);
+        Response mockResponse = mock(Response.class);
+        ResponseBody mockResponseBody = mock(ResponseBody.class);
+
+        GBFeaturesRepository repository = spy(new GBFeaturesRepository(
+                "https://cdn.growthbook.io",
+                "sdk-abc123",
+                null,
+                FeatureRefreshStrategy.REMOTE_EVAL_STRATEGY,
+                60,
+                mockHttpClient,
+                requestBody
+        ));
+
+        when(mockHttpClient.newCall(any(Request.class))).thenReturn(mockCall);
+        when(mockCall.execute()).thenReturn(mockResponse);
+        when(mockResponse.isSuccessful()).thenReturn(true);
+        when(mockResponse.code()).thenReturn(200);
+        when(mockResponse.body()).thenReturn(mockResponseBody);
+        when(mockResponseBody.string()).thenReturn("{\"features\": {}}");
+
+        // Act
+        repository.fetchForRemoteEval(requestBody);
+
+        // Assert
+        ArgumentCaptor<Request> requestCaptor = ArgumentCaptor.forClass(Request.class);
+        verify(mockHttpClient).newCall(requestCaptor.capture());
+
+        Request capturedRequest = requestCaptor.getValue();
+        assertNotNull(capturedRequest.body());
+        assertEquals("application/json; charset=utf-8", Objects.requireNonNull(capturedRequest.body().contentType()).toString());
     }
 
     /*
