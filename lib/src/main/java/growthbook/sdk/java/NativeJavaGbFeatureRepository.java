@@ -425,7 +425,7 @@ public class NativeJavaGbFeatureRepository implements IGBFeaturesRepository {
                         } else if (line.isEmpty()) {
                             String data = dataBuffer.toString();
                             if (!data.isEmpty()) {
-                                onResponseJson(data);
+                                onResponseJson(data, false);
                             }
                             dataBuffer.setLength(0);
                         }
