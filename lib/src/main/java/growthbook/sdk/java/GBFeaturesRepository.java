@@ -16,6 +16,7 @@ import okhttp3.sse.EventSourceListener;
 import okhttp3.sse.EventSources;
 
 import org.jetbrains.annotations.NotNull;
+
 import javax.annotation.Nullable;
 import java.io.IOException;
 import java.time.Instant;
@@ -35,7 +36,6 @@ import java.util.logging.Logger;
 public class GBFeaturesRepository implements IGBFeaturesRepository {
     private static final String ENABLED = "enabled";
     private static final String FILE_NAME = "FEATURE_CACHE.json";
-    private static final String FILE_NAME_FOR_CACHE = "FEATURE_CACHE.json";
     public static final String FILE_PATH_FOR_CACHE = "src/main/resources";
     public static final String EMPTY_JSON_OBJECT_STRING = "{}";
 
@@ -130,9 +130,17 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
      */
     private String featuresJson = EMPTY_JSON_OBJECT_STRING;
 
+    // Method was useful for testing
+    public void setCachingManager(CachingManager cachingManager) {
+        if (Boolean.FALSE.equals(this.isCacheDisabled)) {
+            this.cachingManager = cachingManager;
+        }
+    }
+
     /**
      * CachingManger allows to cache features data to file
      */
+    @Getter
     private CachingManager cachingManager;
 
     /**
@@ -236,7 +244,6 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
     }
 
     /**
-     *
      * @return feature data JSON in a type of String. Handle refresh strategy
      */
     public String getFeaturesJson() {
@@ -289,7 +296,7 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
             @Override
             public void onResponse(@NotNull Call call, @NotNull Response response) {
                 try {
-                    self.onSuccess(response);
+                    self.onSuccess(response, false);
                 } catch (FeatureFetchException e) {
                     log.error(e.getMessage(), e);
                 }
@@ -365,7 +372,7 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
 
                             @Override
                             public void onFeaturesResponse(String featuresJsonResponse) throws FeatureFetchException {
-                                onResponseJson(featuresJsonResponse);
+                                onResponseJson(featuresJsonResponse, false);
                             }
                         }
                 ) {
@@ -446,18 +453,12 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
             String sseSupportHeader = response.header(HttpHeaders.X_SSE_SUPPORT.getHeader());
             this.sseAllowed = Objects.equals(sseSupportHeader, ENABLED);
 
-            this.onSuccess(response);
+            this.onSuccess(response, false);
         } catch (IOException e) {
             log.error(e.getMessage(), e);
             if (!isCacheDisabled) {
-                if (cachingManager.loadCache(FILE_NAME) != null) {
-                    onResponseJson(cachingManager.loadCache(FILE_NAME));
-                } else {
-                    throw new FeatureFetchException(
-                            FeatureFetchException.FeatureFetchErrorCode.UNKNOWN,
-                            e.getMessage()
-                    );
-                }
+                String cachedData = getCachedFeatures();
+                onResponseJson(cachedData, true);
             }
         }
     }
@@ -467,16 +468,14 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
      *
      * @param responseJsonString JSON response object
      */
-    private void onResponseJson(String responseJsonString) throws FeatureFetchException {
+    private void onResponseJson(String responseJsonString, boolean isFromCache) throws FeatureFetchException {
         try {
-            String data = responseJsonString;
-            if (!isCacheDisabled) {
+            if (!isFromCache && !isCacheDisabled) {
                 cachingManager.saveContent(FILE_NAME, responseJsonString);
-                data = cachingManager.loadCache(FILE_NAME);
             }
 
             JsonObject jsonObject = GrowthBookJsonUtils.getInstance()
-                    .gson.fromJson(data, JsonObject.class);
+                    .gson.fromJson(responseJsonString, JsonObject.class);
 
             // Features will be refreshed as either an encrypted or un-encrypted JSON string
             String refreshedFeatures;
@@ -543,13 +542,13 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
     }
 
     private void onRefreshSuccess(String featuresJson) {
-        for (FeatureRefreshCallback callback: this.refreshCallbacks) {
+        for (FeatureRefreshCallback callback : this.refreshCallbacks) {
             callback.onRefresh(featuresJson);
         }
     }
 
     private void onRefreshFailed(Throwable throwable) {
-        for (FeatureRefreshCallback callback: this.refreshCallbacks) {
+        for (FeatureRefreshCallback callback : this.refreshCallbacks) {
             callback.onError(throwable);
         }
     }
@@ -559,32 +558,23 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
      *
      * @param response Successful response
      */
-    private void onSuccess(Response response) throws FeatureFetchException {
+    private void onSuccess(Response response, boolean isFromCache) throws FeatureFetchException {
         try {
             ResponseBody responseBody = response.body();
             String responseJsonString = "";
-            if (responseBody == null) {
-                if (!isCacheDisabled) {
-                    log.error("FeatureFetchException: FeatureFetchErrorCode.NO_RESPONSE_ERROR");
-                    log.info("Fetching data from cache...");
-                    if (cachingManager.loadCache(FILE_NAME) == null) {
-                        log.error("FeatureFetchException: No Features from Cache");
-
-                        throw new FeatureFetchException(
-                                FeatureFetchException.FeatureFetchErrorCode.NO_RESPONSE_ERROR
-                        );
-                    }
-                    responseJsonString = cachingManager.loadCache(FILE_NAME);
-                }
-            } else {
+            if (responseBody != null) {
                 responseJsonString = responseBody.string();
+            } else {
+                log.error("FeatureFetchException: FeatureFetchErrorCode.NO_RESPONSE_ERROR");
+                log.info("Fetching data from cache...");
+                responseJsonString = getCachedFeatures();
+                isFromCache = true;
             }
 
-            onResponseJson(responseJsonString);
+            onResponseJson(responseJsonString, isFromCache);
         } catch (IOException e) {
             log.error("FeatureFetchException: UNKNOWN feature fetch error code {}",
                     e.getMessage(), e);
-
 
 
             throw new FeatureFetchException(
@@ -657,5 +647,14 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
             log.info("SseHttpClient shutdown");
 
         }
+    }
+
+    private String getCachedFeatures() throws FeatureFetchException {
+        String cachedData = cachingManager.loadCache(FILE_NAME);
+        if (cachedData == null) {
+            log.error("FeatureFetchException: No Features from Cache");
+            throw new FeatureFetchException(FeatureFetchException.FeatureFetchErrorCode.NO_RESPONSE_ERROR);
+        }
+        return cachedData;
     }
 }
