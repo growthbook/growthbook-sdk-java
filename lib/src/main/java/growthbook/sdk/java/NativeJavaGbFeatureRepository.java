@@ -10,11 +10,16 @@ import javax.annotation.Nullable;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -41,6 +46,12 @@ public class NativeJavaGbFeatureRepository implements IGBFeaturesRepository {
     private final String featuresEndpoint;
 
     /**
+     * Endpoint for POST request
+     */
+    @Getter
+    private final String remoteEvalEndPoint;
+
+    /**
      * Endpoint for SSE request
      */
     @Getter
@@ -62,24 +73,24 @@ public class NativeJavaGbFeatureRepository implements IGBFeaturesRepository {
     /**
      * Flag to know whether sse connection is allowed
      */
-    private Boolean sseAllowed;
+    private final AtomicBoolean sseAllowed = new AtomicBoolean(false);
 
     /**
      * The standard cache TTL to use (60 seconds)
      */
     @Getter
-    private final Integer swrTtlSeconds;
+    private final AtomicInteger swrTtlSeconds;
 
     /**
      * Seconds after that cache is expired
      */
     @Getter
-    private Long expiresAt;
+    private final AtomicLong expiresAt = new AtomicLong(0);
 
     /**
      * Flag to know whether GBFeatureRepository is initialized
      */
-    private volatile Boolean initialized = false;
+    private final AtomicBoolean initialized = new AtomicBoolean(false);
 
     /**
      * Allows you to get the saved groups JSON from the provided {@link NativeJavaGbFeatureRepository#getSavedGroupsJson()} ()}.
@@ -112,12 +123,20 @@ public class NativeJavaGbFeatureRepository implements IGBFeaturesRepository {
     private final AtomicBoolean isCacheDisabled;
 
     /**
+     * Request body that be sent with POST request for remote eval feature
+     */
+    @Nullable
+    @Getter
+    private final RequestBodyForRemoteEval requestBodyForRemoteEval;
+
+    /**
      * Create a new GBFeaturesRepository
      *
      * @param apiHost       The GrowthBook API host (default: <a href="https://cdn.growthbook.io">...</a>)
      * @param clientKey     Your client ID, e.g. sdk-abc123
      * @param encryptionKey optional key for decrypting encrypted payload
      * @param swrTtlSeconds How often the cache should be invalidated when using {@link FeatureRefreshStrategy#STALE_WHILE_REVALIDATE} (default: 60)
+     * @param requestBodyForRemoteEval       Payload that would be sent with POST request when repository configure with Remote evalStrategy {@link FeatureRefreshStrategy#REMOTE_EVAL_STRATEGY}
      */
     @Builder
     public NativeJavaGbFeatureRepository(@Nullable String apiHost,
@@ -126,6 +145,8 @@ public class NativeJavaGbFeatureRepository implements IGBFeaturesRepository {
                                          @Nullable FeatureRefreshStrategy refreshStrategy,
                                          @Nullable Integer swrTtlSeconds,
                                          @Nullable Boolean isCacheDisabled
+                                         @Nullable Integer swrTtlSeconds,
+                                         @Nullable RequestBodyForRemoteEval requestBodyForRemoteEval
     ) {
         this.isCacheDisabled = new AtomicBoolean(Boolean.TRUE.equals(isCacheDisabled));
         if (clientKey == null) {
@@ -137,8 +158,11 @@ public class NativeJavaGbFeatureRepository implements IGBFeaturesRepository {
         this.refreshStrategy = refreshStrategy == null ? FeatureRefreshStrategy.STALE_WHILE_REVALIDATE : refreshStrategy;
         this.featuresEndpoint = apiHost + "/api/features/" + clientKey;
         this.eventsEndpoint = apiHost + "/sub/" + clientKey;
+        this.remoteEvalEndPoint = apiHost + "/api/eval/" + clientKey;
+        this.requestBodyForRemoteEval = requestBodyForRemoteEval;
+
         this.encryptionKey = encryptionKey;
-        this.swrTtlSeconds = swrTtlSeconds == null ? 60 : swrTtlSeconds;
+        this.swrTtlSeconds = swrTtlSeconds == null ? new AtomicInteger(60) : new AtomicInteger(swrTtlSeconds);
         this.refreshExpiresAt();
             if (!this.isCacheDisabled.get()) {
                 this.cachingManager = new AtomicReference<>(new CachingManager(FILE_PATH_FOR_CACHE));
@@ -149,7 +173,8 @@ public class NativeJavaGbFeatureRepository implements IGBFeaturesRepository {
     /**
      * Method for initialize {@link NativeJavaGbFeatureRepository}. Depends on {@link FeatureRefreshStrategy}
      * connection would be established for SSE or for just GET request
-     * @throws FeatureFetchException during initialize function
+     *
+     * @throws FeatureFetchException while initialize function
      */
     @Override
     public void initialize() throws FeatureFetchException {
@@ -177,7 +202,7 @@ public class NativeJavaGbFeatureRepository implements IGBFeaturesRepository {
         try {
             lock.lock();
 
-            if (this.initialized) return;
+            if (this.initialized.get()) return;
 
             switch (this.refreshStrategy) {
                 case STALE_WHILE_REVALIDATE:
@@ -188,9 +213,13 @@ public class NativeJavaGbFeatureRepository implements IGBFeaturesRepository {
                     fetchFeatures();
                     initializeSSE(retryOnFailure);
                     break;
+
+                case REMOTE_EVAL_STRATEGY:
+                    fetchForRemoteEval(this.requestBodyForRemoteEval);
+                    break;
             }
 
-            this.initialized = true;
+            this.initialized.set(true);
         } finally {
             lock.unlock();
         }
@@ -198,6 +227,7 @@ public class NativeJavaGbFeatureRepository implements IGBFeaturesRepository {
 
     /**
      * Method for getting Feature from API call once if it STALE_WHILE_REVALIDATE or be updated if SERVER_SENT_EVENTS strategy
+     *
      * @return Feature Json in format of String
      */
     @Override
@@ -214,6 +244,9 @@ public class NativeJavaGbFeatureRepository implements IGBFeaturesRepository {
                     return this.featuresJson.get();
 
                 case SERVER_SENT_EVENTS:
+                    return this.featuresJson.get();
+
+                case REMOTE_EVAL_STRATEGY:
                     return this.featuresJson.get();
             }
 
@@ -244,10 +277,12 @@ public class NativeJavaGbFeatureRepository implements IGBFeaturesRepository {
     }
 
     private void refreshExpiresAt() {
-        this.expiresAt = Instant.now().getEpochSecond() + this.swrTtlSeconds;
+        this.expiresAt.set(
+                Instant.now().getEpochSecond() + this.swrTtlSeconds.get()
+        );
     }
 
-    private void fetchFeatures() throws FeatureFetchException {
+    void fetchFeatures() throws FeatureFetchException {
         if (this.featuresEndpoint == null) {
             throw new IllegalArgumentException("features endpoint cannot be null");
         }
@@ -273,6 +308,8 @@ public class NativeJavaGbFeatureRepository implements IGBFeaturesRepository {
                 if (sseSupportHeader == null) {
                     throw new FeatureFetchException(FeatureFetchException.FeatureFetchErrorCode.UNKNOWN);
                 }
+                this.sseAllowed.set(ENABLED.equals(sseSupportHeader));
+                this.onSuccess(responseBody);
                 this.sseAllowed = ENABLED.equals(sseSupportHeader);
                 this.onSuccess(responseBody, false);
             }
@@ -281,6 +318,11 @@ public class NativeJavaGbFeatureRepository implements IGBFeaturesRepository {
             if (!isCacheDisabled.get()) {
                 String cachedData = getCachedFeatures();
                 onResponseJson(cachedData, true);
+            } else {
+                this.onRefreshFailed(e);
+
+                throw new FeatureFetchException(FeatureFetchException.FeatureFetchErrorCode.UNKNOWN,
+                        e.getMessage());
             }
 
         } finally {
@@ -391,18 +433,26 @@ public class NativeJavaGbFeatureRepository implements IGBFeaturesRepository {
         }
     }
 
-    private void onRefreshSuccess(String featuresJson) {
-        this.refreshCallbacks.forEach(featureRefreshCallback -> featureRefreshCallback.onRefresh(featuresJson));
+    void onRefreshSuccess(String featuresJson) {
+        for (FeatureRefreshCallback callback : this.refreshCallbacks) {
+            callback.onRefresh(featuresJson);
+        }
+    }
+
+    void onRefreshFailed(Throwable throwable) {
+        for (FeatureRefreshCallback callback : this.refreshCallbacks) {
+            callback.onError(throwable);
+        }
     }
 
     private Boolean isCacheExpired() {
         long now = Instant.now().getEpochSecond();
-        return now >= this.expiresAt;
+        return now >= this.expiresAt.get();
     }
 
 
     private void initializeSSE(Boolean retryOnFailure) {
-        if (!this.sseAllowed) {
+        if (!this.sseAllowed.get()) {
             log.info("\nFalling back to stale-while-revalidate refresh strategy. 'X-Sse-Support: enabled' not present on resource returned at {}", this.featuresEndpoint);
             this.refreshStrategy = FeatureRefreshStrategy.STALE_WHILE_REVALIDATE;
         }
@@ -446,6 +496,50 @@ public class NativeJavaGbFeatureRepository implements IGBFeaturesRepository {
             }
         };
         new Thread(sseTask).start();
+    }
+
+    private void fetchForRemoteEval(RequestBodyForRemoteEval requestBodyForRemoteEval) throws FeatureFetchException {
+        HttpURLConnection urlConnection = null;
+        try {
+            String body = GrowthBookJsonUtils.getInstance().gson.toJson(requestBodyForRemoteEval);
+
+            URL url = new URL(this.remoteEvalEndPoint);
+            urlConnection = (HttpURLConnection) url.openConnection();
+            urlConnection.setRequestMethod("POST");
+            urlConnection.setDoOutput(true);
+            urlConnection.setRequestProperty("Content-Type", "application/json");
+            urlConnection.setRequestProperty("Accept", "application/json");
+
+            try (OutputStream os = urlConnection.getOutputStream()) {
+                byte[] input = body.getBytes(StandardCharsets.UTF_8);
+                os.write(input, 0, input.length);
+            }
+
+            if (urlConnection.getResponseCode() == HttpURLConnection.HTTP_OK) {
+                BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(urlConnection.getInputStream()));
+                String inputLine;
+                StringBuilder builder = new StringBuilder();
+
+                while ((inputLine = bufferedReader.readLine()) != null) {
+                    builder.append(inputLine);
+                }
+                bufferedReader.close();
+                String jsonResponse = builder.toString();
+                onSuccess(jsonResponse);
+            } else {
+                onRefreshFailed(new Throwable(
+                        "Response is not success. Response code: " + urlConnection.getResponseCode() + ". Message: " + urlConnection.getResponseMessage()
+                ));
+            }
+        } catch (IOException e) {
+            onRefreshFailed(e);
+            log.error("Exception occur with message: {}", e.getMessage(), e);
+            throw new FeatureFetchException(FeatureFetchException.FeatureFetchErrorCode.NO_RESPONSE_ERROR, e.getMessage());
+        } finally {
+            if (urlConnection != null) {
+                urlConnection.disconnect();
+            }
+        }
     }
 
 

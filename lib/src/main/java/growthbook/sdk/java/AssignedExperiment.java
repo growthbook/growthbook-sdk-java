@@ -5,7 +5,8 @@ import lombok.Data;
 
 @Data
 @AllArgsConstructor
-public class AssignedExperiment<ValueType> {
-    private Experiment<ValueType> experiment;
-    private ExperimentResult<ValueType> experimentResult;
+public class AssignedExperiment{
+    private String experimentKey;
+    private Boolean inExperiment;
+    private Integer variationId;
 }

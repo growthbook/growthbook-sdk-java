@@ -110,7 +110,7 @@ class GBFeaturesRepositoryTest {
                 null,
                 null,
                 mockOkHttpClient,
-                true
+                null
         );
         subject.initialize();
 
@@ -156,7 +156,7 @@ class GBFeaturesRepositoryTest {
                 null,
                 null,
                 mockOkHttpClient,
-                true
+                null
         );
         subject.initialize();
 
@@ -198,7 +198,7 @@ class GBFeaturesRepositoryTest {
                 null,
                 0,
                 mockOkHttpClient,
-                true
+                null
         );
 
         subject.onFeaturesRefresh(featureRefreshCallback);
@@ -232,7 +232,7 @@ class GBFeaturesRepositoryTest {
                 null,
                 0,
                 mockOkHttpClient,
-                true
+                null
         );
 
         subject.onFeaturesRefresh(featureRefreshCallback);
