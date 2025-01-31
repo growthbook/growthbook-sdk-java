@@ -1,6 +1,8 @@
 package growthbook.sdk.java.multiusermode;
 
 import java.util.*;
+
+import com.google.gson.JsonElement;
 import growthbook.sdk.java.*;
 import growthbook.sdk.java.multiusermode.configurations.EvaluationContext;
 import growthbook.sdk.java.multiusermode.configurations.GlobalContext;
