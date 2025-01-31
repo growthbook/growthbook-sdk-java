@@ -33,7 +33,8 @@ class GBFeaturesRepositoryTest {
                 null,
                 null,
                 null,
-                true
+                true,
+                null
         );
 
         assertNotNull(subject);
@@ -50,7 +51,8 @@ class GBFeaturesRepositoryTest {
                 null,
                 null,
                 null,
-                true
+                true,
+                null
         );
 
         assertNotNull(subject);
@@ -110,6 +112,7 @@ class GBFeaturesRepositoryTest {
                 null,
                 null,
                 mockOkHttpClient,
+                null,
                 null
         );
         subject.initialize();
@@ -156,6 +159,7 @@ class GBFeaturesRepositoryTest {
                 null,
                 null,
                 mockOkHttpClient,
+                null,
                 null
         );
         subject.initialize();
@@ -198,6 +202,7 @@ class GBFeaturesRepositoryTest {
                 null,
                 0,
                 mockOkHttpClient,
+                null,
                 null
         );
 
@@ -232,6 +237,7 @@ class GBFeaturesRepositoryTest {
                 null,
                 0,
                 mockOkHttpClient,
+                null,
                 null
         );
 
@@ -265,7 +271,8 @@ class GBFeaturesRepositoryTest {
                 null,
                 null,
                 mockHttpClient,
-                false
+                false,
+                null
         );
 
         Call mockCall = mock(Call.class);

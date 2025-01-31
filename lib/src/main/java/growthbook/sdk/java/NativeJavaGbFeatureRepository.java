@@ -144,8 +144,7 @@ public class NativeJavaGbFeatureRepository implements IGBFeaturesRepository {
                                          @Nullable String encryptionKey,
                                          @Nullable FeatureRefreshStrategy refreshStrategy,
                                          @Nullable Integer swrTtlSeconds,
-                                         @Nullable Boolean isCacheDisabled
-                                         @Nullable Integer swrTtlSeconds,
+                                         @Nullable Boolean isCacheDisabled,
                                          @Nullable RequestBodyForRemoteEval requestBodyForRemoteEval
     ) {
         this.isCacheDisabled = new AtomicBoolean(Boolean.TRUE.equals(isCacheDisabled));
@@ -309,8 +308,6 @@ public class NativeJavaGbFeatureRepository implements IGBFeaturesRepository {
                     throw new FeatureFetchException(FeatureFetchException.FeatureFetchErrorCode.UNKNOWN);
                 }
                 this.sseAllowed.set(ENABLED.equals(sseSupportHeader));
-                this.onSuccess(responseBody);
-                this.sseAllowed = ENABLED.equals(sseSupportHeader);
                 this.onSuccess(responseBody, false);
             }
         } catch (IOException e) {
@@ -341,7 +338,7 @@ public class NativeJavaGbFeatureRepository implements IGBFeaturesRepository {
 
 
     private void onSuccess(String response, boolean isFromCache) throws FeatureFetchException {
-        String responseJsonString = null;
+        String responseJsonString;
         if (response != null) {
             responseJsonString = response;
         }else {
@@ -525,7 +522,7 @@ public class NativeJavaGbFeatureRepository implements IGBFeaturesRepository {
                 }
                 bufferedReader.close();
                 String jsonResponse = builder.toString();
-                onSuccess(jsonResponse);
+                onSuccess(jsonResponse, false);
             } else {
                 onRefreshFailed(new Throwable(
                         "Response is not success. Response code: " + urlConnection.getResponseCode() + ". Message: " + urlConnection.getResponseMessage()

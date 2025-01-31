@@ -7,8 +7,10 @@ import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import okhttp3.Call;
 import okhttp3.Callback;
+import okhttp3.MediaType;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
+import okhttp3.RequestBody;
 import okhttp3.Response;
 import okhttp3.ResponseBody;
 import okhttp3.sse.EventSource;
@@ -176,7 +178,7 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
             @Nullable FeatureRefreshStrategy refreshStrategy,
             @Nullable Integer swrTtlSeconds
     ) {
-        this(apiHost, clientKey, encryptionKey, refreshStrategy, swrTtlSeconds, null, null);
+        this(apiHost, clientKey, encryptionKey, refreshStrategy, swrTtlSeconds, null, null,null);
     }
 
     /**
@@ -196,7 +198,7 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
             @Nullable Integer swrTtlSeconds,
             @Nullable RequestBodyForRemoteEval requestBodyForRemoteEval
     ) {
-        this(apiHost, clientKey, encryptionKey, refreshStrategy, swrTtlSeconds, null, requestBodyForRemoteEval);
+        this(apiHost, clientKey, encryptionKey, refreshStrategy, swrTtlSeconds, null, null, null, requestBodyForRemoteEval);
     }
 
     /**
@@ -211,13 +213,12 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
             @Nullable Integer swrTtlSeconds,
             @Nullable OkHttpClient okHttpClient,
             @Nullable String decryptionKey,
+            @Nullable Boolean isCacheDisabled,
             @Nullable RequestBodyForRemoteEval requestBodyForRemoteEval
-            @Nullable String decryptionKey,
-            @Nullable Boolean isCacheDisabled
     ) {
         this(apiHost, clientKey, (decryptionKey != null) ? decryptionKey : encryptionKey,
-                refreshStrategy, swrTtlSeconds, okHttpClient, isCacheDisabled);
-                refreshStrategy, swrTtlSeconds, okHttpClient, (requestBodyForRemoteEval != null) ? requestBodyForRemoteEval : new RequestBodyForRemoteEval());
+                refreshStrategy, swrTtlSeconds, okHttpClient, isCacheDisabled,
+                (requestBodyForRemoteEval != null) ? requestBodyForRemoteEval : new RequestBodyForRemoteEval());
     }
 
     /**
@@ -243,11 +244,10 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
             @Nullable FeatureRefreshStrategy refreshStrategy,
             @Nullable Integer swrTtlSeconds,
             @Nullable OkHttpClient okHttpClient,
-            @Nullable Boolean isCacheDisabled
-            @Nullable OkHttpClient okHttpClient,
+            @Nullable Boolean isCacheDisabled,
             @Nullable RequestBodyForRemoteEval requestBodyForRemoteEval
     ) {
-        this.isCacheDisabled = Boolean.TRUE.equals(isCacheDisabled);
+        this.isCacheDisabled = isCacheDisabled == null || isCacheDisabled;
         if (clientKey == null) throw new IllegalArgumentException("clientKey cannot be null");
 
         // Set the defaults when the user does not provide them
@@ -714,7 +714,7 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
 
         try (Response response = this.okHttpClient.newCall(request).execute()) {
             if (response.isSuccessful() && response.code() == 200) {
-                onSuccess(response);
+                onSuccess(response, false);
             } else {
                 onRefreshFailed(new Throwable("Response is not success, response code is:" + response.code() + ". And message is: " + response.message()));
             }

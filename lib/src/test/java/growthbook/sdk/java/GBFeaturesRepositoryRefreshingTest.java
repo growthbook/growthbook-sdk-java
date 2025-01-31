@@ -46,6 +46,7 @@ public class GBFeaturesRepositoryRefreshingTest {
                 FeatureRefreshStrategy.STALE_WHILE_REVALIDATE,
                 ttlSeconds,
                 mockOkHttpClient,
+                null,
                 null
         );
         subject.initialize();
@@ -83,6 +84,7 @@ public class GBFeaturesRepositoryRefreshingTest {
                 FeatureRefreshStrategy.STALE_WHILE_REVALIDATE,
                 ttlSeconds,
                 mockOkHttpClient,
+                null,
                 null
         );
         subject.initialize();
@@ -118,6 +120,7 @@ public class GBFeaturesRepositoryRefreshingTest {
                 FeatureRefreshStrategy.STALE_WHILE_REVALIDATE,
                 ttlSeconds,
                 mockOkHttpClient,
+                null,
                 null
         );
         subject.initialize();
