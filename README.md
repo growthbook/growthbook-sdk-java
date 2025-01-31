@@ -125,7 +125,7 @@ growthBook.isOn("featureKey");
  * The `evalFeature()` method evaluates a feature based on the provided parameters. 
 It takes three arguments: a string representing the unique identifier of the feature, 
 a generic class valueTypeClass that specifies the type of the result value (e.g., Integer, String, Boolean),
-an UserContext object, which contains attributes such as forceVariations and forceFeatureValues to provide a more flexible way of evaluating features.
+an UserContext object, which contains attributes, forceVariations and forceFeatureValues to provide a more flexible way of evaluating features.
 The method returns a FeatureResult object, which contains the evaluated result of the feature along with any additional metadata.
 ```java
 public <ValueType> FeatureResult<ValueType> evalFeature(String key, Class<ValueType> valueTypeClass, UserContext userContext);
@@ -136,7 +136,7 @@ public <ValueType> FeatureResult<ValueType> evalFeature(String key, Class<ValueT
 public <ValueType> ValueType getFeatureValue(String featureKey, ValueType defaultValue, Class<ValueType> gsonDeserializableClass, UserContext userContext);
 ```
 
-* The `isOn()` / `isOff()` method takes a single string argument, which is the unique identifier for the feature and returns the feature state on/off
+* The `isOn()` / `isOff()` method takes a string argument, which is the unique identifier for the feature, and UserContext, which contains attributes, forceVariations and forceFeatureValues to provide a more flexible way of evaluating features. Functions return the feature state on/off
 
 ```java
 public Boolean isOn(String featureKey, UserContext userContext);
