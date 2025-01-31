@@ -10,7 +10,7 @@ import lombok.RequiredArgsConstructor;
 @Data
 @AllArgsConstructor
 @RequiredArgsConstructor
-public class StickyBucketVariation {
+class StickyBucketVariation {
     private Integer variation;
 
     /**

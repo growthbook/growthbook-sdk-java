@@ -9,9 +9,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.*;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
@@ -191,12 +189,12 @@ class GrowthBookTest {
         subject.subscribe(mockCallback2);
         ExperimentResult<String> result = subject.run(mockExperiment);
 
-        verify(mockCallback1).onRun(result);
-        verify(mockCallback2).onRun(result);
+        verify(mockCallback1).onRun(mockExperiment, result);
+        verify(mockCallback2).onRun(mockExperiment, result);
     }
 
     @Test
-    void run_executesExperimentResultCallbacksEveryTimeItIsCalled() {
+    void run_executesExperimentResultCallbacksOnceWhenRunInvokeMultipleTimes() {
         GrowthBook subject = new GrowthBook();
         ExperimentRunCallback mockCallback = mock(ExperimentRunCallback.class);
         Experiment<String> mockExperiment = Experiment.<String>builder().build();
@@ -206,7 +204,101 @@ class GrowthBookTest {
         subject.run(mockExperiment);
         subject.run(mockExperiment);
 
-        verify(mockCallback, times(3)).onRun(any());
+        verify(mockCallback, times(1)).onRun(any(), any());
+    }
+
+    @Test
+    void run_executesExperimentResultCallbacksTwiceWhenRunInvokeMultipleTimes() {
+        ExperimentEvaluator experimentEvaluator = mock(ExperimentEvaluator.class);
+        GrowthBook subject = new GrowthBook(
+                mock(GBContext.class),
+                mock(FeatureEvaluator.class),
+                null,
+                experimentEvaluator);
+
+        ExperimentRunCallback mockCallback = mock(ExperimentRunCallback.class);
+        Experiment<String> mockExperiment1 = Experiment.<String>builder()
+                .key("test1")
+                .bucketVersion(1)
+                .conditionJson(new JsonObject())
+                .coverage(1.0f)
+                .force(1)
+                .meta(new ArrayList<>())
+                .name("exp")
+                .disableStickyBucketing(false)
+                .phase("superphase")
+                .fallbackAttribute("anon")
+                .filters(new ArrayList<>())
+                .seed("seed")
+                .hashAttribute("id")
+                .hashVersion(1)
+                .isActive(true)
+                .minBucketVersion(1)
+                .parentConditions(new ArrayList<>())
+                .ranges(new ArrayList<>())
+                .variations(new ArrayList<>())
+                .weights(new ArrayList<>())
+                .build();
+        Experiment<String> mockExperiment2 = Experiment.<String>builder()
+                .key("test2")
+                .bucketVersion(1)
+                .conditionJson(new JsonObject())
+                .coverage(0.5f)
+                .force(1)
+                .meta(new ArrayList<>())
+                .name("exp")
+                .disableStickyBucketing(false)
+                .phase("superphase1")
+                .fallbackAttribute("anon1")
+                .filters(new ArrayList<>())
+                .seed("seed")
+                .hashAttribute("id")
+                .hashVersion(2)
+                .isActive(true)
+                .minBucketVersion(1)
+                .parentConditions(new ArrayList<>())
+                .ranges(new ArrayList<>())
+                .variations(new ArrayList<>())
+                .weights(new ArrayList<>())
+                .build();
+
+        ExperimentResult<String> expRes1 = ExperimentResult.<String>builder()
+                .inExperiment(true)
+                .variationId(0)
+                .key("test1")
+                .name("exp")
+                .bucket(0.0f)
+                .value("")
+                .featureId("feature")
+                .hashAttribute("id")
+                .hashUsed(true)
+                .passThrough(true)
+                .stickyBucketUsed(false)
+                .build();
+
+        ExperimentResult<String> expRes2 = ExperimentResult.<String>builder()
+                .inExperiment(false)
+                .variationId(1)
+                .key("test2")
+                .name("exp")
+                .bucket(0.0f)
+                .value("")
+                .featureId("feature")
+                .hashAttribute("id")
+                .hashUsed(true)
+                .passThrough(true)
+                .stickyBucketUsed(false)
+                .build();
+
+        when(experimentEvaluator.evaluateExperiment(eq(mockExperiment1), any(), any())).thenReturn(expRes1);
+        when(experimentEvaluator.evaluateExperiment(eq(mockExperiment2), any(), any())).thenReturn(expRes2);
+
+        subject.subscribe(mockCallback);
+        subject.run(mockExperiment1);
+        subject.run(mockExperiment2);
+        subject.run(mockExperiment1);
+
+        verify(mockCallback, times(2)).onRun(any(), any());
     }
 
     @Test
@@ -534,16 +626,17 @@ class GrowthBookTest {
 
         String attrJsonStr = "{ id: 1 }";
         String conditionJsonStr = "{}";
+        String savedGroups = "{}";
         JsonObject attributesJson = GrowthBookJsonUtils.getInstance().gson.fromJson(attrJsonStr, JsonObject.class);
         JsonObject conditionJson = GrowthBookJsonUtils.getInstance().gson.fromJson(conditionJsonStr, JsonObject.class);
-
-
+        JsonObject savedGroupsJson = GrowthBookJsonUtils.getInstance().gson.fromJson(savedGroups, JsonObject.class);
 
         GrowthBook subject = new GrowthBook(context, mockFeatureEvaluator, mockConditionEvaluator, mockExperimentEvaluator);
+        subject.setSavedGroups(savedGroupsJson);
 
         subject.evaluateCondition(attrJsonStr, conditionJsonStr);
 
-        verify(mockConditionEvaluator).evaluateCondition(attributesJson, conditionJson, new JsonObject());
+        verify(mockConditionEvaluator).evaluateCondition(attributesJson, conditionJson, savedGroupsJson);
     }
 
     @Test
@@ -576,8 +669,8 @@ class GrowthBookTest {
         ExperimentResult<String> result2 = subject.run(mockExperiment);
 
         // Verify callbacks are only called once (for the initial invocation)
-        verify(mockCallback1, times(1)).onRun(result2);
-        verify(mockCallback2, times(1)).onRun(result2);
+        verify(mockCallback1, times(1)).onRun(mockExperiment, result2);
+        verify(mockCallback2, times(1)).onRun(mockExperiment, result2);
     }
 
     // region getFeatureValue
