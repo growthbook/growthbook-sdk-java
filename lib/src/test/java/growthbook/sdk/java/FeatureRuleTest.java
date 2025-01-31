@@ -27,7 +27,7 @@ class FeatureRuleTest {
                 null,
                 "my-key",
                 0.5f,
-                100,
+                new OptionalField<>(true,100),
                 variations,
                 weights,
                 namespace,
@@ -51,8 +51,8 @@ class FeatureRuleTest {
 
         assertEquals(0.5f, subject.coverage);
         assertEquals(0.5f, subject.getCoverage());
-        assertEquals(100, subject.force);
-        assertEquals(100, subject.getForce());
+        assertEquals(100, subject.getForce().getValue());
+        assertEquals(100, subject.getForce().getValue());
         assertEquals(namespace, subject.namespace);
         assertEquals(namespace, subject.getNamespace());
         assertEquals("_id", subject.hashAttribute);
@@ -79,7 +79,7 @@ class FeatureRuleTest {
         FeatureRule<String> subject = FeatureRule
                 .<String>builder()
                 .coverage(0.5f)
-                .force("forced-value")
+                .force(new OptionalField<>(true, "forced-value"))
                 .namespace(namespace)
                 .weights(weights)
                 .hashAttribute("_id")
@@ -87,8 +87,8 @@ class FeatureRuleTest {
 
         assertEquals(0.5f, subject.coverage);
         assertEquals(0.5f, subject.getCoverage());
-        assertEquals("forced-value", subject.force);
-        assertEquals("forced-value", subject.getForce());
+        assertEquals("forced-value", subject.getForce().getValue());
+        assertEquals("forced-value", subject.getForce().getValue());
         assertEquals(namespace, subject.namespace);
         assertEquals(namespace, subject.getNamespace());
         assertEquals(weights, subject.weights);

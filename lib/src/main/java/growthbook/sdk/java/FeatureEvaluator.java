@@ -151,7 +151,9 @@ public class FeatureEvaluator implements IFeatureEvaluator {
             }
 
             // Loop through the feature rules (if any)
-            for (FeatureRule<ValueType> rule : feature.getRules()) {
+            List<FeatureRule<ValueType>> featureRules = feature.getRules();
+            for (int i = 0; i < featureRules.size(); i++) {
+                FeatureRule<ValueType> rule = featureRules.get(i);
                 // If there are prerequisite flag(s), evaluate them
                 if (rule.getParentConditions() != null) {
                     for (ParentCondition parentCondition : rule.getParentConditions()) {
@@ -225,7 +227,7 @@ public class FeatureEvaluator implements IFeatureEvaluator {
                 }
 
                 // Feature value is being forced
-                if (rule.getForce() != null) {
+                if (rule.getForce().isPresent()) {
 
                     // If the rule has a condition, and it evaluates to false, skip this rule and continue to the next one
                     if (rule.getCondition() != null) {
@@ -301,7 +303,7 @@ public class FeatureEvaluator implements IFeatureEvaluator {
                         }
                     }
 
-                    ValueType value = (ValueType) GrowthBookJsonUtils.unwrap(rule.getForce());
+                    ValueType value = (ValueType) GrowthBookJsonUtils.unwrap(rule.getForce().getValue());
 
                     // Apply the force rule
                     FeatureResult<ValueType> forcedRuleFeatureValue = FeatureResult
