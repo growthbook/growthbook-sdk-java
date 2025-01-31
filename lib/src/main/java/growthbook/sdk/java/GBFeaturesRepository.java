@@ -5,12 +5,18 @@ import com.google.gson.JsonObject;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
-import okhttp3.*;
+import okhttp3.Call;
+import okhttp3.Callback;
+import okhttp3.MediaType;
+import okhttp3.OkHttpClient;
+import okhttp3.Request;
+import okhttp3.RequestBody;
+import okhttp3.Response;
+import okhttp3.ResponseBody;
 import okhttp3.sse.EventSource;
 import okhttp3.sse.EventSourceListener;
 import okhttp3.sse.EventSources;
 import org.jetbrains.annotations.NotNull;
-
 import javax.annotation.Nullable;
 import java.io.IOException;
 import java.time.Instant;
@@ -29,6 +35,9 @@ import java.util.logging.Logger;
 @Slf4j
 public class GBFeaturesRepository implements IGBFeaturesRepository {
     private static final String ENABLED = "enabled";
+    private static final String FILE_NAME = "FEATURE_CACHE.json";
+    public static final String FILE_PATH_FOR_CACHE = "src/main/resources";
+    public static final String EMPTY_JSON_OBJECT_STRING = "{}";
 
     /**
      * Endpoint for GET request
@@ -112,14 +121,32 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
      */
     @Getter
     @Nullable
-    private String savedGroupsJson = "{}";
+    private String savedGroupsJson = EMPTY_JSON_OBJECT_STRING;
 
     /**
      * Allows you to get the features JSON from the provided {@link GBFeaturesRepository#getFeaturesEndpoint()}.
      * You must call {@link GBFeaturesRepository#initialize()} before calling this method
      * or your features would not have loaded.
      */
-    private String featuresJson = "{}";
+    private String featuresJson = EMPTY_JSON_OBJECT_STRING;
+
+    // Method was useful for testing
+    public void setCachingManager(CachingManager cachingManager) {
+        if (Boolean.FALSE.equals(this.isCacheDisabled)) {
+            this.cachingManager = cachingManager;
+        }
+    }
+
+    /**
+     * CachingManger allows to cache features data to file
+     */
+    @Getter
+    private CachingManager cachingManager;
+
+    /**
+     * Flag that enable CachingManager
+     */
+    private final boolean isCacheDisabled;
 
     /**
      * Request body for that be sent with POST request for remote eval feature
@@ -151,7 +178,7 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
             @Nullable FeatureRefreshStrategy refreshStrategy,
             @Nullable Integer swrTtlSeconds
     ) {
-        this(apiHost, clientKey, encryptionKey, refreshStrategy, swrTtlSeconds, null, null);
+        this(apiHost, clientKey, encryptionKey, refreshStrategy, swrTtlSeconds, null, null,null);
     }
 
     /**
@@ -171,7 +198,7 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
             @Nullable Integer swrTtlSeconds,
             @Nullable RequestBodyForRemoteEval requestBodyForRemoteEval
     ) {
-        this(apiHost, clientKey, encryptionKey, refreshStrategy, swrTtlSeconds, null, requestBodyForRemoteEval);
+        this(apiHost, clientKey, encryptionKey, refreshStrategy, swrTtlSeconds, null, null, null, requestBodyForRemoteEval);
     }
 
     /**
@@ -186,15 +213,23 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
             @Nullable Integer swrTtlSeconds,
             @Nullable OkHttpClient okHttpClient,
             @Nullable String decryptionKey,
+            @Nullable Boolean isCacheDisabled,
             @Nullable RequestBodyForRemoteEval requestBodyForRemoteEval
     ) {
         this(apiHost, clientKey, (decryptionKey != null) ? decryptionKey : encryptionKey,
-                refreshStrategy, swrTtlSeconds, okHttpClient, (requestBodyForRemoteEval != null) ? requestBodyForRemoteEval : new RequestBodyForRemoteEval());
+                refreshStrategy, swrTtlSeconds, okHttpClient, isCacheDisabled,
+                (requestBodyForRemoteEval != null) ? requestBodyForRemoteEval : new RequestBodyForRemoteEval());
     }
 
     /**
      * Create a new GBFeaturesRepository
      *
+     * @param apiHost         The GrowthBook API host (default: <a href="https://cdn.growthbook.io">...</a>)
+     * @param clientKey       Your client ID, e.g. sdk-abc123
+     * @param decryptionKey   optional key for decrypting encrypted payload
+     * @param swrTtlSeconds   How often the cache should be invalidated when using {@link FeatureRefreshStrategy#STALE_WHILE_REVALIDATE} (default: 60)
+     * @param okHttpClient    HTTP client (optional)
+     * @param isCacheDisabled Parameter to disable or enable caching in project
      * @param apiHost       The GrowthBook API host (default: <a href="https://cdn.growthbook.io">...</a>)
      * @param clientKey     Your client ID, e.g. sdk-abc123
      * @param decryptionKey optional key for decrypting encrypted payload
@@ -209,8 +244,10 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
             @Nullable FeatureRefreshStrategy refreshStrategy,
             @Nullable Integer swrTtlSeconds,
             @Nullable OkHttpClient okHttpClient,
+            @Nullable Boolean isCacheDisabled,
             @Nullable RequestBodyForRemoteEval requestBodyForRemoteEval
     ) {
+        this.isCacheDisabled = isCacheDisabled == null || isCacheDisabled;
         if (clientKey == null) throw new IllegalArgumentException("clientKey cannot be null");
 
         // Set the defaults when the user does not provide them
@@ -238,6 +275,9 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
             // TODO: Check for valid interceptor
             this.okHttpClient = okHttpClient;
         }
+        if (Boolean.FALSE.equals(isCacheDisabled)) {
+            cachingManager = new CachingManager(FILE_PATH_FOR_CACHE);
+        }
     }
 
     // Getter for deprecated encryptionKey
@@ -247,6 +287,9 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
         return encryptionKey;
     }
 
+    /**
+     * @return feature data JSON in a type of String. Handle refresh strategy
+     */
     public String getFeaturesJson() {
         switch (this.refreshStrategy) {
             case STALE_WHILE_REVALIDATE:
@@ -300,7 +343,7 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
             @Override
             public void onResponse(@NotNull Call call, @NotNull Response response) {
                 try {
-                    self.onSuccess(response);
+                    self.onSuccess(response, false);
                 } catch (FeatureFetchException e) {
                     log.error(e.getMessage(), e);
                 }
@@ -346,7 +389,7 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
 
     /**
      * Creates an SSE HTTP client if null.
-     * Creates and enqueues a new asynchronous request to the events endpoint.
+     * Creates and enqueues a new asynchronous request to the events' endpoint.
      * Assigns a close listener to recreate the connection.
      */
     private void createEventSourceListenerAndStartListening(Boolean retryOnFailure) {
@@ -380,7 +423,7 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
 
                             @Override
                             public void onFeaturesResponse(String featuresJsonResponse) throws FeatureFetchException {
-                                onResponseJson(featuresJsonResponse);
+                                onResponseJson(featuresJsonResponse, false);
                             }
                         }
                 ) {
@@ -461,14 +504,13 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
             String sseSupportHeader = response.header(HttpHeaders.X_SSE_SUPPORT.getHeader());
             this.sseAllowed = Objects.equals(sseSupportHeader, ENABLED);
 
-            this.onSuccess(response);
+            this.onSuccess(response, false);
         } catch (IOException e) {
             log.error(e.getMessage(), e);
-
-            throw new FeatureFetchException(
-                    FeatureFetchException.FeatureFetchErrorCode.UNKNOWN,
-                    e.getMessage()
-            );
+            if (!isCacheDisabled) {
+                String cachedData = getCachedFeatures();
+                onResponseJson(cachedData, true);
+            }
         }
     }
 
@@ -477,8 +519,12 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
      *
      * @param responseJsonString JSON response object
      */
-    private void onResponseJson(String responseJsonString) throws FeatureFetchException {
+    private void onResponseJson(String responseJsonString, boolean isFromCache) throws FeatureFetchException {
         try {
+            if (!isFromCache && !isCacheDisabled) {
+                cachingManager.saveContent(FILE_NAME, responseJsonString);
+            }
+
             JsonObject jsonObject = GrowthBookJsonUtils.getInstance()
                     .gson.fromJson(responseJsonString, JsonObject.class);
 
@@ -563,17 +609,20 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
      *
      * @param response Successful response
      */
-    private void onSuccess(Response response) throws FeatureFetchException {
+    private void onSuccess(Response response, boolean isFromCache) throws FeatureFetchException {
         try {
             ResponseBody responseBody = response.body();
-            if (responseBody == null) {
+            String responseJsonString = "";
+            if (responseBody != null) {
+                responseJsonString = responseBody.string();
+            } else {
                 log.error("FeatureFetchException: FeatureFetchErrorCode.NO_RESPONSE_ERROR");
-                throw new FeatureFetchException(
-                        FeatureFetchException.FeatureFetchErrorCode.NO_RESPONSE_ERROR
-                );
+                log.info("Fetching data from cache...");
+                responseJsonString = getCachedFeatures();
+                isFromCache = true;
             }
 
-            onResponseJson(responseBody.string());
+            onResponseJson(responseJsonString, isFromCache);
         } catch (IOException e) {
             log.error("FeatureFetchException: UNKNOWN feature fetch error code {}",
                     e.getMessage(), e);
@@ -665,7 +714,7 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
 
         try (Response response = this.okHttpClient.newCall(request).execute()) {
             if (response.isSuccessful() && response.code() == 200) {
-                onSuccess(response);
+                onSuccess(response, false);
             } else {
                 onRefreshFailed(new Throwable("Response is not success, response code is:" + response.code() + ". And message is: " + response.message()));
             }
@@ -673,5 +722,14 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
             log.error(e.getMessage(), e);
             throw new FeatureFetchException(FeatureFetchException.FeatureFetchErrorCode.NO_RESPONSE_ERROR, e.getMessage());
         }
+    }
+
+    private String getCachedFeatures() throws FeatureFetchException {
+        String cachedData = cachingManager.loadCache(FILE_NAME);
+        if (cachedData == null) {
+            log.error("FeatureFetchException: No Features from Cache");
+            throw new FeatureFetchException(FeatureFetchException.FeatureFetchErrorCode.NO_RESPONSE_ERROR);
+        }
+        return cachedData;
     }
 }

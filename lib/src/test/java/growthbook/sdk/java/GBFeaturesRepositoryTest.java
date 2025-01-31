@@ -41,6 +41,7 @@ class GBFeaturesRepositoryTest {
                 null,
                 null,
                 null,
+                true,
                 null
         );
 
@@ -58,6 +59,7 @@ class GBFeaturesRepositoryTest {
                 null,
                 null,
                 null,
+                true,
                 null
         );
 
@@ -118,6 +120,7 @@ class GBFeaturesRepositoryTest {
                 null,
                 null,
                 mockOkHttpClient,
+                null,
                 null
         );
         subject.initialize();
@@ -164,6 +167,7 @@ class GBFeaturesRepositoryTest {
                 null,
                 null,
                 mockOkHttpClient,
+                null,
                 null
         );
         subject.initialize();
@@ -206,6 +210,7 @@ class GBFeaturesRepositoryTest {
                 null,
                 0,
                 mockOkHttpClient,
+                null,
                 null
         );
 
@@ -240,6 +245,7 @@ class GBFeaturesRepositoryTest {
                 null,
                 0,
                 mockOkHttpClient,
+                null,
                 null
         );
 
@@ -409,6 +415,35 @@ class GBFeaturesRepositoryTest {
         subject.initialize();
     }
     */
+
+    @Test
+    void test_getFeaturesFromCacheSuccessfully() throws FeatureFetchException, IOException {
+        OkHttpClient mockHttpClient = mock(OkHttpClient.class);
+        CachingManager mockCacheManager = mock(CachingManager.class);
+        String cachedData = "{\"status\":200,\"features\":{\"banner_text\":{\"defaultValue\":\"Welcome to Acme Donuts!\",\"rules\":[{\"condition\":{\"country\":\"france\"},\"force\":\"Bienvenue au Beignets Acme !\"},{\"condition\":{\"country\":\"spain\"},\"force\":\"¡Bienvenidos y bienvenidas a Donas Acme!\"}]},\"dark_mode\":{\"defaultValue\":false,\"rules\":[{\"condition\":{\"loggedIn\":true},\"force\":true,\"coverage\":0.5,\"hashAttribute\":\"id\"}]},\"donut_price\":{\"defaultValue\":2.5,\"rules\":[{\"condition\":{\"employee\":true},\"force\":0}]},\"meal_overrides_gluten_free\":{\"defaultValue\":{\"meal_type\":\"standard\",\"dessert\":\"Strawberry Cheesecake\"},\"rules\":[{\"condition\":{\"dietaryRestrictions\":{\"$elemMatch\":{\"$eq\":\"gluten_free\"}}},\"force\":{\"meal_type\":\"gf\",\"dessert\":\"French Vanilla Ice Cream\"}}]}},\"dateUpdated\":\"2023-01-11T00:26:01.745Z\"}";
+        String expectedResult = "{\"banner_text\":{\"defaultValue\":\"Welcome to Acme Donuts!\",\"rules\":[{\"condition\":{\"country\":\"france\"},\"force\":\"Bienvenue au Beignets Acme !\"},{\"condition\":{\"country\":\"spain\"},\"force\":\"¡Bienvenidos y bienvenidas a Donas Acme!\"}]},\"dark_mode\":{\"defaultValue\":false,\"rules\":[{\"condition\":{\"loggedIn\":true},\"force\":true,\"coverage\":0.5,\"hashAttribute\":\"id\"}]},\"donut_price\":{\"defaultValue\":2.5,\"rules\":[{\"condition\":{\"employee\":true},\"force\":0}]},\"meal_overrides_gluten_free\":{\"defaultValue\":{\"meal_type\":\"standard\",\"dessert\":\"Strawberry Cheesecake\"},\"rules\":[{\"condition\":{\"dietaryRestrictions\":{\"$elemMatch\":{\"$eq\":\"gluten_free\"}}},\"force\":{\"meal_type\":\"gf\",\"dessert\":\"French Vanilla Ice Cream\"}}]}}";
+        GBFeaturesRepository subject = new GBFeaturesRepository(
+                "http://localhost:80",
+                "abc-123",
+                null,
+                null,
+                null,
+                mockHttpClient,
+                false,
+                null
+        );
+
+        Call mockCall = mock(Call.class);
+        when(mockHttpClient.newCall(any(Request.class))).thenReturn(mockCall);
+        when(mockCall.execute()).thenThrow(new IOException("Http error"));
+        when(mockCacheManager.loadCache(anyString())).thenReturn(cachedData);
+
+        subject.setCachingManager(mockCacheManager);
+        subject.initialize();
+        String actualResult = subject.getFeaturesJson();
+        assertEquals(expectedResult, actualResult);
+        verify(mockCacheManager).loadCache(anyString());
+    }
 
 
     /**
