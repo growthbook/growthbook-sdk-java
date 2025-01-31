@@ -272,6 +272,7 @@ class GBFeaturesRepositoryTest {
                 FeatureRefreshStrategy.REMOTE_EVAL_STRATEGY,
                 60,
                 mockHttpClient,
+                null,
                 null
         ));
 
@@ -311,6 +312,7 @@ class GBFeaturesRepositoryTest {
                 FeatureRefreshStrategy.REMOTE_EVAL_STRATEGY,
                 60,
                 mockHttpClient,
+                null,
                 null
         ));
 
@@ -341,6 +343,7 @@ class GBFeaturesRepositoryTest {
                 FeatureRefreshStrategy.REMOTE_EVAL_STRATEGY,
                 60,
                 mockHttpClient,
+                null,
                 null
         ));
 
@@ -385,6 +388,8 @@ class GBFeaturesRepositoryTest {
                 FeatureRefreshStrategy.REMOTE_EVAL_STRATEGY,
                 60,
                 mockHttpClient,
+                null,
+                null,
                 requestBody
         ));
 
