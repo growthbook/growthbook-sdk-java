@@ -11,7 +11,7 @@
 <link rel="stylesheet" type="text/css" href="../../../script-dir/jquery-ui.min.css" title="Style">
 <link rel="stylesheet" type="text/css" href="../../../jquery-ui.overrides.css" title="Style">
 <script type="text/javascript" src="../../../script.js"></script>
-<script type="text/javascript" src="../../../script-dir/jquery-3.6.1.min.js"></script>
+<script type="text/javascript" src="../../../script-dir/jquery-3.7.1.min.js"></script>
 <script type="text/javascript" src="../../../script-dir/jquery-ui.min.js"></script>
 </head>
 <body class="class-declaration-page">
@@ -45,13 +45,13 @@ loadScripts(document, 'script');</script>
 <ul class="sub-nav-list">
 <li>Summary:&nbsp;</li>
 <li>Nested&nbsp;|&nbsp;</li>
-<li>Field&nbsp;|&nbsp;</li>
+<li><a href="#field-summary">Field</a>&nbsp;|&nbsp;</li>
 <li><a href="#constructor-summary">Constr</a>&nbsp;|&nbsp;</li>
 <li><a href="#method-summary">Method</a></li>
 </ul>
 <ul class="sub-nav-list">
 <li>Detail:&nbsp;</li>
-<li>Field&nbsp;|&nbsp;</li>
+<li><a href="#field-detail">Field</a>&nbsp;|&nbsp;</li>
 <li><a href="#constructor-detail">Constr</a>&nbsp;|&nbsp;</li>
 <li><a href="#method-detail">Method</a></li>
 </ul>
@@ -84,6 +84,21 @@ loadScripts(document, 'script');</script>
 </section>
 <section class="summary">
 <ul class="summary-list">
+<!-- =========== FIELD SUMMARY =========== -->
+<li>
+<section class="field-summary" id="field-summary">
+<h2>Field Summary</h2>
+<div class="caption"><span>Fields</span></div>
+<div class="summary-table three-column-summary">
+<div class="table-header col-first">Modifier and Type</div>
+<div class="table-header col-second">Field</div>
+<div class="table-header col-last">Description</div>
+<div class="col-first even-row-color"><code><a href="multiusermode/configurations/EvaluationContext.html" title="class in growthbook.sdk.java.multiusermode.configurations">EvaluationContext</a></code></div>
+<div class="col-second even-row-color"><code><a href="#evaluationContext" class="member-name-link">evaluationContext</a></code></div>
+<div class="col-last even-row-color">&nbsp;</div>
+</div>
+</section>
+</li>
 <!-- ======== CONSTRUCTOR SUMMARY ======== -->
 <li>
 <section class="constructor-summary" id="constructor-summary">
@@ -116,77 +131,146 @@ loadScripts(document, 'script');</script>
 <div class="table-header col-last">Description</div>
 <div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>void</code></div>
 <div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#destroy()" class="member-name-link">destroy</a>()</code></div>
-<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">&nbsp;</div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="block">Reinitialized the list of ExperimentRunCallbacks.</div>
+</div>
 <div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>&lt;ValueType&gt;<br><a href="FeatureResult.html" title="class in growthbook.sdk.java">FeatureResult</a>&lt;ValueType&gt;</code></div>
 <div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#evalFeature(java.lang.String,java.lang.Class)" class="member-name-link">evalFeature</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;key,
  <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Class.html" title="class or interface in java.lang" class="external-link">Class</a>&lt;ValueType&gt;&nbsp;valueTypeClass)</code></div>
-<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">&nbsp;</div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="block">The evalFeature method takes a single string argument, which is the unique identifier for the feature and returns
+ a FeatureResult object.</div>
+</div>
 <div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Boolean.html" title="class or interface in java.lang" class="external-link">Boolean</a></code></div>
 <div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#evaluateCondition(java.lang.String,java.lang.String)" class="member-name-link">evaluateCondition</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;attributesJsonString,
  <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;conditionJsonString)</code></div>
-<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">&nbsp;</div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="block">Evaluate a condition for a set of user attributes based on the provided condition.</div>
+</div>
 <div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>void</code></div>
 <div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#featuresAPIModelSuccessfully(java.lang.String)" class="member-name-link">featuresAPIModelSuccessfully</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;featuresDataModel)</code></div>
-<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">&nbsp;</div>
-<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Boolean.html" title="class or interface in java.lang" class="external-link">Boolean</a></code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#getFeatureValue(java.lang.String,java.lang.Boolean)" class="member-name-link">getFeatureValue</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;featureKey,
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="block">Update sticky bucketing configuration
+ Method that get cached assignments
+ and set it to Context's Sticky Bucket Assignments documents</div>
+</div>
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>com.google.gson.JsonObject</code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#getAttributeOverrides()" class="member-name-link">getAttributeOverrides</a>()</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">&nbsp;</div>
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Boolean.html" title="class or interface in java.lang" class="external-link">Boolean</a></code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#getFeatureValue(java.lang.String,java.lang.Boolean)" class="member-name-link">getFeatureValue</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;featureKey,
  <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Boolean.html" title="class or interface in java.lang" class="external-link">Boolean</a>&nbsp;defaultValue)</code></div>
-<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">&nbsp;</div>
-<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Double.html" title="class or interface in java.lang" class="external-link">Double</a></code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#getFeatureValue(java.lang.String,java.lang.Double)" class="member-name-link">getFeatureValue</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;featureKey,
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="block">Get the feature value as a boolean</div>
+</div>
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Double.html" title="class or interface in java.lang" class="external-link">Double</a></code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#getFeatureValue(java.lang.String,java.lang.Double)" class="member-name-link">getFeatureValue</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;featureKey,
  <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Double.html" title="class or interface in java.lang" class="external-link">Double</a>&nbsp;defaultValue)</code></div>
-<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">&nbsp;</div>
-<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Float.html" title="class or interface in java.lang" class="external-link">Float</a></code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#getFeatureValue(java.lang.String,java.lang.Float)" class="member-name-link">getFeatureValue</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;featureKey,
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="block">Get the feature value as a double</div>
+</div>
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Float.html" title="class or interface in java.lang" class="external-link">Float</a></code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#getFeatureValue(java.lang.String,java.lang.Float)" class="member-name-link">getFeatureValue</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;featureKey,
  <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Float.html" title="class or interface in java.lang" class="external-link">Float</a>&nbsp;defaultValue)</code></div>
-<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">&nbsp;</div>
-<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Integer.html" title="class or interface in java.lang" class="external-link">Integer</a></code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#getFeatureValue(java.lang.String,java.lang.Integer)" class="member-name-link">getFeatureValue</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;featureKey,
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="block">Get the feature value as a float</div>
+</div>
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Integer.html" title="class or interface in java.lang" class="external-link">Integer</a></code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#getFeatureValue(java.lang.String,java.lang.Integer)" class="member-name-link">getFeatureValue</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;featureKey,
  <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Integer.html" title="class or interface in java.lang" class="external-link">Integer</a>&nbsp;defaultValue)</code></div>
-<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">&nbsp;</div>
-<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html" title="class or interface in java.lang" class="external-link">Object</a></code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#getFeatureValue(java.lang.String,java.lang.Object)" class="member-name-link">getFeatureValue</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;featureKey,
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="block">Get the feature value as an integer</div>
+</div>
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html" title="class or interface in java.lang" class="external-link">Object</a></code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#getFeatureValue(java.lang.String,java.lang.Object)" class="member-name-link">getFeatureValue</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;featureKey,
  <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html" title="class or interface in java.lang" class="external-link">Object</a>&nbsp;defaultValue)</code></div>
-<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">&nbsp;</div>
-<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a></code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#getFeatureValue(java.lang.String,java.lang.String)" class="member-name-link">getFeatureValue</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;featureKey,
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="block">Get the feature value as an Object.</div>
+</div>
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a></code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#getFeatureValue(java.lang.String,java.lang.String)" class="member-name-link">getFeatureValue</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;featureKey,
  <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;defaultValue)</code></div>
-<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">&nbsp;</div>
-<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>&lt;ValueType&gt;<br>ValueType</code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#getFeatureValue(java.lang.String,ValueType,java.lang.Class)" class="member-name-link">getFeatureValue</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;featureKey,
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="block">Get the feature value as a string</div>
+</div>
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>&lt;ValueType&gt;<br>ValueType</code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#getFeatureValue(java.lang.String,ValueType,java.lang.Class)" class="member-name-link">getFeatureValue</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;featureKey,
  ValueType&nbsp;defaultValue,
  <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Class.html" title="class or interface in java.lang" class="external-link">Class</a>&lt;ValueType&gt;&nbsp;gsonDeserializableClass)</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="block">Get the feature value as a Gson-deserializable.</div>
+</div>
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/Map.html" title="class or interface in java.util" class="external-link">Map</a>&lt;<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>,<wbr><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html" title="class or interface in java.lang" class="external-link">Object</a>&gt;</code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#getForcedFeatureValues()" class="member-name-link">getForcedFeatureValues</a>()</code></div>
 <div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">&nbsp;</div>
 <div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Boolean.html" title="class or interface in java.lang" class="external-link">Boolean</a></code></div>
 <div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#isFeatureEnabled(java.lang.String)" class="member-name-link">isFeatureEnabled</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;featureKey)</code></div>
-<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">&nbsp;</div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="block">This method return boolean result if feature enabled by environment it would be present in context</div>
+</div>
 <div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Boolean.html" title="class or interface in java.lang" class="external-link">Boolean</a></code></div>
 <div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#isOff(java.lang.String)" class="member-name-link">isOff</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;featureKey)</code></div>
-<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">&nbsp;</div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="block">Returns true if the value is a falsy value
+ Only the following values are considered to be "falsy":
+ 1) null
+ 2) false
+ 3) ""
+ 4) 0
+ Everything else is considered "truthy", including empty arrays and objects.</div>
+</div>
 <div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Boolean.html" title="class or interface in java.lang" class="external-link">Boolean</a></code></div>
 <div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#isOn(java.lang.String)" class="member-name-link">isOn</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;featureKey)</code></div>
-<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">&nbsp;</div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="block">Returns true if the value is a truthy value
+ Only the following values are considered to be "falsy":
+ 1) null
+ 2) false
+ 3) ""
+ 4) 0
+ Everything else is considered "truthy", including empty arrays and objects.</div>
+</div>
 <div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>&lt;ValueType&gt;<br><a href="ExperimentResult.html" title="class in growthbook.sdk.java">ExperimentResult</a>&lt;ValueType&gt;</code></div>
 <div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#run(growthbook.sdk.java.Experiment)" class="member-name-link">run</a><wbr>(<a href="Experiment.html" title="class in growthbook.sdk.java">Experiment</a>&lt;ValueType&gt;&nbsp;experiment)</code></div>
-<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">&nbsp;</div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="block">The run method takes an Experiment object and returns an ExperimentResult.</div>
+</div>
 <div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>void</code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#setAttributes(java.lang.String)" class="member-name-link">setAttributes</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;attributesJsonString)</code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#setAttributeOverrides(com.google.gson.JsonObject)" class="member-name-link">setAttributeOverrides</a><wbr>(com.google.gson.JsonObject&nbsp;attributeOverrides)</code></div>
 <div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">&nbsp;</div>
 <div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>void</code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#setFeatures(java.lang.String)" class="member-name-link">setFeatures</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;featuresJsonString)</code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#setAttributes(java.lang.String)" class="member-name-link">setAttributes</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;attributesJsonString)</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="block">Update the user's attributes</div>
+</div>
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>void</code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#setFeatures(java.lang.String)" class="member-name-link">setFeatures</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;featuresJsonString)</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="block">Method for pass feature json in format String to GbContext</div>
+</div>
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>void</code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#setForcedFeatureValues(java.util.Map)" class="member-name-link">setForcedFeatureValues</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/Map.html" title="class or interface in java.util" class="external-link">Map</a>&lt;<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>,<wbr><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html" title="class or interface in java.lang" class="external-link">Object</a>&gt;&nbsp;forcedFeatureValues)</code></div>
 <div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">&nbsp;</div>
 <div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>void</code></div>
 <div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#setInMemoryStickyBucketService()" class="member-name-link">setInMemoryStickyBucketService</a>()</code></div>
-<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">&nbsp;</div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="block">Setting default in memory implementation of StickyBucketService interface</div>
+</div>
 <div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>void</code></div>
 <div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#setOwnStickyBucketService(growthbook.sdk.java.stickyBucketing.StickyBucketService)" class="member-name-link">setOwnStickyBucketService</a><wbr>(<a href="stickyBucketing/StickyBucketService.html" title="interface in growthbook.sdk.java.stickyBucketing">StickyBucketService</a>&nbsp;stickyBucketService)</code></div>
-<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">&nbsp;</div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="block">Setting your own implementation of StickyBucketService interface</div>
+</div>
 <div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>void</code></div>
 <div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#setSavedGroups(com.google.gson.JsonObject)" class="member-name-link">setSavedGroups</a><wbr>(com.google.gson.JsonObject&nbsp;savedGroups)</code></div>
-<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">&nbsp;</div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="block">Method for pass saved groups JsonObject to GbContext</div>
+</div>
 <div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>void</code></div>
 <div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#subscribe(growthbook.sdk.java.ExperimentRunCallback)" class="member-name-link">subscribe</a><wbr>(<a href="ExperimentRunCallback.html" title="interface in growthbook.sdk.java">ExperimentRunCallback</a>&nbsp;callback)</code></div>
-<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">&nbsp;</div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="block">This method add new calback to list of ExperimentRunCallback</div>
+</div>
 </div>
 </div>
 </div>
@@ -199,6 +283,20 @@ loadScripts(document, 'script');</script>
 </section>
 <section class="details">
 <ul class="details-list">
+<!-- ============ FIELD DETAIL =========== -->
+<li>
+<section class="field-details" id="field-detail">
+<h2>Field Details</h2>
+<ul class="member-list">
+<li>
+<section class="detail" id="evaluationContext">
+<h3>evaluationContext</h3>
+<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="multiusermode/configurations/EvaluationContext.html" title="class in growthbook.sdk.java.multiusermode.configurations">EvaluationContext</a></span>&nbsp;<span class="element-name">evaluationContext</span></div>
+</section>
+</li>
+</ul>
+</section>
+</li>
 <!-- ========= CONSTRUCTOR DETAIL ======== -->
 <li>
 <section class="constructor-details" id="constructor-detail">
@@ -237,30 +335,100 @@ loadScripts(document, 'script');</script>
 <div class="member-signature"><span class="annotations">@Nullable
 </span><span class="modifiers">public</span>&nbsp;<span class="type-parameters">&lt;ValueType&gt;</span>&nbsp;<span class="return-type"><a href="FeatureResult.html" title="class in growthbook.sdk.java">FeatureResult</a>&lt;ValueType&gt;</span>&nbsp;<span class="element-name">evalFeature</span><wbr><span class="parameters">(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;key,
  <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Class.html" title="class or interface in java.lang" class="external-link">Class</a>&lt;ValueType&gt;&nbsp;valueTypeClass)</span></div>
+<div class="block">The evalFeature method takes a single string argument, which is the unique identifier for the feature and returns
+ a FeatureResult object.
+ <p>
+ There are a few ordered steps to evaluate a feature
+ <p>
+ 1. If the key doesn't exist in context.features
+  1.1 Return getFeatureResult(null, "unknownFeature")
+ 2. Loop through the feature rules (if any)
+  2.1 If the rule has parentConditions (prerequisites) defined, loop through each one:
+      2.1.1 Call evalFeature on the parent condition
+          2.1.1.1 If a cycle is detected, break out of feature evaluation and return getFeatureResult(null, "cyclicPrerequisite")
+      2.1.2 Using the evaluated parent's result, create an object</div>
+<dl class="notes">
+<dt>Type Parameters:</dt>
+<dd><code>ValueType</code> - Gson deserializable type</dd>
+<dt>Parameters:</dt>
+<dd><code>key</code> - name of the feature</dd>
+<dd><code>valueTypeClass</code> - the class of the generic, e.g. MyFeature.class</dd>
+<dt>Returns:</dt>
+<dd>ValueType instance</dd>
+</dl>
 </section>
 </li>
 <li>
 <section class="detail" id="setFeatures(java.lang.String)">
 <h3>setFeatures</h3>
 <div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type">void</span>&nbsp;<span class="element-name">setFeatures</span><wbr><span class="parameters">(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;featuresJsonString)</span></div>
+<div class="block">Method for pass feature json in format String to GbContext</div>
+<dl class="notes">
+<dt>Parameters:</dt>
+<dd><code>featuresJsonString</code> - features JSON from the GrowthBook API</dd>
+</dl>
 </section>
 </li>
 <li>
 <section class="detail" id="setSavedGroups(com.google.gson.JsonObject)">
 <h3>setSavedGroups</h3>
 <div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type">void</span>&nbsp;<span class="element-name">setSavedGroups</span><wbr><span class="parameters">(com.google.gson.JsonObject&nbsp;savedGroups)</span></div>
+<div class="block">Method for pass saved groups JsonObject to GbContext</div>
+<dl class="notes">
+<dt>Parameters:</dt>
+<dd><code>savedGroups</code> - features JSON from the GrowthBook API</dd>
+</dl>
 </section>
 </li>
 <li>
 <section class="detail" id="setAttributes(java.lang.String)">
 <h3>setAttributes</h3>
 <div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type">void</span>&nbsp;<span class="element-name">setAttributes</span><wbr><span class="parameters">(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;attributesJsonString)</span></div>
+<div class="block">Update the user's attributes</div>
+<dl class="notes">
+<dt>Parameters:</dt>
+<dd><code>attributesJsonString</code> - user attributes JSON</dd>
+</dl>
 </section>
 </li>
 <li>
 <section class="detail" id="run(growthbook.sdk.java.Experiment)">
 <h3>run</h3>
 <div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="type-parameters">&lt;ValueType&gt;</span>&nbsp;<span class="return-type"><a href="ExperimentResult.html" title="class in growthbook.sdk.java">ExperimentResult</a>&lt;ValueType&gt;</span>&nbsp;<span class="element-name">run</span><wbr><span class="parameters">(<a href="Experiment.html" title="class in growthbook.sdk.java">Experiment</a>&lt;ValueType&gt;&nbsp;experiment)</span></div>
+<div class="block">The run method takes an Experiment object and returns an ExperimentResult.
+ There are a bunch of ordered steps to run an experiment:
+ 1. If experiment.variations has fewer than 2 variations, return getExperimentResult(experiment)
+ 2. If context.enabled is false, return getExperimentResult(experiment)
+ 3. If context.url exists
+ 4. Return if forced via context
+ 5. If experiment.active is set to false, return getExperimentResult(experiment)
+ 6. Get the user hash value and return if empty
+  6.1 If sticky bucketing is permitted, check to see if a sticky bucket value exists. If so, skip steps 7-8.
+ 7. Apply filters and namespace
+  7.1 If experiment.filters is set
+  7.2 Else if experiment.namespace is set, return if not in range
+ 8. Return if any conditions are not met, return
+  8.1 If experiment.condition is set, return if it evaluates to false
+  8.2 If experiment.parentConditions is set (prerequisites), return if any of them evaluate to false. See the corresponding logic in evalFeature for more details. (Note that the gate flag should not be set in an experiment)
+  8.3 Apply any url targeting based on experiment.urlPatterns, return if no match
+ 9. Choose a variation
+  9.1 If a sticky bucket value exists, use it.
+      9.1.1 If the found sticky bucket version is blocked (doesn't exceed experiment.minBucketVersion), then skip enrollment
+  9.2 Else, calculate bucket ranges for the variations and choose one
+ 10. If assigned == -1, return getExperimentResult(experiment)
+ 11. If experiment has a forced variation, return
+ 12. If context.qaMode, return getExperimentResult(experiment)
+ 13. Build the result object
+ 14. Fire context.trackingCallback if set and the combination of hashAttribute, hashValue, experiment.key, and variationId has not been tracked before
+ 15. Return result</div>
+<dl class="notes">
+<dt>Type Parameters:</dt>
+<dd><code>ValueType</code> - Gson deserializable type</dd>
+<dt>Parameters:</dt>
+<dd><code>experiment</code> - Experiment object</dd>
+<dt>Returns:</dt>
+<dd>ExperimentResult instance</dd>
+</dl>
 </section>
 </li>
 <li>
@@ -268,24 +436,60 @@ loadScripts(document, 'script');</script>
 <h3>setOwnStickyBucketService</h3>
 <div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type">void</span>&nbsp;<span class="element-name">setOwnStickyBucketService</span><wbr><span class="parameters">(@Nullable
  <a href="stickyBucketing/StickyBucketService.html" title="interface in growthbook.sdk.java.stickyBucketing">StickyBucketService</a>&nbsp;stickyBucketService)</span></div>
+<div class="block">Setting your own implementation of StickyBucketService interface</div>
+<dl class="notes">
+<dt>Parameters:</dt>
+<dd><code>stickyBucketService</code> - StickyBucketService</dd>
+</dl>
 </section>
 </li>
 <li>
 <section class="detail" id="setInMemoryStickyBucketService()">
 <h3>setInMemoryStickyBucketService</h3>
 <div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type">void</span>&nbsp;<span class="element-name">setInMemoryStickyBucketService</span>()</div>
+<div class="block">Setting default in memory implementation of StickyBucketService interface</div>
 </section>
 </li>
 <li>
 <section class="detail" id="isOn(java.lang.String)">
 <h3>isOn</h3>
 <div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Boolean.html" title="class or interface in java.lang" class="external-link">Boolean</a></span>&nbsp;<span class="element-name">isOn</span><wbr><span class="parameters">(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;featureKey)</span></div>
+<div class="block">Returns true if the value is a truthy value
+ Only the following values are considered to be "falsy":
+ 1) null
+ 2) false
+ 3) ""
+ 4) 0
+ Everything else is considered "truthy", including empty arrays and objects.
+ If the value is "truthy", then isOn() will return true and isOff() will return false.
+ If the value is "falsy", then the opposite values will be returned.</div>
+<dl class="notes">
+<dt>Parameters:</dt>
+<dd><code>featureKey</code> - name of the feature</dd>
+<dt>Returns:</dt>
+<dd>true if the value is a truthy value</dd>
+</dl>
 </section>
 </li>
 <li>
 <section class="detail" id="isOff(java.lang.String)">
 <h3>isOff</h3>
 <div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Boolean.html" title="class or interface in java.lang" class="external-link">Boolean</a></span>&nbsp;<span class="element-name">isOff</span><wbr><span class="parameters">(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;featureKey)</span></div>
+<div class="block">Returns true if the value is a falsy value
+ Only the following values are considered to be "falsy":
+ 1) null
+ 2) false
+ 3) ""
+ 4) 0
+ Everything else is considered "truthy", including empty arrays and objects.
+ If the value is "truthy", then isOn() will return true and isOff() will return false.
+ If the value is "falsy", then the opposite values will be returned.</div>
+<dl class="notes">
+<dt>Parameters:</dt>
+<dd><code>featureKey</code> - name of the feature</dd>
+<dt>Returns:</dt>
+<dd>true if the value is a truthy value</dd>
+</dl>
 </section>
 </li>
 <li>
@@ -293,6 +497,14 @@ loadScripts(document, 'script');</script>
 <h3>getFeatureValue</h3>
 <div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Boolean.html" title="class or interface in java.lang" class="external-link">Boolean</a></span>&nbsp;<span class="element-name">getFeatureValue</span><wbr><span class="parameters">(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;featureKey,
  <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Boolean.html" title="class or interface in java.lang" class="external-link">Boolean</a>&nbsp;defaultValue)</span></div>
+<div class="block">Get the feature value as a boolean</div>
+<dl class="notes">
+<dt>Parameters:</dt>
+<dd><code>featureKey</code> - name of the feature</dd>
+<dd><code>defaultValue</code> - boolean value to return</dd>
+<dt>Returns:</dt>
+<dd>the found value or defaultValue</dd>
+</dl>
 </section>
 </li>
 <li>
@@ -300,6 +512,14 @@ loadScripts(document, 'script');</script>
 <h3>getFeatureValue</h3>
 <div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a></span>&nbsp;<span class="element-name">getFeatureValue</span><wbr><span class="parameters">(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;featureKey,
  <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;defaultValue)</span></div>
+<div class="block">Get the feature value as a string</div>
+<dl class="notes">
+<dt>Parameters:</dt>
+<dd><code>featureKey</code> - name of the feature</dd>
+<dd><code>defaultValue</code> - string value to return</dd>
+<dt>Returns:</dt>
+<dd>the found value or defaultValue</dd>
+</dl>
 </section>
 </li>
 <li>
@@ -307,6 +527,14 @@ loadScripts(document, 'script');</script>
 <h3>getFeatureValue</h3>
 <div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Float.html" title="class or interface in java.lang" class="external-link">Float</a></span>&nbsp;<span class="element-name">getFeatureValue</span><wbr><span class="parameters">(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;featureKey,
  <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Float.html" title="class or interface in java.lang" class="external-link">Float</a>&nbsp;defaultValue)</span></div>
+<div class="block">Get the feature value as a float</div>
+<dl class="notes">
+<dt>Parameters:</dt>
+<dd><code>featureKey</code> - name of the feature</dd>
+<dd><code>defaultValue</code> - float value to return</dd>
+<dt>Returns:</dt>
+<dd>the found value or defaultValue</dd>
+</dl>
 </section>
 </li>
 <li>
@@ -314,6 +542,14 @@ loadScripts(document, 'script');</script>
 <h3>getFeatureValue</h3>
 <div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Integer.html" title="class or interface in java.lang" class="external-link">Integer</a></span>&nbsp;<span class="element-name">getFeatureValue</span><wbr><span class="parameters">(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;featureKey,
  <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Integer.html" title="class or interface in java.lang" class="external-link">Integer</a>&nbsp;defaultValue)</span></div>
+<div class="block">Get the feature value as an integer</div>
+<dl class="notes">
+<dt>Parameters:</dt>
+<dd><code>featureKey</code> - name of the feature</dd>
+<dd><code>defaultValue</code> - integer value to return</dd>
+<dt>Returns:</dt>
+<dd>the found value or defaultValue</dd>
+</dl>
 </section>
 </li>
 <li>
@@ -321,6 +557,14 @@ loadScripts(document, 'script');</script>
 <h3>getFeatureValue</h3>
 <div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html" title="class or interface in java.lang" class="external-link">Object</a></span>&nbsp;<span class="element-name">getFeatureValue</span><wbr><span class="parameters">(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;featureKey,
  <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html" title="class or interface in java.lang" class="external-link">Object</a>&nbsp;defaultValue)</span></div>
+<div class="block">Get the feature value as an Object. This may be useful for implementations that do not use Gson.</div>
+<dl class="notes">
+<dt>Parameters:</dt>
+<dd><code>featureKey</code> - feature identifier</dd>
+<dd><code>defaultValue</code> - default object value</dd>
+<dt>Returns:</dt>
+<dd>Object</dd>
+</dl>
 </section>
 </li>
 <li>
@@ -329,6 +573,18 @@ loadScripts(document, 'script');</script>
 <div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="type-parameters">&lt;ValueType&gt;</span>&nbsp;<span class="return-type">ValueType</span>&nbsp;<span class="element-name">getFeatureValue</span><wbr><span class="parameters">(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;featureKey,
  ValueType&nbsp;defaultValue,
  <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Class.html" title="class or interface in java.lang" class="external-link">Class</a>&lt;ValueType&gt;&nbsp;gsonDeserializableClass)</span></div>
+<div class="block">Get the feature value as a Gson-deserializable.
+ If your class requires a custom deserializer, use <a href="#getFeatureValue(java.lang.String,java.lang.Object)"><code>getFeatureValue(String, Object)</code></a> instead and deserialize it with your own Gson instance.</div>
+<dl class="notes">
+<dt>Type Parameters:</dt>
+<dd><code>ValueType</code> - Gson deserializable type</dd>
+<dt>Parameters:</dt>
+<dd><code>featureKey</code> - feature identifier</dd>
+<dd><code>defaultValue</code> - default generic class</dd>
+<dd><code>gsonDeserializableClass</code> - the class of the generic, e.g. MyFeature.class</dd>
+<dt>Returns:</dt>
+<dd>ValueType instance</dd>
+</dl>
 </section>
 </li>
 <li>
@@ -336,6 +592,25 @@ loadScripts(document, 'script');</script>
 <h3>evaluateCondition</h3>
 <div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Boolean.html" title="class or interface in java.lang" class="external-link">Boolean</a></span>&nbsp;<span class="element-name">evaluateCondition</span><wbr><span class="parameters">(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;attributesJsonString,
  <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;conditionJsonString)</span></div>
+<div class="block">Evaluate a condition for a set of user attributes based on the provided condition.
+ The condition syntax closely resembles MongoDB's syntax.
+ This is defined in the Feature's targeting conditions' Advanced settings
+ <p>
+ This is the main function used to evaluate a condition. It loops through the condition key/value pairs and checks each entry:
+ <p>
+ 1. If condition key is $or, check if evalOr(attributes, condition["$or"]) is false. If so, break out of the loop and return false
+ 2. If condition key is $nor, check if !evalOr(attributes, condition["$nor"]) is false. If so, break out of the loop and return false
+ 3. If condition key is $and, check if evalAnd(attributes, condition["$and"]) is false. If so, break out of the loop and return false
+ 4. If condition key is $not, check if !evalCondition(attributes, condition["$not"]) is false. If so, break out of the loop and return false
+ 5. Otherwise, check if evalConditionValue(value, getPath(attributes, key)) is false. If so, break out of the loop and return false
+ If none of the entries failed their checks, evalCondition returns true</div>
+<dl class="notes">
+<dt>Parameters:</dt>
+<dd><code>attributesJsonString</code> - A JsonObject of the user attributes to evaluate</dd>
+<dd><code>conditionJsonString</code> - A JsonObject of the condition</dd>
+<dt>Returns:</dt>
+<dd>Whether the condition should be true for the user</dd>
+</dl>
 </section>
 </li>
 <li>
@@ -343,30 +618,83 @@ loadScripts(document, 'script');</script>
 <h3>getFeatureValue</h3>
 <div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Double.html" title="class or interface in java.lang" class="external-link">Double</a></span>&nbsp;<span class="element-name">getFeatureValue</span><wbr><span class="parameters">(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;featureKey,
  <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Double.html" title="class or interface in java.lang" class="external-link">Double</a>&nbsp;defaultValue)</span></div>
+<div class="block">Get the feature value as a double</div>
+<dl class="notes">
+<dt>Parameters:</dt>
+<dd><code>featureKey</code> - name of the feature</dd>
+<dd><code>defaultValue</code> - integer value to return</dd>
+<dt>Returns:</dt>
+<dd>the found value or defaultValue</dd>
+</dl>
 </section>
 </li>
 <li>
 <section class="detail" id="destroy()">
 <h3>destroy</h3>
 <div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type">void</span>&nbsp;<span class="element-name">destroy</span>()</div>
+<div class="block">Reinitialized the list of ExperimentRunCallbacks.
+ This method clears the current list of callbacks by replacing it with a new empty ArrayList.</div>
 </section>
 </li>
 <li>
 <section class="detail" id="subscribe(growthbook.sdk.java.ExperimentRunCallback)">
 <h3>subscribe</h3>
 <div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type">void</span>&nbsp;<span class="element-name">subscribe</span><wbr><span class="parameters">(<a href="ExperimentRunCallback.html" title="interface in growthbook.sdk.java">ExperimentRunCallback</a>&nbsp;callback)</span></div>
+<div class="block">This method add new calback to list of ExperimentRunCallback</div>
+<dl class="notes">
+<dt>Parameters:</dt>
+<dd><code>callback</code> - ExperimentRunCallback interface</dd>
+</dl>
 </section>
 </li>
 <li>
 <section class="detail" id="featuresAPIModelSuccessfully(java.lang.String)">
 <h3>featuresAPIModelSuccessfully</h3>
 <div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type">void</span>&nbsp;<span class="element-name">featuresAPIModelSuccessfully</span><wbr><span class="parameters">(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;featuresDataModel)</span></div>
+<div class="block">Update sticky bucketing configuration
+ Method that get cached assignments
+ and set it to Context's Sticky Bucket Assignments documents</div>
+<dl class="notes">
+<dt>Parameters:</dt>
+<dd><code>featuresDataModel</code> - Json in format of String. See info how it looks like here <a href="https://docs.growthbook.io/app/api#sdk-connection-endpoints">...</a></dd>
+</dl>
 </section>
 </li>
 <li>
 <section class="detail" id="isFeatureEnabled(java.lang.String)">
 <h3>isFeatureEnabled</h3>
 <div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Boolean.html" title="class or interface in java.lang" class="external-link">Boolean</a></span>&nbsp;<span class="element-name">isFeatureEnabled</span><wbr><span class="parameters">(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;featureKey)</span></div>
+<div class="block">This method return boolean result if feature enabled by environment it would be present in context</div>
+<dl class="notes">
+<dt>Parameters:</dt>
+<dd><code>featureKey</code> - Feature name</dd>
+<dt>Returns:</dt>
+<dd>Whether feature is present in GBContext</dd>
+</dl>
+</section>
+</li>
+<li>
+<section class="detail" id="getAttributeOverrides()">
+<h3>getAttributeOverrides</h3>
+<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type">com.google.gson.JsonObject</span>&nbsp;<span class="element-name">getAttributeOverrides</span>()</div>
+</section>
+</li>
+<li>
+<section class="detail" id="setAttributeOverrides(com.google.gson.JsonObject)">
+<h3>setAttributeOverrides</h3>
+<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type">void</span>&nbsp;<span class="element-name">setAttributeOverrides</span><wbr><span class="parameters">(com.google.gson.JsonObject&nbsp;attributeOverrides)</span></div>
+</section>
+</li>
+<li>
+<section class="detail" id="getForcedFeatureValues()">
+<h3>getForcedFeatureValues</h3>
+<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/Map.html" title="class or interface in java.util" class="external-link">Map</a>&lt;<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>,<wbr><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html" title="class or interface in java.lang" class="external-link">Object</a>&gt;</span>&nbsp;<span class="element-name">getForcedFeatureValues</span>()</div>
+</section>
+</li>
+<li>
+<section class="detail" id="setForcedFeatureValues(java.util.Map)">
+<h3>setForcedFeatureValues</h3>
+<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type">void</span>&nbsp;<span class="element-name">setForcedFeatureValues</span><wbr><span class="parameters">(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/Map.html" title="class or interface in java.util" class="external-link">Map</a>&lt;<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>,<wbr><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html" title="class or interface in java.lang" class="external-link">Object</a>&gt;&nbsp;forcedFeatureValues)</span></div>
 </section>
 </li>
 </ul>

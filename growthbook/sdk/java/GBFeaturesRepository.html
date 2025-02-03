@@ -11,7 +11,7 @@
 <link rel="stylesheet" type="text/css" href="../../../script-dir/jquery-ui.min.css" title="Style">
 <link rel="stylesheet" type="text/css" href="../../../jquery-ui.overrides.css" title="Style">
 <script type="text/javascript" src="../../../script.js"></script>
-<script type="text/javascript" src="../../../script-dir/jquery-3.6.1.min.js"></script>
+<script type="text/javascript" src="../../../script-dir/jquery-3.7.1.min.js"></script>
 <script type="text/javascript" src="../../../script-dir/jquery-ui.min.js"></script>
 </head>
 <body class="class-declaration-page">
@@ -45,13 +45,13 @@ loadScripts(document, 'script');</script>
 <ul class="sub-nav-list">
 <li>Summary:&nbsp;</li>
 <li><a href="#nested-class-summary">Nested</a>&nbsp;|&nbsp;</li>
-<li>Field&nbsp;|&nbsp;</li>
+<li><a href="#field-summary">Field</a>&nbsp;|&nbsp;</li>
 <li><a href="#constructor-summary">Constr</a>&nbsp;|&nbsp;</li>
 <li><a href="#method-summary">Method</a></li>
 </ul>
 <ul class="sub-nav-list">
 <li>Detail:&nbsp;</li>
-<li>Field&nbsp;|&nbsp;</li>
+<li><a href="#field-detail">Field</a>&nbsp;|&nbsp;</li>
 <li><a href="#constructor-detail">Constr</a>&nbsp;|&nbsp;</li>
 <li><a href="#method-detail">Method</a></li>
 </ul>
@@ -101,6 +101,24 @@ loadScripts(document, 'script');</script>
 </div>
 </section>
 </li>
+<!-- =========== FIELD SUMMARY =========== -->
+<li>
+<section class="field-summary" id="field-summary">
+<h2>Field Summary</h2>
+<div class="caption"><span>Fields</span></div>
+<div class="summary-table three-column-summary">
+<div class="table-header col-first">Modifier and Type</div>
+<div class="table-header col-second">Field</div>
+<div class="table-header col-last">Description</div>
+<div class="col-first even-row-color"><code>static final <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a></code></div>
+<div class="col-second even-row-color"><code><a href="#EMPTY_JSON_OBJECT_STRING" class="member-name-link">EMPTY_JSON_OBJECT_STRING</a></code></div>
+<div class="col-last even-row-color">&nbsp;</div>
+<div class="col-first odd-row-color"><code>static final <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a></code></div>
+<div class="col-second odd-row-color"><code><a href="#FILE_PATH_FOR_CACHE" class="member-name-link">FILE_PATH_FOR_CACHE</a></code></div>
+<div class="col-last odd-row-color">&nbsp;</div>
+</div>
+</section>
+</li>
 <!-- ======== CONSTRUCTOR SUMMARY ======== -->
 <li>
 <section class="constructor-summary" id="constructor-summary">
@@ -115,16 +133,46 @@ loadScripts(document, 'script');</script>
  <a href="FeatureRefreshStrategy.html" title="enum class in growthbook.sdk.java">FeatureRefreshStrategy</a>&nbsp;refreshStrategy,
  <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Integer.html" title="class or interface in java.lang" class="external-link">Integer</a>&nbsp;swrTtlSeconds)</code></div>
 <div class="col-last even-row-color">
-<div class="block">Create a new GBFeaturesRepository</div>
+<div class="block"><span class="deprecated-label">Deprecated.</span></div>
 </div>
-<div class="col-constructor-name odd-row-color"><code><a href="#%3Cinit%3E(java.lang.String,java.lang.String,java.lang.String,growthbook.sdk.java.FeatureRefreshStrategy,java.lang.Integer,okhttp3.OkHttpClient)" class="member-name-link">GBFeaturesRepository</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;apiHost,
+<div class="col-constructor-name odd-row-color"><code><a href="#%3Cinit%3E(java.lang.String,java.lang.String,java.lang.String,growthbook.sdk.java.FeatureRefreshStrategy,java.lang.Integer,growthbook.sdk.java.RequestBodyForRemoteEval)" class="member-name-link">GBFeaturesRepository</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;apiHost,
  <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;clientKey,
  <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;encryptionKey,
  <a href="FeatureRefreshStrategy.html" title="enum class in growthbook.sdk.java">FeatureRefreshStrategy</a>&nbsp;refreshStrategy,
  <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Integer.html" title="class or interface in java.lang" class="external-link">Integer</a>&nbsp;swrTtlSeconds,
- okhttp3.OkHttpClient&nbsp;okHttpClient)</code></div>
+ <a href="RequestBodyForRemoteEval.html" title="class in growthbook.sdk.java">RequestBodyForRemoteEval</a>&nbsp;requestBodyForRemoteEval)</code></div>
+<div class="col-last odd-row-color">
+<div class="block">New constructor that support payload for remote eval</div>
+</div>
+<div class="col-constructor-name even-row-color"><code><a href="#%3Cinit%3E(java.lang.String,java.lang.String,java.lang.String,growthbook.sdk.java.FeatureRefreshStrategy,java.lang.Integer,java.lang.Boolean)" class="member-name-link">GBFeaturesRepository</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;apiHost,
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;clientKey,
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;encryptionKey,
+ <a href="FeatureRefreshStrategy.html" title="enum class in growthbook.sdk.java">FeatureRefreshStrategy</a>&nbsp;refreshStrategy,
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Integer.html" title="class or interface in java.lang" class="external-link">Integer</a>&nbsp;swrTtlSeconds,
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Boolean.html" title="class or interface in java.lang" class="external-link">Boolean</a>&nbsp;isCacheDisabled)</code></div>
+<div class="col-last even-row-color">&nbsp;</div>
+<div class="col-constructor-name odd-row-color"><code><a href="#%3Cinit%3E(java.lang.String,java.lang.String,java.lang.String,growthbook.sdk.java.FeatureRefreshStrategy,java.lang.Integer,okhttp3.OkHttpClient,java.lang.Boolean,growthbook.sdk.java.RequestBodyForRemoteEval)" class="member-name-link">GBFeaturesRepository</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;apiHost,
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;clientKey,
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;decryptionKey,
+ <a href="FeatureRefreshStrategy.html" title="enum class in growthbook.sdk.java">FeatureRefreshStrategy</a>&nbsp;refreshStrategy,
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Integer.html" title="class or interface in java.lang" class="external-link">Integer</a>&nbsp;swrTtlSeconds,
+ okhttp3.OkHttpClient&nbsp;okHttpClient,
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Boolean.html" title="class or interface in java.lang" class="external-link">Boolean</a>&nbsp;isCacheDisabled,
+ <a href="RequestBodyForRemoteEval.html" title="class in growthbook.sdk.java">RequestBodyForRemoteEval</a>&nbsp;requestBodyForRemoteEval)</code></div>
 <div class="col-last odd-row-color">
 <div class="block">Create a new GBFeaturesRepository</div>
+</div>
+<div class="col-constructor-name even-row-color"><code><a href="#%3Cinit%3E(java.lang.String,java.lang.String,java.lang.String,growthbook.sdk.java.FeatureRefreshStrategy,java.lang.Integer,okhttp3.OkHttpClient,java.lang.String,java.lang.Boolean,growthbook.sdk.java.RequestBodyForRemoteEval)" class="member-name-link">GBFeaturesRepository</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;apiHost,
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;clientKey,
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;encryptionKey,
+ <a href="FeatureRefreshStrategy.html" title="enum class in growthbook.sdk.java">FeatureRefreshStrategy</a>&nbsp;refreshStrategy,
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Integer.html" title="class or interface in java.lang" class="external-link">Integer</a>&nbsp;swrTtlSeconds,
+ okhttp3.OkHttpClient&nbsp;okHttpClient,
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;decryptionKey,
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Boolean.html" title="class or interface in java.lang" class="external-link">Boolean</a>&nbsp;isCacheDisabled,
+ <a href="RequestBodyForRemoteEval.html" title="class in growthbook.sdk.java">RequestBodyForRemoteEval</a>&nbsp;requestBodyForRemoteEval)</code></div>
+<div class="col-last even-row-color">
+<div class="block">New constructor that explicitly supports decryptionKey.</div>
 </div>
 </div>
 </section>
@@ -134,7 +182,7 @@ loadScripts(document, 'script');</script>
 <section class="method-summary" id="method-summary">
 <h2>Method Summary</h2>
 <div id="method-summary-table">
-<div class="table-tabs" role="tablist" aria-orientation="horizontal"><button id="method-summary-table-tab0" role="tab" aria-selected="true" aria-controls="method-summary-table.tabpanel" tabindex="0" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table', 3)" class="active-table-tab">All Methods</button><button id="method-summary-table-tab1" role="tab" aria-selected="false" aria-controls="method-summary-table.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table-tab1', 3)" class="table-tab">Static Methods</button><button id="method-summary-table-tab2" role="tab" aria-selected="false" aria-controls="method-summary-table.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table-tab2', 3)" class="table-tab">Instance Methods</button><button id="method-summary-table-tab4" role="tab" aria-selected="false" aria-controls="method-summary-table.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table-tab4', 3)" class="table-tab">Concrete Methods</button></div>
+<div class="table-tabs" role="tablist" aria-orientation="horizontal"><button id="method-summary-table-tab0" role="tab" aria-selected="true" aria-controls="method-summary-table.tabpanel" tabindex="0" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table', 3)" class="active-table-tab">All Methods</button><button id="method-summary-table-tab1" role="tab" aria-selected="false" aria-controls="method-summary-table.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table-tab1', 3)" class="table-tab">Static Methods</button><button id="method-summary-table-tab2" role="tab" aria-selected="false" aria-controls="method-summary-table.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table-tab2', 3)" class="table-tab">Instance Methods</button><button id="method-summary-table-tab4" role="tab" aria-selected="false" aria-controls="method-summary-table.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table-tab4', 3)" class="table-tab">Concrete Methods</button><button id="method-summary-table-tab6" role="tab" aria-selected="false" aria-controls="method-summary-table.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table-tab6', 3)" class="table-tab">Deprecated Methods</button></div>
 <div id="method-summary-table.tabpanel" role="tabpanel" aria-labelledby="method-summary-table-tab0">
 <div class="summary-table three-column-summary">
 <div class="table-header col-first">Modifier and Type</div>
@@ -146,42 +194,93 @@ loadScripts(document, 'script');</script>
 <div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>void</code></div>
 <div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#clearCallbacks()" class="member-name-link">clearCallbacks</a>()</code></div>
 <div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">&nbsp;</div>
-<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a></code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#getEncryptionKey()" class="member-name-link">getEncryptionKey</a>()</code></div>
-<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">&nbsp;</div>
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>void</code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#fetchFeatures()" class="member-name-link">fetchFeatures</a>()</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="block">Performs a network request to fetch the features from the GrowthBook API
+ with the provided endpoint.</div>
+</div>
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>void</code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#fetchForRemoteEval(growthbook.sdk.java.RequestBodyForRemoteEval)" class="member-name-link">fetchForRemoteEval</a><wbr>(<a href="RequestBodyForRemoteEval.html" title="class in growthbook.sdk.java">RequestBodyForRemoteEval</a>&nbsp;requestBodyForRemoteEval)</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">&nbsp;</div>
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="CachingManager.html" title="class in growthbook.sdk.java">CachingManager</a></code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#getCachingManager()" class="member-name-link">getCachingManager</a>()</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="block">CachingManger allows to cache features data to file</div>
+</div>
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a></code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#getDecryptionKey()" class="member-name-link">getDecryptionKey</a>()</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="block">The key used to decrypt encrypted features from the API</div>
+</div>
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4 method-summary-table-tab6"><code><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a></code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4 method-summary-table-tab6"><code><a href="#getEncryptionKey()" class="member-name-link">getEncryptionKey</a>()</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4 method-summary-table-tab6">
+<div class="block"><span class="deprecated-label">Deprecated.</span></div>
+</div>
 <div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a></code></div>
 <div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#getEventsEndpoint()" class="member-name-link">getEventsEndpoint</a>()</code></div>
-<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">&nbsp;</div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="block">Endpoint for SSE request</div>
+</div>
 <div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Long.html" title="class or interface in java.lang" class="external-link">Long</a></code></div>
 <div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#getExpiresAt()" class="member-name-link">getExpiresAt</a>()</code></div>
-<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">&nbsp;</div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="block">Seconds after that cache is expired</div>
+</div>
 <div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a></code></div>
 <div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#getFeaturesEndpoint()" class="member-name-link">getFeaturesEndpoint</a>()</code></div>
-<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">&nbsp;</div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="block">Endpoint for GET request</div>
+</div>
 <div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a></code></div>
 <div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#getFeaturesJson()" class="member-name-link">getFeaturesJson</a>()</code></div>
 <div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">&nbsp;</div>
-<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="FeatureRefreshStrategy.html" title="enum class in growthbook.sdk.java">FeatureRefreshStrategy</a></code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#getRefreshStrategy()" class="member-name-link">getRefreshStrategy</a>()</code></div>
-<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">&nbsp;</div>
-<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a></code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#getSavedGroupsJson()" class="member-name-link">getSavedGroupsJson</a>()</code></div>
-<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">&nbsp;</div>
-<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Integer.html" title="class or interface in java.lang" class="external-link">Integer</a></code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#getSwrTtlSeconds()" class="member-name-link">getSwrTtlSeconds</a>()</code></div>
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Boolean.html" title="class or interface in java.lang" class="external-link">Boolean</a></code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#getInitialized()" class="member-name-link">getInitialized</a>()</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="block">Flag to know whether GBFeatureRepository is initialized</div>
+</div>
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="FeatureRefreshStrategy.html" title="enum class in growthbook.sdk.java">FeatureRefreshStrategy</a></code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#getRefreshStrategy()" class="member-name-link">getRefreshStrategy</a>()</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="block">Strategy for building url</div>
+</div>
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a></code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#getRemoteEvalEndPoint()" class="member-name-link">getRemoteEvalEndPoint</a>()</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="block">Endpoint for POST request</div>
+</div>
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="RequestBodyForRemoteEval.html" title="class in growthbook.sdk.java">RequestBodyForRemoteEval</a></code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#getRequestBodyForRemoteEval()" class="member-name-link">getRequestBodyForRemoteEval</a>()</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="block">Request body for that be sent with POST request for remote eval feature</div>
+</div>
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a></code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#getSavedGroupsJson()" class="member-name-link">getSavedGroupsJson</a>()</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="block">Allows you to get the saved groups JSON from the provided <a href="#getFeaturesEndpoint()"><code>getFeaturesEndpoint()</code></a>.</div>
+</div>
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Integer.html" title="class or interface in java.lang" class="external-link">Integer</a></code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#getSwrTtlSeconds()" class="member-name-link">getSwrTtlSeconds</a>()</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="block">The standard cache TTL to use (60 seconds)</div>
+</div>
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>void</code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#initialize()" class="member-name-link">initialize</a>()</code></div>
 <div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">&nbsp;</div>
 <div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>void</code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#initialize()" class="member-name-link">initialize</a>()</code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#initialize(java.lang.Boolean)" class="member-name-link">initialize</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Boolean.html" title="class or interface in java.lang" class="external-link">Boolean</a>&nbsp;retryOnFailure)</code></div>
 <div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">&nbsp;</div>
 <div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>void</code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#initialize(java.lang.Boolean)" class="member-name-link">initialize</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Boolean.html" title="class or interface in java.lang" class="external-link">Boolean</a>&nbsp;retryOnFailure)</code></div>
-<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">&nbsp;</div>
-<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>void</code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#onFeaturesRefresh(growthbook.sdk.java.FeatureRefreshCallback)" class="member-name-link">onFeaturesRefresh</a><wbr>(<a href="FeatureRefreshCallback.html" title="interface in growthbook.sdk.java">FeatureRefreshCallback</a>&nbsp;callback)</code></div>
-<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#onFeaturesRefresh(growthbook.sdk.java.FeatureRefreshCallback)" class="member-name-link">onFeaturesRefresh</a><wbr>(<a href="FeatureRefreshCallback.html" title="interface in growthbook.sdk.java">FeatureRefreshCallback</a>&nbsp;callback)</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">Subscribe to feature refresh events
  This callback is called when the features are successfully refreshed or there is an error when refreshing.</div>
 </div>
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>void</code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#setCachingManager(growthbook.sdk.java.CachingManager)" class="member-name-link">setCachingManager</a><wbr>(<a href="CachingManager.html" title="class in growthbook.sdk.java">CachingManager</a>&nbsp;cachingManager)</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">&nbsp;</div>
 <div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>void</code></div>
 <div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#shutdown()" class="member-name-link">shutdown</a>()</code></div>
 <div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">&nbsp;</div>
@@ -197,6 +296,42 @@ loadScripts(document, 'script');</script>
 </section>
 <section class="details">
 <ul class="details-list">
+<!-- ============ FIELD DETAIL =========== -->
+<li>
+<section class="field-details" id="field-detail">
+<h2>Field Details</h2>
+<ul class="member-list">
+<li>
+<section class="detail" id="FILE_PATH_FOR_CACHE">
+<h3>FILE_PATH_FOR_CACHE</h3>
+<div class="member-signature"><span class="modifiers">public static final</span>&nbsp;<span class="return-type"><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a></span>&nbsp;<span class="element-name">FILE_PATH_FOR_CACHE</span></div>
+<dl class="notes">
+<dt>See Also:</dt>
+<dd>
+<ul class="see-list">
+<li><a href="../../../constant-values.html#growthbook.sdk.java.GBFeaturesRepository.FILE_PATH_FOR_CACHE">Constant Field Values</a></li>
+</ul>
+</dd>
+</dl>
+</section>
+</li>
+<li>
+<section class="detail" id="EMPTY_JSON_OBJECT_STRING">
+<h3>EMPTY_JSON_OBJECT_STRING</h3>
+<div class="member-signature"><span class="modifiers">public static final</span>&nbsp;<span class="return-type"><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a></span>&nbsp;<span class="element-name">EMPTY_JSON_OBJECT_STRING</span></div>
+<dl class="notes">
+<dt>See Also:</dt>
+<dd>
+<ul class="see-list">
+<li><a href="../../../constant-values.html#growthbook.sdk.java.GBFeaturesRepository.EMPTY_JSON_OBJECT_STRING">Constant Field Values</a></li>
+</ul>
+</dd>
+</dl>
+</section>
+</li>
+</ul>
+</section>
+</li>
 <!-- ========= CONSTRUCTOR DETAIL ======== -->
 <li>
 <section class="constructor-details" id="constructor-detail">
@@ -205,15 +340,17 @@ loadScripts(document, 'script');</script>
 <li>
 <section class="detail" id="&lt;init&gt;(java.lang.String,java.lang.String,java.lang.String,growthbook.sdk.java.FeatureRefreshStrategy,java.lang.Integer)">
 <h3>GBFeaturesRepository</h3>
-<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="element-name">GBFeaturesRepository</span><wbr><span class="parameters">(@Nullable
+<div class="member-signature"><span class="annotations"><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Deprecated.html" title="class or interface in java.lang" class="external-link">@Deprecated</a>
+</span><span class="modifiers">public</span>&nbsp;<span class="element-name">GBFeaturesRepository</span><wbr><span class="parameters">(@Nullable
  <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;apiHost,
  <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;clientKey,
- @Nullable
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Deprecated.html" title="class or interface in java.lang" class="external-link">@Deprecated</a> @Nullable
  <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;encryptionKey,
  @Nullable
  <a href="FeatureRefreshStrategy.html" title="enum class in growthbook.sdk.java">FeatureRefreshStrategy</a>&nbsp;refreshStrategy,
  @Nullable
  <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Integer.html" title="class or interface in java.lang" class="external-link">Integer</a>&nbsp;swrTtlSeconds)</span></div>
+<div class="deprecation-block"><span class="deprecated-label">Deprecated.</span></div>
 <div class="block">Create a new GBFeaturesRepository</div>
 <dl class="notes">
 <dt>Parameters:</dt>
@@ -225,27 +362,98 @@ loadScripts(document, 'script');</script>
 </section>
 </li>
 <li>
-<section class="detail" id="&lt;init&gt;(java.lang.String,java.lang.String,java.lang.String,growthbook.sdk.java.FeatureRefreshStrategy,java.lang.Integer,okhttp3.OkHttpClient)">
+<section class="detail" id="&lt;init&gt;(java.lang.String,java.lang.String,java.lang.String,growthbook.sdk.java.FeatureRefreshStrategy,java.lang.Integer,growthbook.sdk.java.RequestBodyForRemoteEval)">
 <h3>GBFeaturesRepository</h3>
 <div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="element-name">GBFeaturesRepository</span><wbr><span class="parameters">(@Nullable
  <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;apiHost,
  <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;clientKey,
- @Nullable
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Deprecated.html" title="class or interface in java.lang" class="external-link">@Deprecated</a> @Nullable
  <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;encryptionKey,
  @Nullable
  <a href="FeatureRefreshStrategy.html" title="enum class in growthbook.sdk.java">FeatureRefreshStrategy</a>&nbsp;refreshStrategy,
  @Nullable
  <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Integer.html" title="class or interface in java.lang" class="external-link">Integer</a>&nbsp;swrTtlSeconds,
  @Nullable
- okhttp3.OkHttpClient&nbsp;okHttpClient)</span></div>
-<div class="block">Create a new GBFeaturesRepository</div>
+ <a href="RequestBodyForRemoteEval.html" title="class in growthbook.sdk.java">RequestBodyForRemoteEval</a>&nbsp;requestBodyForRemoteEval)</span></div>
+<div class="block">New constructor that support payload for remote eval</div>
 <dl class="notes">
 <dt>Parameters:</dt>
 <dd><code>apiHost</code> - The GrowthBook API host (default: <a href="https://cdn.growthbook.io">...</a>)</dd>
 <dd><code>clientKey</code> - Your client ID, e.g. sdk-abc123</dd>
 <dd><code>encryptionKey</code> - optional key for decrypting encrypted payload</dd>
+<dd><code>refreshStrategy</code> - Strategy for building url</dd>
+<dd><code>swrTtlSeconds</code> - How often the cache should be invalidated when using <a href="FeatureRefreshStrategy.html#STALE_WHILE_REVALIDATE"><code>FeatureRefreshStrategy.STALE_WHILE_REVALIDATE</code></a> (default: 60)</dd>
+<dd><code>requestBodyForRemoteEval</code> - Payload that would be sent with POST request when repository configure with Remote evalStrategy  <a href="FeatureRefreshStrategy.html#REMOTE_EVAL_STRATEGY"><code>FeatureRefreshStrategy.REMOTE_EVAL_STRATEGY</code></a> (default: 60)</dd>
+</dl>
+</section>
+</li>
+<li>
+<section class="detail" id="&lt;init&gt;(java.lang.String,java.lang.String,java.lang.String,growthbook.sdk.java.FeatureRefreshStrategy,java.lang.Integer,java.lang.Boolean)">
+<h3>GBFeaturesRepository</h3>
+<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="element-name">GBFeaturesRepository</span><wbr><span class="parameters">(@Nullable
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;apiHost,
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;clientKey,
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Deprecated.html" title="class or interface in java.lang" class="external-link">@Deprecated</a> @Nullable
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;encryptionKey,
+ @Nullable
+ <a href="FeatureRefreshStrategy.html" title="enum class in growthbook.sdk.java">FeatureRefreshStrategy</a>&nbsp;refreshStrategy,
+ @Nullable
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Integer.html" title="class or interface in java.lang" class="external-link">Integer</a>&nbsp;swrTtlSeconds,
+ @Nullable
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Boolean.html" title="class or interface in java.lang" class="external-link">Boolean</a>&nbsp;isCacheDisabled)</span></div>
+</section>
+</li>
+<li>
+<section class="detail" id="&lt;init&gt;(java.lang.String,java.lang.String,java.lang.String,growthbook.sdk.java.FeatureRefreshStrategy,java.lang.Integer,okhttp3.OkHttpClient,java.lang.String,java.lang.Boolean,growthbook.sdk.java.RequestBodyForRemoteEval)">
+<h3>GBFeaturesRepository</h3>
+<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="element-name">GBFeaturesRepository</span><wbr><span class="parameters">(@Nullable
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;apiHost,
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;clientKey,
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Deprecated.html" title="class or interface in java.lang" class="external-link">@Deprecated</a> @Nullable
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;encryptionKey,
+ @Nullable
+ <a href="FeatureRefreshStrategy.html" title="enum class in growthbook.sdk.java">FeatureRefreshStrategy</a>&nbsp;refreshStrategy,
+ @Nullable
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Integer.html" title="class or interface in java.lang" class="external-link">Integer</a>&nbsp;swrTtlSeconds,
+ @Nullable
+ okhttp3.OkHttpClient&nbsp;okHttpClient,
+ @Nullable
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;decryptionKey,
+ @Nullable
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Boolean.html" title="class or interface in java.lang" class="external-link">Boolean</a>&nbsp;isCacheDisabled,
+ @Nullable
+ <a href="RequestBodyForRemoteEval.html" title="class in growthbook.sdk.java">RequestBodyForRemoteEval</a>&nbsp;requestBodyForRemoteEval)</span></div>
+<div class="block">New constructor that explicitly supports decryptionKey.</div>
+</section>
+</li>
+<li>
+<section class="detail" id="&lt;init&gt;(java.lang.String,java.lang.String,java.lang.String,growthbook.sdk.java.FeatureRefreshStrategy,java.lang.Integer,okhttp3.OkHttpClient,java.lang.Boolean,growthbook.sdk.java.RequestBodyForRemoteEval)">
+<h3>GBFeaturesRepository</h3>
+<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="element-name">GBFeaturesRepository</span><wbr><span class="parameters">(@Nullable
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;apiHost,
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;clientKey,
+ @Nullable
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;decryptionKey,
+ @Nullable
+ <a href="FeatureRefreshStrategy.html" title="enum class in growthbook.sdk.java">FeatureRefreshStrategy</a>&nbsp;refreshStrategy,
+ @Nullable
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Integer.html" title="class or interface in java.lang" class="external-link">Integer</a>&nbsp;swrTtlSeconds,
+ @Nullable
+ okhttp3.OkHttpClient&nbsp;okHttpClient,
+ @Nullable
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Boolean.html" title="class or interface in java.lang" class="external-link">Boolean</a>&nbsp;isCacheDisabled,
+ @Nullable
+ <a href="RequestBodyForRemoteEval.html" title="class in growthbook.sdk.java">RequestBodyForRemoteEval</a>&nbsp;requestBodyForRemoteEval)</span></div>
+<div class="block">Create a new GBFeaturesRepository</div>
+<dl class="notes">
+<dt>Parameters:</dt>
+<dd><code>apiHost</code> - The GrowthBook API host (default: <a href="https://cdn.growthbook.io">...</a>)</dd>
+<dd><code>clientKey</code> - Your client ID, e.g. sdk-abc123</dd>
+<dd><code>decryptionKey</code> - optional key for decrypting encrypted payload</dd>
 <dd><code>swrTtlSeconds</code> - How often the cache should be invalidated when using <a href="FeatureRefreshStrategy.html#STALE_WHILE_REVALIDATE"><code>FeatureRefreshStrategy.STALE_WHILE_REVALIDATE</code></a> (default: 60)</dd>
 <dd><code>okHttpClient</code> - HTTP client (optional)</dd>
+<dd><code>isCacheDisabled</code> - Parameter to disable or enable caching in project</dd>
+<dd><code>requestBodyForRemoteEval</code> - Payload that would be sent with POST request when repository configure with Remote evalStrategy <a href="FeatureRefreshStrategy.html#REMOTE_EVAL_STRATEGY"><code>FeatureRefreshStrategy.REMOTE_EVAL_STRATEGY</code></a></dd>
 </dl>
 </section>
 </li>
@@ -258,9 +466,28 @@ loadScripts(document, 'script');</script>
 <h2>Method Details</h2>
 <ul class="member-list">
 <li>
+<section class="detail" id="setCachingManager(growthbook.sdk.java.CachingManager)">
+<h3>setCachingManager</h3>
+<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type">void</span>&nbsp;<span class="element-name">setCachingManager</span><wbr><span class="parameters">(<a href="CachingManager.html" title="class in growthbook.sdk.java">CachingManager</a>&nbsp;cachingManager)</span></div>
+</section>
+</li>
+<li>
+<section class="detail" id="getEncryptionKey()">
+<h3>getEncryptionKey</h3>
+<div class="member-signature"><span class="annotations"><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Deprecated.html" title="class or interface in java.lang" class="external-link">@Deprecated</a>
+@Nullable
+</span><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a></span>&nbsp;<span class="element-name">getEncryptionKey</span>()</div>
+<div class="deprecation-block"><span class="deprecated-label">Deprecated.</span></div>
+</section>
+</li>
+<li>
 <section class="detail" id="getFeaturesJson()">
 <h3>getFeaturesJson</h3>
 <div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a></span>&nbsp;<span class="element-name">getFeaturesJson</span>()</div>
+<dl class="notes">
+<dt>Returns:</dt>
+<dd>feature data JSON in a type of String. Handle refresh strategy</dd>
+</dl>
 </section>
 </li>
 <li>
@@ -305,9 +532,35 @@ loadScripts(document, 'script');</script>
 </section>
 </li>
 <li>
+<section class="detail" id="fetchFeatures()">
+<h3>fetchFeatures</h3>
+<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type">void</span>&nbsp;<span class="element-name">fetchFeatures</span>()
+                   throws <span class="exceptions"><a href="FeatureFetchException.html" title="class in growthbook.sdk.java">FeatureFetchException</a></span></div>
+<div class="block">Performs a network request to fetch the features from the GrowthBook API
+ with the provided endpoint.
+ If an encryptionKey is provided, it is assumed the features endpoint is using encrypted features.
+ This method will attempt to decrypt the encrypted features with the provided encryptionKey.</div>
+<dl class="notes">
+<dt>Throws:</dt>
+<dd><code><a href="FeatureFetchException.html" title="class in growthbook.sdk.java">FeatureFetchException</a></code></dd>
+</dl>
+</section>
+</li>
+<li>
 <section class="detail" id="shutdown()">
 <h3>shutdown</h3>
 <div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type">void</span>&nbsp;<span class="element-name">shutdown</span>()</div>
+</section>
+</li>
+<li>
+<section class="detail" id="fetchForRemoteEval(growthbook.sdk.java.RequestBodyForRemoteEval)">
+<h3>fetchForRemoteEval</h3>
+<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type">void</span>&nbsp;<span class="element-name">fetchForRemoteEval</span><wbr><span class="parameters">(<a href="RequestBodyForRemoteEval.html" title="class in growthbook.sdk.java">RequestBodyForRemoteEval</a>&nbsp;requestBodyForRemoteEval)</span>
+                        throws <span class="exceptions"><a href="FeatureFetchException.html" title="class in growthbook.sdk.java">FeatureFetchException</a></span></div>
+<dl class="notes">
+<dt>Throws:</dt>
+<dd><code><a href="FeatureFetchException.html" title="class in growthbook.sdk.java">FeatureFetchException</a></code></dd>
+</dl>
 </section>
 </li>
 <li>
@@ -320,37 +573,50 @@ loadScripts(document, 'script');</script>
 <section class="detail" id="getFeaturesEndpoint()">
 <h3>getFeaturesEndpoint</h3>
 <div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a></span>&nbsp;<span class="element-name">getFeaturesEndpoint</span>()</div>
+<div class="block">Endpoint for GET request</div>
 </section>
 </li>
 <li>
 <section class="detail" id="getEventsEndpoint()">
 <h3>getEventsEndpoint</h3>
 <div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a></span>&nbsp;<span class="element-name">getEventsEndpoint</span>()</div>
+<div class="block">Endpoint for SSE request</div>
 </section>
 </li>
 <li>
 <section class="detail" id="getRefreshStrategy()">
 <h3>getRefreshStrategy</h3>
 <div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="FeatureRefreshStrategy.html" title="enum class in growthbook.sdk.java">FeatureRefreshStrategy</a></span>&nbsp;<span class="element-name">getRefreshStrategy</span>()</div>
+<div class="block">Strategy for building url</div>
 </section>
 </li>
 <li>
-<section class="detail" id="getEncryptionKey()">
-<h3>getEncryptionKey</h3>
+<section class="detail" id="getDecryptionKey()">
+<h3>getDecryptionKey</h3>
 <div class="member-signature"><span class="annotations">@Nullable
-</span><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a></span>&nbsp;<span class="element-name">getEncryptionKey</span>()</div>
+</span><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a></span>&nbsp;<span class="element-name">getDecryptionKey</span>()</div>
+<div class="block">The key used to decrypt encrypted features from the API</div>
 </section>
 </li>
 <li>
 <section class="detail" id="getSwrTtlSeconds()">
 <h3>getSwrTtlSeconds</h3>
 <div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Integer.html" title="class or interface in java.lang" class="external-link">Integer</a></span>&nbsp;<span class="element-name">getSwrTtlSeconds</span>()</div>
+<div class="block">The standard cache TTL to use (60 seconds)</div>
 </section>
 </li>
 <li>
 <section class="detail" id="getExpiresAt()">
 <h3>getExpiresAt</h3>
 <div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Long.html" title="class or interface in java.lang" class="external-link">Long</a></span>&nbsp;<span class="element-name">getExpiresAt</span>()</div>
+<div class="block">Seconds after that cache is expired</div>
+</section>
+</li>
+<li>
+<section class="detail" id="getInitialized()">
+<h3>getInitialized</h3>
+<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Boolean.html" title="class or interface in java.lang" class="external-link">Boolean</a></span>&nbsp;<span class="element-name">getInitialized</span>()</div>
+<div class="block">Flag to know whether GBFeatureRepository is initialized</div>
 </section>
 </li>
 <li>
@@ -358,6 +624,31 @@ loadScripts(document, 'script');</script>
 <h3>getSavedGroupsJson</h3>
 <div class="member-signature"><span class="annotations">@Nullable
 </span><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a></span>&nbsp;<span class="element-name">getSavedGroupsJson</span>()</div>
+<div class="block">Allows you to get the saved groups JSON from the provided <a href="#getFeaturesEndpoint()"><code>getFeaturesEndpoint()</code></a>.
+ You must call <a href="#initialize()"><code>initialize()</code></a> before calling this method
+ or your saved groups would not have loaded.</div>
+</section>
+</li>
+<li>
+<section class="detail" id="getCachingManager()">
+<h3>getCachingManager</h3>
+<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="CachingManager.html" title="class in growthbook.sdk.java">CachingManager</a></span>&nbsp;<span class="element-name">getCachingManager</span>()</div>
+<div class="block">CachingManger allows to cache features data to file</div>
+</section>
+</li>
+<li>
+<section class="detail" id="getRequestBodyForRemoteEval()">
+<h3>getRequestBodyForRemoteEval</h3>
+<div class="member-signature"><span class="annotations">@Nullable
+</span><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="RequestBodyForRemoteEval.html" title="class in growthbook.sdk.java">RequestBodyForRemoteEval</a></span>&nbsp;<span class="element-name">getRequestBodyForRemoteEval</span>()</div>
+<div class="block">Request body for that be sent with POST request for remote eval feature</div>
+</section>
+</li>
+<li>
+<section class="detail" id="getRemoteEvalEndPoint()">
+<h3>getRemoteEvalEndPoint</h3>
+<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a></span>&nbsp;<span class="element-name">getRemoteEvalEndPoint</span>()</div>
+<div class="block">Endpoint for POST request</div>
 </section>
 </li>
 </ul>

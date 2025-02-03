@@ -1,1 +1,1 @@
-packageSearchIndex = [{"l":"All Packages","u":"allpackages-index.html"},{"l":"growthbook.sdk.java"},{"l":"growthbook.sdk.java.stickyBucketing"}];updateSearchResults();
+packageSearchIndex = [{"l":"All Packages","u":"allpackages-index.html"},{"l":"growthbook.sdk.java"},{"l":"growthbook.sdk.java.multiusermode"},{"l":"growthbook.sdk.java.multiusermode.configurations"},{"l":"growthbook.sdk.java.multiusermode.usage"},{"l":"growthbook.sdk.java.multiusermode.util"},{"l":"growthbook.sdk.java.stickyBucketing"}];updateSearchResults();

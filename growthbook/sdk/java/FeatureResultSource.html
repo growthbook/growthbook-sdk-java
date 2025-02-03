@@ -11,7 +11,7 @@
 <link rel="stylesheet" type="text/css" href="../../../script-dir/jquery-ui.min.css" title="Style">
 <link rel="stylesheet" type="text/css" href="../../../jquery-ui.overrides.css" title="Style">
 <script type="text/javascript" src="../../../script.js"></script>
-<script type="text/javascript" src="../../../script-dir/jquery-3.6.1.min.js"></script>
+<script type="text/javascript" src="../../../script-dir/jquery-3.7.1.min.js"></script>
 <script type="text/javascript" src="../../../script-dir/jquery-ui.min.js"></script>
 </head>
 <body class="class-declaration-page">
@@ -121,16 +121,20 @@ loadScripts(document, 'script');</script>
 <div class="col-last odd-row-color">
 <div class="block">When the value is assigned due to a forced condition</div>
 </div>
-<div class="col-first even-row-color"><code><a href="#PREREQUISITE" class="member-name-link">PREREQUISITE</a></code></div>
+<div class="col-first even-row-color"><code><a href="#OVERRIDE" class="member-name-link">OVERRIDE</a></code></div>
 <div class="col-last even-row-color">
+<div class="block">Override Value for the Feature is being processed</div>
+</div>
+<div class="col-first odd-row-color"><code><a href="#PREREQUISITE" class="member-name-link">PREREQUISITE</a></code></div>
+<div class="col-last odd-row-color">
 <div class="block">Prerequisite Value for the Feature is being processed</div>
 </div>
-<div class="col-first odd-row-color"><code><a href="#UNKNOWN_FEATURE" class="member-name-link">UNKNOWN_FEATURE</a></code></div>
-<div class="col-last odd-row-color">
+<div class="col-first even-row-color"><code><a href="#UNKNOWN_FEATURE" class="member-name-link">UNKNOWN_FEATURE</a></code></div>
+<div class="col-last even-row-color">
 <div class="block">When the feature is unknown</div>
 </div>
-<div class="col-first even-row-color"><code><a href="#URL_OVERRIDE" class="member-name-link">URL_OVERRIDE</a></code></div>
-<div class="col-last even-row-color">
+<div class="col-first odd-row-color"><code><a href="#URL_OVERRIDE" class="member-name-link">URL_OVERRIDE</a></code></div>
+<div class="col-last odd-row-color">
 <div class="block">When the value is assigned due to forced feature assignment via the URL</div>
 </div>
 </div>
@@ -232,6 +236,14 @@ the order they are declared.</div>
 <div class="member-signature"><span class="annotations">@SerializedName("cyclicPrerequisite")
 </span><span class="modifiers">public static final</span>&nbsp;<span class="return-type"><a href="FeatureResultSource.html" title="enum class in growthbook.sdk.java">FeatureResultSource</a></span>&nbsp;<span class="element-name">CYCLIC_PREREQUISITE</span></div>
 <div class="block">CyclicPrerequisite Value for the Feature is being processed</div>
+</section>
+</li>
+<li>
+<section class="detail" id="OVERRIDE">
+<h3>OVERRIDE</h3>
+<div class="member-signature"><span class="annotations">@SerializedName("override")
+</span><span class="modifiers">public static final</span>&nbsp;<span class="return-type"><a href="FeatureResultSource.html" title="enum class in growthbook.sdk.java">FeatureResultSource</a></span>&nbsp;<span class="element-name">OVERRIDE</span></div>
+<div class="block">Override Value for the Feature is being processed</div>
 </section>
 </li>
 <li>

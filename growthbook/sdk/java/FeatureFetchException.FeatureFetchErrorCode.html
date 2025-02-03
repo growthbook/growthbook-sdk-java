@@ -11,7 +11,7 @@
 <link rel="stylesheet" type="text/css" href="../../../script-dir/jquery-ui.min.css" title="Style">
 <link rel="stylesheet" type="text/css" href="../../../jquery-ui.overrides.css" title="Style">
 <script type="text/javascript" src="../../../script.js"></script>
-<script type="text/javascript" src="../../../script-dir/jquery-3.6.1.min.js"></script>
+<script type="text/javascript" src="../../../script-dir/jquery-3.7.1.min.js"></script>
 <script type="text/javascript" src="../../../script-dir/jquery-ui.min.js"></script>
 </head>
 <body class="class-declaration-page">
@@ -114,16 +114,20 @@ loadScripts(document, 'script');</script>
 <div class="block">- an encryptionKey was provided but the endpoint does not support encryption so decryption fails
  - no features were found for an unencrypted endpoint</div>
 </div>
-<div class="col-first odd-row-color"><code><a href="#NO_RESPONSE_ERROR" class="member-name-link">NO_RESPONSE_ERROR</a></code></div>
+<div class="col-first odd-row-color"><code><a href="#HTTP_RESPONSE_ERROR" class="member-name-link">HTTP_RESPONSE_ERROR</a></code></div>
 <div class="col-last odd-row-color">
+<div class="block">- the server responded with an HTTP error</div>
+</div>
+<div class="col-first even-row-color"><code><a href="#NO_RESPONSE_ERROR" class="member-name-link">NO_RESPONSE_ERROR</a></code></div>
+<div class="col-last even-row-color">
 <div class="block">- there was no response body</div>
 </div>
-<div class="col-first even-row-color"><code><a href="#SSE_CONNECTION_ERROR" class="member-name-link">SSE_CONNECTION_ERROR</a></code></div>
-<div class="col-last even-row-color">
+<div class="col-first odd-row-color"><code><a href="#SSE_CONNECTION_ERROR" class="member-name-link">SSE_CONNECTION_ERROR</a></code></div>
+<div class="col-last odd-row-color">
 <div class="block">- could not establish a connection to the events (server-sent events) for feature updates</div>
 </div>
-<div class="col-first odd-row-color"><code><a href="#UNKNOWN" class="member-name-link">UNKNOWN</a></code></div>
-<div class="col-last odd-row-color">
+<div class="col-first even-row-color"><code><a href="#UNKNOWN" class="member-name-link">UNKNOWN</a></code></div>
+<div class="col-last even-row-color">
 <div class="block">- there was an unknown error that occurred when attempting to make the request.</div>
 </div>
 </div>
@@ -177,6 +181,13 @@ the order they are declared.</div>
 <div class="member-signature"><span class="modifiers">public static final</span>&nbsp;<span class="return-type"><a href="FeatureFetchException.FeatureFetchErrorCode.html" title="enum class in growthbook.sdk.java">FeatureFetchException.FeatureFetchErrorCode</a></span>&nbsp;<span class="element-name">CONFIGURATION_ERROR</span></div>
 <div class="block">- an encryptionKey was provided but the endpoint does not support encryption so decryption fails
  - no features were found for an unencrypted endpoint</div>
+</section>
+</li>
+<li>
+<section class="detail" id="HTTP_RESPONSE_ERROR">
+<h3>HTTP_RESPONSE_ERROR</h3>
+<div class="member-signature"><span class="modifiers">public static final</span>&nbsp;<span class="return-type"><a href="FeatureFetchException.FeatureFetchErrorCode.html" title="enum class in growthbook.sdk.java">FeatureFetchException.FeatureFetchErrorCode</a></span>&nbsp;<span class="element-name">HTTP_RESPONSE_ERROR</span></div>
+<div class="block">- the server responded with an HTTP error</div>
 </section>
 </li>
 <li>

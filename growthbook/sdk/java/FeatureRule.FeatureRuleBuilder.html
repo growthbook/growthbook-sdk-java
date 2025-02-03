@@ -11,7 +11,7 @@
 <link rel="stylesheet" type="text/css" href="../../../script-dir/jquery-ui.min.css" title="Style">
 <link rel="stylesheet" type="text/css" href="../../../jquery-ui.overrides.css" title="Style">
 <script type="text/javascript" src="../../../script.js"></script>
-<script type="text/javascript" src="../../../script-dir/jquery-3.6.1.min.js"></script>
+<script type="text/javascript" src="../../../script-dir/jquery-3.7.1.min.js"></script>
 <script type="text/javascript" src="../../../script-dir/jquery-ui.min.js"></script>
 </head>
 <body class="class-declaration-page">
@@ -98,7 +98,9 @@ loadScripts(document, 'script');</script>
 <div class="table-header col-last">Description</div>
 <div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="FeatureRule.FeatureRuleBuilder.html" title="class in growthbook.sdk.java">FeatureRule.FeatureRuleBuilder</a>&lt;<a href="FeatureRule.FeatureRuleBuilder.html" title="type parameter in FeatureRule.FeatureRuleBuilder">ValueType</a>&gt;</code></div>
 <div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#bucketVersion(java.lang.Integer)" class="member-name-link">bucketVersion</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Integer.html" title="class or interface in java.lang" class="external-link">Integer</a>&nbsp;bucketVersion)</code></div>
-<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">&nbsp;</div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="block">An sticky bucket version number that can be used to force a re-bucketing of users (default to 0)</div>
+</div>
 <div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="FeatureRule.html" title="class in growthbook.sdk.java">FeatureRule</a>&lt;<a href="FeatureRule.FeatureRuleBuilder.html" title="type parameter in FeatureRule.FeatureRuleBuilder">ValueType</a>&gt;</code></div>
 <div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#build()" class="member-name-link">build</a>()</code></div>
 <div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">&nbsp;</div>
@@ -114,15 +116,21 @@ loadScripts(document, 'script');</script>
 </div>
 <div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="FeatureRule.FeatureRuleBuilder.html" title="class in growthbook.sdk.java">FeatureRule.FeatureRuleBuilder</a>&lt;<a href="FeatureRule.FeatureRuleBuilder.html" title="type parameter in FeatureRule.FeatureRuleBuilder">ValueType</a>&gt;</code></div>
 <div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#disableStickyBucketing(java.lang.Boolean)" class="member-name-link">disableStickyBucketing</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Boolean.html" title="class or interface in java.lang" class="external-link">Boolean</a>&nbsp;disableStickyBucketing)</code></div>
-<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">&nbsp;</div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="block">If true, sticky bucketing will be disabled for this experiment.</div>
+</div>
 <div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="FeatureRule.FeatureRuleBuilder.html" title="class in growthbook.sdk.java">FeatureRule.FeatureRuleBuilder</a>&lt;<a href="FeatureRule.FeatureRuleBuilder.html" title="type parameter in FeatureRule.FeatureRuleBuilder">ValueType</a>&gt;</code></div>
 <div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#fallbackAttribute(java.lang.String)" class="member-name-link">fallbackAttribute</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;fallbackAttribute)</code></div>
-<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">&nbsp;</div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="block">When using sticky bucketing, can be used as a fallback to assign variations</div>
+</div>
 <div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="FeatureRule.FeatureRuleBuilder.html" title="class in growthbook.sdk.java">FeatureRule.FeatureRuleBuilder</a>&lt;<a href="FeatureRule.FeatureRuleBuilder.html" title="type parameter in FeatureRule.FeatureRuleBuilder">ValueType</a>&gt;</code></div>
 <div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#filters(java.util.ArrayList)" class="member-name-link">filters</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/ArrayList.html" title="class or interface in java.util" class="external-link">ArrayList</a>&lt;<a href="Filter.html" title="class in growthbook.sdk.java">Filter</a>&gt;&nbsp;filters)</code></div>
-<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">&nbsp;</div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="block">Array of filters to apply to the rule</div>
+</div>
 <div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="FeatureRule.FeatureRuleBuilder.html" title="class in growthbook.sdk.java">FeatureRule.FeatureRuleBuilder</a>&lt;<a href="FeatureRule.FeatureRuleBuilder.html" title="type parameter in FeatureRule.FeatureRuleBuilder">ValueType</a>&gt;</code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#force(ValueType)" class="member-name-link">force</a><wbr>(<a href="FeatureRule.FeatureRuleBuilder.html" title="type parameter in FeatureRule.FeatureRuleBuilder">ValueType</a>&nbsp;force)</code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#force(growthbook.sdk.java.OptionalField)" class="member-name-link">force</a><wbr>(<a href="OptionalField.html" title="class in growthbook.sdk.java">OptionalField</a>&lt;<a href="FeatureRule.FeatureRuleBuilder.html" title="type parameter in FeatureRule.FeatureRuleBuilder">ValueType</a>&gt;&nbsp;force)</code></div>
 <div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">Immediately force a specific value (ignore every other option besides condition and coverage)</div>
 </div>
@@ -147,16 +155,20 @@ loadScripts(document, 'script');</script>
 <div class="block">The globally unique tracking key for the experiment (default to the feature key)</div>
 </div>
 <div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="FeatureRule.FeatureRuleBuilder.html" title="class in growthbook.sdk.java">FeatureRule.FeatureRuleBuilder</a>&lt;<a href="FeatureRule.FeatureRuleBuilder.html" title="type parameter in FeatureRule.FeatureRuleBuilder">ValueType</a>&gt;</code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#meta(java.util.ArrayList)" class="member-name-link">meta</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/ArrayList.html" title="class or interface in java.util" class="external-link">ArrayList</a>&lt;<a href="VariationMeta.html" title="class in growthbook.sdk.java">VariationMeta</a>&gt;&nbsp;meta)</code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#meta(java.util.ArrayList)" class="member-name-link">meta</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/ArrayList.html" title="class or interface in java.util" class="external-link">ArrayList</a>&lt;growthbook.sdk.java.VariationMeta&gt;&nbsp;meta)</code></div>
 <div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">Meta info about the experiment variations</div>
 </div>
 <div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="FeatureRule.FeatureRuleBuilder.html" title="class in growthbook.sdk.java">FeatureRule.FeatureRuleBuilder</a>&lt;<a href="FeatureRule.FeatureRuleBuilder.html" title="type parameter in FeatureRule.FeatureRuleBuilder">ValueType</a>&gt;</code></div>
 <div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#minBucketVersion(java.lang.Integer)" class="member-name-link">minBucketVersion</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Integer.html" title="class or interface in java.lang" class="external-link">Integer</a>&nbsp;minBucketVersion)</code></div>
-<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">&nbsp;</div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="block">Any users with a sticky bucket version less than this will be excluded from the experiment</div>
+</div>
 <div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="FeatureRule.FeatureRuleBuilder.html" title="class in growthbook.sdk.java">FeatureRule.FeatureRuleBuilder</a>&lt;<a href="FeatureRule.FeatureRuleBuilder.html" title="type parameter in FeatureRule.FeatureRuleBuilder">ValueType</a>&gt;</code></div>
 <div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#name(java.lang.String)" class="member-name-link">name</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;name)</code></div>
-<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">&nbsp;</div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="block">Human-readable name for the experiment</div>
+</div>
 <div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4 method-summary-table-tab6"><code><a href="FeatureRule.FeatureRuleBuilder.html" title="class in growthbook.sdk.java">FeatureRule.FeatureRuleBuilder</a>&lt;<a href="FeatureRule.FeatureRuleBuilder.html" title="type parameter in FeatureRule.FeatureRuleBuilder">ValueType</a>&gt;</code></div>
 <div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4 method-summary-table-tab6"><code><a href="#namespace(growthbook.sdk.java.Namespace)" class="member-name-link">namespace</a><wbr>(<a href="Namespace.html" title="class in growthbook.sdk.java">Namespace</a>&nbsp;namespace)</code></div>
 <div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4 method-summary-table-tab6">
@@ -170,7 +182,9 @@ loadScripts(document, 'script');</script>
 </div>
 <div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="FeatureRule.FeatureRuleBuilder.html" title="class in growthbook.sdk.java">FeatureRule.FeatureRuleBuilder</a>&lt;<a href="FeatureRule.FeatureRuleBuilder.html" title="type parameter in FeatureRule.FeatureRuleBuilder">ValueType</a>&gt;</code></div>
 <div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#phase(java.lang.String)" class="member-name-link">phase</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;phase)</code></div>
-<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">&nbsp;</div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="block">The phase id of the experiment</div>
+</div>
 <div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="FeatureRule.FeatureRuleBuilder.html" title="class in growthbook.sdk.java">FeatureRule.FeatureRuleBuilder</a>&lt;<a href="FeatureRule.FeatureRuleBuilder.html" title="type parameter in FeatureRule.FeatureRuleBuilder">ValueType</a>&gt;</code></div>
 <div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#range(growthbook.sdk.java.BucketRange)" class="member-name-link">range</a><wbr>(<a href="BucketRange.html" title="class in growthbook.sdk.java">BucketRange</a>&nbsp;range)</code></div>
 <div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
@@ -183,13 +197,17 @@ loadScripts(document, 'script');</script>
 </div>
 <div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="FeatureRule.FeatureRuleBuilder.html" title="class in growthbook.sdk.java">FeatureRule.FeatureRuleBuilder</a>&lt;<a href="FeatureRule.FeatureRuleBuilder.html" title="type parameter in FeatureRule.FeatureRuleBuilder">ValueType</a>&gt;</code></div>
 <div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#seed(java.lang.String)" class="member-name-link">seed</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;seed)</code></div>
-<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">&nbsp;</div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="block">Seed to use for hashing</div>
+</div>
 <div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a></code></div>
 <div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#toString()" class="member-name-link">toString</a>()</code></div>
 <div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">&nbsp;</div>
 <div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="FeatureRule.FeatureRuleBuilder.html" title="class in growthbook.sdk.java">FeatureRule.FeatureRuleBuilder</a>&lt;<a href="FeatureRule.FeatureRuleBuilder.html" title="type parameter in FeatureRule.FeatureRuleBuilder">ValueType</a>&gt;</code></div>
 <div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#tracks(java.util.ArrayList)" class="member-name-link">tracks</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/ArrayList.html" title="class or interface in java.util" class="external-link">ArrayList</a>&lt;<a href="TrackData.html" title="class in growthbook.sdk.java">TrackData</a>&lt;<a href="FeatureRule.FeatureRuleBuilder.html" title="type parameter in FeatureRule.FeatureRuleBuilder">ValueType</a>&gt;&gt;&nbsp;tracks)</code></div>
-<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">&nbsp;</div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="block">Array of tracking calls to fire</div>
+</div>
 <div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="FeatureRule.FeatureRuleBuilder.html" title="class in growthbook.sdk.java">FeatureRule.FeatureRuleBuilder</a>&lt;<a href="FeatureRule.FeatureRuleBuilder.html" title="type parameter in FeatureRule.FeatureRuleBuilder">ValueType</a>&gt;</code></div>
 <div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#variations(java.util.ArrayList)" class="member-name-link">variations</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/ArrayList.html" title="class or interface in java.util" class="external-link">ArrayList</a>&lt;<a href="FeatureRule.FeatureRuleBuilder.html" title="type parameter in FeatureRule.FeatureRuleBuilder">ValueType</a>&gt;&nbsp;variations)</code></div>
 <div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
@@ -254,10 +272,9 @@ loadScripts(document, 'script');</script>
 </section>
 </li>
 <li>
-<section class="detail" id="force(ValueType)">
-<h3 id="force(java.lang.Object)">force</h3>
-<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="FeatureRule.FeatureRuleBuilder.html" title="class in growthbook.sdk.java">FeatureRule.FeatureRuleBuilder</a>&lt;<a href="FeatureRule.FeatureRuleBuilder.html" title="type parameter in FeatureRule.FeatureRuleBuilder">ValueType</a>&gt;</span>&nbsp;<span class="element-name">force</span><wbr><span class="parameters">(@Nullable
- <a href="FeatureRule.FeatureRuleBuilder.html" title="type parameter in FeatureRule.FeatureRuleBuilder">ValueType</a>&nbsp;force)</span></div>
+<section class="detail" id="force(growthbook.sdk.java.OptionalField)">
+<h3>force</h3>
+<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="FeatureRule.FeatureRuleBuilder.html" title="class in growthbook.sdk.java">FeatureRule.FeatureRuleBuilder</a>&lt;<a href="FeatureRule.FeatureRuleBuilder.html" title="type parameter in FeatureRule.FeatureRuleBuilder">ValueType</a>&gt;</span>&nbsp;<span class="element-name">force</span><wbr><span class="parameters">(<a href="OptionalField.html" title="class in growthbook.sdk.java">OptionalField</a>&lt;<a href="FeatureRule.FeatureRuleBuilder.html" title="type parameter in FeatureRule.FeatureRuleBuilder">ValueType</a>&gt;&nbsp;force)</span></div>
 <div class="block">Immediately force a specific value (ignore every other option besides condition and coverage)</div>
 <dl class="notes">
 <dt>Returns:</dt>
@@ -380,7 +397,7 @@ loadScripts(document, 'script');</script>
 <section class="detail" id="meta(java.util.ArrayList)">
 <h3>meta</h3>
 <div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="FeatureRule.FeatureRuleBuilder.html" title="class in growthbook.sdk.java">FeatureRule.FeatureRuleBuilder</a>&lt;<a href="FeatureRule.FeatureRuleBuilder.html" title="type parameter in FeatureRule.FeatureRuleBuilder">ValueType</a>&gt;</span>&nbsp;<span class="element-name">meta</span><wbr><span class="parameters">(@Nullable
- <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/ArrayList.html" title="class or interface in java.util" class="external-link">ArrayList</a>&lt;<a href="VariationMeta.html" title="class in growthbook.sdk.java">VariationMeta</a>&gt;&nbsp;meta)</span></div>
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/ArrayList.html" title="class or interface in java.util" class="external-link">ArrayList</a>&lt;growthbook.sdk.java.VariationMeta&gt;&nbsp;meta)</span></div>
 <div class="block">Meta info about the experiment variations</div>
 <dl class="notes">
 <dt>Returns:</dt>
@@ -393,6 +410,7 @@ loadScripts(document, 'script');</script>
 <h3>filters</h3>
 <div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="FeatureRule.FeatureRuleBuilder.html" title="class in growthbook.sdk.java">FeatureRule.FeatureRuleBuilder</a>&lt;<a href="FeatureRule.FeatureRuleBuilder.html" title="type parameter in FeatureRule.FeatureRuleBuilder">ValueType</a>&gt;</span>&nbsp;<span class="element-name">filters</span><wbr><span class="parameters">(@Nullable
  <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/ArrayList.html" title="class or interface in java.util" class="external-link">ArrayList</a>&lt;<a href="Filter.html" title="class in growthbook.sdk.java">Filter</a>&gt;&nbsp;filters)</span></div>
+<div class="block">Array of filters to apply to the rule</div>
 <dl class="notes">
 <dt>Returns:</dt>
 <dd><code>this</code>.</dd>
@@ -404,6 +422,7 @@ loadScripts(document, 'script');</script>
 <h3>seed</h3>
 <div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="FeatureRule.FeatureRuleBuilder.html" title="class in growthbook.sdk.java">FeatureRule.FeatureRuleBuilder</a>&lt;<a href="FeatureRule.FeatureRuleBuilder.html" title="type parameter in FeatureRule.FeatureRuleBuilder">ValueType</a>&gt;</span>&nbsp;<span class="element-name">seed</span><wbr><span class="parameters">(@Nullable
  <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;seed)</span></div>
+<div class="block">Seed to use for hashing</div>
 <dl class="notes">
 <dt>Returns:</dt>
 <dd><code>this</code>.</dd>
@@ -415,6 +434,7 @@ loadScripts(document, 'script');</script>
 <h3>name</h3>
 <div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="FeatureRule.FeatureRuleBuilder.html" title="class in growthbook.sdk.java">FeatureRule.FeatureRuleBuilder</a>&lt;<a href="FeatureRule.FeatureRuleBuilder.html" title="type parameter in FeatureRule.FeatureRuleBuilder">ValueType</a>&gt;</span>&nbsp;<span class="element-name">name</span><wbr><span class="parameters">(@Nullable
  <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;name)</span></div>
+<div class="block">Human-readable name for the experiment</div>
 <dl class="notes">
 <dt>Returns:</dt>
 <dd><code>this</code>.</dd>
@@ -426,6 +446,7 @@ loadScripts(document, 'script');</script>
 <h3>phase</h3>
 <div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="FeatureRule.FeatureRuleBuilder.html" title="class in growthbook.sdk.java">FeatureRule.FeatureRuleBuilder</a>&lt;<a href="FeatureRule.FeatureRuleBuilder.html" title="type parameter in FeatureRule.FeatureRuleBuilder">ValueType</a>&gt;</span>&nbsp;<span class="element-name">phase</span><wbr><span class="parameters">(@Nullable
  <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;phase)</span></div>
+<div class="block">The phase id of the experiment</div>
 <dl class="notes">
 <dt>Returns:</dt>
 <dd><code>this</code>.</dd>
@@ -437,6 +458,7 @@ loadScripts(document, 'script');</script>
 <h3>fallbackAttribute</h3>
 <div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="FeatureRule.FeatureRuleBuilder.html" title="class in growthbook.sdk.java">FeatureRule.FeatureRuleBuilder</a>&lt;<a href="FeatureRule.FeatureRuleBuilder.html" title="type parameter in FeatureRule.FeatureRuleBuilder">ValueType</a>&gt;</span>&nbsp;<span class="element-name">fallbackAttribute</span><wbr><span class="parameters">(@Nullable
  <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;fallbackAttribute)</span></div>
+<div class="block">When using sticky bucketing, can be used as a fallback to assign variations</div>
 <dl class="notes">
 <dt>Returns:</dt>
 <dd><code>this</code>.</dd>
@@ -448,6 +470,8 @@ loadScripts(document, 'script');</script>
 <h3>disableStickyBucketing</h3>
 <div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="FeatureRule.FeatureRuleBuilder.html" title="class in growthbook.sdk.java">FeatureRule.FeatureRuleBuilder</a>&lt;<a href="FeatureRule.FeatureRuleBuilder.html" title="type parameter in FeatureRule.FeatureRuleBuilder">ValueType</a>&gt;</span>&nbsp;<span class="element-name">disableStickyBucketing</span><wbr><span class="parameters">(@Nullable
  <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Boolean.html" title="class or interface in java.lang" class="external-link">Boolean</a>&nbsp;disableStickyBucketing)</span></div>
+<div class="block">If true, sticky bucketing will be disabled for this experiment.
+ (Note: sticky bucketing is only available if a StickyBucketingService is provided in the Context)</div>
 <dl class="notes">
 <dt>Returns:</dt>
 <dd><code>this</code>.</dd>
@@ -459,6 +483,7 @@ loadScripts(document, 'script');</script>
 <h3>bucketVersion</h3>
 <div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="FeatureRule.FeatureRuleBuilder.html" title="class in growthbook.sdk.java">FeatureRule.FeatureRuleBuilder</a>&lt;<a href="FeatureRule.FeatureRuleBuilder.html" title="type parameter in FeatureRule.FeatureRuleBuilder">ValueType</a>&gt;</span>&nbsp;<span class="element-name">bucketVersion</span><wbr><span class="parameters">(@Nullable
  <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Integer.html" title="class or interface in java.lang" class="external-link">Integer</a>&nbsp;bucketVersion)</span></div>
+<div class="block">An sticky bucket version number that can be used to force a re-bucketing of users (default to 0)</div>
 <dl class="notes">
 <dt>Returns:</dt>
 <dd><code>this</code>.</dd>
@@ -470,6 +495,7 @@ loadScripts(document, 'script');</script>
 <h3>minBucketVersion</h3>
 <div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="FeatureRule.FeatureRuleBuilder.html" title="class in growthbook.sdk.java">FeatureRule.FeatureRuleBuilder</a>&lt;<a href="FeatureRule.FeatureRuleBuilder.html" title="type parameter in FeatureRule.FeatureRuleBuilder">ValueType</a>&gt;</span>&nbsp;<span class="element-name">minBucketVersion</span><wbr><span class="parameters">(@Nullable
  <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Integer.html" title="class or interface in java.lang" class="external-link">Integer</a>&nbsp;minBucketVersion)</span></div>
+<div class="block">Any users with a sticky bucket version less than this will be excluded from the experiment</div>
 <dl class="notes">
 <dt>Returns:</dt>
 <dd><code>this</code>.</dd>
@@ -481,6 +507,7 @@ loadScripts(document, 'script');</script>
 <h3>tracks</h3>
 <div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="FeatureRule.FeatureRuleBuilder.html" title="class in growthbook.sdk.java">FeatureRule.FeatureRuleBuilder</a>&lt;<a href="FeatureRule.FeatureRuleBuilder.html" title="type parameter in FeatureRule.FeatureRuleBuilder">ValueType</a>&gt;</span>&nbsp;<span class="element-name">tracks</span><wbr><span class="parameters">(@Nullable
  <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/ArrayList.html" title="class or interface in java.util" class="external-link">ArrayList</a>&lt;<a href="TrackData.html" title="class in growthbook.sdk.java">TrackData</a>&lt;<a href="FeatureRule.FeatureRuleBuilder.html" title="type parameter in FeatureRule.FeatureRuleBuilder">ValueType</a>&gt;&gt;&nbsp;tracks)</span></div>
+<div class="block">Array of tracking calls to fire</div>
 <dl class="notes">
 <dt>Returns:</dt>
 <dd><code>this</code>.</dd>
