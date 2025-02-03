@@ -50,6 +50,27 @@ class FeatureFetchExceptionTest {
                 noResponseExcWithMessage.getMessage()
         );
 
+        // HTTP_RESPONSE_ERROR
+        FeatureFetchException httpResponseExc = new FeatureFetchException(
+                FeatureFetchException.FeatureFetchErrorCode.HTTP_RESPONSE_ERROR
+        );
+        assertEquals(
+                FeatureFetchException.FeatureFetchErrorCode.HTTP_RESPONSE_ERROR,
+                httpResponseExc.getErrorCode()
+        );
+        FeatureFetchException httpResponseExcWithMessage = new FeatureFetchException(
+                FeatureFetchException.FeatureFetchErrorCode.HTTP_RESPONSE_ERROR,
+                "responded with status 400"
+        );
+        assertEquals(
+                FeatureFetchException.FeatureFetchErrorCode.HTTP_RESPONSE_ERROR,
+                httpResponseExcWithMessage.getErrorCode()
+        );
+        assertEquals(
+                "HTTP_RESPONSE_ERROR : responded with status 400",
+                httpResponseExcWithMessage.getMessage()
+        );
+
         // UNKNOWN
         FeatureFetchException unknownExc = new FeatureFetchException(
                 FeatureFetchException.FeatureFetchErrorCode.UNKNOWN
