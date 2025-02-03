@@ -16,7 +16,7 @@ import java.math.BigInteger;
  * The provided methods use a custom Gson instance that has all required type adapters registered.
  */
 @Slf4j
-class GrowthBookJsonUtils {
+public class GrowthBookJsonUtils {
     /**
      * The Gson instance is exposed for convenience.
      */
@@ -39,6 +39,8 @@ class GrowthBookJsonUtils {
 
         // FeatureResult
         gsonBuilder.registerTypeAdapter(FeatureResult.class, FeatureResult.getSerializer());
+
+        gsonBuilder.registerTypeAdapter(FeatureRule.class, new FeatureRule<>());
 
         gsonBuilder.setObjectToNumberStrategy(ToNumberPolicy.LONG_OR_DOUBLE);
 

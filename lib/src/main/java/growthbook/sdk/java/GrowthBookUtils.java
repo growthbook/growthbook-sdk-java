@@ -4,6 +4,7 @@ import com.google.gson.Gson;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
+import growthbook.sdk.java.multiusermode.configurations.EvaluationContext;
 import growthbook.sdk.java.stickyBucketing.StickyAssignmentsDocument;
 import growthbook.sdk.java.stickyBucketing.StickyBucketService;
 import lombok.extern.slf4j.Slf4j;
@@ -20,6 +21,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
  * <b>INTERNAL</b>: Implementation of for internal utility methods to support {@link growthbook.sdk.java.GrowthBook}
@@ -446,13 +448,12 @@ class GrowthBookUtils {
      * </ul>
      *
      * @param filters            List<Filters></Filters>
-     * @param attributeOverrides JsonObject
-     * @param context            GBContext
+     * @param attributes         JsonObject
      * @return check if user filtered
      */
-    public static Boolean isFilteredOut(List<Filter> filters, JsonObject attributeOverrides, GBContext context) {
+    public static Boolean isFilteredOut(List<Filter> filters, JsonObject attributes) {
         if (filters == null) return false;
-        if (attributeOverrides == null) return false;
+        if (attributes == null) return false;
 
         return filters.stream().anyMatch(filter -> {
             String hashAttribute = filter.getAttribute();
@@ -460,10 +461,6 @@ class GrowthBookUtils {
                 hashAttribute = "id";
             }
 
-            JsonObject attributes = context.getAttributes();
-            if (attributes == null) {
-                attributes = new JsonObject();
-            }
             JsonElement hashValueElement = attributes.get(hashAttribute);
             if (hashValueElement == null) return true;
             if (hashValueElement.isJsonNull()) return true;
@@ -498,25 +495,23 @@ class GrowthBookUtils {
      *     <li>If hashValue is empty, return false immediately</li>
      * </ul>
      *
-     * @param attributeOverrides JsonObject
+     * @param attributes JsonObject
      * @param seed               String
      * @param hashAttribute      String
      * @param fallbackAttribute  String
      * @param range              BucketRange
      * @param coverage           Float
      * @param hashVersion        Integer
-     * @param context            GBContext
      * @return Boolean - check if user is included
      */
     public static Boolean isIncludedInRollout(
-            JsonObject attributeOverrides,
+            JsonObject attributes,
             String seed,
             String hashAttribute,
             String fallbackAttribute,
             @Nullable BucketRange range,
             @Nullable Float coverage,
-            @Nullable Integer hashVersion,
-            GBContext context
+            @Nullable Integer hashVersion
     ) {
         if (range == null && coverage == null) return true;
         if (range == null && coverage == 0) return false;
@@ -527,7 +522,7 @@ class GrowthBookUtils {
 
         //Get the hashAttribute and hashValue
         HashAttributeAndHashValue hashAttributeAndHashValue = GrowthBookUtils
-                .getHashAttribute(context, hashAttribute, fallbackAttribute, attributeOverrides);
+                .getHashAttribute(hashAttribute, fallbackAttribute, attributes);
 
         // Determine the bucket for the user
         Float hash = GrowthBookUtils.hash(
@@ -593,7 +588,6 @@ class GrowthBookUtils {
 
             for (String attr : context.getStickyBucketIdentifierAttributes()) {
                 HashAttributeAndHashValue hashAttribute = getHashAttribute(
-                        context,
                         attr,
                         null,
                         attributeOverrides
@@ -610,12 +604,12 @@ class GrowthBookUtils {
      *
      * @param context          GBContext
      * @param featureDataModel String
-     * @param <ValueType>
+     * @param <ValueType> Feature class
      * @return list of sticky bucket identifier
      */
-    private static @Nullable <ValueType> List<String> deriveStickyBucketIdentifierAttributes
-    (GBContext context,
-     String featureDataModel
+    private static @Nullable <ValueType> List<String> deriveStickyBucketIdentifierAttributes(
+            GBContext context,
+            String featureDataModel
     ) {
         Set<String> attributes = new HashSet<>();
 
@@ -661,36 +655,31 @@ class GrowthBookUtils {
      * @param context              GBContext
      * @param expHashAttribute     String
      * @param expFallbackAttribute String
-     * @param attributeOverrides   JsonObject
      * @return Map(StickyBucketAssignments)
      */
     public static Map<String, String> getStickyBucketAssignments(
-            GBContext context,
+            EvaluationContext context,
             @Nullable String expHashAttribute,
-            @Nullable String expFallbackAttribute,
-            JsonObject attributeOverrides
+            @Nullable String expFallbackAttribute
     ) {
         Map<String, String> mergedAssignments = new HashMap<>();
 
-        Map<String, StickyAssignmentsDocument> stickyAssignmentsDocuments = context.getStickyBucketAssignmentDocs();
-        if (context.getStickyBucketAssignmentDocs() == null) {
+        if (context.getUser().getStickyBucketAssignmentDocs() == null) {
             return mergedAssignments;
         }
 
         HashAttributeAndHashValue hashAttributeAndHashValueWithoutFallbackPass = getHashAttribute(
-                context,
                 expHashAttribute,
                 null,
-                attributeOverrides
+                context.getUser().getAttributes()
         );
         String hashKey = hashAttributeAndHashValueWithoutFallbackPass.getHashAttribute() + "||"
                 + hashAttributeAndHashValueWithoutFallbackPass.getHashValue();
 
         HashAttributeAndHashValue hashAttributeAndHashValueWithFallbackAttribute = getHashAttribute(
-                context,
                 null,
                 expFallbackAttribute,
-                attributeOverrides
+                context.getUser().getAttributes()
         );
         String fallBackKey = hashAttributeAndHashValueWithFallbackAttribute.getHashValue().isEmpty()
                 ? null
@@ -698,22 +687,24 @@ class GrowthBookUtils {
                 + "||"
                 + hashAttributeAndHashValueWithFallbackAttribute.getHashValue();
 
-        if (attributeOverrides.get(expFallbackAttribute) != null) {
+        Map<String, StickyAssignmentsDocument> stickyAssignmentsDocuments = context.getUser().getStickyBucketAssignmentDocs();
+
+        if (context.getUser().getAttributes().get(expFallbackAttribute) != null) {
             String leftOperand = stickyAssignmentsDocuments.get(
-                    expFallbackAttribute + "||" + attributeOverrides.get(expFallbackAttribute).getAsString()
+                    expFallbackAttribute + "||" + context.getUser().getAttributes().get(expFallbackAttribute).getAsString()
             ) == null
                     ? null
                     : stickyAssignmentsDocuments.get(
-                    expFallbackAttribute + "||" + attributeOverrides.get(expFallbackAttribute).getAsString()
+                    expFallbackAttribute + "||" + context.getUser().getAttributes().get(expFallbackAttribute).getAsString()
             ).getAttributeValue();
 
-            if (!Objects.equals(leftOperand, attributeOverrides.get(expFallbackAttribute).getAsString())) {
-                context.setStickyBucketAssignmentDocs(new HashMap<>());
+            if (!Objects.equals(leftOperand, context.getUser().getAttributes().get(expFallbackAttribute).getAsString())) {
+                context.getUser().setStickyBucketAssignmentDocs(new HashMap<>());
             }
         }
 
-        if (context.getStickyBucketAssignmentDocs() != null) {
-            context.getStickyBucketAssignmentDocs().values()
+        if (context.getUser().getStickyBucketAssignmentDocs() != null) {
+            context.getUser().getStickyBucketAssignmentDocs().values()
                     .forEach(it -> mergedAssignments.putAll(it.getAssignments()));
         }
 
@@ -737,18 +728,16 @@ class GrowthBookUtils {
      * @param experimentKey               String
      * @param experimentHashAttribute     String
      * @param experimentFallbackAttribute String
-     * @param attributeOverrides          JsonObject
      * @param experimentBucketVersion     Integer
      * @param minExperimentBucketVersion  Integer
      * @param meta                        List<VariationMeta>
      * @return {@link StickyBucketVariation}
      */
     public static StickyBucketVariation getStickyBucketVariation(
-            GBContext context,
+            EvaluationContext context,
             String experimentKey,
             @Nullable String experimentHashAttribute,
             @Nullable String experimentFallbackAttribute,
-            JsonObject attributeOverrides,
             @Nullable Integer experimentBucketVersion,
             @Nullable Integer minExperimentBucketVersion,
             @Nullable List<VariationMeta> meta
@@ -766,8 +755,7 @@ class GrowthBookUtils {
         Map<String, String> assignments = getStickyBucketAssignments(
                 context,
                 experimentHashAttribute,
-                experimentFallbackAttribute,
-                attributeOverrides);
+                experimentFallbackAttribute);
 
         if (minExperimentBucketVersion > 0) {
             for (int i = 0; i <= minExperimentBucketVersion; i++) {
@@ -811,24 +799,22 @@ class GrowthBookUtils {
     /**
      * Method for generate Sticky Bucket Assignment document
      *
-     * @param context        GBContext
+     * @param stickyBucketAssignmentDocs Map<String, StickyAssignmentsDocument>
      * @param attributeName  String
      * @param attributeValue String
      * @param assignments    Map<String, String>
      * @return {@link GeneratedStickyBucketAssignmentDocModel}
      */
     public static GeneratedStickyBucketAssignmentDocModel generateStickyBucketAssignmentDoc(
-            GBContext context,
+            Map<String, StickyAssignmentsDocument> stickyBucketAssignmentDocs,
             String attributeName,
             String attributeValue,
             Map<String, String> assignments
     ) {
         String key = attributeName + "||" + attributeValue;
         Map<String, String> existingAssignments = new HashMap<>();
-        if (context.getStickyBucketAssignmentDocs() != null) {
-            if (context.getStickyBucketAssignmentDocs().get(key) != null) {
-                existingAssignments = context.getStickyBucketAssignmentDocs().get(key).getAssignments();
-            }
+        if (stickyBucketAssignmentDocs != null && stickyBucketAssignmentDocs.get(key) != null) {
+            existingAssignments = stickyBucketAssignmentDocs.get(key).getAssignments();
         }
         Map<String, String> newAssignments = new HashMap<>(existingAssignments);
 
@@ -841,36 +827,27 @@ class GrowthBookUtils {
     /**
      * Method for get hash value by identifier. User attribute used for hashing, defaulting to id if not set.
      *
-     * @param context            GBContext
      * @param attr               String
      * @param fallbackAttribute  String
-     * @param attributeOverrides JsonObject
+     * @param attributes JsonObject
      * @return {@link HashAttributeAndHashValue}
      */
     public static HashAttributeAndHashValue getHashAttribute(
-            GBContext context,
             @Nullable String attr,
             @Nullable String fallbackAttribute,
-            JsonObject attributeOverrides
+            JsonObject attributes
     ) {
         String hashAttribute = attr != null ? attr : "id";
         String hashValue = "";
 
-        if (attributeOverrides.get(hashAttribute) != null && !attributeOverrides.get(hashAttribute).isJsonNull()) {
-            hashValue = attributeOverrides.get(hashAttribute).getAsString();
-        } else if (context.getAttributes().get(hashAttribute) != null
-                && !context.getAttributes().get(hashAttribute).isJsonNull()) {
-            hashValue = context.getAttributes().get(hashAttribute).getAsString();
+        if (attributes.get(hashAttribute) != null && !attributes.get(hashAttribute).isJsonNull()) {
+            hashValue = attributes.get(hashAttribute).getAsString();
         }
 
         if (hashValue.isEmpty() && fallbackAttribute != null) {
-            if (attributeOverrides.get(fallbackAttribute) != null
-                    && !attributeOverrides.get(fallbackAttribute).isJsonNull()) {
-                hashValue = attributeOverrides.get(fallbackAttribute).getAsString();
-            } else if (context.getAttributes() != null
-                    && context.getAttributes().get(fallbackAttribute) != null
-                    && !context.getAttributes().get(fallbackAttribute).isJsonNull()) {
-                hashValue = context.getAttributes().get(fallbackAttribute).getAsString();
+            if (attributes.get(fallbackAttribute) != null
+                    && !attributes.get(fallbackAttribute).isJsonNull()) {
+                hashValue = attributes.get(fallbackAttribute).getAsString();
             }
 
             if (!hashValue.isEmpty()) {
@@ -890,5 +867,19 @@ class GrowthBookUtils {
             }
         }
         return -1;
+    }
+
+    public static  <K, V> Map<K, V> mergeMaps(List<Map<K, V>> maps) {
+        return maps.stream()
+                .filter(Objects::nonNull)
+                .flatMap(map -> map.entrySet()
+                        .stream())
+                .collect(Collectors.toMap(
+                                Map.Entry::getKey,
+                                Map.Entry::getValue,
+                                (v1, v2) -> v2
+                        )
+                );
+
     }
 }

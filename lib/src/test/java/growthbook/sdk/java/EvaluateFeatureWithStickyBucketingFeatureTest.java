@@ -88,7 +88,7 @@ public class EvaluateFeatureWithStickyBucketingFeatureTest {
                     Object.class
             );
             ExperimentResult<Object> actualExperimentResult = actualFeatureResult == null ? null : actualFeatureResult.getExperimentResult();
-            Map<String, StickyAssignmentsDocument> actualStickyBucketAssignmentDocs = context.getStickyBucketAssignmentDocs();
+            Map<String, StickyAssignmentsDocument> actualStickyBucketAssignmentDocs = subject.evaluationContext.getUser().getStickyBucketAssignmentDocs();
 
             // initialize expected data
             ExperimentResult expectedExperimentResult = (testCase.get(4) instanceof JsonNull) ? null : utils.gson.fromJson(
@@ -105,7 +105,7 @@ public class EvaluateFeatureWithStickyBucketingFeatureTest {
             String status = "\n" + description + expectedExperimentResult + "&" + expectedStickyAssignmentsDocument + "\n\n"
                     + "\n" + actualExperimentResult + "&" + actualStickyBucketAssignmentDocs;
 
-            if (Objects.equals(actualExperimentResult, expectedExperimentResult) && expectedStickyAssignmentsDocument.equals(context.getStickyBucketAssignmentDocs())) {
+            if (Objects.equals(actualExperimentResult, expectedExperimentResult) && expectedStickyAssignmentsDocument.equals(actualStickyBucketAssignmentDocs)) {
                 passedTests.add(status);
             } else {
                 failingIndexes.add(i);

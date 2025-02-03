@@ -45,7 +45,9 @@ public class GBFeaturesRepositoryRefreshingTest {
                 encryptionKey,
                 FeatureRefreshStrategy.STALE_WHILE_REVALIDATE,
                 ttlSeconds,
-                mockOkHttpClient
+                mockOkHttpClient,
+                null,
+                null
         );
         subject.initialize();
 
@@ -81,7 +83,9 @@ public class GBFeaturesRepositoryRefreshingTest {
                 encryptionKey,
                 FeatureRefreshStrategy.STALE_WHILE_REVALIDATE,
                 ttlSeconds,
-                mockOkHttpClient
+                mockOkHttpClient,
+                null,
+                null
         );
         subject.initialize();
 
@@ -115,7 +119,9 @@ public class GBFeaturesRepositoryRefreshingTest {
                 encryptionKey,
                 FeatureRefreshStrategy.STALE_WHILE_REVALIDATE,
                 ttlSeconds,
-                mockOkHttpClient
+                mockOkHttpClient,
+                null,
+                null
         );
         subject.initialize();
 

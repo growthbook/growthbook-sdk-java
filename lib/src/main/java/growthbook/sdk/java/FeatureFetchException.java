@@ -34,6 +34,11 @@ public class FeatureFetchException extends Exception {
         CONFIGURATION_ERROR,
 
         /**
+         * - the server responded with an HTTP error
+         */
+        HTTP_RESPONSE_ERROR,
+
+        /**
          * - there was no response body
          */
         NO_RESPONSE_ERROR,
