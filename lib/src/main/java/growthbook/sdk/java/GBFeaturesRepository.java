@@ -202,6 +202,16 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
     ) {
         this(apiHost, clientKey, encryptionKey, refreshStrategy, swrTtlSeconds, null, null, null, requestBodyForRemoteEval);
     }
+    public GBFeaturesRepository(
+            @Nullable String apiHost,
+            String clientKey,
+            @Deprecated @Nullable String encryptionKey,
+            @Nullable FeatureRefreshStrategy refreshStrategy,
+            @Nullable Integer swrTtlSeconds,
+            @Nullable Boolean isCacheDisabled
+    ) {
+        this(apiHost, clientKey, encryptionKey, refreshStrategy, swrTtlSeconds, null, null, isCacheDisabled, null);
+    }
 
     /**
      * New constructor that explicitly supports decryptionKey.
@@ -232,11 +242,6 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
      * @param swrTtlSeconds            How often the cache should be invalidated when using {@link FeatureRefreshStrategy#STALE_WHILE_REVALIDATE} (default: 60)
      * @param okHttpClient             HTTP client (optional)
      * @param isCacheDisabled          Parameter to disable or enable caching in project
-     * @param apiHost                  The GrowthBook API host (default: <a href="https://cdn.growthbook.io">...</a>)
-     * @param clientKey                Your client ID, e.g. sdk-abc123
-     * @param decryptionKey            optional key for decrypting encrypted payload
-     * @param swrTtlSeconds            How often the cache should be invalidated when using {@link FeatureRefreshStrategy#STALE_WHILE_REVALIDATE} (default: 60)
-     * @param okHttpClient             HTTP client (optional)
      * @param requestBodyForRemoteEval Payload that would be sent with POST request when repository configure with Remote evalStrategy {@link FeatureRefreshStrategy#REMOTE_EVAL_STRATEGY}
      */
     public GBFeaturesRepository(
@@ -614,33 +619,36 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
     private void onSuccess(Response response) throws FeatureFetchException {
         try {
             ResponseBody responseBody = response.body();
-            String responseJsonString;
-            if ((responseBody == null || response.code() != 200) && !isCacheDisabled) {
-                log.error("FeatureFetchException: {} (HTTP status {})",
-                        responseBody == null ? "NO_RESPONSE_ERROR" : "HTTP_RESPONSE_ERROR",
-                        response.code());
-                log.info("Fetching data from cache...");
-                responseJsonString = getCachedFeatures();
 
-                if (responseJsonString.isEmpty()) {
+            // if response code is not 200 or response body is null - try cache
+            if (response.code() != 200 || responseBody == null) {
+                log.error("FeatureFetchException: {} with status {}, response: {}",
+                        responseBody == null ? FeatureFetchException.FeatureFetchErrorCode.NO_RESPONSE_ERROR : FeatureFetchException.FeatureFetchErrorCode.HTTP_RESPONSE_ERROR,
+                        response.code(),
+                        responseBody != null ? responseBody.string() : "null");
+
+                if (isCacheDisabled) {
                     throw new FeatureFetchException(
-                            responseBody == null
-                                    ? FeatureFetchException.FeatureFetchErrorCode.NO_RESPONSE_ERROR
-                                    : FeatureFetchException.FeatureFetchErrorCode.HTTP_RESPONSE_ERROR,
+                            FeatureFetchException.FeatureFetchErrorCode.HTTP_RESPONSE_ERROR,
+                            "Failed to fetch data from server and cache is disabled"
+                    );
+                }
+                log.info("Fetching data from cache...");
+
+                String featuresFromCache = getCachedFeatures();
+                if (featuresFromCache.isEmpty()) {
+                    throw new FeatureFetchException(
+                            FeatureFetchException.FeatureFetchErrorCode.NO_RESPONSE_ERROR,
                             "Failed to fetch data from cache"
                     );
                 }
-                onResponseJson(responseJsonString, true); // pass data frm cache
+                onResponseJson(featuresFromCache, true);
                 return;
             }
-            responseJsonString = responseBody.string();
-
-            onResponseJson(responseJsonString, false); // pass data not from cache
+            onResponseJson(responseBody.string(), false);
 
         } catch (IOException e) {
-            log.error("FeatureFetchException: UNKNOWN feature fetch error code {}",
-                    e.getMessage(), e);
-
+            log.error("FeatureFetchException: UNKNOWN feature fetch error code {}", e.getMessage(), e);
             throw new FeatureFetchException(
                     FeatureFetchException.FeatureFetchErrorCode.UNKNOWN,
                     e.getMessage()
