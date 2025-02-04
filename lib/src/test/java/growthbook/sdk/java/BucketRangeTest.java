@@ -1,5 +1,7 @@
 package growthbook.sdk.java;
 
+import growthbook.sdk.java.model.BucketRange;
+import growthbook.sdk.java.util.GrowthBookJsonUtils;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -38,7 +40,7 @@ class BucketRangeTest {
     void canBeJsonDeSerialized() {
         BucketRange subject = GrowthBookJsonUtils.getInstance().gson.fromJson("[0.3,0.7]", BucketRange.class);
 
-        assertEquals(subject.rangeStart, 0.3f);
-        assertEquals(subject.rangeEnd, 0.7f);
+        assertEquals(subject.getRangeStart(), 0.3f);
+        assertEquals(subject.getRangeEnd(), 0.7f);
     }
 }

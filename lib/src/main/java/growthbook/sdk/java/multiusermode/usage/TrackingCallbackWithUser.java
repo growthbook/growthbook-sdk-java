@@ -1,7 +1,7 @@
 package growthbook.sdk.java.multiusermode.usage;
 
-import growthbook.sdk.java.Experiment;
-import growthbook.sdk.java.ExperimentResult;
+import growthbook.sdk.java.model.Experiment;
+import growthbook.sdk.java.model.ExperimentResult;
 import growthbook.sdk.java.multiusermode.configurations.UserContext;
 
 public interface TrackingCallbackWithUser {

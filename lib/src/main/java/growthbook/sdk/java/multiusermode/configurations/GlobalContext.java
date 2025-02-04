@@ -1,8 +1,7 @@
 package growthbook.sdk.java.multiusermode.configurations;
 
 import com.google.gson.JsonObject;
-import growthbook.sdk.java.Experiment;
-import growthbook.sdk.java.multiusermode.util.TransformationUtil;
+import growthbook.sdk.java.model.Experiment;
 import lombok.Builder;
 import lombok.Data;
 import lombok.Getter;

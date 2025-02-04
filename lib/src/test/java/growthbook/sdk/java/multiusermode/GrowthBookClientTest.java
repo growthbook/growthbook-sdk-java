@@ -1,10 +1,15 @@
 package growthbook.sdk.java.multiusermode;
 
 import com.google.gson.JsonObject;
-import growthbook.sdk.java.*;
+import growthbook.sdk.java.callback.FeatureRefreshCallback;
+import growthbook.sdk.java.exception.FeatureFetchException;
+import growthbook.sdk.java.model.FeatureResult;
 import growthbook.sdk.java.multiusermode.configurations.Options;
 import growthbook.sdk.java.multiusermode.configurations.UserContext;
+import growthbook.sdk.java.repository.FeatureRefreshStrategy;
+import growthbook.sdk.java.repository.GBFeaturesRepository;
 import growthbook.sdk.java.testhelpers.TestCasesJsonHelper;
+import growthbook.sdk.java.util.GrowthBookJsonUtils;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;

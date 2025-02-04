@@ -2,6 +2,7 @@ package growthbook.sdk.java;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import growthbook.sdk.java.util.MathUtils;
 import org.junit.jupiter.api.Test;
 
 class MathUtilsTest {

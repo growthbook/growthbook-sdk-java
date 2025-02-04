@@ -17,9 +17,20 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
 import com.google.gson.annotations.SerializedName;
 import com.google.gson.reflect.TypeToken;
+import growthbook.sdk.java.callback.ExperimentRunCallback;
+import growthbook.sdk.java.callback.FeatureUsageCallback;
+import growthbook.sdk.java.evaluators.ConditionEvaluator;
+import growthbook.sdk.java.evaluators.ExperimentEvaluator;
+import growthbook.sdk.java.evaluators.FeatureEvaluator;
+import growthbook.sdk.java.model.Experiment;
+import growthbook.sdk.java.model.ExperimentResult;
+import growthbook.sdk.java.model.FeatureResult;
+import growthbook.sdk.java.model.FeatureResultSource;
+import growthbook.sdk.java.model.GBContext;
 import growthbook.sdk.java.testhelpers.PaperCupsConfig;
 import growthbook.sdk.java.testhelpers.TestCasesJsonHelper;
 import growthbook.sdk.java.testhelpers.TestContext;
+import growthbook.sdk.java.util.GrowthBookJsonUtils;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import java.lang.reflect.Type;
@@ -1098,7 +1109,7 @@ class GrowthBookTest {
         FeatureResult<Boolean> result = subject.evalFeature("dark_mode", Boolean.class);
 
         assertEquals(true, result.getValue());
-        assertEquals(FeatureResultSource.URL_OVERRIDE, result.source);
+        assertEquals(FeatureResultSource.URL_OVERRIDE, result.getSource());
     }
 
     @Test
@@ -1118,7 +1129,7 @@ class GrowthBookTest {
         FeatureResult<String> result = subject.evalFeature("banner_text", String.class);
 
         assertEquals("Hello, everyone! I hope you are all doing well!", result.getValue());
-        assertEquals(FeatureResultSource.URL_OVERRIDE, result.source);
+        assertEquals(FeatureResultSource.URL_OVERRIDE, result.getSource());
     }
 
     @Test
@@ -1138,7 +1149,7 @@ class GrowthBookTest {
         FeatureResult<Float> result = subject.evalFeature("donut_price", Float.class);
 
         assertEquals(3.33f, result.getValue());
-        assertEquals(FeatureResultSource.URL_OVERRIDE, result.source);
+        assertEquals(FeatureResultSource.URL_OVERRIDE, result.getSource());
     }
 
     @Test
@@ -1158,7 +1169,7 @@ class GrowthBookTest {
         FeatureResult<Integer> result = subject.evalFeature("donut_price", Integer.class);
 
         assertEquals(4, result.getValue());
-        assertEquals(FeatureResultSource.URL_OVERRIDE, result.source);
+        assertEquals(FeatureResultSource.URL_OVERRIDE, result.getSource());
     }
 
     // endregion URL -> force features -> evaluateFeature

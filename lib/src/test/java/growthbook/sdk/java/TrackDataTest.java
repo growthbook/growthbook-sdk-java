@@ -2,6 +2,10 @@ package growthbook.sdk.java;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import growthbook.sdk.java.model.Experiment;
+import growthbook.sdk.java.model.ExperimentResult;
+import growthbook.sdk.java.model.FeatureResult;
+import growthbook.sdk.java.model.TrackData;
 import org.junit.jupiter.api.Test;
 
 class TrackDataTest {

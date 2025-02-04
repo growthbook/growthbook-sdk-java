@@ -1,6 +1,6 @@
 package growthbook.sdk.java.multiusermode.usage;
 
-import growthbook.sdk.java.FeatureResult;
+import growthbook.sdk.java.model.FeatureResult;
 import growthbook.sdk.java.multiusermode.configurations.UserContext;
 
 public interface FeatureUsageCallbackWithUser {

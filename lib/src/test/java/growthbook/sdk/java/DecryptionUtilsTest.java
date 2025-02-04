@@ -7,6 +7,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import growthbook.sdk.java.testhelpers.TestCasesJsonHelper;
+import growthbook.sdk.java.util.DecryptionUtils;
 import org.junit.jupiter.api.Test;
 
 class DecryptionUtilsTest {

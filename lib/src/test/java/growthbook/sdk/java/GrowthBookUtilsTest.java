@@ -5,7 +5,11 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 import com.google.gson.JsonArray;
 import com.google.gson.reflect.TypeToken;
+import growthbook.sdk.java.model.BucketRange;
+import growthbook.sdk.java.model.Namespace;
 import growthbook.sdk.java.testhelpers.TestCasesJsonHelper;
+import growthbook.sdk.java.util.GrowthBookJsonUtils;
+import growthbook.sdk.java.util.GrowthBookUtils;
 import org.junit.jupiter.api.Test;
 import javax.annotation.Nullable;
 import java.lang.reflect.Type;

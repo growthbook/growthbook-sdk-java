@@ -5,6 +5,9 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 
 import com.google.gson.JsonObject;
 import com.google.gson.reflect.TypeToken;
+import growthbook.sdk.java.model.Experiment;
+import growthbook.sdk.java.model.Namespace;
+import growthbook.sdk.java.util.GrowthBookJsonUtils;
 import org.junit.jupiter.api.Test;
 import java.lang.reflect.Type;
 import java.util.ArrayList;
@@ -46,18 +49,18 @@ class ExperimentTest {
                 null,
                 null
         );
-        assertEquals(0.5f, experiment.coverage);
         assertEquals(0.5f, experiment.getCoverage());
-        assertEquals(1, experiment.force);
+        assertEquals(0.5f, experiment.getCoverage());
         assertEquals(1, experiment.getForce());
-        assertEquals("my_experiment", experiment.key);
+        assertEquals(1, experiment.getForce());
         assertEquals("my_experiment", experiment.getKey());
-        assertEquals("_id", experiment.hashAttribute);
+        assertEquals("my_experiment", experiment.getKey());
         assertEquals("_id", experiment.getHashAttribute());
-        assert experiment.weights != null;
-        assertEquals(0.3f, experiment.weights.get(0));
-        assertEquals(0.7f, experiment.weights.get(1));
-        assertEquals(Boolean.TRUE, experiment.isActive);
+        assertEquals("_id", experiment.getHashAttribute());
+        assert experiment.getWeights() != null;
+        assertEquals(0.3f, experiment.getWeights().get(0));
+        assertEquals(0.7f, experiment.getWeights().get(1));
+        assertEquals(Boolean.TRUE, experiment.getIsActive());
         assertEquals(Boolean.TRUE, experiment.getIsActive());
     }
 
@@ -77,17 +80,17 @@ class ExperimentTest {
                 .hashAttribute("_id")
                 .build();
 
-        assertEquals(0.5f, experiment.coverage);
         assertEquals(0.5f, experiment.getCoverage());
-        assertEquals(1, experiment.force);
+        assertEquals(0.5f, experiment.getCoverage());
         assertEquals(1, experiment.getForce());
-        assertEquals(0.3f, experiment.weights.get(0));
-        assertEquals(0.7f, experiment.weights.get(1));
-        assertEquals("my_experiment", experiment.key);
+        assertEquals(1, experiment.getForce());
+        assertEquals(0.3f, experiment.getWeights().get(0));
+        assertEquals(0.7f, experiment.getWeights().get(1));
         assertEquals("my_experiment", experiment.getKey());
-        assertEquals("_id", experiment.hashAttribute);
+        assertEquals("my_experiment", experiment.getKey());
         assertEquals("_id", experiment.getHashAttribute());
-        assertEquals(Boolean.TRUE, experiment.isActive);
+        assertEquals("_id", experiment.getHashAttribute());
+        assertEquals(Boolean.TRUE, experiment.getIsActive());
         assertEquals(Boolean.TRUE, experiment.getIsActive());
     }
 
@@ -97,11 +100,11 @@ class ExperimentTest {
                 .<String>builder()
                 .build();
 
-        assertNull(experiment.coverage);
-        assertNull(experiment.force);
-        assertNull(experiment.key);
-        assertNull(experiment.isActive);
-        assertEquals("id", experiment.hashAttribute);
+        assertNull(experiment.getCoverage());
+        assertNull(experiment.getForce());
+        assertNull(experiment.getKey());
+        assertNull(experiment.getIsActive());
+        assertEquals("id", experiment.getHashAttribute());
         assertEquals("id", experiment.getHashAttribute());
     }
 

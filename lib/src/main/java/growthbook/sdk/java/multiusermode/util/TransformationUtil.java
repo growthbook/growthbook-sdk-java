@@ -2,8 +2,8 @@ package growthbook.sdk.java.multiusermode.util;
 
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
-import growthbook.sdk.java.DecryptionUtils;
-import growthbook.sdk.java.GrowthBookJsonUtils;
+import growthbook.sdk.java.util.DecryptionUtils;
+import growthbook.sdk.java.util.GrowthBookJsonUtils;
 import lombok.extern.slf4j.Slf4j;
 
 import javax.annotation.Nullable;

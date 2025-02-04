@@ -11,6 +11,10 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import growthbook.sdk.java.callback.FeatureRefreshCallback;
+import growthbook.sdk.java.exception.FeatureFetchException;
+import growthbook.sdk.java.repository.FeatureRefreshStrategy;
+import growthbook.sdk.java.repository.NativeJavaGbFeatureRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
