@@ -206,7 +206,7 @@ public class FeatureEvaluator implements IFeatureEvaluator {
                         // blocking prerequisite eval failed: feature evaluation fails
                         if (!evalCondition) {
                             // blocking prerequisite eval failed: feature evaluation fails
-                            if (parentCondition.getGate()) {
+                            if (Boolean.TRUE.equals(parentCondition.getGate())) {
                                 log.info("Feature blocked by prerequisite");
 
                                 FeatureResult<ValueType> featureResultWhenBlockedByPrerequisite =

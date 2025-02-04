@@ -5,6 +5,8 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
 
+import javax.annotation.Nullable;
+
 /**
  * A ParentCondition defines a prerequisite. It consists of a parent feature's id (string),
  * a condition (Condition),and an optional gate (boolean) flag.
@@ -27,5 +29,5 @@ public class ParentCondition {
      * If gate is true, then this is a blocking feature-level prerequisite;
      * otherwise it applies to the current rule only
      */
-    private Boolean gate;
+    @Nullable private Boolean gate;
 }
