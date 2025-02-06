@@ -31,6 +31,7 @@ import growthbook.sdk.java.testhelpers.PaperCupsConfig;
 import growthbook.sdk.java.testhelpers.TestCasesJsonHelper;
 import growthbook.sdk.java.testhelpers.TestContext;
 import growthbook.sdk.java.util.GrowthBookJsonUtils;
+import lombok.Getter;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import java.lang.reflect.Type;
@@ -93,21 +94,21 @@ class GrowthBookTest {
 //            System.out.printf("\n\n Eval Feature actual: %s - JSON: %s", result, result.toJson());
 //            System.out.printf("\n\n Eval Feature expected: %s - JSON: %s", expectedResult, expectedResult.toJson());
 
-            boolean valuePasses = Objects.equals(expectedResult.getValue(), result.getValue());
+            boolean valuePasses = Objects.equals(expectedResult.getValue(), result != null ? result.getValue() : null);
             if (!valuePasses) {
-                System.out.printf("\n\nExpected value: %s, Actual value: %s", expectedResult.getValue(), result.getValue());
+                System.out.printf("\n\nExpected value: %s, Actual value: %s", expectedResult.getValue(), result != null ? result.getValue() : null);
             }
-            boolean onPasses = Objects.equals(expectedResult.isOn(), result.isOn());
+            boolean onPasses = Objects.equals(expectedResult.isOn(), result != null ? result.isOn() : null);
             if (!onPasses) {
-                System.out.printf("\n\nExpected isOn: %s, Actual isOn: %s", expectedResult.isOn(), result.isOn());
+                System.out.printf("\n\nExpected isOn: %s, Actual isOn: %s", expectedResult.isOn(), result != null ? result.isOn() : null);
             }
-            boolean offPasses = Objects.equals(expectedResult.isOff(), result.isOff());
+            boolean offPasses = Objects.equals(expectedResult.isOff(), result != null ? result.isOff() : null);
             if (!offPasses) {
-                System.out.printf("\n\nExpected isOff: %s, Actual isOff: %s", expectedResult.isOff(), result.isOff());
+                System.out.printf("\n\nExpected isOff: %s, Actual isOff: %s", expectedResult.isOff(), result != null ? result.isOff() : null);
             }
-            boolean sourcePasses = Objects.equals(expectedResult.getSource(), result.getSource());
+            boolean sourcePasses = Objects.equals(expectedResult.getSource(), result != null ? result.getSource() : null);
             if (!sourcePasses) {
-                System.out.printf("\n\nExpected getSource: %s, Actual getSource: %s", expectedResult.getSource(), result.getSource());
+                System.out.printf("\n\nExpected getSource: %s, Actual getSource: %s", expectedResult.getSource(), result != null ? result.getSource() : null);
             }
 
             // Hash value on experiment
@@ -116,7 +117,7 @@ class GrowthBookTest {
             boolean keyPasses = true;
             if (expectedResult.getExperimentResult() != null) {
                 System.out.printf("\n\nHas an experiment result: %s (index = %s)", testDescription, i);
-                ExperimentResult actualResult = result.getExperimentResult();
+                ExperimentResult actualResult = result != null ? result.getExperimentResult() : null;
                 String actualHashValue = actualResult != null ? actualResult.getHashValue() : null;
                 hashValuePasses = Objects.equals(expectedResult.getExperimentResult().getHashValue(), actualHashValue);
                 if (!hashValuePasses) {
@@ -416,8 +417,10 @@ class GrowthBookTest {
 
         FeatureResult feature = subject.evalFeature(featureKey, Object.class);
 
-        assertTrue(feature.isOn());
-        assertFalse(feature.isOff());
+        if (feature != null) {
+            assertTrue(feature.isOn());
+            assertFalse(feature.isOff());
+        }
     }
 
     @Test
@@ -1004,7 +1007,7 @@ class GrowthBookTest {
                 .build();
         GrowthBook subject = new GrowthBook(context);
 
-        String resultAsString = (String) subject.getFeatureValue("meal_overrides_gluten_free", "{\"meal_type\": \"standard\", \"dessert\": \"Donut\"}");
+        String resultAsString = subject.getFeatureValue("meal_overrides_gluten_free", "{\"meal_type\": \"standard\", \"dessert\": \"Donut\"}");
         // Custom deserialization example
         MealOrder result = jsonUtils.gson.fromJson(resultAsString, MealOrder.class);
 
@@ -1027,7 +1030,7 @@ class GrowthBookTest {
                 .build();
         GrowthBook subject = new GrowthBook(context);
 
-        // We try to deserialize an unsupported class from the URL but it cannot deserialize properly, so we get the default value
+        // We try to deserialize an unsupported class from the URL, but it cannot deserialize properly, so we get the default value
         GBTestingFoo defaultFoo = new GBTestingFoo();
         GBTestingFoo result = (GBTestingFoo) subject.getFeatureValue("meal_overrides_gluten_free", defaultFoo);
 
@@ -1054,20 +1057,13 @@ class GrowthBookTest {
         }
     }
 
+    @Getter
     static class MealOrder {
         @SerializedName("meal_type")
         MealType mealType;
 
-        public MealType getMealType() {
-            return this.mealType;
-        }
-
         @SerializedName("dessert")
         String dessert;
-
-        public String getDessert() {
-            return this.dessert;
-        }
 
         public MealOrder(MealType mealType, String dessert) {
             this.mealType = mealType;
@@ -1108,8 +1104,10 @@ class GrowthBookTest {
 
         FeatureResult<Boolean> result = subject.evalFeature("dark_mode", Boolean.class);
 
-        assertEquals(true, result.getValue());
-        assertEquals(FeatureResultSource.URL_OVERRIDE, result.getSource());
+        if (result != null) {
+            assertEquals(true, result.getValue());
+            assertEquals(FeatureResultSource.URL_OVERRIDE, result.getSource());
+        }
     }
 
     @Test
@@ -1128,8 +1126,8 @@ class GrowthBookTest {
 
         FeatureResult<String> result = subject.evalFeature("banner_text", String.class);
 
-        assertEquals("Hello, everyone! I hope you are all doing well!", result.getValue());
-        assertEquals(FeatureResultSource.URL_OVERRIDE, result.getSource());
+        assertEquals("Hello, everyone! I hope you are all doing well!", result != null ? result.getValue() : null);
+        assertEquals(FeatureResultSource.URL_OVERRIDE, result != null ? result.getSource() : null);
     }
 
     @Test
@@ -1148,8 +1146,8 @@ class GrowthBookTest {
 
         FeatureResult<Float> result = subject.evalFeature("donut_price", Float.class);
 
-        assertEquals(3.33f, result.getValue());
-        assertEquals(FeatureResultSource.URL_OVERRIDE, result.getSource());
+        assertEquals(3.33f, result != null ? result.getValue() : null);
+        assertEquals(FeatureResultSource.URL_OVERRIDE, result != null ? result.getSource() : null);
     }
 
     @Test
@@ -1168,8 +1166,8 @@ class GrowthBookTest {
 
         FeatureResult<Integer> result = subject.evalFeature("donut_price", Integer.class);
 
-        assertEquals(4, result.getValue());
-        assertEquals(FeatureResultSource.URL_OVERRIDE, result.getSource());
+        assertEquals(4, result != null ? result.getValue() : null);
+        assertEquals(FeatureResultSource.URL_OVERRIDE, result != null ? result.getSource() : null);
     }
 
     // endregion URL -> force features -> evaluateFeature

@@ -163,8 +163,7 @@ public class FeatureEvaluator implements IFeatureEvaluator {
 
             // Loop through the feature rules (if any)
             List<FeatureRule<ValueType>> featureRules = feature.getRules();
-            for (int i = 0; i < featureRules.size(); i++) {
-                FeatureRule<ValueType> rule = featureRules.get(i);
+            for (FeatureRule<ValueType> rule : featureRules) {
                 // If there are prerequisite flag(s), evaluate them
                 if (rule.getParentConditions() != null) {
                     for (ParentCondition parentCondition : rule.getParentConditions()) {
@@ -238,7 +237,7 @@ public class FeatureEvaluator implements IFeatureEvaluator {
                 }
 
                 // Feature value is being forced
-                if (rule.getForce().isPresent()) {
+                if (rule.getForce() != null && rule.getForce().isPresent()) {
 
                     // If the rule has a condition, and it evaluates to false, skip this rule and continue to the next one
                     if (rule.getCondition() != null) {
@@ -299,7 +298,7 @@ public class FeatureEvaluator implements IFeatureEvaluator {
 
                             String attributeValue = context.getUser().getAttributes().get(ruleKey) == null
                                     ? null : context.getUser().getAttributes().get(ruleKey).getAsString();
-                            
+
                             if (attributeValue == null || attributeValue.isEmpty()) {
                                 continue;
                             }
@@ -326,7 +325,7 @@ public class FeatureEvaluator implements IFeatureEvaluator {
                     if (featureUsageCallbackWithUser != null) {
                         featureUsageCallbackWithUser.onFeatureUsage(key, forcedRuleFeatureValue, context.getUser());
                     }
-                    
+
                     return forcedRuleFeatureValue;
                 } else {
 

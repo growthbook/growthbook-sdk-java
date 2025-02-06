@@ -1,5 +1,7 @@
 package growthbook.sdk.java.stickyBucketing;
 
+import growthbook.sdk.java.model.StickyAssignmentsDocument;
+
 import java.util.HashMap;
 import java.util.Map;
 

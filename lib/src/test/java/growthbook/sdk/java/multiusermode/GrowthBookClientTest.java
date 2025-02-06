@@ -41,7 +41,7 @@ class GrowthBookClientTest {
 
     @Test
     void test_initialization_withValidConfiguration() throws FeatureFetchException {
-        mockRepository = createMockRepository("{}", "{}");
+        mockRepository = createMockRepository();
         mockBuilder = createMockBuilder(mockRepository);
         FeatureRefreshCallback mockCallback = mock(FeatureRefreshCallback.class);
 
@@ -112,7 +112,7 @@ class GrowthBookClientTest {
     void test_evalFeature_withUserContext() {
         String attributes = "{ \"user_group\": \"subscriber\", \"beta_users\": true }";
 
-        mockRepository = createMockRepository("{}", "{}");
+        mockRepository = createMockRepository();
         mockBuilder = createMockBuilder(mockRepository);
         FeatureRefreshCallback mockCallback = mock(FeatureRefreshCallback.class);
 
@@ -134,7 +134,7 @@ class GrowthBookClientTest {
         }
     }
 
-    private GBFeaturesRepository createMockRepository(String features, String savedGroups) {
+    private GBFeaturesRepository createMockRepository() {
         GBFeaturesRepository repository = mock(GBFeaturesRepository.class);
         when(repository.getInitialized()).thenReturn(true);
         when(repository.getFeaturesJson()).thenReturn("{}");

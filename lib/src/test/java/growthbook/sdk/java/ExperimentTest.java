@@ -26,7 +26,7 @@ class ExperimentTest {
 
         Namespace namespace = Namespace.builder().build();
 
-        Experiment<Float> experiment = new Experiment<Float>(
+        Experiment<Float> experiment = new Experiment<>(
                 "my_experiment",
                 variations,
                 weights,
@@ -84,8 +84,8 @@ class ExperimentTest {
         assertEquals(0.5f, experiment.getCoverage());
         assertEquals(1, experiment.getForce());
         assertEquals(1, experiment.getForce());
-        assertEquals(0.3f, experiment.getWeights().get(0));
-        assertEquals(0.7f, experiment.getWeights().get(1));
+        assertEquals(0.3f, experiment.getWeights() != null ? experiment.getWeights().get(0) : null);
+        assertEquals(0.7f, experiment.getWeights() != null ? experiment.getWeights().get(1) : null);
         assertEquals("my_experiment", experiment.getKey());
         assertEquals("my_experiment", experiment.getKey());
         assertEquals("_id", experiment.getHashAttribute());

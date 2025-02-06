@@ -45,11 +45,13 @@ public class Experiment<ValueType> {
     /**
      * What percent of users should be included in the experiment (between 0 and 1, inclusive)
      */
+    @Nullable
     Float coverage;
 
     /**
      * Optional targeting condition
      */
+    @Nullable
     JsonObject conditionJson;
 
     /**
@@ -70,6 +72,7 @@ public class Experiment<ValueType> {
     /**
      * All users included in the experiment will be forced into the specific variation index
      */
+    @Nullable
     Integer force;
 
     /**

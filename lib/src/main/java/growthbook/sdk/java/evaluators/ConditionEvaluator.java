@@ -4,6 +4,7 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
+import com.google.gson.JsonSyntaxException;
 import com.google.gson.reflect.TypeToken;
 import growthbook.sdk.java.util.GrowthBookJsonUtils;
 import growthbook.sdk.java.model.Operator;
@@ -19,6 +20,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.regex.PatternSyntaxException;
 
 /**
  * <b>INTERNAL</b>: Implementation of condition evaluation
@@ -93,10 +95,10 @@ public class ConditionEvaluator implements IConditionEvaluator {
             }
             // If none of the entries failed their checks, `evalCondition` returns true
             return true;
-        } catch (com.google.gson.JsonSyntaxException jsonSyntaxException) {
+        } catch (JsonSyntaxException jsonSyntaxException) {
             log.error(jsonSyntaxException.getMessage(), jsonSyntaxException);
             return false;
-        } catch (java.util.regex.PatternSyntaxException patternSyntaxException) {
+        } catch (PatternSyntaxException patternSyntaxException) {
             log.error(patternSyntaxException.getMessage(), patternSyntaxException);
             return false;
         } catch (Exception exception) { // for the case if something was missed
@@ -467,7 +469,7 @@ public class ConditionEvaluator implements IConditionEvaluator {
 
             case IN_GROUP:
                 if (actual != null && expected != null) {
-                    JsonElement jsonElement = savedGroups.get(expected.getAsString());
+                    JsonElement jsonElement = savedGroups != null ? savedGroups.get(expected.getAsString()) : null;
                     if (jsonElement != null) {
                         return isIn(actual, jsonElement.getAsJsonArray());
                     }
@@ -475,7 +477,7 @@ public class ConditionEvaluator implements IConditionEvaluator {
                 }
             case NOT_IN_GROUP:
                 if (actual != null && expected != null) {
-                    JsonElement jsonElement = savedGroups.get(expected.getAsString());
+                    JsonElement jsonElement = savedGroups != null ? savedGroups.get(expected.getAsString()) : null;
                     if (jsonElement != null) {
                         return !isIn(actual, jsonElement.getAsJsonArray());
                     }

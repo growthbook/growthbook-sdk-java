@@ -168,7 +168,7 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
      * Endpoint for POST request
      */
     @Getter
-    private String remoteEvalEndPoint;
+    private final String remoteEvalEndPoint;
 
 
     /**

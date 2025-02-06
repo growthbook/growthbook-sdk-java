@@ -111,17 +111,15 @@ class NativeJavaGbFeatureRepositoryTest {
 
     @Test()
     void cannotBeBuild_withoutClientKey() {
-        assertThrows(IllegalArgumentException.class, () -> {
-            new NativeJavaGbFeatureRepository(
-                    API_HOST,
-                    null,
-                    null,
-                    null,
-                    null,
-                    null,
-                    null
-            );
-        });
+        assertThrows(IllegalArgumentException.class, () -> new NativeJavaGbFeatureRepository(
+                API_HOST,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null
+        ));
     }
 
     @Test

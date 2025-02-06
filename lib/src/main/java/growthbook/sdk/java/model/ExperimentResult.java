@@ -120,11 +120,11 @@ public class ExperimentResult<ValueType> {
     ) {
         this.value = value;
         this.variationId = variationId;
-        this.inExperiment = inExperiment == null ? false : inExperiment;
+        this.inExperiment = inExperiment != null && inExperiment;
         this.hashAttribute = hashAttribute == null ? "id" : hashAttribute;
         this.hashValue = hashValue;
         this.featureId = featureId;
-        this.hashUsed = hashUsed == null ? false : hashUsed;
+        this.hashUsed = hashUsed != null && hashUsed;
 
         this.key = key;
         if (this.key == null && variationId != null) {

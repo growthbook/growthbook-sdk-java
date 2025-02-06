@@ -41,7 +41,7 @@ class GBContextTest {
         Boolean isQaMode = false;
         Boolean allowUrlOverride = false;
         String url = "http://localhost:3000";
-        HashMap<String, Integer> forcedVariations = new HashMap<String, Integer>();
+        HashMap<String, Integer> forcedVariations = new HashMap<>();
         forcedVariations.put("my-test", 0);
         forcedVariations.put("other-test", 1);
         String featuresJson = "{}";
@@ -112,7 +112,9 @@ class GBContextTest {
                 .<String>builder()
                 .value("Hello, world!")
                 .build();
-        subject.getTrackingCallback().onTrack(experiment, result);
+        if (subject.getTrackingCallback() != null) {
+            subject.getTrackingCallback().onTrack(experiment, result);
+        }
 
         verify(trackingCallback).onTrack(experiment, result);
     }
@@ -123,7 +125,7 @@ class GBContextTest {
         Boolean isQaMode = false;
         Boolean allowUrlOverride = false;
         String url = "http://localhost:3000";
-        HashMap<String, Integer> forcedVariations = new HashMap<String, Integer>();
+        HashMap<String, Integer> forcedVariations = new HashMap<>();
         forcedVariations.put("my-test", 0);
         forcedVariations.put("other-test", 1);
         String encryptedFeaturesJson = "7rvPA94JEsqRo9yPZsdsXg==.bJ8vtYvX+ur3cEUFVkYo1OyWb98oLnMlpeoO0Hs4YPc0EVb7oKX4KNz+Yt6GUMBsieXqtL7oaYzX+kMayZEtV+3bhyDYnS9QBrvalnfxbLExjtnsy8g0pPQHU/P/DPIzO0F+pphcahRfi+3AMTnIreqvkqrcX+MyOwHN56lqEs23Vp4Rsq2qDow/LZmn5kpwMNhMY0DBq7jC+lh2Oyly0g==";
@@ -150,7 +152,7 @@ class GBContextTest {
         String expectedFeaturesJson = "{\"greeting\":{\"defaultValue\":\"hello\",\"rules\":[{\"condition\":{\"country\":\"france\"},\"force\":\"bonjour\"},{\"condition\":{\"country\":\"mexico\"},\"force\":\"hola\"}]}}";
 
         assertNotNull(subject);
-        assertEquals(expectedFeaturesJson.trim(), subject.getFeatures().toString().trim());
+        assertEquals(expectedFeaturesJson.trim(), subject.getFeatures() != null ? subject.getFeatures().toString().trim() : null);
     }
 
     @Test
@@ -159,7 +161,7 @@ class GBContextTest {
         Boolean isQaMode = false;
         Boolean allowUrlOverride = false;
         String url = "http://localhost:3000";
-        HashMap<String, Integer> forcedVariations = new HashMap<String, Integer>();
+        HashMap<String, Integer> forcedVariations = new HashMap<>();
         forcedVariations.put("my-test", 0);
         forcedVariations.put("other-test", 1);
         String encryptedFeaturesJson = "7rvPA94JEsqRo9yPZsdsXg==.bJ8vtYvX+ur3cEUFVkYo1OyWb98oLnMlpeoO0Hs4YPc0EVb7oKX4KNz+Yt6GUMBsieXqtL7oaYzX+kMayZEtV+3bhyDYnS9QBrvalnfxbLExjtnsy8g0pPQHU/P/DPIzO0F+pphcahRfi+3AMTnIreqvkqrcX+MyOwHN56lqEs23Vp4Rsq2qDow/LZmn5kpwMNhMY0DBq7jC+lh2Oyly0g==";
@@ -197,7 +199,7 @@ class GBContextTest {
                 .encryptionKey(encryptionKey)
                 .build();
 
-        assertEquals("{}", subject.getFeatures().toString());
+        assertEquals("{}", subject.getFeatures() != null ? subject.getFeatures().toString() : null);
     }
 
     @Test
@@ -212,6 +214,6 @@ class GBContextTest {
                 .encryptionKey(encryptionKey)
                 .build();
 
-        assertEquals("{}", subject.getFeatures().toString());
+        assertEquals("{}", subject.getFeatures() != null ? subject.getFeatures().toString() : null);
     }
 }

@@ -17,8 +17,8 @@ public class UrlUtils {
      * @return key/value pairs mapping to the items in the query string
      */
     public static Map<String, String> parseQueryString(String queryString) {
-        Map<String, String> map = new HashMap<String, String>();
-        if ((queryString == null) || (queryString.equals(""))) {
+        Map<String, String> map = new HashMap<>();
+        if ((queryString == null) || (queryString.isEmpty())) {
             return map;
         }
         String[] params = queryString.split("&");

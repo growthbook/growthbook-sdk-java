@@ -9,7 +9,7 @@ public class MathUtils {
 
     /**
      * Fowler-Noll-Vo algorithm
-     * fnv32a returns an long, so we convert that to a float using a modulus
+     * fnv32a returns a long, so we convert that to a float using a modulus
      *
      * @param data byte list
      * @return long

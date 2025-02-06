@@ -1,4 +1,4 @@
-package growthbook.sdk.java.stickyBucketing;
+package growthbook.sdk.java.model;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;

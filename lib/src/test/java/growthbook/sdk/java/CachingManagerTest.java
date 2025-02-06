@@ -56,9 +56,7 @@ class CachingManagerTest {
             fail("Creating test file was not successful.");
         }
 
-        RuntimeException thrown = assertThrows(RuntimeException.class, () -> {
-            cachingManager.saveContent(fileName, "This should fail");
-        });
+        RuntimeException thrown = assertThrows(RuntimeException.class, () -> cachingManager.saveContent(fileName, "This should fail"));
 
         assertInstanceOf(IOException.class, thrown.getCause());
     }

@@ -296,7 +296,9 @@ public class ExperimentEvaluator implements IExperimentEvaluator {
                 );
 
                 // save doc
-                context.getOptions().getStickyBucketService().saveAssignments(docModel.getStickyAssignmentsDocument());
+                if (context.getOptions().getStickyBucketService() != null) {
+                    context.getOptions().getStickyBucketService().saveAssignments(docModel.getStickyAssignmentsDocument());
+                }
             }
         }
 

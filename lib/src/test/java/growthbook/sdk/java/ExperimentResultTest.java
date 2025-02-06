@@ -54,7 +54,7 @@ class ExperimentResultTest {
 
     @Test
     void test_canBeConstructed() {
-        ExperimentResult<String> subject = new ExperimentResult<String>(
+        ExperimentResult<String> subject = new ExperimentResult<>(
                 "c",
                 2,
                 true,

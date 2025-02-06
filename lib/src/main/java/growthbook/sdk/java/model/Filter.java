@@ -26,6 +26,7 @@ public class Filter {
     /**
      * The attribute to use (default to "id")
      */
+    @Nullable
     String attribute;
 
     /**

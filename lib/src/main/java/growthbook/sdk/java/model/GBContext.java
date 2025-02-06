@@ -5,7 +5,6 @@ import growthbook.sdk.java.util.ExperimentHelper;
 import growthbook.sdk.java.callback.FeatureUsageCallback;
 import growthbook.sdk.java.callback.TrackingCallback;
 import growthbook.sdk.java.multiusermode.util.TransformationUtil;
-import growthbook.sdk.java.stickyBucketing.StickyAssignmentsDocument;
 import growthbook.sdk.java.stickyBucketing.StickyBucketService;
 import lombok.Builder;
 import lombok.Data;
@@ -75,9 +74,9 @@ public class GBContext {
             this.features = features;
         }
 
-        this.enabled = enabled == null ? true : enabled;
-        this.isQaMode = isQaMode == null ? false : isQaMode;
-        this.allowUrlOverride = allowUrlOverrides == null ? false : allowUrlOverrides;
+        this.enabled = enabled == null || enabled;
+        this.isQaMode = isQaMode != null && isQaMode;
+        this.allowUrlOverride = allowUrlOverrides != null && allowUrlOverrides;
         this.url = url;
         this.forcedVariationsMap = forcedVariationsMap == null ? new HashMap<>() : forcedVariationsMap;
         this.trackingCallback = trackingCallback;

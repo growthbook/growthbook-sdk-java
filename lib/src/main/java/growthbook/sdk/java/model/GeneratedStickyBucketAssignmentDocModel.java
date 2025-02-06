@@ -1,6 +1,5 @@
 package growthbook.sdk.java.model;
 
-import growthbook.sdk.java.stickyBucketing.StickyAssignmentsDocument;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;

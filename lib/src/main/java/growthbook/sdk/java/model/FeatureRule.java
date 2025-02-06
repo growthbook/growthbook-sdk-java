@@ -57,6 +57,7 @@ public class FeatureRule<ValueType> implements JsonDeserializer<FeatureRule<Valu
     /**
      * Immediately force a specific value (ignore every other option besides condition and coverage)
      */
+    @Nullable
     OptionalField<ValueType> force;
 
     /**
@@ -162,7 +163,7 @@ public class FeatureRule<ValueType> implements JsonDeserializer<FeatureRule<Valu
     Boolean disableStickyBucketing;
 
     /**
-     * An sticky bucket version number that can be used to force a re-bucketing of users (default to 0)
+     * A sticky bucket version number that can be used to force a re-bucketing of users (default to 0)
      */
     @Nullable
     Integer bucketVersion;

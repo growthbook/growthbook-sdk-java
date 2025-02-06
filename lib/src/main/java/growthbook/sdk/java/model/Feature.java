@@ -26,5 +26,6 @@ public class Feature<ValueType> {
     /**
      * The default value (should use null if not specified)
      */
+    @Nullable
     private final Object defaultValue = null;
 }

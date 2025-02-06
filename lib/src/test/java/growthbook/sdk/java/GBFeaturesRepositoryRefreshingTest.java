@@ -54,7 +54,7 @@ public class GBFeaturesRepositoryRefreshingTest {
         );
         subject.initialize();
 
-        // Advance time 3 seconds. We are still within the cache TTL so it should not trigger a refresh.
+        // Advance time 3 seconds. We are still within the cache TTL, so it should not trigger a refresh.
         sleepSeconds(3);
         subject.getFeaturesJson();
 
@@ -92,7 +92,7 @@ public class GBFeaturesRepositoryRefreshingTest {
         );
         subject.initialize();
 
-        // Advance time 2 seconds. We are still within the cache TTL so it should not trigger a refresh.
+        // Advance time 2 seconds. We are still within the cache TTL, so it should not trigger a refresh.
         sleepSeconds(2);
         subject.getFeaturesJson();
 
@@ -128,7 +128,7 @@ public class GBFeaturesRepositoryRefreshingTest {
         );
         subject.initialize();
 
-        // Advance time 3 seconds. We are still within the cache TTL so it should not trigger a refresh.
+        // Advance time 3 seconds. We are still within the cache TTL, so it should not trigger a refresh.
         sleepSeconds(3);
         subject.getFeaturesJson();
 

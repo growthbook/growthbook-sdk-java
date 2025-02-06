@@ -15,7 +15,7 @@ import growthbook.sdk.java.model.Namespace;
 import growthbook.sdk.java.model.StickyBucketVariation;
 import growthbook.sdk.java.model.VariationMeta;
 import growthbook.sdk.java.multiusermode.configurations.EvaluationContext;
-import growthbook.sdk.java.stickyBucketing.StickyAssignmentsDocument;
+import growthbook.sdk.java.model.StickyAssignmentsDocument;
 import growthbook.sdk.java.stickyBucketing.StickyBucketService;
 import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.NotNull;
@@ -132,7 +132,7 @@ public class GrowthBookUtils {
         }
 
         Float weight = 1f / numberOfVariations;
-        return new ArrayList<Float>(Collections.nCopies(size, weight));
+        return new ArrayList<>(Collections.nCopies(size, weight));
     }
 
     // region Experiment for query string
@@ -141,7 +141,7 @@ public class GrowthBookUtils {
      * This checks if an experiment variation is being forced via a URL query string.
      * This may not be applicable for all SDKs (e.g. mobile).
      * <p>
-     * As an example, if the id is my-test and url is http://localhost/?my-test=1,
+     * As an example, if the id is my-test and url is <a href="http://localhost/?my-test=1">...</a>,
      * it would return 1.
      * <p>
      * Returns null if any of these are true:
@@ -176,7 +176,7 @@ public class GrowthBookUtils {
      * This checks if an experiment variation is being forced via a URL query string.
      * This may not be applicable for all SDKs (e.g. mobile).
      * <p>
-     * As an example, if the id is my-test and url is http://localhost/?my-test=1,
+     * As an example, if the id is my-test and url is <a href="http://localhost/?my-test=1">...</a>,
      * it would return 1.
      * <p>
      * Returns null if any of these are true:
@@ -410,7 +410,7 @@ public class GrowthBookUtils {
             adjustedWeights = getEqualWeights(numberOfVariations);
         }
 
-        float start = 0.0f;
+        float start;
         float cumulative = 0.0f;
         ArrayList<BucketRange> bucketRanges = new ArrayList<>();
 
@@ -479,7 +479,7 @@ public class GrowthBookUtils {
             JsonPrimitive hashValuePrimitive = hashValueElement.getAsJsonPrimitive();
 
             String hashValue = hashValuePrimitive.getAsString();
-            if (hashValue == null || hashValue.equals("")) return true;
+            if (hashValue == null || hashValue.isEmpty()) return true;
 
             Integer hashVersion = filter.getHashVersion();
             if (hashVersion == null) {
@@ -617,7 +617,7 @@ public class GrowthBookUtils {
      * @param <ValueType> Feature class
      * @return list of sticky bucket identifier
      */
-    private static @Nullable <ValueType> List<String> deriveStickyBucketIdentifierAttributes(
+    private static <ValueType> List<String> deriveStickyBucketIdentifierAttributes(
             GBContext context,
             String featureDataModel
     ) {
@@ -871,7 +871,7 @@ public class GrowthBookUtils {
     private static int findVariationIndex(List<VariationMeta> meta, String variationKey) {
         for (int i = 0; i < meta.size(); i++) {
             if (meta.get(i).getKey() != null) {
-                if (meta.get(i).getKey().equals(variationKey)) {
+                if (Objects.equals(meta.get(i).getKey(), variationKey)) {
                     return i;
                 }
             }

@@ -160,7 +160,7 @@ public class GrowthBook implements IGrowthBook {
      * <p>
      * There are a few ordered steps to evaluate a feature
      * <p>
-     * 1. If the key doesn't exist in context.features
+     * 1. If the key doesn't exist in context.getFeatures()
      *  1.1 Return getFeatureResult(null, "unknownFeature")
      * 2. Loop through the feature rules (if any)
      *  2.1 If the rule has parentConditions (prerequisites) defined, loop through each one:
@@ -281,7 +281,7 @@ public class GrowthBook implements IGrowthBook {
      * 4) 0
      * Everything else is considered "truthy", including empty arrays and objects.
      * If the value is "truthy", then isOn() will return true and isOff() will return false.
-     * If the value is "falsy", then the opposite values will be returned.
+     * If the value is "false", then the opposite values will be returned.
      *
      * @param featureKey name of the feature
      * @return true if the value is a truthy value
@@ -300,7 +300,7 @@ public class GrowthBook implements IGrowthBook {
      * 4) 0
      * Everything else is considered "truthy", including empty arrays and objects.
      * If the value is "truthy", then isOn() will return true and isOff() will return false.
-     * If the value is "falsy", then the opposite values will be returned.
+     * If the value is "false", then the opposite values will be returned.
      *
      * @param featureKey name of the feature
      * @return true if the value is a truthy value

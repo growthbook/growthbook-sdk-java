@@ -10,7 +10,7 @@ import growthbook.sdk.java.model.ExperimentResult;
 import growthbook.sdk.java.model.FeatureResult;
 import growthbook.sdk.java.model.GBContext;
 import growthbook.sdk.java.stickyBucketing.InMemoryStickyBucketServiceImpl;
-import growthbook.sdk.java.stickyBucketing.StickyAssignmentsDocument;
+import growthbook.sdk.java.model.StickyAssignmentsDocument;
 import growthbook.sdk.java.stickyBucketing.StickyBucketService;
 import growthbook.sdk.java.testhelpers.TestCasesJsonHelper;
 import growthbook.sdk.java.util.GrowthBookJsonUtils;

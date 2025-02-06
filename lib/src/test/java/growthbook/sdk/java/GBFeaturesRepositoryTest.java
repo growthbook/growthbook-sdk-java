@@ -419,7 +419,7 @@ class GBFeaturesRepositoryTest {
     }
 
     @Test()
-    void testOnInitializeHttpError() throws FeatureFetchException, IOException {
+    void testOnInitializeHttpError() throws IOException {
         OkHttpClient mockOkHttpClient = mock(OkHttpClient.class);
 
         String errorResponseJson = "{\"status\": 400, \"error\": \"Invalid API Key\"}";
@@ -450,7 +450,7 @@ class GBFeaturesRepositoryTest {
 
         assertThrows(
                 FeatureFetchException.class,
-                () -> subject.initialize(),
+                subject::initialize,
                 "HTTP_RESPONSE_ERROR : responded with status 400"
         );
 

@@ -13,7 +13,7 @@ class FeatureRuleTest {
 
     @Test
     void canBeConstructed() {
-        ArrayList<Float> weights = new ArrayList<Float>();
+        ArrayList<Float> weights = new ArrayList<>();
         weights.add(0.3f);
         weights.add(0.7f);
 
@@ -26,11 +26,11 @@ class FeatureRuleTest {
                 .rangeEnd(0.6f)
                 .build();
 
-        FeatureRule<Integer> subject = new FeatureRule<Integer>(
+        FeatureRule<Integer> subject = new FeatureRule<>(
                 null,
                 "my-key",
                 0.5f,
-                new OptionalField<>(true,100),
+                new OptionalField<>(true, 100),
                 variations,
                 weights,
                 namespace,
@@ -54,8 +54,8 @@ class FeatureRuleTest {
 
         assertEquals(0.5f, subject.getCoverage());
         assertEquals(0.5f, subject.getCoverage());
-        assertEquals(100, subject.getForce().getValue());
-        assertEquals(100, subject.getForce().getValue());
+        assertEquals(100, subject.getForce() != null ? subject.getForce().getValue() : null);
+        assertEquals(100, subject.getForce() != null ? subject.getForce().getValue() : null);
         assertEquals(namespace, subject.getNamespace());
         assertEquals(namespace, subject.getNamespace());
         assertEquals("_id", subject.getHashAttribute());
@@ -66,7 +66,7 @@ class FeatureRuleTest {
 
     @Test
     void canBeBuilt() {
-        ArrayList<Float> weights = new ArrayList<Float>();
+        ArrayList<Float> weights = new ArrayList<>();
         weights.add(0.3f);
         weights.add(0.7f);
 
@@ -85,13 +85,14 @@ class FeatureRuleTest {
                 .force(new OptionalField<>(true, "forced-value"))
                 .namespace(namespace)
                 .weights(weights)
+                .variations(variations)
                 .hashAttribute("_id")
                 .build();
 
         assertEquals(0.5f, subject.getCoverage());
         assertEquals(0.5f, subject.getCoverage());
-        assertEquals("forced-value", subject.getForce().getValue());
-        assertEquals("forced-value", subject.getForce().getValue());
+        assertEquals("forced-value", subject.getForce() != null ? subject.getForce().getValue() : null);
+        assertEquals("forced-value", subject.getForce() != null ? subject.getForce().getValue() : null);
         assertEquals(namespace, subject.getNamespace());
         assertEquals(namespace, subject.getNamespace());
         assertEquals(weights, subject.getWeights());
