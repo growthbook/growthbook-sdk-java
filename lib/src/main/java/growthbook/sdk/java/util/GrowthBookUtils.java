@@ -445,21 +445,21 @@ public class GrowthBookUtils {
     }
 
     /**
-     * This is a helper method to evaluate filters for both feature flags and experiments.
-     * This method:
+     * Evaluates whether a user should be filtered out based on the given filters.
+     * <p>
+     * This method processes each filter in the provided list and performs the following steps:
      * <ul>
-     *     <li>Loop through filters array
-     *          <li>Get the hashAttribute and hashValue</li>
-     *          <li>If hashValue is empty, return true</li>
-     *          <li>Determine the bucket for the user</li>
-     *          <li>If inRange(n, range) is false for every range in filter.ranges, return true</li>
-     *      </li>
-     *      <li>If you made it through the entire array without returning early, return false now</li>
+     *     <li>Iterates through the list of filters.</li>
+     *     <li>Retrieves the hash attribute and hash value from the user attributes.</li>
+     *     <li>If the hash value is empty, the user is filtered out (returns {@code true}).</li>
+     *     <li>Computes a hash-based bucket value for the user.</li>
+     *     <li>If none of the specified bucket ranges match, the user is filtered out.</li>
      * </ul>
+     * If all filters are processed without an early return, the method returns {@code false}, meaning the user is not filtered out.
      *
-     * @param filters            List<Filters></Filters>
-     * @param attributes         JsonObject
-     * @return check if user filtered
+     * @param filters    The list of {@link Filter} objects that define filtering criteria.
+     * @param attributes A {@link JsonObject} containing user attributes.
+     * @return {@code true} if the user is filtered out, otherwise {@code false}.
      */
     public static Boolean isFilteredOut(List<Filter> filters, JsonObject attributes) {
         if (filters == null) return false;
@@ -551,12 +551,11 @@ public class GrowthBookUtils {
     }
 
     /**
-     * Method that get cached assignments
-     * and set it to Context's Sticky Bucket Assignments documents
+     * Retrieves cached assignments and sets them in the context's Sticky Bucket Assignments documents.
      *
-     * @param context            GBContext
-     * @param featuresDataModel  String
-     * @param attributeOverrides JsonObject
+     * @param context            {@link GBContext} that contains sticky bucketing attributes and sticky bucket service
+     * @param featuresDataModel  A string representing the features data model.
+     * @param attributeOverrides {@link JsonObject} containing attribute overrides.
      */
     public static void refreshStickyBuckets(GBContext context,
                                             String featuresDataModel,
@@ -580,12 +579,12 @@ public class GrowthBookUtils {
     }
 
     /**
-     * Supportive method for get attribute value from Context
+     * Supportive method to get attribute values from the context.
      *
-     * @param context            GBContext
-     * @param featuresDataModel  String
-     * @param attributeOverrides JsonObject
-     * @return create a map of sticky bucket attributes
+     * @param context            {@link GBContext} The context containing user attributes.
+     * @param featuresDataModel  A string representing the features data model.
+     * @param attributeOverrides A {@link JsonObject} containing attribute overrides.
+     * @return {@code Map<String, String>} A map of sticky bucket attributes.
      */
     public static Map<String, String> getStickyBucketAttributes(GBContext context,
                                                                 String featuresDataModel,
@@ -610,12 +609,11 @@ public class GrowthBookUtils {
     }
 
     /**
-     * Supportive method for get attribute value from Context if identifiers missed
+     * Supportive method to get attribute values from the context if identifiers are missing.
      *
-     * @param context          GBContext
-     * @param featureDataModel String
-     * @param <ValueType> Feature class
-     * @return list of sticky bucket identifier
+     * @param context          {@link GBContext} The context containing user attributes.
+     * @param featureDataModel A string representing the feature data model.
+     * @return {@code List<String>} A list of sticky bucket identifiers.
      */
     private static <ValueType> List<String> deriveStickyBucketIdentifierAttributes(
             GBContext context,
@@ -660,12 +658,12 @@ public class GrowthBookUtils {
 
     /**
      * Method to get actual Sticky Bucket assignments.
-     * Also, this method handle if assignments belong to user
+     * Also, this method handles if assignments belong to the user.
      *
-     * @param context              GBContext
-     * @param expHashAttribute     String
-     * @param expFallbackAttribute String
-     * @return Map(StickyBucketAssignments)
+     * @param context              {@link EvaluationContext}
+     * @param expHashAttribute     String (nullable)
+     * @param expFallbackAttribute String (nullable)
+     * @return {@code Map<String, String>} containing sticky bucket assignments.
      */
     public static Map<String, String> getStickyBucketAssignments(
             EvaluationContext context,
@@ -732,15 +730,15 @@ public class GrowthBookUtils {
     }
 
     /**
-     * Method to get {@link StickyBucketVariation}: variation and versionIsBlocked
+     * Method to get {@link StickyBucketVariation}: variation and versionIsBlocked.
      *
-     * @param context                     GBContext
+     * @param context                     {@link EvaluationContext}
      * @param experimentKey               String
-     * @param experimentHashAttribute     String
-     * @param experimentFallbackAttribute String
-     * @param experimentBucketVersion     Integer
-     * @param minExperimentBucketVersion  Integer
-     * @param meta                        List<VariationMeta>
+     * @param experimentHashAttribute     String (nullable)
+     * @param experimentFallbackAttribute String (nullable)
+     * @param experimentBucketVersion     Integer (nullable)
+     * @param minExperimentBucketVersion  Integer (nullable)
+     * @param meta                        {@code List<}{@link VariationMeta}{@code >} (nullable)
      * @return {@link StickyBucketVariation}
      */
     public static StickyBucketVariation getStickyBucketVariation(
@@ -807,12 +805,12 @@ public class GrowthBookUtils {
     }
 
     /**
-     * Method for generate Sticky Bucket Assignment document
+     * Method for generating a Sticky Bucket Assignment document.
      *
-     * @param stickyBucketAssignmentDocs Map<String, StickyAssignmentsDocument>
+     * @param stickyBucketAssignmentDocs {@code Map<String, StickyAssignmentsDocument>}
      * @param attributeName  String
      * @param attributeValue String
-     * @param assignments    Map<String, String>
+     * @param assignments    {@code Map<String, String>}
      * @return {@link GeneratedStickyBucketAssignmentDocModel}
      */
     public static GeneratedStickyBucketAssignmentDocModel generateStickyBucketAssignmentDoc(
