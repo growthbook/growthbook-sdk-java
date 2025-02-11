@@ -52,11 +52,18 @@ loadScripts(document, 'script');</script>
 <span class="package-hierarchy-label">Package Hierarchies:</span>
 <ul class="horizontal">
 <li><a href="growthbook/sdk/java/package-tree.html">growthbook.sdk.java</a>, </li>
+<li><a href="growthbook/sdk/java/callback/package-tree.html">growthbook.sdk.java.callback</a>, </li>
+<li><a href="growthbook/sdk/java/evaluators/package-tree.html">growthbook.sdk.java.evaluators</a>, </li>
+<li><a href="growthbook/sdk/java/exception/package-tree.html">growthbook.sdk.java.exception</a>, </li>
+<li><a href="growthbook/sdk/java/model/package-tree.html">growthbook.sdk.java.model</a>, </li>
 <li><a href="growthbook/sdk/java/multiusermode/package-tree.html">growthbook.sdk.java.multiusermode</a>, </li>
 <li><a href="growthbook/sdk/java/multiusermode/configurations/package-tree.html">growthbook.sdk.java.multiusermode.configurations</a>, </li>
 <li><a href="growthbook/sdk/java/multiusermode/usage/package-tree.html">growthbook.sdk.java.multiusermode.usage</a>, </li>
 <li><a href="growthbook/sdk/java/multiusermode/util/package-tree.html">growthbook.sdk.java.multiusermode.util</a>, </li>
-<li><a href="growthbook/sdk/java/stickyBucketing/package-tree.html">growthbook.sdk.java.stickyBucketing</a></li>
+<li><a href="growthbook/sdk/java/repository/package-tree.html">growthbook.sdk.java.repository</a>, </li>
+<li><a href="growthbook/sdk/java/sandbox/package-tree.html">growthbook.sdk.java.sandbox</a>, </li>
+<li><a href="growthbook/sdk/java/stickyBucketing/package-tree.html">growthbook.sdk.java.stickyBucketing</a>, </li>
+<li><a href="growthbook/sdk/java/util/package-tree.html">growthbook.sdk.java.util</a></li>
 </ul>
 </div>
 <section class="hierarchy">
@@ -64,66 +71,76 @@ loadScripts(document, 'script');</script>
 <ul>
 <li class="circle">java.lang.<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html" class="type-name-link external-link" title="class or interface in java.lang">Object</a>
 <ul>
-<li class="circle">growthbook.sdk.java.<a href="growthbook/sdk/java/AssignedExperiment.html" class="type-name-link" title="class in growthbook.sdk.java">AssignedExperiment</a></li>
-<li class="circle">growthbook.sdk.java.<a href="growthbook/sdk/java/BucketRange.html" class="type-name-link" title="class in growthbook.sdk.java">BucketRange</a></li>
-<li class="circle">growthbook.sdk.java.<a href="growthbook/sdk/java/BucketRange.BucketRangeBuilder.html" class="type-name-link" title="class in growthbook.sdk.java">BucketRange.BucketRangeBuilder</a></li>
-<li class="circle">growthbook.sdk.java.<a href="growthbook/sdk/java/CachingManager.html" class="type-name-link" title="class in growthbook.sdk.java">CachingManager</a></li>
-<li class="circle">growthbook.sdk.java.<a href="growthbook/sdk/java/ConditionEvaluator.html" class="type-name-link" title="class in growthbook.sdk.java">ConditionEvaluator</a></li>
-<li class="circle">growthbook.sdk.java.<a href="growthbook/sdk/java/DecryptionUtils.html" class="type-name-link" title="class in growthbook.sdk.java">DecryptionUtils</a></li>
+<li class="circle">growthbook.sdk.java.model.<a href="growthbook/sdk/java/model/AssignedExperiment.html" class="type-name-link" title="class in growthbook.sdk.java.model">AssignedExperiment</a></li>
+<li class="circle">growthbook.sdk.java.model.<a href="growthbook/sdk/java/model/BucketRange.html" class="type-name-link" title="class in growthbook.sdk.java.model">BucketRange</a></li>
+<li class="circle">growthbook.sdk.java.model.<a href="growthbook/sdk/java/model/BucketRange.BucketRangeBuilder.html" class="type-name-link" title="class in growthbook.sdk.java.model">BucketRange.BucketRangeBuilder</a></li>
+<li class="circle">growthbook.sdk.java.sandbox.<a href="growthbook/sdk/java/sandbox/CachingManager.html" class="type-name-link" title="class in growthbook.sdk.java.sandbox">CachingManager</a></li>
+<li class="circle">growthbook.sdk.java.evaluators.<a href="growthbook/sdk/java/evaluators/ConditionEvaluator.html" class="type-name-link" title="class in growthbook.sdk.java.evaluators">ConditionEvaluator</a></li>
+<li class="circle">growthbook.sdk.java.util.<a href="growthbook/sdk/java/util/DecryptionUtils.html" class="type-name-link" title="class in growthbook.sdk.java.util">DecryptionUtils</a></li>
 <li class="circle">growthbook.sdk.java.multiusermode.configurations.<a href="growthbook/sdk/java/multiusermode/configurations/EvaluationContext.html" class="type-name-link" title="class in growthbook.sdk.java.multiusermode.configurations">EvaluationContext</a></li>
 <li class="circle">growthbook.sdk.java.multiusermode.configurations.<a href="growthbook/sdk/java/multiusermode/configurations/EvaluationContext.StackContext.html" class="type-name-link" title="class in growthbook.sdk.java.multiusermode.configurations">EvaluationContext.StackContext</a></li>
-<li class="circle">growthbook.sdk.java.<a href="growthbook/sdk/java/Experiment.html" class="type-name-link" title="class in growthbook.sdk.java">Experiment</a>&lt;ValueType&gt;</li>
-<li class="circle">growthbook.sdk.java.<a href="growthbook/sdk/java/Experiment.ExperimentBuilder.html" class="type-name-link" title="class in growthbook.sdk.java">Experiment.ExperimentBuilder</a>&lt;ValueType&gt;</li>
-<li class="circle">growthbook.sdk.java.<a href="growthbook/sdk/java/ExperimentEvaluator.html" class="type-name-link" title="class in growthbook.sdk.java">ExperimentEvaluator</a></li>
-<li class="circle">growthbook.sdk.java.<a href="growthbook/sdk/java/ExperimentResult.html" class="type-name-link" title="class in growthbook.sdk.java">ExperimentResult</a>&lt;ValueType&gt;</li>
-<li class="circle">growthbook.sdk.java.<a href="growthbook/sdk/java/ExperimentResult.ExperimentResultBuilder.html" class="type-name-link" title="class in growthbook.sdk.java">ExperimentResult.ExperimentResultBuilder</a>&lt;ValueType&gt;</li>
+<li class="circle">growthbook.sdk.java.model.<a href="growthbook/sdk/java/model/Experiment.html" class="type-name-link" title="class in growthbook.sdk.java.model">Experiment</a>&lt;ValueType&gt;</li>
+<li class="circle">growthbook.sdk.java.model.<a href="growthbook/sdk/java/model/Experiment.ExperimentBuilder.html" class="type-name-link" title="class in growthbook.sdk.java.model">Experiment.ExperimentBuilder</a>&lt;ValueType&gt;</li>
+<li class="circle">growthbook.sdk.java.evaluators.<a href="growthbook/sdk/java/evaluators/ExperimentEvaluator.html" class="type-name-link" title="class in growthbook.sdk.java.evaluators">ExperimentEvaluator</a></li>
+<li class="circle">growthbook.sdk.java.util.<a href="growthbook/sdk/java/util/ExperimentHelper.html" class="type-name-link" title="class in growthbook.sdk.java.util">ExperimentHelper</a></li>
+<li class="circle">growthbook.sdk.java.model.<a href="growthbook/sdk/java/model/ExperimentResult.html" class="type-name-link" title="class in growthbook.sdk.java.model">ExperimentResult</a>&lt;ValueType&gt;</li>
+<li class="circle">growthbook.sdk.java.model.<a href="growthbook/sdk/java/model/ExperimentResult.ExperimentResultBuilder.html" class="type-name-link" title="class in growthbook.sdk.java.model">ExperimentResult.ExperimentResultBuilder</a>&lt;ValueType&gt;</li>
 <li class="circle">growthbook.sdk.java.multiusermode.<a href="growthbook/sdk/java/multiusermode/ExperimentTracker.html" class="type-name-link" title="class in growthbook.sdk.java.multiusermode">ExperimentTracker</a></li>
-<li class="circle">growthbook.sdk.java.<a href="growthbook/sdk/java/Feature.html" class="type-name-link" title="class in growthbook.sdk.java">Feature</a>&lt;ValueType&gt;</li>
-<li class="circle">growthbook.sdk.java.<a href="growthbook/sdk/java/FeatureEvaluator.html" class="type-name-link" title="class in growthbook.sdk.java">FeatureEvaluator</a></li>
-<li class="circle">growthbook.sdk.java.<a href="growthbook/sdk/java/FeatureResult.html" class="type-name-link" title="class in growthbook.sdk.java">FeatureResult</a>&lt;ValueType&gt;</li>
-<li class="circle">growthbook.sdk.java.<a href="growthbook/sdk/java/FeatureResult.FeatureResultBuilder.html" class="type-name-link" title="class in growthbook.sdk.java">FeatureResult.FeatureResultBuilder</a>&lt;ValueType&gt;</li>
-<li class="circle">growthbook.sdk.java.<a href="growthbook/sdk/java/FeatureRule.html" class="type-name-link" title="class in growthbook.sdk.java">FeatureRule</a>&lt;ValueType&gt; (implements com.google.gson.JsonDeserializer&lt;T&gt;)</li>
-<li class="circle">growthbook.sdk.java.<a href="growthbook/sdk/java/FeatureRule.FeatureRuleBuilder.html" class="type-name-link" title="class in growthbook.sdk.java">FeatureRule.FeatureRuleBuilder</a>&lt;ValueType&gt;</li>
+<li class="circle">growthbook.sdk.java.model.<a href="growthbook/sdk/java/model/Feature.html" class="type-name-link" title="class in growthbook.sdk.java.model">Feature</a>&lt;ValueType&gt;</li>
+<li class="circle">growthbook.sdk.java.evaluators.<a href="growthbook/sdk/java/evaluators/FeatureEvaluator.html" class="type-name-link" title="class in growthbook.sdk.java.evaluators">FeatureEvaluator</a></li>
+<li class="circle">growthbook.sdk.java.model.<a href="growthbook/sdk/java/model/FeatureResult.html" class="type-name-link" title="class in growthbook.sdk.java.model">FeatureResult</a>&lt;ValueType&gt;</li>
+<li class="circle">growthbook.sdk.java.model.<a href="growthbook/sdk/java/model/FeatureResult.FeatureResultBuilder.html" class="type-name-link" title="class in growthbook.sdk.java.model">FeatureResult.FeatureResultBuilder</a>&lt;ValueType&gt;</li>
+<li class="circle">growthbook.sdk.java.model.<a href="growthbook/sdk/java/model/FeatureRule.html" class="type-name-link" title="class in growthbook.sdk.java.model">FeatureRule</a>&lt;ValueType&gt; (implements com.google.gson.JsonDeserializer&lt;T&gt;)</li>
+<li class="circle">growthbook.sdk.java.model.<a href="growthbook/sdk/java/model/FeatureRule.FeatureRuleBuilder.html" class="type-name-link" title="class in growthbook.sdk.java.model">FeatureRule.FeatureRuleBuilder</a>&lt;ValueType&gt;</li>
 <li class="circle">growthbook.sdk.java.multiusermode.usage.<a href="growthbook/sdk/java/multiusermode/usage/FeatureUsageCallbackAdapter.html" class="type-name-link" title="class in growthbook.sdk.java.multiusermode.usage">FeatureUsageCallbackAdapter</a> (implements growthbook.sdk.java.multiusermode.usage.<a href="growthbook/sdk/java/multiusermode/usage/FeatureUsageCallbackWithUser.html" title="interface in growthbook.sdk.java.multiusermode.usage">FeatureUsageCallbackWithUser</a>)</li>
-<li class="circle">growthbook.sdk.java.<a href="growthbook/sdk/java/Filter.html" class="type-name-link" title="class in growthbook.sdk.java">Filter</a></li>
-<li class="circle">growthbook.sdk.java.<a href="growthbook/sdk/java/Filter.FilterBuilder.html" class="type-name-link" title="class in growthbook.sdk.java">Filter.FilterBuilder</a></li>
-<li class="circle">growthbook.sdk.java.<a href="growthbook/sdk/java/GBContext.html" class="type-name-link" title="class in growthbook.sdk.java">GBContext</a></li>
-<li class="circle">growthbook.sdk.java.<a href="growthbook/sdk/java/GBContext.GBContextBuilder.html" class="type-name-link" title="class in growthbook.sdk.java">GBContext.GBContextBuilder</a></li>
-<li class="circle">growthbook.sdk.java.<a href="growthbook/sdk/java/GBFeaturesRepository.html" class="type-name-link" title="class in growthbook.sdk.java">GBFeaturesRepository</a></li>
-<li class="circle">growthbook.sdk.java.<a href="growthbook/sdk/java/GBFeaturesRepository.GBFeaturesRepositoryBuilder.html" class="type-name-link" title="class in growthbook.sdk.java">GBFeaturesRepository.GBFeaturesRepositoryBuilder</a></li>
-<li class="circle">growthbook.sdk.java.<a href="growthbook/sdk/java/GBFeaturesRepositoryRequestInterceptor.html" class="type-name-link" title="class in growthbook.sdk.java">GBFeaturesRepositoryRequestInterceptor</a> (implements okhttp3.Interceptor)</li>
+<li class="circle">growthbook.sdk.java.model.<a href="growthbook/sdk/java/model/Filter.html" class="type-name-link" title="class in growthbook.sdk.java.model">Filter</a></li>
+<li class="circle">growthbook.sdk.java.model.<a href="growthbook/sdk/java/model/Filter.FilterBuilder.html" class="type-name-link" title="class in growthbook.sdk.java.model">Filter.FilterBuilder</a></li>
+<li class="circle">growthbook.sdk.java.model.<a href="growthbook/sdk/java/model/GBContext.html" class="type-name-link" title="class in growthbook.sdk.java.model">GBContext</a></li>
+<li class="circle">growthbook.sdk.java.model.<a href="growthbook/sdk/java/model/GBContext.GBContextBuilder.html" class="type-name-link" title="class in growthbook.sdk.java.model">GBContext.GBContextBuilder</a></li>
+<li class="circle">growthbook.sdk.java.repository.<a href="growthbook/sdk/java/repository/GBFeaturesRepository.html" class="type-name-link" title="class in growthbook.sdk.java.repository">GBFeaturesRepository</a> (implements growthbook.sdk.java.repository.<a href="growthbook/sdk/java/repository/IGBFeaturesRepository.html" title="interface in growthbook.sdk.java.repository">IGBFeaturesRepository</a>)</li>
+<li class="circle">growthbook.sdk.java.repository.<a href="growthbook/sdk/java/repository/GBFeaturesRepository.GBFeaturesRepositoryBuilder.html" class="type-name-link" title="class in growthbook.sdk.java.repository">GBFeaturesRepository.GBFeaturesRepositoryBuilder</a></li>
+<li class="circle">growthbook.sdk.java.repository.<a href="growthbook/sdk/java/repository/GBFeaturesRepositoryRequestInterceptor.html" class="type-name-link" title="class in growthbook.sdk.java.repository">GBFeaturesRepositoryRequestInterceptor</a> (implements okhttp3.Interceptor)</li>
+<li class="circle">growthbook.sdk.java.model.<a href="growthbook/sdk/java/model/GeneratedStickyBucketAssignmentDocModel.html" class="type-name-link" title="class in growthbook.sdk.java.model">GeneratedStickyBucketAssignmentDocModel</a></li>
 <li class="circle">growthbook.sdk.java.multiusermode.configurations.<a href="growthbook/sdk/java/multiusermode/configurations/GlobalContext.html" class="type-name-link" title="class in growthbook.sdk.java.multiusermode.configurations">GlobalContext</a></li>
 <li class="circle">growthbook.sdk.java.multiusermode.configurations.<a href="growthbook/sdk/java/multiusermode/configurations/GlobalContext.GlobalContextBuilder.html" class="type-name-link" title="class in growthbook.sdk.java.multiusermode.configurations">GlobalContext.GlobalContextBuilder</a></li>
 <li class="circle">growthbook.sdk.java.<a href="growthbook/sdk/java/GrowthBook.html" class="type-name-link" title="class in growthbook.sdk.java">GrowthBook</a></li>
 <li class="circle">growthbook.sdk.java.multiusermode.<a href="growthbook/sdk/java/multiusermode/GrowthBookClient.html" class="type-name-link" title="class in growthbook.sdk.java.multiusermode">GrowthBookClient</a></li>
-<li class="circle">growthbook.sdk.java.<a href="growthbook/sdk/java/GrowthBookJsonUtils.html" class="type-name-link" title="class in growthbook.sdk.java">GrowthBookJsonUtils</a></li>
+<li class="circle">growthbook.sdk.java.util.<a href="growthbook/sdk/java/util/GrowthBookJsonUtils.html" class="type-name-link" title="class in growthbook.sdk.java.util">GrowthBookJsonUtils</a></li>
+<li class="circle">growthbook.sdk.java.util.<a href="growthbook/sdk/java/util/GrowthBookUtils.html" class="type-name-link" title="class in growthbook.sdk.java.util">GrowthBookUtils</a></li>
+<li class="circle">growthbook.sdk.java.model.<a href="growthbook/sdk/java/model/HashAttributeAndHashValue.html" class="type-name-link" title="class in growthbook.sdk.java.model">HashAttributeAndHashValue</a></li>
 <li class="circle">growthbook.sdk.java.stickyBucketing.<a href="growthbook/sdk/java/stickyBucketing/InMemoryStickyBucketServiceImpl.html" class="type-name-link" title="class in growthbook.sdk.java.stickyBucketing">InMemoryStickyBucketServiceImpl</a> (implements growthbook.sdk.java.stickyBucketing.<a href="growthbook/sdk/java/stickyBucketing/StickyBucketService.html" title="interface in growthbook.sdk.java.stickyBucketing">StickyBucketService</a>)</li>
-<li class="circle">growthbook.sdk.java.<a href="growthbook/sdk/java/LocalGbFeatureRepository.html" class="type-name-link" title="class in growthbook.sdk.java">LocalGbFeatureRepository</a></li>
-<li class="circle">growthbook.sdk.java.<a href="growthbook/sdk/java/Namespace.html" class="type-name-link" title="class in growthbook.sdk.java">Namespace</a></li>
-<li class="circle">growthbook.sdk.java.<a href="growthbook/sdk/java/Namespace.NamespaceBuilder.html" class="type-name-link" title="class in growthbook.sdk.java">Namespace.NamespaceBuilder</a></li>
-<li class="circle">growthbook.sdk.java.<a href="growthbook/sdk/java/NativeJavaGbFeatureRepository.html" class="type-name-link" title="class in growthbook.sdk.java">NativeJavaGbFeatureRepository</a></li>
-<li class="circle">growthbook.sdk.java.<a href="growthbook/sdk/java/NativeJavaGbFeatureRepository.NativeJavaGbFeatureRepositoryBuilder.html" class="type-name-link" title="class in growthbook.sdk.java">NativeJavaGbFeatureRepository.NativeJavaGbFeatureRepositoryBuilder</a></li>
-<li class="circle">growthbook.sdk.java.<a href="growthbook/sdk/java/OptionalField.html" class="type-name-link" title="class in growthbook.sdk.java">OptionalField</a>&lt;ValueType&gt;</li>
+<li class="circle">growthbook.sdk.java.repository.<a href="growthbook/sdk/java/repository/LocalGbFeatureRepository.html" class="type-name-link" title="class in growthbook.sdk.java.repository">LocalGbFeatureRepository</a> (implements growthbook.sdk.java.repository.<a href="growthbook/sdk/java/repository/IGBFeaturesRepository.html" title="interface in growthbook.sdk.java.repository">IGBFeaturesRepository</a>)</li>
+<li class="circle">growthbook.sdk.java.util.<a href="growthbook/sdk/java/util/MathUtils.html" class="type-name-link" title="class in growthbook.sdk.java.util">MathUtils</a></li>
+<li class="circle">growthbook.sdk.java.model.<a href="growthbook/sdk/java/model/Namespace.html" class="type-name-link" title="class in growthbook.sdk.java.model">Namespace</a></li>
+<li class="circle">growthbook.sdk.java.model.<a href="growthbook/sdk/java/model/Namespace.NamespaceBuilder.html" class="type-name-link" title="class in growthbook.sdk.java.model">Namespace.NamespaceBuilder</a></li>
+<li class="circle">growthbook.sdk.java.repository.<a href="growthbook/sdk/java/repository/NativeJavaGbFeatureRepository.html" class="type-name-link" title="class in growthbook.sdk.java.repository">NativeJavaGbFeatureRepository</a> (implements growthbook.sdk.java.repository.<a href="growthbook/sdk/java/repository/IGBFeaturesRepository.html" title="interface in growthbook.sdk.java.repository">IGBFeaturesRepository</a>)</li>
+<li class="circle">growthbook.sdk.java.repository.<a href="growthbook/sdk/java/repository/NativeJavaGbFeatureRepository.NativeJavaGbFeatureRepositoryBuilder.html" class="type-name-link" title="class in growthbook.sdk.java.repository">NativeJavaGbFeatureRepository.NativeJavaGbFeatureRepositoryBuilder</a></li>
+<li class="circle">growthbook.sdk.java.model.<a href="growthbook/sdk/java/model/OptionalField.html" class="type-name-link" title="class in growthbook.sdk.java.model">OptionalField</a>&lt;ValueType&gt;</li>
 <li class="circle">growthbook.sdk.java.multiusermode.configurations.<a href="growthbook/sdk/java/multiusermode/configurations/Options.html" class="type-name-link" title="class in growthbook.sdk.java.multiusermode.configurations">Options</a></li>
 <li class="circle">growthbook.sdk.java.multiusermode.configurations.<a href="growthbook/sdk/java/multiusermode/configurations/Options.OptionsBuilder.html" class="type-name-link" title="class in growthbook.sdk.java.multiusermode.configurations">Options.OptionsBuilder</a></li>
-<li class="circle">growthbook.sdk.java.<a href="growthbook/sdk/java/ParentCondition.html" class="type-name-link" title="class in growthbook.sdk.java">ParentCondition</a></li>
-<li class="circle">growthbook.sdk.java.<a href="growthbook/sdk/java/RequestBodyForRemoteEval.html" class="type-name-link" title="class in growthbook.sdk.java">RequestBodyForRemoteEval</a></li>
-<li class="circle">growthbook.sdk.java.stickyBucketing.<a href="growthbook/sdk/java/stickyBucketing/StickyAssignmentsDocument.html" class="type-name-link" title="class in growthbook.sdk.java.stickyBucketing">StickyAssignmentsDocument</a></li>
+<li class="circle">growthbook.sdk.java.model.<a href="growthbook/sdk/java/model/ParentCondition.html" class="type-name-link" title="class in growthbook.sdk.java.model">ParentCondition</a></li>
+<li class="circle">growthbook.sdk.java.model.<a href="growthbook/sdk/java/model/RequestBodyForRemoteEval.html" class="type-name-link" title="class in growthbook.sdk.java.model">RequestBodyForRemoteEval</a></li>
+<li class="circle">growthbook.sdk.java.model.<a href="growthbook/sdk/java/model/StickyAssignmentsDocument.html" class="type-name-link" title="class in growthbook.sdk.java.model">StickyAssignmentsDocument</a></li>
+<li class="circle">growthbook.sdk.java.model.<a href="growthbook/sdk/java/model/StickyBucketVariation.html" class="type-name-link" title="class in growthbook.sdk.java.model">StickyBucketVariation</a></li>
+<li class="circle">growthbook.sdk.java.util.<a href="growthbook/sdk/java/util/StringUtils.html" class="type-name-link" title="class in growthbook.sdk.java.util">StringUtils</a></li>
 <li class="circle">java.lang.<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Throwable.html" class="type-name-link external-link" title="class or interface in java.lang">Throwable</a> (implements java.io.<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/io/Serializable.html" title="class or interface in java.io" class="external-link">Serializable</a>)
 <ul>
 <li class="circle">java.lang.<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Exception.html" class="type-name-link external-link" title="class or interface in java.lang">Exception</a>
 <ul>
-<li class="circle">growthbook.sdk.java.<a href="growthbook/sdk/java/DecryptionUtils.DecryptionException.html" class="type-name-link" title="class in growthbook.sdk.java">DecryptionUtils.DecryptionException</a></li>
-<li class="circle">growthbook.sdk.java.<a href="growthbook/sdk/java/FeatureFetchException.html" class="type-name-link" title="class in growthbook.sdk.java">FeatureFetchException</a></li>
+<li class="circle">growthbook.sdk.java.util.<a href="growthbook/sdk/java/util/DecryptionUtils.DecryptionException.html" class="type-name-link" title="class in growthbook.sdk.java.util">DecryptionUtils.DecryptionException</a></li>
+<li class="circle">growthbook.sdk.java.exception.<a href="growthbook/sdk/java/exception/FeatureFetchException.html" class="type-name-link" title="class in growthbook.sdk.java.exception">FeatureFetchException</a></li>
 </ul>
 </li>
 </ul>
 </li>
-<li class="circle">growthbook.sdk.java.<a href="growthbook/sdk/java/TrackData.html" class="type-name-link" title="class in growthbook.sdk.java">TrackData</a>&lt;ValueType&gt;</li>
+<li class="circle">growthbook.sdk.java.model.<a href="growthbook/sdk/java/model/TrackData.html" class="type-name-link" title="class in growthbook.sdk.java.model">TrackData</a>&lt;ValueType&gt;</li>
 <li class="circle">growthbook.sdk.java.multiusermode.usage.<a href="growthbook/sdk/java/multiusermode/usage/TrackingCallbackAdapter.html" class="type-name-link" title="class in growthbook.sdk.java.multiusermode.usage">TrackingCallbackAdapter</a> (implements growthbook.sdk.java.multiusermode.usage.<a href="growthbook/sdk/java/multiusermode/usage/TrackingCallbackWithUser.html" title="interface in growthbook.sdk.java.multiusermode.usage">TrackingCallbackWithUser</a>)</li>
 <li class="circle">growthbook.sdk.java.multiusermode.util.<a href="growthbook/sdk/java/multiusermode/util/TransformationUtil.html" class="type-name-link" title="class in growthbook.sdk.java.multiusermode.util">TransformationUtil</a></li>
+<li class="circle">growthbook.sdk.java.util.<a href="growthbook/sdk/java/util/UrlUtils.html" class="type-name-link" title="class in growthbook.sdk.java.util">UrlUtils</a></li>
 <li class="circle">growthbook.sdk.java.multiusermode.configurations.<a href="growthbook/sdk/java/multiusermode/configurations/UserContext.html" class="type-name-link" title="class in growthbook.sdk.java.multiusermode.configurations">UserContext</a></li>
 <li class="circle">growthbook.sdk.java.multiusermode.configurations.<a href="growthbook/sdk/java/multiusermode/configurations/UserContext.UserContextBuilder.html" class="type-name-link" title="class in growthbook.sdk.java.multiusermode.configurations">UserContext.UserContextBuilder</a></li>
+<li class="circle">growthbook.sdk.java.model.<a href="growthbook/sdk/java/model/VariationMeta.html" class="type-name-link" title="class in growthbook.sdk.java.model">VariationMeta</a></li>
+<li class="circle">growthbook.sdk.java.model.<a href="growthbook/sdk/java/model/VariationMeta.VariationMetaBuilder.html" class="type-name-link" title="class in growthbook.sdk.java.model">VariationMeta.VariationMetaBuilder</a></li>
 </ul>
 </li>
 </ul>
@@ -131,13 +148,15 @@ loadScripts(document, 'script');</script>
 <section class="hierarchy">
 <h2 title="Interface Hierarchy">Interface Hierarchy</h2>
 <ul>
-<li class="circle">growthbook.sdk.java.<a href="growthbook/sdk/java/ExperimentRunCallback.html" class="type-name-link" title="interface in growthbook.sdk.java">ExperimentRunCallback</a></li>
-<li class="circle">growthbook.sdk.java.<a href="growthbook/sdk/java/FeatureRefreshCallback.html" class="type-name-link" title="interface in growthbook.sdk.java">FeatureRefreshCallback</a></li>
-<li class="circle">growthbook.sdk.java.<a href="growthbook/sdk/java/FeatureUsageCallback.html" class="type-name-link" title="interface in growthbook.sdk.java">FeatureUsageCallback</a></li>
+<li class="circle">growthbook.sdk.java.callback.<a href="growthbook/sdk/java/callback/ExperimentRunCallback.html" class="type-name-link" title="interface in growthbook.sdk.java.callback">ExperimentRunCallback</a></li>
+<li class="circle">growthbook.sdk.java.callback.<a href="growthbook/sdk/java/callback/FeatureRefreshCallback.html" class="type-name-link" title="interface in growthbook.sdk.java.callback">FeatureRefreshCallback</a></li>
+<li class="circle">growthbook.sdk.java.callback.<a href="growthbook/sdk/java/callback/FeatureUsageCallback.html" class="type-name-link" title="interface in growthbook.sdk.java.callback">FeatureUsageCallback</a></li>
 <li class="circle">growthbook.sdk.java.multiusermode.usage.<a href="growthbook/sdk/java/multiusermode/usage/FeatureUsageCallbackWithUser.html" class="type-name-link" title="interface in growthbook.sdk.java.multiusermode.usage">FeatureUsageCallbackWithUser</a></li>
+<li class="circle">growthbook.sdk.java.repository.<a href="growthbook/sdk/java/repository/IGBFeaturesRepository.html" class="type-name-link" title="interface in growthbook.sdk.java.repository">IGBFeaturesRepository</a></li>
 <li class="circle">growthbook.sdk.java.stickyBucketing.<a href="growthbook/sdk/java/stickyBucketing/StickyBucketService.html" class="type-name-link" title="interface in growthbook.sdk.java.stickyBucketing">StickyBucketService</a></li>
-<li class="circle">growthbook.sdk.java.<a href="growthbook/sdk/java/TrackingCallback.html" class="type-name-link" title="interface in growthbook.sdk.java">TrackingCallback</a></li>
+<li class="circle">growthbook.sdk.java.callback.<a href="growthbook/sdk/java/callback/TrackingCallback.html" class="type-name-link" title="interface in growthbook.sdk.java.callback">TrackingCallback</a></li>
 <li class="circle">growthbook.sdk.java.multiusermode.usage.<a href="growthbook/sdk/java/multiusermode/usage/TrackingCallbackWithUser.html" class="type-name-link" title="interface in growthbook.sdk.java.multiusermode.usage">TrackingCallbackWithUser</a></li>
+<li class="circle">growthbook.sdk.java.<a href="growthbook/sdk/java/Version.html" class="type-name-link" title="interface in growthbook.sdk.java">Version</a></li>
 </ul>
 </section>
 <section class="hierarchy">
@@ -147,11 +166,15 @@ loadScripts(document, 'script');</script>
 <ul>
 <li class="circle">java.lang.<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Enum.html" class="type-name-link external-link" title="class or interface in java.lang">Enum</a>&lt;E&gt; (implements java.lang.<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Comparable.html" title="class or interface in java.lang" class="external-link">Comparable</a>&lt;T&gt;, java.lang.constant.<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/constant/Constable.html" title="class or interface in java.lang.constant" class="external-link">Constable</a>, java.io.<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/io/Serializable.html" title="class or interface in java.io" class="external-link">Serializable</a>)
 <ul>
-<li class="circle">growthbook.sdk.java.<a href="growthbook/sdk/java/DataType.html" class="type-name-link" title="enum class in growthbook.sdk.java">DataType</a></li>
-<li class="circle">growthbook.sdk.java.<a href="growthbook/sdk/java/FeatureFetchException.FeatureFetchErrorCode.html" class="type-name-link" title="enum class in growthbook.sdk.java">FeatureFetchException.FeatureFetchErrorCode</a></li>
-<li class="circle">growthbook.sdk.java.<a href="growthbook/sdk/java/FeatureRefreshStrategy.html" class="type-name-link" title="enum class in growthbook.sdk.java">FeatureRefreshStrategy</a></li>
-<li class="circle">growthbook.sdk.java.<a href="growthbook/sdk/java/FeatureResultSource.html" class="type-name-link" title="enum class in growthbook.sdk.java">FeatureResultSource</a></li>
-<li class="circle">growthbook.sdk.java.<a href="growthbook/sdk/java/Operator.html" class="type-name-link" title="enum class in growthbook.sdk.java">Operator</a></li>
+<li class="circle">growthbook.sdk.java.model.<a href="growthbook/sdk/java/model/DataType.html" class="type-name-link" title="enum class in growthbook.sdk.java.model">DataType</a></li>
+<li class="circle">growthbook.sdk.java.exception.<a href="growthbook/sdk/java/exception/FeatureFetchException.FeatureFetchErrorCode.html" class="type-name-link" title="enum class in growthbook.sdk.java.exception">FeatureFetchException.FeatureFetchErrorCode</a></li>
+<li class="circle">growthbook.sdk.java.repository.<a href="growthbook/sdk/java/repository/FeatureRefreshStrategy.html" class="type-name-link" title="enum class in growthbook.sdk.java.repository">FeatureRefreshStrategy</a></li>
+<li class="circle">growthbook.sdk.java.model.<a href="growthbook/sdk/java/model/FeatureResponseKey.html" class="type-name-link" title="enum class in growthbook.sdk.java.model">FeatureResponseKey</a></li>
+<li class="circle">growthbook.sdk.java.model.<a href="growthbook/sdk/java/model/FeatureResultSource.html" class="type-name-link" title="enum class in growthbook.sdk.java.model">FeatureResultSource</a></li>
+<li class="circle">growthbook.sdk.java.model.<a href="growthbook/sdk/java/model/HttpHeaders.html" class="type-name-link" title="enum class in growthbook.sdk.java.model">HttpHeaders</a></li>
+<li class="circle">growthbook.sdk.java.model.<a href="growthbook/sdk/java/model/HttpMethods.html" class="type-name-link" title="enum class in growthbook.sdk.java.model">HttpMethods</a></li>
+<li class="circle">growthbook.sdk.java.model.<a href="growthbook/sdk/java/model/Operator.html" class="type-name-link" title="enum class in growthbook.sdk.java.model">Operator</a></li>
+<li class="circle">growthbook.sdk.java.model.<a href="growthbook/sdk/java/model/SseKey.html" class="type-name-link" title="enum class in growthbook.sdk.java.model">SseKey</a></li>
 </ul>
 </li>
 </ul>

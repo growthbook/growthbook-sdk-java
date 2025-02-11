@@ -79,7 +79,7 @@ loadScripts(document, 'script');</script>
 <div class="type-signature"><span class="modifiers">public class </span><span class="element-name type-name-label">GrowthBook</span>
 <span class="extends-implements">extends <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html" title="class or interface in java.lang" class="external-link">Object</a></span></div>
 <div class="block">GrowthBook SDK class.
- Build a context with <a href="GBContext.html#builder()"><code>GBContext.builder()</code></a> or the <a href="GBContext.html" title="class in growthbook.sdk.java"><code>GBContext</code></a> constructor
+ Build a context with <a href="model/GBContext.html#builder()"><code>GBContext.builder()</code></a> or the <a href="model/GBContext.html" title="class in growthbook.sdk.java.model"><code>GBContext</code></a> constructor
  and pass it as an argument to the class constructor.</div>
 </section>
 <section class="summary">
@@ -111,9 +111,9 @@ loadScripts(document, 'script');</script>
 <div class="col-last even-row-color">
 <div class="block">No-args constructor.</div>
 </div>
-<div class="col-constructor-name odd-row-color"><code><a href="#%3Cinit%3E(growthbook.sdk.java.GBContext)" class="member-name-link">GrowthBook</a><wbr>(<a href="GBContext.html" title="class in growthbook.sdk.java">GBContext</a>&nbsp;context)</code></div>
+<div class="col-constructor-name odd-row-color"><code><a href="#%3Cinit%3E(growthbook.sdk.java.model.GBContext)" class="member-name-link">GrowthBook</a><wbr>(<a href="model/GBContext.html" title="class in growthbook.sdk.java.model">GBContext</a>&nbsp;context)</code></div>
 <div class="col-last odd-row-color">
-<div class="block">Initialize the GrowthBook SDK with a provided <a href="GBContext.html" title="class in growthbook.sdk.java"><code>GBContext</code></a></div>
+<div class="block">Initialize the GrowthBook SDK with a provided <a href="model/GBContext.html" title="class in growthbook.sdk.java.model"><code>GBContext</code></a></div>
 </div>
 </div>
 </section>
@@ -134,7 +134,7 @@ loadScripts(document, 'script');</script>
 <div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">Reinitialized the list of ExperimentRunCallbacks.</div>
 </div>
-<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>&lt;ValueType&gt;<br><a href="FeatureResult.html" title="class in growthbook.sdk.java">FeatureResult</a>&lt;ValueType&gt;</code></div>
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>&lt;ValueType&gt;<br><a href="model/FeatureResult.html" title="class in growthbook.sdk.java.model">FeatureResult</a>&lt;ValueType&gt;</code></div>
 <div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#evalFeature(java.lang.String,java.lang.Class)" class="member-name-link">evalFeature</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;key,
  <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Class.html" title="class or interface in java.lang" class="external-link">Class</a>&lt;ValueType&gt;&nbsp;valueTypeClass)</code></div>
 <div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
@@ -230,8 +230,8 @@ loadScripts(document, 'script');</script>
  4) 0
  Everything else is considered "truthy", including empty arrays and objects.</div>
 </div>
-<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>&lt;ValueType&gt;<br><a href="ExperimentResult.html" title="class in growthbook.sdk.java">ExperimentResult</a>&lt;ValueType&gt;</code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#run(growthbook.sdk.java.Experiment)" class="member-name-link">run</a><wbr>(<a href="Experiment.html" title="class in growthbook.sdk.java">Experiment</a>&lt;ValueType&gt;&nbsp;experiment)</code></div>
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>&lt;ValueType&gt;<br><a href="model/ExperimentResult.html" title="class in growthbook.sdk.java.model">ExperimentResult</a>&lt;ValueType&gt;</code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#run(growthbook.sdk.java.model.Experiment)" class="member-name-link">run</a><wbr>(<a href="model/Experiment.html" title="class in growthbook.sdk.java.model">Experiment</a>&lt;ValueType&gt;&nbsp;experiment)</code></div>
 <div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">The run method takes an Experiment object and returns an ExperimentResult.</div>
 </div>
@@ -267,7 +267,7 @@ loadScripts(document, 'script');</script>
 <div class="block">Method for pass saved groups JsonObject to GbContext</div>
 </div>
 <div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>void</code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#subscribe(growthbook.sdk.java.ExperimentRunCallback)" class="member-name-link">subscribe</a><wbr>(<a href="ExperimentRunCallback.html" title="interface in growthbook.sdk.java">ExperimentRunCallback</a>&nbsp;callback)</code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#subscribe(growthbook.sdk.java.callback.ExperimentRunCallback)" class="member-name-link">subscribe</a><wbr>(<a href="callback/ExperimentRunCallback.html" title="interface in growthbook.sdk.java.callback">ExperimentRunCallback</a>&nbsp;callback)</code></div>
 <div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">This method add new calback to list of ExperimentRunCallback</div>
 </div>
@@ -303,13 +303,13 @@ loadScripts(document, 'script');</script>
 <h2>Constructor Details</h2>
 <ul class="member-list">
 <li>
-<section class="detail" id="&lt;init&gt;(growthbook.sdk.java.GBContext)">
+<section class="detail" id="&lt;init&gt;(growthbook.sdk.java.model.GBContext)">
 <h3>GrowthBook</h3>
-<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="element-name">GrowthBook</span><wbr><span class="parameters">(<a href="GBContext.html" title="class in growthbook.sdk.java">GBContext</a>&nbsp;context)</span></div>
-<div class="block">Initialize the GrowthBook SDK with a provided <a href="GBContext.html" title="class in growthbook.sdk.java"><code>GBContext</code></a></div>
+<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="element-name">GrowthBook</span><wbr><span class="parameters">(<a href="model/GBContext.html" title="class in growthbook.sdk.java.model">GBContext</a>&nbsp;context)</span></div>
+<div class="block">Initialize the GrowthBook SDK with a provided <a href="model/GBContext.html" title="class in growthbook.sdk.java.model"><code>GBContext</code></a></div>
 <dl class="notes">
 <dt>Parameters:</dt>
-<dd><code>context</code> - <a href="GBContext.html" title="class in growthbook.sdk.java"><code>GBContext</code></a></dd>
+<dd><code>context</code> - <a href="model/GBContext.html" title="class in growthbook.sdk.java.model"><code>GBContext</code></a></dd>
 </dl>
 </section>
 </li>
@@ -317,8 +317,8 @@ loadScripts(document, 'script');</script>
 <section class="detail" id="&lt;init&gt;()">
 <h3>GrowthBook</h3>
 <div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="element-name">GrowthBook</span>()</div>
-<div class="block">No-args constructor. A <a href="GBContext.html" title="class in growthbook.sdk.java"><code>GBContext</code></a> with default values is created.
- It's recommended to create your own context with <a href="GBContext.html#builder()"><code>GBContext.builder()</code></a> or the <a href="GBContext.html" title="class in growthbook.sdk.java"><code>GBContext</code></a> constructor</div>
+<div class="block">No-args constructor. A <a href="model/GBContext.html" title="class in growthbook.sdk.java.model"><code>GBContext</code></a> with default values is created.
+ It's recommended to create your own context with <a href="model/GBContext.html#builder()"><code>GBContext.builder()</code></a> or the <a href="model/GBContext.html" title="class in growthbook.sdk.java.model"><code>GBContext</code></a> constructor</div>
 </section>
 </li>
 </ul>
@@ -333,14 +333,14 @@ loadScripts(document, 'script');</script>
 <section class="detail" id="evalFeature(java.lang.String,java.lang.Class)">
 <h3>evalFeature</h3>
 <div class="member-signature"><span class="annotations">@Nullable
-</span><span class="modifiers">public</span>&nbsp;<span class="type-parameters">&lt;ValueType&gt;</span>&nbsp;<span class="return-type"><a href="FeatureResult.html" title="class in growthbook.sdk.java">FeatureResult</a>&lt;ValueType&gt;</span>&nbsp;<span class="element-name">evalFeature</span><wbr><span class="parameters">(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;key,
+</span><span class="modifiers">public</span>&nbsp;<span class="type-parameters">&lt;ValueType&gt;</span>&nbsp;<span class="return-type"><a href="model/FeatureResult.html" title="class in growthbook.sdk.java.model">FeatureResult</a>&lt;ValueType&gt;</span>&nbsp;<span class="element-name">evalFeature</span><wbr><span class="parameters">(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;key,
  <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Class.html" title="class or interface in java.lang" class="external-link">Class</a>&lt;ValueType&gt;&nbsp;valueTypeClass)</span></div>
 <div class="block">The evalFeature method takes a single string argument, which is the unique identifier for the feature and returns
  a FeatureResult object.
  <p>
  There are a few ordered steps to evaluate a feature
  <p>
- 1. If the key doesn't exist in context.features
+ 1. If the key doesn't exist in context.getFeatures()
   1.1 Return getFeatureResult(null, "unknownFeature")
  2. Loop through the feature rules (if any)
   2.1 If the rule has parentConditions (prerequisites) defined, loop through each one:
@@ -392,9 +392,9 @@ loadScripts(document, 'script');</script>
 </section>
 </li>
 <li>
-<section class="detail" id="run(growthbook.sdk.java.Experiment)">
+<section class="detail" id="run(growthbook.sdk.java.model.Experiment)">
 <h3>run</h3>
-<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="type-parameters">&lt;ValueType&gt;</span>&nbsp;<span class="return-type"><a href="ExperimentResult.html" title="class in growthbook.sdk.java">ExperimentResult</a>&lt;ValueType&gt;</span>&nbsp;<span class="element-name">run</span><wbr><span class="parameters">(<a href="Experiment.html" title="class in growthbook.sdk.java">Experiment</a>&lt;ValueType&gt;&nbsp;experiment)</span></div>
+<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="type-parameters">&lt;ValueType&gt;</span>&nbsp;<span class="return-type"><a href="model/ExperimentResult.html" title="class in growthbook.sdk.java.model">ExperimentResult</a>&lt;ValueType&gt;</span>&nbsp;<span class="element-name">run</span><wbr><span class="parameters">(<a href="model/Experiment.html" title="class in growthbook.sdk.java.model">Experiment</a>&lt;ValueType&gt;&nbsp;experiment)</span></div>
 <div class="block">The run method takes an Experiment object and returns an ExperimentResult.
  There are a bunch of ordered steps to run an experiment:
  1. If experiment.variations has fewer than 2 variations, return getExperimentResult(experiment)
@@ -462,7 +462,7 @@ loadScripts(document, 'script');</script>
  4) 0
  Everything else is considered "truthy", including empty arrays and objects.
  If the value is "truthy", then isOn() will return true and isOff() will return false.
- If the value is "falsy", then the opposite values will be returned.</div>
+ If the value is "false", then the opposite values will be returned.</div>
 <dl class="notes">
 <dt>Parameters:</dt>
 <dd><code>featureKey</code> - name of the feature</dd>
@@ -483,7 +483,7 @@ loadScripts(document, 'script');</script>
  4) 0
  Everything else is considered "truthy", including empty arrays and objects.
  If the value is "truthy", then isOn() will return true and isOff() will return false.
- If the value is "falsy", then the opposite values will be returned.</div>
+ If the value is "false", then the opposite values will be returned.</div>
 <dl class="notes">
 <dt>Parameters:</dt>
 <dd><code>featureKey</code> - name of the feature</dd>
@@ -637,9 +637,9 @@ loadScripts(document, 'script');</script>
 </section>
 </li>
 <li>
-<section class="detail" id="subscribe(growthbook.sdk.java.ExperimentRunCallback)">
+<section class="detail" id="subscribe(growthbook.sdk.java.callback.ExperimentRunCallback)">
 <h3>subscribe</h3>
-<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type">void</span>&nbsp;<span class="element-name">subscribe</span><wbr><span class="parameters">(<a href="ExperimentRunCallback.html" title="interface in growthbook.sdk.java">ExperimentRunCallback</a>&nbsp;callback)</span></div>
+<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type">void</span>&nbsp;<span class="element-name">subscribe</span><wbr><span class="parameters">(<a href="callback/ExperimentRunCallback.html" title="interface in growthbook.sdk.java.callback">ExperimentRunCallback</a>&nbsp;callback)</span></div>
 <div class="block">This method add new calback to list of ExperimentRunCallback</div>
 <dl class="notes">
 <dt>Parameters:</dt>

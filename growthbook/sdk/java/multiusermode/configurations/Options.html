@@ -104,7 +104,7 @@ loadScripts(document, 'script');</script>
 <div class="summary-table two-column-summary">
 <div class="table-header col-first">Constructor</div>
 <div class="table-header col-last">Description</div>
-<div class="col-constructor-name even-row-color"><code><a href="#%3Cinit%3E(java.lang.Boolean,java.lang.Boolean,java.lang.Boolean,java.lang.Boolean,java.lang.String,java.lang.String,java.lang.String,java.lang.String,java.util.List,growthbook.sdk.java.stickyBucketing.StickyBucketService,growthbook.sdk.java.multiusermode.usage.TrackingCallbackWithUser,growthbook.sdk.java.multiusermode.usage.FeatureUsageCallbackWithUser,growthbook.sdk.java.FeatureRefreshStrategy,growthbook.sdk.java.FeatureRefreshCallback,com.google.gson.JsonObject,java.util.Map,java.util.Map)" class="member-name-link">Options</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Boolean.html" title="class or interface in java.lang" class="external-link">Boolean</a>&nbsp;enabled,
+<div class="col-constructor-name even-row-color"><code><a href="#%3Cinit%3E(java.lang.Boolean,java.lang.Boolean,java.lang.Boolean,java.lang.Boolean,java.lang.String,java.lang.String,java.lang.String,java.lang.String,java.util.List,growthbook.sdk.java.stickyBucketing.StickyBucketService,growthbook.sdk.java.multiusermode.usage.TrackingCallbackWithUser,growthbook.sdk.java.multiusermode.usage.FeatureUsageCallbackWithUser,growthbook.sdk.java.repository.FeatureRefreshStrategy,growthbook.sdk.java.callback.FeatureRefreshCallback,com.google.gson.JsonObject,java.util.Map,java.util.Map)" class="member-name-link">Options</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Boolean.html" title="class or interface in java.lang" class="external-link">Boolean</a>&nbsp;enabled,
  <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Boolean.html" title="class or interface in java.lang" class="external-link">Boolean</a>&nbsp;isQaMode,
  <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Boolean.html" title="class or interface in java.lang" class="external-link">Boolean</a>&nbsp;isCacheDisabled,
  <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Boolean.html" title="class or interface in java.lang" class="external-link">Boolean</a>&nbsp;allowUrlOverrides,
@@ -116,8 +116,8 @@ loadScripts(document, 'script');</script>
  <a href="../../stickyBucketing/StickyBucketService.html" title="interface in growthbook.sdk.java.stickyBucketing">StickyBucketService</a>&nbsp;stickyBucketService,
  <a href="../usage/TrackingCallbackWithUser.html" title="interface in growthbook.sdk.java.multiusermode.usage">TrackingCallbackWithUser</a>&nbsp;trackingCallBackWithUser,
  <a href="../usage/FeatureUsageCallbackWithUser.html" title="interface in growthbook.sdk.java.multiusermode.usage">FeatureUsageCallbackWithUser</a>&nbsp;featureUsageCallbackWithUser,
- <a href="../../FeatureRefreshStrategy.html" title="enum class in growthbook.sdk.java">FeatureRefreshStrategy</a>&nbsp;refreshStrategy,
- <a href="../../FeatureRefreshCallback.html" title="interface in growthbook.sdk.java">FeatureRefreshCallback</a>&nbsp;featureRefreshCallback,
+ <a href="../../repository/FeatureRefreshStrategy.html" title="enum class in growthbook.sdk.java.repository">FeatureRefreshStrategy</a>&nbsp;refreshStrategy,
+ <a href="../../callback/FeatureRefreshCallback.html" title="interface in growthbook.sdk.java.callback">FeatureRefreshCallback</a>&nbsp;featureRefreshCallback,
  com.google.gson.JsonObject&nbsp;globalAttributes,
  <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/Map.html" title="class or interface in java.util" class="external-link">Map</a>&lt;<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>,<wbr><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html" title="class or interface in java.lang" class="external-link">Object</a>&gt;&nbsp;globalForcedFeatureValues,
  <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/Map.html" title="class or interface in java.util" class="external-link">Map</a>&lt;<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>,<wbr><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Integer.html" title="class or interface in java.lang" class="external-link">Integer</a>&gt;&nbsp;globalForcedVariationsMap)</code></div>
@@ -169,13 +169,13 @@ loadScripts(document, 'script');</script>
 <div class="block">Whether globally all experiments are enabled (default: true)
  Switch to globally disable all experiments.</div>
 </div>
-<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="../../FeatureRefreshCallback.html" title="interface in growthbook.sdk.java">FeatureRefreshCallback</a></code></div>
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="../../callback/FeatureRefreshCallback.html" title="interface in growthbook.sdk.java.callback">FeatureRefreshCallback</a></code></div>
 <div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#getFeatureRefreshCallback()" class="member-name-link">getFeatureRefreshCallback</a>()</code></div>
 <div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">&nbsp;</div>
 <div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="../usage/FeatureUsageCallbackWithUser.html" title="interface in growthbook.sdk.java.multiusermode.usage">FeatureUsageCallbackWithUser</a></code></div>
 <div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#getFeatureUsageCallbackWithUser()" class="member-name-link">getFeatureUsageCallbackWithUser</a>()</code></div>
 <div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
-<div class="block">A function that takes <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link"><code>String</code></a> and <a href="../../FeatureResult.html" title="class in growthbook.sdk.java"><code>FeatureResult</code></a> as arguments.</div>
+<div class="block">A function that takes <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link"><code>String</code></a> and <a href="../../model/FeatureResult.html" title="class in growthbook.sdk.java.model"><code>FeatureResult</code></a> as arguments.</div>
 </div>
 <div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>com.google.gson.JsonObject</code></div>
 <div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#getGlobalAttributes()" class="member-name-link">getGlobalAttributes</a>()</code></div>
@@ -200,10 +200,10 @@ loadScripts(document, 'script');</script>
 <div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">If true, random assignment is disabled and only explicitly forced variations are used.</div>
 </div>
-<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="../../FeatureRefreshStrategy.html" title="enum class in growthbook.sdk.java">FeatureRefreshStrategy</a></code></div>
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="../../repository/FeatureRefreshStrategy.html" title="enum class in growthbook.sdk.java.repository">FeatureRefreshStrategy</a></code></div>
 <div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#getRefreshingStrategy()" class="member-name-link">getRefreshingStrategy</a>()</code></div>
 <div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">&nbsp;</div>
-<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="../../FeatureRefreshStrategy.html" title="enum class in growthbook.sdk.java">FeatureRefreshStrategy</a></code></div>
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="../../repository/FeatureRefreshStrategy.html" title="enum class in growthbook.sdk.java.repository">FeatureRefreshStrategy</a></code></div>
 <div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#getRefreshStrategy()" class="member-name-link">getRefreshStrategy</a>()</code></div>
 <div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">Strategy for building url</div>
@@ -219,7 +219,7 @@ loadScripts(document, 'script');</script>
 <div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="../usage/TrackingCallbackWithUser.html" title="interface in growthbook.sdk.java.multiusermode.usage">TrackingCallbackWithUser</a></code></div>
 <div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#getTrackingCallBackWithUser()" class="member-name-link">getTrackingCallBackWithUser</a>()</code></div>
 <div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
-<div class="block">A function that takes <a href="../../Experiment.html" title="class in growthbook.sdk.java"><code>Experiment</code></a> and <a href="../../ExperimentResult.html" title="class in growthbook.sdk.java"><code>ExperimentResult</code></a> as arguments.</div>
+<div class="block">A function that takes <a href="../../model/Experiment.html" title="class in growthbook.sdk.java.model"><code>Experiment</code></a> and <a href="../../model/ExperimentResult.html" title="class in growthbook.sdk.java.model"><code>ExperimentResult</code></a> as arguments.</div>
 </div>
 <div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a></code></div>
 <div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#getUrl()" class="member-name-link">getUrl</a>()</code></div>
@@ -255,12 +255,12 @@ loadScripts(document, 'script');</script>
  Switch to globally disable all experiments.</div>
 </div>
 <div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>void</code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#setFeatureRefreshCallback(growthbook.sdk.java.FeatureRefreshCallback)" class="member-name-link">setFeatureRefreshCallback</a><wbr>(<a href="../../FeatureRefreshCallback.html" title="interface in growthbook.sdk.java">FeatureRefreshCallback</a>&nbsp;featureRefreshCallback)</code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#setFeatureRefreshCallback(growthbook.sdk.java.callback.FeatureRefreshCallback)" class="member-name-link">setFeatureRefreshCallback</a><wbr>(<a href="../../callback/FeatureRefreshCallback.html" title="interface in growthbook.sdk.java.callback">FeatureRefreshCallback</a>&nbsp;featureRefreshCallback)</code></div>
 <div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">&nbsp;</div>
 <div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>void</code></div>
 <div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#setFeatureUsageCallbackWithUser(growthbook.sdk.java.multiusermode.usage.FeatureUsageCallbackWithUser)" class="member-name-link">setFeatureUsageCallbackWithUser</a><wbr>(<a href="../usage/FeatureUsageCallbackWithUser.html" title="interface in growthbook.sdk.java.multiusermode.usage">FeatureUsageCallbackWithUser</a>&nbsp;featureUsageCallbackWithUser)</code></div>
 <div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
-<div class="block">A function that takes <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link"><code>String</code></a> and <a href="../../FeatureResult.html" title="class in growthbook.sdk.java"><code>FeatureResult</code></a> as arguments.</div>
+<div class="block">A function that takes <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link"><code>String</code></a> and <a href="../../model/FeatureResult.html" title="class in growthbook.sdk.java.model"><code>FeatureResult</code></a> as arguments.</div>
 </div>
 <div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>void</code></div>
 <div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#setGlobalAttributes(java.lang.String)" class="member-name-link">setGlobalAttributes</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;attributesJson)</code></div>
@@ -287,7 +287,7 @@ loadScripts(document, 'script');</script>
 <div class="block">If true, random assignment is disabled and only explicitly forced variations are used.</div>
 </div>
 <div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>void</code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#setRefreshStrategy(growthbook.sdk.java.FeatureRefreshStrategy)" class="member-name-link">setRefreshStrategy</a><wbr>(<a href="../../FeatureRefreshStrategy.html" title="enum class in growthbook.sdk.java">FeatureRefreshStrategy</a>&nbsp;refreshStrategy)</code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#setRefreshStrategy(growthbook.sdk.java.repository.FeatureRefreshStrategy)" class="member-name-link">setRefreshStrategy</a><wbr>(<a href="../../repository/FeatureRefreshStrategy.html" title="enum class in growthbook.sdk.java.repository">FeatureRefreshStrategy</a>&nbsp;refreshStrategy)</code></div>
 <div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">Strategy for building url</div>
 </div>
@@ -304,7 +304,7 @@ loadScripts(document, 'script');</script>
 <div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>void</code></div>
 <div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#setTrackingCallBackWithUser(growthbook.sdk.java.multiusermode.usage.TrackingCallbackWithUser)" class="member-name-link">setTrackingCallBackWithUser</a><wbr>(<a href="../usage/TrackingCallbackWithUser.html" title="interface in growthbook.sdk.java.multiusermode.usage">TrackingCallbackWithUser</a>&nbsp;trackingCallBackWithUser)</code></div>
 <div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
-<div class="block">A function that takes <a href="../../Experiment.html" title="class in growthbook.sdk.java"><code>Experiment</code></a> and <a href="../../ExperimentResult.html" title="class in growthbook.sdk.java"><code>ExperimentResult</code></a> as arguments.</div>
+<div class="block">A function that takes <a href="../../model/Experiment.html" title="class in growthbook.sdk.java.model"><code>Experiment</code></a> and <a href="../../model/ExperimentResult.html" title="class in growthbook.sdk.java.model"><code>ExperimentResult</code></a> as arguments.</div>
 </div>
 <div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>void</code></div>
 <div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#setUrl(java.lang.String)" class="member-name-link">setUrl</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;url)</code></div>
@@ -330,7 +330,7 @@ loadScripts(document, 'script');</script>
 <h2>Constructor Details</h2>
 <ul class="member-list">
 <li>
-<section class="detail" id="&lt;init&gt;(java.lang.Boolean,java.lang.Boolean,java.lang.Boolean,java.lang.Boolean,java.lang.String,java.lang.String,java.lang.String,java.lang.String,java.util.List,growthbook.sdk.java.stickyBucketing.StickyBucketService,growthbook.sdk.java.multiusermode.usage.TrackingCallbackWithUser,growthbook.sdk.java.multiusermode.usage.FeatureUsageCallbackWithUser,growthbook.sdk.java.FeatureRefreshStrategy,growthbook.sdk.java.FeatureRefreshCallback,com.google.gson.JsonObject,java.util.Map,java.util.Map)">
+<section class="detail" id="&lt;init&gt;(java.lang.Boolean,java.lang.Boolean,java.lang.Boolean,java.lang.Boolean,java.lang.String,java.lang.String,java.lang.String,java.lang.String,java.util.List,growthbook.sdk.java.stickyBucketing.StickyBucketService,growthbook.sdk.java.multiusermode.usage.TrackingCallbackWithUser,growthbook.sdk.java.multiusermode.usage.FeatureUsageCallbackWithUser,growthbook.sdk.java.repository.FeatureRefreshStrategy,growthbook.sdk.java.callback.FeatureRefreshCallback,com.google.gson.JsonObject,java.util.Map,java.util.Map)">
 <h3>Options</h3>
 <div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="element-name">Options</span><wbr><span class="parameters">(@Nullable
  <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Boolean.html" title="class or interface in java.lang" class="external-link">Boolean</a>&nbsp;enabled,
@@ -355,9 +355,9 @@ loadScripts(document, 'script');</script>
  @Nullable
  <a href="../usage/FeatureUsageCallbackWithUser.html" title="interface in growthbook.sdk.java.multiusermode.usage">FeatureUsageCallbackWithUser</a>&nbsp;featureUsageCallbackWithUser,
  @Nullable
- <a href="../../FeatureRefreshStrategy.html" title="enum class in growthbook.sdk.java">FeatureRefreshStrategy</a>&nbsp;refreshStrategy,
+ <a href="../../repository/FeatureRefreshStrategy.html" title="enum class in growthbook.sdk.java.repository">FeatureRefreshStrategy</a>&nbsp;refreshStrategy,
  @Nullable
- <a href="../../FeatureRefreshCallback.html" title="interface in growthbook.sdk.java">FeatureRefreshCallback</a>&nbsp;featureRefreshCallback,
+ <a href="../../callback/FeatureRefreshCallback.html" title="interface in growthbook.sdk.java.callback">FeatureRefreshCallback</a>&nbsp;featureRefreshCallback,
  @Nullable
  com.google.gson.JsonObject&nbsp;globalAttributes,
  @Nullable
@@ -377,7 +377,7 @@ loadScripts(document, 'script');</script>
 <li>
 <section class="detail" id="getRefreshingStrategy()">
 <h3>getRefreshingStrategy</h3>
-<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="../../FeatureRefreshStrategy.html" title="enum class in growthbook.sdk.java">FeatureRefreshStrategy</a></span>&nbsp;<span class="element-name">getRefreshingStrategy</span>()</div>
+<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="../../repository/FeatureRefreshStrategy.html" title="enum class in growthbook.sdk.java.repository">FeatureRefreshStrategy</a></span>&nbsp;<span class="element-name">getRefreshingStrategy</span>()</div>
 </section>
 </li>
 <li>
@@ -477,7 +477,7 @@ loadScripts(document, 'script');</script>
 <h3>getTrackingCallBackWithUser</h3>
 <div class="member-signature"><span class="annotations">@Nullable
 </span><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="../usage/TrackingCallbackWithUser.html" title="interface in growthbook.sdk.java.multiusermode.usage">TrackingCallbackWithUser</a></span>&nbsp;<span class="element-name">getTrackingCallBackWithUser</span>()</div>
-<div class="block">A function that takes <a href="../../Experiment.html" title="class in growthbook.sdk.java"><code>Experiment</code></a> and <a href="../../ExperimentResult.html" title="class in growthbook.sdk.java"><code>ExperimentResult</code></a> as arguments.</div>
+<div class="block">A function that takes <a href="../../model/Experiment.html" title="class in growthbook.sdk.java.model"><code>Experiment</code></a> and <a href="../../model/ExperimentResult.html" title="class in growthbook.sdk.java.model"><code>ExperimentResult</code></a> as arguments.</div>
 </section>
 </li>
 <li>
@@ -485,7 +485,7 @@ loadScripts(document, 'script');</script>
 <h3>getFeatureUsageCallbackWithUser</h3>
 <div class="member-signature"><span class="annotations">@Nullable
 </span><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="../usage/FeatureUsageCallbackWithUser.html" title="interface in growthbook.sdk.java.multiusermode.usage">FeatureUsageCallbackWithUser</a></span>&nbsp;<span class="element-name">getFeatureUsageCallbackWithUser</span>()</div>
-<div class="block">A function that takes <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link"><code>String</code></a> and <a href="../../FeatureResult.html" title="class in growthbook.sdk.java"><code>FeatureResult</code></a> as arguments.
+<div class="block">A function that takes <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link"><code>String</code></a> and <a href="../../model/FeatureResult.html" title="class in growthbook.sdk.java.model"><code>FeatureResult</code></a> as arguments.
  A callback that will be invoked every time a feature is viewed. Listen for feature usage events</div>
 </section>
 </li>
@@ -493,7 +493,7 @@ loadScripts(document, 'script');</script>
 <section class="detail" id="getRefreshStrategy()">
 <h3>getRefreshStrategy</h3>
 <div class="member-signature"><span class="annotations">@Nullable
-</span><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="../../FeatureRefreshStrategy.html" title="enum class in growthbook.sdk.java">FeatureRefreshStrategy</a></span>&nbsp;<span class="element-name">getRefreshStrategy</span>()</div>
+</span><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="../../repository/FeatureRefreshStrategy.html" title="enum class in growthbook.sdk.java.repository">FeatureRefreshStrategy</a></span>&nbsp;<span class="element-name">getRefreshStrategy</span>()</div>
 <div class="block">Strategy for building url</div>
 </section>
 </li>
@@ -533,7 +533,7 @@ loadScripts(document, 'script');</script>
 <section class="detail" id="getFeatureRefreshCallback()">
 <h3>getFeatureRefreshCallback</h3>
 <div class="member-signature"><span class="annotations">@Nullable
-</span><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="../../FeatureRefreshCallback.html" title="interface in growthbook.sdk.java">FeatureRefreshCallback</a></span>&nbsp;<span class="element-name">getFeatureRefreshCallback</span>()</div>
+</span><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="../../callback/FeatureRefreshCallback.html" title="interface in growthbook.sdk.java.callback">FeatureRefreshCallback</a></span>&nbsp;<span class="element-name">getFeatureRefreshCallback</span>()</div>
 </section>
 </li>
 <li>
@@ -615,7 +615,7 @@ loadScripts(document, 'script');</script>
 <h3>setTrackingCallBackWithUser</h3>
 <div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type">void</span>&nbsp;<span class="element-name">setTrackingCallBackWithUser</span><wbr><span class="parameters">(@Nullable
  <a href="../usage/TrackingCallbackWithUser.html" title="interface in growthbook.sdk.java.multiusermode.usage">TrackingCallbackWithUser</a>&nbsp;trackingCallBackWithUser)</span></div>
-<div class="block">A function that takes <a href="../../Experiment.html" title="class in growthbook.sdk.java"><code>Experiment</code></a> and <a href="../../ExperimentResult.html" title="class in growthbook.sdk.java"><code>ExperimentResult</code></a> as arguments.</div>
+<div class="block">A function that takes <a href="../../model/Experiment.html" title="class in growthbook.sdk.java.model"><code>Experiment</code></a> and <a href="../../model/ExperimentResult.html" title="class in growthbook.sdk.java.model"><code>ExperimentResult</code></a> as arguments.</div>
 </section>
 </li>
 <li>
@@ -623,15 +623,15 @@ loadScripts(document, 'script');</script>
 <h3>setFeatureUsageCallbackWithUser</h3>
 <div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type">void</span>&nbsp;<span class="element-name">setFeatureUsageCallbackWithUser</span><wbr><span class="parameters">(@Nullable
  <a href="../usage/FeatureUsageCallbackWithUser.html" title="interface in growthbook.sdk.java.multiusermode.usage">FeatureUsageCallbackWithUser</a>&nbsp;featureUsageCallbackWithUser)</span></div>
-<div class="block">A function that takes <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link"><code>String</code></a> and <a href="../../FeatureResult.html" title="class in growthbook.sdk.java"><code>FeatureResult</code></a> as arguments.
+<div class="block">A function that takes <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link"><code>String</code></a> and <a href="../../model/FeatureResult.html" title="class in growthbook.sdk.java.model"><code>FeatureResult</code></a> as arguments.
  A callback that will be invoked every time a feature is viewed. Listen for feature usage events</div>
 </section>
 </li>
 <li>
-<section class="detail" id="setRefreshStrategy(growthbook.sdk.java.FeatureRefreshStrategy)">
+<section class="detail" id="setRefreshStrategy(growthbook.sdk.java.repository.FeatureRefreshStrategy)">
 <h3>setRefreshStrategy</h3>
 <div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type">void</span>&nbsp;<span class="element-name">setRefreshStrategy</span><wbr><span class="parameters">(@Nullable
- <a href="../../FeatureRefreshStrategy.html" title="enum class in growthbook.sdk.java">FeatureRefreshStrategy</a>&nbsp;refreshStrategy)</span></div>
+ <a href="../../repository/FeatureRefreshStrategy.html" title="enum class in growthbook.sdk.java.repository">FeatureRefreshStrategy</a>&nbsp;refreshStrategy)</span></div>
 <div class="block">Strategy for building url</div>
 </section>
 </li>
@@ -660,10 +660,10 @@ loadScripts(document, 'script');</script>
 </section>
 </li>
 <li>
-<section class="detail" id="setFeatureRefreshCallback(growthbook.sdk.java.FeatureRefreshCallback)">
+<section class="detail" id="setFeatureRefreshCallback(growthbook.sdk.java.callback.FeatureRefreshCallback)">
 <h3>setFeatureRefreshCallback</h3>
 <div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type">void</span>&nbsp;<span class="element-name">setFeatureRefreshCallback</span><wbr><span class="parameters">(@Nullable
- <a href="../../FeatureRefreshCallback.html" title="interface in growthbook.sdk.java">FeatureRefreshCallback</a>&nbsp;featureRefreshCallback)</span></div>
+ <a href="../../callback/FeatureRefreshCallback.html" title="interface in growthbook.sdk.java.callback">FeatureRefreshCallback</a>&nbsp;featureRefreshCallback)</span></div>
 </section>
 </li>
 <li>
