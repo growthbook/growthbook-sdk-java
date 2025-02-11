@@ -11,6 +11,10 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import growthbook.sdk.java.callback.FeatureRefreshCallback;
+import growthbook.sdk.java.exception.FeatureFetchException;
+import growthbook.sdk.java.repository.FeatureRefreshStrategy;
+import growthbook.sdk.java.repository.NativeJavaGbFeatureRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
@@ -107,17 +111,15 @@ class NativeJavaGbFeatureRepositoryTest {
 
     @Test()
     void cannotBeBuild_withoutClientKey() {
-        assertThrows(IllegalArgumentException.class, () -> {
-            new NativeJavaGbFeatureRepository(
-                    API_HOST,
-                    null,
-                    null,
-                    null,
-                    null,
-                    null,
-                    null
-            );
-        });
+        assertThrows(IllegalArgumentException.class, () -> new NativeJavaGbFeatureRepository(
+                API_HOST,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null
+        ));
     }
 
     @Test

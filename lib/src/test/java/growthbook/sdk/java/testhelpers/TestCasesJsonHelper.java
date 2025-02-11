@@ -4,6 +4,8 @@ import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import lombok.Getter;
+
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.nio.file.Path;
@@ -78,11 +80,8 @@ public class TestCasesJsonHelper implements ITestCasesJsonHelper {
 
     private final JsonObject testCases;
 
+    @Getter
     private final String demoFeaturesJson;
-
-    public String getDemoFeaturesJson() {
-        return this.demoFeaturesJson;
-    }
 
     private static TestCasesJsonHelper instance = null;
 

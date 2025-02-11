@@ -2,6 +2,8 @@ package growthbook.sdk.java;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import growthbook.sdk.java.model.BucketRange;
+import growthbook.sdk.java.model.Filter;
 import org.junit.jupiter.api.Test;
 import java.util.ArrayList;
 

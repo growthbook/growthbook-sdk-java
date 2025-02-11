@@ -7,6 +7,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import growthbook.sdk.java.testhelpers.TestCasesJsonHelper;
+import growthbook.sdk.java.util.DecryptionUtils;
 import org.junit.jupiter.api.Test;
 
 class DecryptionUtilsTest {
@@ -53,9 +54,7 @@ class DecryptionUtilsTest {
         String payload = "foobar";
         String encryptionKey = "BhB1wORFmZLTDjbvstvS8w==";
 
-        Exception exception = assertThrows(DecryptionUtils.DecryptionException.class, () -> {
-            DecryptionUtils.decrypt(payload, encryptionKey);
-        });
+        Exception exception = assertThrows(DecryptionUtils.DecryptionException.class, () -> DecryptionUtils.decrypt(payload, encryptionKey));
 
         assertTrue(exception.getMessage().contains("Invalid payload"));
     }
@@ -65,9 +64,7 @@ class DecryptionUtilsTest {
         String payload = "foobar.bar";
         String encryptionKey = "BhB1wORFmZLTDjbvstvS8w==";
 
-        Exception exception = assertThrows(DecryptionUtils.DecryptionException.class, () -> {
-            DecryptionUtils.decrypt(payload, encryptionKey);
-        });
+        Exception exception = assertThrows(DecryptionUtils.DecryptionException.class, () -> DecryptionUtils.decrypt(payload, encryptionKey));
 
         assertTrue(exception.getMessage().contains("Invalid payload"));
     }
@@ -77,9 +74,7 @@ class DecryptionUtilsTest {
         String payload = "7rvPA94JEsqRo9yPZsdsXg==.bJ8vtYvX+ur3cEUFVkYo1OyWb98oLnMlpeoO0Hs4YPc0EVb7oKX4KNz+Yt6GUMBsieXqtL7oaYzX+kMayZEtV+3bhyDYnS9QBrvalnfxbLExjtnsy8g0pPQHU/P/DPIzO0F+pphcahRfi+3AMTnIreqvkqrcX+MyOwHN56lqEs23Vp4Rsq2qDow/LZmn5kpwMNhMY0DBq7jC+lh2Oyly0g==";
         String encryptionKey = "foobar";
 
-        Exception exception = assertThrows(DecryptionUtils.DecryptionException.class, () -> {
-            DecryptionUtils.decrypt(payload, encryptionKey);
-        });
+        Exception exception = assertThrows(DecryptionUtils.DecryptionException.class, () -> DecryptionUtils.decrypt(payload, encryptionKey));
 
         assertTrue(exception.getMessage().contains("Invalid encryption key"));
     }
@@ -99,9 +94,7 @@ class DecryptionUtilsTest {
             JsonElement expectedElem = test.get(3);
             if (expectedElem.isJsonNull()) {
                 // Null means no features can be parsed
-                Exception exception = assertThrows(DecryptionUtils.DecryptionException.class, () -> {
-                    DecryptionUtils.decrypt(payload, key);
-                });
+                Exception exception = assertThrows(DecryptionUtils.DecryptionException.class, () -> DecryptionUtils.decrypt(payload, key));
 //                System.out.printf("\n\nException thrown: %s", exception.getMessage());
             } else {
                 String expected = test.get(3).getAsString();

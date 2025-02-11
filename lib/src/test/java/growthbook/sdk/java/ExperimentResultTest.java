@@ -5,6 +5,8 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 
 import com.google.gson.reflect.TypeToken;
+import growthbook.sdk.java.model.ExperimentResult;
+import growthbook.sdk.java.util.GrowthBookJsonUtils;
 import org.junit.jupiter.api.Test;
 import java.lang.reflect.Type;
 
@@ -52,7 +54,7 @@ class ExperimentResultTest {
 
     @Test
     void test_canBeConstructed() {
-        ExperimentResult<String> subject = new ExperimentResult<String>(
+        ExperimentResult<String> subject = new ExperimentResult<>(
                 "c",
                 2,
                 true,

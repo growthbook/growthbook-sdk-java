@@ -1,7 +1,7 @@
 package growthbook.sdk.java.multiusermode.usage;
 
-import growthbook.sdk.java.FeatureResult;
-import growthbook.sdk.java.FeatureUsageCallback;
+import growthbook.sdk.java.model.FeatureResult;
+import growthbook.sdk.java.callback.FeatureUsageCallback;
 import growthbook.sdk.java.multiusermode.configurations.UserContext;
 
 // Use Wrapper adapter design pattern - to allow an existing interface to function as if it was a new interface

@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import growthbook.sdk.java.model.Namespace;
 import org.junit.jupiter.api.Test;
 
 class NamespaceTest {

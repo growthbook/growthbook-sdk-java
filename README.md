@@ -131,7 +131,7 @@ The method returns a FeatureResult object, which contains the evaluated result o
 public <ValueType> FeatureResult<ValueType> evalFeature(String key, Class<ValueType> valueTypeClass, UserContext userContext);
 ```
 
-*  `getFeatureValue()` the same purpose as in `evalFeature()` but have ability to provide default value)
+*  `getFeatureValue()` the same purpose as in `evalFeature()`, but have ability to provide default value
 ```java
 public <ValueType> ValueType getFeatureValue(String featureKey, ValueType defaultValue, Class<ValueType> gsonDeserializableClass, UserContext userContext);
 ```
@@ -270,7 +270,7 @@ public class InMemoryStickyBucketServiceImpl implements StickyBucketService {
 
 ### Releasing a new version
 
-For now we are manually managing the version number.
+For now, we are manually managing the version number.
 
 When making a new release, ensure the file `growthbook/sdk/java/Version.java` has the version matching the tag and release. For example, if you are releasing version `0.3.0`, the following criteria should be met:
 

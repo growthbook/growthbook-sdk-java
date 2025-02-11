@@ -2,7 +2,7 @@ package growthbook.sdk.java.multiusermode.configurations;
 
 import com.google.gson.JsonObject;
 import growthbook.sdk.java.multiusermode.util.TransformationUtil;
-import growthbook.sdk.java.stickyBucketing.StickyAssignmentsDocument;
+import growthbook.sdk.java.model.StickyAssignmentsDocument;
 import lombok.Builder;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;

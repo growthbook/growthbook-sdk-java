@@ -14,6 +14,12 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.google.gson.JsonObject;
+import growthbook.sdk.java.callback.FeatureRefreshCallback;
+import growthbook.sdk.java.exception.FeatureFetchException;
+import growthbook.sdk.java.model.RequestBodyForRemoteEval;
+import growthbook.sdk.java.repository.FeatureRefreshStrategy;
+import growthbook.sdk.java.repository.GBFeaturesRepository;
+import growthbook.sdk.java.sandbox.CachingManager;
 import okhttp3.Call;
 import okhttp3.Callback;
 import okhttp3.MediaType;
@@ -413,7 +419,7 @@ class GBFeaturesRepositoryTest {
     }
 
     @Test()
-    void testOnInitializeHttpError() throws FeatureFetchException, IOException {
+    void testOnInitializeHttpError() throws IOException {
         OkHttpClient mockOkHttpClient = mock(OkHttpClient.class);
 
         String errorResponseJson = "{\"status\": 400, \"error\": \"Invalid API Key\"}";
@@ -444,7 +450,7 @@ class GBFeaturesRepositoryTest {
 
         assertThrows(
                 FeatureFetchException.class,
-                () -> subject.initialize(),
+                subject::initialize,
                 "HTTP_RESPONSE_ERROR : responded with status 400"
         );
 

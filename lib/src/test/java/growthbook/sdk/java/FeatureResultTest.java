@@ -6,6 +6,10 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 
+import growthbook.sdk.java.model.FeatureResult;
+import growthbook.sdk.java.model.FeatureResultSource;
+import growthbook.sdk.java.model.GBContext;
+import growthbook.sdk.java.util.GrowthBookJsonUtils;
 import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
@@ -23,7 +27,7 @@ class FeatureResultTest {
                 "my-rule-id"
         );
 
-        assertNull(subject.experiment);
+        assertNull(subject.getExperiment());
         assertEquals(100, subject.getValue());
     }
 
@@ -38,7 +42,7 @@ class FeatureResultTest {
                 .source(FeatureResultSource.EXPERIMENT)
                 .build();
 
-        assertNull(subject.experiment);
+        assertNull(subject.getExperiment());
         assertEquals("hello", subject.getValue());
     }
 

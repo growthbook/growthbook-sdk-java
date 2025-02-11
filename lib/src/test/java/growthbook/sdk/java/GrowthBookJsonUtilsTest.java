@@ -4,6 +4,10 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonElement;
+import growthbook.sdk.java.model.BucketRange;
+import growthbook.sdk.java.model.DataType;
+import growthbook.sdk.java.model.Namespace;
+import growthbook.sdk.java.util.GrowthBookJsonUtils;
 import org.junit.jupiter.api.Test;
 
 class GrowthBookJsonUtilsTest {

@@ -6,6 +6,9 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import growthbook.sdk.java.exception.FeatureFetchException;
+import growthbook.sdk.java.repository.FeatureRefreshStrategy;
+import growthbook.sdk.java.repository.GBFeaturesRepository;
 import okhttp3.Call;
 import okhttp3.MediaType;
 import okhttp3.OkHttpClient;
@@ -51,7 +54,7 @@ public class GBFeaturesRepositoryRefreshingTest {
         );
         subject.initialize();
 
-        // Advance time 3 seconds. We are still within the cache TTL so it should not trigger a refresh.
+        // Advance time 3 seconds. We are still within the cache TTL, so it should not trigger a refresh.
         sleepSeconds(3);
         subject.getFeaturesJson();
 
@@ -89,7 +92,7 @@ public class GBFeaturesRepositoryRefreshingTest {
         );
         subject.initialize();
 
-        // Advance time 2 seconds. We are still within the cache TTL so it should not trigger a refresh.
+        // Advance time 2 seconds. We are still within the cache TTL, so it should not trigger a refresh.
         sleepSeconds(2);
         subject.getFeaturesJson();
 
@@ -125,7 +128,7 @@ public class GBFeaturesRepositoryRefreshingTest {
         );
         subject.initialize();
 
-        // Advance time 3 seconds. We are still within the cache TTL so it should not trigger a refresh.
+        // Advance time 3 seconds. We are still within the cache TTL, so it should not trigger a refresh.
         sleepSeconds(3);
         subject.getFeaturesJson();
 

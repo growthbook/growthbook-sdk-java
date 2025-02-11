@@ -8,13 +8,17 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import growthbook.sdk.java.evaluators.ConditionEvaluator;
 import growthbook.sdk.java.testhelpers.TestCasesJsonHelper;
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
+
+import growthbook.sdk.java.util.GrowthBookJsonUtils;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import java.util.ArrayList;
+import java.util.Objects;
 
 class ConditionEvaluatorTest {
 
@@ -109,8 +113,8 @@ class ConditionEvaluatorTest {
         JsonElement attributes = GrowthBookJsonUtils.getInstance().gson
                 .fromJson("{ \"name\": \"sarah\", \"job\": { \"title\": \"developer\" } }", JsonElement.class);
 
-        assertEquals("sarah", ((JsonElement) evaluator.getPath(attributes, "name")).getAsString());
-        assertEquals("developer", ((JsonElement) evaluator.getPath(attributes, "job.title")).getAsString());
+        assertEquals("sarah", ((JsonElement) Objects.requireNonNull(evaluator.getPath(attributes, "name"))).getAsString());
+        assertEquals("developer", ((JsonElement) Objects.requireNonNull(evaluator.getPath(attributes, "job.title"))).getAsString());
         assertNull(evaluator.getPath(attributes, "job.company"));
     }
 

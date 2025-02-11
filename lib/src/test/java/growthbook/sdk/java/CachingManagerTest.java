@@ -6,6 +6,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
+import growthbook.sdk.java.sandbox.CachingManager;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -55,9 +56,7 @@ class CachingManagerTest {
             fail("Creating test file was not successful.");
         }
 
-        RuntimeException thrown = assertThrows(RuntimeException.class, () -> {
-            cachingManager.saveContent(fileName, "This should fail");
-        });
+        RuntimeException thrown = assertThrows(RuntimeException.class, () -> cachingManager.saveContent(fileName, "This should fail"));
 
         assertInstanceOf(IOException.class, thrown.getCause());
     }

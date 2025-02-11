@@ -2,6 +2,7 @@ package growthbook.sdk.java;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import growthbook.sdk.java.model.VariationMeta;
 import org.junit.jupiter.api.Test;
 
 class VariationMetaTest {
