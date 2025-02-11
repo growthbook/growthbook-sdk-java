@@ -6,6 +6,8 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.annotations.SerializedName;
 import com.google.gson.reflect.TypeToken;
+
+import growthbook.sdk.java.util.GrowthBookJsonUtils;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -192,22 +194,20 @@ public class FeatureRule<ValueType> implements JsonDeserializer<FeatureRule<Valu
 
         if (jsonObject.has("force")) {
             JsonElement forceElement = jsonObject.get("force");
-            if (!forceElement.isJsonNull()) {
-                ValueType forceValue = context.deserialize(forceElement, new TypeToken<ValueType>() {}.getType());
-                builder.force(new OptionalField<>(true, forceValue));
-            } else {
-                builder.force(new OptionalField<>(true, null));
-            }
+            ValueType unwrap = (ValueType) GrowthBookJsonUtils.unwrap(forceElement);
+            builder.force(new OptionalField<>(true, unwrap));
         } else {
             builder.force(new OptionalField<>(false, null));
         }
 
         if (jsonObject.has("variations")) {
-            builder.variations(context.deserialize(jsonObject.get("variations"), new TypeToken<ArrayList<ValueType>>() {}.getType()));
+            builder.variations(context.deserialize(jsonObject.get("variations"), new TypeToken<ArrayList<ValueType>>() {
+            }.getType()));
         }
 
         if (jsonObject.has("weights")) {
-            builder.weights(context.deserialize(jsonObject.get("weights"), new TypeToken<ArrayList<Float>>() {}.getType()));
+            builder.weights(context.deserialize(jsonObject.get("weights"), new TypeToken<ArrayList<Float>>() {
+            }.getType()));
         }
 
         builder.namespace(jsonObject.has("namespace") ? context.deserialize(jsonObject.get("namespace"), Namespace.class) : null);
@@ -215,22 +215,26 @@ public class FeatureRule<ValueType> implements JsonDeserializer<FeatureRule<Valu
         builder.condition(jsonObject.has("condition") ? context.deserialize(jsonObject.get("condition"), JsonObject.class) : null);
 
         if (jsonObject.has("parentConditions")) {
-            builder.parentConditions(context.deserialize(jsonObject.get("parentConditions"), new TypeToken<ArrayList<ParentCondition>>() {}.getType()));
+            builder.parentConditions(context.deserialize(jsonObject.get("parentConditions"), new TypeToken<ArrayList<ParentCondition>>() {
+            }.getType()));
         }
 
         builder.hashVersion(jsonObject.has("hashVersion") ? context.deserialize(jsonObject.get("hashVersion"), Integer.class) : null);
         builder.range(jsonObject.has("range") ? context.deserialize(jsonObject.get("range"), BucketRange.class) : null);
 
         if (jsonObject.has("ranges")) {
-            builder.ranges(context.deserialize(jsonObject.get("ranges"), new TypeToken<ArrayList<BucketRange>>() {}.getType()));
+            builder.ranges(context.deserialize(jsonObject.get("ranges"), new TypeToken<ArrayList<BucketRange>>() {
+            }.getType()));
         }
 
         if (jsonObject.has("meta")) {
-            builder.meta(context.deserialize(jsonObject.get("meta"), new TypeToken<ArrayList<VariationMeta>>() {}.getType()));
+            builder.meta(context.deserialize(jsonObject.get("meta"), new TypeToken<ArrayList<VariationMeta>>() {
+            }.getType()));
         }
 
         if (jsonObject.has("filters")) {
-            builder.filters(context.deserialize(jsonObject.get("filters"), new TypeToken<ArrayList<Filter>>() {}.getType()));
+            builder.filters(context.deserialize(jsonObject.get("filters"), new TypeToken<ArrayList<Filter>>() {
+            }.getType()));
         }
 
         builder.seed(jsonObject.has("seed") ? context.deserialize(jsonObject.get("seed"), String.class) : null);
@@ -242,7 +246,8 @@ public class FeatureRule<ValueType> implements JsonDeserializer<FeatureRule<Valu
         builder.minBucketVersion(jsonObject.has("minBucketVersion") ? context.deserialize(jsonObject.get("minBucketVersion"), Integer.class) : null);
 
         if (jsonObject.has("tracks")) {
-            builder.tracks(context.deserialize(jsonObject.get("tracks"), new TypeToken<ArrayList<TrackData<ValueType>>>() {}.getType()));
+            builder.tracks(context.deserialize(jsonObject.get("tracks"), new TypeToken<ArrayList<TrackData<ValueType>>>() {
+            }.getType()));
         }
 
         return builder.build();
