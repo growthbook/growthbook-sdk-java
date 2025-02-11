@@ -255,7 +255,7 @@ public class InMemoryStickyBucketServiceImpl implements StickyBucketService {
 }
 ```
 ## Changelog
-- **v0.0.92** 2024-02-DD
+- **v0.0.92** 2024-02-03
   - Provide new way of initialization SDK through Options and GrowthBookClient
   - Add ability to maintenance of remote evaluation feature
   - Add ability to cache data from HTTP response to the file
