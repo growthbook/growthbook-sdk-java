@@ -38,7 +38,7 @@ import java.util.ArrayList;
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
-public class FeatureRule<ValueType> extends SuperTypeToken<ValueType> implements JsonDeserializer<FeatureRule<ValueType>>{
+public class FeatureRule<ValueType> extends SuperTypeToken<ValueType> implements JsonDeserializer<FeatureRule<ValueType>> {
     /**
      * Unique feature rule id
      */
@@ -251,7 +251,8 @@ public class FeatureRule<ValueType> extends SuperTypeToken<ValueType> implements
         builder.minBucketVersion(jsonObject.has("minBucketVersion") ? context.deserialize(jsonObject.get("minBucketVersion"), Integer.class) : null);
 
         if (jsonObject.has("tracks")) {
-            builder.tracks(context.deserialize(jsonObject.get("tracks"), TypeToken.getParameterized(ArrayList.class, TrackData.class, getType()).getType()));
+            builder.tracks(context.deserialize(jsonObject.get("tracks"), TypeToken.getParameterized(ArrayList.class, TrackData.class).getType()));
+//            builder.tracks(context.deserialize(jsonObject.get("tracks"), new TypeToken<ArrayList<TrackData<ValueType>>>() {}.getType()));
         }
 
         return builder.build();
