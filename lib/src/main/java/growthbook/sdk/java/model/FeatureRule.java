@@ -6,12 +6,12 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.annotations.SerializedName;
 import com.google.gson.reflect.TypeToken;
-
-import growthbook.sdk.java.util.GrowthBookJsonUtils;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
+import serializers.SuperTypeToken;
 
 import javax.annotation.Nullable;
 import java.lang.reflect.Type;
@@ -33,11 +33,12 @@ import java.util.ArrayList;
  *
  * @param <ValueType> generic type for the value type for this experiment's variations.
  */
+@EqualsAndHashCode(callSuper = true)
 @Data
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
-public class FeatureRule<ValueType> implements JsonDeserializer<FeatureRule<ValueType>> {
+public class FeatureRule<ValueType> extends SuperTypeToken<ValueType> implements JsonDeserializer<FeatureRule<ValueType>>{
     /**
      * Unique feature rule id
      */
@@ -194,15 +195,19 @@ public class FeatureRule<ValueType> implements JsonDeserializer<FeatureRule<Valu
 
         if (jsonObject.has("force")) {
             JsonElement forceElement = jsonObject.get("force");
-            ValueType unwrap = (ValueType) GrowthBookJsonUtils.unwrap(forceElement);
-            builder.force(new OptionalField<>(true, unwrap));
+            if (!forceElement.isJsonNull()) {
+                ValueType forceValue = context.deserialize(forceElement, getType());
+                builder.force(new OptionalField<>(true, forceValue));
+            } else {
+                builder.force(new OptionalField<>(true, null));
+            }
         } else {
             builder.force(new OptionalField<>(false, null));
         }
 
         if (jsonObject.has("variations")) {
-            builder.variations(context.deserialize(jsonObject.get("variations"), new TypeToken<ArrayList<ValueType>>() {
-            }.getType()));
+            builder.variations(context.deserialize(jsonObject.get("variations"), TypeToken.getParameterized(ArrayList.class, getType()).getType()));
+//            builder.variations(context.deserialize(jsonObject.get("variations"), new TypeToken<ArrayList<ValueType>>() {}.getType()));
         }
 
         if (jsonObject.has("weights")) {
@@ -246,8 +251,7 @@ public class FeatureRule<ValueType> implements JsonDeserializer<FeatureRule<Valu
         builder.minBucketVersion(jsonObject.has("minBucketVersion") ? context.deserialize(jsonObject.get("minBucketVersion"), Integer.class) : null);
 
         if (jsonObject.has("tracks")) {
-            builder.tracks(context.deserialize(jsonObject.get("tracks"), new TypeToken<ArrayList<TrackData<ValueType>>>() {
-            }.getType()));
+            builder.tracks(context.deserialize(jsonObject.get("tracks"), TypeToken.getParameterized(ArrayList.class, TrackData.class, getType()).getType()));
         }
 
         return builder.build();
