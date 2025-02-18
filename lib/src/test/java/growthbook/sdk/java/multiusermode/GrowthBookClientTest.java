@@ -116,7 +116,7 @@ class GrowthBookClientTest {
         mockBuilder = createMockBuilder(mockRepository);
         FeatureRefreshCallback mockCallback = mock(FeatureRefreshCallback.class);
 
-        UserContext userContext = UserContext.builder()
+        UserContext userContext = new UserContext.UserContextBuilder()
                 .attributes(jsonUtils.gson.fromJson(attributes, JsonObject.class))
                 .build();
 
