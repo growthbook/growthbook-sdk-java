@@ -254,17 +254,6 @@ public class InMemoryStickyBucketServiceImpl implements StickyBucketService {
     }
 }
 ```
-## Changelog
-- **v0.0.92** 2024-02-DD
-  - Provide new way of initialization SDK through Options and GrowthBookClient
-  - Add ability to maintenance of remote evaluation feature
-  - Add ability to cache data from HTTP response to the file
-  - Fix evaluating force property in rule when rule is JsonObject and defined as null
-  - Update guava dependency
-  - Change logic of subscriptions
-  - Add ability to evaluate manual force feature
-  - add new implementations of  IGBFeaturesRepository : NativeJavaGbFeatureRepository and LocalGbFeatureRepository
-  - Providing better error handling for non-200 HTTP responses
 
 ## Contributing
 
