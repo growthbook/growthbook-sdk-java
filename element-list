@@ -11,3 +11,4 @@ growthbook.sdk.java.repository
 growthbook.sdk.java.sandbox
 growthbook.sdk.java.stickyBucketing
 growthbook.sdk.java.util
+serializers
