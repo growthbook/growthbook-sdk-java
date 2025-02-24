@@ -247,9 +247,9 @@ public class GrowthBookClient {
 
         String attributesJson = GrowthBookJsonUtils.getInstance().gson.toJson(globalAttributes);
 
-        userContext.setAttributesJson(attributesJson);
+        UserContext updatedUserContext = userContext.witAttributesJson(attributesJson);
 
-        return new EvaluationContext(this.globalContext, userContext, new EvaluationContext.StackContext(), this.options);
+        return new EvaluationContext(this.globalContext, updatedUserContext, new EvaluationContext.StackContext(), this.options);
     }
 
     private RequestBodyForRemoteEval configurePayloadForRemoteEval(Options options) {

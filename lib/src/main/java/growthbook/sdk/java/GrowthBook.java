@@ -137,7 +137,7 @@ public class GrowthBook implements IGrowthBook {
                 .build();
 
         // build user context
-        UserContext userContext = UserContext.builder()
+        UserContext userContext = new UserContext.UserContextBuilder()
                 .attributes(this.context.getAttributes())
                 .stickyBucketAssignmentDocs(this.context.getStickyBucketAssignmentDocs())
                 .forcedVariationsMap(this.context.getForcedVariationsMap())
