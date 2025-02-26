@@ -54,19 +54,6 @@ public class FeatureEvaluator implements IFeatureEvaluator {
                 .build();
 
         try {
-            Map<String, Object> forcedFeatureValues = getForcedFeatureValues(context);
-            if (forcedFeatureValues.containsKey(key)) {
-                ValueType unwrapForceFeatureValue = (ValueType) GrowthBookJsonUtils.unwrap(forcedFeatureValues.get(key));
-                log.info("Global override for forced feature with key: {} and value {}", key,
-                        forcedFeatureValues.get(key).toString());
-
-                return FeatureResult
-                        .<ValueType>builder()
-                        .value(unwrapForceFeatureValue)
-                        .source(FeatureResultSource.OVERRIDE)
-                        .build();
-            }
-
             if (context.getStack().getEvaluatedFeatures().contains(key)) {
                 // block that handle recursion
                 log.info(
@@ -87,9 +74,22 @@ public class FeatureEvaluator implements IFeatureEvaluator {
                 leaveCircularLoop(context);
                 return featureResultWhenCircularDependencyDetected;
             }
-
             // Add the current feature being evaluated to the stack
             addFeatureToEvalStack(key, context);
+
+            // Global override
+            Map<String, Object> forcedFeatureValues = getForcedFeatureValues(context);
+            if (forcedFeatureValues.containsKey(key)) {
+                ValueType unwrapForceFeatureValue = (ValueType) GrowthBookJsonUtils.unwrap(forcedFeatureValues.get(key));
+                log.info("Global override for forced feature with key: {} and value {}", key,
+                        forcedFeatureValues.get(key).toString());
+
+                return FeatureResult
+                        .<ValueType>builder()
+                        .value(unwrapForceFeatureValue)
+                        .source(FeatureResultSource.OVERRIDE)
+                        .build();
+            }
 
             // Check for feature values forced by URL
             if (context.getOptions().getAllowUrlOverrides()) {
@@ -163,6 +163,7 @@ public class FeatureEvaluator implements IFeatureEvaluator {
 
             // Loop through the feature rules (if any)
             List<FeatureRule<ValueType>> featureRules = feature.getRules();
+            outer:
             for (FeatureRule<ValueType> rule : featureRules) {
                 // If there are prerequisite flag(s), evaluate them
                 if (rule.getParentConditions() != null) {
@@ -224,6 +225,7 @@ public class FeatureEvaluator implements IFeatureEvaluator {
                             }
                             // non-blocking prerequisite eval failed: break out
                             // of parentConditions loop, jump to the next rule
+                            continue outer;
                         }
                     }
                 }
