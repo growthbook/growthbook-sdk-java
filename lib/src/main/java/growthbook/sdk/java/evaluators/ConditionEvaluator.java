@@ -533,6 +533,30 @@ public class ConditionEvaluator implements IConditionEvaluator {
      * @return true if equal
      */
     Boolean evalConditionValue(JsonElement conditionValue, @Nullable JsonElement attributeValue, @Nullable JsonObject savedGroups) {
+
+        if (conditionValue.isJsonNull()) {
+            return attributeValue == null || attributeValue.isJsonNull();
+        }
+
+        if (conditionValue.isJsonPrimitive() && conditionValue.getAsJsonPrimitive().isString() &&
+                (attributeValue != null && attributeValue.isJsonPrimitive()) && attributeValue.getAsJsonPrimitive().isString()) {
+            return conditionValue.getAsString().equals(attributeValue.getAsString());
+        }
+
+        if (conditionValue.isJsonPrimitive() && conditionValue.getAsJsonPrimitive().isNumber() &&
+                (attributeValue != null && attributeValue.isJsonPrimitive()) && attributeValue.getAsJsonPrimitive().isNumber()) {
+            return conditionValue.getAsDouble() == attributeValue.getAsDouble();
+        }
+
+        if (conditionValue.isJsonPrimitive() && conditionValue.getAsJsonPrimitive().isBoolean() &&
+                (attributeValue != null && attributeValue.isJsonPrimitive()) && attributeValue.getAsJsonPrimitive().isBoolean()) {
+            return conditionValue.getAsBoolean() == attributeValue.getAsBoolean();
+        }
+
+        if (conditionValue.isJsonArray() && (attributeValue != null && attributeValue.isJsonArray())) {
+            return jsonUtils.gson.toJson(conditionValue).equals(jsonUtils.gson.toJson(attributeValue));
+        }
+
         if (conditionValue.isJsonObject()) {
             JsonObject conditionValueObject = (JsonObject) conditionValue;
 
@@ -549,18 +573,11 @@ public class ConditionEvaluator implements IConditionEvaluator {
             }
         }
 
-        if (
-            conditionValue.isJsonNull() &&
-                (attributeValue == null || attributeValue.isJsonNull())
-        ) {
-            return true;
+        if (conditionValue.isJsonObject() && (attributeValue != null && attributeValue.isJsonObject())) {
+            return jsonUtils.gson.toJson(conditionValue).equals(jsonUtils.gson.toJson(attributeValue));
         }
 
-        if (attributeValue == null) {
-            return false;
-        }
-
-        return conditionValue.toString().equals(attributeValue.toString());
+        return conditionValue.toString().equals(attributeValue != null ? attributeValue.toString() : null);
     }
 
     Boolean elemMatch(JsonElement actual, JsonElement expected, @Nullable JsonObject savedGroups) {

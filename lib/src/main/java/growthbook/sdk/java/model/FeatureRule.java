@@ -43,7 +43,8 @@ public class FeatureRule<ValueType> extends SuperTypeToken<ValueType> implements
      * Unique feature rule id
      */
     @Nullable
-    String id;
+    @Builder.Default
+    String id = "";
 
     /**
      * The globally unique tracking key for the experiment (default to the feature key)
@@ -188,7 +189,7 @@ public class FeatureRule<ValueType> extends SuperTypeToken<ValueType> implements
         JsonObject jsonObject = json.getAsJsonObject();
         FeatureRule.FeatureRuleBuilder<ValueType> builder = FeatureRule.builder();
 
-        builder.id(jsonObject.has("id") ? context.deserialize(jsonObject.get("id"), String.class) : null);
+        builder.id(jsonObject.has("id") ? context.deserialize(jsonObject.get("id"), String.class) : "");
         builder.key(jsonObject.has("key") ? context.deserialize(jsonObject.get("key"), String.class) : null);
         builder.coverage(jsonObject.has("coverage") ? context.deserialize(jsonObject.get("coverage"), Float.class) : null);
 
