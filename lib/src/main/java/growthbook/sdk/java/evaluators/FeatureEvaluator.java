@@ -163,11 +163,14 @@ public class FeatureEvaluator implements IFeatureEvaluator {
 
             // Loop through the feature rules (if any)
             List<FeatureRule<ValueType>> featureRules = feature.getRules();
+            final Set<String> evaluatedFeatures = new HashSet<>(context.getStack().getEvaluatedFeatures());
+
             outer:
             for (FeatureRule<ValueType> rule : featureRules) {
                 // If there are prerequisite flag(s), evaluate them
                 if (rule.getParentConditions() != null) {
                     for (ParentCondition parentCondition : rule.getParentConditions()) {
+                        context.getStack().setEvaluatedFeatures(new HashSet<>(evaluatedFeatures));
                         //enterCircularLoop(key, context);
                         FeatureResult<ValueType> parentResult = evaluateFeature(
                                 parentCondition.getId(),
@@ -322,6 +325,7 @@ public class FeatureEvaluator implements IFeatureEvaluator {
                             .<ValueType>builder()
                             .value(value) // TODO: Check this. - This is not right
                             .source(FeatureResultSource.FORCE)
+                            .ruleId(rule.getId())
                             .build();
 
                     if (featureUsageCallbackWithUser != null) {
@@ -371,6 +375,7 @@ public class FeatureEvaluator implements IFeatureEvaluator {
                             FeatureResult<ValueType> experimentFeatureResult = FeatureResult
                                     .<ValueType>builder()
                                     .value(value)
+                                    .ruleId(rule.getId())
                                     .source(FeatureResultSource.EXPERIMENT)
                                     .experiment(experiment)
                                     .experimentResult(result)

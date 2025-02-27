@@ -164,7 +164,10 @@ public class ExperimentEvaluator implements IExperimentEvaluator {
             // 10. Exclude if prerequisites are not met
             List<ParentCondition> parenConditions = experiment.getParentConditions();
             if (parenConditions != null) {
+                final Set<String> evaluatedFeatures = new HashSet<>(context.getStack().getEvaluatedFeatures());
+
                 for (ParentCondition parentCondition : parenConditions) {
+                    context.getStack().setEvaluatedFeatures(new HashSet<>(evaluatedFeatures));
 
                     FeatureResult<ValueType> parentResult = new FeatureEvaluator().evaluateFeature(
                             parentCondition.getId(),
