@@ -11,6 +11,7 @@ import growthbook.sdk.java.model.Operator;
 import growthbook.sdk.java.util.StringUtils;
 import growthbook.sdk.java.model.DataType;
 import lombok.extern.slf4j.Slf4j;
+
 import javax.annotation.Nullable;
 import java.lang.reflect.Type;
 import java.util.ArrayList;
@@ -18,6 +19,7 @@ import java.util.Collections;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
@@ -35,8 +37,8 @@ public class ConditionEvaluator implements IConditionEvaluator {
      * The condition syntax closely resembles MongoDB's syntax.
      * This is defined in the Feature's targeting conditions' Advanced settings.
      *
-     * @param attributes A JsonObject of the user attributes to evaluate
-     * @param conditionJson  A JsonObject of the condition
+     * @param attributes    A JsonObject of the user attributes to evaluate
+     * @param conditionJson A JsonObject of the condition
      * @return Whether the condition should be true for the user
      */
     @Override
@@ -492,8 +494,8 @@ public class ConditionEvaluator implements IConditionEvaluator {
     /**
      * Compares two primitives for equality.
      *
-     * @param a left side primitive
-     * @param b right side primitive
+     * @param a        left side primitive
+     * @param b        right side primitive
      * @param dataType The data type of the primitives
      * @return if they are equal
      */
@@ -534,50 +536,47 @@ public class ConditionEvaluator implements IConditionEvaluator {
      */
     Boolean evalConditionValue(JsonElement conditionValue, @Nullable JsonElement attributeValue, @Nullable JsonObject savedGroups) {
 
-        if (conditionValue.isJsonNull()) {
-            return attributeValue == null || attributeValue.isJsonNull();
+        if (conditionValue == null) {
+            return attributeValue == null;
         }
+        DataType conditionValueElementType = GrowthBookJsonUtils.getElementType(conditionValue);
 
-        if (conditionValue.isJsonPrimitive() && conditionValue.getAsJsonPrimitive().isString() &&
-                (attributeValue != null && attributeValue.isJsonPrimitive()) && attributeValue.getAsJsonPrimitive().isString()) {
-            return conditionValue.getAsString().equals(attributeValue.getAsString());
-        }
+        switch (conditionValueElementType) {
+            case STRING:
+                return isMatchingPrimitive(conditionValue, attributeValue, JsonPrimitive::getAsJsonPrimitive);
 
-        if (conditionValue.isJsonPrimitive() && conditionValue.getAsJsonPrimitive().isNumber() &&
-                (attributeValue != null && attributeValue.isJsonPrimitive()) && attributeValue.getAsJsonPrimitive().isNumber()) {
-            return conditionValue.getAsDouble() == attributeValue.getAsDouble();
-        }
+            case NUMBER:
+                return isMatchingPrimitive(conditionValue, attributeValue, JsonPrimitive::getAsDouble);
 
-        if (conditionValue.isJsonPrimitive() && conditionValue.getAsJsonPrimitive().isBoolean() &&
-                (attributeValue != null && attributeValue.isJsonPrimitive()) && attributeValue.getAsJsonPrimitive().isBoolean()) {
-            return conditionValue.getAsBoolean() == attributeValue.getAsBoolean();
-        }
+            case BOOLEAN:
+                return isMatchingPrimitive(conditionValue, attributeValue, JsonPrimitive::getAsBoolean);
 
-        if (conditionValue.isJsonArray() && (attributeValue != null && attributeValue.isJsonArray())) {
-            return jsonUtils.gson.toJson(conditionValue).equals(jsonUtils.gson.toJson(attributeValue));
-        }
+            case ARRAY:
+                return attributeValue != null && attributeValue.isJsonArray()
+                        && jsonUtils.gson.toJson(conditionValue).equals(jsonUtils.gson.toJson(attributeValue));
 
-        if (conditionValue.isJsonObject()) {
-            JsonObject conditionValueObject = (JsonObject) conditionValue;
-
-            if (isOperatorObject(conditionValueObject)) {
-                Set<Map.Entry<String, JsonElement>> entries = conditionValueObject.entrySet();
-
-                for (Map.Entry<String, JsonElement> entry : entries) {
-                    if (!evalOperatorCondition(entry.getKey(), attributeValue, entry.getValue(), savedGroups)) {
-                        return false;
-                    }
+            case OBJECT:
+                JsonObject conditionValueObject = conditionValue.getAsJsonObject();
+                if (isOperatorObject(conditionValueObject)) {
+                    return conditionValueObject.entrySet().stream()
+                            .allMatch(entry -> evalOperatorCondition(
+                                            entry.getKey(),
+                                            attributeValue,
+                                            entry.getValue(),
+                                            savedGroups
+                                    )
+                            );
                 }
+                return attributeValue != null && attributeValue.isJsonObject() &&
+                        jsonUtils.gson.toJson(conditionValue).equals(jsonUtils.gson.toJson(attributeValue));
 
-                return true;
-            }
+            case NULL:
+                return attributeValue == null || attributeValue.isJsonNull();
+            case UNDEFINED:
+            case UNKNOWN:
+            default:
+                return conditionValue.toString().equals(attributeValue != null ? attributeValue.toString() : null);
         }
-
-        if (conditionValue.isJsonObject() && (attributeValue != null && attributeValue.isJsonObject())) {
-            return jsonUtils.gson.toJson(conditionValue).equals(jsonUtils.gson.toJson(attributeValue));
-        }
-
-        return conditionValue.toString().equals(attributeValue != null ? attributeValue.toString() : null);
     }
 
     Boolean elemMatch(JsonElement actual, JsonElement expected, @Nullable JsonObject savedGroups) {
@@ -594,8 +593,7 @@ public class ConditionEvaluator implements IConditionEvaluator {
                 if (evalConditionValue(expected, actualElement, savedGroups)) {
                     return true;
                 }
-            }
-            else if (evaluateCondition(actualElement.getAsJsonObject(), expected.getAsJsonObject(), savedGroups)) {
+            } else if (evaluateCondition(actualElement.getAsJsonObject(), expected.getAsJsonObject(), savedGroups)) {
                 return true;
             }
         }
@@ -659,16 +657,28 @@ public class ConditionEvaluator implements IConditionEvaluator {
         ArrayList<Object> actualAsList = jsonUtils.gson.fromJson(actualArr, listType);
 
         return actualAsList.stream()
-            .anyMatch(o -> {
-                if (
-                    attributeDataType == DataType.STRING ||
-                        attributeDataType == DataType.NUMBER ||
-                        attributeDataType == DataType.BOOLEAN
-                ) {
-                    return expectedAsList.contains(o);
-                }
+                .anyMatch(o -> {
+                    if (
+                            attributeDataType == DataType.STRING ||
+                                    attributeDataType == DataType.NUMBER ||
+                                    attributeDataType == DataType.BOOLEAN
+                    ) {
+                        return expectedAsList.contains(o);
+                    }
 
-                return false;
-            });
+                    return false;
+                });
+    }
+
+    private <T> boolean isMatchingPrimitive(
+            JsonElement conditionValue,
+            JsonElement attributeValue,
+            Function<JsonPrimitive, T> extractor) {
+        return attributeValue != null
+                && attributeValue.isJsonPrimitive()
+                && extractor.apply(
+                        conditionValue.getAsJsonPrimitive())
+                .equals(extractor.apply(
+                        attributeValue.getAsJsonPrimitive()));
     }
 }
