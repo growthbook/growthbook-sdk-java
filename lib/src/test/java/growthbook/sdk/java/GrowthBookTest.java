@@ -137,8 +137,15 @@ class GrowthBookTest {
                     System.out.printf("\n\nExpected key: %s, Actual key: %s", expectedKey, actualKey);
                 }
             }
+            String expectedResultRuleId = expectedResult.getRuleId();
+            String actualResultRuleId = result.getRuleId();
+            boolean ruleIdPass = Objects.equals(expectedResultRuleId, actualResultRuleId);
+            if (!ruleIdPass) {
+                System.out.printf("\n\nExpected rule id: %s, Actual rule id: %s", expectedResultRuleId, actualResultRuleId);
 
-            boolean passes = valuePasses && onPasses && offPasses && sourcePasses && hashValuePasses && keyPasses && bucketPasses;
+            }
+
+            boolean passes = valuePasses && onPasses && offPasses && sourcePasses && hashValuePasses && keyPasses && bucketPasses && ruleIdPass;
 
             if (passes) {
                 passedTests.add(testDescription);

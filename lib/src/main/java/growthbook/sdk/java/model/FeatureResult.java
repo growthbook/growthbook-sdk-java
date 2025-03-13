@@ -64,7 +64,8 @@ public class FeatureResult<ValueType> {
      * Unique identifier of rule
      */
     @Nullable
-    String ruleId;
+    @Builder.Default
+    String ruleId = "";
 
     /**
      * Get a Gson JsonElement of the {@link FeatureResult}

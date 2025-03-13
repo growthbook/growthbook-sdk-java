@@ -37,9 +37,9 @@ public class ExperimentEvaluator implements IExperimentEvaluator {
     /**
      * Takes Context, Experiment and returns Experiment Result
      *
-     * @param experiment         Experiment
-     * @param context            EvaluationContext
-     * @param featureId          String(can be null)
+     * @param experiment Experiment
+     * @param context    EvaluationContext
+     * @param featureId  String(can be null)
      * @return ExperimentResult
      */
     @Override
@@ -122,7 +122,7 @@ public class ExperimentEvaluator implements IExperimentEvaluator {
 
             foundStickyBucket = stickyBucketVariation.getVariation() >= 0;
             assigned = stickyBucketVariation.getVariation();
-            stickyBucketVersionIsBlocked = stickyBucketVariation.getVersionIsBlocked() != null ? stickyBucketVariation.getVersionIsBlocked() : false;
+            stickyBucketVersionIsBlocked = Boolean.TRUE.equals(stickyBucketVariation.getVersionIsBlocked());
         }
 
         // Some checks are not needed if we already have a sticky bucket
@@ -164,7 +164,10 @@ public class ExperimentEvaluator implements IExperimentEvaluator {
             // 10. Exclude if prerequisites are not met
             List<ParentCondition> parenConditions = experiment.getParentConditions();
             if (parenConditions != null) {
+                final Set<String> evaluatedFeatures = new HashSet<>(context.getStack().getEvaluatedFeatures());
+
                 for (ParentCondition parentCondition : parenConditions) {
+                    context.getStack().setEvaluatedFeatures(new HashSet<>(evaluatedFeatures));
 
                     FeatureResult<ValueType> parentResult = new FeatureEvaluator().evaluateFeature(
                             parentCondition.getId(),
@@ -274,8 +277,12 @@ public class ExperimentEvaluator implements IExperimentEvaluator {
         if (isStickyBucketingEnabledForExperiment(context, experiment)) {
 
             Map<String, String> assignments = new HashMap<>();
-            assignments.put(GrowthBookUtils
-                    .getStickyBucketExperimentKey(experiment.getKey(), experiment.getBucketVersion()), result.getKey());
+            assignments.put(
+                    GrowthBookUtils.getStickyBucketExperimentKey(
+                            experiment.getKey(),
+                            experiment.getBucketVersion()),
+                    result.getKey()
+            );
 
             GeneratedStickyBucketAssignmentDocModel docModel = GrowthBookUtils.generateStickyBucketAssignmentDoc(
                     context.getUser().getStickyBucketAssignmentDocs(),
@@ -411,7 +418,7 @@ public class ExperimentEvaluator implements IExperimentEvaluator {
     }
 
     private Map<String, Integer> getForcedVariations(EvaluationContext evaluationContext) {
-        Map<String, Integer> globalForcedVariations= evaluationContext.getGlobal() != null
+        Map<String, Integer> globalForcedVariations = evaluationContext.getGlobal() != null
                 ? evaluationContext.getGlobal().getForcedVariations()
                 : Collections.emptyMap();
 
