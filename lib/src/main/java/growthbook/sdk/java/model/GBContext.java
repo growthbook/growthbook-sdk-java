@@ -49,7 +49,7 @@ public class GBContext {
             @Nullable String attributesJson,
             @Nullable JsonObject attributes,
             @Nullable String featuresJson,
-            @Nullable JsonObject features,
+            @Nullable Map<String, Feature<?>> features,
             @Nullable String encryptionKey,
             @Nullable Boolean enabled,
             Boolean isQaMode,
@@ -92,7 +92,7 @@ public class GBContext {
      * Feature definitions - To be pulled from API / Cache
      */
     @Nullable
-    private JsonObject features;
+    private Map<String, Feature<?>> features;
 
     /**
      * Switch to globally disable all experiments. Default true.

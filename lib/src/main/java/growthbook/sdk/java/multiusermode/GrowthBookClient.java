@@ -82,7 +82,7 @@ public class GrowthBookClient {
 
                 // instantiate a global context that holds features & savedGroups.
                 this.globalContext = GlobalContext.builder()
-                        .features(TransformationUtil.transformFeatures(repository.getFeaturesJson()))
+                        .features(repository.getFeaturesMap())
                         .savedGroups(TransformationUtil.transformSavedGroups(repository.getSavedGroupsJson()))
                         .enabled(this.options.getEnabled())
                         .qaMode(this.options.getIsQaMode())
@@ -203,13 +203,12 @@ public class GrowthBookClient {
             public void onRefresh(String featuresJson) {
                 // refer the global context with latest features & saved groups
                 if (globalContext != null) {
-                    globalContext.setFeatures(TransformationUtil.transformFeatures(featuresJson));
+                    globalContext.setFeatures(repository.getFeaturesMap());
                     globalContext.setSavedGroups(TransformationUtil.transformSavedGroups(repository.getSavedGroupsJson()));
                 } else {
                     // TBD:M This should never happen! Just to be cautious about race conditions at the time of initialization
                     globalContext = GlobalContext.builder()
-                            .features(TransformationUtil.transformFeatures(featuresJson))
-                            .savedGroups(TransformationUtil.transformFeatures(repository.getSavedGroupsJson()))
+                            .features(repository.getFeaturesMap())
                             .savedGroups(TransformationUtil.transformSavedGroups(repository.getSavedGroupsJson()))
                             .enabled(options.getEnabled())
                             .qaMode(options.getIsQaMode())

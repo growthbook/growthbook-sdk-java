@@ -110,8 +110,8 @@ public class FeatureEvaluator implements IFeatureEvaluator {
             }
 
             // Unknown key, return empty feature
-            JsonObject features = context.getGlobal().getFeatures();
-            if (features == null || !features.has(key)) {
+            Map<String, Feature<?>> features = context.getGlobal().getFeatures();
+            if (features == null || features.isEmpty() || !features.containsKey(key)) {
                 if (featureUsageCallbackWithUser != null) {
                     featureUsageCallbackWithUser.onFeatureUsage(key, unknownFeatureResult, context.getUser());
                 }
@@ -120,14 +120,14 @@ public class FeatureEvaluator implements IFeatureEvaluator {
             }
 
             // The key exists
-            JsonElement featureJson = features.get(key);
+            Feature<ValueType> feature =  (Feature<ValueType>) features.get(key);
             FeatureResult<ValueType> defaultValueFeature = FeatureResult
                     .<ValueType>builder()
                     .value(null)
                     .source(FeatureResultSource.DEFAULT_VALUE)
                     .build();
 
-            if (featureJson == null) {
+            if (feature == null) {
                 log.info("featureJson is null");
 
                 // When key exists but there is no value, should be default value with null value
@@ -135,15 +135,6 @@ public class FeatureEvaluator implements IFeatureEvaluator {
                     featureUsageCallbackWithUser.onFeatureUsage(key, defaultValueFeature, context.getUser());
                 }
 
-                return defaultValueFeature;
-            }
-
-            Feature<ValueType> feature = jsonUtils.gson.fromJson(featureJson, Feature.class);
-            if (feature == null) {
-                // When key exists but there is no value, should be default value with null value
-                if (featureUsageCallbackWithUser != null) {
-                    featureUsageCallbackWithUser.onFeatureUsage(key, defaultValueFeature, context.getUser());
-                }
                 return defaultValueFeature;
             }
 
