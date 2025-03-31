@@ -2,6 +2,8 @@ package growthbook.sdk.java.repository;
 
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import growthbook.sdk.java.model.Feature;
+import growthbook.sdk.java.multiusermode.util.TransformationUtil;
 import growthbook.sdk.java.sandbox.CachingManager;
 import growthbook.sdk.java.util.DecryptionUtils;
 import growthbook.sdk.java.exception.FeatureFetchException;
@@ -26,6 +28,7 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
+import java.util.Map;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -260,6 +263,31 @@ public class NativeJavaGbFeatureRepository implements IGBFeaturesRepository {
             }
 
             return this.featuresJson.get();
+        } finally {
+            lock.unlock();
+        }
+    }
+
+    public Map<String, Feature<?>> getFeaturesMap() {
+        try {
+            lock.lock();
+
+            switch (this.refreshStrategy) {
+                case STALE_WHILE_REVALIDATE:
+                    if (isCacheExpired()) {
+                        this.initializeSSE(true);
+                        this.refreshExpiresAt();
+                    }
+                    return TransformationUtil.transformFeatures(this.featuresJson.get());
+
+                case SERVER_SENT_EVENTS:
+                    return TransformationUtil.transformFeatures(this.featuresJson.get());
+
+                case REMOTE_EVAL_STRATEGY:
+                    return TransformationUtil.transformFeatures(this.featuresJson.get());
+            }
+
+            return TransformationUtil.transformFeatures(this.featuresJson.get());
         } finally {
             lock.unlock();
         }

@@ -1,6 +1,5 @@
 package growthbook.sdk.java.evaluators;
 
-import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import growthbook.sdk.java.util.GrowthBookJsonUtils;
 import growthbook.sdk.java.util.GrowthBookUtils;
@@ -33,7 +32,6 @@ public class FeatureEvaluator implements IFeatureEvaluator {
     private final GrowthBookJsonUtils jsonUtils = GrowthBookJsonUtils.getInstance();
     private final ConditionEvaluator conditionEvaluator = new ConditionEvaluator();
     private final ExperimentEvaluator experimentEvaluator = new ExperimentEvaluator();
-    //private final FeatureEvalContext featureEvalContext = new FeatureEvalContext(null, new HashSet<>());
 
     // Takes Context and Feature Key
     // Returns Calculated Feature Result against that key
@@ -285,7 +283,12 @@ public class FeatureEvaluator implements IFeatureEvaluator {
 
                     // If this was a remotely evaluated experiment, fire the tracking callbacks
                     if (trackData != null && trackingCallBackWithUser != null) {
-                        trackData.forEach(t -> trackingCallBackWithUser.onTrack(t.getExperiment(), t.getResult().getExperimentResult(), context.getUser()));
+                        trackData.forEach(t -> {
+                            ExperimentResult<ValueType> trackedExpResult = t.getResult().getExperimentResult();
+                            Experiment<ValueType> trackedExperiment = t.getExperiment();
+                            if (context.getOptions().getExperimentHelper().isTracked(trackedExperiment, trackedExpResult)) {
+                                trackingCallBackWithUser.onTrack(t.getExperiment(), t.getResult().getExperimentResult(), context.getUser());
+                            }});
                     }
 
                     if (rule.getRange() == null) {
