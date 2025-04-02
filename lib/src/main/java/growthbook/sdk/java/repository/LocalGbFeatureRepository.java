@@ -5,6 +5,8 @@ import com.google.gson.GsonBuilder;
 import com.google.gson.JsonObject;
 import growthbook.sdk.java.exception.FeatureFetchException;
 import growthbook.sdk.java.callback.FeatureRefreshCallback;
+import growthbook.sdk.java.model.Feature;
+import growthbook.sdk.java.multiusermode.util.TransformationUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -12,6 +14,7 @@ import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Map;
 
 @Slf4j
 @RequiredArgsConstructor
@@ -24,6 +27,7 @@ public class LocalGbFeatureRepository implements IGBFeaturesRepository {
 
     /**
      * Method for initializing {@link LocalGbFeatureRepository} by fetching features from user's json file
+     *
      * @throws FeatureFetchException exception when FileNotFoundException occur
      */
     @Override
@@ -65,11 +69,16 @@ public class LocalGbFeatureRepository implements IGBFeaturesRepository {
 
     /**
      * Method for getting the featuresJson in format of String from user json file
+     *
      * @return featuresJson
      */
     @Override
     public String getFeaturesJson() {
         return this.featuresJson;
+    }
+
+    public Map<String, Feature<?>> getFeaturesMap() {
+        return TransformationUtil.transformFeatures(this.featuresJson);
     }
 
     /**

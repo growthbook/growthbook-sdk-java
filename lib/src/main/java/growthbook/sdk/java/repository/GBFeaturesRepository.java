@@ -2,6 +2,8 @@ package growthbook.sdk.java.repository;
 
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import growthbook.sdk.java.model.Feature;
+import growthbook.sdk.java.multiusermode.util.TransformationUtil;
 import growthbook.sdk.java.sandbox.CachingManager;
 import growthbook.sdk.java.util.DecryptionUtils;
 import growthbook.sdk.java.exception.FeatureFetchException;
@@ -31,6 +33,7 @@ import javax.annotation.Nullable;
 import java.io.IOException;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
@@ -307,22 +310,19 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
      * @return feature data JSON in a type of String. Handle refresh strategy
      */
     public String getFeaturesJson() {
-        switch (this.refreshStrategy) {
-            case STALE_WHILE_REVALIDATE:
-                if (isCacheExpired()) {
-                    this.enqueueFeatureRefreshRequest();
-                    this.refreshExpiresAt();
-                }
-                return this.featuresJson;
-
-            case SERVER_SENT_EVENTS:
-                return this.featuresJson;
-
-            case REMOTE_EVAL_STRATEGY:
-                return this.featuresJson;
+        if (this.refreshStrategy == FeatureRefreshStrategy.STALE_WHILE_REVALIDATE && isCacheExpired()) {
+            this.enqueueFeatureRefreshRequest();
+            this.refreshExpiresAt();
         }
-
         return this.featuresJson;
+    }
+
+    public Map<String, Feature<?>> getFeaturesMap() {
+        if (this.refreshStrategy == FeatureRefreshStrategy.STALE_WHILE_REVALIDATE && isCacheExpired()) {
+            this.enqueueFeatureRefreshRequest();
+            this.refreshExpiresAt();
+        }
+        return TransformationUtil.transformFeatures(this.featuresJson);
     }
 
     /**
