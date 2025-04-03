@@ -11,6 +11,7 @@ import growthbook.sdk.java.multiusermode.util.TransformationUtil;
 import growthbook.sdk.java.repository.FeatureRefreshStrategy;
 import growthbook.sdk.java.stickyBucketing.InMemoryStickyBucketServiceImpl;
 import growthbook.sdk.java.stickyBucketing.StickyBucketService;
+import growthbook.sdk.java.util.ExperimentHelper;
 import lombok.Builder;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
@@ -156,6 +157,7 @@ public class Options {
     @Nullable
     private Map<String, Object> globalForcedFeatureValues;
 
+    private ExperimentHelper experimentHelper = new ExperimentHelper();
     /**
      * Force specific experiments to always assign a specific variation (used for QA)
      */
