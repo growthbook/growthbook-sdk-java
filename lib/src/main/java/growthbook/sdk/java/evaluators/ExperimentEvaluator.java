@@ -2,6 +2,7 @@ package growthbook.sdk.java.evaluators;
 
 import com.google.gson.JsonObject;
 import growthbook.sdk.java.model.GeneratedStickyBucketAssignmentDocModel;
+import growthbook.sdk.java.multiusermode.ExperimentTracker;
 import growthbook.sdk.java.util.GrowthBookJsonUtils;
 import growthbook.sdk.java.util.GrowthBookUtils;
 import growthbook.sdk.java.model.HashAttributeAndHashValue;
@@ -29,6 +30,8 @@ import java.util.*;
 public class ExperimentEvaluator implements IExperimentEvaluator {
 
     private final ConditionEvaluator conditionEvaluator = new ConditionEvaluator();
+    private final GrowthBookJsonUtils jsonUtils = GrowthBookJsonUtils.getInstance();
+    private final ExperimentTracker experimentTracker = new ExperimentTracker();
 
 
     /**
@@ -308,7 +311,7 @@ public class ExperimentEvaluator implements IExperimentEvaluator {
 
         // Fire context.trackingClosure if set and the combination of hashAttribute,
         // hashValue, experiment.key, and variationId has not been tracked before
-        if (!context.getOptions().getExperimentHelper().isTracked(experiment, result)) {
+        if (!isExperimentTracked(experiment, result)) {
             TrackingCallbackWithUser trackingCallBackWithUser = context.getOptions().getTrackingCallBackWithUser();
 
             if (trackingCallBackWithUser != null) {
@@ -389,6 +392,23 @@ public class ExperimentEvaluator implements IExperimentEvaluator {
                 .bucket(hashBucket)
                 .passThrough(passThrough)
                 .build();
+    }
+
+    //  Track experiments to trigger callbacks.
+    private <ValueType> boolean isExperimentTracked(Experiment<ValueType> experiment, ExperimentResult<ValueType> result) {
+        String experimentKey = experiment.getKey();
+
+        String key = (
+                result.getHashAttribute() != null ? result.getHashAttribute() : "")
+                + (result.getHashValue() != null ? result.getHashValue() : "")
+                + (experimentKey + result.getVariationId());
+
+        // Add the experiment to the tracker if it doesn't exist.
+        if (!experimentTracker.isExperimentTracked(key)) {
+            experimentTracker.trackExperiment(key);
+        }
+
+        return false;
     }
 
     private <ValueType> boolean isStickyBucketingEnabledForExperiment(EvaluationContext context,

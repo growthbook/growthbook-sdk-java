@@ -16,6 +16,7 @@ import growthbook.sdk.java.multiusermode.configurations.EvaluationContext;
 import growthbook.sdk.java.multiusermode.usage.FeatureUsageCallbackWithUser;
 import growthbook.sdk.java.multiusermode.usage.TrackingCallbackWithUser;
 import lombok.extern.slf4j.Slf4j;
+
 import javax.annotation.Nullable;
 import java.net.MalformedURLException;
 import java.net.URL;
@@ -118,7 +119,7 @@ public class FeatureEvaluator implements IFeatureEvaluator {
             }
 
             // The key exists
-            Feature<ValueType> feature =  (Feature<ValueType>) features.get(key);
+            Feature<ValueType> feature = (Feature<ValueType>) features.get(key);
             FeatureResult<ValueType> defaultValueFeature = FeatureResult
                     .<ValueType>builder()
                     .value(null)
@@ -283,12 +284,13 @@ public class FeatureEvaluator implements IFeatureEvaluator {
 
                     // If this was a remotely evaluated experiment, fire the tracking callbacks
                     if (trackData != null && trackingCallBackWithUser != null) {
-                        trackData.forEach(t -> {
-                            ExperimentResult<ValueType> trackedExpResult = t.getResult().getExperimentResult();
-                            Experiment<ValueType> trackedExperiment = t.getExperiment();
-                            if (context.getOptions().getExperimentHelper().isTracked(trackedExperiment, trackedExpResult)) {
-                                trackingCallBackWithUser.onTrack(t.getExperiment(), t.getResult().getExperimentResult(), context.getUser());
-                            }});
+                        trackData.forEach(t ->
+                                trackingCallBackWithUser.onTrack(
+                                        t.getExperiment(),
+                                        t.getResult().getExperimentResult(),
+                                        context.getUser()
+                                )
+                        );
                     }
 
                     if (rule.getRange() == null) {
@@ -443,7 +445,7 @@ public class FeatureEvaluator implements IFeatureEvaluator {
             return null;
         }
     }
-    
+
     private void leaveCircularLoop(EvaluationContext context) {
         context.getStack().setId(null);
         context.getStack().getEvaluatedFeatures().clear();
