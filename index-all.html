@@ -535,9 +535,9 @@ loadScripts(document, 'script');</script>
 <dd>&nbsp;</dd>
 <dt><a href="growthbook/sdk/java/model/FeatureRule.FeatureRuleBuilder.html" class="type-name-link" title="class in growthbook.sdk.java.model">FeatureRule.FeatureRuleBuilder</a>&lt;<a href="growthbook/sdk/java/model/FeatureRule.FeatureRuleBuilder.html" title="type parameter in FeatureRule.FeatureRuleBuilder">ValueType</a>&gt; - Class in <a href="growthbook/sdk/java/model/package-summary.html">growthbook.sdk.java.model</a></dt>
 <dd>&nbsp;</dd>
-<dt><a href="growthbook/sdk/java/model/GBContext.GBContextBuilder.html#features(com.google.gson.JsonObject)" class="member-name-link">features(JsonObject)</a> - Method in class growthbook.sdk.java.model.<a href="growthbook/sdk/java/model/GBContext.GBContextBuilder.html" title="class in growthbook.sdk.java.model">GBContext.GBContextBuilder</a></dt>
+<dt><a href="growthbook/sdk/java/model/GBContext.GBContextBuilder.html#features(java.util.Map)" class="member-name-link">features(Map&lt;String, Feature&lt;?&gt;&gt;)</a> - Method in class growthbook.sdk.java.model.<a href="growthbook/sdk/java/model/GBContext.GBContextBuilder.html" title="class in growthbook.sdk.java.model">GBContext.GBContextBuilder</a></dt>
 <dd>&nbsp;</dd>
-<dt><a href="growthbook/sdk/java/multiusermode/configurations/GlobalContext.GlobalContextBuilder.html#features(com.google.gson.JsonObject)" class="member-name-link">features(JsonObject)</a> - Method in class growthbook.sdk.java.multiusermode.configurations.<a href="growthbook/sdk/java/multiusermode/configurations/GlobalContext.GlobalContextBuilder.html" title="class in growthbook.sdk.java.multiusermode.configurations">GlobalContext.GlobalContextBuilder</a></dt>
+<dt><a href="growthbook/sdk/java/multiusermode/configurations/GlobalContext.GlobalContextBuilder.html#features(java.util.Map)" class="member-name-link">features(Map&lt;String, Feature&lt;?&gt;&gt;)</a> - Method in class growthbook.sdk.java.multiusermode.configurations.<a href="growthbook/sdk/java/multiusermode/configurations/GlobalContext.GlobalContextBuilder.html" title="class in growthbook.sdk.java.multiusermode.configurations">GlobalContext.GlobalContextBuilder</a></dt>
 <dd>
 <div class="block">Keys are unique identifiers for the features and the values are Feature objects.</div>
 </dd>
@@ -636,7 +636,7 @@ loadScripts(document, 'script');</script>
 <dd>
 <div class="block">Context object passed into the GrowthBook constructor.</div>
 </dd>
-<dt><a href="growthbook/sdk/java/model/GBContext.html#%3Cinit%3E(java.lang.String,com.google.gson.JsonObject,java.lang.String,com.google.gson.JsonObject,java.lang.String,java.lang.Boolean,java.lang.Boolean,java.lang.String,java.lang.Boolean,java.util.Map,growthbook.sdk.java.callback.TrackingCallback,growthbook.sdk.java.callback.FeatureUsageCallback,growthbook.sdk.java.stickyBucketing.StickyBucketService,java.util.Map,java.util.List,com.google.gson.JsonObject)" class="member-name-link">GBContext(String, JsonObject, String, JsonObject, String, Boolean, Boolean, String, Boolean, Map&lt;String, Integer&gt;, TrackingCallback, FeatureUsageCallback, StickyBucketService, Map&lt;String, StickyAssignmentsDocument&gt;, List&lt;String&gt;, JsonObject)</a> - Constructor for class growthbook.sdk.java.model.<a href="growthbook/sdk/java/model/GBContext.html" title="class in growthbook.sdk.java.model">GBContext</a></dt>
+<dt><a href="growthbook/sdk/java/model/GBContext.html#%3Cinit%3E(java.lang.String,com.google.gson.JsonObject,java.lang.String,java.util.Map,java.lang.String,java.lang.Boolean,java.lang.Boolean,java.lang.String,java.lang.Boolean,java.util.Map,growthbook.sdk.java.callback.TrackingCallback,growthbook.sdk.java.callback.FeatureUsageCallback,growthbook.sdk.java.stickyBucketing.StickyBucketService,java.util.Map,java.util.List,com.google.gson.JsonObject)" class="member-name-link">GBContext(String, JsonObject, String, Map&lt;String, Feature&lt;?&gt;&gt;, String, Boolean, Boolean, String, Boolean, Map&lt;String, Integer&gt;, TrackingCallback, FeatureUsageCallback, StickyBucketService, Map&lt;String, StickyAssignmentsDocument&gt;, List&lt;String&gt;, JsonObject)</a> - Constructor for class growthbook.sdk.java.model.<a href="growthbook/sdk/java/model/GBContext.html" title="class in growthbook.sdk.java.model">GBContext</a></dt>
 <dd>
 <div class="block">The <a href="growthbook/sdk/java/model/GBContext.GBContextBuilder.html" title="class in growthbook.sdk.java.model"><code>GBContext.GBContextBuilder</code></a> is recommended for constructing a Context.</div>
 </dd>
@@ -935,6 +935,8 @@ loadScripts(document, 'script');</script>
 <dd>
 <div class="block">Method for getting Feature from API call once if it STALE_WHILE_REVALIDATE or be updated if SERVER_SENT_EVENTS strategy</div>
 </dd>
+<dt><a href="growthbook/sdk/java/repository/NativeJavaGbFeatureRepository.html#getFeaturesMap()" class="member-name-link">getFeaturesMap()</a> - Method in class growthbook.sdk.java.repository.<a href="growthbook/sdk/java/repository/NativeJavaGbFeatureRepository.html" title="class in growthbook.sdk.java.repository">NativeJavaGbFeatureRepository</a></dt>
+<dd>&nbsp;</dd>
 <dt><a href="growthbook/sdk/java/model/GBContext.html#getFeatureUsageCallback()" class="member-name-link">getFeatureUsageCallback()</a> - Method in class growthbook.sdk.java.model.<a href="growthbook/sdk/java/model/GBContext.html" title="class in growthbook.sdk.java.model">GBContext</a></dt>
 <dd>
 <div class="block">A function that takes <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link"><code>String</code></a> and <a href="growthbook/sdk/java/model/FeatureResult.html" title="class in growthbook.sdk.java.model"><code>FeatureResult</code></a> as arguments.</div>
@@ -1228,6 +1230,12 @@ loadScripts(document, 'script');</script>
 <div class="block">Each item defines a prerequisite where a `condition` must evaluate against
  a parent feature's value (identified by `id`).</div>
 </dd>
+<dt><a href="growthbook/sdk/java/repository/GBFeaturesRepository.html#getParsedFeatures()" class="member-name-link">getParsedFeatures()</a> - Method in class growthbook.sdk.java.repository.<a href="growthbook/sdk/java/repository/GBFeaturesRepository.html" title="class in growthbook.sdk.java.repository">GBFeaturesRepository</a></dt>
+<dd>&nbsp;</dd>
+<dt><a href="growthbook/sdk/java/repository/LocalGbFeatureRepository.html#getParsedFeatures()" class="member-name-link">getParsedFeatures()</a> - Method in class growthbook.sdk.java.repository.<a href="growthbook/sdk/java/repository/LocalGbFeatureRepository.html" title="class in growthbook.sdk.java.repository">LocalGbFeatureRepository</a></dt>
+<dd>&nbsp;</dd>
+<dt><a href="growthbook/sdk/java/repository/GBFeaturesRepository.html#getParsedSavedGroups()" class="member-name-link">getParsedSavedGroups()</a> - Method in class growthbook.sdk.java.repository.<a href="growthbook/sdk/java/repository/GBFeaturesRepository.html" title="class in growthbook.sdk.java.repository">GBFeaturesRepository</a></dt>
+<dd>&nbsp;</dd>
 <dt><a href="growthbook/sdk/java/model/ExperimentResult.html#getPassThrough()" class="member-name-link">getPassThrough()</a> - Method in class growthbook.sdk.java.model.<a href="growthbook/sdk/java/model/ExperimentResult.html" title="class in growthbook.sdk.java.model">ExperimentResult</a></dt>
 <dd>
 <div class="block">Used for holdout groups</div>
@@ -2305,17 +2313,13 @@ loadScripts(document, 'script');</script>
 </dd>
 <dt><a href="growthbook/sdk/java/multiusermode/configurations/Options.html#setFeatureRefreshCallback(growthbook.sdk.java.callback.FeatureRefreshCallback)" class="member-name-link">setFeatureRefreshCallback(FeatureRefreshCallback)</a> - Method in class growthbook.sdk.java.multiusermode.configurations.<a href="growthbook/sdk/java/multiusermode/configurations/Options.html" title="class in growthbook.sdk.java.multiusermode.configurations">Options</a></dt>
 <dd>&nbsp;</dd>
-<dt><a href="growthbook/sdk/java/model/GBContext.html#setFeatures(com.google.gson.JsonObject)" class="member-name-link">setFeatures(JsonObject)</a> - Method in class growthbook.sdk.java.model.<a href="growthbook/sdk/java/model/GBContext.html" title="class in growthbook.sdk.java.model">GBContext</a></dt>
+<dt><a href="growthbook/sdk/java/model/GBContext.html#setFeatures(java.util.Map)" class="member-name-link">setFeatures(Map&lt;String, Feature&lt;?&gt;&gt;)</a> - Method in class growthbook.sdk.java.model.<a href="growthbook/sdk/java/model/GBContext.html" title="class in growthbook.sdk.java.model">GBContext</a></dt>
 <dd>
 <div class="block">Keys are unique identifiers for the features and the values are Feature objects.</div>
 </dd>
-<dt><a href="growthbook/sdk/java/multiusermode/configurations/GlobalContext.html#setFeatures(com.google.gson.JsonObject)" class="member-name-link">setFeatures(JsonObject)</a> - Method in class growthbook.sdk.java.multiusermode.configurations.<a href="growthbook/sdk/java/multiusermode/configurations/GlobalContext.html" title="class in growthbook.sdk.java.multiusermode.configurations">GlobalContext</a></dt>
+<dt><a href="growthbook/sdk/java/multiusermode/configurations/GlobalContext.html#setFeatures(java.util.Map)" class="member-name-link">setFeatures(Map&lt;String, Feature&lt;?&gt;&gt;)</a> - Method in class growthbook.sdk.java.multiusermode.configurations.<a href="growthbook/sdk/java/multiusermode/configurations/GlobalContext.html" title="class in growthbook.sdk.java.multiusermode.configurations">GlobalContext</a></dt>
 <dd>
 <div class="block">Keys are unique identifiers for the features and the values are Feature objects.</div>
-</dd>
-<dt><a href="growthbook/sdk/java/GrowthBook.html#setFeatures(java.lang.String)" class="member-name-link">setFeatures(String)</a> - Method in class growthbook.sdk.java.<a href="growthbook/sdk/java/GrowthBook.html" title="class in growthbook.sdk.java">GrowthBook</a></dt>
-<dd>
-<div class="block">Method for pass feature json in format String to GbContext</div>
 </dd>
 <dt><a href="growthbook/sdk/java/model/GBContext.html#setFeaturesJson(java.lang.String)" class="member-name-link">setFeaturesJson(String)</a> - Method in class growthbook.sdk.java.model.<a href="growthbook/sdk/java/model/GBContext.html" title="class in growthbook.sdk.java.model">GBContext</a></dt>
 <dd>
@@ -2584,10 +2588,6 @@ loadScripts(document, 'script');</script>
 <dt><a href="growthbook/sdk/java/model/FeatureResult.html#setRuleId(java.lang.String)" class="member-name-link">setRuleId(String)</a> - Method in class growthbook.sdk.java.model.<a href="growthbook/sdk/java/model/FeatureResult.html" title="class in growthbook.sdk.java.model">FeatureResult</a></dt>
 <dd>
 <div class="block">Unique identifier of rule</div>
-</dd>
-<dt><a href="growthbook/sdk/java/GrowthBook.html#setSavedGroups(com.google.gson.JsonObject)" class="member-name-link">setSavedGroups(JsonObject)</a> - Method in class growthbook.sdk.java.<a href="growthbook/sdk/java/GrowthBook.html" title="class in growthbook.sdk.java">GrowthBook</a></dt>
-<dd>
-<div class="block">Method for pass saved groups JsonObject to GbContext</div>
 </dd>
 <dt><a href="growthbook/sdk/java/model/GBContext.html#setSavedGroups(com.google.gson.JsonObject)" class="member-name-link">setSavedGroups(JsonObject)</a> - Method in class growthbook.sdk.java.model.<a href="growthbook/sdk/java/model/GBContext.html" title="class in growthbook.sdk.java.model">GBContext</a></dt>
 <dd>
