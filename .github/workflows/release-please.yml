@@ -1,0 +1,60 @@
+name: Release-Please
+
+on:
+  push:
+    branches:
+      - main
+      - mc-optimize-deserialization
+
+permissions:
+  contents: write
+  pull-requests: write
+  packages: write
+
+jobs:
+  release-please:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: google-github-actions/release-please-action@v3
+        id: release
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          release-type: java-yoshi
+          package-name: com.github.growthbook.growthbook-sdk-java
+          command: manifest
+
+      # The following steps only run if a new release was created
+      - name: Checkout code
+        if: ${{ steps.release.outputs.release_created }}
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - name: Set up JDK 11
+        if: ${{ steps.release.outputs.release_created }}
+        uses: actions/setup-java@v3
+        with:
+          java-version: '11'
+          distribution: 'temurin'
+          cache: gradle
+
+      - name: Build with Gradle
+        if: ${{ steps.release.outputs.release_created }}
+        run: ./gradlew build
+
+      - name: Publish to GitHub Packages
+        if: ${{ steps.release.outputs.release_created }}
+        run: ./gradlew publish
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload Artifacts to GitHub Release
+        if: ${{ steps.release.outputs.release_created }}
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: v${{ steps.release.outputs.major }}.${{ steps.release.outputs.minor }}.${{ steps.release.outputs.patch }}
+          files: |
+            lib/build/libs/lib-*.jar
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} 
