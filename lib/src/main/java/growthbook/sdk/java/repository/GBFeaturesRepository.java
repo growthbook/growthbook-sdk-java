@@ -2,6 +2,8 @@ package growthbook.sdk.java.repository;
 
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import growthbook.sdk.java.model.Feature;
+import growthbook.sdk.java.multiusermode.util.TransformationUtil;
 import growthbook.sdk.java.sandbox.CachingManager;
 import growthbook.sdk.java.util.DecryptionUtils;
 import growthbook.sdk.java.exception.FeatureFetchException;
@@ -31,6 +33,8 @@ import javax.annotation.Nullable;
 import java.io.IOException;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
@@ -139,6 +143,16 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
      * or your features would not have loaded.
      */
     private String featuresJson = EMPTY_JSON_OBJECT_STRING;
+
+    /**
+     * Keys are unique identifiers for the features and the values are Feature objects.
+     * Feature definitions - To be pulled from API / Cache
+     */
+    //@Getter
+    private Map<String, Feature<?>> parsedFeatures = new HashMap<>();
+
+    @Getter
+    private JsonObject parsedSavedGroups = new JsonObject();
 
     // Method was useful for testing
     public void setCachingManager(CachingManager cachingManager) {
@@ -307,22 +321,20 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
      * @return feature data JSON in a type of String. Handle refresh strategy
      */
     public String getFeaturesJson() {
-        switch (this.refreshStrategy) {
-            case STALE_WHILE_REVALIDATE:
-                if (isCacheExpired()) {
-                    this.enqueueFeatureRefreshRequest();
-                    this.refreshExpiresAt();
-                }
-                return this.featuresJson;
-
-            case SERVER_SENT_EVENTS:
-                return this.featuresJson;
-
-            case REMOTE_EVAL_STRATEGY:
-                return this.featuresJson;
+        if (this.refreshStrategy == FeatureRefreshStrategy.STALE_WHILE_REVALIDATE && isCacheExpired()) {
+            this.enqueueFeatureRefreshRequest();
+            this.refreshExpiresAt();
         }
-
         return this.featuresJson;
+    }
+
+    public Map<String, Feature<?>> getParsedFeatures() {
+        //TBD: This auto-refresh implementation must be corrected.
+        if (this.refreshStrategy == FeatureRefreshStrategy.STALE_WHILE_REVALIDATE && isCacheExpired()) {
+            this.enqueueFeatureRefreshRequest();
+            this.refreshExpiresAt();
+        }
+        return this.parsedFeatures;
     }
 
     /**
@@ -595,6 +607,8 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
 
             this.featuresJson = refreshedFeatures;
             this.savedGroupsJson = refreshedSavedGroups;
+            this.parsedFeatures = TransformationUtil.transformFeatures(this.featuresJson);
+            this.parsedSavedGroups = TransformationUtil.transformSavedGroups(this.savedGroupsJson);
 
             this.onRefreshSuccess(this.featuresJson);
         } catch (DecryptionUtils.DecryptionException e) {

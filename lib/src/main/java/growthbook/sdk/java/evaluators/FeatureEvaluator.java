@@ -1,6 +1,5 @@
 package growthbook.sdk.java.evaluators;
 
-import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import growthbook.sdk.java.util.GrowthBookJsonUtils;
 import growthbook.sdk.java.util.GrowthBookUtils;
@@ -33,7 +32,6 @@ public class FeatureEvaluator implements IFeatureEvaluator {
     private final GrowthBookJsonUtils jsonUtils = GrowthBookJsonUtils.getInstance();
     private final ConditionEvaluator conditionEvaluator = new ConditionEvaluator();
     private final ExperimentEvaluator experimentEvaluator = new ExperimentEvaluator();
-    //private final FeatureEvalContext featureEvalContext = new FeatureEvalContext(null, new HashSet<>());
 
     // Takes Context and Feature Key
     // Returns Calculated Feature Result against that key
@@ -110,8 +108,8 @@ public class FeatureEvaluator implements IFeatureEvaluator {
             }
 
             // Unknown key, return empty feature
-            JsonObject features = context.getGlobal().getFeatures();
-            if (features == null || !features.has(key)) {
+            Map<String, Feature<?>> features = context.getGlobal().getFeatures();
+            if (features == null || features.isEmpty() || !features.containsKey(key)) {
                 if (featureUsageCallbackWithUser != null) {
                     featureUsageCallbackWithUser.onFeatureUsage(key, unknownFeatureResult, context.getUser());
                 }
@@ -120,25 +118,13 @@ public class FeatureEvaluator implements IFeatureEvaluator {
             }
 
             // The key exists
-            JsonElement featureJson = features.get(key);
+            Feature<ValueType> feature = (Feature<ValueType>) features.get(key);
             FeatureResult<ValueType> defaultValueFeature = FeatureResult
                     .<ValueType>builder()
                     .value(null)
                     .source(FeatureResultSource.DEFAULT_VALUE)
                     .build();
 
-            if (featureJson == null) {
-                log.info("featureJson is null");
-
-                // When key exists but there is no value, should be default value with null value
-                if (featureUsageCallbackWithUser != null) {
-                    featureUsageCallbackWithUser.onFeatureUsage(key, defaultValueFeature, context.getUser());
-                }
-
-                return defaultValueFeature;
-            }
-
-            Feature<ValueType> feature = jsonUtils.gson.fromJson(featureJson, Feature.class);
             if (feature == null) {
                 // When key exists but there is no value, should be default value with null value
                 if (featureUsageCallbackWithUser != null) {
@@ -294,7 +280,13 @@ public class FeatureEvaluator implements IFeatureEvaluator {
 
                     // If this was a remotely evaluated experiment, fire the tracking callbacks
                     if (trackData != null && trackingCallBackWithUser != null) {
-                        trackData.forEach(t -> trackingCallBackWithUser.onTrack(t.getExperiment(), t.getResult().getExperimentResult(), context.getUser()));
+                        trackData.forEach(t ->
+                                trackingCallBackWithUser.onTrack(
+                                        t.getExperiment(),
+                                        t.getResult().getExperimentResult(),
+                                        context.getUser()
+                                )
+                        );
                     }
 
                     if (rule.getRange() == null) {
@@ -449,7 +441,7 @@ public class FeatureEvaluator implements IFeatureEvaluator {
             return null;
         }
     }
-    
+
     private void leaveCircularLoop(EvaluationContext context) {
         context.getStack().setId(null);
         context.getStack().getEvaluatedFeatures().clear();

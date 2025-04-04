@@ -10,13 +10,17 @@ import static org.mockito.Mockito.verify;
 import growthbook.sdk.java.callback.TrackingCallback;
 import growthbook.sdk.java.model.Experiment;
 import growthbook.sdk.java.model.ExperimentResult;
+import growthbook.sdk.java.model.Feature;
 import growthbook.sdk.java.model.GBContext;
+import growthbook.sdk.java.multiusermode.util.TransformationUtil;
+import growthbook.sdk.java.util.GrowthBookJsonUtils;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import java.util.HashMap;
+import java.util.Map;
 
 class GBContextTest {
     private AutoCloseable closeable;
@@ -150,9 +154,14 @@ class GBContextTest {
                 null
         );
         String expectedFeaturesJson = "{\"greeting\":{\"defaultValue\":\"hello\",\"rules\":[{\"condition\":{\"country\":\"france\"},\"force\":\"bonjour\"},{\"condition\":{\"country\":\"mexico\"},\"force\":\"hola\"}]}}";
+        Map<String, Feature<?>> stringFeatureMap = TransformationUtil.transformFeatures(expectedFeaturesJson);
+        String expectedResult = GrowthBookJsonUtils.getInstance().gson.toJson(stringFeatureMap);
+
+        String actualResult = GrowthBookJsonUtils.getInstance().gson.toJson(subject.getFeatures());
+
 
         assertNotNull(subject);
-        assertEquals(expectedFeaturesJson.trim(), subject.getFeatures() != null ? subject.getFeatures().toString().trim() : null);
+        assertEquals(expectedResult, actualResult);
     }
 
     @Test
@@ -181,10 +190,13 @@ class GBContextTest {
                 .build();
 
         String expectedFeaturesJson = "{\"greeting\":{\"defaultValue\":\"hello\",\"rules\":[{\"condition\":{\"country\":\"france\"},\"force\":\"bonjour\"},{\"condition\":{\"country\":\"mexico\"},\"force\":\"hola\"}]}}";
+        Map<String, Feature<?>> expectedFeaturesJsonMapFormat = TransformationUtil.transformFeatures(expectedFeaturesJson);
+        String expectedResult = GrowthBookJsonUtils.getInstance().gson.toJson(expectedFeaturesJsonMapFormat);
+        String actualResult = GrowthBookJsonUtils.getInstance().gson.toJson(subject.getFeatures());
 
         assertNotNull(subject);
         assert subject.getFeatures() != null;
-        assertEquals(expectedFeaturesJson.trim(), subject.getFeatures().toString().trim());
+        assertEquals(expectedResult, actualResult);
     }
 
     @Test

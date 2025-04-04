@@ -16,6 +16,7 @@ import growthbook.sdk.java.model.StickyBucketVariation;
 import growthbook.sdk.java.model.VariationMeta;
 import growthbook.sdk.java.multiusermode.configurations.EvaluationContext;
 import growthbook.sdk.java.model.StickyAssignmentsDocument;
+import growthbook.sdk.java.multiusermode.util.TransformationUtil;
 import growthbook.sdk.java.stickyBucketing.StickyBucketService;
 import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.NotNull;
@@ -624,15 +625,13 @@ public class GrowthBookUtils {
         JsonObject jsonObject = GrowthBookJsonUtils.getInstance()
                 .gson.fromJson(featureDataModel, JsonObject.class);
 
-        JsonElement featuresJsonElement = jsonObject.get("features");
-        JsonElement features = featuresJsonElement != null ? featuresJsonElement : context.getFeatures();
+        String featuresStringJson = jsonObject.get("features").toString().trim();
+        Map<String, Feature<?>> featuresMap = TransformationUtil.transformFeatures(featuresStringJson);
+        Map<String, Feature<?>> features = !featuresMap.isEmpty() ? featuresMap : context.getFeatures();
 
         if (features != null) {
-            for (String id : features.getAsJsonObject().keySet()) {
-                Feature<ValueType> feature = GrowthBookJsonUtils
-                        .getInstance()
-                        .gson
-                        .fromJson(features.getAsJsonObject().get(id), Feature.class);
+            for (Map.Entry<String, Feature<?>> entry : features.entrySet()) {
+                Feature<ValueType> feature = (Feature<ValueType>) entry.getValue();
 
                 if (feature != null && feature.getRules() != null) {
 

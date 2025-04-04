@@ -2,6 +2,7 @@ package growthbook.sdk.java.multiusermode.configurations;
 
 import com.google.gson.JsonObject;
 import growthbook.sdk.java.model.Experiment;
+import growthbook.sdk.java.model.Feature;
 import lombok.Builder;
 import lombok.Data;
 import lombok.Getter;
@@ -23,7 +24,7 @@ public class GlobalContext {
      */
     @Getter
     @Nullable
-    private JsonObject features;
+    private Map<String, Feature<?>> features;
 
     @Nullable
     private JsonObject savedGroups;
