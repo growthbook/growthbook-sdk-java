@@ -30,9 +30,6 @@ import java.util.*;
 public class ExperimentEvaluator implements IExperimentEvaluator {
 
     private final ConditionEvaluator conditionEvaluator = new ConditionEvaluator();
-    private final GrowthBookJsonUtils jsonUtils = GrowthBookJsonUtils.getInstance();
-    private final ExperimentTracker experimentTracker = new ExperimentTracker();
-
 
     /**
      * Takes Context, Experiment and returns Experiment Result
@@ -311,7 +308,7 @@ public class ExperimentEvaluator implements IExperimentEvaluator {
 
         // Fire context.trackingClosure if set and the combination of hashAttribute,
         // hashValue, experiment.key, and variationId has not been tracked before
-        if (!isExperimentTracked(experiment, result)) {
+        if (!context.getOptions().getExperimentHelper().isTracked(experiment, result)) {
             TrackingCallbackWithUser trackingCallBackWithUser = context.getOptions().getTrackingCallBackWithUser();
 
             if (trackingCallBackWithUser != null) {
@@ -392,23 +389,6 @@ public class ExperimentEvaluator implements IExperimentEvaluator {
                 .bucket(hashBucket)
                 .passThrough(passThrough)
                 .build();
-    }
-
-    //  Track experiments to trigger callbacks.
-    private <ValueType> boolean isExperimentTracked(Experiment<ValueType> experiment, ExperimentResult<ValueType> result) {
-        String experimentKey = experiment.getKey();
-
-        String key = (
-                result.getHashAttribute() != null ? result.getHashAttribute() : "")
-                + (result.getHashValue() != null ? result.getHashValue() : "")
-                + (experimentKey + result.getVariationId());
-
-        // Add the experiment to the tracker if it doesn't exist.
-        if (!experimentTracker.isExperimentTracked(key)) {
-            experimentTracker.trackExperiment(key);
-        }
-
-        return false;
     }
 
     private <ValueType> boolean isStickyBucketingEnabledForExperiment(EvaluationContext context,

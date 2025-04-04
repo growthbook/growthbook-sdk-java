@@ -157,6 +157,7 @@ public class Options {
     @Nullable
     private Map<String, Object> globalForcedFeatureValues;
 
+    private ExperimentHelper experimentHelper = new ExperimentHelper();
     /**
      * Force specific experiments to always assign a specific variation (used for QA)
      */
