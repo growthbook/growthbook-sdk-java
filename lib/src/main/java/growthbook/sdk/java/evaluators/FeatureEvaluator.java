@@ -16,7 +16,6 @@ import growthbook.sdk.java.multiusermode.configurations.EvaluationContext;
 import growthbook.sdk.java.multiusermode.usage.FeatureUsageCallbackWithUser;
 import growthbook.sdk.java.multiusermode.usage.TrackingCallbackWithUser;
 import lombok.extern.slf4j.Slf4j;
-
 import javax.annotation.Nullable;
 import java.net.MalformedURLException;
 import java.net.URL;
@@ -127,13 +126,10 @@ public class FeatureEvaluator implements IFeatureEvaluator {
                     .build();
 
             if (feature == null) {
-                log.info("featureJson is null");
-
                 // When key exists but there is no value, should be default value with null value
                 if (featureUsageCallbackWithUser != null) {
                     featureUsageCallbackWithUser.onFeatureUsage(key, defaultValueFeature, context.getUser());
                 }
-
                 return defaultValueFeature;
             }
 

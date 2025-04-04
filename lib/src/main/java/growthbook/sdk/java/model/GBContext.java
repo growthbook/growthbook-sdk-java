@@ -84,7 +84,7 @@ public class GBContext {
         this.stickyBucketService = stickyBucketService;
         this.stickyBucketAssignmentDocs = stickyBucketAssignmentDocs;
         this.stickyBucketIdentifierAttributes = stickyBucketIdentifierAttributes;
-        this.savedGroups = savedGroups;
+        this.savedGroups = savedGroups == null ? new JsonObject() : savedGroups;
     }
 
     /**

@@ -22,6 +22,10 @@ public class TransformationUtil {
 
 
     public static Map<String, Feature<?>> transformFeatures(String featuresJsonString) {
+        if (featuresJsonString == null || featuresJsonString.isEmpty()) {
+            return Collections.emptyMap();
+        }
+
         try {
             Type featureMapType = new TypeToken<Map<String, Feature<?>>>() {
             }.getType();
@@ -35,11 +39,15 @@ public class TransformationUtil {
     }
 
     public static JsonObject transformSavedGroups(String savedGroupsJsonString) {
+        if (savedGroupsJsonString == null || savedGroupsJsonString.isEmpty()) {
+            return new JsonObject();
+        }
+
         try {
             return GSON.fromJson(savedGroupsJsonString, JsonObject.class);
         } catch (Exception e) {
             log.error(e.getMessage(), e);
-            return null;
+            return new JsonObject();
         }
     }
 
@@ -47,25 +55,20 @@ public class TransformationUtil {
             @Nullable String featuresJson,
             @Nullable String encryptionKey
     ) {
-        // Features start as empty JSON
-        Map<String, Feature<?>> features = new HashMap<>();
-
         if (encryptionKey != null && featuresJson != null) {
             // Attempt to decrypt payload
             try {
                 String decrypted = DecryptionUtils.decrypt(featuresJson, encryptionKey);
                 String featuresJsonDecrypted = decrypted.trim();
-                features = transformFeatures(featuresJsonDecrypted);
-
+                return transformFeatures(featuresJsonDecrypted);
             } catch (DecryptionUtils.DecryptionException e) {
                 log.error(e.getMessage(), e);
-
             }
         } else if (featuresJson != null) {
-            features = transformFeatures(featuresJson);
+            return transformFeatures(featuresJson);
         }
 
-        return features;
+        return Collections.emptyMap();
     }
 
     public static JsonObject transformAttributes(@Nullable String attributesJsonString) {

@@ -657,7 +657,7 @@ class GrowthBookTest {
         JsonObject savedGroupsJson = GrowthBookJsonUtils.getInstance().gson.fromJson(savedGroups, JsonObject.class);
 
         GrowthBook subject = new GrowthBook(context, mockFeatureEvaluator, mockConditionEvaluator, mockExperimentEvaluator);
-        subject.setSavedGroups(savedGroupsJson);
+        context.setSavedGroups(savedGroupsJson);
 
         subject.evaluateCondition(attrJsonStr, conditionJsonStr);
 

@@ -82,8 +82,8 @@ public class GrowthBookClient {
 
                 // instantiate a global context that holds features & savedGroups.
                 this.globalContext = GlobalContext.builder()
-                        .features(repository.getFeaturesMap())
-                        .savedGroups(TransformationUtil.transformSavedGroups(repository.getSavedGroupsJson()))
+                        .features(repository.getParsedFeatures())
+                        .savedGroups(repository.getParsedSavedGroups())
                         .enabled(this.options.getEnabled())
                         .qaMode(this.options.getIsQaMode())
                         .forcedFeatureValues(this.options.getGlobalForcedFeatureValues())
@@ -203,13 +203,13 @@ public class GrowthBookClient {
             public void onRefresh(String featuresJson) {
                 // refer the global context with latest features & saved groups
                 if (globalContext != null) {
-                    globalContext.setFeatures(repository.getFeaturesMap());
-                    globalContext.setSavedGroups(TransformationUtil.transformSavedGroups(repository.getSavedGroupsJson()));
+                    globalContext.setFeatures(repository.getParsedFeatures());
+                    globalContext.setSavedGroups(repository.getParsedSavedGroups());
                 } else {
                     // TBD:M This should never happen! Just to be cautious about race conditions at the time of initialization
                     globalContext = GlobalContext.builder()
-                            .features(repository.getFeaturesMap())
-                            .savedGroups(TransformationUtil.transformSavedGroups(repository.getSavedGroupsJson()))
+                            .features(repository.getParsedFeatures())
+                            .savedGroups(repository.getParsedSavedGroups())
                             .enabled(options.getEnabled())
                             .qaMode(options.getIsQaMode())
                             .forcedFeatureValues(options.getGlobalForcedFeatureValues())

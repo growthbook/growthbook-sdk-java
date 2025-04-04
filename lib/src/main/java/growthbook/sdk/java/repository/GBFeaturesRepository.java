@@ -33,6 +33,7 @@ import javax.annotation.Nullable;
 import java.io.IOException;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
@@ -142,6 +143,16 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
      * or your features would not have loaded.
      */
     private String featuresJson = EMPTY_JSON_OBJECT_STRING;
+
+    /**
+     * Keys are unique identifiers for the features and the values are Feature objects.
+     * Feature definitions - To be pulled from API / Cache
+     */
+    //@Getter
+    private Map<String, Feature<?>> parsedFeatures = new HashMap<>();
+
+    @Getter
+    private JsonObject parsedSavedGroups = new JsonObject();
 
     // Method was useful for testing
     public void setCachingManager(CachingManager cachingManager) {
@@ -317,12 +328,13 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
         return this.featuresJson;
     }
 
-    public Map<String, Feature<?>> getFeaturesMap() {
+    public Map<String, Feature<?>> getParsedFeatures() {
+        //TBD: This auto-refresh implementation must be corrected.
         if (this.refreshStrategy == FeatureRefreshStrategy.STALE_WHILE_REVALIDATE && isCacheExpired()) {
             this.enqueueFeatureRefreshRequest();
             this.refreshExpiresAt();
         }
-        return TransformationUtil.transformFeatures(this.featuresJson);
+        return this.parsedFeatures;
     }
 
     /**
@@ -595,6 +607,8 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
 
             this.featuresJson = refreshedFeatures;
             this.savedGroupsJson = refreshedSavedGroups;
+            this.parsedFeatures = TransformationUtil.transformFeatures(this.featuresJson);
+            this.parsedSavedGroups = TransformationUtil.transformSavedGroups(this.savedGroupsJson);
 
             this.onRefreshSuccess(this.featuresJson);
         } catch (DecryptionUtils.DecryptionException e) {

@@ -77,7 +77,7 @@ public class LocalGbFeatureRepository implements IGBFeaturesRepository {
         return this.featuresJson;
     }
 
-    public Map<String, Feature<?>> getFeaturesMap() {
+    public Map<String, Feature<?>> getParsedFeatures() {
         return TransformationUtil.transformFeatures(this.featuresJson);
     }
 

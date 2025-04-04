@@ -22,15 +22,6 @@ interface IGrowthBook {
     <ValueType> FeatureResult<ValueType> evalFeature(String key, Class<ValueType> valueTypeClass);
 
     /**
-     * Call this with the JSON string returned from API.
-     *
-     * @param featuresJsonString features JSON from the GrowthBook API
-     */
-    void setFeatures(String featuresJsonString);
-
-    void setSavedGroups(JsonObject savedGroups);
-
-    /**
      * Update the user's attributes
      *
      * @param attributesJsonString user attributes JSON
