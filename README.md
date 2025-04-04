@@ -13,7 +13,6 @@
 
 - Java version 1.8 or later
 
-
 ## Documentation
 
 - [Usage Guide](https://docs.growthbook.io/lib/java)
@@ -22,7 +21,9 @@
 ## Installation
 
 ### Gradle
+
 To install in a Gradle project, add Jitpack to your repositories, and then add the dependency with the latest version to your project's dependencies.
+
 ```groovy
 allprojects {
     repositories {
@@ -36,7 +37,9 @@ dependencies {
 ```
 
 ### Maven
+
 To install in a Maven project, add Jitpack to your repositories:
+
 ```java
 <repositories>
     <repository>
@@ -45,6 +48,7 @@ To install in a Maven project, add Jitpack to your repositories:
     </repository>
 </repositories>
 ```
+
 Next, add the dependency with the latest version to your project's dependencies:
 
 ```java
@@ -58,8 +62,9 @@ Next, add the dependency with the latest version to your project's dependencies:
 > We are proposing two way of initializing SDK:
 
 ### GrowthBookClient
-`GrowthBookClient` lets you share the same instance for all requests with an ability to accept the user attributes 
-while calling the feature methods like `isOn()`. This `GrowthBookClient` instance is decoupled from the `GBContext`, 
+
+`GrowthBookClient` lets you share the same instance for all requests with an ability to accept the user attributes
+while calling the feature methods like `isOn()`. This `GrowthBookClient` instance is decoupled from the `GBContext`,
 creates a singleton featureRepository based on your refreshStrategy and uses the latest features at the time of
 evaluation, all managed internally.
 
@@ -120,35 +125,41 @@ GrowthBook growthBook = new GrowthBook(context);
 
 growthBook.isOn("featureKey");
 ```
+
 ## Usage
 
- * The `evalFeature()` method evaluates a feature based on the provided parameters. 
-It takes three arguments: a string representing the unique identifier of the feature, 
+- The `evalFeature()` method evaluates a feature based on the provided parameters.
+It takes three arguments: a string representing the unique identifier of the feature,
 a generic class valueTypeClass that specifies the type of the result value (e.g., Integer, String, Boolean),
 an UserContext object, which contains attributes, forceVariations and forceFeatureValues to provide a more flexible way of evaluating features.
 The method returns a FeatureResult object, which contains the evaluated result of the feature along with any additional metadata.
+
 ```java
 public <ValueType> FeatureResult<ValueType> evalFeature(String key, Class<ValueType> valueTypeClass, UserContext userContext);
 ```
 
-*  `getFeatureValue()` the same purpose as in `evalFeature()`, but have ability to provide default value
+- `getFeatureValue()` the same purpose as in `evalFeature()`, but have ability to provide default value
+
 ```java
 public <ValueType> ValueType getFeatureValue(String featureKey, ValueType defaultValue, Class<ValueType> gsonDeserializableClass, UserContext userContext);
 ```
 
-* The `isOn()` / `isOff()` method takes a string argument, which is the unique identifier for the feature, and UserContext, which contains attributes, forceVariations and forceFeatureValues to provide a more flexible way of evaluating features. Functions return the feature state on/off
+- The `isOn()` / `isOff()` method takes a string argument, which is the unique identifier for the feature, and UserContext, which contains attributes, forceVariations and forceFeatureValues to provide a more flexible way of evaluating features. Functions return the feature state on/off
 
 ```java
 public Boolean isOn(String featureKey, UserContext userContext);
 
 public Boolean isOff(String featureKey, UserContext userContext);
 ```
-* The `run()` method takes an Experiment object and UserContext. Function returns an ExperimentResult
+
+- The `run()` method takes an Experiment object and UserContext. Function returns an ExperimentResult
+
 ```java
 public <ValueType> ExperimentResult<ValueType> run(Experiment<ValueType> experiment, UserContext userContext);
 ```
 
-* If you changed, added or removed any features, you can call the `refreshCache()` / `refreshCacheForRemoteEval()` method to clear the cache and download the latest feature definitions.
+- If you changed, added or removed any features, you can call the `refreshCache()` / `refreshCacheForRemoteEval()` method to clear the cache and download the latest feature definitions.
+
 ```java
 public void refreshFeature();
 
@@ -185,13 +196,15 @@ information. If your organization and experiment supports sticky bucketing, you 
 the `StickyBucketService` to use Sticky Bucketing. For simple bucket persistence using the CachingLayer.
 
 Sticky Bucket documents contain three fields:
-* attributeName - The name of the attribute used to identify the user (e.g. id, cookie_id, etc.)
-* attributeValue - The value of the attribute (e.g. 123)
-* assignments - A dictionary of persisted experiment assignments. For example: {"exp1__0":"control"}
+
+- attributeName - The name of the attribute used to identify the user (e.g. id, cookie_id, etc.)
+- attributeValue - The value of the attribute (e.g. 123)
+- assignments - A dictionary of persisted experiment assignments. For example: {"exp1__0":"control"}
 
 The attributeName/attributeValue combo is the primary key.
 
 Here's an example implementation using a theoretical db object:
+
 ```java
 public class InMemoryStickyBucketServiceImpl implements StickyBucketService {
     private final Map<String, StickyAssignmentsDocument> localStorage;
@@ -259,10 +272,27 @@ public class InMemoryStickyBucketServiceImpl implements StickyBucketService {
 
 ### Releasing a new version
 
-For now, we are manually managing the version number.
+We use [Release-Please](https://github.com/googleapis/release-please) to automate our release process. The release process follows these steps:
 
-When making a new release, ensure the file `growthbook/sdk/java/Version.java` has the version matching the tag and release. For example, if you are releasing version `0.3.0`, the following criteria should be met:
+1. **Make changes using Conventional Commits**: When making changes, format your commit messages following the [Conventional Commits](https://www.conventionalcommits.org/) spec:
+   - `fix: message` - for bug fixes (triggers a patch version bump)
+   - `feat: message` - for new features (triggers a minor version bump)
+   - `feat!: message` or `fix!: message` - for breaking changes (triggers a major version bump)
+   - `docs: message` - for documentation changes (no version bump)
+   - `chore: message` - for maintenance changes (no version bump)
 
-- the tag should be `0.3.0`
-- the release should be `0.3.0` 
-- the contents of the `Version.java` file should include the version as `static final String SDK_VERSION = "0.3.0";`
+2. **Automated Release PR**: When commits are pushed to the `main` branch, Release-Please will automatically create or update a release PR that:
+   - Updates the version in `gradle.properties` and `Version.java`
+   - Updates the `CHANGELOG.md` with all the changes since the last release
+   - Groups changes by type (features, fixes, etc.)
+
+3. **Review and Merge**: Review the Release PR and merge it when ready to trigger a release.
+
+4. **Automated Release**: Upon merging the Release PR, the action will:
+   - Create a Git tag for the new version
+   - Create a GitHub Release with release notes
+   - Upload build artifacts to the GitHub Release
+
+5. **Jitpack Integration**: Jitpack will automatically detect the new release tag and make it available for download.
+
+No manual version updates are required!
