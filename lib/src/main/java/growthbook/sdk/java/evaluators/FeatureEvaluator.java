@@ -53,7 +53,7 @@ public class FeatureEvaluator implements IFeatureEvaluator {
 
         try {
             if (context.getStack().getEvaluatedFeatures().contains(key)) {
-                // block that handle recursion
+                // block that handles recursion
                 log.info(
                         "evaluateFeature: circular dependency detected: {} -> {}. { from: {}, to: {} }",
                         context.getStack().getId(), key,
@@ -291,8 +291,6 @@ public class FeatureEvaluator implements IFeatureEvaluator {
 
                     if (rule.getRange() == null) {
                         if (rule.getCoverage() != null) {
-//                            String key = ruleKey;
-
                             String attributeValue = context.getUser().getAttributes().get(ruleKey) == null
                                     ? null : context.getUser().getAttributes().get(ruleKey).getAsString();
 
