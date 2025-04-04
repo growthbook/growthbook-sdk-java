@@ -160,9 +160,4 @@ release {
     tagTemplate = '${version}'
     versionPropertyFile = 'gradle.properties'
     pushReleaseVersionBranch = 'main'
-
-    git {
-        requireBranch = 'main'
-        pushToRemote = 'origin'
-    }
 }
