@@ -2,6 +2,8 @@ package growthbook.sdk.java.repository;
 
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import growthbook.sdk.java.model.Feature;
+import growthbook.sdk.java.multiusermode.util.TransformationUtil;
 import growthbook.sdk.java.sandbox.CachingManager;
 import growthbook.sdk.java.util.DecryptionUtils;
 import growthbook.sdk.java.exception.FeatureFetchException;
@@ -26,6 +28,9 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
+import java.util.Collections;
+import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -243,23 +248,34 @@ public class NativeJavaGbFeatureRepository implements IGBFeaturesRepository {
     public String getFeaturesJson() {
         try {
             lock.lock();
-
-            switch (this.refreshStrategy) {
-                case STALE_WHILE_REVALIDATE:
-                    if (isCacheExpired()) {
-                        this.initializeSSE(true);
-                        this.refreshExpiresAt();
-                    }
-                    return this.featuresJson.get();
-
-                case SERVER_SENT_EVENTS:
-                    return this.featuresJson.get();
-
-                case REMOTE_EVAL_STRATEGY:
-                    return this.featuresJson.get();
+            if (this.refreshStrategy == FeatureRefreshStrategy.STALE_WHILE_REVALIDATE && isCacheExpired()) {
+                this.enqueueFeatureRefreshRequest();
+                this.refreshExpiresAt();
             }
-
             return this.featuresJson.get();
+        } finally {
+            lock.unlock();
+        }
+    }
+
+    private void enqueueFeatureRefreshRequest() {
+        try {
+            fetchFeatures();
+        } catch (FeatureFetchException e) {
+            log.error("FeatureFetchException occur with message - {}, Code is - {}", e.getMessage(), e.getErrorCode(), e);
+        }
+    }
+
+    public Map<String, Feature<?>> getFeaturesMap() {
+        try {
+            lock.lock();
+            if (this.refreshStrategy == FeatureRefreshStrategy.STALE_WHILE_REVALIDATE && isCacheExpired()) {
+                this.enqueueFeatureRefreshRequest();
+                this.refreshExpiresAt();
+            }
+            return Optional.ofNullable(this.featuresJson.get())
+                    .map(TransformationUtil::transformFeatures)
+                    .orElse(Collections.emptyMap());
         } finally {
             lock.unlock();
         }

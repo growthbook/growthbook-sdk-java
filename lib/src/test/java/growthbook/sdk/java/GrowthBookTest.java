@@ -24,9 +24,11 @@ import growthbook.sdk.java.evaluators.ExperimentEvaluator;
 import growthbook.sdk.java.evaluators.FeatureEvaluator;
 import growthbook.sdk.java.model.Experiment;
 import growthbook.sdk.java.model.ExperimentResult;
+import growthbook.sdk.java.model.Feature;
 import growthbook.sdk.java.model.FeatureResult;
 import growthbook.sdk.java.model.FeatureResultSource;
 import growthbook.sdk.java.model.GBContext;
+import growthbook.sdk.java.multiusermode.util.TransformationUtil;
 import growthbook.sdk.java.testhelpers.PaperCupsConfig;
 import growthbook.sdk.java.testhelpers.TestCasesJsonHelper;
 import growthbook.sdk.java.testhelpers.TestContext;
@@ -37,6 +39,7 @@ import org.mockito.ArgumentCaptor;
 import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Map;
 import java.util.Objects;
 
 class GrowthBookTest {
@@ -455,10 +458,11 @@ class GrowthBookTest {
         JsonObject jsonObject2 = new JsonObject();
         jsonObject2.add("defaultValue", new JsonPrimitive(true));
         jsonObject1.add(featureKey, jsonObject2);
-        
+        Map<String, Feature<?>> stringFeatureMap = TransformationUtil.transformFeatures(jsonObject1.toString());
+
         GBContext context = GBContext
         .builder()
-        .features(jsonObject1)
+        .features(stringFeatureMap)
         .build();
         
         GrowthBook subject = new GrowthBook(context);
@@ -653,7 +657,7 @@ class GrowthBookTest {
         JsonObject savedGroupsJson = GrowthBookJsonUtils.getInstance().gson.fromJson(savedGroups, JsonObject.class);
 
         GrowthBook subject = new GrowthBook(context, mockFeatureEvaluator, mockConditionEvaluator, mockExperimentEvaluator);
-        subject.setSavedGroups(savedGroupsJson);
+        context.setSavedGroups(savedGroupsJson);
 
         subject.evaluateCondition(attrJsonStr, conditionJsonStr);
 

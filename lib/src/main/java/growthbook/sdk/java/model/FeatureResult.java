@@ -104,6 +104,11 @@ public class FeatureResult<ValueType> {
             return (Double) value != 0;
         }
 
+        if (value instanceof Long) {
+            return (Long) value != 0;
+
+        }
+
         if (value instanceof Collection<?>) {
             return !((Collection<?>) value).isEmpty();
         }

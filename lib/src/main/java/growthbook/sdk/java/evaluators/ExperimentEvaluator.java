@@ -2,6 +2,7 @@ package growthbook.sdk.java.evaluators;
 
 import com.google.gson.JsonObject;
 import growthbook.sdk.java.model.GeneratedStickyBucketAssignmentDocModel;
+import growthbook.sdk.java.multiusermode.ExperimentTracker;
 import growthbook.sdk.java.util.GrowthBookJsonUtils;
 import growthbook.sdk.java.util.GrowthBookUtils;
 import growthbook.sdk.java.model.HashAttributeAndHashValue;
@@ -15,7 +16,6 @@ import growthbook.sdk.java.model.FeatureResultSource;
 import growthbook.sdk.java.model.Filter;
 import growthbook.sdk.java.model.StickyBucketVariation;
 import growthbook.sdk.java.model.VariationMeta;
-import growthbook.sdk.java.multiusermode.ExperimentTracker;
 import growthbook.sdk.java.multiusermode.configurations.EvaluationContext;
 import growthbook.sdk.java.multiusermode.usage.TrackingCallbackWithUser;
 import lombok.extern.slf4j.Slf4j;
