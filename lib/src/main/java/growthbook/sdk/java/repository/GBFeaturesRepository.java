@@ -156,7 +156,7 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
 
     // Method was useful for testing
     public void setCachingManager(CachingManager cachingManager) {
-        if (Boolean.FALSE.equals(this.isCacheDisabled)) {
+        if (!isCacheDisabled) {
             this.cachingManager = cachingManager;
         }
     }
@@ -277,7 +277,7 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
             @Nullable Boolean isCacheDisabled,
             @Nullable RequestBodyForRemoteEval requestBodyForRemoteEval
     ) {
-        this.isCacheDisabled = isCacheDisabled == null || isCacheDisabled;
+        this.isCacheDisabled = isCacheDisabled != null && isCacheDisabled; // cache enable by default
         if (clientKey == null) throw new IllegalArgumentException("clientKey cannot be null");
 
         // Set the defaults when the user does not provide them
@@ -321,7 +321,10 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
      * @return feature data JSON in a type of String. Handle refresh strategy
      */
     public String getFeaturesJson() {
-        if (this.refreshStrategy == FeatureRefreshStrategy.STALE_WHILE_REVALIDATE && isCacheExpired()) {
+        if (this.refreshStrategy == FeatureRefreshStrategy.STALE_WHILE_REVALIDATE
+                && !isCacheDisabled
+                && isCacheExpired()
+        ) {
             this.enqueueFeatureRefreshRequest();
             this.refreshExpiresAt();
         }
@@ -330,7 +333,10 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
 
     public Map<String, Feature<?>> getParsedFeatures() {
         //TBD: This auto-refresh implementation must be corrected.
-        if (this.refreshStrategy == FeatureRefreshStrategy.STALE_WHILE_REVALIDATE && isCacheExpired()) {
+        if (this.refreshStrategy == FeatureRefreshStrategy.STALE_WHILE_REVALIDATE
+                && !isCacheDisabled
+                && isCacheExpired()
+        ) {
             this.enqueueFeatureRefreshRequest();
             this.refreshExpiresAt();
         }
