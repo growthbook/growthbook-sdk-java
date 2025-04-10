@@ -47,7 +47,7 @@ public class Options {
     ) {
         this.enabled = enabled == null || enabled;
         this.isQaMode = isQaMode != null && isQaMode;
-        this.isCacheDisabled = isCacheDisabled == null || isCacheDisabled;
+        this.isCacheDisabled = isCacheDisabled != null && isCacheDisabled;
         this.allowUrlOverrides = allowUrlOverrides != null && allowUrlOverrides;
         this.url = url;
         this.apiHost = apiHost;
