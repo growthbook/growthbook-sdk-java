@@ -305,7 +305,7 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
             // TODO: Check for valid interceptor
             this.okHttpClient = okHttpClient;
         }
-        if (Boolean.FALSE.equals(isCacheDisabled)) {
+        if (Boolean.FALSE.equals(this.isCacheDisabled)) {
             cachingManager = new CachingManager(FILE_PATH_FOR_CACHE);
         }
     }

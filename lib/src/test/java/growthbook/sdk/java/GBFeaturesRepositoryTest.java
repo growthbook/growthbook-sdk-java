@@ -126,7 +126,7 @@ class GBFeaturesRepositoryTest {
                 null,
                 null,
                 mockOkHttpClient,
-                null,
+                true,
                 null
         );
         subject.initialize();
@@ -173,7 +173,7 @@ class GBFeaturesRepositoryTest {
                 null,
                 null,
                 mockOkHttpClient,
-                null,
+                true,
                 null
         );
         subject.initialize();
@@ -230,7 +230,7 @@ class GBFeaturesRepositoryTest {
     }
 
     @Test
-    void testOnFeaturesRefresh_Error() {
+    void testOnFeaturesRefresh_Error() throws IOException {
         OkHttpClient mockOkHttpClient = mock(OkHttpClient.class);
         IOException requestFailed = new IOException("Request failed");
 
@@ -261,6 +261,8 @@ class GBFeaturesRepositoryTest {
 
         verify(featureRefreshCallback).onError(requestFailed);
         verify(featureRefreshCallback, never()).onRefresh(anyString());
+
+        subject.getCachingManager().clearCache();
     }
 
 
@@ -278,7 +280,7 @@ class GBFeaturesRepositoryTest {
                 FeatureRefreshStrategy.REMOTE_EVAL_STRATEGY,
                 60,
                 mockHttpClient,
-                null,
+                true,
                 null
         ));
 
@@ -318,7 +320,7 @@ class GBFeaturesRepositoryTest {
                 FeatureRefreshStrategy.REMOTE_EVAL_STRATEGY,
                 60,
                 mockHttpClient,
-                null,
+                true,
                 null
         ));
 
@@ -349,7 +351,7 @@ class GBFeaturesRepositoryTest {
                 FeatureRefreshStrategy.REMOTE_EVAL_STRATEGY,
                 60,
                 mockHttpClient,
-                null,
+                true,
                 null
         ));
 
@@ -395,7 +397,7 @@ class GBFeaturesRepositoryTest {
                 60,
                 mockHttpClient,
                 null,
-                null,
+                true,
                 requestBody
         ));
 
@@ -444,7 +446,7 @@ class GBFeaturesRepositoryTest {
                 null,
                 0,
                 mockOkHttpClient,
-                null,
+                true,
                 null
         );
 
@@ -453,7 +455,6 @@ class GBFeaturesRepositoryTest {
                 subject::initialize,
                 "HTTP_RESPONSE_ERROR : responded with status 400"
         );
-
     }
 
     /*
@@ -492,6 +493,7 @@ class GBFeaturesRepositoryTest {
         String actualResult = subject.getFeaturesJson();
         assertEquals(expectedResult, actualResult);
         verify(mockCacheManager).loadCache(anyString());
+        mockCacheManager.clearCache();
     }
 
 
