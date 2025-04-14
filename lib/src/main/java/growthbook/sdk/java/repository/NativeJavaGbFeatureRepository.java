@@ -5,6 +5,7 @@ import com.google.gson.JsonObject;
 import growthbook.sdk.java.model.Feature;
 import growthbook.sdk.java.multiusermode.util.TransformationUtil;
 import growthbook.sdk.java.sandbox.FileCachingManagerImpl;
+import growthbook.sdk.java.sandbox.GbCacheManager;
 import growthbook.sdk.java.util.DecryptionUtils;
 import growthbook.sdk.java.exception.FeatureFetchException;
 import growthbook.sdk.java.callback.FeatureRefreshCallback;
@@ -131,7 +132,7 @@ public class NativeJavaGbFeatureRepository implements IGBFeaturesRepository {
     /**
      * CachingManger allows to cache features data to file
      */
-    private AtomicReference<FileCachingManagerImpl> cachingManager;
+    private AtomicReference<GbCacheManager> cacheManager;
     /**
      * Flag that enable CachingManager
      */
@@ -160,7 +161,8 @@ public class NativeJavaGbFeatureRepository implements IGBFeaturesRepository {
                                          @Nullable FeatureRefreshStrategy refreshStrategy,
                                          @Nullable Integer swrTtlSeconds,
                                          @Nullable Boolean isCacheDisabled,
-                                         @Nullable RequestBodyForRemoteEval requestBodyForRemoteEval
+                                         @Nullable RequestBodyForRemoteEval requestBodyForRemoteEval,
+                                         @Nullable GbCacheManager cacheManager
     ) {
         this.isCacheDisabled = new AtomicBoolean(Boolean.TRUE.equals(isCacheDisabled));
         if (clientKey == null) {
@@ -179,7 +181,7 @@ public class NativeJavaGbFeatureRepository implements IGBFeaturesRepository {
         this.swrTtlSeconds = swrTtlSeconds == null ? new AtomicInteger(60) : new AtomicInteger(swrTtlSeconds);
         this.refreshExpiresAt();
             if (!this.isCacheDisabled.get()) {
-                this.cachingManager = new AtomicReference<>(new FileCachingManagerImpl(FILE_PATH_FOR_CACHE));
+                this.cacheManager = cacheManager != null ? new AtomicReference<>(cacheManager) :new AtomicReference<>(new FileCachingManagerImpl(FILE_PATH_FOR_CACHE));
             }
 
     }
@@ -384,7 +386,7 @@ public class NativeJavaGbFeatureRepository implements IGBFeaturesRepository {
             }
 
             if (!isFromCache && !isCacheDisabled.get()) {
-                cachingManager.get().saveContent(FILE_NAME_FOR_CACHE, responseJsonString);
+                cacheManager.get().saveContent(FILE_NAME_FOR_CACHE, responseJsonString);
             }
 
             try {
@@ -590,7 +592,7 @@ public class NativeJavaGbFeatureRepository implements IGBFeaturesRepository {
         return connection;
     }
     private String getCachedFeatures() throws FeatureFetchException {
-        String cachedData = cachingManager.get().loadCache(FILE_NAME_FOR_CACHE);
+        String cachedData = cacheManager.get().loadCache(FILE_NAME_FOR_CACHE);
         if (cachedData == null) {
             log.error("FeatureFetchException: No Features from Cache");
             throw new FeatureFetchException(FeatureFetchException.FeatureFetchErrorCode.NO_RESPONSE_ERROR);
