@@ -15,10 +15,10 @@ import java.nio.file.Files;
  * Class responsible for caching data to a file
  */
 @Slf4j
-public class CachingManager {
+public class FileCachingManagerImpl implements GbCacheManager {
     private final File cacheDir;
 
-    public CachingManager(String filePath) {
+    public FileCachingManagerImpl(String filePath) {
         this.cacheDir = new File(filePath);
         if (!cacheDir.exists()) {
             boolean created = cacheDir.mkdirs();
@@ -77,7 +77,7 @@ public class CachingManager {
     /**
      * Clears all cache files in the directory
      */
-    public void clearCache() throws IOException {
+    public void clearCache(){
         if (cacheDir.exists() && cacheDir.isDirectory()) {
             File[] files = cacheDir.listFiles();
             if (files != null) {
@@ -86,7 +86,6 @@ public class CachingManager {
                         Files.delete(file.toPath());
                     } catch (IOException e) {
                         log.error("Failed to delete cache file: {}", file.getName(), e);
-                        throw e;
                     }
                 }
             }

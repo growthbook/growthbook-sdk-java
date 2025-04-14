@@ -19,7 +19,7 @@ import growthbook.sdk.java.exception.FeatureFetchException;
 import growthbook.sdk.java.model.RequestBodyForRemoteEval;
 import growthbook.sdk.java.repository.FeatureRefreshStrategy;
 import growthbook.sdk.java.repository.GBFeaturesRepository;
-import growthbook.sdk.java.sandbox.CachingManager;
+import growthbook.sdk.java.sandbox.FileCachingManagerImpl;
 import okhttp3.Call;
 import okhttp3.Callback;
 import okhttp3.MediaType;
@@ -48,6 +48,7 @@ class GBFeaturesRepositoryTest {
                 null,
                 null,
                 true,
+                null,
                 null
         );
 
@@ -66,6 +67,7 @@ class GBFeaturesRepositoryTest {
                 null,
                 null,
                 true,
+                null,
                 null
         );
 
@@ -127,6 +129,7 @@ class GBFeaturesRepositoryTest {
                 null,
                 mockOkHttpClient,
                 true,
+                null,
                 null
         );
         subject.initialize();
@@ -174,6 +177,7 @@ class GBFeaturesRepositoryTest {
                 null,
                 mockOkHttpClient,
                 true,
+                null,
                 null
         );
         subject.initialize();
@@ -217,6 +221,8 @@ class GBFeaturesRepositoryTest {
                 0,
                 mockOkHttpClient,
                 null,
+                null,
+                null,
                 null
         );
 
@@ -252,6 +258,8 @@ class GBFeaturesRepositoryTest {
                 0,
                 mockOkHttpClient,
                 null,
+                null,
+                null,
                 null
         );
 
@@ -262,7 +270,7 @@ class GBFeaturesRepositoryTest {
         verify(featureRefreshCallback).onError(requestFailed);
         verify(featureRefreshCallback, never()).onRefresh(anyString());
 
-        subject.getCachingManager().clearCache();
+        subject.getCacheManager().clearCache();
     }
 
 
@@ -281,6 +289,7 @@ class GBFeaturesRepositoryTest {
                 60,
                 mockHttpClient,
                 true,
+                null,
                 null
         ));
 
@@ -321,6 +330,7 @@ class GBFeaturesRepositoryTest {
                 60,
                 mockHttpClient,
                 true,
+                null,
                 null
         ));
 
@@ -352,6 +362,7 @@ class GBFeaturesRepositoryTest {
                 60,
                 mockHttpClient,
                 true,
+                null,
                 null
         ));
 
@@ -397,8 +408,8 @@ class GBFeaturesRepositoryTest {
                 60,
                 mockHttpClient,
                 null,
-                true,
-                requestBody
+                requestBody,
+                null
         ));
 
         when(mockHttpClient.newCall(any(Request.class))).thenReturn(mockCall);
@@ -447,6 +458,7 @@ class GBFeaturesRepositoryTest {
                 0,
                 mockOkHttpClient,
                 true,
+                null,
                 null
         );
 
@@ -469,7 +481,7 @@ class GBFeaturesRepositoryTest {
     @Test
     void test_getFeaturesFromCacheSuccessfully() throws FeatureFetchException, IOException {
         OkHttpClient mockHttpClient = mock(OkHttpClient.class);
-        CachingManager mockCacheManager = mock(CachingManager.class);
+        FileCachingManagerImpl mockCacheManager = mock(FileCachingManagerImpl.class);
         String cachedData = "{\"status\":200,\"features\":{\"banner_text\":{\"defaultValue\":\"Welcome to Acme Donuts!\",\"rules\":[{\"condition\":{\"country\":\"france\"},\"force\":\"Bienvenue au Beignets Acme !\"},{\"condition\":{\"country\":\"spain\"},\"force\":\"¡Bienvenidos y bienvenidas a Donas Acme!\"}]},\"dark_mode\":{\"defaultValue\":false,\"rules\":[{\"condition\":{\"loggedIn\":true},\"force\":true,\"coverage\":0.5,\"hashAttribute\":\"id\"}]},\"donut_price\":{\"defaultValue\":2.5,\"rules\":[{\"condition\":{\"employee\":true},\"force\":0}]},\"meal_overrides_gluten_free\":{\"defaultValue\":{\"meal_type\":\"standard\",\"dessert\":\"Strawberry Cheesecake\"},\"rules\":[{\"condition\":{\"dietaryRestrictions\":{\"$elemMatch\":{\"$eq\":\"gluten_free\"}}},\"force\":{\"meal_type\":\"gf\",\"dessert\":\"French Vanilla Ice Cream\"}}]}},\"dateUpdated\":\"2023-01-11T00:26:01.745Z\"}";
         String expectedResult = "{\"banner_text\":{\"defaultValue\":\"Welcome to Acme Donuts!\",\"rules\":[{\"condition\":{\"country\":\"france\"},\"force\":\"Bienvenue au Beignets Acme !\"},{\"condition\":{\"country\":\"spain\"},\"force\":\"¡Bienvenidos y bienvenidas a Donas Acme!\"}]},\"dark_mode\":{\"defaultValue\":false,\"rules\":[{\"condition\":{\"loggedIn\":true},\"force\":true,\"coverage\":0.5,\"hashAttribute\":\"id\"}]},\"donut_price\":{\"defaultValue\":2.5,\"rules\":[{\"condition\":{\"employee\":true},\"force\":0}]},\"meal_overrides_gluten_free\":{\"defaultValue\":{\"meal_type\":\"standard\",\"dessert\":\"Strawberry Cheesecake\"},\"rules\":[{\"condition\":{\"dietaryRestrictions\":{\"$elemMatch\":{\"$eq\":\"gluten_free\"}}},\"force\":{\"meal_type\":\"gf\",\"dessert\":\"French Vanilla Ice Cream\"}}]}}";
         GBFeaturesRepository subject = new GBFeaturesRepository(
@@ -480,6 +492,7 @@ class GBFeaturesRepositoryTest {
                 null,
                 mockHttpClient,
                 false,
+                null,
                 null
         );
 
@@ -488,7 +501,7 @@ class GBFeaturesRepositoryTest {
         when(mockCall.execute()).thenThrow(new IOException("Http error"));
         when(mockCacheManager.loadCache(anyString())).thenReturn(cachedData);
 
-        subject.setCachingManager(mockCacheManager);
+        subject.setCacheManager(mockCacheManager);
         subject.initialize();
         String actualResult = subject.getFeaturesJson();
         assertEquals(expectedResult, actualResult);

@@ -9,9 +9,9 @@ import growthbook.sdk.java.multiusermode.usage.FeatureUsageCallbackWithUser;
 import growthbook.sdk.java.multiusermode.usage.TrackingCallbackWithUser;
 import growthbook.sdk.java.multiusermode.util.TransformationUtil;
 import growthbook.sdk.java.repository.FeatureRefreshStrategy;
+import growthbook.sdk.java.sandbox.GbCacheManager;
 import growthbook.sdk.java.stickyBucketing.InMemoryStickyBucketServiceImpl;
 import growthbook.sdk.java.stickyBucketing.StickyBucketService;
-import growthbook.sdk.java.util.ExperimentHelper;
 import lombok.Builder;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
@@ -42,7 +42,8 @@ public class Options {
                    @Nullable FeatureRefreshCallback featureRefreshCallback,
                    @Nullable JsonObject globalAttributes,
                    @Nullable Map<String, Object> globalForcedFeatureValues,
-                   @Nullable Map<String, Integer> globalForcedVariationsMap
+                   @Nullable Map<String, Integer> globalForcedVariationsMap,
+                   @Nullable GbCacheManager cacheManager
 
     ) {
         this.enabled = enabled == null || enabled;
@@ -62,6 +63,7 @@ public class Options {
         this.globalAttributes = globalAttributes;
         this.globalForcedFeatureValues = globalForcedFeatureValues;
         this.globalForcedVariationsMap = globalForcedVariationsMap;
+        this.cacheManager = cacheManager;
     }
 
     /**
@@ -172,6 +174,9 @@ public class Options {
 
     @Nullable
     private FeatureRefreshCallback featureRefreshCallback;
+
+    @Nullable
+    private GbCacheManager cacheManager;
 
     @Nullable
     public StickyBucketService getStickyBucketService() {

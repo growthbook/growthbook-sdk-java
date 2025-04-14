@@ -6,7 +6,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
-import growthbook.sdk.java.sandbox.CachingManager;
+import growthbook.sdk.java.sandbox.FileCachingManagerImpl;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -15,15 +15,15 @@ import org.junit.jupiter.api.io.TempDir;
 import java.io.File;
 import java.io.IOException;
 
-class CachingManagerTest {
-    private CachingManager cachingManager;
+class FileCachingManagerImplTest {
+    private FileCachingManagerImpl fileCachingManagerImpl;
 
     @TempDir
     File tempDir;
 
     @BeforeEach
     void setUp() {
-        cachingManager = new CachingManager(tempDir.getAbsolutePath());
+        fileCachingManagerImpl = new FileCachingManagerImpl(tempDir.getAbsolutePath());
     }
 
     @Test
@@ -31,14 +31,14 @@ class CachingManagerTest {
         String fileName = "test.txt";
         String content = "Hello, cache!";
 
-        cachingManager.saveContent(fileName, content);
-        String loadedContent = cachingManager.loadCache(fileName);
+        fileCachingManagerImpl.saveContent(fileName, content);
+        String loadedContent = fileCachingManagerImpl.loadCache(fileName);
         assertEquals(content, loadedContent);
     }
 
     @Test
     void shouldReturnNullWhenFileDoesNotExist() {
-        String loadedContent = cachingManager.loadCache("nonexistent.txt");
+        String loadedContent = fileCachingManagerImpl.loadCache("nonexistent.txt");
         Assertions.assertNull(loadedContent);
     }
 
@@ -56,7 +56,7 @@ class CachingManagerTest {
             fail("Creating test file was not successful.");
         }
 
-        RuntimeException thrown = assertThrows(RuntimeException.class, () -> cachingManager.saveContent(fileName, "This should fail"));
+        RuntimeException thrown = assertThrows(RuntimeException.class, () -> fileCachingManagerImpl.saveContent(fileName, "This should fail"));
 
         assertInstanceOf(IOException.class, thrown.getCause());
     }
@@ -87,19 +87,19 @@ class CachingManagerTest {
     void shouldOverwriteExistingFile() {
         String fileName = "overwrite.txt";
 
-        cachingManager.saveContent(fileName, "Initial content");
-        cachingManager.saveContent(fileName, "New content");
+        fileCachingManagerImpl.saveContent(fileName, "Initial content");
+        fileCachingManagerImpl.saveContent(fileName, "New content");
 
-        String loadedContent = cachingManager.loadCache(fileName);
+        String loadedContent = fileCachingManagerImpl.loadCache(fileName);
         assertEquals("New content", loadedContent);
     }
 
     @Test
     void shouldReturnEmptyStringForEmptyFile() {
         String fileName = "empty.txt";
-        cachingManager.saveContent(fileName, "");
+        fileCachingManagerImpl.saveContent(fileName, "");
 
-        String loadedContent = cachingManager.loadCache(fileName);
+        String loadedContent = fileCachingManagerImpl.loadCache(fileName);
         assertEquals("", loadedContent);
     }
 
@@ -120,10 +120,10 @@ class CachingManagerTest {
 
     @Test
     void shouldHandleMultipleFilesSeparately() {
-        cachingManager.saveContent("file1.txt", "Content 1");
-        cachingManager.saveContent("file2.txt", "Content 2");
+        fileCachingManagerImpl.saveContent("file1.txt", "Content 1");
+        fileCachingManagerImpl.saveContent("file2.txt", "Content 2");
 
-        assertEquals("Content 1", cachingManager.loadCache("file1.txt"));
-        assertEquals("Content 2", cachingManager.loadCache("file2.txt"));
+        assertEquals("Content 1", fileCachingManagerImpl.loadCache("file1.txt"));
+        assertEquals("Content 2", fileCachingManagerImpl.loadCache("file2.txt"));
     }
 }

@@ -4,7 +4,7 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import growthbook.sdk.java.model.Feature;
 import growthbook.sdk.java.multiusermode.util.TransformationUtil;
-import growthbook.sdk.java.sandbox.CachingManager;
+import growthbook.sdk.java.sandbox.FileCachingManagerImpl;
 import growthbook.sdk.java.util.DecryptionUtils;
 import growthbook.sdk.java.exception.FeatureFetchException;
 import growthbook.sdk.java.callback.FeatureRefreshCallback;
@@ -131,7 +131,7 @@ public class NativeJavaGbFeatureRepository implements IGBFeaturesRepository {
     /**
      * CachingManger allows to cache features data to file
      */
-    private AtomicReference<CachingManager> cachingManager;
+    private AtomicReference<FileCachingManagerImpl> cachingManager;
     /**
      * Flag that enable CachingManager
      */
@@ -179,7 +179,7 @@ public class NativeJavaGbFeatureRepository implements IGBFeaturesRepository {
         this.swrTtlSeconds = swrTtlSeconds == null ? new AtomicInteger(60) : new AtomicInteger(swrTtlSeconds);
         this.refreshExpiresAt();
             if (!this.isCacheDisabled.get()) {
-                this.cachingManager = new AtomicReference<>(new CachingManager(FILE_PATH_FOR_CACHE));
+                this.cachingManager = new AtomicReference<>(new FileCachingManagerImpl(FILE_PATH_FOR_CACHE));
             }
 
     }
