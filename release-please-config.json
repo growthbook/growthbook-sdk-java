@@ -3,6 +3,7 @@
         ".": {
             "release-type": "java-yoshi",
             "package-name": "com.github.growthbook.growthbook-sdk-java",
+            "include-v-in-tag": false,
             "include-component-in-tag": false,
             "bump-minor-pre-major": true,
             "bump-patch-for-minor-pre-major": true,
