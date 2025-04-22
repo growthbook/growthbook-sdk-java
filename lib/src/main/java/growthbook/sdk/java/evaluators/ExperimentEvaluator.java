@@ -308,7 +308,8 @@ public class ExperimentEvaluator implements IExperimentEvaluator {
 
         // Fire context.trackingClosure if set and the combination of hashAttribute,
         // hashValue, experiment.key, and variationId has not been tracked before
-        if (!context.getOptions().getExperimentHelper().isTracked(experiment, result)) {
+        ExperimentTracker experimentTracker = context.getGlobal().getExperimentTracker();
+        if (!GrowthBookUtils.isExperimentTracked(experimentTracker, experiment, result)) {
             TrackingCallbackWithUser trackingCallBackWithUser = context.getOptions().getTrackingCallBackWithUser();
 
             if (trackingCallBackWithUser != null) {
