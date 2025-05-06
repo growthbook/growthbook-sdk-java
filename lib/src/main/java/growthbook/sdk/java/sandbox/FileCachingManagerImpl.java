@@ -9,15 +9,16 @@ import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.FileNotFoundException;
+import java.nio.file.Files;
 
 /**
  * Class responsible for caching data to a file
  */
 @Slf4j
-public class CachingManager {
+public class FileCachingManagerImpl implements GbCacheManager {
     private final File cacheDir;
 
-    public CachingManager(String filePath) {
+    public FileCachingManagerImpl(String filePath) {
         this.cacheDir = new File(filePath);
         if (!cacheDir.exists()) {
             boolean created = cacheDir.mkdirs();
@@ -59,7 +60,7 @@ public class CachingManager {
             String line;
 
             while ((line = reader.readLine()) != null) {
-                builder.append(line).append(System.lineSeparator());
+                builder.append(line);
             }
 
             return builder.toString().trim();
@@ -70,6 +71,24 @@ public class CachingManager {
             log.error("Error was occur during reading data from file, error message was - {}", e.getMessage());
 
             throw new RuntimeException(e);
+        }
+    }
+
+    /**
+     * Clears all cache files in the directory
+     */
+    public void clearCache(){
+        if (cacheDir.exists() && cacheDir.isDirectory()) {
+            File[] files = cacheDir.listFiles();
+            if (files != null) {
+                for (File file : files) {
+                    try {
+                        Files.delete(file.toPath());
+                    } catch (IOException e) {
+                        log.error("Failed to delete cache file: {}", file.getName(), e);
+                    }
+                }
+            }
         }
     }
 }

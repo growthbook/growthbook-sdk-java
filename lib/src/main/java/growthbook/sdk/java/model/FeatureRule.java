@@ -11,7 +11,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
-import serializers.SuperTypeToken;
+import growthbook.sdk.java.serializers.SuperTypeToken;
 
 import javax.annotation.Nullable;
 import java.lang.reflect.Type;

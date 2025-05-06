@@ -152,6 +152,7 @@ class GrowthBookClientTest {
         when(builder.refreshStrategy(any())).thenReturn(builder);
         when(builder.isCacheDisabled(anyBoolean())).thenReturn(builder);
         when(builder.requestBodyForRemoteEval(any())).thenReturn(builder);
+        when(builder.cacheManager(any())).thenReturn(builder);
         when(builder.build()).thenReturn(repository);
 
         return builder;

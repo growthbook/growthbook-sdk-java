@@ -58,6 +58,7 @@ class NativeJavaGbFeatureRepositoryTest {
                 null,
                 null,
                 null,
+                null,
                 null
         );
 
@@ -72,6 +73,7 @@ class NativeJavaGbFeatureRepositoryTest {
                 "https://cdn.growthbook.io",
                 "sdk-862b5mHcP9XPugqD",
                 "BhB1wORFmZLTDjbvstvS8w==",
+                null,
                 null,
                 null,
                 null,
@@ -113,6 +115,7 @@ class NativeJavaGbFeatureRepositoryTest {
     void cannotBeBuild_withoutClientKey() {
         assertThrows(IllegalArgumentException.class, () -> new NativeJavaGbFeatureRepository(
                 API_HOST,
+                null,
                 null,
                 null,
                 null,
