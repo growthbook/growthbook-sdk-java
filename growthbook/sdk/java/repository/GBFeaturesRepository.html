@@ -156,18 +156,19 @@ implements <a href="IGBFeaturesRepository.html" title="interface in growthbook.s
  <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Integer.html" title="class or interface in java.lang" class="external-link">Integer</a>&nbsp;swrTtlSeconds,
  <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Boolean.html" title="class or interface in java.lang" class="external-link">Boolean</a>&nbsp;isCacheDisabled)</code></div>
 <div class="col-last even-row-color">&nbsp;</div>
-<div class="col-constructor-name odd-row-color"><code><a href="#%3Cinit%3E(java.lang.String,java.lang.String,java.lang.String,growthbook.sdk.java.repository.FeatureRefreshStrategy,java.lang.Integer,okhttp3.OkHttpClient,java.lang.Boolean,growthbook.sdk.java.model.RequestBodyForRemoteEval)" class="member-name-link">GBFeaturesRepository</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;apiHost,
+<div class="col-constructor-name odd-row-color"><code><a href="#%3Cinit%3E(java.lang.String,java.lang.String,java.lang.String,growthbook.sdk.java.repository.FeatureRefreshStrategy,java.lang.Integer,okhttp3.OkHttpClient,java.lang.Boolean,growthbook.sdk.java.model.RequestBodyForRemoteEval,growthbook.sdk.java.sandbox.GbCacheManager)" class="member-name-link">GBFeaturesRepository</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;apiHost,
  <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;clientKey,
  <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;decryptionKey,
  <a href="FeatureRefreshStrategy.html" title="enum class in growthbook.sdk.java.repository">FeatureRefreshStrategy</a>&nbsp;refreshStrategy,
  <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Integer.html" title="class or interface in java.lang" class="external-link">Integer</a>&nbsp;swrTtlSeconds,
  okhttp3.OkHttpClient&nbsp;okHttpClient,
  <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Boolean.html" title="class or interface in java.lang" class="external-link">Boolean</a>&nbsp;isCacheDisabled,
- <a href="../model/RequestBodyForRemoteEval.html" title="class in growthbook.sdk.java.model">RequestBodyForRemoteEval</a>&nbsp;requestBodyForRemoteEval)</code></div>
+ <a href="../model/RequestBodyForRemoteEval.html" title="class in growthbook.sdk.java.model">RequestBodyForRemoteEval</a>&nbsp;requestBodyForRemoteEval,
+ <a href="../sandbox/GbCacheManager.html" title="interface in growthbook.sdk.java.sandbox">GbCacheManager</a>&nbsp;cacheManager)</code></div>
 <div class="col-last odd-row-color">
 <div class="block">Create a new GBFeaturesRepository</div>
 </div>
-<div class="col-constructor-name even-row-color"><code><a href="#%3Cinit%3E(java.lang.String,java.lang.String,java.lang.String,growthbook.sdk.java.repository.FeatureRefreshStrategy,java.lang.Integer,okhttp3.OkHttpClient,java.lang.String,java.lang.Boolean,growthbook.sdk.java.model.RequestBodyForRemoteEval)" class="member-name-link">GBFeaturesRepository</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;apiHost,
+<div class="col-constructor-name even-row-color"><code><a href="#%3Cinit%3E(java.lang.String,java.lang.String,java.lang.String,growthbook.sdk.java.repository.FeatureRefreshStrategy,java.lang.Integer,okhttp3.OkHttpClient,java.lang.String,java.lang.Boolean,growthbook.sdk.java.model.RequestBodyForRemoteEval,growthbook.sdk.java.sandbox.GbCacheManager)" class="member-name-link">GBFeaturesRepository</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;apiHost,
  <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;clientKey,
  <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;encryptionKey,
  <a href="FeatureRefreshStrategy.html" title="enum class in growthbook.sdk.java.repository">FeatureRefreshStrategy</a>&nbsp;refreshStrategy,
@@ -175,7 +176,8 @@ implements <a href="IGBFeaturesRepository.html" title="interface in growthbook.s
  okhttp3.OkHttpClient&nbsp;okHttpClient,
  <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;decryptionKey,
  <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Boolean.html" title="class or interface in java.lang" class="external-link">Boolean</a>&nbsp;isCacheDisabled,
- <a href="../model/RequestBodyForRemoteEval.html" title="class in growthbook.sdk.java.model">RequestBodyForRemoteEval</a>&nbsp;requestBodyForRemoteEval)</code></div>
+ <a href="../model/RequestBodyForRemoteEval.html" title="class in growthbook.sdk.java.model">RequestBodyForRemoteEval</a>&nbsp;requestBodyForRemoteEval,
+ <a href="../sandbox/GbCacheManager.html" title="interface in growthbook.sdk.java.sandbox">GbCacheManager</a>&nbsp;cacheManager)</code></div>
 <div class="col-last even-row-color">
 <div class="block">New constructor that explicitly supports decryptionKey.</div>
 </div>
@@ -210,8 +212,8 @@ implements <a href="IGBFeaturesRepository.html" title="interface in growthbook.s
 <div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>void</code></div>
 <div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#fetchForRemoteEval(growthbook.sdk.java.model.RequestBodyForRemoteEval)" class="member-name-link">fetchForRemoteEval</a><wbr>(<a href="../model/RequestBodyForRemoteEval.html" title="class in growthbook.sdk.java.model">RequestBodyForRemoteEval</a>&nbsp;requestBodyForRemoteEval)</code></div>
 <div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">&nbsp;</div>
-<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="../sandbox/CachingManager.html" title="class in growthbook.sdk.java.sandbox">CachingManager</a></code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#getCachingManager()" class="member-name-link">getCachingManager</a>()</code></div>
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="../sandbox/GbCacheManager.html" title="interface in growthbook.sdk.java.sandbox">GbCacheManager</a></code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#getCacheManager()" class="member-name-link">getCacheManager</a>()</code></div>
 <div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">CachingManger allows to cache features data to file</div>
 </div>
@@ -294,7 +296,7 @@ implements <a href="IGBFeaturesRepository.html" title="interface in growthbook.s
  This callback is called when the features are successfully refreshed or there is an error when refreshing.</div>
 </div>
 <div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>void</code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#setCachingManager(growthbook.sdk.java.sandbox.CachingManager)" class="member-name-link">setCachingManager</a><wbr>(<a href="../sandbox/CachingManager.html" title="class in growthbook.sdk.java.sandbox">CachingManager</a>&nbsp;cachingManager)</code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#setCacheManager(growthbook.sdk.java.sandbox.GbCacheManager)" class="member-name-link">setCacheManager</a><wbr>(<a href="../sandbox/GbCacheManager.html" title="interface in growthbook.sdk.java.sandbox">GbCacheManager</a>&nbsp;cacheManager)</code></div>
 <div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">&nbsp;</div>
 <div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>void</code></div>
 <div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#shutdown()" class="member-name-link">shutdown</a>()</code></div>
@@ -419,7 +421,7 @@ implements <a href="IGBFeaturesRepository.html" title="interface in growthbook.s
 </section>
 </li>
 <li>
-<section class="detail" id="&lt;init&gt;(java.lang.String,java.lang.String,java.lang.String,growthbook.sdk.java.repository.FeatureRefreshStrategy,java.lang.Integer,okhttp3.OkHttpClient,java.lang.String,java.lang.Boolean,growthbook.sdk.java.model.RequestBodyForRemoteEval)">
+<section class="detail" id="&lt;init&gt;(java.lang.String,java.lang.String,java.lang.String,growthbook.sdk.java.repository.FeatureRefreshStrategy,java.lang.Integer,okhttp3.OkHttpClient,java.lang.String,java.lang.Boolean,growthbook.sdk.java.model.RequestBodyForRemoteEval,growthbook.sdk.java.sandbox.GbCacheManager)">
 <h3>GBFeaturesRepository</h3>
 <div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="element-name">GBFeaturesRepository</span><wbr><span class="parameters">(@Nullable
  <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;apiHost,
@@ -437,12 +439,14 @@ implements <a href="IGBFeaturesRepository.html" title="interface in growthbook.s
  @Nullable
  <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Boolean.html" title="class or interface in java.lang" class="external-link">Boolean</a>&nbsp;isCacheDisabled,
  @Nullable
- <a href="../model/RequestBodyForRemoteEval.html" title="class in growthbook.sdk.java.model">RequestBodyForRemoteEval</a>&nbsp;requestBodyForRemoteEval)</span></div>
+ <a href="../model/RequestBodyForRemoteEval.html" title="class in growthbook.sdk.java.model">RequestBodyForRemoteEval</a>&nbsp;requestBodyForRemoteEval,
+ @Nullable
+ <a href="../sandbox/GbCacheManager.html" title="interface in growthbook.sdk.java.sandbox">GbCacheManager</a>&nbsp;cacheManager)</span></div>
 <div class="block">New constructor that explicitly supports decryptionKey.</div>
 </section>
 </li>
 <li>
-<section class="detail" id="&lt;init&gt;(java.lang.String,java.lang.String,java.lang.String,growthbook.sdk.java.repository.FeatureRefreshStrategy,java.lang.Integer,okhttp3.OkHttpClient,java.lang.Boolean,growthbook.sdk.java.model.RequestBodyForRemoteEval)">
+<section class="detail" id="&lt;init&gt;(java.lang.String,java.lang.String,java.lang.String,growthbook.sdk.java.repository.FeatureRefreshStrategy,java.lang.Integer,okhttp3.OkHttpClient,java.lang.Boolean,growthbook.sdk.java.model.RequestBodyForRemoteEval,growthbook.sdk.java.sandbox.GbCacheManager)">
 <h3>GBFeaturesRepository</h3>
 <div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="element-name">GBFeaturesRepository</span><wbr><span class="parameters">(@Nullable
  <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;apiHost,
@@ -458,7 +462,9 @@ implements <a href="IGBFeaturesRepository.html" title="interface in growthbook.s
  @Nullable
  <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Boolean.html" title="class or interface in java.lang" class="external-link">Boolean</a>&nbsp;isCacheDisabled,
  @Nullable
- <a href="../model/RequestBodyForRemoteEval.html" title="class in growthbook.sdk.java.model">RequestBodyForRemoteEval</a>&nbsp;requestBodyForRemoteEval)</span></div>
+ <a href="../model/RequestBodyForRemoteEval.html" title="class in growthbook.sdk.java.model">RequestBodyForRemoteEval</a>&nbsp;requestBodyForRemoteEval,
+ @Nullable
+ <a href="../sandbox/GbCacheManager.html" title="interface in growthbook.sdk.java.sandbox">GbCacheManager</a>&nbsp;cacheManager)</span></div>
 <div class="block">Create a new GBFeaturesRepository</div>
 <dl class="notes">
 <dt>Parameters:</dt>
@@ -481,9 +487,9 @@ implements <a href="IGBFeaturesRepository.html" title="interface in growthbook.s
 <h2>Method Details</h2>
 <ul class="member-list">
 <li>
-<section class="detail" id="setCachingManager(growthbook.sdk.java.sandbox.CachingManager)">
-<h3>setCachingManager</h3>
-<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type">void</span>&nbsp;<span class="element-name">setCachingManager</span><wbr><span class="parameters">(<a href="../sandbox/CachingManager.html" title="class in growthbook.sdk.java.sandbox">CachingManager</a>&nbsp;cachingManager)</span></div>
+<section class="detail" id="setCacheManager(growthbook.sdk.java.sandbox.GbCacheManager)">
+<h3>setCacheManager</h3>
+<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type">void</span>&nbsp;<span class="element-name">setCacheManager</span><wbr><span class="parameters">(<a href="../sandbox/GbCacheManager.html" title="interface in growthbook.sdk.java.sandbox">GbCacheManager</a>&nbsp;cacheManager)</span></div>
 </section>
 </li>
 <li>
@@ -673,9 +679,9 @@ implements <a href="IGBFeaturesRepository.html" title="interface in growthbook.s
 </section>
 </li>
 <li>
-<section class="detail" id="getCachingManager()">
-<h3>getCachingManager</h3>
-<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="../sandbox/CachingManager.html" title="class in growthbook.sdk.java.sandbox">CachingManager</a></span>&nbsp;<span class="element-name">getCachingManager</span>()</div>
+<section class="detail" id="getCacheManager()">
+<h3>getCacheManager</h3>
+<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="../sandbox/GbCacheManager.html" title="interface in growthbook.sdk.java.sandbox">GbCacheManager</a></span>&nbsp;<span class="element-name">getCacheManager</span>()</div>
 <div class="block">CachingManger allows to cache features data to file</div>
 </section>
 </li>

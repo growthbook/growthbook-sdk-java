@@ -178,11 +178,11 @@ loadScripts(document, 'script');</script>
 </dl>
 <h2 class="title" id="I:C">C</h2>
 <dl class="index">
-<dt><a href="growthbook/sdk/java/sandbox/CachingManager.html" class="type-name-link" title="class in growthbook.sdk.java.sandbox">CachingManager</a> - Class in <a href="growthbook/sdk/java/sandbox/package-summary.html">growthbook.sdk.java.sandbox</a></dt>
-<dd>
-<div class="block">Class responsible for caching data to a file</div>
-</dd>
-<dt><a href="growthbook/sdk/java/sandbox/CachingManager.html#%3Cinit%3E(java.lang.String)" class="member-name-link">CachingManager(String)</a> - Constructor for class growthbook.sdk.java.sandbox.<a href="growthbook/sdk/java/sandbox/CachingManager.html" title="class in growthbook.sdk.java.sandbox">CachingManager</a></dt>
+<dt><a href="growthbook/sdk/java/multiusermode/configurations/Options.OptionsBuilder.html#cacheManager(growthbook.sdk.java.sandbox.GbCacheManager)" class="member-name-link">cacheManager(GbCacheManager)</a> - Method in class growthbook.sdk.java.multiusermode.configurations.<a href="growthbook/sdk/java/multiusermode/configurations/Options.OptionsBuilder.html" title="class in growthbook.sdk.java.multiusermode.configurations">Options.OptionsBuilder</a></dt>
+<dd>&nbsp;</dd>
+<dt><a href="growthbook/sdk/java/repository/GBFeaturesRepository.GBFeaturesRepositoryBuilder.html#cacheManager(growthbook.sdk.java.sandbox.GbCacheManager)" class="member-name-link">cacheManager(GbCacheManager)</a> - Method in class growthbook.sdk.java.repository.<a href="growthbook/sdk/java/repository/GBFeaturesRepository.GBFeaturesRepositoryBuilder.html" title="class in growthbook.sdk.java.repository">GBFeaturesRepository.GBFeaturesRepositoryBuilder</a></dt>
+<dd>&nbsp;</dd>
+<dt><a href="growthbook/sdk/java/repository/NativeJavaGbFeatureRepository.NativeJavaGbFeatureRepositoryBuilder.html#cacheManager(growthbook.sdk.java.sandbox.GbCacheManager)" class="member-name-link">cacheManager(GbCacheManager)</a> - Method in class growthbook.sdk.java.repository.<a href="growthbook/sdk/java/repository/NativeJavaGbFeatureRepository.NativeJavaGbFeatureRepositoryBuilder.html" title="class in growthbook.sdk.java.repository">NativeJavaGbFeatureRepository.NativeJavaGbFeatureRepositoryBuilder</a></dt>
 <dd>&nbsp;</dd>
 <dt><a href="growthbook/sdk/java/util/GrowthBookUtils.html#chooseVariation(java.lang.Float,java.util.ArrayList)" class="member-name-link">chooseVariation(Float, ArrayList&lt;BucketRange&gt;)</a> - Static method in class growthbook.sdk.java.util.<a href="growthbook/sdk/java/util/GrowthBookUtils.html" title="class in growthbook.sdk.java.util">GrowthBookUtils</a></dt>
 <dd>
@@ -192,6 +192,12 @@ loadScripts(document, 'script');</script>
 <dd>
 <div class="block">Given a value, ensures it's clamped between the range provided</div>
 </dd>
+<dt><a href="growthbook/sdk/java/sandbox/FileCachingManagerImpl.html#clearCache()" class="member-name-link">clearCache()</a> - Method in class growthbook.sdk.java.sandbox.<a href="growthbook/sdk/java/sandbox/FileCachingManagerImpl.html" title="class in growthbook.sdk.java.sandbox">FileCachingManagerImpl</a></dt>
+<dd>
+<div class="block">Clears all cache files in the directory</div>
+</dd>
+<dt><a href="growthbook/sdk/java/sandbox/GbCacheManager.html#clearCache()" class="member-name-link">clearCache()</a> - Method in interface growthbook.sdk.java.sandbox.<a href="growthbook/sdk/java/sandbox/GbCacheManager.html" title="interface in growthbook.sdk.java.sandbox">GbCacheManager</a></dt>
+<dd>&nbsp;</dd>
 <dt><a href="growthbook/sdk/java/repository/GBFeaturesRepository.html#clearCallbacks()" class="member-name-link">clearCallbacks()</a> - Method in class growthbook.sdk.java.repository.<a href="growthbook/sdk/java/repository/GBFeaturesRepository.html" title="class in growthbook.sdk.java.repository">GBFeaturesRepository</a></dt>
 <dd>&nbsp;</dd>
 <dt><a href="growthbook/sdk/java/repository/IGBFeaturesRepository.html#clearCallbacks()" class="member-name-link">clearCallbacks()</a> - Method in interface growthbook.sdk.java.repository.<a href="growthbook/sdk/java/repository/IGBFeaturesRepository.html" title="interface in growthbook.sdk.java.repository">IGBFeaturesRepository</a></dt>
@@ -576,6 +582,12 @@ loadScripts(document, 'script');</script>
 <dd>&nbsp;</dd>
 <dt><a href="growthbook/sdk/java/repository/NativeJavaGbFeatureRepository.html#FILE_PATH_FOR_CACHE" class="member-name-link">FILE_PATH_FOR_CACHE</a> - Static variable in class growthbook.sdk.java.repository.<a href="growthbook/sdk/java/repository/NativeJavaGbFeatureRepository.html" title="class in growthbook.sdk.java.repository">NativeJavaGbFeatureRepository</a></dt>
 <dd>&nbsp;</dd>
+<dt><a href="growthbook/sdk/java/sandbox/FileCachingManagerImpl.html" class="type-name-link" title="class in growthbook.sdk.java.sandbox">FileCachingManagerImpl</a> - Class in <a href="growthbook/sdk/java/sandbox/package-summary.html">growthbook.sdk.java.sandbox</a></dt>
+<dd>
+<div class="block">Class responsible for caching data to a file</div>
+</dd>
+<dt><a href="growthbook/sdk/java/sandbox/FileCachingManagerImpl.html#%3Cinit%3E(java.lang.String)" class="member-name-link">FileCachingManagerImpl(String)</a> - Constructor for class growthbook.sdk.java.sandbox.<a href="growthbook/sdk/java/sandbox/FileCachingManagerImpl.html" title="class in growthbook.sdk.java.sandbox">FileCachingManagerImpl</a></dt>
+<dd>&nbsp;</dd>
 <dt><a href="growthbook/sdk/java/model/Filter.html" class="type-name-link" title="class in growthbook.sdk.java.model">Filter</a> - Class in <a href="growthbook/sdk/java/model/package-summary.html">growthbook.sdk.java.model</a></dt>
 <dd>
 <div class="block">Object used for mutual exclusion and filtering users out of experiments based on random hashes.</div>
@@ -632,6 +644,8 @@ loadScripts(document, 'script');</script>
 </dl>
 <h2 class="title" id="I:G">G</h2>
 <dl class="index">
+<dt><a href="growthbook/sdk/java/sandbox/GbCacheManager.html" class="type-name-link" title="interface in growthbook.sdk.java.sandbox">GbCacheManager</a> - Interface in <a href="growthbook/sdk/java/sandbox/package-summary.html">growthbook.sdk.java.sandbox</a></dt>
+<dd>&nbsp;</dd>
 <dt><a href="growthbook/sdk/java/model/GBContext.html" class="type-name-link" title="class in growthbook.sdk.java.model">GBContext</a> - Class in <a href="growthbook/sdk/java/model/package-summary.html">growthbook.sdk.java.model</a></dt>
 <dd>
 <div class="block">Context object passed into the GrowthBook constructor.</div>
@@ -658,11 +672,11 @@ loadScripts(document, 'script');</script>
 </dd>
 <dt><a href="growthbook/sdk/java/repository/GBFeaturesRepository.html#%3Cinit%3E(java.lang.String,java.lang.String,java.lang.String,growthbook.sdk.java.repository.FeatureRefreshStrategy,java.lang.Integer,java.lang.Boolean)" class="member-name-link">GBFeaturesRepository(String, String, String, FeatureRefreshStrategy, Integer, Boolean)</a> - Constructor for class growthbook.sdk.java.repository.<a href="growthbook/sdk/java/repository/GBFeaturesRepository.html" title="class in growthbook.sdk.java.repository">GBFeaturesRepository</a></dt>
 <dd>&nbsp;</dd>
-<dt><a href="growthbook/sdk/java/repository/GBFeaturesRepository.html#%3Cinit%3E(java.lang.String,java.lang.String,java.lang.String,growthbook.sdk.java.repository.FeatureRefreshStrategy,java.lang.Integer,okhttp3.OkHttpClient,java.lang.Boolean,growthbook.sdk.java.model.RequestBodyForRemoteEval)" class="member-name-link">GBFeaturesRepository(String, String, String, FeatureRefreshStrategy, Integer, OkHttpClient, Boolean, RequestBodyForRemoteEval)</a> - Constructor for class growthbook.sdk.java.repository.<a href="growthbook/sdk/java/repository/GBFeaturesRepository.html" title="class in growthbook.sdk.java.repository">GBFeaturesRepository</a></dt>
+<dt><a href="growthbook/sdk/java/repository/GBFeaturesRepository.html#%3Cinit%3E(java.lang.String,java.lang.String,java.lang.String,growthbook.sdk.java.repository.FeatureRefreshStrategy,java.lang.Integer,okhttp3.OkHttpClient,java.lang.Boolean,growthbook.sdk.java.model.RequestBodyForRemoteEval,growthbook.sdk.java.sandbox.GbCacheManager)" class="member-name-link">GBFeaturesRepository(String, String, String, FeatureRefreshStrategy, Integer, OkHttpClient, Boolean, RequestBodyForRemoteEval, GbCacheManager)</a> - Constructor for class growthbook.sdk.java.repository.<a href="growthbook/sdk/java/repository/GBFeaturesRepository.html" title="class in growthbook.sdk.java.repository">GBFeaturesRepository</a></dt>
 <dd>
 <div class="block">Create a new GBFeaturesRepository</div>
 </dd>
-<dt><a href="growthbook/sdk/java/repository/GBFeaturesRepository.html#%3Cinit%3E(java.lang.String,java.lang.String,java.lang.String,growthbook.sdk.java.repository.FeatureRefreshStrategy,java.lang.Integer,okhttp3.OkHttpClient,java.lang.String,java.lang.Boolean,growthbook.sdk.java.model.RequestBodyForRemoteEval)" class="member-name-link">GBFeaturesRepository(String, String, String, FeatureRefreshStrategy, Integer, OkHttpClient, String, Boolean, RequestBodyForRemoteEval)</a> - Constructor for class growthbook.sdk.java.repository.<a href="growthbook/sdk/java/repository/GBFeaturesRepository.html" title="class in growthbook.sdk.java.repository">GBFeaturesRepository</a></dt>
+<dt><a href="growthbook/sdk/java/repository/GBFeaturesRepository.html#%3Cinit%3E(java.lang.String,java.lang.String,java.lang.String,growthbook.sdk.java.repository.FeatureRefreshStrategy,java.lang.Integer,okhttp3.OkHttpClient,java.lang.String,java.lang.Boolean,growthbook.sdk.java.model.RequestBodyForRemoteEval,growthbook.sdk.java.sandbox.GbCacheManager)" class="member-name-link">GBFeaturesRepository(String, String, String, FeatureRefreshStrategy, Integer, OkHttpClient, String, Boolean, RequestBodyForRemoteEval, GbCacheManager)</a> - Constructor for class growthbook.sdk.java.repository.<a href="growthbook/sdk/java/repository/GBFeaturesRepository.html" title="class in growthbook.sdk.java.repository">GBFeaturesRepository</a></dt>
 <dd>
 <div class="block">New constructor that explicitly supports decryptionKey.</div>
 </dd>
@@ -767,7 +781,9 @@ loadScripts(document, 'script');</script>
 <dd>
 <div class="block">A sticky bucket version number that can be used to force a re-bucketing of users (default to 0)</div>
 </dd>
-<dt><a href="growthbook/sdk/java/repository/GBFeaturesRepository.html#getCachingManager()" class="member-name-link">getCachingManager()</a> - Method in class growthbook.sdk.java.repository.<a href="growthbook/sdk/java/repository/GBFeaturesRepository.html" title="class in growthbook.sdk.java.repository">GBFeaturesRepository</a></dt>
+<dt><a href="growthbook/sdk/java/multiusermode/configurations/Options.html#getCacheManager()" class="member-name-link">getCacheManager()</a> - Method in class growthbook.sdk.java.multiusermode.configurations.<a href="growthbook/sdk/java/multiusermode/configurations/Options.html" title="class in growthbook.sdk.java.multiusermode.configurations">Options</a></dt>
+<dd>&nbsp;</dd>
+<dt><a href="growthbook/sdk/java/repository/GBFeaturesRepository.html#getCacheManager()" class="member-name-link">getCacheManager()</a> - Method in class growthbook.sdk.java.repository.<a href="growthbook/sdk/java/repository/GBFeaturesRepository.html" title="class in growthbook.sdk.java.repository">GBFeaturesRepository</a></dt>
 <dd>
 <div class="block">CachingManger allows to cache features data to file</div>
 </dd>
@@ -1443,7 +1459,7 @@ loadScripts(document, 'script');</script>
 <dd>
 <div class="block">Array of tracking calls to fire</div>
 </dd>
-<dt><a href="serializers/SuperTypeToken.html#getType()" class="member-name-link">getType()</a> - Method in class serializers.<a href="serializers/SuperTypeToken.html" title="class in serializers">SuperTypeToken</a></dt>
+<dt><a href="growthbook/sdk/java/serializers/SuperTypeToken.html#getType()" class="member-name-link">getType()</a> - Method in class growthbook.sdk.java.serializers.<a href="growthbook/sdk/java/serializers/SuperTypeToken.html" title="class in growthbook.sdk.java.serializers">SuperTypeToken</a></dt>
 <dd>&nbsp;</dd>
 <dt><a href="growthbook/sdk/java/model/GBContext.html#getUrl()" class="member-name-link">getUrl()</a> - Method in class growthbook.sdk.java.model.<a href="growthbook/sdk/java/model/GBContext.html" title="class in growthbook.sdk.java.model">GBContext</a></dt>
 <dd>
@@ -1538,6 +1554,8 @@ loadScripts(document, 'script');</script>
 <dt><a href="growthbook/sdk/java/repository/package-summary.html">growthbook.sdk.java.repository</a> - package growthbook.sdk.java.repository</dt>
 <dd>&nbsp;</dd>
 <dt><a href="growthbook/sdk/java/sandbox/package-summary.html">growthbook.sdk.java.sandbox</a> - package growthbook.sdk.java.sandbox</dt>
+<dd>&nbsp;</dd>
+<dt><a href="growthbook/sdk/java/serializers/package-summary.html">growthbook.sdk.java.serializers</a> - package growthbook.sdk.java.serializers</dt>
 <dd>&nbsp;</dd>
 <dt><a href="growthbook/sdk/java/stickyBucketing/package-summary.html">growthbook.sdk.java.stickyBucketing</a> - package growthbook.sdk.java.stickyBucketing</dt>
 <dd>&nbsp;</dd>
@@ -1822,10 +1840,12 @@ loadScripts(document, 'script');</script>
 </dl>
 <h2 class="title" id="I:L">L</h2>
 <dl class="index">
-<dt><a href="growthbook/sdk/java/sandbox/CachingManager.html#loadCache(java.lang.String)" class="member-name-link">loadCache(String)</a> - Method in class growthbook.sdk.java.sandbox.<a href="growthbook/sdk/java/sandbox/CachingManager.html" title="class in growthbook.sdk.java.sandbox">CachingManager</a></dt>
+<dt><a href="growthbook/sdk/java/sandbox/FileCachingManagerImpl.html#loadCache(java.lang.String)" class="member-name-link">loadCache(String)</a> - Method in class growthbook.sdk.java.sandbox.<a href="growthbook/sdk/java/sandbox/FileCachingManagerImpl.html" title="class in growthbook.sdk.java.sandbox">FileCachingManagerImpl</a></dt>
 <dd>
 <div class="block">Method that fetches data from cache by file name</div>
 </dd>
+<dt><a href="growthbook/sdk/java/sandbox/GbCacheManager.html#loadCache(java.lang.String)" class="member-name-link">loadCache(String)</a> - Method in interface growthbook.sdk.java.sandbox.<a href="growthbook/sdk/java/sandbox/GbCacheManager.html" title="interface in growthbook.sdk.java.sandbox">GbCacheManager</a></dt>
+<dd>&nbsp;</dd>
 <dt><a href="growthbook/sdk/java/repository/LocalGbFeatureRepository.html" class="type-name-link" title="class in growthbook.sdk.java.repository">LocalGbFeatureRepository</a> - Class in <a href="growthbook/sdk/java/repository/package-summary.html">growthbook.sdk.java.repository</a></dt>
 <dd>&nbsp;</dd>
 <dt><a href="growthbook/sdk/java/repository/LocalGbFeatureRepository.html#%3Cinit%3E(java.lang.String)" class="member-name-link">LocalGbFeatureRepository(String)</a> - Constructor for class growthbook.sdk.java.repository.<a href="growthbook/sdk/java/repository/LocalGbFeatureRepository.html" title="class in growthbook.sdk.java.repository">LocalGbFeatureRepository</a></dt>
@@ -1904,7 +1924,7 @@ loadScripts(document, 'script');</script>
 <dd>
 <div class="block">This class can be created with its `builder()` or constructor.</div>
 </dd>
-<dt><a href="growthbook/sdk/java/repository/NativeJavaGbFeatureRepository.html#%3Cinit%3E(java.lang.String,java.lang.String,java.lang.String,growthbook.sdk.java.repository.FeatureRefreshStrategy,java.lang.Integer,java.lang.Boolean,growthbook.sdk.java.model.RequestBodyForRemoteEval)" class="member-name-link">NativeJavaGbFeatureRepository(String, String, String, FeatureRefreshStrategy, Integer, Boolean, RequestBodyForRemoteEval)</a> - Constructor for class growthbook.sdk.java.repository.<a href="growthbook/sdk/java/repository/NativeJavaGbFeatureRepository.html" title="class in growthbook.sdk.java.repository">NativeJavaGbFeatureRepository</a></dt>
+<dt><a href="growthbook/sdk/java/repository/NativeJavaGbFeatureRepository.html#%3Cinit%3E(java.lang.String,java.lang.String,java.lang.String,growthbook.sdk.java.repository.FeatureRefreshStrategy,java.lang.Integer,java.lang.Boolean,growthbook.sdk.java.model.RequestBodyForRemoteEval,growthbook.sdk.java.sandbox.GbCacheManager)" class="member-name-link">NativeJavaGbFeatureRepository(String, String, String, FeatureRefreshStrategy, Integer, Boolean, RequestBodyForRemoteEval, GbCacheManager)</a> - Constructor for class growthbook.sdk.java.repository.<a href="growthbook/sdk/java/repository/NativeJavaGbFeatureRepository.html" title="class in growthbook.sdk.java.repository">NativeJavaGbFeatureRepository</a></dt>
 <dd>
 <div class="block">Create a new GBFeaturesRepository</div>
 </dd>
@@ -2005,7 +2025,7 @@ loadScripts(document, 'script');</script>
 <dd>&nbsp;</dd>
 <dt><a href="growthbook/sdk/java/multiusermode/configurations/Options.html" class="type-name-link" title="class in growthbook.sdk.java.multiusermode.configurations">Options</a> - Class in <a href="growthbook/sdk/java/multiusermode/configurations/package-summary.html">growthbook.sdk.java.multiusermode.configurations</a></dt>
 <dd>&nbsp;</dd>
-<dt><a href="growthbook/sdk/java/multiusermode/configurations/Options.html#%3Cinit%3E(java.lang.Boolean,java.lang.Boolean,java.lang.Boolean,java.lang.Boolean,java.lang.String,java.lang.String,java.lang.String,java.lang.String,java.util.List,growthbook.sdk.java.stickyBucketing.StickyBucketService,growthbook.sdk.java.multiusermode.usage.TrackingCallbackWithUser,growthbook.sdk.java.multiusermode.usage.FeatureUsageCallbackWithUser,growthbook.sdk.java.repository.FeatureRefreshStrategy,growthbook.sdk.java.callback.FeatureRefreshCallback,com.google.gson.JsonObject,java.util.Map,java.util.Map)" class="member-name-link">Options(Boolean, Boolean, Boolean, Boolean, String, String, String, String, List&lt;String&gt;, StickyBucketService, TrackingCallbackWithUser, FeatureUsageCallbackWithUser, FeatureRefreshStrategy, FeatureRefreshCallback, JsonObject, Map&lt;String, Object&gt;, Map&lt;String, Integer&gt;)</a> - Constructor for class growthbook.sdk.java.multiusermode.configurations.<a href="growthbook/sdk/java/multiusermode/configurations/Options.html" title="class in growthbook.sdk.java.multiusermode.configurations">Options</a></dt>
+<dt><a href="growthbook/sdk/java/multiusermode/configurations/Options.html#%3Cinit%3E(java.lang.Boolean,java.lang.Boolean,java.lang.Boolean,java.lang.Boolean,java.lang.String,java.lang.String,java.lang.String,java.lang.String,java.util.List,growthbook.sdk.java.stickyBucketing.StickyBucketService,growthbook.sdk.java.multiusermode.usage.TrackingCallbackWithUser,growthbook.sdk.java.multiusermode.usage.FeatureUsageCallbackWithUser,growthbook.sdk.java.repository.FeatureRefreshStrategy,growthbook.sdk.java.callback.FeatureRefreshCallback,com.google.gson.JsonObject,java.util.Map,java.util.Map,growthbook.sdk.java.sandbox.GbCacheManager)" class="member-name-link">Options(Boolean, Boolean, Boolean, Boolean, String, String, String, String, List&lt;String&gt;, StickyBucketService, TrackingCallbackWithUser, FeatureUsageCallbackWithUser, FeatureRefreshStrategy, FeatureRefreshCallback, JsonObject, Map&lt;String, Object&gt;, Map&lt;String, Integer&gt;, GbCacheManager)</a> - Constructor for class growthbook.sdk.java.multiusermode.configurations.<a href="growthbook/sdk/java/multiusermode/configurations/Options.html" title="class in growthbook.sdk.java.multiusermode.configurations">Options</a></dt>
 <dd>&nbsp;</dd>
 <dt><a href="growthbook/sdk/java/multiusermode/configurations/Options.OptionsBuilder.html" class="type-name-link" title="class in growthbook.sdk.java.multiusermode.configurations">Options.OptionsBuilder</a> - Class in <a href="growthbook/sdk/java/multiusermode/configurations/package-summary.html">growthbook.sdk.java.multiusermode.configurations</a></dt>
 <dd>&nbsp;</dd>
@@ -2145,10 +2165,12 @@ loadScripts(document, 'script');</script>
 <dd>
 <div class="block">Insert new record if not exists, otherwise update</div>
 </dd>
-<dt><a href="growthbook/sdk/java/sandbox/CachingManager.html#saveContent(java.lang.String,java.lang.String)" class="member-name-link">saveContent(String, String)</a> - Method in class growthbook.sdk.java.sandbox.<a href="growthbook/sdk/java/sandbox/CachingManager.html" title="class in growthbook.sdk.java.sandbox">CachingManager</a></dt>
+<dt><a href="growthbook/sdk/java/sandbox/FileCachingManagerImpl.html#saveContent(java.lang.String,java.lang.String)" class="member-name-link">saveContent(String, String)</a> - Method in class growthbook.sdk.java.sandbox.<a href="growthbook/sdk/java/sandbox/FileCachingManagerImpl.html" title="class in growthbook.sdk.java.sandbox">FileCachingManagerImpl</a></dt>
 <dd>
 <div class="block">Method that saves feature JSON as String to a cache file</div>
 </dd>
+<dt><a href="growthbook/sdk/java/sandbox/GbCacheManager.html#saveContent(java.lang.String,java.lang.String)" class="member-name-link">saveContent(String, String)</a> - Method in interface growthbook.sdk.java.sandbox.<a href="growthbook/sdk/java/sandbox/GbCacheManager.html" title="interface in growthbook.sdk.java.sandbox">GbCacheManager</a></dt>
+<dd>&nbsp;</dd>
 <dt><a href="growthbook/sdk/java/model/FeatureResponseKey.html#SAVED_GROUP_KEY" class="member-name-link">SAVED_GROUP_KEY</a> - Enum constant in enum class growthbook.sdk.java.model.<a href="growthbook/sdk/java/model/FeatureResponseKey.html" title="enum class in growthbook.sdk.java.model">FeatureResponseKey</a></dt>
 <dd>&nbsp;</dd>
 <dt><a href="growthbook/sdk/java/model/GBContext.GBContextBuilder.html#savedGroups(com.google.gson.JsonObject)" class="member-name-link">savedGroups(JsonObject)</a> - Method in class growthbook.sdk.java.model.<a href="growthbook/sdk/java/model/GBContext.GBContextBuilder.html" title="class in growthbook.sdk.java.model">GBContext.GBContextBuilder</a></dt>
@@ -2166,8 +2188,6 @@ loadScripts(document, 'script');</script>
 <div class="block">Seed to use for hashing</div>
 </dd>
 <dt><a href="growthbook/sdk/java/model/Filter.FilterBuilder.html#seed(java.lang.String)" class="member-name-link">seed(String)</a> - Method in class growthbook.sdk.java.model.<a href="growthbook/sdk/java/model/Filter.FilterBuilder.html" title="class in growthbook.sdk.java.model">Filter.FilterBuilder</a></dt>
-<dd>&nbsp;</dd>
-<dt><a href="serializers/package-summary.html">serializers</a> - package serializers</dt>
 <dd>&nbsp;</dd>
 <dt><a href="growthbook/sdk/java/repository/FeatureRefreshStrategy.html#SERVER_SENT_EVENTS" class="member-name-link">SERVER_SENT_EVENTS</a> - Enum constant in enum class growthbook.sdk.java.repository.<a href="growthbook/sdk/java/repository/FeatureRefreshStrategy.html" title="enum class in growthbook.sdk.java.repository">FeatureRefreshStrategy</a></dt>
 <dd>&nbsp;</dd>
@@ -2226,7 +2246,9 @@ loadScripts(document, 'script');</script>
 <dd>
 <div class="block">A sticky bucket version number that can be used to force a re-bucketing of users (default to 0)</div>
 </dd>
-<dt><a href="growthbook/sdk/java/repository/GBFeaturesRepository.html#setCachingManager(growthbook.sdk.java.sandbox.CachingManager)" class="member-name-link">setCachingManager(CachingManager)</a> - Method in class growthbook.sdk.java.repository.<a href="growthbook/sdk/java/repository/GBFeaturesRepository.html" title="class in growthbook.sdk.java.repository">GBFeaturesRepository</a></dt>
+<dt><a href="growthbook/sdk/java/multiusermode/configurations/Options.html#setCacheManager(growthbook.sdk.java.sandbox.GbCacheManager)" class="member-name-link">setCacheManager(GbCacheManager)</a> - Method in class growthbook.sdk.java.multiusermode.configurations.<a href="growthbook/sdk/java/multiusermode/configurations/Options.html" title="class in growthbook.sdk.java.multiusermode.configurations">Options</a></dt>
+<dd>&nbsp;</dd>
+<dt><a href="growthbook/sdk/java/repository/GBFeaturesRepository.html#setCacheManager(growthbook.sdk.java.sandbox.GbCacheManager)" class="member-name-link">setCacheManager(GbCacheManager)</a> - Method in class growthbook.sdk.java.repository.<a href="growthbook/sdk/java/repository/GBFeaturesRepository.html" title="class in growthbook.sdk.java.repository">GBFeaturesRepository</a></dt>
 <dd>&nbsp;</dd>
 <dt><a href="growthbook/sdk/java/model/GeneratedStickyBucketAssignmentDocModel.html#setChanged(boolean)" class="member-name-link">setChanged(boolean)</a> - Method in class growthbook.sdk.java.model.<a href="growthbook/sdk/java/model/GeneratedStickyBucketAssignmentDocModel.html" title="class in growthbook.sdk.java.model">GeneratedStickyBucketAssignmentDocModel</a></dt>
 <dd>
@@ -2776,9 +2798,9 @@ loadScripts(document, 'script');</script>
 <dd>
 <div class="block">Add up all the numbers</div>
 </dd>
-<dt><a href="serializers/SuperTypeToken.html" class="type-name-link" title="class in serializers">SuperTypeToken</a>&lt;<a href="serializers/SuperTypeToken.html" title="type parameter in SuperTypeToken">T</a>&gt; - Class in <a href="serializers/package-summary.html">serializers</a></dt>
+<dt><a href="growthbook/sdk/java/serializers/SuperTypeToken.html" class="type-name-link" title="class in growthbook.sdk.java.serializers">SuperTypeToken</a>&lt;<a href="growthbook/sdk/java/serializers/SuperTypeToken.html" title="type parameter in SuperTypeToken">T</a>&gt; - Class in <a href="growthbook/sdk/java/serializers/package-summary.html">growthbook.sdk.java.serializers</a></dt>
 <dd>&nbsp;</dd>
-<dt><a href="serializers/SuperTypeToken.html#%3Cinit%3E()" class="member-name-link">SuperTypeToken()</a> - Constructor for class serializers.<a href="serializers/SuperTypeToken.html" title="class in serializers">SuperTypeToken</a></dt>
+<dt><a href="growthbook/sdk/java/serializers/SuperTypeToken.html#%3Cinit%3E()" class="member-name-link">SuperTypeToken()</a> - Constructor for class growthbook.sdk.java.serializers.<a href="growthbook/sdk/java/serializers/SuperTypeToken.html" title="class in growthbook.sdk.java.serializers">SuperTypeToken</a></dt>
 <dd>&nbsp;</dd>
 <dt><a href="growthbook/sdk/java/repository/GBFeaturesRepository.GBFeaturesRepositoryBuilder.html#swrTtlSeconds(java.lang.Integer)" class="member-name-link">swrTtlSeconds(Integer)</a> - Method in class growthbook.sdk.java.repository.<a href="growthbook/sdk/java/repository/GBFeaturesRepository.GBFeaturesRepositoryBuilder.html" title="class in growthbook.sdk.java.repository">GBFeaturesRepository.GBFeaturesRepositoryBuilder</a></dt>
 <dd>&nbsp;</dd>

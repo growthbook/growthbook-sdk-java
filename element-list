@@ -9,6 +9,6 @@ growthbook.sdk.java.multiusermode.usage
 growthbook.sdk.java.multiusermode.util
 growthbook.sdk.java.repository
 growthbook.sdk.java.sandbox
+growthbook.sdk.java.serializers
 growthbook.sdk.java.stickyBucketing
 growthbook.sdk.java.util
-serializers
