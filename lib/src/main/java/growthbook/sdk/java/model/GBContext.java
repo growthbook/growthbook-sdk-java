@@ -193,7 +193,7 @@ public class GBContext {
 
     public void setFeaturesJson(String featuresJson) {
         if (featuresJson != null) {
-            this.setFeatures(TransformationUtil.transformFeatures(featuresJson));
+            this.setFeatures(TransformationUtil.transformEncryptedFeatures(featuresJson, this.encryptionKey));
         }
     }
 
