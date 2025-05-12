@@ -2,6 +2,7 @@ package growthbook.sdk.java.sandbox;
 
 import lombok.extern.slf4j.Slf4j;
 
+import javax.annotation.Nullable;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
@@ -18,7 +19,7 @@ import java.nio.file.Files;
 public class FileCachingManagerImpl implements GbCacheManager {
     private final File cacheDir;
 
-    public FileCachingManagerImpl(String filePath) {
+    public FileCachingManagerImpl(@Nullable String filePath) {
         if (filePath == null) {
             this.cacheDir = new File(System.getProperty("java.io.tmpdir"), "growthbook_cache");
         } else {
