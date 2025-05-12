@@ -19,11 +19,16 @@ public class FileCachingManagerImpl implements GbCacheManager {
     private final File cacheDir;
 
     public FileCachingManagerImpl(String filePath) {
-        this.cacheDir = new File(filePath);
+        if (filePath == null) {
+            this.cacheDir = new File(System.getProperty("java.io.tmpdir"), "growthbook_cache");
+        } else {
+            this.cacheDir = new File(filePath);
+        }
         if (!cacheDir.exists()) {
             boolean created = cacheDir.mkdirs();
             if (!created) {
-                throw new RuntimeException("Failed to create cache directory at " + filePath);
+                log.warn("Failed to create cache directory at {}", cacheDir.getAbsolutePath());
+                throw new RuntimeException("Failed to create cache directory at " +  cacheDir.getAbsolutePath());
             }
         }
     }
