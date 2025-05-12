@@ -3,7 +3,7 @@ package growthbook.sdk.java.sandbox;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
-public class InMemoryCacheManager implements GbCacheManager{
+public class InMemoryCachingManagerImpl implements GbCacheManager{
     private final Map<String, String> cache = new ConcurrentHashMap<>();
 
     @Override
