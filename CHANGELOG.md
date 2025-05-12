@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.10.1](https://github.com/growthbook/growthbook-sdk-java/compare/v0.10.0...0.10.1) (2025-05-12)
+
+
+### Bug Fixes
+
+* handle decryption for explicit features ([#157](https://github.com/growthbook/growthbook-sdk-java/issues/157)) ([76e5c38](https://github.com/growthbook/growthbook-sdk-java/commit/76e5c385b76eb6b6744f4a66f810288d5750a98b))
+
 ## [0.10.0](https://github.com/growthbook/growthbook-sdk-java/compare/v0.9.97...v0.10.0) (2025-04-04)
 
 
