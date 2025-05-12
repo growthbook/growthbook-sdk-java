@@ -49,6 +49,8 @@ class GBFeaturesRepositoryTest {
                 null,
                 true,
                 null,
+                null,
+                null,
                 null
         );
 
@@ -67,6 +69,8 @@ class GBFeaturesRepositoryTest {
                 null,
                 null,
                 true,
+                null,
+                null,
                 null,
                 null
         );
@@ -130,6 +134,8 @@ class GBFeaturesRepositoryTest {
                 mockOkHttpClient,
                 true,
                 null,
+                null,
+                null,
                 null
         );
         subject.initialize();
@@ -178,6 +184,8 @@ class GBFeaturesRepositoryTest {
                 mockOkHttpClient,
                 true,
                 null,
+                null,
+                null,
                 null
         );
         subject.initialize();
@@ -223,6 +231,7 @@ class GBFeaturesRepositoryTest {
                 null,
                 null,
                 null,
+                null,null,
                 null
         );
 
@@ -260,6 +269,7 @@ class GBFeaturesRepositoryTest {
                 null,
                 null,
                 null,
+                null,null,
                 null
         );
 
@@ -290,6 +300,7 @@ class GBFeaturesRepositoryTest {
                 mockHttpClient,
                 true,
                 null,
+                null, null,
                 null
         ));
 
@@ -331,6 +342,7 @@ class GBFeaturesRepositoryTest {
                 mockHttpClient,
                 true,
                 null,
+                null,null,
                 null
         ));
 
@@ -363,6 +375,7 @@ class GBFeaturesRepositoryTest {
                 mockHttpClient,
                 true,
                 null,
+                null, null,
                 null
         ));
 
@@ -409,6 +422,7 @@ class GBFeaturesRepositoryTest {
                 mockHttpClient,
                 null,
                 requestBody,
+                null, null,
                 null
         ));
 
@@ -459,6 +473,7 @@ class GBFeaturesRepositoryTest {
                 mockOkHttpClient,
                 true,
                 null,
+                null,null,
                 null
         );
 
@@ -493,6 +508,7 @@ class GBFeaturesRepositoryTest {
                 mockHttpClient,
                 false,
                 null,
+                null,null,
                 null
         );
 

@@ -4,6 +4,7 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import growthbook.sdk.java.model.Feature;
 import growthbook.sdk.java.multiusermode.util.TransformationUtil;
+import growthbook.sdk.java.sandbox.CacheManagerFactory;
 import growthbook.sdk.java.sandbox.GbCacheManager;
 import growthbook.sdk.java.sandbox.FileCachingManagerImpl;
 import growthbook.sdk.java.util.DecryptionUtils;
@@ -202,7 +203,7 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
             @Nullable FeatureRefreshStrategy refreshStrategy,
             @Nullable Integer swrTtlSeconds
     ) {
-        this(apiHost, clientKey, encryptionKey, refreshStrategy, swrTtlSeconds, null, null, null, null);
+        this(apiHost, clientKey, encryptionKey, refreshStrategy, swrTtlSeconds, null, null, null, null, null,false);
     }
 
     /**
@@ -223,8 +224,9 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
             @Nullable Integer swrTtlSeconds,
             @Nullable RequestBodyForRemoteEval requestBodyForRemoteEval
     ) {
-        this(apiHost, clientKey, encryptionKey, refreshStrategy, swrTtlSeconds, null, null, requestBodyForRemoteEval, null);
+        this(apiHost, clientKey, encryptionKey, refreshStrategy, swrTtlSeconds, null, null, requestBodyForRemoteEval, null, null, false);
     }
+
     public GBFeaturesRepository(
             @Nullable String apiHost,
             String clientKey,
@@ -233,7 +235,7 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
             @Nullable Integer swrTtlSeconds,
             @Nullable Boolean isCacheDisabled
     ) {
-        this(apiHost, clientKey, encryptionKey, refreshStrategy, swrTtlSeconds, null, null, isCacheDisabled, null,null);
+        this(apiHost, clientKey, encryptionKey, refreshStrategy, swrTtlSeconds, null, null, isCacheDisabled, null, null, null, false);
     }
 
     /**
@@ -250,7 +252,10 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
             @Nullable String decryptionKey,
             @Nullable Boolean isCacheDisabled,
             @Nullable RequestBodyForRemoteEval requestBodyForRemoteEval,
-            @Nullable GbCacheManager cacheManager
+            @Nullable GbCacheManager cacheManager,
+            @Nullable String cacheDirectory,
+            @Nullable Boolean inMemoryCache
+
     ) {
         this(apiHost, clientKey, (decryptionKey != null) ? decryptionKey : encryptionKey,
                 refreshStrategy,
@@ -258,7 +263,9 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
                 okHttpClient,
                 isCacheDisabled,
                 (requestBodyForRemoteEval != null) ? requestBodyForRemoteEval : new RequestBodyForRemoteEval(),
-                cacheManager
+                cacheManager,
+                cacheDirectory,
+                (inMemoryCache != null) ? inMemoryCache : false
         );
     }
 
@@ -282,7 +289,9 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
             @Nullable OkHttpClient okHttpClient,
             @Nullable Boolean isCacheDisabled,
             @Nullable RequestBodyForRemoteEval requestBodyForRemoteEval,
-            @Nullable GbCacheManager cacheManager
+            @Nullable GbCacheManager cacheManager,
+            @Nullable String cacheDirectory,
+            @Nullable Boolean inMemoryCache
     ) {
         this.isCacheDisabled = isCacheDisabled != null && isCacheDisabled; // cache enable by default
         if (clientKey == null) throw new IllegalArgumentException("clientKey cannot be null");
@@ -313,7 +322,11 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
             this.okHttpClient = okHttpClient;
         }
         if (Boolean.FALSE.equals(this.isCacheDisabled)) {
-            this.cacheManager = cacheManager != null ? cacheManager : new FileCachingManagerImpl(FILE_PATH_FOR_CACHE);
+            this.cacheManager = cacheManager != null ? cacheManager :
+                    CacheManagerFactory.createCacheManager(
+                            cacheDirectory != null ? cacheDirectory : FILE_PATH_FOR_CACHE,
+                            Boolean.TRUE.equals(inMemoryCache)
+                    );
         }
     }
 
@@ -386,8 +399,8 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
 
                     }
                 }
-                    // OkHttp will auto-retry on failure
-                    self.onRefreshFailed(e);
+                // OkHttp will auto-retry on failure
+                self.onRefreshFailed(e);
 
             }
 
