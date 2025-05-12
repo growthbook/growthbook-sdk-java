@@ -105,6 +105,10 @@ featuresRepository.onFeaturesRefresh(new FeatureRefreshCallback() {
         System.out.println("Features have been refreshed");
         System.out.println(featuresJson);
     }
+    @Override
+    public void onError(Throwable throwable) {
+        System.out.println("Features refreshed with error");
+    }
 });
 
 try {
