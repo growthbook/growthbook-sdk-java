@@ -153,6 +153,7 @@ class GrowthBookClientTest {
         when(builder.isCacheDisabled(anyBoolean())).thenReturn(builder);
         when(builder.requestBodyForRemoteEval(any())).thenReturn(builder);
         when(builder.cacheManager(any())).thenReturn(builder);
+        when(builder.inMemoryCache(anyBoolean())).thenReturn(builder);
         when(builder.build()).thenReturn(repository);
 
         return builder;
@@ -163,6 +164,7 @@ class GrowthBookClientTest {
                 .apiHost("https://custom.growthbook.io")
                 .clientKey("custom_key")
                 .decryptionKey("test_key")
+                .inMemoryCache(true)
                 .refreshStrategy(FeatureRefreshStrategy.STALE_WHILE_REVALIDATE)
                 .featureRefreshCallback(callback)
                 .build();

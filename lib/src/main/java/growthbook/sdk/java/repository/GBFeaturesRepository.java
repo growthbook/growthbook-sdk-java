@@ -52,7 +52,6 @@ import java.util.logging.Logger;
 public class GBFeaturesRepository implements IGBFeaturesRepository {
     private static final String ENABLED = "enabled";
     private static final String FILE_NAME = "FEATURE_CACHE.json";
-    public static final String FILE_PATH_FOR_CACHE = "src/main/resources";
     public static final String EMPTY_JSON_OBJECT_STRING = "{}";
 
     /**
@@ -324,7 +323,7 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
         if (Boolean.FALSE.equals(this.isCacheDisabled)) {
             this.cacheManager = cacheManager != null ? cacheManager :
                     CacheManagerFactory.createCacheManager(
-                            cacheDirectory != null ? cacheDirectory : FILE_PATH_FOR_CACHE,
+                            cacheDirectory,
                             Boolean.TRUE.equals(inMemoryCache)
                     );
         }

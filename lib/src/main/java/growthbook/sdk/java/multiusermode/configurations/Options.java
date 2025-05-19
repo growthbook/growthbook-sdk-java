@@ -43,7 +43,8 @@ public class Options {
                    @Nullable JsonObject globalAttributes,
                    @Nullable Map<String, Object> globalForcedFeatureValues,
                    @Nullable Map<String, Integer> globalForcedVariationsMap,
-                   @Nullable GbCacheManager cacheManager
+                   @Nullable GbCacheManager cacheManager,
+                   @Nullable Boolean inMemoryCache
 
     ) {
         this.enabled = enabled == null || enabled;
@@ -64,6 +65,7 @@ public class Options {
         this.globalForcedFeatureValues = globalForcedFeatureValues;
         this.globalForcedVariationsMap = globalForcedVariationsMap;
         this.cacheManager = cacheManager;
+        this.inMemoryCache = inMemoryCache;
     }
 
     /**
@@ -177,6 +179,9 @@ public class Options {
 
     @Nullable
     private GbCacheManager cacheManager;
+
+    @Nullable
+    private Boolean inMemoryCache;
 
     @Nullable
     public StickyBucketService getStickyBucketService() {
