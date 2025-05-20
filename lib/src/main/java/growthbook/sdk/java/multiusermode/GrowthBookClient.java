@@ -71,6 +71,9 @@ public class GrowthBookClient {
                 // Add featureRefreshCallback
                 repository.onFeaturesRefresh(this.options.getFeatureRefreshCallback());
 
+                // Add a callback to refresh the global context
+                repository.onFeaturesRefresh(this.refreshGlobalContext());
+
                 try {
                     repository.initialize();
                 } catch (FeatureFetchException e) {
