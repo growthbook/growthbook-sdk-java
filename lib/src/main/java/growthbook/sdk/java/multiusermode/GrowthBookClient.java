@@ -71,9 +71,6 @@ public class GrowthBookClient {
                 // Add featureRefreshCallback
                 repository.onFeaturesRefresh(this.options.getFeatureRefreshCallback());
 
-                // Add a callback to refresh the global context
-                repository.onFeaturesRefresh(this.refreshGlobalContext());
-
                 try {
                     repository.initialize();
                 } catch (FeatureFetchException e) {
@@ -227,6 +224,9 @@ public class GrowthBookClient {
     }
 
     private EvaluationContext getEvalContext(UserContext userContext) {
+        // Refresh features on each evaluation to ensure cache refresh is triggered
+        this.globalContext.setFeatures(repository.getParsedFeatures());
+        
         HashMap<String, JsonElement> globalAttributes = null;
         if (this.options.getGlobalAttributes() != null) {
             globalAttributes = GrowthBookJsonUtils.getInstance().gson.fromJson(this.options.getGlobalAttributes(), HashMap.class);
