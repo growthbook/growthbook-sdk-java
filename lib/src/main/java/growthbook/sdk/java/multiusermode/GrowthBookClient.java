@@ -227,6 +227,9 @@ public class GrowthBookClient {
     }
 
     private EvaluationContext getEvalContext(UserContext userContext) {
+        // Refresh features on each evaluation to ensure cache refresh is triggered
+        this.globalContext.setFeatures(repository.getParsedFeatures());
+        
         HashMap<String, JsonElement> globalAttributes = null;
         if (this.options.getGlobalAttributes() != null) {
             globalAttributes = GrowthBookJsonUtils.getInstance().gson.fromJson(this.options.getGlobalAttributes(), HashMap.class);
