@@ -9,6 +9,7 @@ import com.google.gson.JsonNull;
 import growthbook.sdk.java.model.ExperimentResult;
 import growthbook.sdk.java.model.FeatureResult;
 import growthbook.sdk.java.model.GBContext;
+import growthbook.sdk.java.repository.GBFeaturesRepository;
 import growthbook.sdk.java.stickyBucketing.InMemoryStickyBucketServiceImpl;
 import growthbook.sdk.java.model.StickyAssignmentsDocument;
 import growthbook.sdk.java.stickyBucketing.StickyBucketService;
@@ -86,7 +87,19 @@ public class EvaluateFeatureWithStickyBucketingFeatureTest {
                     .stickyBucketAssignmentDocs(initialStickyBucketAssignmentDocs)
                     .build();
 
-            GrowthBook subject = new GrowthBook(context);
+            GBFeaturesRepository repository = new GBFeaturesRepository(
+                    "https://cdn.growthbook.io",
+                    "java_NsrWldWd5bxQJZftGsWKl7R2yD2LtAK8C8EUYh9L8",
+                    null,
+                    null,
+                    null,
+                    null,
+                    true,
+                    null,
+                    null
+            );
+
+            GrowthBook subject = new GrowthBook(context, repository);
             FeatureResult<Object> actualFeatureResult = subject.evalFeature(
                     testCase.get(3).getAsJsonPrimitive().getAsString(),
                     Object.class

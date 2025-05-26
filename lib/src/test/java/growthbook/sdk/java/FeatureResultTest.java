@@ -9,6 +9,7 @@ import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import growthbook.sdk.java.model.FeatureResult;
 import growthbook.sdk.java.model.FeatureResultSource;
 import growthbook.sdk.java.model.GBContext;
+import growthbook.sdk.java.repository.GBFeaturesRepository;
 import growthbook.sdk.java.util.GrowthBookJsonUtils;
 import org.junit.jupiter.api.Test;
 
@@ -207,7 +208,18 @@ class FeatureResultTest {
                 "{\"test\":{\"defaultValue\":[],\"rules\":[{\"force\":[\"line1\",\"line2\"]}]}}")
             .build();
 
-        GrowthBook growthBook = new GrowthBook(ctx);
+        GBFeaturesRepository featuresRepository = new GBFeaturesRepository(
+                "https://cdn.growthbook.io",
+                "java_NsrWldWd5bxQJZftGsWKl7R2yD2LtAK8C8EUYh9L8",
+                null,
+                null,
+                null,
+                null,
+                true,
+                null,
+                null
+        );
+        GrowthBook growthBook = new GrowthBook(ctx, featuresRepository);
 
         String featureName = "test";
 

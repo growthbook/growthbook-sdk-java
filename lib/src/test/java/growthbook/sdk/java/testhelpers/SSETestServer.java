@@ -55,7 +55,7 @@ public class SSETestServer {
             GBContext context = GBContext.builder()
                     .featuresJson(featuresRepository.getFeaturesJson())
                     .build();
-            GrowthBook growthBook = new GrowthBook(context);
+            GrowthBook growthBook = new GrowthBook(context, featuresRepository);
 
             // Get a feature value
             String randomString = growthBook.getFeatureValue("greeting", "????");
