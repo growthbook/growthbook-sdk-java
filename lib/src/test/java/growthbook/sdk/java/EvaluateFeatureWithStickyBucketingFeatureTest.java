@@ -6,7 +6,11 @@ import com.google.common.reflect.TypeToken;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonNull;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
+
 import growthbook.sdk.java.model.ExperimentResult;
+import growthbook.sdk.java.model.Feature;
 import growthbook.sdk.java.model.FeatureResult;
 import growthbook.sdk.java.model.GBContext;
 import growthbook.sdk.java.repository.GBFeaturesRepository;
@@ -18,6 +22,9 @@ import growthbook.sdk.java.util.GrowthBookJsonUtils;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+
+import java.lang.reflect.Field;
+import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -99,6 +106,19 @@ public class EvaluateFeatureWithStickyBucketingFeatureTest {
                     null
             );
 
+            try {
+                if (featuresJson != null) {
+                    Type featureMapType = new TypeToken<Map<String, Feature<?>>>() {}.getType();
+                    Map<String, Feature<?>> featuresMap = utils.gson.fromJson(featuresJson, featureMapType);
+
+                    Field parsedFeaturesField = GBFeaturesRepository.class.getDeclaredField("parsedFeatures");
+                    parsedFeaturesField.setAccessible(true);
+                    parsedFeaturesField.set(repository, featuresMap);
+                }
+            } catch (NoSuchFieldException | IllegalAccessException e) {
+                e.printStackTrace();
+            }
+
             GrowthBook subject = new GrowthBook(context, repository);
             FeatureResult<Object> actualFeatureResult = subject.evalFeature(
                     testCase.get(3).getAsJsonPrimitive().getAsString(),
@@ -112,7 +132,6 @@ public class EvaluateFeatureWithStickyBucketingFeatureTest {
                     testCase.get(4).getAsJsonObject(),
                     ExperimentResult.class
             );
-//            Map<String, StickyAssignmentsDocument> expectedStickyAssignmentsDocument = new HashMap<>();
             Map<String, StickyAssignmentsDocument> expectedStickyAssignmentsDocument = utils.gson.fromJson(
                     testCase.get(5),
                     new TypeToken<HashMap<String, StickyAssignmentsDocument>>() {

@@ -6,18 +6,34 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 
+
+import com.google.gson.reflect.TypeToken;
+
+import growthbook.sdk.java.model.Feature;
 import growthbook.sdk.java.model.FeatureResult;
 import growthbook.sdk.java.model.FeatureResultSource;
 import growthbook.sdk.java.model.GBContext;
 import growthbook.sdk.java.repository.GBFeaturesRepository;
 import growthbook.sdk.java.util.GrowthBookJsonUtils;
+
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
+import java.lang.reflect.Field;
+import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Map;
 
 class FeatureResultTest {
+    private static GrowthBookJsonUtils utils;
+    @BeforeAll
+    static void beforeAll() {
+        utils = GrowthBookJsonUtils.getInstance();
+
+    }
+
     @Test
     void canBeConstructed() {
         FeatureResult subject = new FeatureResult(
@@ -202,10 +218,10 @@ class FeatureResultTest {
     }
 
     @Test
-    void proofOfConceptCollectionTest() {
+    void proofOfConceptCollectionTest() throws NoSuchFieldException, IllegalAccessException {
+        String featuresJsonString =  "{\"test\":{\"defaultValue\":[],\"rules\":[{\"force\":[\"line1\",\"line2\"]}]}}";
         GBContext ctx = GBContext.builder()
-            .featuresJson(
-                "{\"test\":{\"defaultValue\":[],\"rules\":[{\"force\":[\"line1\",\"line2\"]}]}}")
+            .featuresJson(featuresJsonString)
             .build();
 
         GBFeaturesRepository featuresRepository = new GBFeaturesRepository(
@@ -219,6 +235,16 @@ class FeatureResultTest {
                 null,
                 null
         );
+
+        Type featureMapType = new TypeToken<Map<String, Feature<?>>>() {}.getType();
+        Map<String, Feature<?>> featuresMap = utils.gson.fromJson(featuresJsonString, featureMapType);
+
+        // Встановлюємо Map у приватне поле parsedFeatures через reflection
+        Field parsedFeaturesField = GBFeaturesRepository.class.getDeclaredField("parsedFeatures");
+        parsedFeaturesField.setAccessible(true);
+        parsedFeaturesField.set(featuresRepository, featuresMap);
+
+
         GrowthBook growthBook = new GrowthBook(ctx, featuresRepository);
 
         String featureName = "test";
