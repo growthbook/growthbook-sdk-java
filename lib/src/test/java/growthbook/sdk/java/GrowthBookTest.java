@@ -11,6 +11,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
+import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
@@ -33,10 +34,13 @@ import growthbook.sdk.java.repository.GBFeaturesRepository;
 import growthbook.sdk.java.testhelpers.PaperCupsConfig;
 import growthbook.sdk.java.testhelpers.TestCasesJsonHelper;
 import growthbook.sdk.java.testhelpers.TestContext;
+import growthbook.sdk.java.util.DecryptionUtils;
 import growthbook.sdk.java.util.GrowthBookJsonUtils;
 import lombok.Getter;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
+
+import java.lang.reflect.Field;
 import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -61,7 +65,7 @@ class GrowthBookTest {
     );
 
     @Test
-    void test_evalFeature() {
+    void test_evalFeature() throws NoSuchFieldException, IllegalAccessException {
         JsonArray testCases = helper.featureTestCases();
 
         ArrayList<String> passedTests = new ArrayList<>();
@@ -100,6 +104,14 @@ class GrowthBookTest {
 //            System.out.printf("\n context: %s", context);
             String featureKey = testCase.get(2).getAsString();
 //            String type = testCase.get("type").getAsString();
+            if (featuresJson != null) {
+                Type featureMapType = new TypeToken<Map<String, Feature<?>>>() {}.getType();
+                Map<String, Feature<?>> featuresMap = jsonUtils.gson.fromJson(featuresJson, featureMapType);
+
+                Field parsedFeaturesField = GBFeaturesRepository.class.getDeclaredField("parsedFeatures");
+                parsedFeaturesField.setAccessible(true);
+                parsedFeaturesField.set(repository, featuresMap);
+            }
 
             GrowthBook subject = new GrowthBook(context, repository);
             JsonElement expected = testCase.get(3).getAsJsonObject();
@@ -191,15 +203,24 @@ class GrowthBookTest {
     }
 
     @Test
-    void test_evalFeature_callsFeatureUsageCallback() {
+    void test_evalFeature_callsFeatureUsageCallback() throws NoSuchFieldException, IllegalAccessException {
         ArgumentCaptor<FeatureResult<String>> captor = ArgumentCaptor.forClass(FeatureResult.class);
         FeatureUsageCallback featureUsageCallback = mock(FeatureUsageCallback.class);
         String features = TestCasesJsonHelper.getInstance().getDemoFeaturesJson();
+
+        Map<String, Feature<?>> featuresMap = TransformationUtil.transformFeatures(features);
+
+        Field parsedFeaturesField = GBFeaturesRepository.class.getDeclaredField("parsedFeatures");
+        parsedFeaturesField.setAccessible(true);
+        parsedFeaturesField.set(repository, featuresMap);
+
+
         GBContext context = GBContext
                 .builder()
                 .featuresJson(features)
                 .featureUsageCallback(featureUsageCallback)
                 .build();
+
         GrowthBook subject = new GrowthBook(context, repository);
 
         String value = subject.getFeatureValue("h1-title", "unknown feature key");
@@ -337,7 +358,7 @@ class GrowthBookTest {
     }
 
     @Test
-    void test_runExperiment() {
+    void test_runExperiment() throws NoSuchFieldException, IllegalAccessException {
         JsonArray testCases = helper.runTestCases();
 
         ArrayList<String> passedTests = new ArrayList<>();
@@ -388,6 +409,12 @@ class GrowthBookTest {
                     }
                 }
 
+                Map<String, Feature<?>> featuresMap = TransformationUtil.transformFeatures(featuresJsonString);
+                Field parsedFeaturesField = GBFeaturesRepository.class.getDeclaredField("parsedFeatures");
+                parsedFeaturesField.setAccessible(true);
+                parsedFeaturesField.set(repository, featuresMap);
+
+
                 GrowthBook subject = new GrowthBook(context, repository);
                 ExperimentResult result = subject.run(experiment);
                 ExperimentResult expectedResult = new ExperimentResult<>(itemArray.get(3), null, itemArray.get(4).getAsBoolean(), null, null, null, itemArray.get(5).getAsBoolean(), null, null, null, null, null);
@@ -426,10 +453,16 @@ class GrowthBookTest {
     }
 
     @Test
-    void test_isOn_returns_true() {
+    void test_isOn_returns_true() throws IllegalAccessException, NoSuchFieldException {
         String featureKey = "new-feature";
         String attributes = "{ \"user_group\": \"subscriber\", \"beta_users\": true }";
         String features = TestCasesJsonHelper.getInstance().getDemoFeaturesJson();
+
+        Map<String, Feature<?>> featuresMap = TransformationUtil.transformFeatures(features);
+
+        Field parsedFeaturesField = GBFeaturesRepository.class.getDeclaredField("parsedFeatures");
+        parsedFeaturesField.setAccessible(true);
+        parsedFeaturesField.set(repository, featuresMap);
 
         GBContext context = GBContext
                 .builder()
@@ -464,7 +497,7 @@ class GrowthBookTest {
     }
     
     @Test
-    void test_isOn_should_be_stable() {
+    void test_isOn_should_be_stable() throws NoSuchFieldException, IllegalAccessException {
         String featureKey = "flag";
         
         JsonObject jsonObject1 = new JsonObject();
@@ -473,10 +506,15 @@ class GrowthBookTest {
         jsonObject1.add(featureKey, jsonObject2);
         Map<String, Feature<?>> stringFeatureMap = TransformationUtil.transformFeatures(jsonObject1.toString());
 
+        Field parsedFeaturesField = GBFeaturesRepository.class.getDeclaredField("parsedFeatures");
+        parsedFeaturesField.setAccessible(true);
+        parsedFeaturesField.set(repository, stringFeatureMap);
+
         GBContext context = GBContext
         .builder()
         .features(stringFeatureMap)
         .build();
+
         
         GrowthBook subject = new GrowthBook(context, repository);
         assertTrue(subject.isOn(featureKey));
@@ -484,10 +522,15 @@ class GrowthBookTest {
     }
 
     @Test
-    void test_getFeatureValue_boolean() {
+    void test_getFeatureValue_boolean() throws NoSuchFieldException, IllegalAccessException {
         String featureKey = "new-feature";
         String attributes = "{ \"user_group\": \"subscriber\", \"beta_users\": true }";
         String features = TestCasesJsonHelper.getInstance().getDemoFeaturesJson();
+
+        Map<String, Feature<?>> featuresMap = TransformationUtil.transformFeatures(features);
+        Field parsedFeaturesField = GBFeaturesRepository.class.getDeclaredField("parsedFeatures");
+        parsedFeaturesField.setAccessible(true);
+        parsedFeaturesField.set(repository, featuresMap);
 
         GBContext context = GBContext
                 .builder()
@@ -502,10 +545,15 @@ class GrowthBookTest {
     }
 
     @Test
-    void test_getFeatureValue_string_inExperiment() {
+    void test_getFeatureValue_string_inExperiment() throws NoSuchFieldException, IllegalAccessException {
         String featureKey = "covid-banner-text";
         String attributes = "{ \"user_group\": \"subscriber\", \"beta_users\": true }";
         String features = TestCasesJsonHelper.getInstance().getDemoFeaturesJson();
+
+        Map<String, Feature<?>> featuresMap = TransformationUtil.transformFeatures(features);
+        Field parsedFeaturesField = GBFeaturesRepository.class.getDeclaredField("parsedFeatures");
+        parsedFeaturesField.setAccessible(true);
+        parsedFeaturesField.set(repository, featuresMap);
 
         GBContext context = GBContext
                 .builder()
@@ -520,10 +568,15 @@ class GrowthBookTest {
     }
 
     @Test
-    void test_getFeatureValue_string_notInExperiment() {
+    void test_getFeatureValue_string_notInExperiment() throws NoSuchFieldException, IllegalAccessException {
         String featureKey = "covid-banner-text";
         String attributes = "{ \"user_group\": \"subscriber\", \"beta_users\": false }";
         String features = TestCasesJsonHelper.getInstance().getDemoFeaturesJson();
+
+        Map<String, Feature<?>> featuresMap = TransformationUtil.transformFeatures(features);
+        Field parsedFeaturesField = GBFeaturesRepository.class.getDeclaredField("parsedFeatures");
+        parsedFeaturesField.setAccessible(true);
+        parsedFeaturesField.set(repository, featuresMap);
 
         GBContext context = GBContext
                 .builder()
@@ -556,10 +609,15 @@ class GrowthBookTest {
     }
 
     @Test
-    void test_getFeatureValue_integer_inExperiment() {
+    void test_getFeatureValue_integer_inExperiment() throws NoSuchFieldException, IllegalAccessException {
         String featureKey = "demo";
         String attributes = "{ \"admin\": true }";
         String features = TestCasesJsonHelper.getInstance().getDemoFeaturesJson();
+
+        Map<String, Feature<?>> featuresMap = TransformationUtil.transformFeatures(features);
+        Field parsedFeaturesField = GBFeaturesRepository.class.getDeclaredField("parsedFeatures");
+        parsedFeaturesField.setAccessible(true);
+        parsedFeaturesField.set(repository, featuresMap);
 
         GBContext context = GBContext
                 .builder()
@@ -574,10 +632,15 @@ class GrowthBookTest {
     }
 
     @Test
-    void test_getFeatureValue_float() {
+    void test_getFeatureValue_float() throws NoSuchFieldException, IllegalAccessException {
         String featureKey = "price";
         String attributes = "{ \"user\": \"standard\" }";
         String features = TestCasesJsonHelper.getInstance().getDemoFeaturesJson();
+
+        Map<String, Feature<?>> featuresMap = TransformationUtil.transformFeatures(features);
+        Field parsedFeaturesField = GBFeaturesRepository.class.getDeclaredField("parsedFeatures");
+        parsedFeaturesField.setAccessible(true);
+        parsedFeaturesField.set(repository, featuresMap);
 
         GBContext context = GBContext
                 .builder()
@@ -636,10 +699,16 @@ class GrowthBookTest {
     }
 
     @Test
-    void test_getFeatureValue_returnsFeatureValueFromEncryptedFeatures() {
+    void test_getFeatureValue_returnsFeatureValueFromEncryptedFeatures() throws NoSuchFieldException, IllegalAccessException, DecryptionUtils.DecryptionException {
         String encryptedFeaturesJson = "7rvPA94JEsqRo9yPZsdsXg==.bJ8vtYvX+ur3cEUFVkYo1OyWb98oLnMlpeoO0Hs4YPc0EVb7oKX4KNz+Yt6GUMBsieXqtL7oaYzX+kMayZEtV+3bhyDYnS9QBrvalnfxbLExjtnsy8g0pPQHU/P/DPIzO0F+pphcahRfi+3AMTnIreqvkqrcX+MyOwHN56lqEs23Vp4Rsq2qDow/LZmn5kpwMNhMY0DBq7jC+lh2Oyly0g==";
         String encryptionKey = "BhB1wORFmZLTDjbvstvS8w==";
         String sampleUserAttributes = "{\"country\": \"mexico\", \"device\": \"android\"}";
+
+        String decryptedFeaturesJson = DecryptionUtils.decrypt(encryptedFeaturesJson, encryptionKey);
+        Map<String, Feature<?>> featuresMap = TransformationUtil.transformFeatures(decryptedFeaturesJson);
+        Field parsedFeaturesField = GBFeaturesRepository.class.getDeclaredField("parsedFeatures");
+        parsedFeaturesField.setAccessible(true);
+        parsedFeaturesField.set(repository, featuresMap);
 
         GBContext context = GBContext
                 .builder()
