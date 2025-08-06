@@ -689,10 +689,15 @@ class GrowthBookTest {
     }
 
     @Test
-    void test_getFeatureValue_asGsonDeserializable() {
+    void test_getFeatureValue_asGsonDeserializable() throws NoSuchFieldException, IllegalAccessException {
         String featureKey = "papercups-config";
         String attributes = "{ \"user\": \"standard\" }";
         String features = TestCasesJsonHelper.getInstance().getDemoFeaturesJson();
+        Map<String, Feature<?>> featuresMap = TransformationUtil.transformFeatures(features);
+        Field parsedFeaturesField = GBFeaturesRepository.class.getDeclaredField("parsedFeatures");
+        parsedFeaturesField.setAccessible(true);
+        parsedFeaturesField.set(repository, featuresMap);
+
 
         GBContext context = GBContext
                 .builder()
