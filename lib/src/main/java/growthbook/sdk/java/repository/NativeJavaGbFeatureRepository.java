@@ -4,6 +4,7 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import growthbook.sdk.java.model.Feature;
 import growthbook.sdk.java.multiusermode.util.TransformationUtil;
+import growthbook.sdk.java.sandbox.CacheManagerFactory;
 import growthbook.sdk.java.sandbox.FileCachingManagerImpl;
 import growthbook.sdk.java.sandbox.GbCacheManager;
 import growthbook.sdk.java.util.DecryptionUtils;
@@ -162,7 +163,9 @@ public class NativeJavaGbFeatureRepository implements IGBFeaturesRepository {
                                          @Nullable Integer swrTtlSeconds,
                                          @Nullable Boolean isCacheDisabled,
                                          @Nullable RequestBodyForRemoteEval requestBodyForRemoteEval,
-                                         @Nullable GbCacheManager cacheManager
+                                         @Nullable GbCacheManager cacheManager,
+                                         @Nullable String cacheDirectory,
+                                         @Nullable Boolean inMemoryCache
     ) {
         this.isCacheDisabled = new AtomicBoolean(Boolean.TRUE.equals(isCacheDisabled));
         if (clientKey == null) {
@@ -180,10 +183,13 @@ public class NativeJavaGbFeatureRepository implements IGBFeaturesRepository {
         this.encryptionKey = encryptionKey;
         this.swrTtlSeconds = swrTtlSeconds == null ? new AtomicInteger(60) : new AtomicInteger(swrTtlSeconds);
         this.refreshExpiresAt();
-            if (!this.isCacheDisabled.get()) {
-                this.cacheManager = cacheManager != null ? new AtomicReference<>(cacheManager) :new AtomicReference<>(new FileCachingManagerImpl(FILE_PATH_FOR_CACHE));
-            }
-
+        if (Boolean.FALSE.equals(this.isCacheDisabled.get())) {
+            this.cacheManager = cacheManager != null ? new AtomicReference<>(cacheManager) :
+                    new AtomicReference<>(CacheManagerFactory.createCacheManager(
+                            cacheDirectory,
+                            Boolean.TRUE.equals(inMemoryCache)
+                    ));
+        }
     }
 
     /**

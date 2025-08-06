@@ -65,6 +65,7 @@ public class GrowthBookClient {
                         .refreshStrategy(this.options.getRefreshStrategy())
                         .isCacheDisabled(this.options.getIsCacheDisabled())
                         .cacheManager(this.options.getCacheManager())
+                        .inMemoryCache(this.options.getInMemoryCache())
                         .requestBodyForRemoteEval(configurePayloadForRemoteEval(this.options)) // if we don't want to pre-fetch for remote eval we can delete this line
                         .build();
 
