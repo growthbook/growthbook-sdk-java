@@ -3,14 +3,6 @@
  */
 package growthbook.sdk.java;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.*;
-
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
@@ -29,26 +21,54 @@ import growthbook.sdk.java.model.FeatureResult;
 import growthbook.sdk.java.model.FeatureResultSource;
 import growthbook.sdk.java.model.GBContext;
 import growthbook.sdk.java.multiusermode.util.TransformationUtil;
+import growthbook.sdk.java.repository.GBFeaturesRepository;
 import growthbook.sdk.java.testhelpers.PaperCupsConfig;
 import growthbook.sdk.java.testhelpers.TestCasesJsonHelper;
 import growthbook.sdk.java.testhelpers.TestContext;
+import growthbook.sdk.java.util.DecryptionUtils;
 import growthbook.sdk.java.util.GrowthBookJsonUtils;
 import lombok.Getter;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
+
+import java.lang.reflect.Field;
 import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
 class GrowthBookTest {
 
     final TestCasesJsonHelper helper = TestCasesJsonHelper.getInstance();
     final GrowthBookJsonUtils jsonUtils = GrowthBookJsonUtils.getInstance();
+    final static GBFeaturesRepository repository = new GBFeaturesRepository(
+            "https://cdn.growthbook.io",
+            "java_NsrWldWd5bxQJZftGsWKl7R2yD2LtAK8C8EUYh9L8",
+            null,
+            null,
+            null,
+            null,
+            true,
+            null,
+            null,
+            null,
+            null
+    );
 
     @Test
-    void test_evalFeature() {
+    void test_evalFeature() throws NoSuchFieldException, IllegalAccessException {
         JsonArray testCases = helper.featureTestCases();
 
         ArrayList<String> passedTests = new ArrayList<>();
@@ -65,7 +85,8 @@ class GrowthBookTest {
             JsonElement attributesJson = testCase.get(1).getAsJsonObject().get("attributes");
             String attributesJsonAsStringOrNull = attributesJson == null ? null : attributesJson.toString();
 
-            Type forcedVariationsType = new TypeToken<HashMap<String, Integer>>() {}.getType();
+            Type forcedVariationsType = new TypeToken<HashMap<String, Integer>>() {
+            }.getType();
             HashMap<String, Integer> forcedVariations = jsonUtils.gson.fromJson(testCase.get(1).getAsJsonObject().get("forcedVariations"), forcedVariationsType);
 
             JsonElement savedGroupsJson = testCase.get(1).getAsJsonObject().get("savedGroups");
@@ -87,8 +108,18 @@ class GrowthBookTest {
 //            System.out.printf("\n context: %s", context);
             String featureKey = testCase.get(2).getAsString();
 //            String type = testCase.get("type").getAsString();
+            if (featuresJson != null) {
+                Type featureMapType = new TypeToken<Map<String, Feature<?>>>() {
+                }.getType();
+                Map<String, Feature<?>> featuresMap = jsonUtils.gson.fromJson(featuresJson, featureMapType);
 
-            GrowthBook subject = new GrowthBook(context);
+                Field parsedFeaturesField = GBFeaturesRepository.class.getDeclaredField("parsedFeatures");
+                parsedFeaturesField.setAccessible(true);
+                parsedFeaturesField.set(repository, featuresMap);
+            }
+
+
+            GrowthBook subject = new GrowthBook(context, repository);
             JsonElement expected = testCase.get(3).getAsJsonObject();
 //            System.out.printf("\n\n Expected result (string): %s", expectedString);
             FeatureResult expectedResult = jsonUtils.gson.fromJson(expected, FeatureResult.class);
@@ -178,16 +209,24 @@ class GrowthBookTest {
     }
 
     @Test
-    void test_evalFeature_callsFeatureUsageCallback() {
+    void test_evalFeature_callsFeatureUsageCallback() throws NoSuchFieldException, IllegalAccessException {
         ArgumentCaptor<FeatureResult<String>> captor = ArgumentCaptor.forClass(FeatureResult.class);
         FeatureUsageCallback featureUsageCallback = mock(FeatureUsageCallback.class);
         String features = TestCasesJsonHelper.getInstance().getDemoFeaturesJson();
+
+        Map<String, Feature<?>> featuresMap = TransformationUtil.transformFeatures(features);
+
+        Field parsedFeaturesField = GBFeaturesRepository.class.getDeclaredField("parsedFeatures");
+        parsedFeaturesField.setAccessible(true);
+        parsedFeaturesField.set(repository, featuresMap);
+
+
         GBContext context = GBContext
                 .builder()
                 .featuresJson(features)
                 .featureUsageCallback(featureUsageCallback)
                 .build();
-        GrowthBook subject = new GrowthBook(context);
+        GrowthBook subject = new GrowthBook(context, repository);
 
         String value = subject.getFeatureValue("h1-title", "unknown feature key");
 
@@ -202,7 +241,7 @@ class GrowthBookTest {
 
     @Test
     void run_executesExperimentResultCallbacks() {
-        GrowthBook subject = new GrowthBook();
+        GrowthBook subject = new GrowthBook(repository);
         ExperimentRunCallback mockCallback1 = mock(ExperimentRunCallback.class);
         ExperimentRunCallback mockCallback2 = mock(ExperimentRunCallback.class);
         Experiment<String> mockExperiment = Experiment.<String>builder().build();
@@ -217,7 +256,7 @@ class GrowthBookTest {
 
     @Test
     void run_executesExperimentResultCallbacksOnceWhenRunInvokeMultipleTimes() {
-        GrowthBook subject = new GrowthBook();
+        GrowthBook subject = new GrowthBook(repository);
         ExperimentRunCallback mockCallback = mock(ExperimentRunCallback.class);
         Experiment<String> mockExperiment = Experiment.<String>builder().build();
 
@@ -236,7 +275,9 @@ class GrowthBookTest {
                 mock(GBContext.class),
                 mock(FeatureEvaluator.class),
                 null,
-                experimentEvaluator);
+                experimentEvaluator,
+                repository
+        );
 
         ExperimentRunCallback mockCallback = mock(ExperimentRunCallback.class);
         Experiment<String> mockExperiment1 = Experiment.<String>builder()
@@ -324,7 +365,7 @@ class GrowthBookTest {
     }
 
     @Test
-    void test_runExperiment() {
+    void test_runExperiment() throws NoSuchFieldException, IllegalAccessException {
         JsonArray testCases = helper.runTestCases();
 
         ArrayList<String> passedTests = new ArrayList<>();
@@ -343,7 +384,8 @@ class GrowthBookTest {
                 JsonElement attributesJson = itemArray.get(1).getAsJsonObject().get("attributes");
                 String attributesJsonString = attributesJson == null ? "null" : attributesJson.toString();
 
-                Type forcedVariationsType = new TypeToken<HashMap<String, Integer>>() {}.getType();
+                Type forcedVariationsType = new TypeToken<HashMap<String, Integer>>() {
+                }.getType();
                 HashMap<String, Integer> forcedVariations = jsonUtils.gson.fromJson(itemArray.get(1).getAsJsonObject().get("forcedVariations"), forcedVariationsType);
 
                 JsonElement savedGroups = itemArray.get(1).getAsJsonObject().get("savedGroups");
@@ -375,7 +417,13 @@ class GrowthBookTest {
                     }
                 }
 
-                GrowthBook subject = new GrowthBook(context);
+                Map<String, Feature<?>> featuresMap = TransformationUtil.transformFeatures(featuresJsonString);
+                Field parsedFeaturesField = GBFeaturesRepository.class.getDeclaredField("parsedFeatures");
+                parsedFeaturesField.setAccessible(true);
+                parsedFeaturesField.set(repository, featuresMap);
+
+
+                GrowthBook subject = new GrowthBook(context, repository);
                 ExperimentResult result = subject.run(experiment);
                 ExperimentResult expectedResult = new ExperimentResult<>(itemArray.get(3), null, itemArray.get(4).getAsBoolean(), null, null, null, itemArray.get(5).getAsBoolean(), null, null, null, null, null);
                 String json = expectedResult.toJson();
@@ -413,7 +461,7 @@ class GrowthBookTest {
     }
 
     @Test
-    void test_isOn_returns_true() {
+    void test_isOn_returns_true() throws NoSuchFieldException, IllegalAccessException {
         String featureKey = "new-feature";
         String attributes = "{ \"user_group\": \"subscriber\", \"beta_users\": true }";
         String features = TestCasesJsonHelper.getInstance().getDemoFeaturesJson();
@@ -423,7 +471,13 @@ class GrowthBookTest {
                 .featuresJson(features)
                 .attributesJson(attributes)
                 .build();
-        GrowthBook subject = new GrowthBook(context);
+        Map<String, Feature<?>> featuresMap = TransformationUtil.transformFeatures(features);
+
+        Field parsedFeaturesField = GBFeaturesRepository.class.getDeclaredField("parsedFeatures");
+        parsedFeaturesField.setAccessible(true);
+        parsedFeaturesField.set(repository, featuresMap);
+
+        GrowthBook subject = new GrowthBook(context, repository);
 
         FeatureResult feature = subject.evalFeature(featureKey, Object.class);
 
@@ -444,16 +498,16 @@ class GrowthBookTest {
                 .featuresJson(features)
                 .attributesJson(attributes)
                 .build();
-        GrowthBook subject = new GrowthBook(context);
+        GrowthBook subject = new GrowthBook(context, repository);
 
         assertFalse(subject.isOn(featureKey));
         assertTrue(subject.isOff(featureKey));
     }
-    
+
     @Test
-    void test_isOn_should_be_stable() {
+    void test_isOn_should_be_stable() throws IllegalAccessException, NoSuchFieldException {
         String featureKey = "flag";
-        
+
         JsonObject jsonObject1 = new JsonObject();
         JsonObject jsonObject2 = new JsonObject();
         jsonObject2.add("defaultValue", new JsonPrimitive(true));
@@ -461,27 +515,37 @@ class GrowthBookTest {
         Map<String, Feature<?>> stringFeatureMap = TransformationUtil.transformFeatures(jsonObject1.toString());
 
         GBContext context = GBContext
-        .builder()
-        .features(stringFeatureMap)
-        .build();
-        
-        GrowthBook subject = new GrowthBook(context);
+                .builder()
+                .features(stringFeatureMap)
+                .build();
+
+        Field parsedFeaturesField = GBFeaturesRepository.class.getDeclaredField("parsedFeatures");
+        parsedFeaturesField.setAccessible(true);
+        parsedFeaturesField.set(repository, stringFeatureMap);
+
+        GrowthBook subject = new GrowthBook(context, repository);
         assertTrue(subject.isOn(featureKey));
         assertTrue(subject.isOn(featureKey));
     }
 
     @Test
-    void test_getFeatureValue_boolean() {
+    void test_getFeatureValue_boolean() throws IllegalAccessException, NoSuchFieldException {
         String featureKey = "new-feature";
         String attributes = "{ \"user_group\": \"subscriber\", \"beta_users\": true }";
         String features = TestCasesJsonHelper.getInstance().getDemoFeaturesJson();
+
+
+        Map<String, Feature<?>> featuresMap = TransformationUtil.transformFeatures(features);
+        Field parsedFeaturesField = GBFeaturesRepository.class.getDeclaredField("parsedFeatures");
+        parsedFeaturesField.setAccessible(true);
+        parsedFeaturesField.set(repository, featuresMap);
 
         GBContext context = GBContext
                 .builder()
                 .featuresJson(features)
                 .attributesJson(attributes)
                 .build();
-        GrowthBook subject = new GrowthBook(context);
+        GrowthBook subject = new GrowthBook(context, repository);
 
         Boolean result = subject.getFeatureValue(featureKey, false);
 
@@ -489,7 +553,7 @@ class GrowthBookTest {
     }
 
     @Test
-    void test_getFeatureValue_string_inExperiment() {
+    void test_getFeatureValue_string_inExperiment() throws NoSuchFieldException, IllegalAccessException {
         String featureKey = "covid-banner-text";
         String attributes = "{ \"user_group\": \"subscriber\", \"beta_users\": true }";
         String features = TestCasesJsonHelper.getInstance().getDemoFeaturesJson();
@@ -499,7 +563,13 @@ class GrowthBookTest {
                 .featuresJson(features)
                 .attributesJson(attributes)
                 .build();
-        GrowthBook subject = new GrowthBook(context);
+
+        Map<String, Feature<?>> featuresMap = TransformationUtil.transformFeatures(features);
+        Field parsedFeaturesField = GBFeaturesRepository.class.getDeclaredField("parsedFeatures");
+        parsedFeaturesField.setAccessible(true);
+        parsedFeaturesField.set(repository, featuresMap);
+
+        GrowthBook subject = new GrowthBook(context, repository);
 
         String result = subject.getFeatureValue(featureKey, "nope");
 
@@ -507,17 +577,22 @@ class GrowthBookTest {
     }
 
     @Test
-    void test_getFeatureValue_string_notInExperiment() {
+    void test_getFeatureValue_string_notInExperiment() throws NoSuchFieldException, IllegalAccessException {
         String featureKey = "covid-banner-text";
         String attributes = "{ \"user_group\": \"subscriber\", \"beta_users\": false }";
         String features = TestCasesJsonHelper.getInstance().getDemoFeaturesJson();
+
+        Map<String, Feature<?>> featuresMap = TransformationUtil.transformFeatures(features);
+        Field parsedFeaturesField = GBFeaturesRepository.class.getDeclaredField("parsedFeatures");
+        parsedFeaturesField.setAccessible(true);
+        parsedFeaturesField.set(repository, featuresMap);
 
         GBContext context = GBContext
                 .builder()
                 .featuresJson(features)
                 .attributesJson(attributes)
                 .build();
-        GrowthBook subject = new GrowthBook(context);
+        GrowthBook subject = new GrowthBook(context, repository);
 
         String result = subject.getFeatureValue(featureKey, "nope");
 
@@ -525,7 +600,7 @@ class GrowthBookTest {
     }
 
     @Test
-    void test_getFeatureValue_double_inExperiment() {
+    void test_getFeatureValue_double_inExperiment() throws NoSuchFieldException, IllegalAccessException {
         String featureKey = "demo";
         String attributes = "{ \"admin\": true }";
         String features = TestCasesJsonHelper.getInstance().getDemoFeaturesJson();
@@ -535,7 +610,13 @@ class GrowthBookTest {
                 .featuresJson(features)
                 .attributesJson(attributes)
                 .build();
-        GrowthBook subject = new GrowthBook(context);
+
+        Map<String, Feature<?>> featuresMap = TransformationUtil.transformFeatures(features);
+        Field parsedFeaturesField = GBFeaturesRepository.class.getDeclaredField("parsedFeatures");
+        parsedFeaturesField.setAccessible(true);
+        parsedFeaturesField.set(repository, featuresMap);
+
+        GrowthBook subject = new GrowthBook(context, repository);
 
         Double result = subject.getFeatureValue(featureKey, Double.valueOf(999));
 
@@ -553,7 +634,7 @@ class GrowthBookTest {
                 .featuresJson(features)
                 .attributesJson(attributes)
                 .build();
-        GrowthBook subject = new GrowthBook(context);
+        GrowthBook subject = new GrowthBook(context, repository);
 
         Integer result = subject.getFeatureValue(featureKey, 999);
 
@@ -571,7 +652,7 @@ class GrowthBookTest {
                 .featuresJson(features)
                 .attributesJson(attributes)
                 .build();
-        GrowthBook subject = new GrowthBook(context);
+        GrowthBook subject = new GrowthBook(context, repository);
 
         Float result = subject.getFeatureValue(featureKey, 0.00f);
 
@@ -579,7 +660,7 @@ class GrowthBookTest {
     }
 
     @Test
-    void test_getFeatureValue_asObject() {
+    void test_getFeatureValue_asObject() throws IllegalAccessException, NoSuchFieldException {
         String featureKey = "papercups-config";
         String attributes = "{ \"user\": \"standard\" }";
         String features = TestCasesJsonHelper.getInstance().getDemoFeaturesJson();
@@ -589,7 +670,13 @@ class GrowthBookTest {
                 .featuresJson(features)
                 .attributesJson(attributes)
                 .build();
-        GrowthBook subject = new GrowthBook(context);
+
+        Map<String, Feature<?>> featuresMap = TransformationUtil.transformFeatures(features);
+        Field parsedFeaturesField = GBFeaturesRepository.class.getDeclaredField("parsedFeatures");
+        parsedFeaturesField.setAccessible(true);
+        parsedFeaturesField.set(repository, featuresMap);
+
+        GrowthBook subject = new GrowthBook(context, repository);
 
         Object defaultConfig = new PaperCupsConfig("abc123", "My Chat", true);
         Object resultObject = subject.getFeatureValue(featureKey, defaultConfig);
@@ -613,7 +700,7 @@ class GrowthBookTest {
                 .featuresJson(features)
                 .attributesJson(attributes)
                 .build();
-        GrowthBook subject = new GrowthBook(context);
+        GrowthBook subject = new GrowthBook(context, repository);
 
         PaperCupsConfig defaultConfig = new PaperCupsConfig("abc123", "My Chat", true);
         PaperCupsConfig resultConfig = subject.getFeatureValue(featureKey, defaultConfig, PaperCupsConfig.class);
@@ -623,7 +710,7 @@ class GrowthBookTest {
     }
 
     @Test
-    void test_getFeatureValue_returnsFeatureValueFromEncryptedFeatures() {
+    void test_getFeatureValue_returnsFeatureValueFromEncryptedFeatures() throws DecryptionUtils.DecryptionException, NoSuchFieldException, IllegalAccessException {
         String encryptedFeaturesJson = "7rvPA94JEsqRo9yPZsdsXg==.bJ8vtYvX+ur3cEUFVkYo1OyWb98oLnMlpeoO0Hs4YPc0EVb7oKX4KNz+Yt6GUMBsieXqtL7oaYzX+kMayZEtV+3bhyDYnS9QBrvalnfxbLExjtnsy8g0pPQHU/P/DPIzO0F+pphcahRfi+3AMTnIreqvkqrcX+MyOwHN56lqEs23Vp4Rsq2qDow/LZmn5kpwMNhMY0DBq7jC+lh2Oyly0g==";
         String encryptionKey = "BhB1wORFmZLTDjbvstvS8w==";
         String sampleUserAttributes = "{\"country\": \"mexico\", \"device\": \"android\"}";
@@ -634,7 +721,14 @@ class GrowthBookTest {
                 .featuresJson(encryptedFeaturesJson)
                 .encryptionKey(encryptionKey)
                 .build();
-        GrowthBook subject = new GrowthBook(context);
+
+        String decryptedFeaturesJson = DecryptionUtils.decrypt(encryptedFeaturesJson, encryptionKey);
+        Map<String, Feature<?>> featuresMap = TransformationUtil.transformFeatures(decryptedFeaturesJson);
+        Field parsedFeaturesField = GBFeaturesRepository.class.getDeclaredField("parsedFeatures");
+        parsedFeaturesField.setAccessible(true);
+        parsedFeaturesField.set(repository, featuresMap);
+
+        GrowthBook subject = new GrowthBook(context, repository);
 
         String result = subject.getFeatureValue("greeting", "hello");
         String expected = "hola";
@@ -656,7 +750,7 @@ class GrowthBookTest {
         JsonObject conditionJson = GrowthBookJsonUtils.getInstance().gson.fromJson(conditionJsonStr, JsonObject.class);
         JsonObject savedGroupsJson = GrowthBookJsonUtils.getInstance().gson.fromJson(savedGroups, JsonObject.class);
 
-        GrowthBook subject = new GrowthBook(context, mockFeatureEvaluator, mockConditionEvaluator, mockExperimentEvaluator);
+        GrowthBook subject = new GrowthBook(context, mockFeatureEvaluator, mockConditionEvaluator, mockExperimentEvaluator, repository);
         context.setSavedGroups(savedGroupsJson);
 
         subject.evaluateCondition(attrJsonStr, conditionJsonStr);
@@ -669,13 +763,13 @@ class GrowthBookTest {
         String attributes = "{\"name\": \"world\"}";
         String condition = "[\"$not\": { \"name\": \"hello\" }]";
 
-        GrowthBook growthBook = new GrowthBook();
+        GrowthBook growthBook = new GrowthBook(repository);
         assertFalse(growthBook.evaluateCondition(attributes, condition));
     }
 
     @Test
     void test_destroyClearsCallbacks() {
-        GrowthBook subject = new GrowthBook();
+        GrowthBook subject = new GrowthBook(repository);
         ExperimentRunCallback mockCallback1 = mock(ExperimentRunCallback.class);
         ExperimentRunCallback mockCallback2 = mock(ExperimentRunCallback.class);
         Experiment<String> mockExperiment = Experiment.<String>builder().build();
@@ -711,7 +805,7 @@ class GrowthBookTest {
                 .featuresJson(features)
                 .attributesJson(attributes)
                 .build();
-        GrowthBook subject = new GrowthBook(context);
+        GrowthBook subject = new GrowthBook(context, repository);
 
         String result = subject.getFeatureValue(featureKey, "my fallback value");
 
@@ -730,7 +824,7 @@ class GrowthBookTest {
                 .featuresJson(features)
                 .attributesJson(attributes)
                 .build();
-        GrowthBook subject = new GrowthBook(context);
+        GrowthBook subject = new GrowthBook(context, repository);
 
         Float result = subject.getFeatureValue(featureKey, 10.0f);
 
@@ -749,7 +843,7 @@ class GrowthBookTest {
                 .featuresJson(features)
                 .attributesJson(attributes)
                 .build();
-        GrowthBook subject = new GrowthBook(context);
+        GrowthBook subject = new GrowthBook(context, repository);
 
         Integer result = subject.getFeatureValue(featureKey, 99);
 
@@ -768,7 +862,7 @@ class GrowthBookTest {
                 .featuresJson(features)
                 .attributesJson(attributes)
                 .build();
-        GrowthBook subject = new GrowthBook(context);
+        GrowthBook subject = new GrowthBook(context, repository);
 
         Double result = subject.getFeatureValue(featureKey, Double.valueOf(101));
 
@@ -787,7 +881,7 @@ class GrowthBookTest {
                 .featuresJson(features)
                 .attributesJson(attributes)
                 .build();
-        GrowthBook subject = new GrowthBook(context);
+        GrowthBook subject = new GrowthBook(context, repository);
 
         PaperCupsConfig defaultConfig = new PaperCupsConfig("abc123", "My Chat", true);
         PaperCupsConfig result = subject.getFeatureValue(featureKey, defaultConfig, PaperCupsConfig.class);
@@ -814,7 +908,7 @@ class GrowthBookTest {
                 .url(url)
                 .allowUrlOverrides(true)
                 .build();
-        GrowthBook subject = new GrowthBook(context);
+        GrowthBook subject = new GrowthBook(context, repository);
 
         Boolean result = subject.getFeatureValue("dark_mode", false);
 
@@ -834,7 +928,7 @@ class GrowthBookTest {
                 .url(url)
                 .allowUrlOverrides(true)
                 .build();
-        GrowthBook subject = new GrowthBook(context);
+        GrowthBook subject = new GrowthBook(context, repository);
 
         Boolean result = subject.getFeatureValue("dark_mode", false);
 
@@ -854,7 +948,7 @@ class GrowthBookTest {
                 .url(url)
                 .allowUrlOverrides(true)
                 .build();
-        GrowthBook subject = new GrowthBook(context);
+        GrowthBook subject = new GrowthBook(context, repository);
 
         Boolean result = subject.getFeatureValue("dark_mode", false);
 
@@ -874,7 +968,7 @@ class GrowthBookTest {
                 .url(url)
                 .allowUrlOverrides(true)
                 .build();
-        GrowthBook subject = new GrowthBook(context);
+        GrowthBook subject = new GrowthBook(context, repository);
 
         Boolean result = subject.getFeatureValue("dark_mode", true);
 
@@ -894,7 +988,7 @@ class GrowthBookTest {
                 .url(url)
                 .allowUrlOverrides(true)
                 .build();
-        GrowthBook subject = new GrowthBook(context);
+        GrowthBook subject = new GrowthBook(context, repository);
 
         Boolean result = subject.getFeatureValue("dark_mode", true);
 
@@ -914,7 +1008,7 @@ class GrowthBookTest {
                 .url(url)
                 .allowUrlOverrides(true)
                 .build();
-        GrowthBook subject = new GrowthBook(context);
+        GrowthBook subject = new GrowthBook(context, repository);
 
         Boolean result = subject.getFeatureValue("dark_mode", true);
 
@@ -934,7 +1028,7 @@ class GrowthBookTest {
                 .url(url)
                 .allowUrlOverrides(true)
                 .build();
-        GrowthBook subject = new GrowthBook(context);
+        GrowthBook subject = new GrowthBook(context, repository);
 
         Integer result = subject.getFeatureValue("donut_price", 999);
 
@@ -953,7 +1047,7 @@ class GrowthBookTest {
                 .url(url)
                 .allowUrlOverrides(true)
                 .build();
-        GrowthBook subject = new GrowthBook(context);
+        GrowthBook subject = new GrowthBook(context, repository);
 
         Float result = subject.getFeatureValue("donut_price", 9999f);
 
@@ -972,7 +1066,7 @@ class GrowthBookTest {
                 .url(url)
                 .allowUrlOverrides(true)
                 .build();
-        GrowthBook subject = new GrowthBook(context);
+        GrowthBook subject = new GrowthBook(context, repository);
 
         String result = subject.getFeatureValue("banner_text", "???");
         assertEquals("Hello, everyone! I hope you are all doing well!", result);
@@ -992,7 +1086,7 @@ class GrowthBookTest {
                 .url(url)
                 .allowUrlOverrides(true)
                 .build();
-        GrowthBook subject = new GrowthBook(context);
+        GrowthBook subject = new GrowthBook(context, repository);
 
         MealOrder emptyMealOrder = new MealOrder(MealType.STANDARD, "Donut");
 
@@ -1016,7 +1110,7 @@ class GrowthBookTest {
                 .url(url)
                 .allowUrlOverrides(true)
                 .build();
-        GrowthBook subject = new GrowthBook(context);
+        GrowthBook subject = new GrowthBook(context, repository);
 
         String resultAsString = subject.getFeatureValue("meal_overrides_gluten_free", "{\"meal_type\": \"standard\", \"dessert\": \"Donut\"}");
         // Custom deserialization example
@@ -1039,7 +1133,7 @@ class GrowthBookTest {
                 .url(url)
                 .allowUrlOverrides(true)
                 .build();
-        GrowthBook subject = new GrowthBook(context);
+        GrowthBook subject = new GrowthBook(context, repository);
 
         // We try to deserialize an unsupported class from the URL, but it cannot deserialize properly, so we get the default value
         GBTestingFoo defaultFoo = new GBTestingFoo();
@@ -1111,7 +1205,7 @@ class GrowthBookTest {
                 .url(url)
                 .allowUrlOverrides(true)
                 .build();
-        GrowthBook subject = new GrowthBook(context);
+        GrowthBook subject = new GrowthBook(context, repository);
 
         FeatureResult<Boolean> result = subject.evalFeature("dark_mode", Boolean.class);
 
@@ -1133,7 +1227,7 @@ class GrowthBookTest {
                 .url(url)
                 .allowUrlOverrides(true)
                 .build();
-        GrowthBook subject = new GrowthBook(context);
+        GrowthBook subject = new GrowthBook(context, repository);
 
         FeatureResult<String> result = subject.evalFeature("banner_text", String.class);
 
@@ -1153,7 +1247,7 @@ class GrowthBookTest {
                 .url(url)
                 .allowUrlOverrides(true)
                 .build();
-        GrowthBook subject = new GrowthBook(context);
+        GrowthBook subject = new GrowthBook(context, repository);
 
         FeatureResult<Float> result = subject.evalFeature("donut_price", Float.class);
 
@@ -1173,7 +1267,7 @@ class GrowthBookTest {
                 .url(url)
                 .allowUrlOverrides(true)
                 .build();
-        GrowthBook subject = new GrowthBook(context);
+        GrowthBook subject = new GrowthBook(context, repository);
 
         FeatureResult<Integer> result = subject.evalFeature("donut_price", Integer.class);
 

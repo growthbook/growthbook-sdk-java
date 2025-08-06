@@ -6,6 +6,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import javax.annotation.Nullable;
+
 import com.google.gson.JsonObject;
 import growthbook.sdk.java.callback.ExperimentRunCallback;
 import growthbook.sdk.java.evaluators.ConditionEvaluator;
@@ -14,8 +15,10 @@ import growthbook.sdk.java.evaluators.FeatureEvaluator;
 import growthbook.sdk.java.model.AssignedExperiment;
 import growthbook.sdk.java.model.Experiment;
 import growthbook.sdk.java.model.ExperimentResult;
+import growthbook.sdk.java.model.Feature;
 import growthbook.sdk.java.model.FeatureResult;
 import growthbook.sdk.java.model.GBContext;
+import growthbook.sdk.java.repository.GBFeaturesRepository;
 import growthbook.sdk.java.util.GrowthBookJsonUtils;
 import growthbook.sdk.java.util.GrowthBookUtils;
 import lombok.Getter;
@@ -48,19 +51,28 @@ public class GrowthBook implements IGrowthBook {
     private final GrowthBookJsonUtils jsonUtils = GrowthBookJsonUtils.getInstance();
 
     private List<ExperimentRunCallback> callbacks;
-    @Getter @Setter private JsonObject attributeOverrides;
+    @Getter
+    @Setter
+    private JsonObject attributeOverrides;
 
     public EvaluationContext evaluationContext = null;
     private final Map<String, AssignedExperiment> assigned;
 
-    @Getter @Setter private Map<String, Object> forcedFeatureValues;
+    private GBFeaturesRepository repository;
+
+    @Getter
+    @Setter
+    private Map<String, Object> forcedFeatureValues;
+
     /**
      * Initialize the GrowthBook SDK with a provided {@link GBContext}
      *
      * @param context {@link GBContext}
      */
-    public GrowthBook(GBContext context) {
+    public GrowthBook(GBContext context, GBFeaturesRepository repository) {
         this.context = context;
+        this.repository = repository;
+
 
         this.assigned = new HashMap<>();
         this.callbacks = new ArrayList<>();
@@ -76,8 +88,9 @@ public class GrowthBook implements IGrowthBook {
      * No-args constructor. A {@link GBContext} with default values is created.
      * It's recommended to create your own context with {@link GBContext#builder()} or the {@link GBContext} constructor
      */
-    public GrowthBook() {
+    public GrowthBook(GBFeaturesRepository repository) {
         this.context = GBContext.builder().build();
+        this.repository = repository;
 
         // dependencies
         this.assigned = new HashMap<>();
@@ -99,11 +112,12 @@ public class GrowthBook implements IGrowthBook {
      * @param conditionEvaluator  ConditionEvaluator
      * @param experimentEvaluator ExperimentEvaluator
      */
-    GrowthBook(GBContext context, FeatureEvaluator featureEvaluator, ConditionEvaluator conditionEvaluator, ExperimentEvaluator experimentEvaluator) {
+    GrowthBook(GBContext context, FeatureEvaluator featureEvaluator, ConditionEvaluator conditionEvaluator, ExperimentEvaluator experimentEvaluator, GBFeaturesRepository repository) {
         this.featureEvaluator = featureEvaluator;
         this.conditionEvaluator = conditionEvaluator;
         this.experimentEvaluatorEvaluator = experimentEvaluator;
         this.context = context;
+        this.repository = repository;
         this.assigned = new HashMap<>();
         this.callbacks = new ArrayList<>();
         this.attributeOverrides = context.getAttributes() == null ? new JsonObject() : context.getAttributes();
@@ -146,6 +160,9 @@ public class GrowthBook implements IGrowthBook {
     }
 
     private EvaluationContext getEvaluationContext() {
+        Map<String, Feature<?>> res = this.repository.getParsedFeatures();
+        this.context.setFeatures(res);
+        this.evaluationContext.setFeatures(res);
         // Reset the stackContext for every evaluation.
         this.evaluationContext.setStack(new EvaluationContext.StackContext());
         return this.evaluationContext;
@@ -158,12 +175,13 @@ public class GrowthBook implements IGrowthBook {
      * There are a few ordered steps to evaluate a feature
      * <p>
      * 1. If the key doesn't exist in context.getFeatures()
-     *  1.1 Return getFeatureResult(null, "unknownFeature")
+     * 1.1 Return getFeatureResult(null, "unknownFeature")
      * 2. Loop through the feature rules (if any)
-     *  2.1 If the rule has parentConditions (prerequisites) defined, loop through each one:
-     *      2.1.1 Call evalFeature on the parent condition
-     *          2.1.1.1 If a cycle is detected, break out of feature evaluation and return getFeatureResult(null, "cyclicPrerequisite")
-     *      2.1.2 Using the evaluated parent's result, create an object
+     * 2.1 If the rule has parentConditions (prerequisites) defined, loop through each one:
+     * 2.1.1 Call evalFeature on the parent condition
+     * 2.1.1.1 If a cycle is detected, break out of feature evaluation and return getFeatureResult(null, "cyclicPrerequisite")
+     * 2.1.2 Using the evaluated parent's result, create an object
+     *
      * @param key            name of the feature
      * @param valueTypeClass the class of the generic, e.g. MyFeature.class
      * @param <ValueType>    Gson deserializable type
@@ -195,18 +213,18 @@ public class GrowthBook implements IGrowthBook {
      * 4. Return if forced via context
      * 5. If experiment.active is set to false, return getExperimentResult(experiment)
      * 6. Get the user hash value and return if empty
-     *  6.1 If sticky bucketing is permitted, check to see if a sticky bucket value exists. If so, skip steps 7-8.
+     * 6.1 If sticky bucketing is permitted, check to see if a sticky bucket value exists. If so, skip steps 7-8.
      * 7. Apply filters and namespace
-     *  7.1 If experiment.filters is set
-     *  7.2 Else if experiment.namespace is set, return if not in range
+     * 7.1 If experiment.filters is set
+     * 7.2 Else if experiment.namespace is set, return if not in range
      * 8. Return if any conditions are not met, return
-     *  8.1 If experiment.condition is set, return if it evaluates to false
-     *  8.2 If experiment.parentConditions is set (prerequisites), return if any of them evaluate to false. See the corresponding logic in evalFeature for more details. (Note that the gate flag should not be set in an experiment)
-     *  8.3 Apply any url targeting based on experiment.urlPatterns, return if no match
+     * 8.1 If experiment.condition is set, return if it evaluates to false
+     * 8.2 If experiment.parentConditions is set (prerequisites), return if any of them evaluate to false. See the corresponding logic in evalFeature for more details. (Note that the gate flag should not be set in an experiment)
+     * 8.3 Apply any url targeting based on experiment.urlPatterns, return if no match
      * 9. Choose a variation
-     *  9.1 If a sticky bucket value exists, use it.
-     *      9.1.1 If the found sticky bucket version is blocked (doesn't exceed experiment.minBucketVersion), then skip enrollment
-     *  9.2 Else, calculate bucket ranges for the variations and choose one
+     * 9.1 If a sticky bucket value exists, use it.
+     * 9.1.1 If the found sticky bucket version is blocked (doesn't exceed experiment.minBucketVersion), then skip enrollment
+     * 9.2 Else, calculate bucket ranges for the variations and choose one
      * 10. If assigned == -1, return getExperimentResult(experiment)
      * 11. If experiment has a forced variation, return
      * 12. If context.qaMode, return getExperimentResult(experiment)
@@ -214,9 +232,9 @@ public class GrowthBook implements IGrowthBook {
      * 14. Fire context.trackingCallback if set and the combination of hashAttribute, hashValue, experiment.key, and variationId has not been tracked before
      * 15. Return result
      *
-     * @param experiment Experiment object
-     * @return ExperimentResult instance
+     * @param experiment  Experiment object
      * @param <ValueType> Gson deserializable type
+     * @return ExperimentResult instance
      */
     @Override
     public <ValueType> ExperimentResult<ValueType> run(Experiment<ValueType> experiment) {
@@ -445,8 +463,9 @@ public class GrowthBook implements IGrowthBook {
      * 4. If condition key is $not, check if !evalCondition(attributes, condition["$not"]) is false. If so, break out of the loop and return false
      * 5. Otherwise, check if evalConditionValue(value, getPath(attributes, key)) is false. If so, break out of the loop and return false
      * If none of the entries failed their checks, evalCondition returns true
+     *
      * @param attributesJsonString A JsonObject of the user attributes to evaluate
-     * @param conditionJsonString A JsonObject of the condition
+     * @param conditionJsonString  A JsonObject of the condition
      * @return Whether the condition should be true for the user
      */
     @Override
@@ -503,6 +522,7 @@ public class GrowthBook implements IGrowthBook {
 
     /**
      * This method add new calback to list of ExperimentRunCallback
+     *
      * @param callback ExperimentRunCallback interface
      */
     @Override
@@ -514,6 +534,7 @@ public class GrowthBook implements IGrowthBook {
      * Update sticky bucketing configuration
      * Method that get cached assignments
      * and set it to Context's Sticky Bucket Assignments documents
+     *
      * @param featuresDataModel Json in format of String. See info how it looks like here <a href="https://docs.growthbook.io/app/api#sdk-connection-endpoints">...</a>
      */
     @Override
@@ -523,6 +544,7 @@ public class GrowthBook implements IGrowthBook {
 
     /**
      * This method return boolean result if feature enabled by environment it would be present in context
+     *
      * @param featureKey Feature name
      * @return Whether feature is present in GBContext
      */

@@ -7,6 +7,7 @@ import growthbook.sdk.java.multiusermode.ExperimentTracker;
 import lombok.Builder;
 import lombok.Data;
 import lombok.Getter;
+import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 
 import javax.annotation.Nullable;
@@ -24,6 +25,7 @@ public class GlobalContext {
      * Feature definitions - To be pulled from API / Cache
      */
     @Getter
+    @Setter
     @Nullable
     private Map<String, Feature<?>> features;
 

@@ -1,22 +1,37 @@
 package growthbook.sdk.java;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertInstanceOf;
-
+import com.google.common.reflect.TypeToken;
+import growthbook.sdk.java.model.Feature;
 import growthbook.sdk.java.model.FeatureResult;
 import growthbook.sdk.java.model.FeatureResultSource;
 import growthbook.sdk.java.model.GBContext;
+import growthbook.sdk.java.repository.GBFeaturesRepository;
 import growthbook.sdk.java.util.GrowthBookJsonUtils;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
+import java.lang.reflect.Field;
+import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Map;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class FeatureResultTest {
+    private static GrowthBookJsonUtils utils;
+
+    @BeforeAll
+    static void beforeAll() {
+        utils = GrowthBookJsonUtils.getInstance();
+
+    }
+
     @Test
     void canBeConstructed() {
         FeatureResult subject = new FeatureResult(
@@ -201,13 +216,38 @@ class FeatureResultTest {
     }
 
     @Test
-    void proofOfConceptCollectionTest() {
-        GBContext ctx = GBContext.builder()
-            .featuresJson(
-                "{\"test\":{\"defaultValue\":[],\"rules\":[{\"force\":[\"line1\",\"line2\"]}]}}")
-            .build();
+    void proofOfConceptCollectionTest() throws NoSuchFieldException, IllegalAccessException {
+        String featuresJsonString = "{\"test\":{\"defaultValue\":[],\"rules\":[{\"force\":[\"line1\",\"line2\"]}]}}";
 
-        GrowthBook growthBook = new GrowthBook(ctx);
+        GBContext ctx = GBContext.builder()
+                .featuresJson(featuresJsonString)
+                .build();
+
+        GBFeaturesRepository featuresRepository = new GBFeaturesRepository(
+                "https://cdn.growthbook.io",
+                "java_NsrWldWd5bxQJZftGsWKl7R2yD2LtAK8C8EUYh9L8",
+                null,
+                null,
+                null,
+                null,
+                true,
+                null,
+                null,
+                null,
+                null
+        );
+
+        Type featureMapType = new TypeToken<Map<String, Feature<?>>>() {
+        }.getType();
+        Map<String, Feature<?>> featuresMap = utils.gson.fromJson(featuresJsonString, featureMapType);
+
+        // Встановлюємо Map у приватне поле parsedFeatures через reflection
+        Field parsedFeaturesField = GBFeaturesRepository.class.getDeclaredField("parsedFeatures");
+        parsedFeaturesField.setAccessible(true);
+        parsedFeaturesField.set(featuresRepository, featuresMap);
+
+
+        GrowthBook growthBook = new GrowthBook(ctx, featuresRepository);
 
         String featureName = "test";
 

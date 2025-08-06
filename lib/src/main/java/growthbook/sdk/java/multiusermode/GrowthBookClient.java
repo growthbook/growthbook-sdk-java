@@ -19,7 +19,6 @@ import growthbook.sdk.java.multiusermode.configurations.EvaluationContext;
 import growthbook.sdk.java.multiusermode.configurations.GlobalContext;
 import growthbook.sdk.java.multiusermode.configurations.Options;
 import growthbook.sdk.java.multiusermode.configurations.UserContext;
-import growthbook.sdk.java.multiusermode.util.TransformationUtil;
 import growthbook.sdk.java.repository.GBFeaturesRepository;
 import growthbook.sdk.java.util.GrowthBookJsonUtils;
 import lombok.extern.slf4j.Slf4j;
@@ -208,7 +207,8 @@ public class GrowthBookClient {
                 // refer the global context with latest features & saved groups
                 if (globalContext != null) {
                     Map<String, Feature<?>> features = GrowthBookJsonUtils.getInstance()
-                            .gson.fromJson(featuresJson, new TypeToken<Map<String, Feature<?>>>(){}.getType());
+                            .gson.fromJson(featuresJson, new TypeToken<Map<String, Feature<?>>>() {
+                            }.getType());
                     globalContext.setFeatures(features);
                 } else {
                     // TBD:M This should never happen! Just to be cautious about race conditions at the time of initialization
@@ -231,6 +231,8 @@ public class GrowthBookClient {
     }
 
     private EvaluationContext getEvalContext(UserContext userContext) {
+        this.globalContext.setFeatures(repository.getParsedFeatures());
+
         HashMap<String, JsonElement> globalAttributes = null;
         if (this.options.getGlobalAttributes() != null) {
             globalAttributes = GrowthBookJsonUtils.getInstance().gson.fromJson(this.options.getGlobalAttributes(), HashMap.class);

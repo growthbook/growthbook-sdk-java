@@ -3,11 +3,12 @@ package growthbook.sdk.java.testhelpers;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
 import com.sun.net.httpserver.HttpServer;
-import growthbook.sdk.java.exception.FeatureFetchException;
-import growthbook.sdk.java.repository.FeatureRefreshStrategy;
-import growthbook.sdk.java.model.GBContext;
-import growthbook.sdk.java.repository.GBFeaturesRepository;
 import growthbook.sdk.java.GrowthBook;
+import growthbook.sdk.java.exception.FeatureFetchException;
+import growthbook.sdk.java.model.GBContext;
+import growthbook.sdk.java.repository.FeatureRefreshStrategy;
+import growthbook.sdk.java.repository.GBFeaturesRepository;
+
 import java.io.IOException;
 import java.io.OutputStream;
 import java.net.InetSocketAddress;
@@ -55,7 +56,7 @@ public class SSETestServer {
             GBContext context = GBContext.builder()
                     .featuresJson(featuresRepository.getFeaturesJson())
                     .build();
-            GrowthBook growthBook = new GrowthBook(context);
+            GrowthBook growthBook = new GrowthBook(context, featuresRepository);
 
             // Get a feature value
             String randomString = growthBook.getFeatureValue("greeting", "????");
