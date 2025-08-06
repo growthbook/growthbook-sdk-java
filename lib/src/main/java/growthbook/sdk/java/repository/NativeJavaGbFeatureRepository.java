@@ -4,6 +4,7 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import growthbook.sdk.java.model.Feature;
 import growthbook.sdk.java.multiusermode.util.TransformationUtil;
+import growthbook.sdk.java.sandbox.CacheManagerFactory;
 import growthbook.sdk.java.sandbox.FileCachingManagerImpl;
 import growthbook.sdk.java.sandbox.GbCacheManager;
 import growthbook.sdk.java.util.DecryptionUtils;
@@ -148,11 +149,11 @@ public class NativeJavaGbFeatureRepository implements IGBFeaturesRepository {
     /**
      * Create a new GBFeaturesRepository
      *
-     * @param apiHost       The GrowthBook API host (default: <a href="https://cdn.growthbook.io">...</a>)
-     * @param clientKey     Your client ID, e.g. sdk-abc123
-     * @param encryptionKey optional key for decrypting encrypted payload
-     * @param swrTtlSeconds How often the cache should be invalidated when using {@link FeatureRefreshStrategy#STALE_WHILE_REVALIDATE} (default: 60)
-     * @param requestBodyForRemoteEval       Payload that would be sent with POST request when repository configure with Remote evalStrategy {@link FeatureRefreshStrategy#REMOTE_EVAL_STRATEGY}
+     * @param apiHost                  The GrowthBook API host (default: <a href="https://cdn.growthbook.io">...</a>)
+     * @param clientKey                Your client ID, e.g. sdk-abc123
+     * @param encryptionKey            optional key for decrypting encrypted payload
+     * @param swrTtlSeconds            How often the cache should be invalidated when using {@link FeatureRefreshStrategy#STALE_WHILE_REVALIDATE} (default: 60)
+     * @param requestBodyForRemoteEval Payload that would be sent with POST request when repository configure with Remote evalStrategy {@link FeatureRefreshStrategy#REMOTE_EVAL_STRATEGY}
      */
     @Builder
     public NativeJavaGbFeatureRepository(@Nullable String apiHost,
@@ -162,7 +163,9 @@ public class NativeJavaGbFeatureRepository implements IGBFeaturesRepository {
                                          @Nullable Integer swrTtlSeconds,
                                          @Nullable Boolean isCacheDisabled,
                                          @Nullable RequestBodyForRemoteEval requestBodyForRemoteEval,
-                                         @Nullable GbCacheManager cacheManager
+                                         @Nullable GbCacheManager cacheManager,
+                                         @Nullable String cacheDirectory,
+                                         @Nullable Boolean inMemoryCache
     ) {
         this.isCacheDisabled = new AtomicBoolean(Boolean.TRUE.equals(isCacheDisabled));
         if (clientKey == null) {
@@ -180,10 +183,13 @@ public class NativeJavaGbFeatureRepository implements IGBFeaturesRepository {
         this.encryptionKey = encryptionKey;
         this.swrTtlSeconds = swrTtlSeconds == null ? new AtomicInteger(60) : new AtomicInteger(swrTtlSeconds);
         this.refreshExpiresAt();
-            if (!this.isCacheDisabled.get()) {
-                this.cacheManager = cacheManager != null ? new AtomicReference<>(cacheManager) :new AtomicReference<>(new FileCachingManagerImpl(FILE_PATH_FOR_CACHE));
-            }
-
+        if (!this.isCacheDisabled.get()) {
+            this.cacheManager = cacheManager != null ? new AtomicReference<>(cacheManager) :
+                    new AtomicReference<>(CacheManagerFactory.createCacheManager(
+                            cacheDirectory,
+                            Boolean.TRUE.equals(inMemoryCache)
+                    ));
+        }
     }
 
     /**
@@ -200,6 +206,7 @@ public class NativeJavaGbFeatureRepository implements IGBFeaturesRepository {
 
     /**
      * Get method for saved Group json
+     *
      * @return saved Group Json in format of String type
      */
     @Nullable
@@ -210,7 +217,8 @@ public class NativeJavaGbFeatureRepository implements IGBFeaturesRepository {
     /**
      * Method for initialize {@link NativeJavaGbFeatureRepository}. Depends on {@link FeatureRefreshStrategy}
      * connection would be established for SSE or for just GET request
-     * @param retryOnFailure:  Boolean argument that responsible whether SSE connection need to be reconnected
+     *
+     * @param retryOnFailure: Boolean argument that responsible whether SSE connection need to be reconnected
      * @throws FeatureFetchException during fetchFeatures function
      */
     @Override
@@ -369,7 +377,7 @@ public class NativeJavaGbFeatureRepository implements IGBFeaturesRepository {
         String responseJsonString;
         if (response != null) {
             responseJsonString = response;
-        }else {
+        } else {
             log.error("FeatureFetchException: FeatureFetchErrorCode.NO_RESPONSE_ERROR");
             log.info("Fetching data from cache...");
             responseJsonString = getCachedFeatures();
@@ -591,6 +599,7 @@ public class NativeJavaGbFeatureRepository implements IGBFeaturesRepository {
         }
         return connection;
     }
+
     private String getCachedFeatures() throws FeatureFetchException {
         String cachedData = cacheManager.get().loadCache(FILE_NAME_FOR_CACHE);
         if (cachedData == null) {
