@@ -350,12 +350,14 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
 
     public Map<String, Feature<?>> getParsedFeatures() {
         //TBD: This auto-refresh implementation must be corrected.
-        if (this.refreshStrategy == FeatureRefreshStrategy.STALE_WHILE_REVALIDATE
-                && !isCacheDisabled
-                && isCacheExpired()
-        ) {
-            this.enqueueFeatureRefreshRequest();
-            this.refreshExpiresAt();
+        if (this.refreshStrategy == FeatureRefreshStrategy.STALE_WHILE_REVALIDATE) {
+            boolean shouldRefresh = (isCacheDisabled || isCacheExpired());
+            if (shouldRefresh) {
+                this.enqueueFeatureRefreshRequest();
+                if (!isCacheDisabled) {
+                    this.refreshExpiresAt();
+                }
+            }
         }
         return this.parsedFeatures;
     }

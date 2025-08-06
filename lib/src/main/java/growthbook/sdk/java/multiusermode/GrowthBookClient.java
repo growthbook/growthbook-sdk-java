@@ -2,6 +2,7 @@ package growthbook.sdk.java.multiusermode;
 
 import java.util.*;
 
+import com.google.common.reflect.TypeToken;
 import com.google.gson.JsonElement;
 import growthbook.sdk.java.callback.ExperimentRunCallback;
 import growthbook.sdk.java.callback.FeatureRefreshCallback;
@@ -11,6 +12,7 @@ import growthbook.sdk.java.exception.FeatureFetchException;
 import growthbook.sdk.java.model.AssignedExperiment;
 import growthbook.sdk.java.model.Experiment;
 import growthbook.sdk.java.model.ExperimentResult;
+import growthbook.sdk.java.model.Feature;
 import growthbook.sdk.java.model.FeatureResult;
 import growthbook.sdk.java.model.RequestBodyForRemoteEval;
 import growthbook.sdk.java.multiusermode.configurations.EvaluationContext;
@@ -205,8 +207,9 @@ public class GrowthBookClient {
             public void onRefresh(String featuresJson) {
                 // refer the global context with latest features & saved groups
                 if (globalContext != null) {
-                    globalContext.setFeatures(repository.getParsedFeatures());
-                    globalContext.setSavedGroups(repository.getParsedSavedGroups());
+                    Map<String, Feature<?>> features = GrowthBookJsonUtils.getInstance()
+                            .gson.fromJson(featuresJson, new TypeToken<Map<String, Feature<?>>>(){}.getType());
+                    globalContext.setFeatures(features);
                 } else {
                     // TBD:M This should never happen! Just to be cautious about race conditions at the time of initialization
                     globalContext = GlobalContext.builder()
