@@ -118,7 +118,6 @@ class GrowthBookTest {
                 parsedFeaturesField.set(repository, featuresMap);
             }
 
-
             GrowthBook subject = new GrowthBook(context, repository);
             JsonElement expected = testCase.get(3).getAsJsonObject();
 //            System.out.printf("\n\n Expected result (string): %s", expectedString);
