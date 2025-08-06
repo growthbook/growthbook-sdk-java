@@ -513,14 +513,14 @@ class GrowthBookTest {
         jsonObject1.add(featureKey, jsonObject2);
         Map<String, Feature<?>> stringFeatureMap = TransformationUtil.transformFeatures(jsonObject1.toString());
 
+        Field parsedFeaturesField = GBFeaturesRepository.class.getDeclaredField("parsedFeatures");
+        parsedFeaturesField.setAccessible(true);
+        parsedFeaturesField.set(repository, stringFeatureMap);
+
         GBContext context = GBContext
                 .builder()
                 .features(stringFeatureMap)
                 .build();
-
-        Field parsedFeaturesField = GBFeaturesRepository.class.getDeclaredField("parsedFeatures");
-        parsedFeaturesField.setAccessible(true);
-        parsedFeaturesField.set(repository, stringFeatureMap);
 
         GrowthBook subject = new GrowthBook(context, repository);
         assertTrue(subject.isOn(featureKey));
