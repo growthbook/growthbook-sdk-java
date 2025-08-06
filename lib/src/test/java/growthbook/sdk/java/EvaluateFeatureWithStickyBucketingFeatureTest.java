@@ -7,8 +7,10 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonNull;
 import growthbook.sdk.java.model.ExperimentResult;
+import growthbook.sdk.java.model.Feature;
 import growthbook.sdk.java.model.FeatureResult;
 import growthbook.sdk.java.model.GBContext;
+import growthbook.sdk.java.repository.GBFeaturesRepository;
 import growthbook.sdk.java.stickyBucketing.InMemoryStickyBucketServiceImpl;
 import growthbook.sdk.java.model.StickyAssignmentsDocument;
 import growthbook.sdk.java.stickyBucketing.StickyBucketService;
@@ -17,6 +19,9 @@ import growthbook.sdk.java.util.GrowthBookJsonUtils;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+
+import java.lang.reflect.Field;
+import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -85,8 +90,35 @@ public class EvaluateFeatureWithStickyBucketingFeatureTest {
                     .stickyBucketService(stickyBucketService)
                     .stickyBucketAssignmentDocs(initialStickyBucketAssignmentDocs)
                     .build();
+            GBFeaturesRepository repository = new GBFeaturesRepository(
+                    "https://cdn.growthbook.io",
+                    "java_NsrWldWd5bxQJZftGsWKl7R2yD2LtAK8C8EUYh9L8",
+                    null,
+                    null,
+                    null,
+                    null,
+                    true,
+                    null,
+                    null,
+                    null,
+                    null
+            );
 
-            GrowthBook subject = new GrowthBook(context);
+            try {
+                if (featuresJson != null) {
+                    Type featureMapType = new TypeToken<Map<String, Feature<?>>>() {}.getType();
+                    Map<String, Feature<?>> featuresMap = utils.gson.fromJson(featuresJson, featureMapType);
+
+                    Field parsedFeaturesField = GBFeaturesRepository.class.getDeclaredField("parsedFeatures");
+                    parsedFeaturesField.setAccessible(true);
+                    parsedFeaturesField.set(repository, featuresMap);
+                }
+            } catch (NoSuchFieldException | IllegalAccessException e) {
+                e.printStackTrace();
+            }
+
+            GrowthBook subject = new GrowthBook(context, repository);
+
             FeatureResult<Object> actualFeatureResult = subject.evalFeature(
                     testCase.get(3).getAsJsonPrimitive().getAsString(),
                     Object.class

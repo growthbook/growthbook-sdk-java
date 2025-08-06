@@ -14,8 +14,10 @@ import growthbook.sdk.java.evaluators.FeatureEvaluator;
 import growthbook.sdk.java.model.AssignedExperiment;
 import growthbook.sdk.java.model.Experiment;
 import growthbook.sdk.java.model.ExperimentResult;
+import growthbook.sdk.java.model.Feature;
 import growthbook.sdk.java.model.FeatureResult;
 import growthbook.sdk.java.model.GBContext;
+import growthbook.sdk.java.repository.GBFeaturesRepository;
 import growthbook.sdk.java.util.GrowthBookJsonUtils;
 import growthbook.sdk.java.util.GrowthBookUtils;
 import lombok.Getter;
@@ -52,6 +54,7 @@ public class GrowthBook implements IGrowthBook {
 
     public EvaluationContext evaluationContext = null;
     private final Map<String, AssignedExperiment> assigned;
+    private GBFeaturesRepository repository;
 
     @Getter @Setter private Map<String, Object> forcedFeatureValues;
     /**
@@ -59,9 +62,9 @@ public class GrowthBook implements IGrowthBook {
      *
      * @param context {@link GBContext}
      */
-    public GrowthBook(GBContext context) {
+    public GrowthBook(GBContext context, GBFeaturesRepository repository) {
         this.context = context;
-
+        this.repository=repository;
         this.assigned = new HashMap<>();
         this.callbacks = new ArrayList<>();
         this.featureEvaluator = new FeatureEvaluator();
@@ -76,9 +79,9 @@ public class GrowthBook implements IGrowthBook {
      * No-args constructor. A {@link GBContext} with default values is created.
      * It's recommended to create your own context with {@link GBContext#builder()} or the {@link GBContext} constructor
      */
-    public GrowthBook() {
+    public GrowthBook(GBFeaturesRepository repository) {
         this.context = GBContext.builder().build();
-
+        this.repository= repository;
         // dependencies
         this.assigned = new HashMap<>();
         this.callbacks = new ArrayList<>();
@@ -99,9 +102,10 @@ public class GrowthBook implements IGrowthBook {
      * @param conditionEvaluator  ConditionEvaluator
      * @param experimentEvaluator ExperimentEvaluator
      */
-    GrowthBook(GBContext context, FeatureEvaluator featureEvaluator, ConditionEvaluator conditionEvaluator, ExperimentEvaluator experimentEvaluator) {
+    GrowthBook(GBContext context, FeatureEvaluator featureEvaluator, ConditionEvaluator conditionEvaluator, ExperimentEvaluator experimentEvaluator, GBFeaturesRepository repository) {
         this.featureEvaluator = featureEvaluator;
         this.conditionEvaluator = conditionEvaluator;
+        this.repository=repository;
         this.experimentEvaluatorEvaluator = experimentEvaluator;
         this.context = context;
         this.assigned = new HashMap<>();
@@ -146,6 +150,9 @@ public class GrowthBook implements IGrowthBook {
     }
 
     private EvaluationContext getEvaluationContext() {
+        Map<String, Feature<?>> res=this.repository.getParsedFeatures();
+        this.context.setFeatures(res);
+        this.evaluationContext.setFeatures(res);
         // Reset the stackContext for every evaluation.
         this.evaluationContext.setStack(new EvaluationContext.StackContext());
         return this.evaluationContext;
