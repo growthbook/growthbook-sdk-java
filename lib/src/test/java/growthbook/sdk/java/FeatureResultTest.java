@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+import static org.mockito.Mockito.when;
 
 import com.google.common.reflect.TypeToken;
 import growthbook.sdk.java.model.Feature;
@@ -15,6 +16,7 @@ import growthbook.sdk.java.repository.GBFeaturesRepository;
 import growthbook.sdk.java.util.GrowthBookJsonUtils;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Type;
@@ -221,27 +223,10 @@ class FeatureResultTest {
                     featuresJsonString)
             .build();
 
-        GBFeaturesRepository featuresRepository = new GBFeaturesRepository(
-                "https://cdn.growthbook.io",
-                "java_NsrWldWd5bxQJZftGsWKl7R2yD2LtAK8C8EUYh9L8",
-                null,
-                null,
-                null,
-                null,
-                true,
-                null,
-                null,
-                null,
-                null
-        );
-
+        GBFeaturesRepository featuresRepository = Mockito.mock(GBFeaturesRepository.class);
         Type featureMapType = new TypeToken<Map<String, Feature<?>>>() {}.getType();
         Map<String, Feature<?>> featuresMap = utils.gson.fromJson(featuresJsonString, featureMapType);
-
-        Field parsedFeaturesField = GBFeaturesRepository.class.getDeclaredField("parsedFeatures");
-        parsedFeaturesField.setAccessible(true);
-        parsedFeaturesField.set(featuresRepository, featuresMap);
-
+        when(featuresRepository.getParsedFeatures()).thenReturn(featuresMap);
 
         GrowthBook growthBook = new GrowthBook(ctx, featuresRepository);
 

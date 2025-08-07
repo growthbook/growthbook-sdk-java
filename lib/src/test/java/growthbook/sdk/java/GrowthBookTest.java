@@ -38,6 +38,7 @@ import growthbook.sdk.java.util.GrowthBookJsonUtils;
 import lombok.Getter;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
+import org.mockito.Mockito;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Type;
@@ -50,19 +51,6 @@ class GrowthBookTest {
 
     final TestCasesJsonHelper helper = TestCasesJsonHelper.getInstance();
     final GrowthBookJsonUtils jsonUtils = GrowthBookJsonUtils.getInstance();
-    final static GBFeaturesRepository repository = new GBFeaturesRepository(
-            "https://cdn.growthbook.io",
-            "java_NsrWldWd5bxQJZftGsWKl7R2yD2LtAK8C8EUYh9L8",
-            null,
-            null,
-            null,
-            null,
-            true,
-            null,
-            null,
-            null,
-            null
-    );
 
     @Test
     void test_evalFeature() {
@@ -82,7 +70,8 @@ class GrowthBookTest {
             JsonElement attributesJson = testCase.get(1).getAsJsonObject().get("attributes");
             String attributesJsonAsStringOrNull = attributesJson == null ? null : attributesJson.toString();
 
-            Type forcedVariationsType = new TypeToken<HashMap<String, Integer>>() {}.getType();
+            Type forcedVariationsType = new TypeToken<HashMap<String, Integer>>() {
+            }.getType();
             HashMap<String, Integer> forcedVariations = jsonUtils.gson.fromJson(testCase.get(1).getAsJsonObject().get("forcedVariations"), forcedVariationsType);
 
             JsonElement savedGroupsJson = testCase.get(1).getAsJsonObject().get("savedGroups");
@@ -104,21 +93,16 @@ class GrowthBookTest {
 //            System.out.printf("\n context: %s", context);
             String featureKey = testCase.get(2).getAsString();
 //            String type = testCase.get("type").getAsString();
-            if (featuresJson != null) {
-                Type featureMapType = new TypeToken<Map<String, Feature<?>>>() {}.getType();
-                Map<String, Feature<?>> featuresMap = jsonUtils.gson.fromJson(featuresJson, featureMapType);
+            GBFeaturesRepository featuresRepository = Mockito.mock(GBFeaturesRepository.class);
 
-                Field parsedFeaturesField = null;
-                try {
-                    parsedFeaturesField = GBFeaturesRepository.class.getDeclaredField("parsedFeatures");
-                    parsedFeaturesField.setAccessible(true);
-                    parsedFeaturesField.set(repository, featuresMap);
-                } catch (NoSuchFieldException | IllegalAccessException e) {
-                    throw new RuntimeException(e);
-                }
+            if (featuresJson != null) {
+                Type featureMapType = new com.google.common.reflect.TypeToken<Map<String, Feature<?>>>() {
+                }.getType();
+                Map<String, Feature<?>> featuresMap = jsonUtils.gson.fromJson(featuresJson, featureMapType);
+                when(featuresRepository.getParsedFeatures()).thenReturn(featuresMap);
             }
 
-            GrowthBook subject = new GrowthBook(context, repository);
+            GrowthBook subject = new GrowthBook(context, featuresRepository);
             JsonElement expected = testCase.get(3).getAsJsonObject();
 //            System.out.printf("\n\n Expected result (string): %s", expectedString);
             FeatureResult expectedResult = jsonUtils.gson.fromJson(expected, FeatureResult.class);
@@ -220,16 +204,10 @@ class GrowthBookTest {
 
         Map<String, Feature<?>> featuresMap = TransformationUtil.transformFeatures(features);
 
-        Field parsedFeaturesField = null;
-        try {
-            parsedFeaturesField = GBFeaturesRepository.class.getDeclaredField("parsedFeatures");
-            parsedFeaturesField.setAccessible(true);
-            parsedFeaturesField.set(repository, featuresMap);
-        } catch (NoSuchFieldException | IllegalAccessException e) {
-            throw new RuntimeException(e);
-        }
+        GBFeaturesRepository featuresRepository = Mockito.mock(GBFeaturesRepository.class);
+        when(featuresRepository.getParsedFeatures()).thenReturn(featuresMap);
 
-        GrowthBook subject = new GrowthBook(context, repository);
+        GrowthBook subject = new GrowthBook(context, featuresRepository);
 
         String value = subject.getFeatureValue("h1-title", "unknown feature key");
 
@@ -244,7 +222,9 @@ class GrowthBookTest {
 
     @Test
     void run_executesExperimentResultCallbacks() {
-        GrowthBook subject = new GrowthBook(repository);
+        GBFeaturesRepository featuresRepository = Mockito.mock(GBFeaturesRepository.class);
+
+        GrowthBook subject = new GrowthBook(featuresRepository);
         ExperimentRunCallback mockCallback1 = mock(ExperimentRunCallback.class);
         ExperimentRunCallback mockCallback2 = mock(ExperimentRunCallback.class);
         Experiment<String> mockExperiment = Experiment.<String>builder().build();
@@ -259,7 +239,8 @@ class GrowthBookTest {
 
     @Test
     void run_executesExperimentResultCallbacksOnceWhenRunInvokeMultipleTimes() {
-        GrowthBook subject = new GrowthBook(repository);
+        GBFeaturesRepository featuresRepository = Mockito.mock(GBFeaturesRepository.class);
+        GrowthBook subject = new GrowthBook(featuresRepository);
         ExperimentRunCallback mockCallback = mock(ExperimentRunCallback.class);
         Experiment<String> mockExperiment = Experiment.<String>builder().build();
 
@@ -274,12 +255,13 @@ class GrowthBookTest {
     @Test
     void run_executesExperimentResultCallbacksTwiceWhenRunInvokeMultipleTimes() {
         ExperimentEvaluator experimentEvaluator = mock(ExperimentEvaluator.class);
+        GBFeaturesRepository featuresRepository = Mockito.mock(GBFeaturesRepository.class);
         GrowthBook subject = new GrowthBook(
                 mock(GBContext.class),
                 mock(FeatureEvaluator.class),
                 null,
                 experimentEvaluator,
-                repository
+                featuresRepository
         );
 
         ExperimentRunCallback mockCallback = mock(ExperimentRunCallback.class);
@@ -387,7 +369,8 @@ class GrowthBookTest {
                 JsonElement attributesJson = itemArray.get(1).getAsJsonObject().get("attributes");
                 String attributesJsonString = attributesJson == null ? "null" : attributesJson.toString();
 
-                Type forcedVariationsType = new TypeToken<HashMap<String, Integer>>() {}.getType();
+                Type forcedVariationsType = new TypeToken<HashMap<String, Integer>>() {
+                }.getType();
                 HashMap<String, Integer> forcedVariations = jsonUtils.gson.fromJson(itemArray.get(1).getAsJsonObject().get("forcedVariations"), forcedVariationsType);
 
                 JsonElement savedGroups = itemArray.get(1).getAsJsonObject().get("savedGroups");
@@ -420,16 +403,10 @@ class GrowthBookTest {
                 }
                 Map<String, Feature<?>> featuresMap = TransformationUtil.transformFeatures(featuresJsonString);
 
-                Field parsedFeaturesField = null;
-                try {
-                    parsedFeaturesField = GBFeaturesRepository.class.getDeclaredField("parsedFeatures");
-                    parsedFeaturesField.setAccessible(true);
-                    parsedFeaturesField.set(repository, featuresMap);
-                } catch (NoSuchFieldException | IllegalAccessException e) {
-                    throw new RuntimeException(e);
-                }
+                GBFeaturesRepository featuresRepository = Mockito.mock(GBFeaturesRepository.class);
+                when(featuresRepository.getParsedFeatures()).thenReturn(featuresMap);
 
-                GrowthBook subject = new GrowthBook(context, repository);
+                GrowthBook subject = new GrowthBook(context, featuresRepository);
                 ExperimentResult result = subject.run(experiment);
                 ExperimentResult expectedResult = new ExperimentResult<>(itemArray.get(3), null, itemArray.get(4).getAsBoolean(), null, null, null, itemArray.get(5).getAsBoolean(), null, null, null, null, null);
                 String json = expectedResult.toJson();
@@ -474,21 +451,15 @@ class GrowthBookTest {
 
         Map<String, Feature<?>> featuresMap = TransformationUtil.transformFeatures(features);
 
-        Field parsedFeaturesField = null;
-        try {
-            parsedFeaturesField = GBFeaturesRepository.class.getDeclaredField("parsedFeatures");
-            parsedFeaturesField.setAccessible(true);
-            parsedFeaturesField.set(repository, featuresMap);
-        } catch (NoSuchFieldException | IllegalAccessException e) {
-            throw new RuntimeException(e);
-        }
+        GBFeaturesRepository featuresRepository = Mockito.mock(GBFeaturesRepository.class);
+        when(featuresRepository.getParsedFeatures()).thenReturn(featuresMap);
 
         GBContext context = GBContext
                 .builder()
                 .featuresJson(features)
                 .attributesJson(attributes)
                 .build();
-        GrowthBook subject = new GrowthBook(context, repository);
+        GrowthBook subject = new GrowthBook(context, featuresRepository);
 
         FeatureResult feature = subject.evalFeature(featureKey, Object.class);
 
@@ -509,38 +480,32 @@ class GrowthBookTest {
                 .featuresJson(features)
                 .attributesJson(attributes)
                 .build();
-        GrowthBook subject = new GrowthBook(context, repository);
+        GBFeaturesRepository featuresRepository = Mockito.mock(GBFeaturesRepository.class);
+        GrowthBook subject = new GrowthBook(context, featuresRepository);
 
         assertFalse(subject.isOn(featureKey));
         assertTrue(subject.isOff(featureKey));
     }
-    
+
     @Test
     void test_isOn_should_be_stable() {
         String featureKey = "flag";
-        
+
         JsonObject jsonObject1 = new JsonObject();
         JsonObject jsonObject2 = new JsonObject();
         jsonObject2.add("defaultValue", new JsonPrimitive(true));
         jsonObject1.add(featureKey, jsonObject2);
         Map<String, Feature<?>> stringFeatureMap = TransformationUtil.transformFeatures(jsonObject1.toString());
 
-
-        Field parsedFeaturesField = null;
-        try {
-            parsedFeaturesField = GBFeaturesRepository.class.getDeclaredField("parsedFeatures");
-            parsedFeaturesField.setAccessible(true);
-            parsedFeaturesField.set(repository, stringFeatureMap);
-        } catch (NoSuchFieldException | IllegalAccessException e) {
-            throw new RuntimeException(e);
-        }
+        GBFeaturesRepository featuresRepository = Mockito.mock(GBFeaturesRepository.class);
+        when(featuresRepository.getParsedFeatures()).thenReturn(stringFeatureMap);
 
         GBContext context = GBContext
-        .builder()
-        .features(stringFeatureMap)
-        .build();
-        
-        GrowthBook subject = new GrowthBook(context, repository);
+                .builder()
+                .features(stringFeatureMap)
+                .build();
+
+        GrowthBook subject = new GrowthBook(context, featuresRepository);
         assertTrue(subject.isOn(featureKey));
         assertTrue(subject.isOn(featureKey));
     }
@@ -553,21 +518,15 @@ class GrowthBookTest {
 
         Map<String, Feature<?>> featuresMap = TransformationUtil.transformFeatures(features);
 
-        Field parsedFeaturesField = null;
-        try {
-            parsedFeaturesField = GBFeaturesRepository.class.getDeclaredField("parsedFeatures");
-            parsedFeaturesField.setAccessible(true);
-            parsedFeaturesField.set(repository, featuresMap);
-        } catch (NoSuchFieldException | IllegalAccessException e) {
-            throw new RuntimeException(e);
-        }
+        GBFeaturesRepository featuresRepository = Mockito.mock(GBFeaturesRepository.class);
+        when(featuresRepository.getParsedFeatures()).thenReturn(featuresMap);
 
         GBContext context = GBContext
                 .builder()
                 .featuresJson(features)
                 .attributesJson(attributes)
                 .build();
-        GrowthBook subject = new GrowthBook(context, repository);
+        GrowthBook subject = new GrowthBook(context, featuresRepository);
 
         Boolean result = subject.getFeatureValue(featureKey, false);
 
@@ -582,21 +541,15 @@ class GrowthBookTest {
 
         Map<String, Feature<?>> featuresMap = TransformationUtil.transformFeatures(features);
 
-        Field parsedFeaturesField = null;
-        try {
-            parsedFeaturesField = GBFeaturesRepository.class.getDeclaredField("parsedFeatures");
-            parsedFeaturesField.setAccessible(true);
-            parsedFeaturesField.set(repository, featuresMap);
-        } catch (NoSuchFieldException | IllegalAccessException e) {
-            throw new RuntimeException(e);
-        }
+        GBFeaturesRepository featuresRepository = Mockito.mock(GBFeaturesRepository.class);
+        when(featuresRepository.getParsedFeatures()).thenReturn(featuresMap);
 
         GBContext context = GBContext
                 .builder()
                 .featuresJson(features)
                 .attributesJson(attributes)
                 .build();
-        GrowthBook subject = new GrowthBook(context, repository);
+        GrowthBook subject = new GrowthBook(context, featuresRepository);
 
         String result = subject.getFeatureValue(featureKey, "nope");
 
@@ -617,17 +570,11 @@ class GrowthBookTest {
 
         Map<String, Feature<?>> featuresMap = TransformationUtil.transformFeatures(features);
 
-        Field parsedFeaturesField = null;
-        try {
-            parsedFeaturesField = GBFeaturesRepository.class.getDeclaredField("parsedFeatures");
-            parsedFeaturesField.setAccessible(true);
-            parsedFeaturesField.set(repository, featuresMap);
-        } catch (NoSuchFieldException | IllegalAccessException e) {
-            throw new RuntimeException(e);
-        }
+        GBFeaturesRepository featuresRepository = Mockito.mock(GBFeaturesRepository.class);
+        when(featuresRepository.getParsedFeatures()).thenReturn(featuresMap);
 
 
-        GrowthBook subject = new GrowthBook(context, repository);
+        GrowthBook subject = new GrowthBook(context, featuresRepository);
 
         String result = subject.getFeatureValue(featureKey, "nope");
 
@@ -648,16 +595,10 @@ class GrowthBookTest {
 
         Map<String, Feature<?>> featuresMap = TransformationUtil.transformFeatures(features);
 
-        Field parsedFeaturesField = null;
-        try {
-            parsedFeaturesField = GBFeaturesRepository.class.getDeclaredField("parsedFeatures");
-            parsedFeaturesField.setAccessible(true);
-            parsedFeaturesField.set(repository, featuresMap);
-        } catch (NoSuchFieldException | IllegalAccessException e) {
-            throw new RuntimeException(e);
-        }
+        GBFeaturesRepository featuresRepository = Mockito.mock(GBFeaturesRepository.class);
+        when(featuresRepository.getParsedFeatures()).thenReturn(featuresMap);
 
-        GrowthBook subject = new GrowthBook(context,repository);
+        GrowthBook subject = new GrowthBook(context, featuresRepository);
 
         Double result = subject.getFeatureValue(featureKey, Double.valueOf(999));
 
@@ -672,14 +613,8 @@ class GrowthBookTest {
 
         Map<String, Feature<?>> featuresMap = TransformationUtil.transformFeatures(features);
 
-        Field parsedFeaturesField = null;
-        try {
-            parsedFeaturesField = GBFeaturesRepository.class.getDeclaredField("parsedFeatures");
-            parsedFeaturesField.setAccessible(true);
-            parsedFeaturesField.set(repository, featuresMap);
-        } catch (NoSuchFieldException | IllegalAccessException e) {
-            throw new RuntimeException(e);
-        }
+        GBFeaturesRepository featuresRepository = Mockito.mock(GBFeaturesRepository.class);
+        when(featuresRepository.getParsedFeatures()).thenReturn(featuresMap);
 
         GBContext context = GBContext
                 .builder()
@@ -688,7 +623,7 @@ class GrowthBookTest {
                 .build();
 
 
-        GrowthBook subject = new GrowthBook(context, repository);
+        GrowthBook subject = new GrowthBook(context, featuresRepository);
 
         Integer result = subject.getFeatureValue(featureKey, 999);
 
@@ -703,21 +638,15 @@ class GrowthBookTest {
 
         Map<String, Feature<?>> featuresMap = TransformationUtil.transformFeatures(features);
 
-        Field parsedFeaturesField = null;
-        try {
-            parsedFeaturesField = GBFeaturesRepository.class.getDeclaredField("parsedFeatures");
-            parsedFeaturesField.setAccessible(true);
-            parsedFeaturesField.set(repository, featuresMap);
-        } catch (NoSuchFieldException | IllegalAccessException e) {
-            throw new RuntimeException(e);
-        }
+        GBFeaturesRepository featuresRepository = Mockito.mock(GBFeaturesRepository.class);
+        when(featuresRepository.getParsedFeatures()).thenReturn(featuresMap);
 
         GBContext context = GBContext
                 .builder()
                 .featuresJson(features)
                 .attributesJson(attributes)
                 .build();
-        GrowthBook subject = new GrowthBook(context, repository);
+        GrowthBook subject = new GrowthBook(context, featuresRepository);
 
         Float result = subject.getFeatureValue(featureKey, 0.00f);
 
@@ -738,16 +667,10 @@ class GrowthBookTest {
 
         Map<String, Feature<?>> featuresMap = TransformationUtil.transformFeatures(features);
 
-        Field parsedFeaturesField = null;
-        try {
-            parsedFeaturesField = GBFeaturesRepository.class.getDeclaredField("parsedFeatures");
-            parsedFeaturesField.setAccessible(true);
-            parsedFeaturesField.set(repository, featuresMap);
-        } catch (NoSuchFieldException | IllegalAccessException e) {
-            throw new RuntimeException(e);
-        }
+        GBFeaturesRepository featuresRepository = Mockito.mock(GBFeaturesRepository.class);
+        when(featuresRepository.getParsedFeatures()).thenReturn(featuresMap);
 
-        GrowthBook subject = new GrowthBook(context, repository);
+        GrowthBook subject = new GrowthBook(context, featuresRepository);
 
         Object defaultConfig = new PaperCupsConfig("abc123", "My Chat", true);
         Object resultObject = subject.getFeatureValue(featureKey, defaultConfig);
@@ -768,21 +691,15 @@ class GrowthBookTest {
 
         Map<String, Feature<?>> featuresMap = TransformationUtil.transformFeatures(features);
 
-        Field parsedFeaturesField = null;
-        try {
-            parsedFeaturesField = GBFeaturesRepository.class.getDeclaredField("parsedFeatures");
-            parsedFeaturesField.setAccessible(true);
-            parsedFeaturesField.set(repository, featuresMap);
-        } catch (NoSuchFieldException | IllegalAccessException e) {
-            throw new RuntimeException(e);
-        }
+        GBFeaturesRepository featuresRepository = Mockito.mock(GBFeaturesRepository.class);
+        when(featuresRepository.getParsedFeatures()).thenReturn(featuresMap);
 
         GBContext context = GBContext
                 .builder()
                 .featuresJson(features)
                 .attributesJson(attributes)
                 .build();
-        GrowthBook subject = new GrowthBook(context, repository);
+        GrowthBook subject = new GrowthBook(context, featuresRepository);
 
         PaperCupsConfig defaultConfig = new PaperCupsConfig("abc123", "My Chat", true);
         PaperCupsConfig resultConfig = subject.getFeatureValue(featureKey, defaultConfig, PaperCupsConfig.class);
@@ -808,16 +725,10 @@ class GrowthBookTest {
 
         Map<String, Feature<?>> featuresMap = TransformationUtil.transformFeatures(decryptedFeaturesJson);
 
-        Field parsedFeaturesField = null;
-        try {
-            parsedFeaturesField = GBFeaturesRepository.class.getDeclaredField("parsedFeatures");
-            parsedFeaturesField.setAccessible(true);
-            parsedFeaturesField.set(repository, featuresMap);
-        } catch (NoSuchFieldException | IllegalAccessException e) {
-            throw new RuntimeException(e);
-        }
+        GBFeaturesRepository featuresRepository = Mockito.mock(GBFeaturesRepository.class);
+        when(featuresRepository.getParsedFeatures()).thenReturn(featuresMap);
 
-        GrowthBook subject = new GrowthBook(context, repository);
+        GrowthBook subject = new GrowthBook(context, featuresRepository);
 
         String result = subject.getFeatureValue("greeting", "hello");
         String expected = "hola";
@@ -838,8 +749,8 @@ class GrowthBookTest {
         JsonObject attributesJson = GrowthBookJsonUtils.getInstance().gson.fromJson(attrJsonStr, JsonObject.class);
         JsonObject conditionJson = GrowthBookJsonUtils.getInstance().gson.fromJson(conditionJsonStr, JsonObject.class);
         JsonObject savedGroupsJson = GrowthBookJsonUtils.getInstance().gson.fromJson(savedGroups, JsonObject.class);
-
-        GrowthBook subject = new GrowthBook(context, mockFeatureEvaluator, mockConditionEvaluator, mockExperimentEvaluator, repository);
+        GBFeaturesRepository featuresRepository = Mockito.mock(GBFeaturesRepository.class);
+        GrowthBook subject = new GrowthBook(context, mockFeatureEvaluator, mockConditionEvaluator, mockExperimentEvaluator, featuresRepository);
         context.setSavedGroups(savedGroupsJson);
 
         subject.evaluateCondition(attrJsonStr, conditionJsonStr);
@@ -852,13 +763,15 @@ class GrowthBookTest {
         String attributes = "{\"name\": \"world\"}";
         String condition = "[\"$not\": { \"name\": \"hello\" }]";
 
-        GrowthBook growthBook = new GrowthBook(repository);
+        GBFeaturesRepository featuresRepository = Mockito.mock(GBFeaturesRepository.class);
+        GrowthBook growthBook = new GrowthBook(featuresRepository);
         assertFalse(growthBook.evaluateCondition(attributes, condition));
     }
 
     @Test
     void test_destroyClearsCallbacks() {
-        GrowthBook subject = new GrowthBook(repository);
+        GBFeaturesRepository featuresRepository = Mockito.mock(GBFeaturesRepository.class);
+        GrowthBook subject = new GrowthBook(featuresRepository);
         ExperimentRunCallback mockCallback1 = mock(ExperimentRunCallback.class);
         ExperimentRunCallback mockCallback2 = mock(ExperimentRunCallback.class);
         Experiment<String> mockExperiment = Experiment.<String>builder().build();
@@ -894,7 +807,8 @@ class GrowthBookTest {
                 .featuresJson(features)
                 .attributesJson(attributes)
                 .build();
-        GrowthBook subject = new GrowthBook(context, repository);
+        GBFeaturesRepository featuresRepository = Mockito.mock(GBFeaturesRepository.class);
+        GrowthBook subject = new GrowthBook(context, featuresRepository);
 
         String result = subject.getFeatureValue(featureKey, "my fallback value");
 
@@ -913,7 +827,8 @@ class GrowthBookTest {
                 .featuresJson(features)
                 .attributesJson(attributes)
                 .build();
-        GrowthBook subject = new GrowthBook(context, repository);
+        GBFeaturesRepository featuresRepository = Mockito.mock(GBFeaturesRepository.class);
+        GrowthBook subject = new GrowthBook(context, featuresRepository);
 
         Float result = subject.getFeatureValue(featureKey, 10.0f);
 
@@ -932,7 +847,8 @@ class GrowthBookTest {
                 .featuresJson(features)
                 .attributesJson(attributes)
                 .build();
-        GrowthBook subject = new GrowthBook(context, repository);
+        GBFeaturesRepository featuresRepository = Mockito.mock(GBFeaturesRepository.class);
+        GrowthBook subject = new GrowthBook(context, featuresRepository);
 
         Integer result = subject.getFeatureValue(featureKey, 99);
 
@@ -951,7 +867,8 @@ class GrowthBookTest {
                 .featuresJson(features)
                 .attributesJson(attributes)
                 .build();
-        GrowthBook subject = new GrowthBook(context, repository);
+        GBFeaturesRepository featuresRepository = Mockito.mock(GBFeaturesRepository.class);
+        GrowthBook subject = new GrowthBook(context, featuresRepository);
 
         Double result = subject.getFeatureValue(featureKey, Double.valueOf(101));
 
@@ -970,7 +887,8 @@ class GrowthBookTest {
                 .featuresJson(features)
                 .attributesJson(attributes)
                 .build();
-        GrowthBook subject = new GrowthBook(context, repository);
+        GBFeaturesRepository featuresRepository = Mockito.mock(GBFeaturesRepository.class);
+        GrowthBook subject = new GrowthBook(context, featuresRepository);
 
         PaperCupsConfig defaultConfig = new PaperCupsConfig("abc123", "My Chat", true);
         PaperCupsConfig result = subject.getFeatureValue(featureKey, defaultConfig, PaperCupsConfig.class);
@@ -997,7 +915,8 @@ class GrowthBookTest {
                 .url(url)
                 .allowUrlOverrides(true)
                 .build();
-        GrowthBook subject = new GrowthBook(context, repository);
+        GBFeaturesRepository featuresRepository = Mockito.mock(GBFeaturesRepository.class);
+        GrowthBook subject = new GrowthBook(context, featuresRepository);
 
         Boolean result = subject.getFeatureValue("dark_mode", false);
 
@@ -1017,7 +936,8 @@ class GrowthBookTest {
                 .url(url)
                 .allowUrlOverrides(true)
                 .build();
-        GrowthBook subject = new GrowthBook(context, repository);
+        GBFeaturesRepository featuresRepository = Mockito.mock(GBFeaturesRepository.class);
+        GrowthBook subject = new GrowthBook(context, featuresRepository);
 
         Boolean result = subject.getFeatureValue("dark_mode", false);
 
@@ -1037,7 +957,8 @@ class GrowthBookTest {
                 .url(url)
                 .allowUrlOverrides(true)
                 .build();
-        GrowthBook subject = new GrowthBook(context, repository);
+        GBFeaturesRepository featuresRepository = Mockito.mock(GBFeaturesRepository.class);
+        GrowthBook subject = new GrowthBook(context, featuresRepository);
 
         Boolean result = subject.getFeatureValue("dark_mode", false);
 
@@ -1057,7 +978,8 @@ class GrowthBookTest {
                 .url(url)
                 .allowUrlOverrides(true)
                 .build();
-        GrowthBook subject = new GrowthBook(context, repository);
+        GBFeaturesRepository featuresRepository = Mockito.mock(GBFeaturesRepository.class);
+        GrowthBook subject = new GrowthBook(context, featuresRepository);
 
         Boolean result = subject.getFeatureValue("dark_mode", true);
 
@@ -1077,7 +999,8 @@ class GrowthBookTest {
                 .url(url)
                 .allowUrlOverrides(true)
                 .build();
-        GrowthBook subject = new GrowthBook(context, repository);
+        GBFeaturesRepository featuresRepository = Mockito.mock(GBFeaturesRepository.class);
+        GrowthBook subject = new GrowthBook(context, featuresRepository);
 
         Boolean result = subject.getFeatureValue("dark_mode", true);
 
@@ -1097,7 +1020,8 @@ class GrowthBookTest {
                 .url(url)
                 .allowUrlOverrides(true)
                 .build();
-        GrowthBook subject = new GrowthBook(context, repository);
+        GBFeaturesRepository featuresRepository = Mockito.mock(GBFeaturesRepository.class);
+        GrowthBook subject = new GrowthBook(context, featuresRepository);
 
         Boolean result = subject.getFeatureValue("dark_mode", true);
 
@@ -1117,7 +1041,8 @@ class GrowthBookTest {
                 .url(url)
                 .allowUrlOverrides(true)
                 .build();
-        GrowthBook subject = new GrowthBook(context, repository);
+        GBFeaturesRepository featuresRepository = Mockito.mock(GBFeaturesRepository.class);
+        GrowthBook subject = new GrowthBook(context, featuresRepository);
 
         Integer result = subject.getFeatureValue("donut_price", 999);
 
@@ -1136,7 +1061,8 @@ class GrowthBookTest {
                 .url(url)
                 .allowUrlOverrides(true)
                 .build();
-        GrowthBook subject = new GrowthBook(context, repository);
+        GBFeaturesRepository featuresRepository = Mockito.mock(GBFeaturesRepository.class);
+        GrowthBook subject = new GrowthBook(context, featuresRepository);
 
         Float result = subject.getFeatureValue("donut_price", 9999f);
 
@@ -1155,7 +1081,8 @@ class GrowthBookTest {
                 .url(url)
                 .allowUrlOverrides(true)
                 .build();
-        GrowthBook subject = new GrowthBook(context, repository);
+        GBFeaturesRepository featuresRepository = Mockito.mock(GBFeaturesRepository.class);
+        GrowthBook subject = new GrowthBook(context, featuresRepository);
 
         String result = subject.getFeatureValue("banner_text", "???");
         assertEquals("Hello, everyone! I hope you are all doing well!", result);
@@ -1175,7 +1102,8 @@ class GrowthBookTest {
                 .url(url)
                 .allowUrlOverrides(true)
                 .build();
-        GrowthBook subject = new GrowthBook(context, repository);
+        GBFeaturesRepository featuresRepository = Mockito.mock(GBFeaturesRepository.class);
+        GrowthBook subject = new GrowthBook(context, featuresRepository);
 
         MealOrder emptyMealOrder = new MealOrder(MealType.STANDARD, "Donut");
 
@@ -1199,7 +1127,8 @@ class GrowthBookTest {
                 .url(url)
                 .allowUrlOverrides(true)
                 .build();
-        GrowthBook subject = new GrowthBook(context, repository);
+        GBFeaturesRepository featuresRepository = Mockito.mock(GBFeaturesRepository.class);
+        GrowthBook subject = new GrowthBook(context, featuresRepository);
 
         String resultAsString = subject.getFeatureValue("meal_overrides_gluten_free", "{\"meal_type\": \"standard\", \"dessert\": \"Donut\"}");
         // Custom deserialization example
@@ -1222,7 +1151,8 @@ class GrowthBookTest {
                 .url(url)
                 .allowUrlOverrides(true)
                 .build();
-        GrowthBook subject = new GrowthBook(context, repository);
+        GBFeaturesRepository featuresRepository = Mockito.mock(GBFeaturesRepository.class);
+        GrowthBook subject = new GrowthBook(context, featuresRepository);
 
         // We try to deserialize an unsupported class from the URL, but it cannot deserialize properly, so we get the default value
         GBTestingFoo defaultFoo = new GBTestingFoo();
@@ -1294,7 +1224,8 @@ class GrowthBookTest {
                 .url(url)
                 .allowUrlOverrides(true)
                 .build();
-        GrowthBook subject = new GrowthBook(context, repository);
+        GBFeaturesRepository featuresRepository = Mockito.mock(GBFeaturesRepository.class);
+        GrowthBook subject = new GrowthBook(context, featuresRepository);
 
         FeatureResult<Boolean> result = subject.evalFeature("dark_mode", Boolean.class);
 
@@ -1316,7 +1247,8 @@ class GrowthBookTest {
                 .url(url)
                 .allowUrlOverrides(true)
                 .build();
-        GrowthBook subject = new GrowthBook(context, repository);
+        GBFeaturesRepository featuresRepository = Mockito.mock(GBFeaturesRepository.class);
+        GrowthBook subject = new GrowthBook(context, featuresRepository);
 
         FeatureResult<String> result = subject.evalFeature("banner_text", String.class);
 
@@ -1336,7 +1268,8 @@ class GrowthBookTest {
                 .url(url)
                 .allowUrlOverrides(true)
                 .build();
-        GrowthBook subject = new GrowthBook(context, repository);
+        GBFeaturesRepository featuresRepository = Mockito.mock(GBFeaturesRepository.class);
+        GrowthBook subject = new GrowthBook(context, featuresRepository);
 
         FeatureResult<Float> result = subject.evalFeature("donut_price", Float.class);
 
@@ -1356,7 +1289,10 @@ class GrowthBookTest {
                 .url(url)
                 .allowUrlOverrides(true)
                 .build();
-        GrowthBook subject = new GrowthBook(context, repository);
+
+        GBFeaturesRepository featuresRepository = Mockito.mock(GBFeaturesRepository.class);
+
+        GrowthBook subject = new GrowthBook(context, featuresRepository);
 
         FeatureResult<Integer> result = subject.evalFeature("donut_price", Integer.class);
 

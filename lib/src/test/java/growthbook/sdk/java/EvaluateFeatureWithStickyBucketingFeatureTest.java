@@ -1,6 +1,7 @@
 package growthbook.sdk.java;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.Mockito.when;
 
 import com.google.common.reflect.TypeToken;
 import com.google.gson.JsonArray;
@@ -19,6 +20,7 @@ import growthbook.sdk.java.util.GrowthBookJsonUtils;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Type;
@@ -90,32 +92,11 @@ public class EvaluateFeatureWithStickyBucketingFeatureTest {
                     .stickyBucketService(stickyBucketService)
                     .stickyBucketAssignmentDocs(initialStickyBucketAssignmentDocs)
                     .build();
-            GBFeaturesRepository repository = new GBFeaturesRepository(
-                    "https://cdn.growthbook.io",
-                    "java_NsrWldWd5bxQJZftGsWKl7R2yD2LtAK8C8EUYh9L8",
-                    null,
-                    null,
-                    null,
-                    null,
-                    true,
-                    null,
-                    null,
-                    null,
-                    null
-            );
 
-            try {
-                if (featuresJson != null) {
-                    Type featureMapType = new TypeToken<Map<String, Feature<?>>>() {}.getType();
-                    Map<String, Feature<?>> featuresMap = utils.gson.fromJson(featuresJson, featureMapType);
-
-                    Field parsedFeaturesField = GBFeaturesRepository.class.getDeclaredField("parsedFeatures");
-                    parsedFeaturesField.setAccessible(true);
-                    parsedFeaturesField.set(repository, featuresMap);
-                }
-            } catch (NoSuchFieldException | IllegalAccessException e) {
-                e.printStackTrace();
-            }
+            GBFeaturesRepository repository = Mockito.mock(GBFeaturesRepository.class);
+            Type featureMapType = new TypeToken<Map<String, Feature<?>>>() {}.getType();
+            Map<String, Feature<?>> featuresMap = utils.gson.fromJson(featuresJson, featureMapType);
+            when(repository.getParsedFeatures()).thenReturn(featuresMap);
 
             GrowthBook subject = new GrowthBook(context, repository);
 
