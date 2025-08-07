@@ -8,6 +8,9 @@ import lombok.Getter;
 
 import java.io.FileNotFoundException;
 import java.io.FileReader;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
@@ -100,33 +103,37 @@ public class TestCasesJsonHelper implements ITestCasesJsonHelper {
     }
 
     private JsonObject initializeTestCasesFromFile() {
-        String absolutePath = getResourceDirectoryPath();
+        Path resourceDirectory = getResourceDirectoryPath();
+        Path filePath = resourceDirectory.resolve("test-cases.json");
 
         Gson gson = new Gson();
         try {
-            return (JsonObject) gson.fromJson(new FileReader(absolutePath + "/test-cases.json"), JsonElement.class);
-        } catch (FileNotFoundException e) {
+            String content = new String(Files.readAllBytes(filePath), StandardCharsets.UTF_8);
+
+            return gson.fromJson(content, JsonObject.class);
+        } catch (IOException e) {
             throw new RuntimeException(e);
         }
     }
 
     private String initializeDemoFeaturesFromFile() {
-        String absolutePath = getResourceDirectoryPath();
+        Path resourceDirectory = getResourceDirectoryPath();
+        Path filePath = resourceDirectory.resolve("demo-features-001.json");
 
         Gson gson = new Gson();
         try {
-            JsonObject features = gson.fromJson(new FileReader(absolutePath + "/demo-features-001.json"), JsonObject.class);
+            String content = new String(Files.readAllBytes(filePath), StandardCharsets.UTF_8);
+            JsonObject features = gson.fromJson(content, JsonObject.class);
             return features.toString();
-        } catch (FileNotFoundException e) {
+        } catch (IOException e) {
             throw new RuntimeException(e);
         }
     }
 
-    private String getResourceDirectoryPath() {
+    private Path getResourceDirectoryPath() {
         Path resourceDirectory = Paths.get("src", "test", "resources");
-        String absolutePath = resourceDirectory.toFile().getAbsolutePath();
-        System.out.println(absolutePath);
-        return absolutePath;
+        System.out.println(resourceDirectory);
+        return resourceDirectory;
     }
 
     // endregion Initialization
