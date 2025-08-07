@@ -138,6 +138,7 @@ public class GBContext {
     /**
      * Helper class for differentiate whether specific experiment was evaluated before or not. Internal usage
      */
+    @Deprecated
     private ExperimentHelper experimentHelper = new ExperimentHelper();
 
     /**
