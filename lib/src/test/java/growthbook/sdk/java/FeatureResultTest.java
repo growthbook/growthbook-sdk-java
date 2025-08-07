@@ -238,7 +238,6 @@ class FeatureResultTest {
         Type featureMapType = new TypeToken<Map<String, Feature<?>>>() {}.getType();
         Map<String, Feature<?>> featuresMap = utils.gson.fromJson(featuresJsonString, featureMapType);
 
-        // Встановлюємо Map у приватне поле parsedFeatures через reflection
         Field parsedFeaturesField = GBFeaturesRepository.class.getDeclaredField("parsedFeatures");
         parsedFeaturesField.setAccessible(true);
         parsedFeaturesField.set(featuresRepository, featuresMap);
