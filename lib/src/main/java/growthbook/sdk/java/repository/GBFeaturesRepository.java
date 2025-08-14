@@ -374,7 +374,7 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
                     null
             );
         } catch (Exception e) {
-            return new growthbook.sdk.java.sandbox.NoOpCachingManagerImpl();
+            return null;
         }
     }
 
