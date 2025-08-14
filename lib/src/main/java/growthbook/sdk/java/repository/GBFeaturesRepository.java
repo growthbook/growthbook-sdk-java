@@ -313,7 +313,7 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
             this.okHttpClient = okHttpClient;
         }
         if (Boolean.FALSE.equals(this.isCacheDisabled)) {
-            this.cacheManager = cacheManager != null ? cacheManager : new FileCachingManagerImpl(FILE_PATH_FOR_CACHE);
+            this.cacheManager = cacheManager != null ? cacheManager : determineCacheManager();
         }
     }
 
@@ -365,6 +365,17 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
     @Override
     public void clearCallbacks() {
         this.refreshCallbacks.clear();
+    }
+
+    private GbCacheManager determineCacheManager() {
+        try {
+            return growthbook.sdk.java.sandbox.CacheManagerFactory.create(
+                    growthbook.sdk.java.sandbox.CacheMode.AUTO,
+                    null
+            );
+        } catch (Exception e) {
+            return new growthbook.sdk.java.sandbox.NoOpCachingManagerImpl();
+        }
     }
 
     private void enqueueFeatureRefreshRequest() {
@@ -581,8 +592,8 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
      */
     private void onResponseJson(String responseJsonString, boolean isFromCache) throws FeatureFetchException {
         try {
-            if (!isFromCache && !isCacheDisabled) {
-                cacheManager.saveContent(FILE_NAME, responseJsonString);
+            if (!isFromCache && !isCacheDisabled && cacheManager != null) {
+                try { cacheManager.saveContent(FILE_NAME, responseJsonString); } catch (RuntimeException ignored) {}
             }
 
             JsonObject jsonObject = GrowthBookJsonUtils.getInstance()

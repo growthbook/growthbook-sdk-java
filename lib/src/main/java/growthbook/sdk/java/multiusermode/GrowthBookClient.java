@@ -58,13 +58,20 @@ public class GrowthBookClient {
         try {
 
             if (repository == null) {
+                growthbook.sdk.java.sandbox.GbCacheManager cm = this.options.getCacheManager() != null
+                        ? this.options.getCacheManager()
+                        : growthbook.sdk.java.sandbox.CacheManagerFactory.create(
+                                this.options.getCacheMode(),
+                                this.options.getCacheDirectory()
+                        );
+
                 repository = GBFeaturesRepository.builder()
                         .apiHost(this.options.getApiHost())
                         .clientKey(this.options.getClientKey())
                         .decryptionKey(this.options.getDecryptionKey())
                         .refreshStrategy(this.options.getRefreshStrategy())
                         .isCacheDisabled(this.options.getIsCacheDisabled())
-                        .cacheManager(this.options.getCacheManager())
+                        .cacheManager(cm)
                         .requestBodyForRemoteEval(configurePayloadForRemoteEval(this.options)) // if we don't want to pre-fetch for remote eval we can delete this line
                         .build();
 
