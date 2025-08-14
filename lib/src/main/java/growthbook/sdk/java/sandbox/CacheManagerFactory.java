@@ -54,28 +54,28 @@ public class CacheManagerFactory {
         String xdg = System.getenv("XDG_CACHE_HOME");
         if (xdg != null) {
             String p = Paths.get(xdg, "growthbook").toString();
-            if (ensureDirWritable(p)) return p;
+            if (isWritableDir(p)) return p;
         }
 
         // macOS ~/Library/Caches/growthbook
         String userHome = System.getProperty("user.home");
         if (userHome != null) {
             String mac = Paths.get(userHome, "Library", "Caches", "growthbook").toString();
-            if (ensureDirWritable(mac)) return mac;
+            if (isWritableDir(mac)) return mac;
         }
 
         // Windows %LOCALAPPDATA%/GrowthBook
         String localApp = System.getenv("LOCALAPPDATA");
         if (localApp != null) {
             String win = Paths.get(localApp, "GrowthBook").toString();
-            if (ensureDirWritable(win)) return win;
+            if (isWritableDir(win)) return win;
         }
 
         // Fallback: java.io.tmpdir/growthbook-cache
         String tmp = System.getProperty("java.io.tmpdir");
         if (tmp != null) {
             String p = Paths.get(tmp, "growthbook-cache").toString();
-            if (ensureDirWritable(p)) return p;
+            if (isWritableDir(p)) return p;
         }
 
         return null;
@@ -92,10 +92,6 @@ public class CacheManagerFactory {
         } catch (Exception e) {
             return false;
         }
-    }
-
-    private static boolean ensureDirWritable(String dir) {
-        return isWritableDir(dir);
     }
 }
 

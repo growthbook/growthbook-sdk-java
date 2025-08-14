@@ -185,6 +185,7 @@ public class Options {
 
     // New cache configuration
     private CacheMode cacheMode;
+
     @Nullable
     private String cacheDirectory;
 

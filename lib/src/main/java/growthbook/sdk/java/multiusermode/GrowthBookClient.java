@@ -17,8 +17,10 @@ import growthbook.sdk.java.multiusermode.configurations.EvaluationContext;
 import growthbook.sdk.java.multiusermode.configurations.GlobalContext;
 import growthbook.sdk.java.multiusermode.configurations.Options;
 import growthbook.sdk.java.multiusermode.configurations.UserContext;
-import growthbook.sdk.java.multiusermode.util.TransformationUtil;
 import growthbook.sdk.java.repository.GBFeaturesRepository;
+import growthbook.sdk.java.sandbox.CacheManagerFactory;
+import growthbook.sdk.java.sandbox.CacheMode;
+import growthbook.sdk.java.sandbox.GbCacheManager;
 import growthbook.sdk.java.util.GrowthBookJsonUtils;
 import lombok.extern.slf4j.Slf4j;
 
@@ -58,11 +60,9 @@ public class GrowthBookClient {
         try {
 
             if (repository == null) {
-                growthbook.sdk.java.sandbox.GbCacheManager cm = this.options.getCacheManager() != null
+                GbCacheManager cm = this.options.getCacheManager() != null
                         ? this.options.getCacheManager()
-                        : growthbook.sdk.java.sandbox.CacheManagerFactory.create(
-                                this.options.getCacheMode(),
-                                this.options.getCacheDirectory()
+                        : CacheManagerFactory.create(this.options.getCacheMode(), this.options.getCacheDirectory()
                         );
 
                 repository = GBFeaturesRepository.builder()
@@ -70,9 +70,10 @@ public class GrowthBookClient {
                         .clientKey(this.options.getClientKey())
                         .decryptionKey(this.options.getDecryptionKey())
                         .refreshStrategy(this.options.getRefreshStrategy())
-                        .isCacheDisabled(this.options.getIsCacheDisabled())
+                        .isCacheDisabled(this.options.getIsCacheDisabled() || this.options.getCacheMode() == CacheMode.NONE)
                         .cacheManager(cm)
-                        .requestBodyForRemoteEval(configurePayloadForRemoteEval(this.options)) // if we don't want to pre-fetch for remote eval we can delete this line
+                        // if we don't want to pre-fetch for remote eval we can delete this line
+                        .requestBodyForRemoteEval(configurePayloadForRemoteEval(this.options))
                         .build();
 
                 // Add featureRefreshCallback

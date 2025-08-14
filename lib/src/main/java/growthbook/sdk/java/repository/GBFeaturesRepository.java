@@ -4,8 +4,9 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import growthbook.sdk.java.model.Feature;
 import growthbook.sdk.java.multiusermode.util.TransformationUtil;
+import growthbook.sdk.java.sandbox.CacheManagerFactory;
+import growthbook.sdk.java.sandbox.CacheMode;
 import growthbook.sdk.java.sandbox.GbCacheManager;
-import growthbook.sdk.java.sandbox.FileCachingManagerImpl;
 import growthbook.sdk.java.util.DecryptionUtils;
 import growthbook.sdk.java.exception.FeatureFetchException;
 import growthbook.sdk.java.callback.FeatureRefreshCallback;
@@ -312,8 +313,8 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
             // TODO: Check for valid interceptor
             this.okHttpClient = okHttpClient;
         }
-        if (Boolean.FALSE.equals(this.isCacheDisabled)) {
-            this.cacheManager = cacheManager != null ? cacheManager : determineCacheManager();
+        if (!this.isCacheDisabled) {
+            this.cacheManager = cacheManager != null ? cacheManager : createCacheManager();
         }
     }
 
@@ -367,13 +368,11 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
         this.refreshCallbacks.clear();
     }
 
-    private GbCacheManager determineCacheManager() {
+    private GbCacheManager createCacheManager() {
         try {
-            return growthbook.sdk.java.sandbox.CacheManagerFactory.create(
-                    growthbook.sdk.java.sandbox.CacheMode.AUTO,
-                    null
-            );
+            return CacheManagerFactory.create(CacheMode.AUTO, null);
         } catch (Exception e) {
+            log.warn("Cache Manager creation failed", e);
             return null;
         }
     }
