@@ -188,6 +188,10 @@ public class Options {
     @Nullable
     private String cacheDirectory;
 
+    public CacheMode getCacheMode() { return cacheMode == null ? CacheMode.AUTO : cacheMode; }
+    @Nullable
+    public String getCacheDirectory() { return cacheDirectory; }
+
     @Nullable
     public StickyBucketService getStickyBucketService() {
         return stickyBucketService;
