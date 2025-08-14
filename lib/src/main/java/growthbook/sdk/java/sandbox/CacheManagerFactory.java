@@ -12,25 +12,25 @@ public class CacheManagerFactory {
 
     public static GbCacheManager create(CacheMode mode, String explicitCacheDirOrNull) {
         if (mode == CacheMode.NONE) {
-            return new NoOpCachingManagerImpl();
+            return null; // no cache manager
         }
 
         if (mode == CacheMode.MEMORY) {
-            // Reuse NoOp for persistence, repository still holds live state.
-            return new NoOpCachingManagerImpl();
+            // Simple in-memory store
+            return new InMemoryCachingManagerImpl();
         }
 
         if (mode == CacheMode.FILE) {
             FileCachingManagerImpl fileManager = tryCreateFileManager(explicitCacheDirOrNull);
             if (fileManager != null) return fileManager;
-            log.warn("CacheMode.FILE requested but directory is not usable. Falling back to MEMORY (no-op persistence)." );
-            return new NoOpCachingManagerImpl();
+            log.warn("CacheMode.FILE requested but directory is not usable. Falling back to MEMORY.");
+            return new InMemoryCachingManagerImpl();
         }
 
         // AUTO
         FileCachingManagerImpl fileManager = tryCreateFileManager(explicitCacheDirOrNull);
         if (fileManager != null) return fileManager;
-        return new NoOpCachingManagerImpl();
+        return new InMemoryCachingManagerImpl();
     }
 
     private static FileCachingManagerImpl tryCreateFileManager(String explicitDir) {

@@ -20,7 +20,11 @@ public enum CacheMode {
     /**
      * Persist cache to filesystem directory.
      */
-    FILE
+    FILE,
+    /**
+     * Use a custom GbCacheManager supplied by the integrator.
+     */
+    CUSTOM
 }
 
 
