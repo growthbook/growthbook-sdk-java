@@ -599,4 +599,15 @@ public class NativeJavaGbFeatureRepository implements IGBFeaturesRepository {
         }
         return cachedData;
     }
+
+    private growthbook.sdk.java.sandbox.GbCacheManager determineCacheManager() {
+        try {
+            return growthbook.sdk.java.sandbox.CacheManagerFactory.create(
+                    growthbook.sdk.java.sandbox.CacheMode.AUTO,
+                    null
+            );
+        } catch (Exception e) {
+            return new growthbook.sdk.java.sandbox.NoOpCachingManagerImpl();
+        }
+    }
 }
