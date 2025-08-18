@@ -4,6 +4,7 @@ import growthbook.sdk.java.model.StickyAssignmentsDocument;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 
 /**
  * For simple bucket persistence using the in memory's storage(Map) (can be polyfilled for other environments)
@@ -30,8 +31,8 @@ public class InMemoryStickyBucketServiceImpl implements StickyBucketService {
      * @return StickyAssignmentsDocument
      */
     @Override
-    public StickyAssignmentsDocument getAssignments(String attributeName, String attributeValue) {
-        return localStorage.get(attributeName + "||" + attributeValue);
+    public CompletableFuture<StickyAssignmentsDocument> getAssignments(String attributeName, String attributeValue) {
+        return CompletableFuture.supplyAsync(() -> localStorage.get(attributeName + "||" + attributeValue));
     }
 
     /**
@@ -41,7 +42,9 @@ public class InMemoryStickyBucketServiceImpl implements StickyBucketService {
      */
     @Override
     public void saveAssignments(StickyAssignmentsDocument doc) {
-        localStorage.put(doc.getAttributeName() + "||" + doc.getAttributeValue(), doc);
+        CompletableFuture.runAsync(() ->
+                localStorage.put(doc.getAttributeName() + "||" + doc.getAttributeValue(), doc)
+        );
     }
 
     /**
@@ -51,20 +54,18 @@ public class InMemoryStickyBucketServiceImpl implements StickyBucketService {
      * @return Map with key String and value StickyAssignmentsDocument
      */
     @Override
-    public Map<String, StickyAssignmentsDocument> getAllAssignments(Map<String, String> attributes) {
-        Map<String, StickyAssignmentsDocument> docs = new HashMap<>();
-
-        for (Map.Entry<String, String> entry : attributes.entrySet()) {
-            String key = entry.getKey();
-            String value = entry.getValue();
-            StickyAssignmentsDocument doc = getAssignments(key, value);
-
-            if (doc != null) {
-                String docKey = doc.getAttributeName() + "||" + doc.getAttributeValue();
-                docs.put(docKey, doc);
+    public CompletableFuture<Map<String, StickyAssignmentsDocument>> getAllAssignments(Map<String, String> attributes) {
+        return CompletableFuture.supplyAsync( () -> {
+            Map<String, StickyAssignmentsDocument> docs = new HashMap<>();
+            for (Map.Entry<String, String> entry : attributes.entrySet()) {
+                StickyAssignmentsDocument doc = localStorage.get(entry.getKey() + "||" + entry.getValue());
+                if (doc != null) {
+                    String docKey = doc.getAttributeName() + "||" + doc.getAttributeValue();
+                    docs.put(docKey, doc);
+                }
             }
-        }
 
-        return docs;
+            return docs;
+        });
     }
 }
