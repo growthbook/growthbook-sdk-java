@@ -509,13 +509,13 @@ public class GrowthBookUtils {
      *     <li>If hashValue is empty, return false immediately</li>
      * </ul>
      *
-     * @param attributes JsonObject
-     * @param seed               String
-     * @param hashAttribute      String
-     * @param fallbackAttribute  String
-     * @param range              BucketRange
-     * @param coverage           Float
-     * @param hashVersion        Integer
+     * @param attributes        JsonObject
+     * @param seed              String
+     * @param hashAttribute     String
+     * @param fallbackAttribute String
+     * @param range             BucketRange
+     * @param coverage          Float
+     * @param hashVersion       Integer
      * @return Boolean - check if user is included
      */
     public static Boolean isIncludedInRollout(
@@ -575,11 +575,12 @@ public class GrowthBookUtils {
                         attributeOverrides
                 );
 
-        context.setStickyBucketAssignmentDocs(
-                stickyBucketService.getAllAssignments(
-                        stickyBucketAttributes
-                )
-        );
+        stickyBucketService.getAllAssignments(stickyBucketAttributes)
+                .thenAccept(context::setStickyBucketAssignmentDocs)
+                .exceptionally(ex -> {
+                    log.error("Failed to set sticky documents in context for refreshStickyBuckets");
+                    return null;
+                });
     }
 
     /**
@@ -810,9 +811,9 @@ public class GrowthBookUtils {
      * Method for generating a Sticky Bucket Assignment document.
      *
      * @param stickyBucketAssignmentDocs {@code Map<String, StickyAssignmentsDocument>}
-     * @param attributeName  String
-     * @param attributeValue String
-     * @param assignments    {@code Map<String, String>}
+     * @param attributeName              String
+     * @param attributeValue             String
+     * @param assignments                {@code Map<String, String>}
      * @return {@link GeneratedStickyBucketAssignmentDocModel}
      */
     public static GeneratedStickyBucketAssignmentDocModel generateStickyBucketAssignmentDoc(
@@ -837,9 +838,9 @@ public class GrowthBookUtils {
     /**
      * Method for get hash value by identifier. User attribute used for hashing, defaulting to id if not set.
      *
-     * @param attr               String
-     * @param fallbackAttribute  String
-     * @param attributes JsonObject
+     * @param attr              String
+     * @param fallbackAttribute String
+     * @param attributes        JsonObject
      * @return {@link HashAttributeAndHashValue}
      */
     public static HashAttributeAndHashValue getHashAttribute(
@@ -879,7 +880,7 @@ public class GrowthBookUtils {
         return -1;
     }
 
-    public static  <K, V> Map<K, V> mergeMaps(List<Map<K, V>> maps) {
+    public static <K, V> Map<K, V> mergeMaps(List<Map<K, V>> maps) {
         return maps.stream()
                 .filter(Objects::nonNull)
                 .flatMap(map -> map.entrySet()
@@ -894,9 +895,9 @@ public class GrowthBookUtils {
     }
 
     //  Track experiments to trigger callbacks.
-    public static  <ValueType> boolean isExperimentTracked(ExperimentTracker experimentTracker,
-                                                           Experiment<ValueType> experiment,
-                                                           @Nullable ExperimentResult<ValueType> result) {
+    public static <ValueType> boolean isExperimentTracked(ExperimentTracker experimentTracker,
+                                                          Experiment<ValueType> experiment,
+                                                          @Nullable ExperimentResult<ValueType> result) {
         if (result == null) {
             return false;
         }
