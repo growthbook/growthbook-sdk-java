@@ -42,9 +42,19 @@ public class UserContext {
     }
 
     public UserContext witAttributesJson(String attributesJson) {
+        // Build a new context using only the provided attributesJson for attributes
         return new UserContextBuilder()
                 .attributesJson(attributesJson)
-                .attributes(this.attributes)
+                .forcedVariationsMap(this.forcedVariationsMap)
+                .forcedFeatureValues(this.forcedFeatureValues)
+                .url(this.url)
+                .stickyBucketAssignmentDocs(this.stickyBucketAssignmentDocs)
+                .build();
+    }
+
+    public UserContext withAttributes(JsonObject attributes) {
+        return new UserContextBuilder()
+                .attributes(attributes == null ? new JsonObject() : attributes)
                 .forcedVariationsMap(this.forcedVariationsMap)
                 .forcedFeatureValues(this.forcedFeatureValues)
                 .url(this.url)
@@ -105,7 +115,10 @@ public class UserContext {
 
         public UserContextBuilder attributesJson(String attributesJson) {
             this.attributesJson = attributesJson;
-            this.attributes = TransformationUtil.transformAttributes(attributesJson);
+            // Only transform if attributes not explicitly provided
+            if (this.attributes == null) {
+                this.attributes = TransformationUtil.transformAttributes(attributesJson);
+            }
             return this;
         }
 
