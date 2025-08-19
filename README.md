@@ -131,6 +131,29 @@ growthBook.isOn("featureKey");
 ```
 
 ## Usage
+## Caching & Refresh Strategy
+
+### Cache modes
+
+The SDK supports multiple cache modes for persisting feature payloads:
+
+- FILE: persist to a writable directory (configurable). Defaults to a safe OS-specific cache dir (or `java.io.tmpdir`).
+- MEMORY: in-process cache only (no filesystem writes).
+- NONE: no cache I/O. Runtime still holds the latest fetched features.
+- CUSTOM: supply your own `GbCacheManager` implementation.
+
+You can configure these through `Options` when using `GrowthBookClient`, or via the repository builder’s `cacheManager` directly. When cache is disabled (`isCacheDisabled=true`), the repository won’t attempt any persistence.
+
+### STALE_WHILE_REVALIDATE (default)
+
+With the SWR strategy, the repository will:
+
+- Perform an initial synchronous fetch during `initialize()`.
+- Start a lightweight background poller that revalidates features on a fixed delay (by default equal to the TTL). The poller is protected against overlapping runs and logs start/end of each polling cycle.
+- Keep the latest features in memory and invoke registered `FeatureRefreshCallback`s when updated so the `GlobalContext` stays fresh.
+
+For SSE connections, the repository establishes a server‑sent events stream and updates as changes arrive; the SWR poller is not used.
+
 
 - The `evalFeature()` method evaluates a feature based on the provided parameters.
 It takes three arguments: a string representing the unique identifier of the feature,
