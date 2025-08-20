@@ -3,6 +3,7 @@ package growthbook.sdk.java.multiusermode;
 import java.util.*;
 
 import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
 import growthbook.sdk.java.callback.ExperimentRunCallback;
 import growthbook.sdk.java.callback.FeatureRefreshCallback;
 import growthbook.sdk.java.evaluators.ExperimentEvaluator;
@@ -17,8 +18,10 @@ import growthbook.sdk.java.multiusermode.configurations.EvaluationContext;
 import growthbook.sdk.java.multiusermode.configurations.GlobalContext;
 import growthbook.sdk.java.multiusermode.configurations.Options;
 import growthbook.sdk.java.multiusermode.configurations.UserContext;
-import growthbook.sdk.java.multiusermode.util.TransformationUtil;
 import growthbook.sdk.java.repository.GBFeaturesRepository;
+import growthbook.sdk.java.sandbox.CacheManagerFactory;
+import growthbook.sdk.java.sandbox.CacheMode;
+import growthbook.sdk.java.sandbox.GbCacheManager;
 import growthbook.sdk.java.util.GrowthBookJsonUtils;
 import lombok.extern.slf4j.Slf4j;
 
@@ -58,14 +61,20 @@ public class GrowthBookClient {
         try {
 
             if (repository == null) {
+                GbCacheManager cm = this.options.getCacheManager() != null
+                        ? this.options.getCacheManager()
+                        : CacheManagerFactory.create(this.options.getCacheMode(), this.options.getCacheDirectory()
+                        );
+
                 repository = GBFeaturesRepository.builder()
                         .apiHost(this.options.getApiHost())
                         .clientKey(this.options.getClientKey())
                         .decryptionKey(this.options.getDecryptionKey())
                         .refreshStrategy(this.options.getRefreshStrategy())
-                        .isCacheDisabled(this.options.getIsCacheDisabled())
-                        .cacheManager(this.options.getCacheManager())
-                        .requestBodyForRemoteEval(configurePayloadForRemoteEval(this.options)) // if we don't want to pre-fetch for remote eval we can delete this line
+                        .isCacheDisabled(this.options.getIsCacheDisabled() || this.options.getCacheMode() == CacheMode.NONE)
+                        .cacheManager(cm)
+                        // if we don't want to pre-fetch for remote eval we can delete this line
+                        .requestBodyForRemoteEval(configurePayloadForRemoteEval(this.options))
                         .build();
 
                 // Add featureRefreshCallback
@@ -227,31 +236,19 @@ public class GrowthBookClient {
     }
 
     private EvaluationContext getEvalContext(UserContext userContext) {
-        // Refresh features on each evaluation to ensure cache refresh is triggered
-        this.globalContext.setFeatures(repository.getParsedFeatures());
-        
-        HashMap<String, JsonElement> globalAttributes = null;
+        // Merge attributes using JsonObject to avoid parse/serialize churn
+        JsonObject merged = new JsonObject();
         if (this.options.getGlobalAttributes() != null) {
-            globalAttributes = GrowthBookJsonUtils.getInstance().gson.fromJson(this.options.getGlobalAttributes(), HashMap.class);
+            merged = GrowthBookJsonUtils.getInstance().gson.fromJson(this.options.getGlobalAttributes(), JsonObject.class);
+            if (merged == null) merged = new JsonObject();
         }
-
-        HashMap<String, JsonElement> userAttributes = null;
-        if (userContext.getAttributes() != null) {
-            userAttributes = GrowthBookJsonUtils.getInstance().gson.fromJson(userContext.getAttributes(), HashMap.class);
-        }
-
-        if (globalAttributes != null) {
-            if (userAttributes != null) {
-                globalAttributes.putAll(userAttributes);
+        JsonObject userAttrs = userContext.getAttributes();
+        if (userAttrs != null) {
+            for (Map.Entry<String, JsonElement> e : userAttrs.entrySet()) {
+                merged.add(e.getKey(), e.getValue());
             }
-        } else {
-            globalAttributes = userAttributes;
         }
-
-        String attributesJson = GrowthBookJsonUtils.getInstance().gson.toJson(globalAttributes);
-
-        UserContext updatedUserContext = userContext.witAttributesJson(attributesJson);
-
+        UserContext updatedUserContext = userContext.withAttributes(merged);
         return new EvaluationContext(this.globalContext, updatedUserContext, new EvaluationContext.StackContext(), this.options);
     }
 

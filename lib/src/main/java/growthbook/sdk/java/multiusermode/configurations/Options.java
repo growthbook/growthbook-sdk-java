@@ -10,6 +10,7 @@ import growthbook.sdk.java.multiusermode.usage.TrackingCallbackWithUser;
 import growthbook.sdk.java.multiusermode.util.TransformationUtil;
 import growthbook.sdk.java.repository.FeatureRefreshStrategy;
 import growthbook.sdk.java.sandbox.GbCacheManager;
+import growthbook.sdk.java.sandbox.CacheMode;
 import growthbook.sdk.java.stickyBucketing.InMemoryStickyBucketServiceImpl;
 import growthbook.sdk.java.stickyBucketing.StickyBucketService;
 import lombok.Builder;
@@ -43,7 +44,9 @@ public class Options {
                    @Nullable JsonObject globalAttributes,
                    @Nullable Map<String, Object> globalForcedFeatureValues,
                    @Nullable Map<String, Integer> globalForcedVariationsMap,
-                   @Nullable GbCacheManager cacheManager
+                    @Nullable GbCacheManager cacheManager,
+                    @Nullable CacheMode cacheMode,
+                    @Nullable String cacheDirectory
 
     ) {
         this.enabled = enabled == null || enabled;
@@ -64,6 +67,8 @@ public class Options {
         this.globalForcedFeatureValues = globalForcedFeatureValues;
         this.globalForcedVariationsMap = globalForcedVariationsMap;
         this.cacheManager = cacheManager;
+        this.cacheMode = cacheMode == null ? CacheMode.AUTO : cacheMode;
+        this.cacheDirectory = cacheDirectory;
     }
 
     /**
@@ -177,6 +182,16 @@ public class Options {
 
     @Nullable
     private GbCacheManager cacheManager;
+
+    // New cache configuration
+    private CacheMode cacheMode;
+
+    @Nullable
+    private String cacheDirectory;
+
+    public CacheMode getCacheMode() { return cacheMode == null ? CacheMode.AUTO : cacheMode; }
+    @Nullable
+    public String getCacheDirectory() { return cacheDirectory; }
 
     @Nullable
     public StickyBucketService getStickyBucketService() {

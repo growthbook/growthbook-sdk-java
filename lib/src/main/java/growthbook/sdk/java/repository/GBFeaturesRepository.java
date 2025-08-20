@@ -4,8 +4,9 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import growthbook.sdk.java.model.Feature;
 import growthbook.sdk.java.multiusermode.util.TransformationUtil;
+import growthbook.sdk.java.sandbox.CacheManagerFactory;
+import growthbook.sdk.java.sandbox.CacheMode;
 import growthbook.sdk.java.sandbox.GbCacheManager;
-import growthbook.sdk.java.sandbox.FileCachingManagerImpl;
 import growthbook.sdk.java.util.DecryptionUtils;
 import growthbook.sdk.java.exception.FeatureFetchException;
 import growthbook.sdk.java.callback.FeatureRefreshCallback;
@@ -37,7 +38,10 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.logging.Logger;
 
 /**
@@ -142,7 +146,10 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
      * Allows you to get the features JSON from the provided {@link GBFeaturesRepository#getFeaturesEndpoint()}.
      * You must call {@link GBFeaturesRepository#initialize()} before calling this method
      * or your features would not have loaded.
+     *
+     * @return feature data JSON in a type of String. Handle refresh strategy
      */
+    @Getter
     private String featuresJson = EMPTY_JSON_OBJECT_STRING;
 
     /**
@@ -150,6 +157,7 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
      * Feature definitions - To be pulled from API / Cache
      */
     //@Getter
+    @Getter
     private Map<String, Feature<?>> parsedFeatures = new HashMap<>();
 
     @Getter
@@ -158,6 +166,8 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
     public void setCacheManager(GbCacheManager cacheManager) {
         if (!isCacheDisabled) {
             this.cacheManager = cacheManager;
+        } else {
+            log.warn("Cache is disabled. Please enable it and set the CacheManager");
         }
     }
 
@@ -312,8 +322,8 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
             // TODO: Check for valid interceptor
             this.okHttpClient = okHttpClient;
         }
-        if (Boolean.FALSE.equals(this.isCacheDisabled)) {
-            this.cacheManager = cacheManager != null ? cacheManager : new FileCachingManagerImpl(FILE_PATH_FOR_CACHE);
+        if (!this.isCacheDisabled) {
+            this.cacheManager = cacheManager != null ? cacheManager : createCacheManager();
         }
     }
 
@@ -322,32 +332,6 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
     @Nullable
     public String getEncryptionKey() {
         return encryptionKey;
-    }
-
-    /**
-     * @return feature data JSON in a type of String. Handle refresh strategy
-     */
-    public String getFeaturesJson() {
-        if (this.refreshStrategy == FeatureRefreshStrategy.STALE_WHILE_REVALIDATE
-                && !isCacheDisabled
-                && isCacheExpired()
-        ) {
-            this.enqueueFeatureRefreshRequest();
-            this.refreshExpiresAt();
-        }
-        return this.featuresJson;
-    }
-
-    public Map<String, Feature<?>> getParsedFeatures() {
-        //TBD: This auto-refresh implementation must be corrected.
-        if (this.refreshStrategy == FeatureRefreshStrategy.STALE_WHILE_REVALIDATE
-                && !isCacheDisabled
-                && isCacheExpired()
-        ) {
-            this.enqueueFeatureRefreshRequest();
-            this.refreshExpiresAt();
-        }
-        return this.parsedFeatures;
     }
 
     /**
@@ -367,48 +351,40 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
         this.refreshCallbacks.clear();
     }
 
-    private void enqueueFeatureRefreshRequest() {
-        GBFeaturesRepository self = this;
+    private GbCacheManager createCacheManager() {
+        try {
+            return CacheManagerFactory.create(CacheMode.AUTO, null);
+        } catch (Exception e) {
+            log.warn("Cache Manager creation failed", e);
+            return null;
+        }
+    }
 
-        Request request = new Request.Builder()
-                .url(this.featuresEndpoint)
-                .build();
+    // Scheduled polling (non-SSE) drives refresh for STALE_WHILE_REVALIDATE strategy
+    private ScheduledExecutorService pollScheduler;
+    private final AtomicBoolean polling = new AtomicBoolean(false);
 
-        this.okHttpClient.newCall(request).enqueue(new Callback() {
-            @Override
-            public void onFailure(@NotNull Call call, @NotNull IOException e) {
-                if (!isCacheDisabled) {
-                    try {
-                        String cachedData = getCachedFeatures();
-                        onResponseJson(cachedData, true);
-                    } catch (FeatureFetchException ex) {
-                        log.error(e.getMessage(), e);
+    private void schedulePolling() {
+        if (pollScheduler != null || this.refreshStrategy == FeatureRefreshStrategy.SERVER_SENT_EVENTS) return;
+        // create single threaded executor
+        pollScheduler = Executors.newSingleThreadScheduledExecutor();
+        pollScheduler.scheduleWithFixedDelay(this::pollOnceSafe, this.swrTtlSeconds, this.swrTtlSeconds, TimeUnit.SECONDS);
+    }
 
-                    }
-                }
-                    // OkHttp will auto-retry on failure
-                    self.onRefreshFailed(e);
+    private void pollOnceSafe() {
+        if (!polling.compareAndSet(false, true)) return;
 
-            }
-
-            @Override
-            public void onResponse(@NotNull Call call, @NotNull Response response) {
-                try {
-                    self.onSuccess(response);
-                } catch (FeatureFetchException e) {
-                    log.error(e.getMessage(), e);
-                    if (!isCacheDisabled) {
-                        try {
-                            String cachedData = getCachedFeatures();
-                            onResponseJson(cachedData, true);
-                        } catch (FeatureFetchException ex) {
-                            log.error(e.getMessage(), e);
-
-                        }
-                    }
-                }
-            }
-        });
+        // call the features API.
+        long started = System.currentTimeMillis();
+        try {
+            log.debug("GrowthBook Features Refresh polling starts");
+            fetchFeatures();
+        } catch (Exception e) {
+            log.error("Features Refresh polling failed.", e);
+        } finally {
+            log.debug("GrowthBook Features Refresh polling ends in ({} ms)", System.currentTimeMillis() - started);
+            polling.set(false);
+        }
     }
 
     @Override
@@ -423,6 +399,7 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
         switch (this.refreshStrategy) {
             case STALE_WHILE_REVALIDATE:
                 fetchFeatures();
+                schedulePolling();
                 break;
 
             case SERVER_SENT_EVENTS:
@@ -571,6 +548,8 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
                 String cachedData = getCachedFeatures();
                 onResponseJson(cachedData, true);
             }
+            // Notify listeners about network failure
+            this.onRefreshFailed(e);
         }
     }
 
@@ -581,8 +560,8 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
      */
     private void onResponseJson(String responseJsonString, boolean isFromCache) throws FeatureFetchException {
         try {
-            if (!isFromCache && !isCacheDisabled) {
-                cacheManager.saveContent(FILE_NAME, responseJsonString);
+            if (!isFromCache && !isCacheDisabled && cacheManager != null) {
+                try { cacheManager.saveContent(FILE_NAME, responseJsonString); } catch (RuntimeException ignored) {}
             }
 
             JsonObject jsonObject = GrowthBookJsonUtils.getInstance()
@@ -639,12 +618,17 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
 
             this.featuresJson = refreshedFeatures;
             this.savedGroupsJson = refreshedSavedGroups;
-            this.parsedFeatures = TransformationUtil.transformFeatures(this.featuresJson);
-            this.parsedSavedGroups = TransformationUtil.transformSavedGroups(this.savedGroupsJson);
+
+            Map<String, Feature<?>> newParsed = TransformationUtil.transformFeatures(this.featuresJson);
+            JsonObject newSaved = TransformationUtil.transformSavedGroups(this.savedGroupsJson);
+            this.parsedFeatures = newParsed;
+            this.parsedSavedGroups = newSaved == null ? new JsonObject() : newSaved;
 
             if (!isFromCache) {
                 this.onRefreshSuccess(this.featuresJson);
             }
+            // bump TTL only after successful processing
+            this.refreshExpiresAt();
         } catch (DecryptionUtils.DecryptionException e) {
             log.error("FeatureFetchException: UNKNOWN feature fetch error code {}",
                     e.getMessage(), e);
@@ -761,6 +745,12 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
     }
 
     public void shutdown() {
+        // stop polling
+        if (this.pollScheduler != null) {
+            this.pollScheduler.shutdownNow();
+            this.pollScheduler = null;
+            log.info("Polling scheduler shut down");
+        }
         if (this.sseEventSource != null) {
             this.sseEventSource.cancel();
             this.sseEventSource = null;
@@ -778,9 +768,11 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
             }
             this.sseHttpClient = null;
             log.info("SseHttpClient shutdown");
-            this.cacheManager.clearCache();
-            this.cacheManager = null;
-            log.info("CacheManager shutdown");
+            if (this.cacheManager != null) {
+                try { this.cacheManager.clearCache(); } catch (Exception ignored) {}
+                this.cacheManager = null;
+                log.info("CacheManager shutdown");
+            }
 
         }
     }

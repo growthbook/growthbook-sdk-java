@@ -26,6 +26,9 @@ public class FileCachingManagerImpl implements GbCacheManager {
                 throw new RuntimeException("Failed to create cache directory at " + filePath);
             }
         }
+        if (!cacheDir.canWrite()) {
+            throw new RuntimeException("Cache directory is not writable: " + filePath);
+        }
     }
 
     /**

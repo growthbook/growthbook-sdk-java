@@ -181,7 +181,7 @@ public class NativeJavaGbFeatureRepository implements IGBFeaturesRepository {
         this.swrTtlSeconds = swrTtlSeconds == null ? new AtomicInteger(60) : new AtomicInteger(swrTtlSeconds);
         this.refreshExpiresAt();
             if (!this.isCacheDisabled.get()) {
-                this.cacheManager = cacheManager != null ? new AtomicReference<>(cacheManager) :new AtomicReference<>(new FileCachingManagerImpl(FILE_PATH_FOR_CACHE));
+                this.cacheManager = cacheManager != null ? new AtomicReference<>(cacheManager) : new AtomicReference<>(determineCacheManager());
             }
 
     }
@@ -385,8 +385,8 @@ public class NativeJavaGbFeatureRepository implements IGBFeaturesRepository {
                 return;
             }
 
-            if (!isFromCache && !isCacheDisabled.get()) {
-                cacheManager.get().saveContent(FILE_NAME_FOR_CACHE, responseJsonString);
+            if (!isFromCache && !isCacheDisabled.get() && cacheManager.get() != null) {
+                try { cacheManager.get().saveContent(FILE_NAME_FOR_CACHE, responseJsonString); } catch (RuntimeException ignored) {}
             }
 
             try {
@@ -592,11 +592,22 @@ public class NativeJavaGbFeatureRepository implements IGBFeaturesRepository {
         return connection;
     }
     private String getCachedFeatures() throws FeatureFetchException {
-        String cachedData = cacheManager.get().loadCache(FILE_NAME_FOR_CACHE);
+        String cachedData = cacheManager.get() == null ? null : cacheManager.get().loadCache(FILE_NAME_FOR_CACHE);
         if (cachedData == null) {
             log.error("FeatureFetchException: No Features from Cache");
             throw new FeatureFetchException(FeatureFetchException.FeatureFetchErrorCode.NO_RESPONSE_ERROR);
         }
         return cachedData;
+    }
+
+    private growthbook.sdk.java.sandbox.GbCacheManager determineCacheManager() {
+        try {
+            return growthbook.sdk.java.sandbox.CacheManagerFactory.create(
+                    growthbook.sdk.java.sandbox.CacheMode.AUTO,
+                    null
+            );
+        } catch (Exception e) {
+            return null;
+        }
     }
 }

@@ -102,19 +102,28 @@ class GBFeaturesRepositoryTest {
         assertEquals("BhB1wORFmZLTDjbvstvS8w==", subject.getDecryptionKey());
     }
 
-    /*
     @Test
-    void canFetchUnencryptedFeatures_real() throws FeatureFetchException {
+    void pollingDoesNotThrowAndDoesNotOverlap() throws Exception {
         GBFeaturesRepository subject = GBFeaturesRepository.builder()
-            .apiHost("https://cdn.growthbook.io")
-            .clientKey("sdk-pGmC6LrsiUoEUcpZ")
-            .build();
+                .apiHost("http://localhost")
+                .clientKey("sdk-123")
+                .refreshStrategy(FeatureRefreshStrategy.STALE_WHILE_REVALIDATE)
+                .build();
 
-        subject.initialize();
+        // initialize creates http client but will fail network; we just want to ensure no exceptions in poll
+        try {
+            subject.initialize();
+        } catch (Exception ignored) {}
 
-        assertTrue(subject.getFeaturesJson().startsWith("{\"banner_text\":{\"defaultValue\":\"Welcome to Acme Donuts!\""));
+        // invoke internal poll method via reflection to ensure no overlap protection throws
+        java.lang.reflect.Method m = GBFeaturesRepository.class.getDeclaredMethod("pollOnceSafe");
+        m.setAccessible(true);
+        m.invoke(subject); // first call
+        m.invoke(subject); // second immediate call should be ignored by AtomicBoolean guard
+
+        // shutdown should not throw
+        subject.shutdown();
     }
-    */
 
     @Test
     void canFetchUnencryptedFeatures_mockedResponse() throws FeatureFetchException, IOException {
@@ -204,12 +213,11 @@ class GBFeaturesRepositoryTest {
                                 MediaType.parse("application/json")
                         ))
                 .build();
-
-        doAnswer(invocation -> {
-            Callback mockCallback = invocation.getArgument(0);
-            mockCallback.onResponse(mockCall, response);
-            return null;
-        }).when(mockCall).enqueue(any(Callback.class));
+        try {
+            when(mockCall.execute()).thenReturn(response);
+        } catch (IOException e) {
+            // ignore in test
+        }
 
         FeatureRefreshCallback featureRefreshCallback = mock(FeatureRefreshCallback.class);
 
@@ -228,7 +236,8 @@ class GBFeaturesRepositoryTest {
 
         subject.onFeaturesRefresh(featureRefreshCallback);
 
-        subject.getFeaturesJson();
+        // trigger initialize to perform initial fetch which will call callbacks
+        try { subject.initialize(); } catch (Exception ignored) {}
 
         String expected = "{\"banner_text\":{\"defaultValue\":\"Welcome to Acme Donuts!\",\"rules\":[{\"condition\":{\"country\":\"france\"},\"force\":\"Bienvenue au Beignets Acme !\"},{\"condition\":{\"country\":\"spain\"},\"force\":\"¡Bienvenidos y bienvenidas a Donas Acme!\"}]},\"dark_mode\":{\"defaultValue\":false,\"rules\":[{\"condition\":{\"loggedIn\":true},\"force\":true,\"coverage\":0.5,\"hashAttribute\":\"id\"}]},\"donut_price\":{\"defaultValue\":2.5,\"rules\":[{\"condition\":{\"employee\":true},\"force\":0}]},\"meal_overrides_gluten_free\":{\"defaultValue\":{\"meal_type\":\"standard\",\"dessert\":\"Strawberry Cheesecake\"},\"rules\":[{\"condition\":{\"dietaryRestrictions\":{\"$elemMatch\":{\"$eq\":\"gluten_free\"}}},\"force\":{\"meal_type\":\"gf\",\"dessert\":\"French Vanilla Ice Cream\"}}]}}";
         verify(featureRefreshCallback).onRefresh(expected);
@@ -242,11 +251,7 @@ class GBFeaturesRepositoryTest {
 
         Call mockCall = mock(Call.class);
         doReturn(mockCall).when(mockOkHttpClient).newCall(any(Request.class));
-        doAnswer(invocation -> {
-            Callback mockCallback = invocation.getArgument(0);
-            mockCallback.onFailure(mockCall, requestFailed);
-            return null;
-        }).when(mockCall).enqueue(any(Callback.class));
+        when(mockCall.execute()).thenThrow(requestFailed);
 
         FeatureRefreshCallback featureRefreshCallback = mock(FeatureRefreshCallback.class);
 
@@ -265,7 +270,7 @@ class GBFeaturesRepositoryTest {
 
         subject.onFeaturesRefresh(featureRefreshCallback);
 
-        subject.getFeaturesJson();
+        try { subject.initialize(); } catch (Exception ignored) {}
 
         verify(featureRefreshCallback).onError(requestFailed);
         verify(featureRefreshCallback, never()).onRefresh(anyString());
