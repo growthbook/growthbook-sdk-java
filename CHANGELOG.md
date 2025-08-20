@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.10.2](https://github.com/growthbook/growthbook-sdk-java/compare/v0.10.1...0.10.2) (2025-08-20)
+
+
+### Bug Fixes
+
+* ScheduledExecutorService for Feature Refresh, Cache updates and evalPath Optimization ([#168](https://github.com/growthbook/growthbook-sdk-java/issues/168)) ([be12839](https://github.com/growthbook/growthbook-sdk-java/commit/be128397ffa9e945f87ffdd298ac269a48116d9d))
+
 ## [0.10.1](https://github.com/growthbook/growthbook-sdk-java/compare/v0.10.0...0.10.1) (2025-05-12)
 
 
