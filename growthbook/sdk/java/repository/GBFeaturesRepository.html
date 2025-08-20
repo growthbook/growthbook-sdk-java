@@ -245,7 +245,7 @@ implements <a href="IGBFeaturesRepository.html" title="interface in growthbook.s
 <div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a></code></div>
 <div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#getFeaturesJson()" class="member-name-link">getFeaturesJson</a>()</code></div>
 <div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
-<div class="block">Required implementation to get the featuresJson</div>
+<div class="block">Allows you to get the features JSON from the provided <a href="#getFeaturesEndpoint()"><code>getFeaturesEndpoint()</code></a>.</div>
 </div>
 <div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Boolean.html" title="class or interface in java.lang" class="external-link">Boolean</a></code></div>
 <div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#getInitialized()" class="member-name-link">getInitialized</a>()</code></div>
@@ -254,7 +254,9 @@ implements <a href="IGBFeaturesRepository.html" title="interface in growthbook.s
 </div>
 <div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/Map.html" title="class or interface in java.util" class="external-link">Map</a>&lt;<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>,<wbr><a href="../model/Feature.html" title="class in growthbook.sdk.java.model">Feature</a>&lt;?&gt;&gt;</code></div>
 <div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#getParsedFeatures()" class="member-name-link">getParsedFeatures</a>()</code></div>
-<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">&nbsp;</div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="block">Keys are unique identifiers for the features and the values are Feature objects.</div>
+</div>
 <div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>com.google.gson.JsonObject</code></div>
 <div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#getParsedSavedGroups()" class="member-name-link">getParsedSavedGroups</a>()</code></div>
 <div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">&nbsp;</div>
@@ -502,26 +504,6 @@ implements <a href="IGBFeaturesRepository.html" title="interface in growthbook.s
 </section>
 </li>
 <li>
-<section class="detail" id="getFeaturesJson()">
-<h3>getFeaturesJson</h3>
-<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a></span>&nbsp;<span class="element-name">getFeaturesJson</span>()</div>
-<div class="block"><span class="descfrm-type-label">Description copied from interface:&nbsp;<code><a href="IGBFeaturesRepository.html#getFeaturesJson()">IGBFeaturesRepository</a></code></span></div>
-<div class="block">Required implementation to get the featuresJson</div>
-<dl class="notes">
-<dt>Specified by:</dt>
-<dd><code><a href="IGBFeaturesRepository.html#getFeaturesJson()">getFeaturesJson</a></code>&nbsp;in interface&nbsp;<code><a href="IGBFeaturesRepository.html" title="interface in growthbook.sdk.java.repository">IGBFeaturesRepository</a></code></dd>
-<dt>Returns:</dt>
-<dd>feature data JSON in a type of String. Handle refresh strategy</dd>
-</dl>
-</section>
-</li>
-<li>
-<section class="detail" id="getParsedFeatures()">
-<h3>getParsedFeatures</h3>
-<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/Map.html" title="class or interface in java.util" class="external-link">Map</a>&lt;<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>,<wbr><a href="../model/Feature.html" title="class in growthbook.sdk.java.model">Feature</a>&lt;?&gt;&gt;</span>&nbsp;<span class="element-name">getParsedFeatures</span>()</div>
-</section>
-</li>
-<li>
 <section class="detail" id="onFeaturesRefresh(growthbook.sdk.java.callback.FeatureRefreshCallback)">
 <h3>onFeaturesRefresh</h3>
 <div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type">void</span>&nbsp;<span class="element-name">onFeaturesRefresh</span><wbr><span class="parameters">(<a href="../callback/FeatureRefreshCallback.html" title="interface in growthbook.sdk.java.callback">FeatureRefreshCallback</a>&nbsp;callback)</span></div>
@@ -670,6 +652,29 @@ implements <a href="IGBFeaturesRepository.html" title="interface in growthbook.s
 <div class="block">Allows you to get the saved groups JSON from the provided <a href="#getFeaturesEndpoint()"><code>getFeaturesEndpoint()</code></a>.
  You must call <a href="#initialize()"><code>initialize()</code></a> before calling this method
  or your saved groups would not have loaded.</div>
+</section>
+</li>
+<li>
+<section class="detail" id="getFeaturesJson()">
+<h3>getFeaturesJson</h3>
+<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a></span>&nbsp;<span class="element-name">getFeaturesJson</span>()</div>
+<div class="block">Allows you to get the features JSON from the provided <a href="#getFeaturesEndpoint()"><code>getFeaturesEndpoint()</code></a>.
+ You must call <a href="#initialize()"><code>initialize()</code></a> before calling this method
+ or your features would not have loaded.</div>
+<dl class="notes">
+<dt>Specified by:</dt>
+<dd><code><a href="IGBFeaturesRepository.html#getFeaturesJson()">getFeaturesJson</a></code>&nbsp;in interface&nbsp;<code><a href="IGBFeaturesRepository.html" title="interface in growthbook.sdk.java.repository">IGBFeaturesRepository</a></code></dd>
+<dt>Returns:</dt>
+<dd>feature data JSON in a type of String. Handle refresh strategy</dd>
+</dl>
+</section>
+</li>
+<li>
+<section class="detail" id="getParsedFeatures()">
+<h3>getParsedFeatures</h3>
+<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/Map.html" title="class or interface in java.util" class="external-link">Map</a>&lt;<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>,<wbr><a href="../model/Feature.html" title="class in growthbook.sdk.java.model">Feature</a>&lt;?&gt;&gt;</span>&nbsp;<span class="element-name">getParsedFeatures</span>()</div>
+<div class="block">Keys are unique identifiers for the features and the values are Feature objects.
+ Feature definitions - To be pulled from API / Cache</div>
 </section>
 </li>
 <li>

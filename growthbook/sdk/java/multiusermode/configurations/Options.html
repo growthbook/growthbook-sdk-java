@@ -104,7 +104,7 @@ loadScripts(document, 'script');</script>
 <div class="summary-table two-column-summary">
 <div class="table-header col-first">Constructor</div>
 <div class="table-header col-last">Description</div>
-<div class="col-constructor-name even-row-color"><code><a href="#%3Cinit%3E(java.lang.Boolean,java.lang.Boolean,java.lang.Boolean,java.lang.Boolean,java.lang.String,java.lang.String,java.lang.String,java.lang.String,java.util.List,growthbook.sdk.java.stickyBucketing.StickyBucketService,growthbook.sdk.java.multiusermode.usage.TrackingCallbackWithUser,growthbook.sdk.java.multiusermode.usage.FeatureUsageCallbackWithUser,growthbook.sdk.java.repository.FeatureRefreshStrategy,growthbook.sdk.java.callback.FeatureRefreshCallback,com.google.gson.JsonObject,java.util.Map,java.util.Map,growthbook.sdk.java.sandbox.GbCacheManager)" class="member-name-link">Options</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Boolean.html" title="class or interface in java.lang" class="external-link">Boolean</a>&nbsp;enabled,
+<div class="col-constructor-name even-row-color"><code><a href="#%3Cinit%3E(java.lang.Boolean,java.lang.Boolean,java.lang.Boolean,java.lang.Boolean,java.lang.String,java.lang.String,java.lang.String,java.lang.String,java.util.List,growthbook.sdk.java.stickyBucketing.StickyBucketService,growthbook.sdk.java.multiusermode.usage.TrackingCallbackWithUser,growthbook.sdk.java.multiusermode.usage.FeatureUsageCallbackWithUser,growthbook.sdk.java.repository.FeatureRefreshStrategy,growthbook.sdk.java.callback.FeatureRefreshCallback,com.google.gson.JsonObject,java.util.Map,java.util.Map,growthbook.sdk.java.sandbox.GbCacheManager,growthbook.sdk.java.sandbox.CacheMode,java.lang.String)" class="member-name-link">Options</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Boolean.html" title="class or interface in java.lang" class="external-link">Boolean</a>&nbsp;enabled,
  <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Boolean.html" title="class or interface in java.lang" class="external-link">Boolean</a>&nbsp;isQaMode,
  <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Boolean.html" title="class or interface in java.lang" class="external-link">Boolean</a>&nbsp;isCacheDisabled,
  <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Boolean.html" title="class or interface in java.lang" class="external-link">Boolean</a>&nbsp;allowUrlOverrides,
@@ -121,7 +121,9 @@ loadScripts(document, 'script');</script>
  com.google.gson.JsonObject&nbsp;globalAttributes,
  <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/Map.html" title="class or interface in java.util" class="external-link">Map</a>&lt;<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>,<wbr><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html" title="class or interface in java.lang" class="external-link">Object</a>&gt;&nbsp;globalForcedFeatureValues,
  <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/Map.html" title="class or interface in java.util" class="external-link">Map</a>&lt;<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>,<wbr><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Integer.html" title="class or interface in java.lang" class="external-link">Integer</a>&gt;&nbsp;globalForcedVariationsMap,
- <a href="../../sandbox/GbCacheManager.html" title="interface in growthbook.sdk.java.sandbox">GbCacheManager</a>&nbsp;cacheManager)</code></div>
+ <a href="../../sandbox/GbCacheManager.html" title="interface in growthbook.sdk.java.sandbox">GbCacheManager</a>&nbsp;cacheManager,
+ <a href="../../sandbox/CacheMode.html" title="enum class in growthbook.sdk.java.sandbox">CacheMode</a>&nbsp;cacheMode,
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;cacheDirectory)</code></div>
 <div class="col-last even-row-color">&nbsp;</div>
 </div>
 </section>
@@ -156,8 +158,14 @@ loadScripts(document, 'script');</script>
 <div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">String format of user attributes that are used to assign variations</div>
 </div>
-<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="../../sandbox/GbCacheManager.html" title="interface in growthbook.sdk.java.sandbox">GbCacheManager</a></code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#getCacheManager()" class="member-name-link">getCacheManager</a>()</code></div>
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a></code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#getCacheDirectory()" class="member-name-link">getCacheDirectory</a>()</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">&nbsp;</div>
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="../../sandbox/GbCacheManager.html" title="interface in growthbook.sdk.java.sandbox">GbCacheManager</a></code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#getCacheManager()" class="member-name-link">getCacheManager</a>()</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">&nbsp;</div>
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="../../sandbox/CacheMode.html" title="enum class in growthbook.sdk.java.sandbox">CacheMode</a></code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#getCacheMode()" class="member-name-link">getCacheMode</a>()</code></div>
 <div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">&nbsp;</div>
 <div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a></code></div>
 <div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#getClientKey()" class="member-name-link">getClientKey</a>()</code></div>
@@ -245,7 +253,13 @@ loadScripts(document, 'script');</script>
 <div class="block">String format of user attributes that are used to assign variations</div>
 </div>
 <div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>void</code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#setCacheManager(growthbook.sdk.java.sandbox.GbCacheManager)" class="member-name-link">setCacheManager</a><wbr>(<a href="../../sandbox/GbCacheManager.html" title="interface in growthbook.sdk.java.sandbox">GbCacheManager</a>&nbsp;cacheManager)</code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#setCacheDirectory(java.lang.String)" class="member-name-link">setCacheDirectory</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;cacheDirectory)</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">&nbsp;</div>
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>void</code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#setCacheManager(growthbook.sdk.java.sandbox.GbCacheManager)" class="member-name-link">setCacheManager</a><wbr>(<a href="../../sandbox/GbCacheManager.html" title="interface in growthbook.sdk.java.sandbox">GbCacheManager</a>&nbsp;cacheManager)</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">&nbsp;</div>
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>void</code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#setCacheMode(growthbook.sdk.java.sandbox.CacheMode)" class="member-name-link">setCacheMode</a><wbr>(<a href="../../sandbox/CacheMode.html" title="enum class in growthbook.sdk.java.sandbox">CacheMode</a>&nbsp;cacheMode)</code></div>
 <div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">&nbsp;</div>
 <div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>void</code></div>
 <div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#setClientKey(java.lang.String)" class="member-name-link">setClientKey</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;clientKey)</code></div>
@@ -337,7 +351,7 @@ loadScripts(document, 'script');</script>
 <h2>Constructor Details</h2>
 <ul class="member-list">
 <li>
-<section class="detail" id="&lt;init&gt;(java.lang.Boolean,java.lang.Boolean,java.lang.Boolean,java.lang.Boolean,java.lang.String,java.lang.String,java.lang.String,java.lang.String,java.util.List,growthbook.sdk.java.stickyBucketing.StickyBucketService,growthbook.sdk.java.multiusermode.usage.TrackingCallbackWithUser,growthbook.sdk.java.multiusermode.usage.FeatureUsageCallbackWithUser,growthbook.sdk.java.repository.FeatureRefreshStrategy,growthbook.sdk.java.callback.FeatureRefreshCallback,com.google.gson.JsonObject,java.util.Map,java.util.Map,growthbook.sdk.java.sandbox.GbCacheManager)">
+<section class="detail" id="&lt;init&gt;(java.lang.Boolean,java.lang.Boolean,java.lang.Boolean,java.lang.Boolean,java.lang.String,java.lang.String,java.lang.String,java.lang.String,java.util.List,growthbook.sdk.java.stickyBucketing.StickyBucketService,growthbook.sdk.java.multiusermode.usage.TrackingCallbackWithUser,growthbook.sdk.java.multiusermode.usage.FeatureUsageCallbackWithUser,growthbook.sdk.java.repository.FeatureRefreshStrategy,growthbook.sdk.java.callback.FeatureRefreshCallback,com.google.gson.JsonObject,java.util.Map,java.util.Map,growthbook.sdk.java.sandbox.GbCacheManager,growthbook.sdk.java.sandbox.CacheMode,java.lang.String)">
 <h3>Options</h3>
 <div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="element-name">Options</span><wbr><span class="parameters">(@Nullable
  <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Boolean.html" title="class or interface in java.lang" class="external-link">Boolean</a>&nbsp;enabled,
@@ -372,7 +386,11 @@ loadScripts(document, 'script');</script>
  @Nullable
  <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/Map.html" title="class or interface in java.util" class="external-link">Map</a>&lt;<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>,<wbr><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Integer.html" title="class or interface in java.lang" class="external-link">Integer</a>&gt;&nbsp;globalForcedVariationsMap,
  @Nullable
- <a href="../../sandbox/GbCacheManager.html" title="interface in growthbook.sdk.java.sandbox">GbCacheManager</a>&nbsp;cacheManager)</span></div>
+ <a href="../../sandbox/GbCacheManager.html" title="interface in growthbook.sdk.java.sandbox">GbCacheManager</a>&nbsp;cacheManager,
+ @Nullable
+ <a href="../../sandbox/CacheMode.html" title="enum class in growthbook.sdk.java.sandbox">CacheMode</a>&nbsp;cacheMode,
+ @Nullable
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;cacheDirectory)</span></div>
 </section>
 </li>
 </ul>
@@ -387,6 +405,19 @@ loadScripts(document, 'script');</script>
 <section class="detail" id="getRefreshingStrategy()">
 <h3>getRefreshingStrategy</h3>
 <div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="../../repository/FeatureRefreshStrategy.html" title="enum class in growthbook.sdk.java.repository">FeatureRefreshStrategy</a></span>&nbsp;<span class="element-name">getRefreshingStrategy</span>()</div>
+</section>
+</li>
+<li>
+<section class="detail" id="getCacheMode()">
+<h3>getCacheMode</h3>
+<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="../../sandbox/CacheMode.html" title="enum class in growthbook.sdk.java.sandbox">CacheMode</a></span>&nbsp;<span class="element-name">getCacheMode</span>()</div>
+</section>
+</li>
+<li>
+<section class="detail" id="getCacheDirectory()">
+<h3>getCacheDirectory</h3>
+<div class="member-signature"><span class="annotations">@Nullable
+</span><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a></span>&nbsp;<span class="element-name">getCacheDirectory</span>()</div>
 </section>
 </li>
 <li>
@@ -687,6 +718,19 @@ loadScripts(document, 'script');</script>
 <h3>setCacheManager</h3>
 <div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type">void</span>&nbsp;<span class="element-name">setCacheManager</span><wbr><span class="parameters">(@Nullable
  <a href="../../sandbox/GbCacheManager.html" title="interface in growthbook.sdk.java.sandbox">GbCacheManager</a>&nbsp;cacheManager)</span></div>
+</section>
+</li>
+<li>
+<section class="detail" id="setCacheMode(growthbook.sdk.java.sandbox.CacheMode)">
+<h3>setCacheMode</h3>
+<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type">void</span>&nbsp;<span class="element-name">setCacheMode</span><wbr><span class="parameters">(<a href="../../sandbox/CacheMode.html" title="enum class in growthbook.sdk.java.sandbox">CacheMode</a>&nbsp;cacheMode)</span></div>
+</section>
+</li>
+<li>
+<section class="detail" id="setCacheDirectory(java.lang.String)">
+<h3>setCacheDirectory</h3>
+<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type">void</span>&nbsp;<span class="element-name">setCacheDirectory</span><wbr><span class="parameters">(@Nullable
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;cacheDirectory)</span></div>
 </section>
 </li>
 <li>
