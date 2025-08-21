@@ -3,6 +3,7 @@ package growthbook.sdk.java.multiusermode.configurations;
 import com.google.gson.JsonObject;
 import growthbook.sdk.java.model.Experiment;
 import growthbook.sdk.java.model.Feature;
+import growthbook.sdk.java.multiusermode.ExperimentTracker;
 import lombok.Builder;
 import lombok.Data;
 import lombok.Getter;
@@ -48,4 +49,7 @@ public class GlobalContext {
     @Getter
     @Nullable
     private Map<String, Object> forcedFeatureValues;
+
+    @Getter
+    private final ExperimentTracker experimentTracker = new ExperimentTracker();
 }
