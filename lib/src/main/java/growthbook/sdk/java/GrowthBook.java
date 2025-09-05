@@ -191,6 +191,7 @@ public class GrowthBook implements IGrowthBook {
     public void setAttributes(String attributesJsonString) {
         this.context.setAttributesJson(attributesJsonString);
         initializeEvalContext();
+        refreshStickyBucketService(null);
     }
 
     /**
@@ -244,6 +245,7 @@ public class GrowthBook implements IGrowthBook {
     public void setOwnStickyBucketService(@Nullable StickyBucketService stickyBucketService) {
         this.context.setStickyBucketService(stickyBucketService);
         initializeEvalContext();
+        refreshStickyBucketService(null);
     }
 
     /**
@@ -253,6 +255,7 @@ public class GrowthBook implements IGrowthBook {
     public void setInMemoryStickyBucketService() {
         this.context.setStickyBucketService(new InMemoryStickyBucketServiceImpl(new HashMap<>()));
         initializeEvalContext();
+        refreshStickyBucketService(null);
     }
 
     /**

@@ -107,7 +107,7 @@ public class FileStickyBucketServiceImpl implements StickyBucketService {
                     }
                     StickyAssignmentsDocument doc = gson.fromJson(json, StickyAssignmentsDocument.class);
                     if (doc != null) {
-                        docs.put(key, doc);
+                        docs.put(entry.getKey() + "||" + entry.getValue(), doc);
                     }
                 } catch (Exception e) {
                     log.error("Error while loading sticky assignment for {}={}, error: {}",

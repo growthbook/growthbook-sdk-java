@@ -4,6 +4,7 @@ import com.google.gson.Gson;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
+import growthbook.sdk.java.GrowthBook;
 import growthbook.sdk.java.model.Experiment;
 import growthbook.sdk.java.model.ExperimentResult;
 import growthbook.sdk.java.model.GeneratedStickyBucketAssignmentDocModel;
@@ -38,7 +39,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
- * <b>INTERNAL</b>: Implementation of for internal utility methods to support {@link growthbook.sdk.java.GrowthBook}
+ * <b>INTERNAL</b>: Implementation of for internal utility methods to support {@link GrowthBook}
  */
 @Slf4j
 public class GrowthBookUtils {
@@ -596,18 +597,15 @@ public class GrowthBookUtils {
                                                                 JsonObject attributeOverrides) {
         Map<String, String> attributes = new HashMap<>();
 
+        List<String> stickyBucketIdentifierAttributes = deriveStickyBucketIdentifierAttributes(context, featuresDataModel);
 
-        if (context.getStickyBucketIdentifierAttributes() != null) {
-            context.setStickyBucketIdentifierAttributes(deriveStickyBucketIdentifierAttributes(context, featuresDataModel));
-
-            for (String attr : context.getStickyBucketIdentifierAttributes()) {
-                HashAttributeAndHashValue hashAttribute = getHashAttribute(
-                        attr,
-                        null,
-                        attributeOverrides
-                );
-                attributes.put(attr, hashAttribute.getHashValue());
-            }
+        for (String attr : stickyBucketIdentifierAttributes) {
+            HashAttributeAndHashValue hashAttribute = getHashAttribute(
+                    attr,
+                    null,
+                    attributeOverrides
+            );
+            attributes.put(attr, hashAttribute.getHashValue());
         }
 
         return attributes;
@@ -622,14 +620,14 @@ public class GrowthBookUtils {
      */
     private static <ValueType> List<String> deriveStickyBucketIdentifierAttributes(
             GBContext context,
-            String featureDataModel
+            @Nullable String featureDataModel
     ) {
         Set<String> attributes = new HashSet<>();
 
         JsonObject jsonObject = GrowthBookJsonUtils.getInstance()
                 .gson.fromJson(featureDataModel, JsonObject.class);
-
-        String featuresStringJson = jsonObject.get("features").toString().trim();
+        
+        String featuresStringJson = jsonObject != null ? jsonObject.get("features").toString().trim() : null;
         Map<String, Feature<?>> featuresMap = TransformationUtil.transformFeatures(featuresStringJson);
         Map<String, Feature<?>> features = !featuresMap.isEmpty() ? featuresMap : context.getFeatures();
 
