@@ -3,6 +3,7 @@ package growthbook.sdk.java.stickyBucketing;
 import growthbook.sdk.java.model.StickyAssignmentsDocument;
 
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 
 /**
  * Sticky Bucket Service is responsible for persisting previously seen
@@ -19,7 +20,7 @@ public interface StickyBucketService {
      *                       a key that us for find proper StickyAssignmentsDocument
      * @return StickyAssignmentsDocument
      */
-    StickyAssignmentsDocument getAssignments(String attributeName, String attributeValue);
+    CompletableFuture<StickyAssignmentsDocument> getAssignments(String attributeName, String attributeValue);
 
     /**
      * Insert new record if not exists, otherwise update
@@ -34,5 +35,5 @@ public interface StickyBucketService {
      * @param attributes Map of String key and String value that you have in GBContext
      * @return Map with key String and value StickyAssignmentsDocument
      */
-    Map<String, StickyAssignmentsDocument> getAllAssignments(Map<String, String> attributes);
+    CompletableFuture<Map<String, StickyAssignmentsDocument>> getAllAssignments(Map<String, String> attributes);
 }
