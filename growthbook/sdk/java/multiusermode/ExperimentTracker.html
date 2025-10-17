@@ -78,8 +78,8 @@ loadScripts(document, 'script');</script>
 <hr>
 <div class="type-signature"><span class="modifiers">public class </span><span class="element-name type-name-label">ExperimentTracker</span>
 <span class="extends-implements">extends <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html" title="class or interface in java.lang" class="external-link">Object</a></span></div>
-<div class="block">An LRU Cache implementation to keep track of the most recent experiments.
- Uses LinkedHashMap with access-order mode with a configurable size of 30.</div>
+<div class="block">A thread-safe LRU Cache implementation to keep track of the most recent experiments.
+ Uses Guava cache with a maximum size of 30 entries.</div>
 </section>
 <section class="summary">
 <ul class="summary-list">
