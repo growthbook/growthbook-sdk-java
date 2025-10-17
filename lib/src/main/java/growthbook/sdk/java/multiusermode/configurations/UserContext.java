@@ -1,8 +1,8 @@
 package growthbook.sdk.java.multiusermode.configurations;
 
 import com.google.gson.JsonObject;
-import growthbook.sdk.java.multiusermode.util.TransformationUtil;
 import growthbook.sdk.java.model.StickyAssignmentsDocument;
+import growthbook.sdk.java.multiusermode.util.TransformationUtil;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 
@@ -39,6 +39,10 @@ public class UserContext {
         forcedVariationsMap = userContextBuilder.forcedVariationsMap;
         forcedFeatureValues = userContextBuilder.forcedFeatureValues;
         attributesJson = userContextBuilder.attributesJson;
+    }
+
+    public static UserContextBuilder builder() {
+        return new UserContextBuilder();
     }
 
     public UserContext witAttributesJson(String attributesJson) {
