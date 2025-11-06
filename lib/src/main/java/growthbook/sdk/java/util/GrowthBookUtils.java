@@ -765,7 +765,8 @@ public class GrowthBookUtils {
                 experimentFallbackAttribute);
 
         if (minExperimentBucketVersion > 0) {
-            for (int i = 0; i <= minExperimentBucketVersion; i++) {
+            // users with any blocked bucket version (0 to minExperimentBucketVersion - 1) are excluded from the test
+            for (int i = 0; i < minExperimentBucketVersion; i++) {
                 String blockedKey = getStickyBucketExperimentKey(experimentKey, i);
                 if (assignments.containsKey(blockedKey)) {
                     return new StickyBucketVariation(-1, true);
