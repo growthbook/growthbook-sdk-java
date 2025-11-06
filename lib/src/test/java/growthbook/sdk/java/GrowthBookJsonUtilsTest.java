@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonElement;
+import com.google.gson.JsonNull;
 import growthbook.sdk.java.model.BucketRange;
 import growthbook.sdk.java.model.DataType;
 import growthbook.sdk.java.model.Namespace;
@@ -55,6 +56,7 @@ class GrowthBookJsonUtilsTest {
         Gson gson = GrowthBookJsonUtils.getInstance().gson;
 
         assertEquals(DataType.NULL, GrowthBookJsonUtils.getElementType(gson.fromJson("null", JsonElement.class)));
+        assertEquals(DataType.NULL, GrowthBookJsonUtils.getElementType(JsonNull.INSTANCE));
         assertEquals(DataType.ARRAY, GrowthBookJsonUtils.getElementType(gson.fromJson("[1]", JsonElement.class)));
         assertEquals(DataType.OBJECT, GrowthBookJsonUtils.getElementType(gson.fromJson("{ \"foo\": 2}", JsonElement.class)));
         assertEquals(DataType.BOOLEAN, GrowthBookJsonUtils.getElementType(gson.fromJson("true", JsonElement.class)));
