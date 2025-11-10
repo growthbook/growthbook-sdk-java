@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.10.3](https://github.com/growthbook/growthbook-sdk-java/compare/v0.10.2...0.10.3) (2025-11-10)
+
+
+### Bug Fixes
+
+* added manual `.builder()` method to `UserContext` to align to the documentation ([#172](https://github.com/growthbook/growthbook-sdk-java/issues/172)) ([987cb33](https://github.com/growthbook/growthbook-sdk-java/commit/987cb33c9a3a866ae7b260cfb6623b52829d208d))
+* Performance and bug fixes ([#178](https://github.com/growthbook/growthbook-sdk-java/issues/178)) ([82bc58e](https://github.com/growthbook/growthbook-sdk-java/commit/82bc58e52fc1fd30b2617afbdce066e935afae38))
+
 ## [0.10.2](https://github.com/growthbook/growthbook-sdk-java/compare/v0.10.1...0.10.2) (2025-08-20)
 
 
