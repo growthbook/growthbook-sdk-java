@@ -143,7 +143,7 @@ public class GrowthBookJsonUtils {
         try {
             if (element == null) return DataType.UNDEFINED;
 
-            if (element.toString().equals("null")) {
+            if (element.isJsonNull()) {
                 return DataType.NULL;
             }
 
