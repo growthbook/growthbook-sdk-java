@@ -831,6 +831,7 @@ public class GrowthBookUtils {
 
     /**
      * Method for generating a Sticky Bucket Assignment document.
+     * Optimized to avoid unnecessary HashMap copies: detects changes before allocation.
      *
      * @param stickyBucketAssignmentDocs {@code Map<String, StickyAssignmentsDocument>}
      * @param attributeName  String
@@ -849,12 +850,28 @@ public class GrowthBookUtils {
         if (stickyBucketAssignmentDocs != null && stickyBucketAssignmentDocs.get(key) != null) {
             existingAssignments = stickyBucketAssignmentDocs.get(key).getAssignments();
         }
-        Map<String, String> newAssignments = new HashMap<>(existingAssignments);
 
+        // Detect changes before allocating a new map. This avoids O(|assignments|) copies
+        // for experiments with no new assignments.
+        boolean hasChanges = false;
+        for (Map.Entry<String, String> entry : assignments.entrySet()) {
+            if (!Objects.equals(entry.getValue(), existingAssignments.get(entry.getKey()))) {
+                hasChanges = true;
+                break;
+            }
+        }
+
+        if (!hasChanges) {
+            // No changes detected, reuse existing assignments without allocation
+            StickyAssignmentsDocument doc = new StickyAssignmentsDocument(attributeName, attributeValue, existingAssignments);
+            return new GeneratedStickyBucketAssignmentDocModel(key, doc, false);
+        }
+
+        // Changes detected: allocate merged map
+        Map<String, String> newAssignments = new HashMap<>(existingAssignments);
         newAssignments.putAll(assignments);
-        boolean changed = !newAssignments.equals(existingAssignments);
         StickyAssignmentsDocument stickyAssignmentsDocument = new StickyAssignmentsDocument(attributeName, attributeValue, newAssignments);
-        return new GeneratedStickyBucketAssignmentDocModel(key, stickyAssignmentsDocument, changed);
+        return new GeneratedStickyBucketAssignmentDocModel(key, stickyAssignmentsDocument, true);
     }
 
     /**
