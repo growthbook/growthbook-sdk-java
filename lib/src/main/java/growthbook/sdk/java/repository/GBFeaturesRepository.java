@@ -342,12 +342,17 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
      * @param callback This callback will be called when features are refreshed
      */
     @Override
-    public void onFeaturesRefresh(FeatureRefreshCallback callback) {
-        this.refreshCallbacks.add(callback);
+    public synchronized void onFeaturesRefresh(FeatureRefreshCallback callback) {
+        if (callback == null) {
+            return;
+        }
+        if (!this.refreshCallbacks.contains(callback)) {
+            this.refreshCallbacks.add(callback);
+        }
     }
 
     @Override
-    public void clearCallbacks() {
+    public synchronized void clearCallbacks() {
         this.refreshCallbacks.clear();
     }
 

@@ -563,6 +563,7 @@ public class GrowthBookUtils {
                                             JsonObject attributeOverrides) {
         StickyBucketService stickyBucketService = context.getStickyBucketService();
         if (stickyBucketService == null) {
+            log.debug("refreshStickyBuckets: sticky bucket service not configured, skipping refresh.");
             return;
         }
         Map<String, String> stickyBucketAttributes =
