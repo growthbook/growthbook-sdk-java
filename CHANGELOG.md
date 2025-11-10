@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.10.4](https://github.com/growthbook/growthbook-sdk-java/compare/0.10.3...0.10.4) (2025-11-10)
+
+
+### Bug Fixes
+
+* Optimized Sticky bucket generation ([#181](https://github.com/growthbook/growthbook-sdk-java/issues/181)) ([65f5ca9](https://github.com/growthbook/growthbook-sdk-java/commit/65f5ca97a136c33dde9daed8ff628c4f7fdaccc6))
+
 ## [0.10.3](https://github.com/growthbook/growthbook-sdk-java/compare/v0.10.2...0.10.3) (2025-11-10)
 
 
