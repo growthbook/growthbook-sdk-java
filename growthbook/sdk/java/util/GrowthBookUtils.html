@@ -716,7 +716,8 @@ V&gt;&nbsp;<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base
  <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;attributeName,
  <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;attributeValue,
  <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/Map.html" title="class or interface in java.util" class="external-link">Map</a>&lt;<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>,<wbr><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&gt;&nbsp;assignments)</span></div>
-<div class="block">Method for generating a Sticky Bucket Assignment document.</div>
+<div class="block">Method for generating a Sticky Bucket Assignment document.
+ Optimized to avoid unnecessary HashMap copies: detects changes before allocation.</div>
 <dl class="notes">
 <dt>Parameters:</dt>
 <dd><code>stickyBucketAssignmentDocs</code> - <code>Map&lt;String, StickyAssignmentsDocument&gt;</code></dd>
