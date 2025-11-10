@@ -72,6 +72,12 @@ public class FeatureEvaluator implements IFeatureEvaluator {
                 leaveCircularLoop(context);
                 return featureResultWhenCircularDependencyDetected;
             }
+
+            FeatureResult<?> memoizedResult = context.getStack().getMemoizedResults().get(key);
+            if (memoizedResult != null) {
+                return (FeatureResult<ValueType>) memoizedResult;
+            }
+
             // Add the current feature being evaluated to the stack
             addFeatureToEvalStack(key, context);
 
@@ -82,11 +88,12 @@ public class FeatureEvaluator implements IFeatureEvaluator {
                 log.info("Global override for forced feature with key: {} and value {}", key,
                         forcedFeatureValues.get(key).toString());
 
-                return FeatureResult
+                FeatureResult<ValueType> overrideResult = FeatureResult
                         .<ValueType>builder()
                         .value(unwrapForceFeatureValue)
                         .source(FeatureResultSource.OVERRIDE)
                         .build();
+                return cacheResult(key, overrideResult, context);
             }
 
             // Check for feature values forced by URL
@@ -103,7 +110,7 @@ public class FeatureEvaluator implements IFeatureEvaluator {
                         featureUsageCallbackWithUser.onFeatureUsage(key, urlFeatureResult, context.getUser());
                     }
 
-                    return urlFeatureResult;
+                    return cacheResult(key, urlFeatureResult, context);
                 }
             }
 
@@ -114,7 +121,7 @@ public class FeatureEvaluator implements IFeatureEvaluator {
                     featureUsageCallbackWithUser.onFeatureUsage(key, unknownFeatureResult, context.getUser());
                 }
 
-                return unknownFeatureResult;
+                return cacheResult(key, unknownFeatureResult, context);
             }
 
             // The key exists
@@ -130,7 +137,7 @@ public class FeatureEvaluator implements IFeatureEvaluator {
                 if (featureUsageCallbackWithUser != null) {
                     featureUsageCallbackWithUser.onFeatureUsage(key, defaultValueFeature, context.getUser());
                 }
-                return defaultValueFeature;
+                return cacheResult(key, defaultValueFeature, context);
             }
 
             // If empty rule set, use the default value
@@ -144,7 +151,7 @@ public class FeatureEvaluator implements IFeatureEvaluator {
                 if (featureUsageCallbackWithUser != null) {
                     featureUsageCallbackWithUser.onFeatureUsage(key, defaultValueFeatureForRules, context.getUser());
                 }
-                return defaultValueFeatureForRules;
+                return cacheResult(key, defaultValueFeatureForRules, context);
             }
 
             // Loop through the feature rules (if any)
@@ -177,7 +184,7 @@ public class FeatureEvaluator implements IFeatureEvaluator {
                                         featureResultWhenCircularDependencyDetected,
                                         context.getUser());
                             }
-                            return featureResultWhenCircularDependencyDetected;
+                            return cacheResult(key, featureResultWhenCircularDependencyDetected, context);
                         }
 
                         Map<String, Object> evalObj = new HashMap<>();
@@ -210,7 +217,7 @@ public class FeatureEvaluator implements IFeatureEvaluator {
                                             featureResultWhenBlockedByPrerequisite,
                                             context.getUser());
                                 }
-                                return featureResultWhenBlockedByPrerequisite;
+                                return cacheResult(key, featureResultWhenBlockedByPrerequisite, context);
                             }
                             // non-blocking prerequisite eval failed: break out
                             // of parentConditions loop, jump to the next rule
@@ -322,7 +329,7 @@ public class FeatureEvaluator implements IFeatureEvaluator {
                         featureUsageCallbackWithUser.onFeatureUsage(key, forcedRuleFeatureValue, context.getUser());
                     }
 
-                    return forcedRuleFeatureValue;
+                    return cacheResult(key, forcedRuleFeatureValue, context);
                 } else {
 
                     ArrayList<ValueType> variations = rule.getVariations();
@@ -374,7 +381,7 @@ public class FeatureEvaluator implements IFeatureEvaluator {
                             if (featureUsageCallbackWithUser != null) {
                                 featureUsageCallbackWithUser.onFeatureUsage(key, experimentFeatureResult, context.getUser());
                             }
-                            return experimentFeatureResult;
+                            return cacheResult(key, experimentFeatureResult, context);
                         }
                     } else {
                         continue;
@@ -397,13 +404,13 @@ public class FeatureEvaluator implements IFeatureEvaluator {
             }
 
             // Return (value = defaultValue or null, source = defaultValue)
-            return defaultValueFeatureResult;
+            return cacheResult(key, defaultValueFeatureResult, context);
         } catch (Exception e) {
             log.error(e.getMessage(), e);
 
             // If the key doesn't exist in context.features, return immediately
             // (value = null, source = unknownFeature).
-            return unknownFeatureResult;
+            return cacheResult(key, unknownFeatureResult, context);
         }
     }
 
@@ -443,11 +450,17 @@ public class FeatureEvaluator implements IFeatureEvaluator {
     private void leaveCircularLoop(EvaluationContext context) {
         context.getStack().setId(null);
         context.getStack().getEvaluatedFeatures().clear();
+        context.getStack().getMemoizedResults().clear();
     }
 
     private void addFeatureToEvalStack(String featureKey, EvaluationContext context) {
         context.getStack().setId(featureKey);
         context.getStack().getEvaluatedFeatures().add(featureKey);
+    }
+
+    private <ValueType> FeatureResult<ValueType> cacheResult(String key, FeatureResult<ValueType> result, EvaluationContext context) {
+        context.getStack().getMemoizedResults().putIfAbsent(key, result);
+        return result;
     }
 
     private Map<String, Object> getForcedFeatureValues(EvaluationContext evaluationContext) {

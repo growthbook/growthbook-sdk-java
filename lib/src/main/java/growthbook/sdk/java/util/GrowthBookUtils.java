@@ -563,6 +563,7 @@ public class GrowthBookUtils {
                                             JsonObject attributeOverrides) {
         StickyBucketService stickyBucketService = context.getStickyBucketService();
         if (stickyBucketService == null) {
+            log.debug("refreshStickyBuckets: sticky bucket service not configured, skipping refresh.");
             return;
         }
         Map<String, String> stickyBucketAttributes =
@@ -591,19 +592,36 @@ public class GrowthBookUtils {
                                                                 String featuresDataModel,
                                                                 JsonObject attributeOverrides) {
         Map<String, String> attributes = new HashMap<>();
+        List<String> identifierAttributes = context.getStickyBucketIdentifierAttributes();
 
+        if (identifierAttributes == null || identifierAttributes.isEmpty()) {
+            return attributes;
+        }
 
-        if (context.getStickyBucketIdentifierAttributes() != null) {
-            context.setStickyBucketIdentifierAttributes(deriveStickyBucketIdentifierAttributes(context, featuresDataModel));
+        // 1. generate payload signature for sticky-bucket identifier derivation to re-use it later.
+        // context.getFeatures() - shouldn't be null!
+        String signature = Integer.toString(featuresDataModel == null
+                ? context.getFeatures().hashCode() : featuresDataModel.hashCode());
 
-            for (String attr : context.getStickyBucketIdentifierAttributes()) {
-                HashAttributeAndHashValue hashAttribute = getHashAttribute(
-                        attr,
-                        null,
-                        attributeOverrides
-                );
-                attributes.put(attr, hashAttribute.getHashValue());
-            }
+        // 2. derive attributes only if the signature changes
+        boolean shouldDerive = !signature.equals(context.getStickyBucketIdentifierAttributesSignature());
+
+        if (shouldDerive) {
+            List<String> derived = deriveStickyBucketIdentifierAttributes(context, featuresDataModel);
+            identifierAttributes = derived;
+
+            // 3. store the derived attributes to re-use in evaluations.
+            context.setStickyBucketIdentifierAttributes(derived);
+            context.setStickyBucketIdentifierAttributesSignature(signature);
+        }
+
+        for (String attr : identifierAttributes) {
+            HashAttributeAndHashValue hashAttribute = getHashAttribute(
+                    attr,
+                    null,
+                    attributeOverrides
+            );
+            attributes.put(attr, hashAttribute.getHashValue());
         }
 
         return attributes;
@@ -622,12 +640,19 @@ public class GrowthBookUtils {
     ) {
         Set<String> attributes = new HashSet<>();
 
-        JsonObject jsonObject = GrowthBookJsonUtils.getInstance()
-                .gson.fromJson(featureDataModel, JsonObject.class);
+        Map<String, Feature<?>> features = context.getFeatures();
 
-        String featuresStringJson = jsonObject.get("features").toString().trim();
-        Map<String, Feature<?>> featuresMap = TransformationUtil.transformFeatures(featuresStringJson);
-        Map<String, Feature<?>> features = !featuresMap.isEmpty() ? featuresMap : context.getFeatures();
+        if (featureDataModel != null && !featureDataModel.isEmpty()) {
+            JsonObject jsonObject = GrowthBookJsonUtils.getInstance()
+                    .gson.fromJson(featureDataModel, JsonObject.class);
+            if (jsonObject != null && jsonObject.has("features") && jsonObject.get("features") != null) {
+                String featuresStringJson = jsonObject.get("features").toString().trim();
+                Map<String, Feature<?>> featuresMap = TransformationUtil.transformFeatures(featuresStringJson);
+                if (!featuresMap.isEmpty()) {
+                    features = featuresMap;
+                }
+            }
+        }
 
         if (features != null) {
             for (Map.Entry<String, Feature<?>> entry : features.entrySet()) {
@@ -765,7 +790,8 @@ public class GrowthBookUtils {
                 experimentFallbackAttribute);
 
         if (minExperimentBucketVersion > 0) {
-            for (int i = 0; i <= minExperimentBucketVersion; i++) {
+            // users with any blocked bucket version (0 to minExperimentBucketVersion - 1) are excluded from the test
+            for (int i = 0; i < minExperimentBucketVersion; i++) {
                 String blockedKey = getStickyBucketExperimentKey(experimentKey, i);
                 if (assignments.containsKey(blockedKey)) {
                     return new StickyBucketVariation(-1, true);

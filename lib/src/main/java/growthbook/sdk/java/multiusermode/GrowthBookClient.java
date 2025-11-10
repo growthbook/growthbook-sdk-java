@@ -1,7 +1,5 @@
 package growthbook.sdk.java.multiusermode;
 
-import java.util.*;
-
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import growthbook.sdk.java.callback.ExperimentRunCallback;
@@ -26,7 +24,9 @@ import growthbook.sdk.java.util.GrowthBookJsonUtils;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Collectors;
@@ -101,6 +101,7 @@ public class GrowthBookClient {
                         .build();
 
                 isReady = repository.getInitialized();
+                log.info("GrowthBookClient initialized repository and registered feature refresh callbacks.");
             }
         } catch (Exception e) {
             log.error("Failed to initialize growthbook instance", e);
