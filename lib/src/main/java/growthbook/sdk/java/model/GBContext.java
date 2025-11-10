@@ -179,6 +179,13 @@ public class GBContext {
         this.attributes = (attributes == null) ? new JsonObject() : attributes;
     }
 
+    public void setStickyBucketIdentifierAttributes(@Nullable List<String> stickyBucketIdentifierAttributes) {
+        this.stickyBucketIdentifierAttributes = stickyBucketIdentifierAttributes;
+        if (stickyBucketIdentifierAttributes == null) {
+            this.stickyBucketIdentifierAttributesSignature = null;
+        }
+    }
+
     /**
      * Optional encryption key. If this is not null, featuresJson should be an encrypted payload.
      */
@@ -222,6 +229,12 @@ public class GBContext {
     private List<String> stickyBucketIdentifierAttributes;
 
     /**
+     * Fingerprint of the feature payload used to derive sticky bucket identifiers.
+     */
+    @Nullable
+    private String stickyBucketIdentifierAttributesSignature;
+
+    /**
      * The builder class to help create a context. You can use {@link #builder()} or the {@link GBContext} constructor
      */
     public static class GBContextBuilder {
@@ -244,5 +257,12 @@ public class GBContext {
 
             return context;
         }
+    }
+
+    public static void main(String[] args) {
+        HashMap<String, Feature<?>> featureHashMap = new HashMap<>();
+        featureHashMap.put("1", null);
+
+        System.out.println("featureHashMap.hashCode() = " + featureHashMap.hashCode());
     }
 }
