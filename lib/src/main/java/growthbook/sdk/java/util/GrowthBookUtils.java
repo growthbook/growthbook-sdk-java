@@ -4,6 +4,8 @@ import com.google.gson.Gson;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
+import growthbook.sdk.java.model.Experiment;
+import growthbook.sdk.java.model.ExperimentResult;
 import growthbook.sdk.java.model.GeneratedStickyBucketAssignmentDocModel;
 import growthbook.sdk.java.model.BucketRange;
 import growthbook.sdk.java.model.Feature;
@@ -14,6 +16,7 @@ import growthbook.sdk.java.model.HashAttributeAndHashValue;
 import growthbook.sdk.java.model.Namespace;
 import growthbook.sdk.java.model.StickyBucketVariation;
 import growthbook.sdk.java.model.VariationMeta;
+import growthbook.sdk.java.multiusermode.ExperimentTracker;
 import growthbook.sdk.java.multiusermode.configurations.EvaluationContext;
 import growthbook.sdk.java.model.StickyAssignmentsDocument;
 import growthbook.sdk.java.multiusermode.util.TransformationUtil;
@@ -931,5 +934,29 @@ public class GrowthBookUtils {
                         )
                 );
 
+    }
+
+    //  Track experiments to trigger callbacks.
+    public static  <ValueType> boolean isExperimentTracked(ExperimentTracker experimentTracker,
+                                                           Experiment<ValueType> experiment,
+                                                           @Nullable ExperimentResult<ValueType> result) {
+        if (result == null) {
+            return false;
+        }
+        String experimentKey = experiment.getKey();
+
+        String key = (
+                result.getHashAttribute() != null ? result.getHashAttribute() : "")
+                + (result.getHashValue() != null ? result.getHashValue() : "")
+                + (experimentKey + result.getVariationId());
+
+        boolean alreadyTracked = experimentTracker.isExperimentTracked(key);
+
+        // Add the experiment to the tracker if it doesn't exist.
+        if (!alreadyTracked) {
+            experimentTracker.trackExperiment(key);
+        }
+
+        return alreadyTracked;
     }
 }
