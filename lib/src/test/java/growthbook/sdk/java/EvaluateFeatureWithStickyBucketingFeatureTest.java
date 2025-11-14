@@ -29,6 +29,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class EvaluateFeatureWithStickyBucketingFeatureTest {
     private static TestCasesJsonHelper helper;
@@ -45,7 +46,7 @@ public class EvaluateFeatureWithStickyBucketingFeatureTest {
 
     @BeforeEach
     void setUp() {
-        stickyBucketService = new InMemoryStickyBucketServiceImpl(new HashMap<>());
+        stickyBucketService = new InMemoryStickyBucketServiceImpl(new ConcurrentHashMap<>());
     }
 
     @Test

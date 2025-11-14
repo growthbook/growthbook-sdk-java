@@ -8,7 +8,8 @@ import lombok.extern.slf4j.Slf4j;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 
 /**
  * File-based implementation of {@link StickyBucketService}.
@@ -28,6 +29,7 @@ public class FileStickyBucketServiceImpl implements StickyBucketService {
     private final String prefix;
     private final GbCacheManager gbCacheManager;
     private final Gson gson;
+    private final ConcurrentMap<String, Object> keyLocks;
 
     /**
      * Constructs a new service with the default prefix "gbStickyBuckets__".
@@ -38,6 +40,7 @@ public class FileStickyBucketServiceImpl implements StickyBucketService {
         this.gbCacheManager = gbCacheManager;
         this.prefix = "gbStickyBuckets__";
         this.gson = GrowthBookJsonUtils.getInstance().gson;
+        this.keyLocks = new ConcurrentHashMap<>();
     }
 
     /**
@@ -45,14 +48,15 @@ public class FileStickyBucketServiceImpl implements StickyBucketService {
      *
      * @param attributeName  the name of the attribute
      * @param attributeValue the value of the attribute
-     * @return a {@link CompletableFuture} containing the {@link StickyAssignmentsDocument},
+     * @return the {@link StickyAssignmentsDocument},
      * or {@code null} if not found
      */
     @Override
-    public CompletableFuture<StickyAssignmentsDocument> getAssignments(String attributeName, String attributeValue) {
-        return CompletableFuture.supplyAsync(() -> {
+    public StickyAssignmentsDocument getAssignments(String attributeName, String attributeValue) {
+        String key = buildKey(attributeName, attributeValue);
+        Object lock = keyLocks.computeIfAbsent(key, k -> new Object());
+        synchronized (lock) {
             try {
-                String key = buildKey(attributeName, attributeValue);
                 String json = gbCacheManager.loadCache(key);
                 if (json == null) {
                     return null;
@@ -63,7 +67,7 @@ public class FileStickyBucketServiceImpl implements StickyBucketService {
                         attributeName, attributeValue, e.getMessage(), e);
                 return null;
             }
-        });
+        }
     }
 
     /**
@@ -74,15 +78,16 @@ public class FileStickyBucketServiceImpl implements StickyBucketService {
      */
     @Override
     public void saveAssignments(StickyAssignmentsDocument doc) {
-        CompletableFuture.runAsync(() -> {
-            String key = buildKey(doc.getAttributeName(), doc.getAttributeValue());
+        String key = buildKey(doc.getAttributeName(), doc.getAttributeValue());
+        Object lock = keyLocks.computeIfAbsent(key, k -> new Object());
+        synchronized (lock) {
             try {
                 String json = gson.toJson(doc);
                 gbCacheManager.saveContent(key, json);
             } catch (Exception e) {
                 log.error("Failed to save StickyAssignmentsDocument for key={}, error: {}", key, e.getMessage(), e);
             }
-        });
+        }
     }
 
 
@@ -90,32 +95,30 @@ public class FileStickyBucketServiceImpl implements StickyBucketService {
      * Retrieves all sticky assignments documents for the given attributes.
      *
      * @param attributes a map of attribute names to values
-     * @return a {@link CompletableFuture} containing a map where keys are
+     * @return a map where keys are
      * "prefix + attributeName||attributeValue" and values are
      * {@link StickyAssignmentsDocument} instances
      */
     @Override
-    public CompletableFuture<Map<String, StickyAssignmentsDocument>> getAllAssignments(Map<String, String> attributes) {
-        return CompletableFuture.supplyAsync(() -> {
-            Map<String, StickyAssignmentsDocument> docs = new HashMap<>();
-            for (Map.Entry<String, String> entry : attributes.entrySet()) {
-                try {
-                    String key = buildKey(entry.getKey(), entry.getValue());
-                    String json = gbCacheManager.loadCache(key);
-                    if (json == null) {
-                        continue;
-                    }
-                    StickyAssignmentsDocument doc = gson.fromJson(json, StickyAssignmentsDocument.class);
-                    if (doc != null) {
-                        docs.put(entry.getKey() + "||" + entry.getValue(), doc);
-                    }
-                } catch (Exception e) {
-                    log.error("Error while loading sticky assignment for {}={}, error: {}",
-                            entry.getKey(), entry.getValue(), e.getMessage(), e);
+    public Map<String, StickyAssignmentsDocument> getAllAssignments(Map<String, String> attributes) {
+        Map<String, StickyAssignmentsDocument> docs = new HashMap<>();
+        for (Map.Entry<String, String> entry : attributes.entrySet()) {
+            try {
+                String key = buildKey(entry.getKey(), entry.getValue());
+                String json = gbCacheManager.loadCache(key);
+                if (json == null) {
+                    continue;
                 }
+                StickyAssignmentsDocument doc = gson.fromJson(json, StickyAssignmentsDocument.class);
+                if (doc != null) {
+                    docs.put(entry.getKey() + "||" + entry.getValue(), doc);
+                }
+            } catch (Exception e) {
+                log.error("Error while loading sticky assignment for {}={}, error: {}",
+                        entry.getKey(), entry.getValue(), e.getMessage(), e);
             }
-            return docs;
-        });
+        }
+        return docs;
     }
 
     /**

@@ -576,12 +576,11 @@ public class GrowthBookUtils {
                         attributeOverrides
                 );
 
-        stickyBucketService.getAllAssignments(stickyBucketAttributes)
-                .thenAccept(context::setStickyBucketAssignmentDocs)
-                .exceptionally(ex -> {
-                    log.error("Failed to set sticky documents in context for refreshStickyBuckets");
-                    return null;
-                });
+        context.setStickyBucketAssignmentDocs(
+                stickyBucketService.getAllAssignments(
+                        stickyBucketAttributes
+                )
+        );
     }
 
     /**
@@ -626,7 +625,7 @@ public class GrowthBookUtils {
 
         JsonObject jsonObject = GrowthBookJsonUtils.getInstance()
                 .gson.fromJson(featureDataModel, JsonObject.class);
-        
+
         String featuresStringJson = jsonObject != null ? jsonObject.get("features").toString().trim() : null;
         Map<String, Feature<?>> featuresMap = TransformationUtil.transformFeatures(featuresStringJson);
         Map<String, Feature<?>> features = !featuresMap.isEmpty() ? featuresMap : context.getFeatures();
