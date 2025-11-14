@@ -4,6 +4,7 @@ import com.google.gson.Gson;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
+import growthbook.sdk.java.GrowthBook;
 import growthbook.sdk.java.model.Experiment;
 import growthbook.sdk.java.model.ExperimentResult;
 import growthbook.sdk.java.model.GeneratedStickyBucketAssignmentDocModel;
@@ -38,7 +39,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
- * <b>INTERNAL</b>: Implementation of for internal utility methods to support {@link growthbook.sdk.java.GrowthBook}
+ * <b>INTERNAL</b>: Implementation of for internal utility methods to support {@link GrowthBook}
  */
 @Slf4j
 public class GrowthBookUtils {
@@ -509,13 +510,13 @@ public class GrowthBookUtils {
      *     <li>If hashValue is empty, return false immediately</li>
      * </ul>
      *
-     * @param attributes JsonObject
-     * @param seed               String
-     * @param hashAttribute      String
-     * @param fallbackAttribute  String
-     * @param range              BucketRange
-     * @param coverage           Float
-     * @param hashVersion        Integer
+     * @param attributes        JsonObject
+     * @param seed              String
+     * @param hashAttribute     String
+     * @param fallbackAttribute String
+     * @param range             BucketRange
+     * @param coverage          Float
+     * @param hashVersion       Integer
      * @return Boolean - check if user is included
      */
     public static Boolean isIncludedInRollout(
@@ -595,18 +596,15 @@ public class GrowthBookUtils {
                                                                 JsonObject attributeOverrides) {
         Map<String, String> attributes = new HashMap<>();
 
+        List<String> stickyBucketIdentifierAttributes = deriveStickyBucketIdentifierAttributes(context, featuresDataModel);
 
-        if (context.getStickyBucketIdentifierAttributes() != null) {
-            context.setStickyBucketIdentifierAttributes(deriveStickyBucketIdentifierAttributes(context, featuresDataModel));
-
-            for (String attr : context.getStickyBucketIdentifierAttributes()) {
-                HashAttributeAndHashValue hashAttribute = getHashAttribute(
-                        attr,
-                        null,
-                        attributeOverrides
-                );
-                attributes.put(attr, hashAttribute.getHashValue());
-            }
+        for (String attr : stickyBucketIdentifierAttributes) {
+            HashAttributeAndHashValue hashAttribute = getHashAttribute(
+                    attr,
+                    null,
+                    attributeOverrides
+            );
+            attributes.put(attr, hashAttribute.getHashValue());
         }
 
         return attributes;
@@ -621,14 +619,14 @@ public class GrowthBookUtils {
      */
     private static <ValueType> List<String> deriveStickyBucketIdentifierAttributes(
             GBContext context,
-            String featureDataModel
+            @Nullable String featureDataModel
     ) {
         Set<String> attributes = new HashSet<>();
 
         JsonObject jsonObject = GrowthBookJsonUtils.getInstance()
                 .gson.fromJson(featureDataModel, JsonObject.class);
 
-        String featuresStringJson = jsonObject.get("features").toString().trim();
+        String featuresStringJson = jsonObject != null ? jsonObject.get("features").toString().trim() : null;
         Map<String, Feature<?>> featuresMap = TransformationUtil.transformFeatures(featuresStringJson);
         Map<String, Feature<?>> features = !featuresMap.isEmpty() ? featuresMap : context.getFeatures();
 
@@ -810,9 +808,9 @@ public class GrowthBookUtils {
      * Method for generating a Sticky Bucket Assignment document.
      *
      * @param stickyBucketAssignmentDocs {@code Map<String, StickyAssignmentsDocument>}
-     * @param attributeName  String
-     * @param attributeValue String
-     * @param assignments    {@code Map<String, String>}
+     * @param attributeName              String
+     * @param attributeValue             String
+     * @param assignments                {@code Map<String, String>}
      * @return {@link GeneratedStickyBucketAssignmentDocModel}
      */
     public static GeneratedStickyBucketAssignmentDocModel generateStickyBucketAssignmentDoc(
@@ -837,9 +835,9 @@ public class GrowthBookUtils {
     /**
      * Method for get hash value by identifier. User attribute used for hashing, defaulting to id if not set.
      *
-     * @param attr               String
-     * @param fallbackAttribute  String
-     * @param attributes JsonObject
+     * @param attr              String
+     * @param fallbackAttribute String
+     * @param attributes        JsonObject
      * @return {@link HashAttributeAndHashValue}
      */
     public static HashAttributeAndHashValue getHashAttribute(
@@ -879,7 +877,7 @@ public class GrowthBookUtils {
         return -1;
     }
 
-    public static  <K, V> Map<K, V> mergeMaps(List<Map<K, V>> maps) {
+    public static <K, V> Map<K, V> mergeMaps(List<Map<K, V>> maps) {
         return maps.stream()
                 .filter(Objects::nonNull)
                 .flatMap(map -> map.entrySet()
@@ -894,9 +892,9 @@ public class GrowthBookUtils {
     }
 
     //  Track experiments to trigger callbacks.
-    public static  <ValueType> boolean isExperimentTracked(ExperimentTracker experimentTracker,
-                                                           Experiment<ValueType> experiment,
-                                                           @Nullable ExperimentResult<ValueType> result) {
+    public static <ValueType> boolean isExperimentTracked(ExperimentTracker experimentTracker,
+                                                          Experiment<ValueType> experiment,
+                                                          @Nullable ExperimentResult<ValueType> result) {
         if (result == null) {
             return false;
         }

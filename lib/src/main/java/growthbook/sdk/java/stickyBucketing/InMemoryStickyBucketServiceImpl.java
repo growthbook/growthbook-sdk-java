@@ -1,9 +1,11 @@
 package growthbook.sdk.java.stickyBucketing;
 
 import growthbook.sdk.java.model.StickyAssignmentsDocument;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * For simple bucket persistence using the in memory's storage(Map) (can be polyfilled for other environments)
@@ -16,8 +18,8 @@ public class InMemoryStickyBucketServiceImpl implements StickyBucketService {
      *
      * @param localStorage a map to store sticky assignments documents in memory.
      */
-    public InMemoryStickyBucketServiceImpl(Map<String, StickyAssignmentsDocument> localStorage) {
-        this.localStorage = localStorage;
+    public InMemoryStickyBucketServiceImpl(@Nullable Map<String, StickyAssignmentsDocument> localStorage) {
+        this.localStorage = localStorage != null ? localStorage : new ConcurrentHashMap<>();
     }
 
     /**
