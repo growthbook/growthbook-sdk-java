@@ -11,6 +11,7 @@ import growthbook.sdk.java.model.AssignedExperiment;
 import growthbook.sdk.java.model.Experiment;
 import growthbook.sdk.java.model.ExperimentResult;
 import growthbook.sdk.java.model.FeatureResult;
+import growthbook.sdk.java.model.FeatureResultSource;
 import growthbook.sdk.java.model.RequestBodyForRemoteEval;
 import growthbook.sdk.java.multiusermode.configurations.EvaluationContext;
 import growthbook.sdk.java.multiusermode.configurations.GlobalContext;
@@ -64,7 +65,7 @@ public class GrowthBookClient {
                 GbCacheManager cm = this.options.getCacheManager() != null
                         ? this.options.getCacheManager()
                         : CacheManagerFactory.create(this.options.getCacheMode(), this.options.getCacheDirectory()
-                        );
+                );
 
                 repository = GBFeaturesRepository.builder()
                         .apiHost(this.options.getApiHost())
@@ -184,6 +185,70 @@ public class GrowthBookClient {
         this.callbacks.add(callback);
     }
 
+    /**
+     * Evaluates a batch of features using a shared EvaluationContext.
+     * This optimizes memory usage by parsing attributes and merging context only once.
+     *
+     * @param featureKeys    List of feature keys to evaluate
+     * @param valueTypeClass The expected type of the values (usually Object.class for mixed types)
+     * @param userContext    The user context (will be processed once)
+     * @param <ValueType>    The type of the result value
+     * @return A map where keys are feature keys and values are FeatureResult objects
+     */
+    public <ValueType> Map<String, FeatureResult<ValueType>> evalFeatures(
+            List<String> featureKeys,
+            Class<ValueType> valueTypeClass,
+            UserContext userContext
+    ) {
+        JsonObject mergedAttributes = mergeAttributes(userContext);
+        UserContext optimizedUserContext = userContext.withAttributes(mergedAttributes);
+
+        Map<String, FeatureResult<ValueType>> results = new HashMap<>();
+
+        for (String key : featureKeys) {
+            try {
+                EvaluationContext evalContext = new EvaluationContext(
+                        this.globalContext,
+                        optimizedUserContext,
+                        new EvaluationContext.StackContext(),
+                        this.options
+                );
+
+                FeatureResult<ValueType> result = featureEvaluator.evaluateFeature(
+                        key,
+                        evalContext,
+                        valueTypeClass
+                );
+                results.put(key, result);
+            } catch (Exception e) {
+                log.error("Error evaluating feature in batch: {}", key, e);
+                results.put(
+                        key,
+                        FeatureResult.<ValueType>builder()
+                                .value(null)
+                                .source(FeatureResultSource.UNKNOWN_FEATURE)
+                                .build());
+            }
+        }
+
+        return results;
+    }
+
+    private JsonObject mergeAttributes(UserContext userContext) {
+        JsonObject merged = new JsonObject();
+        if (this.options.getGlobalAttributes() != null) {
+            merged = GrowthBookJsonUtils.getInstance().gson.fromJson(this.options.getGlobalAttributes(), JsonObject.class);
+            if (merged == null) merged = new JsonObject();
+        }
+        JsonObject userAttrs = userContext.getAttributes();
+        if (userAttrs != null) {
+            for (Map.Entry<String, JsonElement> e : userAttrs.entrySet()) {
+                merged.add(e.getKey(), e.getValue());
+            }
+        }
+        return merged;
+    }
+
     private <ValueType> void fireSubscriptions(Experiment<ValueType> experiment, ExperimentResult<ValueType> result) {
         String key = experiment.getKey();
         // If assigned variation has changed, fire subscriptions
@@ -238,17 +303,7 @@ public class GrowthBookClient {
 
     private EvaluationContext getEvalContext(UserContext userContext) {
         // Merge attributes using JsonObject to avoid parse/serialize churn
-        JsonObject merged = new JsonObject();
-        if (this.options.getGlobalAttributes() != null) {
-            merged = GrowthBookJsonUtils.getInstance().gson.fromJson(this.options.getGlobalAttributes(), JsonObject.class);
-            if (merged == null) merged = new JsonObject();
-        }
-        JsonObject userAttrs = userContext.getAttributes();
-        if (userAttrs != null) {
-            for (Map.Entry<String, JsonElement> e : userAttrs.entrySet()) {
-                merged.add(e.getKey(), e.getValue());
-            }
-        }
+        JsonObject merged = mergeAttributes(userContext);
         UserContext updatedUserContext = userContext.withAttributes(merged);
         return new EvaluationContext(this.globalContext, updatedUserContext, new EvaluationContext.StackContext(), this.options);
     }
