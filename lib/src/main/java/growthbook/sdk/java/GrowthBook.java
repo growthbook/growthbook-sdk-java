@@ -556,16 +556,18 @@ public class GrowthBook implements IGrowthBook {
             List<String> featureKeys,
             Class<ValueType> valueTypeClass
     ) {
+        EvaluationContext optimizedContext = getEvaluationContext();
         Map<String, FeatureResult<ValueType>> results = new HashMap<>(featureKeys.size());
 
         for (String key : featureKeys) {
             try {
                 FeatureResult<ValueType> result = featureEvaluator.evaluateFeature(
                         key,
-                        getEvaluationContext(),
+                        optimizedContext,
                         valueTypeClass
                 );
                 results.put(key, result);
+                optimizedContext.setStack(new EvaluationContext.StackContext());
             } catch (Exception e) {
                 log.error("Error evaluating feature in batch: {}", key, e);
                 results.put(

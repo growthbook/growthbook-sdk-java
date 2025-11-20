@@ -200,26 +200,18 @@ public class GrowthBookClient {
             Class<ValueType> valueTypeClass,
             UserContext userContext
     ) {
-        JsonObject mergedAttributes = mergeAttributes(userContext);
-        UserContext optimizedUserContext = userContext.withAttributes(mergedAttributes);
-
+        EvaluationContext optimizedContext = getEvalContext(userContext);
         Map<String, FeatureResult<ValueType>> results = new HashMap<>();
 
         for (String key : featureKeys) {
             try {
-                EvaluationContext evalContext = new EvaluationContext(
-                        this.globalContext,
-                        optimizedUserContext,
-                        new EvaluationContext.StackContext(),
-                        this.options
-                );
-
                 FeatureResult<ValueType> result = featureEvaluator.evaluateFeature(
                         key,
-                        evalContext,
+                        optimizedContext,
                         valueTypeClass
                 );
                 results.put(key, result);
+                optimizedContext.setStack(new EvaluationContext.StackContext());
             } catch (Exception e) {
                 log.error("Error evaluating feature in batch: {}", key, e);
                 results.put(
