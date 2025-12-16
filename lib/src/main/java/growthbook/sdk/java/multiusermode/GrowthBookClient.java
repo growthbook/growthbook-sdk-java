@@ -184,6 +184,14 @@ public class GrowthBookClient {
         this.callbacks.add(callback);
     }
 
+    public void shutdown() {
+      if (repository != null) {
+        repository.shutdown();
+        repository = null;
+        log.info("Repository shut down");
+      }
+    }
+
     private <ValueType> void fireSubscriptions(Experiment<ValueType> experiment, ExperimentResult<ValueType> result) {
         String key = experiment.getKey();
         // If assigned variation has changed, fire subscriptions
