@@ -1,6 +1,8 @@
 package growthbook.sdk.java.evaluators;
 
 import com.google.gson.JsonObject;
+import growthbook.sdk.java.multiusermode.ExperimentTracker;
+import growthbook.sdk.java.multiusermode.configurations.UserContext;
 import growthbook.sdk.java.util.GrowthBookJsonUtils;
 import growthbook.sdk.java.util.GrowthBookUtils;
 import growthbook.sdk.java.model.ParentCondition;
@@ -287,13 +289,15 @@ public class FeatureEvaluator implements IFeatureEvaluator {
 
                     // If this was a remotely evaluated experiment, fire the tracking callbacks
                     if (trackData != null && trackingCallBackWithUser != null) {
-                        trackData.forEach(t ->
-                                trackingCallBackWithUser.onTrack(
-                                        t.getExperiment(),
-                                        t.getResult().getExperimentResult(),
-                                        context.getUser()
-                                )
-                        );
+                        trackData.forEach(t -> {
+                            ExperimentResult<ValueType> trackedExpResult = t.getResult().getExperimentResult();
+                            Experiment<ValueType> trackedExperiment = t.getExperiment();
+                            ExperimentTracker experimentTracker = context.getGlobal().getExperimentTracker();
+                            UserContext userContext = context.getUser();
+
+                            if (!GrowthBookUtils.isExperimentTracked(experimentTracker, trackedExperiment, trackedExpResult)) {
+                                trackingCallBackWithUser.onTrack(trackedExperiment, trackedExpResult, userContext);
+                            }});
                     }
 
                     if (rule.getRange() == null) {
