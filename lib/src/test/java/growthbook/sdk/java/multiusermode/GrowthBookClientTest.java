@@ -108,6 +108,44 @@ class GrowthBookClientTest {
         }
     }
 
+  @Test
+  void test_shutdown_withANonInitializedClient() {
+    mockRepository = createMockRepository();
+    mockBuilder = createMockBuilder(mockRepository);
+    FeatureRefreshCallback mockCallback = mock(FeatureRefreshCallback.class);
+
+    try (MockedStatic<GBFeaturesRepository> mockedStatic = mockStatic(GBFeaturesRepository.class)) {
+      mockedStatic.when(GBFeaturesRepository::builder).thenReturn(mockBuilder);
+
+      Options options = createDefaultOptions(mockCallback);
+
+      GrowthBookClient client = new GrowthBookClient(options);
+
+      client.shutdown();
+
+      verify(mockRepository, never()).shutdown();
+    }
+  }
+  @Test
+  void test_shutdown_withAnInitializedClient() {
+    mockRepository = createMockRepository();
+    mockBuilder = createMockBuilder(mockRepository);
+    FeatureRefreshCallback mockCallback = mock(FeatureRefreshCallback.class);
+
+    try (MockedStatic<GBFeaturesRepository> mockedStatic = mockStatic(GBFeaturesRepository.class)) {
+      mockedStatic.when(GBFeaturesRepository::builder).thenReturn(mockBuilder);
+
+      Options options = createDefaultOptions(mockCallback);
+
+      GrowthBookClient client = new GrowthBookClient(options);
+      client.initialize();
+
+      client.shutdown();
+
+      verify(mockRepository).shutdown();
+    }
+  }
+
     //@Test
     void test_evalFeature_withUserContext() {
         String attributes = "{ \"user_group\": \"subscriber\", \"beta_users\": true }";
