@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.10.5](https://github.com/growthbook/growthbook-sdk-java/compare/v0.10.4...0.10.5) (2025-12-18)
+
+
+### Features
+
+* enable refresh time customization ([#186](https://github.com/growthbook/growthbook-sdk-java/issues/186)) ([63c97b0](https://github.com/growthbook/growthbook-sdk-java/commit/63c97b08f1f1b887472b7233d0729ff0be4cdcf6))
+
+
+### Bug Fixes
+
+* add proper client shutdown method ([#188](https://github.com/growthbook/growthbook-sdk-java/issues/188)) ([3486a61](https://github.com/growthbook/growthbook-sdk-java/commit/3486a6123ca03b377252e6240c2057be8af3ce36))
+
 ## [0.10.4](https://github.com/growthbook/growthbook-sdk-java/compare/0.10.3...0.10.4) (2025-11-10)
 
 
