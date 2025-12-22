@@ -54,6 +54,12 @@ public class NativeJavaGbFeatureRepository implements IGBFeaturesRepository {
     private static final String FILE_NAME_FOR_CACHE = "FEATURE_CACHE.json";
     public static final String FILE_PATH_FOR_CACHE = "src/main/resources";
     public static final String EMPTY_JSON_OBJECT_STRING = "{}";
+    private static final String FEATURES_PATH_PATTERN = ".*/api/features/[^/]+";
+
+    /**
+     * Thread-safe LRU cache with max 100 entries to prevent unbounded growth
+     */
+    private final LruETagCache eTagCache = new LruETagCache(100);
 
     /**
      * Endpoint for GET request
@@ -321,8 +327,30 @@ public class NativeJavaGbFeatureRepository implements IGBFeaturesRepository {
             URL url = new URL(this.featuresEndpoint);
             connection = (HttpURLConnection) url.openConnection();
             connection.setRequestMethod(HttpMethods.GET.getMethod());
+            if (this.featuresEndpoint.matches(FEATURES_PATH_PATTERN)) {
+                String cachedEtag = eTagCache.get(this.featuresEndpoint);
+                if (cachedEtag != null) {
+                    connection.setRequestProperty(HttpHeaders.IF_NONE_MATCH.getHeader(), cachedEtag);
+                }
+                connection.setRequestProperty(HttpHeaders.CACHE_CONTROL.getHeader(), "max-age=" + this.swrTtlSeconds.get());
+            }
 
-            if (connection.getResponseCode() == HttpURLConnection.HTTP_OK) {
+            int responseCode = connection.getResponseCode();
+
+            if (responseCode == HttpURLConnection.HTTP_NOT_MODIFIED) { // 304
+                log.info("Features not modified (304). Using existing data.");
+                this.refreshExpiresAt();
+                this.onRefreshSuccess(this.featuresJson.get());
+                return;
+            }
+
+            if (responseCode == HttpURLConnection.HTTP_OK) {
+                if (this.featuresEndpoint.matches(FEATURES_PATH_PATTERN)) {
+                    String newEtag = connection.getHeaderField("ETag");
+                    if (newEtag != null) {
+                        eTagCache.put(this.featuresEndpoint, newEtag);
+                    }
+                }
                 reader = new BufferedReader(new InputStreamReader(connection.getInputStream()));
                 StringBuilder responseBuilder = new StringBuilder();
                 String lines;

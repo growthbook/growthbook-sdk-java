@@ -2,19 +2,19 @@ package growthbook.sdk.java.repository;
 
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import growthbook.sdk.java.callback.FeatureRefreshCallback;
+import growthbook.sdk.java.exception.FeatureFetchException;
 import growthbook.sdk.java.model.Feature;
+import growthbook.sdk.java.model.FeatureResponseKey;
+import growthbook.sdk.java.model.GBContext;
+import growthbook.sdk.java.model.HttpHeaders;
+import growthbook.sdk.java.model.RequestBodyForRemoteEval;
 import growthbook.sdk.java.multiusermode.util.TransformationUtil;
 import growthbook.sdk.java.sandbox.CacheManagerFactory;
 import growthbook.sdk.java.sandbox.CacheMode;
 import growthbook.sdk.java.sandbox.GbCacheManager;
 import growthbook.sdk.java.util.DecryptionUtils;
-import growthbook.sdk.java.exception.FeatureFetchException;
-import growthbook.sdk.java.callback.FeatureRefreshCallback;
-import growthbook.sdk.java.model.FeatureResponseKey;
 import growthbook.sdk.java.util.GrowthBookJsonUtils;
-import growthbook.sdk.java.model.HttpHeaders;
-import growthbook.sdk.java.model.RequestBodyForRemoteEval;
-import growthbook.sdk.java.model.GBContext;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
@@ -33,6 +33,7 @@ import org.jetbrains.annotations.NotNull;
 
 import javax.annotation.Nullable;
 import java.io.IOException;
+import java.net.HttpURLConnection;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -57,6 +58,12 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
     private static final String FILE_NAME = "FEATURE_CACHE.json";
     public static final String FILE_PATH_FOR_CACHE = "src/main/resources";
     public static final String EMPTY_JSON_OBJECT_STRING = "{}";
+    private static final String FEATURES_PATH_PATTERN = ".*/api/features/[^/]+";
+
+    /**
+     * Thread-safe LRU cache with max 100 entries to prevent unbounded growth
+     */
+    private final LruETagCache eTagCache = new LruETagCache(100);
 
     /**
      * Endpoint for GET request
@@ -235,6 +242,7 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
     ) {
         this(apiHost, clientKey, encryptionKey, refreshStrategy, swrTtlSeconds, null, null, requestBodyForRemoteEval, null);
     }
+
     public GBFeaturesRepository(
             @Nullable String apiHost,
             String clientKey,
@@ -243,7 +251,7 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
             @Nullable Integer swrTtlSeconds,
             @Nullable Boolean isCacheDisabled
     ) {
-        this(apiHost, clientKey, encryptionKey, refreshStrategy, swrTtlSeconds, null, null, isCacheDisabled, null,null);
+        this(apiHost, clientKey, encryptionKey, refreshStrategy, swrTtlSeconds, null, null, isCacheDisabled, null, null);
     }
 
     /**
@@ -538,9 +546,17 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
             throw new IllegalArgumentException("features endpoint cannot be null");
         }
 
-        Request request = new Request.Builder()
-                .url(this.featuresEndpoint)
-                .build();
+        Request.Builder requestBuilder = new Request.Builder()
+                .url(this.featuresEndpoint);
+
+        if (this.featuresEndpoint.matches(FEATURES_PATH_PATTERN)) {
+            String cacheETag = eTagCache.get(this.featuresEndpoint);
+            if (cacheETag != null) {
+                requestBuilder.addHeader(HttpHeaders.IF_NONE_MATCH.getHeader(), cacheETag);
+            }
+            requestBuilder.header(HttpHeaders.CACHE_CONTROL.getHeader(), "max-age=" + this.swrTtlSeconds);
+        }
+        Request request = requestBuilder.build();
 
         try (Response response = this.okHttpClient.newCall(request).execute()) {
             String sseSupportHeader = response.header(HttpHeaders.X_SSE_SUPPORT.getHeader());
@@ -566,7 +582,10 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
     private void onResponseJson(String responseJsonString, boolean isFromCache) throws FeatureFetchException {
         try {
             if (!isFromCache && !isCacheDisabled && cacheManager != null) {
-                try { cacheManager.saveContent(FILE_NAME, responseJsonString); } catch (RuntimeException ignored) {}
+                try {
+                    cacheManager.saveContent(FILE_NAME, responseJsonString);
+                } catch (RuntimeException ignored) {
+                }
             }
 
             JsonObject jsonObject = GrowthBookJsonUtils.getInstance()
@@ -670,8 +689,22 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
         try {
             ResponseBody responseBody = response.body();
 
+            if (response.code() == HttpURLConnection.HTTP_NOT_MODIFIED) {
+                log.info("Features not modified (304). Using existing data.");
+                this.refreshExpiresAt();
+                this.onRefreshSuccess(this.featuresJson);
+                return;
+            }
+
+            if (response.code() == HttpURLConnection.HTTP_OK && this.featuresEndpoint.matches(FEATURES_PATH_PATTERN)) {
+                String newETag = response.header("ETag");
+                if (newETag != null) {
+                    eTagCache.put(this.featuresEndpoint, newETag);
+                }
+            }
+
             // if response code is not 200 or response body is null - try cache
-            if (response.code() != 200 || responseBody == null) {
+            if (response.code() != HttpURLConnection.HTTP_OK || responseBody == null) {
                 log.error("FeatureFetchException: {} with status {}, response: {}",
                         responseBody == null ? FeatureFetchException.FeatureFetchErrorCode.NO_RESPONSE_ERROR : FeatureFetchException.FeatureFetchErrorCode.HTTP_RESPONSE_ERROR,
                         response.code(),
@@ -774,7 +807,10 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
             this.sseHttpClient = null;
             log.info("SseHttpClient shutdown");
             if (this.cacheManager != null) {
-                try { this.cacheManager.clearCache(); } catch (Exception ignored) {}
+                try {
+                    this.cacheManager.clearCache();
+                } catch (Exception ignored) {
+                }
                 this.cacheManager = null;
                 log.info("CacheManager shutdown");
             }
