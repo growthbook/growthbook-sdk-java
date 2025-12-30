@@ -40,13 +40,14 @@ public class Options {
                    @Nullable TrackingCallbackWithUser trackingCallBackWithUser,
                    @Nullable FeatureUsageCallbackWithUser featureUsageCallbackWithUser,
                    @Nullable FeatureRefreshStrategy refreshStrategy,
+                   @Nullable Integer swrTtlSeconds,
                    @Nullable FeatureRefreshCallback featureRefreshCallback,
                    @Nullable JsonObject globalAttributes,
                    @Nullable Map<String, Object> globalForcedFeatureValues,
                    @Nullable Map<String, Integer> globalForcedVariationsMap,
-                    @Nullable GbCacheManager cacheManager,
-                    @Nullable CacheMode cacheMode,
-                    @Nullable String cacheDirectory
+                   @Nullable GbCacheManager cacheManager,
+                   @Nullable CacheMode cacheMode,
+                   @Nullable String cacheDirectory
 
     ) {
         this.enabled = enabled == null || enabled;
@@ -62,6 +63,7 @@ public class Options {
         this.trackingCallBackWithUser = trackingCallBackWithUser;
         this.featureUsageCallbackWithUser = featureUsageCallbackWithUser;
         this.refreshStrategy = refreshStrategy;
+        this.swrTtlSeconds = swrTtlSeconds;
         this.featureRefreshCallback = featureRefreshCallback;
         this.globalAttributes = globalAttributes;
         this.globalForcedFeatureValues = globalForcedFeatureValues;
@@ -145,6 +147,12 @@ public class Options {
      */
     @Nullable
     private FeatureRefreshStrategy refreshStrategy;
+
+    /**
+     * The standard cache TTL to use.
+     */
+    @Nullable
+    private Integer swrTtlSeconds;
 
     /**
      * Map of user attributes that are used to assign variations

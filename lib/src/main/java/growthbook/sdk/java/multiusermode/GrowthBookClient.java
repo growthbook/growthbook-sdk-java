@@ -72,6 +72,7 @@ public class GrowthBookClient {
                         .clientKey(this.options.getClientKey())
                         .decryptionKey(this.options.getDecryptionKey())
                         .refreshStrategy(this.options.getRefreshStrategy())
+                        .swrTtlSeconds(this.options.getSwrTtlSeconds())
                         .isCacheDisabled(this.options.getIsCacheDisabled() || this.options.getCacheMode() == CacheMode.NONE)
                         .cacheManager(cm)
                         // if we don't want to pre-fetch for remote eval we can delete this line
@@ -183,6 +184,14 @@ public class GrowthBookClient {
 
     public void subscribe(ExperimentRunCallback callback) {
         this.callbacks.add(callback);
+    }
+
+    public void shutdown() {
+      if (repository != null) {
+        repository.shutdown();
+        repository = null;
+        log.info("Repository shut down");
+      }
     }
 
     /**
