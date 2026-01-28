@@ -35,6 +35,18 @@ public enum Operator {
      */
     REGEX("$regex"),
     /**
+     * $regexi
+     */
+    REGEX_I("$regexi"),
+    /**
+     * $notRegex
+     */
+    NOT_REGEX("$notRegex"),
+    /**
+     * $notRegexi
+     */
+    NOT_REGEX_I("$notRegexi"),
+    /**
      * $ne
      */
     NE("$ne"),

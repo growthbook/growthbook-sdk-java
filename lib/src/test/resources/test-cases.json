@@ -63,24 +63,32 @@
         "$and": [
           {
             "$groups": {
-              "$elemMatch": { "$eq": "a" }
+              "$elemMatch": {
+                "$eq": "a"
+              }
             }
           },
           {
             "$groups": {
-              "$elemMatch": { "$eq": "b" }
+              "$elemMatch": {
+                "$eq": "b"
+              }
             }
           },
           {
             "$or": [
               {
                 "$groups": {
-                  "$elemMatch": { "$eq": "c" }
+                  "$elemMatch": {
+                    "$eq": "c"
+                  }
                 }
               },
               {
                 "$groups": {
-                  "$elemMatch": { "$eq": "e" }
+                  "$elemMatch": {
+                    "$eq": "e"
+                  }
                 }
               }
             ]
@@ -88,21 +96,30 @@
           {
             "$not": {
               "$groups": {
-                "$elemMatch": { "$eq": "f" }
+                "$elemMatch": {
+                  "$eq": "f"
+                }
               }
             }
           },
           {
             "$not": {
               "$groups": {
-                "$elemMatch": { "$eq": "g" }
+                "$elemMatch": {
+                  "$eq": "g"
+                }
               }
             }
           }
         ]
       },
       {
-        "$groups": ["a", "b", "c", "d"]
+        "$groups": [
+          "a",
+          "b",
+          "c",
+          "d"
+        ]
       },
       true
     ],
@@ -112,24 +129,32 @@
         "$and": [
           {
             "$groups": {
-              "$elemMatch": { "$eq": "a" }
+              "$elemMatch": {
+                "$eq": "a"
+              }
             }
           },
           {
             "$groups": {
-              "$elemMatch": { "$eq": "b" }
+              "$elemMatch": {
+                "$eq": "b"
+              }
             }
           },
           {
             "$or": [
               {
                 "$groups": {
-                  "$elemMatch": { "$eq": "c" }
+                  "$elemMatch": {
+                    "$eq": "c"
+                  }
                 }
               },
               {
                 "$groups": {
-                  "$elemMatch": { "$eq": "e" }
+                  "$elemMatch": {
+                    "$eq": "e"
+                  }
                 }
               }
             ]
@@ -137,21 +162,30 @@
           {
             "$not": {
               "$groups": {
-                "$elemMatch": { "$eq": "d" }
+                "$elemMatch": {
+                  "$eq": "d"
+                }
               }
             }
           },
           {
             "$not": {
               "$groups": {
-                "$elemMatch": { "$eq": "g" }
+                "$elemMatch": {
+                  "$eq": "g"
+                }
               }
             }
           }
         ]
       },
       {
-        "$groups": ["a", "b", "c", "d"]
+        "$groups": [
+          "a",
+          "b",
+          "c",
+          "d"
+        ]
       },
       false
     ],
@@ -389,7 +423,11 @@
       "$in - pass",
       {
         "num": {
-          "$in": [1, 2, 3]
+          "$in": [
+            1,
+            2,
+            3
+          ]
         }
       },
       {
@@ -401,7 +439,11 @@
       "$in - fail",
       {
         "num": {
-          "$in": [1, 2, 3]
+          "$in": [
+            1,
+            2,
+            3
+          ]
         }
       },
       {
@@ -425,11 +467,18 @@
       "$in - array pass 1",
       {
         "tags": {
-          "$in": ["a", "b"]
+          "$in": [
+            "a",
+            "b"
+          ]
         }
       },
       {
-        "tags": ["d", "e", "a"]
+        "tags": [
+          "d",
+          "e",
+          "a"
+        ]
       },
       true
     ],
@@ -437,11 +486,18 @@
       "$in - array pass 2",
       {
         "tags": {
-          "$in": ["a", "b"]
+          "$in": [
+            "a",
+            "b"
+          ]
         }
       },
       {
-        "tags": ["d", "b", "f"]
+        "tags": [
+          "d",
+          "b",
+          "f"
+        ]
       },
       true
     ],
@@ -449,11 +505,18 @@
       "$in - array pass 3",
       {
         "tags": {
-          "$in": ["a", "b"]
+          "$in": [
+            "a",
+            "b"
+          ]
         }
       },
       {
-        "tags": ["d", "b", "a"]
+        "tags": [
+          "d",
+          "b",
+          "a"
+        ]
       },
       true
     ],
@@ -461,11 +524,18 @@
       "$in - array fail 1",
       {
         "tags": {
-          "$in": ["a", "b"]
+          "$in": [
+            "a",
+            "b"
+          ]
         }
       },
       {
-        "tags": ["d", "e", "f"]
+        "tags": [
+          "d",
+          "e",
+          "f"
+        ]
       },
       false
     ],
@@ -473,7 +543,10 @@
       "$in - array fail 2",
       {
         "tags": {
-          "$in": ["a", "b"]
+          "$in": [
+            "a",
+            "b"
+          ]
         }
       },
       {
@@ -485,7 +558,11 @@
       "$nin - pass",
       {
         "num": {
-          "$nin": [1, 2, 3]
+          "$nin": [
+            1,
+            2,
+            3
+          ]
         }
       },
       {
@@ -497,7 +574,11 @@
       "$nin - fail",
       {
         "num": {
-          "$nin": [1, 2, 3]
+          "$nin": [
+            1,
+            2,
+            3
+          ]
         }
       },
       {
@@ -521,11 +602,18 @@
       "$nin - array fail 1",
       {
         "tags": {
-          "$nin": ["a", "b"]
+          "$nin": [
+            "a",
+            "b"
+          ]
         }
       },
       {
-        "tags": ["d", "e", "a"]
+        "tags": [
+          "d",
+          "e",
+          "a"
+        ]
       },
       false
     ],
@@ -533,11 +621,18 @@
       "$nin - array fail 2",
       {
         "tags": {
-          "$nin": ["a", "b"]
+          "$nin": [
+            "a",
+            "b"
+          ]
         }
       },
       {
-        "tags": ["d", "b", "f"]
+        "tags": [
+          "d",
+          "b",
+          "f"
+        ]
       },
       false
     ],
@@ -545,11 +640,18 @@
       "$nin - array fail 3",
       {
         "tags": {
-          "$nin": ["a", "b"]
+          "$nin": [
+            "a",
+            "b"
+          ]
         }
       },
       {
-        "tags": ["d", "b", "a"]
+        "tags": [
+          "d",
+          "b",
+          "a"
+        ]
       },
       false
     ],
@@ -557,11 +659,18 @@
       "$nin - array pass 1",
       {
         "tags": {
-          "$nin": ["a", "b"]
+          "$nin": [
+            "a",
+            "b"
+          ]
         }
       },
       {
-        "tags": ["d", "e", "f"]
+        "tags": [
+          "d",
+          "e",
+          "f"
+        ]
       },
       true
     ],
@@ -569,7 +678,10 @@
       "$nin - array pass 2",
       {
         "tags": {
-          "$nin": ["a", "b"]
+          "$nin": [
+            "a",
+            "b"
+          ]
         }
       },
       {
@@ -587,7 +699,12 @@
         }
       },
       {
-        "nums": [0, 5, -20, 15]
+        "nums": [
+          0,
+          5,
+          -20,
+          15
+        ]
       },
       true
     ],
@@ -601,7 +718,12 @@
         }
       },
       {
-        "nums": [0, 5, -20, 8]
+        "nums": [
+          0,
+          5,
+          -20,
+          8
+        ]
       },
       false
     ],
@@ -609,7 +731,9 @@
       "missing attribute - fail",
       {
         "pets.dog.name": {
-          "$in": ["fido"]
+          "$in": [
+            "fido"
+          ]
         }
       },
       {
@@ -754,6 +878,90 @@
       },
       {
         "userAgent": "Chrome Desktop Browser"
+      },
+      false
+    ],
+    [
+      "$regexi - pass (case insensitive match)",
+      {
+        "userAgent": {
+          "$regexi": "(mobile|tablet)"
+        }
+      },
+      {
+        "userAgent": "Android Mobile Browser"
+      },
+      true
+    ],
+    [
+      "$regexi - pass (uppercase pattern, lowercase value)",
+      {
+        "userAgent": {
+          "$regexi": "(MOBILE|TABLET)"
+        }
+      },
+      {
+        "userAgent": "android mobile browser"
+      },
+      true
+    ],
+    [
+      "$regexi - fail",
+      {
+        "userAgent": {
+          "$regexi": "(mobile|tablet)"
+        }
+      },
+      {
+        "userAgent": "Chrome Desktop Browser"
+      },
+      false
+    ],
+    [
+      "$notRegex - pass",
+      {
+        "userAgent": {
+          "$notRegex": "(Mobile|Tablet)"
+        }
+      },
+      {
+        "userAgent": "Chrome Desktop Browser"
+      },
+      true
+    ],
+    [
+      "$notRegex - fail",
+      {
+        "userAgent": {
+          "$notRegex": "(Mobile|Tablet)"
+        }
+      },
+      {
+        "userAgent": "Android Mobile Browser"
+      },
+      false
+    ],
+    [
+      "$notRegexi - pass",
+      {
+        "userAgent": {
+          "$notRegexi": "(mobile|tablet)"
+        }
+      },
+      {
+        "userAgent": "Chrome Desktop Browser"
+      },
+      true
+    ],
+    [
+      "$notRegexi - fail",
+      {
+        "userAgent": {
+          "$notRegexi": "(mobile|tablet)"
+        }
+      },
+      {
+        "userAgent": "Android Mobile Browser"
       },
       false
     ],
@@ -1063,7 +1271,10 @@
         }
       },
       {
-        "a": [1, 2]
+        "a": [
+          1,
+          2
+        ]
       },
       true
     ],
@@ -1118,7 +1329,9 @@
     [
       "$size empty - pass",
       {
-        "tags": { "$size": 0 }
+        "tags": {
+          "$size": 0
+        }
       },
       {
         "tags": []
@@ -1128,10 +1341,14 @@
     [
       "$size empty - fail",
       {
-        "tags": { "$size": 0 }
+        "tags": {
+          "$size": 0
+        }
       },
       {
-        "tags": [10]
+        "tags": [
+          10
+        ]
       },
       false
     ],
@@ -1143,7 +1360,11 @@
         }
       },
       {
-        "tags": ["a", "b", "c"]
+        "tags": [
+          "a",
+          "b",
+          "c"
+        ]
       },
       true
     ],
@@ -1155,7 +1376,10 @@
         }
       },
       {
-        "tags": ["a", "b"]
+        "tags": [
+          "a",
+          "b"
+        ]
       },
       false
     ],
@@ -1167,7 +1391,12 @@
         }
       },
       {
-        "tags": ["a", "b", "c", "d"]
+        "tags": [
+          "a",
+          "b",
+          "c",
+          "d"
+        ]
       },
       false
     ],
@@ -1193,7 +1422,11 @@
         }
       },
       {
-        "tags": [0, 1, 2]
+        "tags": [
+          0,
+          1,
+          2
+        ]
       },
       true
     ],
@@ -1207,7 +1440,10 @@
         }
       },
       {
-        "tags": [0, 1]
+        "tags": [
+          0,
+          1
+        ]
       },
       false
     ],
@@ -1221,7 +1457,9 @@
         }
       },
       {
-        "tags": [0]
+        "tags": [
+          0
+        ]
       },
       false
     ],
@@ -1235,7 +1473,11 @@
         }
       },
       {
-        "tags": ["foo", "bar", "baz"]
+        "tags": [
+          "foo",
+          "bar",
+          "baz"
+        ]
       },
       true
     ],
@@ -1249,7 +1491,10 @@
         }
       },
       {
-        "tags": ["foo", "baz"]
+        "tags": [
+          "foo",
+          "baz"
+        ]
       },
       false
     ],
@@ -1258,12 +1503,19 @@
       {
         "tags": {
           "$elemMatch": {
-            "$in": ["a", "b"]
+            "$in": [
+              "a",
+              "b"
+            ]
           }
         }
       },
       {
-        "tags": ["d", "e", "b"]
+        "tags": [
+          "d",
+          "e",
+          "b"
+        ]
       },
       true
     ],
@@ -1272,12 +1524,19 @@
       {
         "tags": {
           "$elemMatch": {
-            "$in": ["a", "b"]
+            "$in": [
+              "a",
+              "b"
+            ]
           }
         }
       },
       {
-        "tags": ["d", "e", "f"]
+        "tags": [
+          "d",
+          "e",
+          "f"
+        ]
       },
       false
     ],
@@ -1293,7 +1552,10 @@
         }
       },
       {
-        "tags": ["foo", "baz"]
+        "tags": [
+          "foo",
+          "baz"
+        ]
       },
       true
     ],
@@ -1309,7 +1571,11 @@
         }
       },
       {
-        "tags": ["foo", "bar", "baz"]
+        "tags": [
+          "foo",
+          "bar",
+          "baz"
+        ]
       },
       false
     ],
@@ -1410,11 +1676,18 @@
       "$all - pass",
       {
         "tags": {
-          "$all": ["one", "three"]
+          "$all": [
+            "one",
+            "three"
+          ]
         }
       },
       {
-        "tags": ["one", "two", "three"]
+        "tags": [
+          "one",
+          "two",
+          "three"
+        ]
       },
       true
     ],
@@ -1422,11 +1695,18 @@
       "$all - fail",
       {
         "tags": {
-          "$all": ["one", "three"]
+          "$all": [
+            "one",
+            "three"
+          ]
         }
       },
       {
-        "tags": ["one", "two", "four"]
+        "tags": [
+          "one",
+          "two",
+          "four"
+        ]
       },
       false
     ],
@@ -1434,7 +1714,10 @@
       "$all - fail not array",
       {
         "tags": {
-          "$all": ["one", "three"]
+          "$all": [
+            "one",
+            "three"
+          ]
         }
       },
       {
@@ -1525,47 +1808,74 @@
     [
       "equals array - pass",
       {
-        "tags": ["hello", "world"]
+        "tags": [
+          "hello",
+          "world"
+        ]
       },
       {
-        "tags": ["hello", "world"]
+        "tags": [
+          "hello",
+          "world"
+        ]
       },
       true
     ],
     [
       "equals array - fail order",
       {
-        "tags": ["hello", "world"]
+        "tags": [
+          "hello",
+          "world"
+        ]
       },
       {
-        "tags": ["world", "hello"]
+        "tags": [
+          "world",
+          "hello"
+        ]
       },
       false
     ],
     [
       "equals array - fail missing item",
       {
-        "tags": ["hello", "world"]
+        "tags": [
+          "hello",
+          "world"
+        ]
       },
       {
-        "tags": ["hello"]
+        "tags": [
+          "hello"
+        ]
       },
       false
     ],
     [
       "equals array - fail extra item",
       {
-        "tags": ["hello", "world"]
+        "tags": [
+          "hello",
+          "world"
+        ]
       },
       {
-        "tags": ["hello", "world", "foo"]
+        "tags": [
+          "hello",
+          "world",
+          "foo"
+        ]
       },
       false
     ],
     [
       "equals array - fail type mismatch",
       {
-        "tags": ["hello", "world"]
+        "tags": [
+          "hello",
+          "world"
+        ]
       },
       {
         "tags": "hello world"
@@ -1694,7 +2004,9 @@
     [
       "false strict condition - missing attribute",
       {
-        "userId": { "$eq": false }
+        "userId": {
+          "$eq": false
+        }
       },
       {},
       false
@@ -2805,7 +3117,14 @@
     [
       "$or pass but second condition fail",
       {
-        "$or": [{ "foo": 1 }, { "bar": 1 }],
+        "$or": [
+          {
+            "foo": 1
+          },
+          {
+            "bar": 1
+          }
+        ],
         "baz": 2
       },
       {
@@ -2818,7 +3137,14 @@
     [
       "$or and second condition both pass",
       {
-        "$or": [{ "foo": 1 }, { "bar": 1 }],
+        "$or": [
+          {
+            "foo": 1
+          },
+          {
+            "bar": 1
+          }
+        ],
         "baz": 2
       },
       {
@@ -2831,8 +3157,22 @@
     [
       "$and condition pass but $or fail",
       {
-        "$and": [{ "foo": 1 }, { "bar": 1 }],
-        "$or": [{ "baz": 1 }, { "empty": 1 }]
+        "$and": [
+          {
+            "foo": 1
+          },
+          {
+            "bar": 1
+          }
+        ],
+        "$or": [
+          {
+            "baz": 1
+          },
+          {
+            "empty": 1
+          }
+        ]
       },
       {
         "foo": 1,
@@ -2844,8 +3184,22 @@
     [
       "$and and $or both pass",
       {
-        "$and": [{ "foo": 1 }, { "bar": 1 }],
-        "$or": [{ "baz": 1 }, { "empty": 1 }]
+        "$and": [
+          {
+            "foo": 1
+          },
+          {
+            "bar": 1
+          }
+        ],
+        "$or": [
+          {
+            "baz": 1
+          },
+          {
+            "empty": 1
+          }
+        ]
       },
       {
         "foo": 1,
@@ -2858,202 +3212,529 @@
     [
       "$inGroup passes for member of known group id",
       {
-        "id": { "$inGroup": "group_id" }
+        "id": {
+          "$inGroup": "group_id"
+        }
       },
-      { "id": 1 },
+      {
+        "id": 1
+      },
       true,
-      { "group_id": [1, 2, 3] }
+      {
+        "group_id": [
+          1,
+          2,
+          3
+        ]
+      }
     ],
     [
       "$inGroup fails for non-member of known group id",
       {
-        "id": { "$inGroup": "group_id" }
+        "id": {
+          "$inGroup": "group_id"
+        }
       },
-      { "id": 5 },
+      {
+        "id": 5
+      },
       false,
-      { "group_id": [1, 2, 3] }
+      {
+        "group_id": [
+          1,
+          2,
+          3
+        ]
+      }
     ],
     [
       "$inGroup fails for unknown group id",
       {
-        "id": { "$inGroup": "unknowngroup_id" }
+        "id": {
+          "$inGroup": "unknowngroup_id"
+        }
       },
-      { "id": 1 },
+      {
+        "id": 1
+      },
       false,
-      { "group_id": [1, 2, 3] }
+      {
+        "group_id": [
+          1,
+          2,
+          3
+        ]
+      }
     ],
     [
       "$notInGroup fails for member of known group id",
       {
-        "id": { "$notInGroup": "group_id" }
+        "id": {
+          "$notInGroup": "group_id"
+        }
       },
-      { "id": 1 },
+      {
+        "id": 1
+      },
       false,
-      { "group_id": [1, 2, 3] }
+      {
+        "group_id": [
+          1,
+          2,
+          3
+        ]
+      }
     ],
     [
       "$notInGroup passes for non-member of known group id",
       {
-        "id": { "$notInGroup": "group_id" }
+        "id": {
+          "$notInGroup": "group_id"
+        }
       },
-      { "id": 5 },
+      {
+        "id": 5
+      },
       true,
-      { "group_id": [1, 2, 3] }
+      {
+        "group_id": [
+          1,
+          2,
+          3
+        ]
+      }
     ],
     [
       "$notInGroup passes for unknown group id",
       {
-        "id": { "$notInGroup": "unknowngroup_id" }
+        "id": {
+          "$notInGroup": "unknowngroup_id"
+        }
       },
-      { "id": 1 },
+      {
+        "id": 1
+      },
       true,
-      { "group_id": [1, 2, 3] }
+      {
+        "group_id": [
+          1,
+          2,
+          3
+        ]
+      }
     ],
     [
       "$inGroup passes for properly typed data",
       {
-        "id": { "$inGroup": "group_id" }
+        "id": {
+          "$inGroup": "group_id"
+        }
       },
-      { "id": "2" },
+      {
+        "id": "2"
+      },
       true,
-      { "group_id": [1, "2", 3] }
+      {
+        "group_id": [
+          1,
+          "2",
+          3
+        ]
+      }
     ],
     [
       "$inGroup fails for improperly typed data",
       {
-        "id": { "$inGroup": "group_id" }
+        "id": {
+          "$inGroup": "group_id"
+        }
       },
-      { "id": "3" },
+      {
+        "id": "3"
+      },
       false,
-      { "group_id": [1, "2", 3] }
+      {
+        "group_id": [
+          1,
+          "2",
+          3
+        ]
+      }
     ]
   ],
   "hash": [
-    ["", "a", 1, 0.22],
-    ["", "b", 1, 0.077],
-    ["b", "a", 1, 0.946],
-    ["ef", "d", 1, 0.652],
-    ["asdf", "8952klfjas09ujk", 1, 0.549],
-    ["", "123", 1, 0.011],
-    ["", "___)((*\":&", 1, 0.563],
-    ["seed", "a", 2, 0.0505],
-    ["seed", "b", 2, 0.2696],
-    ["foo", "ab", 2, 0.2575],
-    ["foo", "def", 2, 0.2019],
-    ["89123klj", "8952klfjas09ujkasdf", 2, 0.124],
-    ["90850943850283058242805", "123", 2, 0.7516],
-    ["()**(%$##$%#$#", "___)((*\":&", 2, 0.0128],
-    ["abc", "def", 99, null]
+    [
+      "",
+      "a",
+      1,
+      0.22
+    ],
+    [
+      "",
+      "b",
+      1,
+      0.077
+    ],
+    [
+      "b",
+      "a",
+      1,
+      0.946
+    ],
+    [
+      "ef",
+      "d",
+      1,
+      0.652
+    ],
+    [
+      "asdf",
+      "8952klfjas09ujk",
+      1,
+      0.549
+    ],
+    [
+      "",
+      "123",
+      1,
+      0.011
+    ],
+    [
+      "",
+      "___)((*\":&",
+      1,
+      0.563
+    ],
+    [
+      "seed",
+      "a",
+      2,
+      0.0505
+    ],
+    [
+      "seed",
+      "b",
+      2,
+      0.2696
+    ],
+    [
+      "foo",
+      "ab",
+      2,
+      0.2575
+    ],
+    [
+      "foo",
+      "def",
+      2,
+      0.2019
+    ],
+    [
+      "89123klj",
+      "8952klfjas09ujkasdf",
+      2,
+      0.124
+    ],
+    [
+      "90850943850283058242805",
+      "123",
+      2,
+      0.7516
+    ],
+    [
+      "()**(%$##$%#$#",
+      "___)((*\":&",
+      2,
+      0.0128
+    ],
+    [
+      "abc",
+      "def",
+      99,
+      null
+    ]
   ],
   "getBucketRange": [
     [
       "normal 50/50",
-      [2, 1, null],
       [
-        [0, 0.5],
-        [0.5, 1]
+        2,
+        1,
+        null
+      ],
+      [
+        [
+          0,
+          0.5
+        ],
+        [
+          0.5,
+          1
+        ]
       ]
     ],
     [
       "reduced coverage",
-      [2, 0.5, null],
       [
-        [0, 0.25],
-        [0.5, 0.75]
+        2,
+        0.5,
+        null
+      ],
+      [
+        [
+          0,
+          0.25
+        ],
+        [
+          0.5,
+          0.75
+        ]
       ]
     ],
     [
       "zero coverage",
-      [2, 0, null],
       [
-        [0, 0],
-        [0.5, 0.5]
+        2,
+        0,
+        null
+      ],
+      [
+        [
+          0,
+          0
+        ],
+        [
+          0.5,
+          0.5
+        ]
       ]
     ],
     [
       "4 variations",
-      [4, 1, null],
       [
-        [0, 0.25],
-        [0.25, 0.5],
-        [0.5, 0.75],
-        [0.75, 1]
+        4,
+        1,
+        null
+      ],
+      [
+        [
+          0,
+          0.25
+        ],
+        [
+          0.25,
+          0.5
+        ],
+        [
+          0.5,
+          0.75
+        ],
+        [
+          0.75,
+          1
+        ]
       ]
     ],
     [
       "uneven weights",
-      [2, 1, [0.4, 0.6]],
       [
-        [0, 0.4],
-        [0.4, 1]
+        2,
+        1,
+        [
+          0.4,
+          0.6
+        ]
+      ],
+      [
+        [
+          0,
+          0.4
+        ],
+        [
+          0.4,
+          1
+        ]
       ]
     ],
     [
       "uneven weights, 3 variations",
-      [3, 1, [0.2, 0.3, 0.5]],
       [
-        [0, 0.2],
-        [0.2, 0.5],
-        [0.5, 1]
+        3,
+        1,
+        [
+          0.2,
+          0.3,
+          0.5
+        ]
+      ],
+      [
+        [
+          0,
+          0.2
+        ],
+        [
+          0.2,
+          0.5
+        ],
+        [
+          0.5,
+          1
+        ]
       ]
     ],
     [
       "uneven weights, reduced coverage, 3 variations",
-      [3, 0.2, [0.2, 0.3, 0.5]],
       [
-        [0, 0.04],
-        [0.2, 0.26],
-        [0.5, 0.6]
+        3,
+        0.2,
+        [
+          0.2,
+          0.3,
+          0.5
+        ]
+      ],
+      [
+        [
+          0,
+          0.04
+        ],
+        [
+          0.2,
+          0.26
+        ],
+        [
+          0.5,
+          0.6
+        ]
       ]
     ],
     [
       "negative coverage",
-      [2, -0.2, null],
       [
-        [0, 0],
-        [0.5, 0.5]
+        2,
+        -0.2,
+        null
+      ],
+      [
+        [
+          0,
+          0
+        ],
+        [
+          0.5,
+          0.5
+        ]
       ]
     ],
     [
       "coverage above 1",
-      [2, 1.5, null],
       [
-        [0, 0.5],
-        [0.5, 1]
+        2,
+        1.5,
+        null
+      ],
+      [
+        [
+          0,
+          0.5
+        ],
+        [
+          0.5,
+          1
+        ]
       ]
     ],
     [
       "weights sum below 1",
-      [2, 1, [0.4, 0.1]],
       [
-        [0, 0.5],
-        [0.5, 1]
+        2,
+        1,
+        [
+          0.4,
+          0.1
+        ]
+      ],
+      [
+        [
+          0,
+          0.5
+        ],
+        [
+          0.5,
+          1
+        ]
       ]
     ],
     [
       "weights sum above 1",
-      [2, 1, [0.7, 0.6]],
       [
-        [0, 0.5],
-        [0.5, 1]
+        2,
+        1,
+        [
+          0.7,
+          0.6
+        ]
+      ],
+      [
+        [
+          0,
+          0.5
+        ],
+        [
+          0.5,
+          1
+        ]
       ]
     ],
     [
       "weights.length not equal to num variations",
-      [4, 1, [0.4, 0.4, 0.2]],
       [
-        [0, 0.25],
-        [0.25, 0.5],
-        [0.5, 0.75],
-        [0.75, 1]
+        4,
+        1,
+        [
+          0.4,
+          0.4,
+          0.2
+        ]
+      ],
+      [
+        [
+          0,
+          0.25
+        ],
+        [
+          0.25,
+          0.5
+        ],
+        [
+          0.5,
+          0.75
+        ],
+        [
+          0.75,
+          1
+        ]
       ]
     ],
     [
       "weights sum almost equals 1",
-      [2, 1, [0.4, 0.5999]],
       [
-        [0, 0.4],
-        [0.4, 0.9999]
+        2,
+        1,
+        [
+          0.4,
+          0.5999
+        ]
+      ],
+      [
+        [
+          0,
+          0.4
+        ],
+        [
+          0.4,
+          0.9999
+        ]
       ]
     ]
   ],
@@ -3072,7 +3753,11 @@
     ],
     [
       "defaults when empty",
-      { "features": { "feature": {} } },
+      {
+        "features": {
+          "feature": {}
+        }
+      },
       "feature",
       {
         "value": null,
@@ -3084,7 +3769,13 @@
     ],
     [
       "uses defaultValue - number",
-      { "features": { "feature": { "defaultValue": 1 } } },
+      {
+        "features": {
+          "feature": {
+            "defaultValue": 1
+          }
+        }
+      },
       "feature",
       {
         "value": 1,
@@ -3096,7 +3787,13 @@
     ],
     [
       "uses custom values - string",
-      { "features": { "feature": { "defaultValue": "yes" } } },
+      {
+        "features": {
+          "feature": {
+            "defaultValue": "yes"
+          }
+        }
+      },
       "feature",
       {
         "value": "yes",
@@ -3325,7 +4022,12 @@
               {
                 "force": 1,
                 "condition": {
-                  "country": { "$in": ["US", "CA"] },
+                  "country": {
+                    "$in": [
+                      "US",
+                      "CA"
+                    ]
+                  },
                   "browser": "firefox"
                 }
               }
@@ -3356,7 +4058,12 @@
               {
                 "force": 1,
                 "condition": {
-                  "country": { "$in": ["US", "CA"] },
+                  "country": {
+                    "$in": [
+                      "US",
+                      "CA"
+                    ]
+                  },
                   "browser": "firefox"
                 }
               }
@@ -3406,7 +4113,9 @@
       {
         "features": {
           "feature": {
-            "rules": [{}]
+            "rules": [
+              {}
+            ]
           }
         }
       },
@@ -3429,7 +4138,11 @@
           "feature": {
             "rules": [
               {
-                "variations": ["a", "b", "c"]
+                "variations": [
+                  "a",
+                  "b",
+                  "c"
+                ]
               }
             ]
           }
@@ -3442,7 +4155,11 @@
         "off": false,
         "experiment": {
           "key": "feature",
-          "variations": ["a", "b", "c"]
+          "variations": [
+            "a",
+            "b",
+            "c"
+          ]
         },
         "experimentResult": {
           "featureId": "feature",
@@ -3471,7 +4188,11 @@
             "rules": [
               {
                 "id": "id",
-                "variations": ["a", "b", "c"]
+                "variations": [
+                  "a",
+                  "b",
+                  "c"
+                ]
               }
             ]
           }
@@ -3484,7 +4205,11 @@
         "off": false,
         "experiment": {
           "key": "feature",
-          "variations": ["a", "b", "c"]
+          "variations": [
+            "a",
+            "b",
+            "c"
+          ]
         },
         "experimentResult": {
           "featureId": "feature",
@@ -3512,7 +4237,11 @@
           "feature": {
             "rules": [
               {
-                "variations": ["a", "b", "c"]
+                "variations": [
+                  "a",
+                  "b",
+                  "c"
+                ]
               }
             ]
           }
@@ -3525,7 +4254,11 @@
         "off": false,
         "experiment": {
           "key": "feature",
-          "variations": ["a", "b", "c"]
+          "variations": [
+            "a",
+            "b",
+            "c"
+          ]
         },
         "experimentResult": {
           "featureId": "feature",
@@ -3561,8 +4294,14 @@
                 "name": "Test",
                 "phase": "1",
                 "ranges": [
-                  [0, 0.1],
-                  [0.1, 1.0]
+                  [
+                    0,
+                    0.1
+                  ],
+                  [
+                    0.1,
+                    1.0
+                  ]
                 ],
                 "meta": [
                   {
@@ -3578,14 +4317,31 @@
                   {
                     "attribute": "anonId",
                     "seed": "pricing",
-                    "ranges": [[0, 1]]
+                    "ranges": [
+                      [
+                        0,
+                        1
+                      ]
+                    ]
                   }
                 ],
-                "namespace": ["pricing", 0, 1],
+                "namespace": [
+                  "pricing",
+                  0,
+                  1
+                ],
                 "key": "hello",
-                "variations": [true, false],
-                "weights": [0.1, 0.9],
-                "condition": { "premium": true },
+                "variations": [
+                  true,
+                  false
+                ],
+                "weights": [
+                  0.1,
+                  0.9
+                ],
+                "condition": {
+                  "premium": true
+                },
                 "foo": "bar"
               }
             ]
@@ -3601,8 +4357,14 @@
         "experiment": {
           "coverage": 0.99,
           "ranges": [
-            [0, 0.1],
-            [0.1, 1.0]
+            [
+              0,
+              0.1
+            ],
+            [
+              0.1,
+              1.0
+            ]
           ],
           "meta": [
             {
@@ -3618,7 +4380,12 @@
             {
               "attribute": "anonId",
               "seed": "pricing",
-              "ranges": [[0, 1]]
+              "ranges": [
+                [
+                  0,
+                  1
+                ]
+              ]
             }
           ],
           "name": "Test",
@@ -3626,11 +4393,23 @@
           "seed": "feature",
           "hashVersion": 2,
           "hashAttribute": "anonId",
-          "namespace": ["pricing", 0, 1],
+          "namespace": [
+            "pricing",
+            0,
+            1
+          ],
           "key": "hello",
-          "variations": [true, false],
-          "weights": [0.1, 0.9],
-          "condition": { "premium": true }
+          "variations": [
+            true,
+            false
+          ],
+          "weights": [
+            0.1,
+            0.9
+          ],
+          "condition": {
+            "premium": true
+          }
         },
         "experimentResult": {
           "featureId": "feature",
@@ -3660,15 +4439,21 @@
             "rules": [
               {
                 "force": 1,
-                "condition": { "browser": "chrome" }
+                "condition": {
+                  "browser": "chrome"
+                }
               },
               {
                 "force": 2,
-                "condition": { "browser": "firefox" }
+                "condition": {
+                  "browser": "firefox"
+                }
               },
               {
                 "force": 3,
-                "condition": { "browser": "safari" }
+                "condition": {
+                  "browser": "safari"
+                }
               }
             ]
           }
@@ -3696,17 +4481,23 @@
               {
                 "force": 1,
                 "id": "1",
-                "condition": { "browser": "chrome" }
+                "condition": {
+                  "browser": "chrome"
+                }
               },
               {
                 "id": "2",
                 "force": 2,
-                "condition": { "browser": "firefox" }
+                "condition": {
+                  "browser": "firefox"
+                }
               },
               {
                 "id": "3",
                 "force": 3,
-                "condition": { "browser": "safari" }
+                "condition": {
+                  "browser": "safari"
+                }
               }
             ]
           }
@@ -3733,15 +4524,21 @@
             "rules": [
               {
                 "force": 1,
-                "condition": { "browser": "chrome" }
+                "condition": {
+                  "browser": "chrome"
+                }
               },
               {
                 "force": 2,
-                "condition": { "browser": "firefox" }
+                "condition": {
+                  "browser": "firefox"
+                }
               },
               {
                 "force": 3,
-                "condition": { "browser": "safari" }
+                "condition": {
+                  "browser": "safari"
+                }
               }
             ]
           }
@@ -3759,13 +4556,20 @@
     [
       "skips experiment on coverage",
       {
-        "attributes": { "id": "123" },
+        "attributes": {
+          "id": "123"
+        },
         "features": {
           "feature": {
             "defaultValue": 0,
             "rules": [
               {
-                "variations": [0, 1, 2, 3],
+                "variations": [
+                  0,
+                  1,
+                  2,
+                  3
+                ],
                 "coverage": 0.01
               },
               {
@@ -3787,14 +4591,25 @@
     [
       "skips experiment on namespace",
       {
-        "attributes": { "id": "123" },
+        "attributes": {
+          "id": "123"
+        },
         "features": {
           "feature": {
             "defaultValue": 0,
             "rules": [
               {
-                "variations": [0, 1, 2, 3],
-                "namespace": ["pricing", 0, 0.01]
+                "variations": [
+                  0,
+                  1,
+                  2,
+                  3
+                ],
+                "namespace": [
+                  "pricing",
+                  0,
+                  0.01
+                ]
               },
               {
                 "force": 3
@@ -3815,13 +4630,18 @@
     [
       "handles integer hashAttribute",
       {
-        "attributes": { "id": 123 },
+        "attributes": {
+          "id": 123
+        },
         "features": {
           "feature": {
             "defaultValue": 0,
             "rules": [
               {
-                "variations": [0, 1]
+                "variations": [
+                  0,
+                  1
+                ]
               }
             ]
           }
@@ -3835,7 +4655,10 @@
         "source": "experiment",
         "experiment": {
           "key": "feature",
-          "variations": [0, 1]
+          "variations": [
+            0,
+            1
+          ]
         },
         "experimentResult": {
           "featureId": "feature",
@@ -3855,13 +4678,20 @@
     [
       "skip experiment on missing hashAttribute",
       {
-        "attributes": { "id": "123" },
+        "attributes": {
+          "id": "123"
+        },
         "features": {
           "feature": {
             "defaultValue": 0,
             "rules": [
               {
-                "variations": [0, 1, 2, 3],
+                "variations": [
+                  0,
+                  1,
+                  2,
+                  3
+                ],
                 "hashAttribute": "company"
               },
               {
@@ -3883,7 +4713,9 @@
     [
       "include experiments when forced",
       {
-        "attributes": { "id": "123" },
+        "attributes": {
+          "id": "123"
+        },
         "forcedVariations": {
           "feature": 1
         },
@@ -3892,7 +4724,12 @@
             "defaultValue": 0,
             "rules": [
               {
-                "variations": [0, 1, 2, 3]
+                "variations": [
+                  0,
+                  1,
+                  2,
+                  3
+                ]
               },
               {
                 "force": 3
@@ -3909,7 +4746,12 @@
         "source": "experiment",
         "experiment": {
           "key": "feature",
-          "variations": [0, 1, 2, 3]
+          "variations": [
+            0,
+            1,
+            2,
+            3
+          ]
         },
         "experimentResult": {
           "featureId": "feature",
@@ -3938,7 +4780,10 @@
               {
                 "force": 2,
                 "coverage": 0.01,
-                "range": [0, 0.99]
+                "range": [
+                  0,
+                  0.99
+                ]
               }
             ]
           }
@@ -3966,7 +4811,10 @@
               {
                 "force": 2,
                 "hashVersion": 2,
-                "range": [0.96, 0.97]
+                "range": [
+                  0.96,
+                  0.97
+                ]
               }
             ]
           }
@@ -3993,7 +4841,10 @@
             "rules": [
               {
                 "force": 2,
-                "range": [0, 0.01]
+                "range": [
+                  0,
+                  0.01
+                ]
               }
             ]
           }
@@ -4023,7 +4874,12 @@
                 "filters": [
                   {
                     "seed": "seed",
-                    "ranges": [[0, 0.01]]
+                    "ranges": [
+                      [
+                        0,
+                        0.01
+                      ]
+                    ]
                   }
                 ]
               }
@@ -4052,7 +4908,10 @@
             "rules": [
               {
                 "force": 2,
-                "range": [0, 0.5],
+                "range": [
+                  0,
+                  0.5
+                ],
                 "seed": "fjdslafdsa",
                 "hashVersion": 2
               }
@@ -4081,11 +4940,20 @@
             "rules": [
               {
                 "key": "holdout",
-                "variations": [1, 2],
+                "variations": [
+                  1,
+                  2
+                ],
                 "hashVersion": 2,
                 "ranges": [
-                  [0, 0.01],
-                  [0.01, 1.0]
+                  [
+                    0,
+                    0.01
+                  ],
+                  [
+                    0.01,
+                    1.0
+                  ]
                 ],
                 "meta": [
                   {},
@@ -4096,11 +4964,20 @@
               },
               {
                 "key": "experiment",
-                "variations": [3, 4],
+                "variations": [
+                  3,
+                  4
+                ],
                 "hashVersion": 2,
                 "ranges": [
-                  [0, 0.5],
-                  [0.5, 1.0]
+                  [
+                    0,
+                    0.5
+                  ],
+                  [
+                    0.5,
+                    1.0
+                  ]
                 ]
               }
             ]
@@ -4116,10 +4993,19 @@
         "experiment": {
           "key": "experiment",
           "hashVersion": 2,
-          "variations": [3, 4],
+          "variations": [
+            3,
+            4
+          ],
           "ranges": [
-            [0, 0.5],
-            [0.5, 1.0]
+            [
+              0,
+              0.5
+            ],
+            [
+              0.5,
+              1.0
+            ]
           ]
         },
         "experimentResult": {
@@ -4150,10 +5036,19 @@
               {
                 "key": "holdout",
                 "hashVersion": 2,
-                "variations": [1, 2],
+                "variations": [
+                  1,
+                  2
+                ],
                 "ranges": [
-                  [0, 0.99],
-                  [0.99, 1.0]
+                  [
+                    0,
+                    0.99
+                  ],
+                  [
+                    0.99,
+                    1.0
+                  ]
                 ],
                 "meta": [
                   {},
@@ -4165,10 +5060,19 @@
               {
                 "key": "experiment",
                 "hashVersion": 2,
-                "variations": [3, 4],
+                "variations": [
+                  3,
+                  4
+                ],
                 "ranges": [
-                  [0, 0.5],
-                  [0.5, 1.0]
+                  [
+                    0,
+                    0.5
+                  ],
+                  [
+                    0.5,
+                    1.0
+                  ]
                 ]
               }
             ]
@@ -4184,8 +5088,14 @@
         "experiment": {
           "hashVersion": 2,
           "ranges": [
-            [0, 0.99],
-            [0.99, 1.0]
+            [
+              0,
+              0.99
+            ],
+            [
+              0.99,
+              1.0
+            ]
           ],
           "meta": [
             {},
@@ -4194,7 +5104,10 @@
             }
           ],
           "key": "holdout",
-          "variations": [1, 2]
+          "variations": [
+            1,
+            2
+          ]
         },
         "experimentResult": {
           "featureId": "feature",
@@ -4224,11 +5137,20 @@
             "defaultValue": "silver",
             "rules": [
               {
-                "condition": { "country": "Canada" },
+                "condition": {
+                  "country": "Canada"
+                },
                 "force": "red"
               },
               {
-                "condition": { "country": { "$in": ["USA", "Mexico"] } },
+                "condition": {
+                  "country": {
+                    "$in": [
+                      "USA",
+                      "Mexico"
+                    ]
+                  }
+                },
                 "force": "green"
               }
             ]
@@ -4240,13 +5162,17 @@
                 "parentConditions": [
                   {
                     "id": "parentFlag",
-                    "condition": { "value": "green" },
+                    "condition": {
+                      "value": "green"
+                    },
                     "gate": true
                   }
                 ]
               },
               {
-                "condition": { "memberType": "basic" },
+                "condition": {
+                  "memberType": "basic"
+                },
                 "force": "success"
               }
             ]
@@ -4278,13 +5204,17 @@
                 "parentConditions": [
                   {
                     "id": "parentFlag",
-                    "condition": { "value": "green" },
+                    "condition": {
+                      "value": "green"
+                    },
                     "gate": true
                   }
                 ]
               },
               {
-                "condition": { "memberType": "basic" },
+                "condition": {
+                  "memberType": "basic"
+                },
                 "force": "success"
               }
             ]
@@ -4313,11 +5243,20 @@
             "defaultValue": "silver",
             "rules": [
               {
-                "condition": { "country": "Canada" },
+                "condition": {
+                  "country": "Canada"
+                },
                 "force": "red"
               },
               {
-                "condition": { "country": { "$in": ["USA", "Mexico"] } },
+                "condition": {
+                  "country": {
+                    "$in": [
+                      "USA",
+                      "Mexico"
+                    ]
+                  }
+                },
                 "force": "green"
               }
             ]
@@ -4329,13 +5268,17 @@
                 "parentConditions": [
                   {
                     "id": "parentFlag",
-                    "condition": { "value": "green" },
+                    "condition": {
+                      "value": "green"
+                    },
                     "gate": true
                   }
                 ]
               },
               {
-                "condition": { "memberType": "basic" },
+                "condition": {
+                  "memberType": "basic"
+                },
                 "force": "success"
               }
             ]
@@ -4364,11 +5307,20 @@
             "defaultValue": "silver",
             "rules": [
               {
-                "condition": { "country": "Canada" },
+                "condition": {
+                  "country": "Canada"
+                },
                 "force": "red"
               },
               {
-                "condition": { "country": { "$in": ["USA", "Mexico"] } },
+                "condition": {
+                  "country": {
+                    "$in": [
+                      "USA",
+                      "Mexico"
+                    ]
+                  }
+                },
                 "force": "green"
               }
             ]
@@ -4377,7 +5329,9 @@
             "defaultValue": 0,
             "rules": [
               {
-                "condition": { "id": "123" },
+                "condition": {
+                  "id": "123"
+                },
                 "force": 2
               }
             ]
@@ -4389,7 +5343,9 @@
                 "parentConditions": [
                   {
                     "id": "parentFlag1",
-                    "condition": { "value": "green" },
+                    "condition": {
+                      "value": "green"
+                    },
                     "gate": true
                   }
                 ]
@@ -4398,13 +5354,19 @@
                 "parentConditions": [
                   {
                     "id": "parentFlag2",
-                    "condition": { "value": { "$gt": 1 } },
+                    "condition": {
+                      "value": {
+                        "$gt": 1
+                      }
+                    },
                     "gate": true
                   }
                 ]
               },
               {
-                "condition": { "memberType": "basic" },
+                "condition": {
+                  "memberType": "basic"
+                },
                 "force": "success"
               }
             ]
@@ -4436,17 +5398,30 @@
                 "parentConditions": [
                   {
                     "id": "parentFlag2",
-                    "condition": { "value": { "$gt": 1 } },
+                    "condition": {
+                      "value": {
+                        "$gt": 1
+                      }
+                    },
                     "gate": true
                   }
                 ]
               },
               {
-                "condition": { "country": "Canada" },
+                "condition": {
+                  "country": "Canada"
+                },
                 "force": "red"
               },
               {
-                "condition": { "country": { "$in": ["USA", "Mexico"] } },
+                "condition": {
+                  "country": {
+                    "$in": [
+                      "USA",
+                      "Mexico"
+                    ]
+                  }
+                },
                 "force": "green"
               }
             ]
@@ -4455,7 +5430,9 @@
             "defaultValue": 0,
             "rules": [
               {
-                "condition": { "id": "123" },
+                "condition": {
+                  "id": "123"
+                },
                 "force": 2
               }
             ]
@@ -4467,13 +5444,17 @@
                 "parentConditions": [
                   {
                     "id": "parentFlag1",
-                    "condition": { "value": "green" },
+                    "condition": {
+                      "value": "green"
+                    },
                     "gate": true
                   }
                 ]
               },
               {
-                "condition": { "memberType": "basic" },
+                "condition": {
+                  "memberType": "basic"
+                },
                 "force": "success"
               }
             ]
@@ -4503,12 +5484,21 @@
             "rules": [
               {
                 "key": "experiment",
-                "variations": [0, 1],
+                "variations": [
+                  0,
+                  1
+                ],
                 "hashAttribute": "id",
                 "hashVersion": 2,
                 "ranges": [
-                  [0, 0.5],
-                  [0.5, 1.0]
+                  [
+                    0,
+                    0.5
+                  ],
+                  [
+                    0.5,
+                    1.0
+                  ]
                 ]
               }
             ]
@@ -4520,13 +5510,17 @@
                 "parentConditions": [
                   {
                     "id": "parentExperimentFlag",
-                    "condition": { "value": 1 },
+                    "condition": {
+                      "value": 1
+                    },
                     "gate": true
                   }
                 ]
               },
               {
-                "condition": { "memberType": "basic" },
+                "condition": {
+                  "memberType": "basic"
+                },
                 "force": "success"
               }
             ]
@@ -4556,12 +5550,21 @@
             "rules": [
               {
                 "key": "experiment",
-                "variations": [0, 1],
+                "variations": [
+                  0,
+                  1
+                ],
                 "hashAttribute": "id",
                 "hashVersion": 2,
                 "ranges": [
-                  [0, 0.5],
-                  [0.5, 1.0]
+                  [
+                    0,
+                    0.5
+                  ],
+                  [
+                    0.5,
+                    1.0
+                  ]
                 ]
               }
             ]
@@ -4573,13 +5576,17 @@
                 "parentConditions": [
                   {
                     "id": "parentExperimentFlag",
-                    "condition": { "value": 0 },
+                    "condition": {
+                      "value": 0
+                    },
                     "gate": true
                   }
                 ]
               },
               {
-                "condition": { "memberType": "basic" },
+                "condition": {
+                  "memberType": "basic"
+                },
                 "force": "success"
               }
             ]
@@ -4609,7 +5616,9 @@
                 "parentConditions": [
                   {
                     "id": "flag2",
-                    "condition": { "value": true },
+                    "condition": {
+                      "value": true
+                    },
                     "gate": true
                   }
                 ]
@@ -4623,7 +5632,9 @@
                 "parentConditions": [
                   {
                     "id": "flag1",
-                    "condition": { "value": true },
+                    "condition": {
+                      "value": true
+                    },
                     "gate": true
                   }
                 ]
@@ -4656,12 +5667,18 @@
                 "parentConditions": [
                   {
                     "id": "parentFlag",
-                    "condition": { "value": { "$ne": false } },
+                    "condition": {
+                      "value": {
+                        "$ne": false
+                      }
+                    },
                     "gate": true
                   },
                   {
                     "id": "parentFlag",
-                    "condition": { "value": true },
+                    "condition": {
+                      "value": true
+                    },
                     "gate": true
                   }
                 ]
@@ -4673,19 +5690,25 @@
                 "parentConditions": [
                   {
                     "id": "parentFlag",
-                    "condition": { "value": true }
+                    "condition": {
+                      "value": true
+                    }
                   }
                 ],
                 "force": "C"
               },
               {
                 "condition": {
-                  "browser": { "$ne": "safari" }
+                  "browser": {
+                    "$ne": "safari"
+                  }
                 },
                 "parentConditions": [
                   {
                     "id": "parentFlag",
-                    "condition": { "value": true }
+                    "condition": {
+                      "value": true
+                    }
                   }
                 ],
                 "force": "T"
@@ -4718,13 +5741,20 @@
             "rules": [
               {
                 "force": true,
-                "condition": { "id": { "$inGroup": "group_id" } }
+                "condition": {
+                  "id": {
+                    "$inGroup": "group_id"
+                  }
+                }
               }
             ]
           }
         },
         "savedGroups": {
-          "group_id": [123, 456]
+          "group_id": [
+            123,
+            456
+          ]
         }
       },
       "inGroup_force_rule",
@@ -4748,19 +5778,35 @@
             "rules": [
               {
                 "key": "experiment",
-                "condition": { "id": { "$inGroup": "group_id" } },
+                "condition": {
+                  "id": {
+                    "$inGroup": "group_id"
+                  }
+                },
                 "hashVersion": 2,
-                "variations": [1, 2],
+                "variations": [
+                  1,
+                  2
+                ],
                 "ranges": [
-                  [0, 0.5],
-                  [0.5, 1.0]
+                  [
+                    0,
+                    0.5
+                  ],
+                  [
+                    0.5,
+                    1.0
+                  ]
                 ]
               }
             ]
           }
         },
         "savedGroups": {
-          "group_id": [123, 456]
+          "group_id": [
+            123,
+            456
+          ]
         }
       },
       "inGroup_experiment_rule",
@@ -4771,11 +5817,24 @@
         "source": "experiment",
         "experiment": {
           "hashVersion": 2,
-          "condition": { "id": { "$inGroup": "group_id" } },
-          "variations": [1, 2],
+          "condition": {
+            "id": {
+              "$inGroup": "group_id"
+            }
+          },
+          "variations": [
+            1,
+            2
+          ],
           "ranges": [
-            [0, 0.5],
-            [0.5, 1.0]
+            [
+              0,
+              0.5
+            ],
+            [
+              0.5,
+              1.0
+            ]
           ],
           "key": "experiment"
         },
@@ -4798,328 +5857,790 @@
   "run": [
     [
       "default weights - 1",
-      { "attributes": { "id": "1" } },
-      { "key": "my-test", "variations": [0, 1] },
+      {
+        "attributes": {
+          "id": "1"
+        }
+      },
+      {
+        "key": "my-test",
+        "variations": [
+          0,
+          1
+        ]
+      },
       1,
       true,
       true
     ],
     [
       "default weights - 2",
-      { "attributes": { "id": "2" } },
-      { "key": "my-test", "variations": [0, 1] },
+      {
+        "attributes": {
+          "id": "2"
+        }
+      },
+      {
+        "key": "my-test",
+        "variations": [
+          0,
+          1
+        ]
+      },
       0,
       true,
       true
     ],
     [
       "default weights - 3",
-      { "attributes": { "id": "3" } },
-      { "key": "my-test", "variations": [0, 1] },
+      {
+        "attributes": {
+          "id": "3"
+        }
+      },
+      {
+        "key": "my-test",
+        "variations": [
+          0,
+          1
+        ]
+      },
       0,
       true,
       true
     ],
     [
       "default weights - 4",
-      { "attributes": { "id": "4" } },
-      { "key": "my-test", "variations": [0, 1] },
+      {
+        "attributes": {
+          "id": "4"
+        }
+      },
+      {
+        "key": "my-test",
+        "variations": [
+          0,
+          1
+        ]
+      },
       1,
       true,
       true
     ],
     [
       "default weights - 5",
-      { "attributes": { "id": "5" } },
-      { "key": "my-test", "variations": [0, 1] },
+      {
+        "attributes": {
+          "id": "5"
+        }
+      },
+      {
+        "key": "my-test",
+        "variations": [
+          0,
+          1
+        ]
+      },
       1,
       true,
       true
     ],
     [
       "default weights - 6",
-      { "attributes": { "id": "6" } },
-      { "key": "my-test", "variations": [0, 1] },
+      {
+        "attributes": {
+          "id": "6"
+        }
+      },
+      {
+        "key": "my-test",
+        "variations": [
+          0,
+          1
+        ]
+      },
       1,
       true,
       true
     ],
     [
       "default weights - 7",
-      { "attributes": { "id": "7" } },
-      { "key": "my-test", "variations": [0, 1] },
+      {
+        "attributes": {
+          "id": "7"
+        }
+      },
+      {
+        "key": "my-test",
+        "variations": [
+          0,
+          1
+        ]
+      },
       0,
       true,
       true
     ],
     [
       "default weights - 8",
-      { "attributes": { "id": "8" } },
-      { "key": "my-test", "variations": [0, 1] },
+      {
+        "attributes": {
+          "id": "8"
+        }
+      },
+      {
+        "key": "my-test",
+        "variations": [
+          0,
+          1
+        ]
+      },
       1,
       true,
       true
     ],
     [
       "default weights - 9",
-      { "attributes": { "id": "9" } },
-      { "key": "my-test", "variations": [0, 1] },
+      {
+        "attributes": {
+          "id": "9"
+        }
+      },
+      {
+        "key": "my-test",
+        "variations": [
+          0,
+          1
+        ]
+      },
       0,
       true,
       true
     ],
     [
       "uneven weights - 1",
-      { "attributes": { "id": "1" } },
-      { "key": "my-test", "variations": [0, 1], "weights": [0.1, 0.9] },
+      {
+        "attributes": {
+          "id": "1"
+        }
+      },
+      {
+        "key": "my-test",
+        "variations": [
+          0,
+          1
+        ],
+        "weights": [
+          0.1,
+          0.9
+        ]
+      },
       1,
       true,
       true
     ],
     [
       "uneven weights - 2",
-      { "attributes": { "id": "2" } },
-      { "key": "my-test", "variations": [0, 1], "weights": [0.1, 0.9] },
+      {
+        "attributes": {
+          "id": "2"
+        }
+      },
+      {
+        "key": "my-test",
+        "variations": [
+          0,
+          1
+        ],
+        "weights": [
+          0.1,
+          0.9
+        ]
+      },
       1,
       true,
       true
     ],
     [
       "uneven weights - 3",
-      { "attributes": { "id": "3" } },
-      { "key": "my-test", "variations": [0, 1], "weights": [0.1, 0.9] },
+      {
+        "attributes": {
+          "id": "3"
+        }
+      },
+      {
+        "key": "my-test",
+        "variations": [
+          0,
+          1
+        ],
+        "weights": [
+          0.1,
+          0.9
+        ]
+      },
       0,
       true,
       true
     ],
     [
       "uneven weights - 4",
-      { "attributes": { "id": "4" } },
-      { "key": "my-test", "variations": [0, 1], "weights": [0.1, 0.9] },
+      {
+        "attributes": {
+          "id": "4"
+        }
+      },
+      {
+        "key": "my-test",
+        "variations": [
+          0,
+          1
+        ],
+        "weights": [
+          0.1,
+          0.9
+        ]
+      },
       1,
       true,
       true
     ],
     [
       "uneven weights - 5",
-      { "attributes": { "id": "5" } },
-      { "key": "my-test", "variations": [0, 1], "weights": [0.1, 0.9] },
+      {
+        "attributes": {
+          "id": "5"
+        }
+      },
+      {
+        "key": "my-test",
+        "variations": [
+          0,
+          1
+        ],
+        "weights": [
+          0.1,
+          0.9
+        ]
+      },
       1,
       true,
       true
     ],
     [
       "uneven weights - 6",
-      { "attributes": { "id": "6" } },
-      { "key": "my-test", "variations": [0, 1], "weights": [0.1, 0.9] },
+      {
+        "attributes": {
+          "id": "6"
+        }
+      },
+      {
+        "key": "my-test",
+        "variations": [
+          0,
+          1
+        ],
+        "weights": [
+          0.1,
+          0.9
+        ]
+      },
       1,
       true,
       true
     ],
     [
       "uneven weights - 7",
-      { "attributes": { "id": "7" } },
-      { "key": "my-test", "variations": [0, 1], "weights": [0.1, 0.9] },
+      {
+        "attributes": {
+          "id": "7"
+        }
+      },
+      {
+        "key": "my-test",
+        "variations": [
+          0,
+          1
+        ],
+        "weights": [
+          0.1,
+          0.9
+        ]
+      },
       0,
       true,
       true
     ],
     [
       "uneven weights - 8",
-      { "attributes": { "id": "8" } },
-      { "key": "my-test", "variations": [0, 1], "weights": [0.1, 0.9] },
+      {
+        "attributes": {
+          "id": "8"
+        }
+      },
+      {
+        "key": "my-test",
+        "variations": [
+          0,
+          1
+        ],
+        "weights": [
+          0.1,
+          0.9
+        ]
+      },
       1,
       true,
       true
     ],
     [
       "uneven weights - 9",
-      { "attributes": { "id": "9" } },
-      { "key": "my-test", "variations": [0, 1], "weights": [0.1, 0.9] },
+      {
+        "attributes": {
+          "id": "9"
+        }
+      },
+      {
+        "key": "my-test",
+        "variations": [
+          0,
+          1
+        ],
+        "weights": [
+          0.1,
+          0.9
+        ]
+      },
       1,
       true,
       true
     ],
     [
       "coverage - 1",
-      { "attributes": { "id": "1" } },
-      { "key": "my-test", "variations": [0, 1], "coverage": 0.4 },
+      {
+        "attributes": {
+          "id": "1"
+        }
+      },
+      {
+        "key": "my-test",
+        "variations": [
+          0,
+          1
+        ],
+        "coverage": 0.4
+      },
       0,
       false,
       false
     ],
     [
       "coverage - 2",
-      { "attributes": { "id": "2" } },
-      { "key": "my-test", "variations": [0, 1], "coverage": 0.4 },
+      {
+        "attributes": {
+          "id": "2"
+        }
+      },
+      {
+        "key": "my-test",
+        "variations": [
+          0,
+          1
+        ],
+        "coverage": 0.4
+      },
       0,
       true,
       true
     ],
     [
       "coverage - 3",
-      { "attributes": { "id": "3" } },
-      { "key": "my-test", "variations": [0, 1], "coverage": 0.4 },
+      {
+        "attributes": {
+          "id": "3"
+        }
+      },
+      {
+        "key": "my-test",
+        "variations": [
+          0,
+          1
+        ],
+        "coverage": 0.4
+      },
       0,
       true,
       true
     ],
     [
       "coverage - 4",
-      { "attributes": { "id": "4" } },
-      { "key": "my-test", "variations": [0, 1], "coverage": 0.4 },
+      {
+        "attributes": {
+          "id": "4"
+        }
+      },
+      {
+        "key": "my-test",
+        "variations": [
+          0,
+          1
+        ],
+        "coverage": 0.4
+      },
       0,
       false,
       false
     ],
     [
       "coverage - 5",
-      { "attributes": { "id": "5" } },
-      { "key": "my-test", "variations": [0, 1], "coverage": 0.4 },
+      {
+        "attributes": {
+          "id": "5"
+        }
+      },
+      {
+        "key": "my-test",
+        "variations": [
+          0,
+          1
+        ],
+        "coverage": 0.4
+      },
       1,
       true,
       true
     ],
     [
       "coverage - 6",
-      { "attributes": { "id": "6" } },
-      { "key": "my-test", "variations": [0, 1], "coverage": 0.4 },
+      {
+        "attributes": {
+          "id": "6"
+        }
+      },
+      {
+        "key": "my-test",
+        "variations": [
+          0,
+          1
+        ],
+        "coverage": 0.4
+      },
       0,
       false,
       false
     ],
     [
       "coverage - 7",
-      { "attributes": { "id": "7" } },
-      { "key": "my-test", "variations": [0, 1], "coverage": 0.4 },
+      {
+        "attributes": {
+          "id": "7"
+        }
+      },
+      {
+        "key": "my-test",
+        "variations": [
+          0,
+          1
+        ],
+        "coverage": 0.4
+      },
       0,
       true,
       true
     ],
     [
       "coverage - 8",
-      { "attributes": { "id": "8" } },
-      { "key": "my-test", "variations": [0, 1], "coverage": 0.4 },
+      {
+        "attributes": {
+          "id": "8"
+        }
+      },
+      {
+        "key": "my-test",
+        "variations": [
+          0,
+          1
+        ],
+        "coverage": 0.4
+      },
       1,
       true,
       true
     ],
     [
       "coverage - 9",
-      { "attributes": { "id": "9" } },
-      { "key": "my-test", "variations": [0, 1], "coverage": 0.4 },
+      {
+        "attributes": {
+          "id": "9"
+        }
+      },
+      {
+        "key": "my-test",
+        "variations": [
+          0,
+          1
+        ],
+        "coverage": 0.4
+      },
       0,
       false,
       false
     ],
     [
       "three way test - 1",
-      { "attributes": { "id": "1" } },
-      { "key": "my-test", "variations": [0, 1, 2] },
+      {
+        "attributes": {
+          "id": "1"
+        }
+      },
+      {
+        "key": "my-test",
+        "variations": [
+          0,
+          1,
+          2
+        ]
+      },
       2,
       true,
       true
     ],
     [
       "three way test - 2",
-      { "attributes": { "id": "2" } },
-      { "key": "my-test", "variations": [0, 1, 2] },
+      {
+        "attributes": {
+          "id": "2"
+        }
+      },
+      {
+        "key": "my-test",
+        "variations": [
+          0,
+          1,
+          2
+        ]
+      },
       0,
       true,
       true
     ],
     [
       "three way test - 3",
-      { "attributes": { "id": "3" } },
-      { "key": "my-test", "variations": [0, 1, 2] },
+      {
+        "attributes": {
+          "id": "3"
+        }
+      },
+      {
+        "key": "my-test",
+        "variations": [
+          0,
+          1,
+          2
+        ]
+      },
       0,
       true,
       true
     ],
     [
       "three way test - 4",
-      { "attributes": { "id": "4" } },
-      { "key": "my-test", "variations": [0, 1, 2] },
+      {
+        "attributes": {
+          "id": "4"
+        }
+      },
+      {
+        "key": "my-test",
+        "variations": [
+          0,
+          1,
+          2
+        ]
+      },
       2,
       true,
       true
     ],
     [
       "three way test - 5",
-      { "attributes": { "id": "5" } },
-      { "key": "my-test", "variations": [0, 1, 2] },
+      {
+        "attributes": {
+          "id": "5"
+        }
+      },
+      {
+        "key": "my-test",
+        "variations": [
+          0,
+          1,
+          2
+        ]
+      },
       1,
       true,
       true
     ],
     [
       "three way test - 6",
-      { "attributes": { "id": "6" } },
-      { "key": "my-test", "variations": [0, 1, 2] },
+      {
+        "attributes": {
+          "id": "6"
+        }
+      },
+      {
+        "key": "my-test",
+        "variations": [
+          0,
+          1,
+          2
+        ]
+      },
       2,
       true,
       true
     ],
     [
       "three way test - 7",
-      { "attributes": { "id": "7" } },
-      { "key": "my-test", "variations": [0, 1, 2] },
+      {
+        "attributes": {
+          "id": "7"
+        }
+      },
+      {
+        "key": "my-test",
+        "variations": [
+          0,
+          1,
+          2
+        ]
+      },
       0,
       true,
       true
     ],
     [
       "three way test - 8",
-      { "attributes": { "id": "8" } },
-      { "key": "my-test", "variations": [0, 1, 2] },
+      {
+        "attributes": {
+          "id": "8"
+        }
+      },
+      {
+        "key": "my-test",
+        "variations": [
+          0,
+          1,
+          2
+        ]
+      },
       1,
       true,
       true
     ],
     [
       "three way test - 9",
-      { "attributes": { "id": "9" } },
-      { "key": "my-test", "variations": [0, 1, 2] },
+      {
+        "attributes": {
+          "id": "9"
+        }
+      },
+      {
+        "key": "my-test",
+        "variations": [
+          0,
+          1,
+          2
+        ]
+      },
       0,
       true,
       true
     ],
     [
       "test name - my-test",
-      { "attributes": { "id": "1" } },
-      { "key": "my-test", "variations": [0, 1] },
+      {
+        "attributes": {
+          "id": "1"
+        }
+      },
+      {
+        "key": "my-test",
+        "variations": [
+          0,
+          1
+        ]
+      },
       1,
       true,
       true
     ],
     [
       "test name - my-test-3",
-      { "attributes": { "id": "1" } },
-      { "key": "my-test-3", "variations": [0, 1] },
+      {
+        "attributes": {
+          "id": "1"
+        }
+      },
+      {
+        "key": "my-test-3",
+        "variations": [
+          0,
+          1
+        ]
+      },
       0,
       true,
       true
     ],
     [
       "empty id",
-      { "attributes": { "id": "" } },
-      { "key": "my-test", "variations": [0, 1] },
+      {
+        "attributes": {
+          "id": ""
+        }
+      },
+      {
+        "key": "my-test",
+        "variations": [
+          0,
+          1
+        ]
+      },
       0,
       false,
       false
     ],
     [
       "null id",
-      { "attributes": { "id": null } },
-      { "key": "my-test", "variations": [0, 1] },
+      {
+        "attributes": {
+          "id": null
+        }
+      },
+      {
+        "key": "my-test",
+        "variations": [
+          0,
+          1
+        ]
+      },
       0,
       false,
       false
     ],
     [
       "missing id",
-      { "attributes": {} },
-      { "key": "my-test", "variations": [0, 1] },
+      {
+        "attributes": {}
+      },
+      {
+        "key": "my-test",
+        "variations": [
+          0,
+          1
+        ]
+      },
       0,
       false,
       false
@@ -5127,31 +6648,68 @@
     [
       "missing attributes",
       {},
-      { "key": "my-test", "variations": [0, 1] },
+      {
+        "key": "my-test",
+        "variations": [
+          0,
+          1
+        ]
+      },
       0,
       false,
       false
     ],
     [
       "single variation",
-      { "attributes": { "id": "1" } },
-      { "key": "my-test", "variations": [0] },
+      {
+        "attributes": {
+          "id": "1"
+        }
+      },
+      {
+        "key": "my-test",
+        "variations": [
+          0
+        ]
+      },
       0,
       false,
       false
     ],
     [
       "negative forced variation",
-      { "attributes": { "id": "1" } },
-      { "key": "my-test", "variations": [0, 1], "force": -8 },
+      {
+        "attributes": {
+          "id": "1"
+        }
+      },
+      {
+        "key": "my-test",
+        "variations": [
+          0,
+          1
+        ],
+        "force": -8
+      },
       0,
       false,
       false
     ],
     [
       "high forced variation",
-      { "attributes": { "id": "1" } },
-      { "key": "my-test", "variations": [0, 1], "force": 25 },
+      {
+        "attributes": {
+          "id": "1"
+        }
+      },
+      {
+        "key": "my-test",
+        "variations": [
+          0,
+          1
+        ],
+        "force": 25
+      },
       0,
       false,
       false
@@ -5166,7 +6724,10 @@
       },
       {
         "key": "my-test",
-        "variations": [0, 1],
+        "variations": [
+          0,
+          1
+        ],
         "condition": {
           "browser": "firefox"
         }
@@ -5185,7 +6746,10 @@
       },
       {
         "key": "my-test",
-        "variations": [0, 1],
+        "variations": [
+          0,
+          1
+        ],
         "condition": {
           "browser": "firefox"
         }
@@ -5204,7 +6768,10 @@
       },
       {
         "key": "my-test",
-        "variations": [0, 1],
+        "variations": [
+          0,
+          1
+        ],
         "hashAttribute": "companyId"
       },
       1,
@@ -5221,7 +6788,10 @@
       },
       {
         "key": "my-test",
-        "variations": [0, 1]
+        "variations": [
+          0,
+          1
+        ]
       },
       0,
       false,
@@ -5237,7 +6807,10 @@
       },
       {
         "key": "forced-test-qs",
-        "variations": [0, 1]
+        "variations": [
+          0,
+          1
+        ]
       },
       1,
       true,
@@ -5253,7 +6826,10 @@
       {
         "key": "my-test",
         "active": true,
-        "variations": [0, 1]
+        "variations": [
+          0,
+          1
+        ]
       },
       1,
       true,
@@ -5269,7 +6845,10 @@
       {
         "key": "my-test",
         "active": false,
-        "variations": [0, 1]
+        "variations": [
+          0,
+          1
+        ]
       },
       0,
       false,
@@ -5286,7 +6865,10 @@
       {
         "key": "my-test",
         "active": false,
-        "variations": [0, 1]
+        "variations": [
+          0,
+          1
+        ]
       },
       1,
       true,
@@ -5303,7 +6885,10 @@
         "key": "my-test",
         "force": 1,
         "coverage": 0.01,
-        "variations": [0, 1]
+        "variations": [
+          0,
+          1
+        ]
       },
       0,
       false,
@@ -5339,12 +6924,19 @@
     [
       "Force variation from context",
       {
-        "attributes": { "id": "1" },
-        "forcedVariations": { "my-test": 0 }
+        "attributes": {
+          "id": "1"
+        },
+        "forcedVariations": {
+          "my-test": 0
+        }
       },
       {
         "key": "my-test",
-        "variations": [0, 1]
+        "variations": [
+          0,
+          1
+        ]
       },
       0,
       true,
@@ -5353,12 +6945,17 @@
     [
       "Skips experiments in QA mode",
       {
-        "attributes": { "id": "1" },
+        "attributes": {
+          "id": "1"
+        },
         "qaMode": true
       },
       {
         "key": "my-test",
-        "variations": [0, 1]
+        "variations": [
+          0,
+          1
+        ]
       },
       0,
       false,
@@ -5367,13 +6964,20 @@
     [
       "Works in QA mode if forced in context",
       {
-        "attributes": { "id": "1" },
+        "attributes": {
+          "id": "1"
+        },
         "qaMode": true,
-        "forcedVariations": { "my-test": 1 }
+        "forcedVariations": {
+          "my-test": 1
+        }
       },
       {
         "key": "my-test",
-        "variations": [0, 1]
+        "variations": [
+          0,
+          1
+        ]
       },
       1,
       true,
@@ -5382,12 +6986,17 @@
     [
       "Works in QA mode if forced in experiment",
       {
-        "attributes": { "id": "1" },
+        "attributes": {
+          "id": "1"
+        },
         "qaMode": true
       },
       {
         "key": "my-test",
-        "variations": [0, 1],
+        "variations": [
+          0,
+          1
+        ],
         "force": 1
       },
       1,
@@ -5403,8 +7012,15 @@
       },
       {
         "key": "my-test",
-        "variations": [0, 1],
-        "namespace": ["namespace", 0.1, 1]
+        "variations": [
+          0,
+          1
+        ],
+        "namespace": [
+          "namespace",
+          0.1,
+          1
+        ]
       },
       1,
       true,
@@ -5419,8 +7035,15 @@
       },
       {
         "key": "my-test",
-        "variations": [0, 1],
-        "namespace": ["namespace", 0, 0.1]
+        "variations": [
+          0,
+          1
+        ],
+        "namespace": [
+          "namespace",
+          0,
+          0.1
+        ]
       },
       0,
       false,
@@ -5435,7 +7058,10 @@
       },
       {
         "key": "no-coverage",
-        "variations": [0, 1],
+        "variations": [
+          0,
+          1
+        ],
         "coverage": 0
       },
       0,
@@ -5452,19 +7078,33 @@
       },
       {
         "key": "filtered",
-        "variations": [0, 1],
+        "variations": [
+          0,
+          1
+        ],
         "filters": [
           {
             "seed": "seed",
             "ranges": [
-              [0, 0.1],
-              [0.2, 0.4]
+              [
+                0,
+                0.1
+              ],
+              [
+                0.2,
+                0.4
+              ]
             ]
           },
           {
             "seed": "seed",
             "attribute": "anonId",
-            "ranges": [[0.8, 1.0]]
+            "ranges": [
+              [
+                0.8,
+                1.0
+              ]
+            ]
           }
         ]
       },
@@ -5482,19 +7122,33 @@
       },
       {
         "key": "filtered",
-        "variations": [0, 1],
+        "variations": [
+          0,
+          1
+        ],
         "filters": [
           {
             "seed": "seed",
             "ranges": [
-              [0, 0.1],
-              [0.2, 0.4]
+              [
+                0,
+                0.1
+              ],
+              [
+                0.2,
+                0.4
+              ]
             ]
           },
           {
             "seed": "seed",
             "attribute": "anonId",
-            "ranges": [[0.6, 0.8]]
+            "ranges": [
+              [
+                0.6,
+                0.8
+              ]
+            ]
           }
         ]
       },
@@ -5511,17 +7165,30 @@
       },
       {
         "key": "filtered",
-        "variations": [0, 1],
+        "variations": [
+          0,
+          1
+        ],
         "filters": [
           {
             "seed": "seed",
             "ranges": [
-              [0, 0.1],
-              [0.2, 0.4]
+              [
+                0,
+                0.1
+              ],
+              [
+                0.2,
+                0.4
+              ]
             ]
           }
         ],
-        "namespace": ["test", 0, 0.001]
+        "namespace": [
+          "test",
+          0,
+          0.001
+        ]
       },
       1,
       true,
@@ -5536,13 +7203,25 @@
       },
       {
         "key": "ranges",
-        "variations": [0, 1],
+        "variations": [
+          0,
+          1
+        ],
         "ranges": [
-          [0.99, 1.0],
-          [0.0, 0.99]
+          [
+            0.99,
+            1.0
+          ],
+          [
+            0.0,
+            0.99
+          ]
         ],
         "coverage": 0.01,
-        "weights": [0.99, 0.01]
+        "weights": [
+          0.99,
+          0.01
+        ]
       },
       1,
       true,
@@ -5557,10 +7236,19 @@
       },
       {
         "key": "configs",
-        "variations": [0, 1],
+        "variations": [
+          0,
+          1
+        ],
         "ranges": [
-          [0, 0.1],
-          [0.9, 1.0]
+          [
+            0,
+            0.1
+          ],
+          [
+            0.9,
+            1.0
+          ]
         ]
       },
       0,
@@ -5578,10 +7266,19 @@
         "key": "key",
         "seed": "foo",
         "hashVersion": 2,
-        "variations": [0, 1],
+        "variations": [
+          0,
+          1
+        ],
         "ranges": [
-          [0, 0.5],
-          [0.5, 1.0]
+          [
+            0,
+            0.5
+          ],
+          [
+            0.5,
+            1.0
+          ]
         ]
       },
       1,
@@ -5599,7 +7296,10 @@
         "key": "key",
         "seed": "foo",
         "hashVersion": 2,
-        "variations": [0, 1]
+        "variations": [
+          0,
+          1
+        ]
       },
       1,
       true,
@@ -5616,8 +7316,14 @@
         "key": "key",
         "seed": "foo",
         "hashVersion": 2,
-        "variations": [0, 1],
-        "weights": [0.5, 0.5],
+        "variations": [
+          0,
+          1
+        ],
+        "weights": [
+          0.5,
+          0.5
+        ],
         "coverage": 0.99
       },
       1,
@@ -5627,7 +7333,9 @@
     [
       "Prerequisite condition passes",
       {
-        "attributes": { "id": "1" },
+        "attributes": {
+          "id": "1"
+        },
         "features": {
           "parentFlag": {
             "defaultValue": true
@@ -5636,7 +7344,10 @@
       },
       {
         "key": "my-test",
-        "variations": [0, 1],
+        "variations": [
+          0,
+          1
+        ],
         "parentConditions": [
           {
             "id": "parentFlag",
@@ -5653,7 +7364,9 @@
     [
       "Prerequisite condition fails",
       {
-        "attributes": { "id": "1" },
+        "attributes": {
+          "id": "1"
+        },
         "features": {
           "parentFlag": {
             "defaultValue": false
@@ -5662,7 +7375,10 @@
       },
       {
         "key": "my-test",
-        "variations": [0, 1],
+        "variations": [
+          0,
+          1
+        ],
         "parentConditions": [
           {
             "id": "parentFlag",
@@ -5679,15 +7395,29 @@
     [
       "SavedGroups correctly pulled from context for experiment",
       {
-        "attributes": { "id": "4" },
-        "savedGroups": { "group_id": ["4", "5", "6"] }
+        "attributes": {
+          "id": "4"
+        },
+        "savedGroups": {
+          "group_id": [
+            "4",
+            "5",
+            "6"
+          ]
+        }
       },
       {
         "key": "group-filtered-test",
         "condition": {
-          "id": { "$inGroup": "group_id" }
+          "id": {
+            "$inGroup": "group_id"
+          }
         },
-        "variations": [0, 1, 2]
+        "variations": [
+          0,
+          1,
+          2
+        ]
       },
       0,
       true,
@@ -5699,8 +7429,14 @@
       "even range, 0.2",
       0.2,
       [
-        [0, 0.5],
-        [0.5, 1]
+        [
+          0,
+          0.5
+        ],
+        [
+          0.5,
+          1
+        ]
       ],
       0
     ],
@@ -5708,8 +7444,14 @@
       "even range, 0.4",
       0.4,
       [
-        [0, 0.5],
-        [0.5, 1]
+        [
+          0,
+          0.5
+        ],
+        [
+          0.5,
+          1
+        ]
       ],
       0
     ],
@@ -5717,8 +7459,14 @@
       "even range, 0.6",
       0.6,
       [
-        [0, 0.5],
-        [0.5, 1]
+        [
+          0,
+          0.5
+        ],
+        [
+          0.5,
+          1
+        ]
       ],
       1
     ],
@@ -5726,8 +7474,14 @@
       "even range, 0.8",
       0.8,
       [
-        [0, 0.5],
-        [0.5, 1]
+        [
+          0,
+          0.5
+        ],
+        [
+          0.5,
+          1
+        ]
       ],
       1
     ],
@@ -5735,8 +7489,14 @@
       "even range, 0",
       0,
       [
-        [0, 0.5],
-        [0.5, 1]
+        [
+          0,
+          0.5
+        ],
+        [
+          0.5,
+          1
+        ]
       ],
       0
     ],
@@ -5744,8 +7504,14 @@
       "even range, 0.5",
       0.5,
       [
-        [0, 0.5],
-        [0.5, 1]
+        [
+          0,
+          0.5
+        ],
+        [
+          0.5,
+          1
+        ]
       ],
       1
     ],
@@ -5753,8 +7519,14 @@
       "reduced range, 0.2",
       0.2,
       [
-        [0, 0.25],
-        [0.5, 0.75]
+        [
+          0,
+          0.25
+        ],
+        [
+          0.5,
+          0.75
+        ]
       ],
       0
     ],
@@ -5762,8 +7534,14 @@
       "reduced range, 0.4",
       0.4,
       [
-        [0, 0.25],
-        [0.5, 0.75]
+        [
+          0,
+          0.25
+        ],
+        [
+          0.5,
+          0.75
+        ]
       ],
       -1
     ],
@@ -5771,8 +7549,14 @@
       "reduced range, 0.6",
       0.6,
       [
-        [0, 0.25],
-        [0.5, 0.75]
+        [
+          0,
+          0.25
+        ],
+        [
+          0.5,
+          0.75
+        ]
       ],
       1
     ],
@@ -5780,8 +7564,14 @@
       "reduced range, 0.8",
       0.8,
       [
-        [0, 0.25],
-        [0.5, 0.75]
+        [
+          0,
+          0.25
+        ],
+        [
+          0.5,
+          0.75
+        ]
       ],
       -1
     ],
@@ -5789,8 +7579,14 @@
       "reduced range, 0.25",
       0.25,
       [
-        [0, 0.25],
-        [0.5, 0.75]
+        [
+          0,
+          0.25
+        ],
+        [
+          0.5,
+          0.75
+        ]
       ],
       -1
     ],
@@ -5798,8 +7594,14 @@
       "reduced range, 0.5",
       0.5,
       [
-        [0, 0.25],
-        [0.5, 0.75]
+        [
+          0,
+          0.25
+        ],
+        [
+          0.5,
+          0.75
+        ]
       ],
       1
     ],
@@ -5807,17 +7609,44 @@
       "zero range",
       0.5,
       [
-        [0, 0.5],
-        [0.5, 0.5],
-        [0.5, 1]
+        [
+          0,
+          0.5
+        ],
+        [
+          0.5,
+          0.5
+        ],
+        [
+          0.5,
+          1
+        ]
       ],
       2
     ]
   ],
   "getQueryStringOverride": [
-    ["empty url", "my-test", "", 2, null],
-    ["no query string", "my-test", "http://example.com", 2, null],
-    ["empty query string", "my-test", "http://example.com?", 2, null],
+    [
+      "empty url",
+      "my-test",
+      "",
+      2,
+      null
+    ],
+    [
+      "no query string",
+      "my-test",
+      "http://example.com",
+      2,
+      null
+    ],
+    [
+      "empty query string",
+      "my-test",
+      "http://example.com?",
+      2,
+      null
+    ],
     [
       "no query string match",
       "my-test",
@@ -5825,14 +7654,62 @@
       2,
       null
     ],
-    ["invalid query string", "my-test", "http://example.com??&&&?#", 2, null],
-    ["simple match 0", "my-test", "http://example.com?my-test=0", 2, 0],
-    ["simple match 1", "my-test", "http://example.com?my-test=1", 2, 1],
-    ["negative variation", "my-test", "http://example.com?my-test=-1", 2, null],
-    ["float", "my-test", "http://example.com?my-test=2.054", 2, null],
-    ["string", "my-test", "http://example.com?my-test=foo", 2, null],
-    ["variation too high", "my-test", "http://example.com?my-test=5", 2, null],
-    ["high numVariations", "my-test", "http://example.com?my-test=5", 6, 5],
+    [
+      "invalid query string",
+      "my-test",
+      "http://example.com??&&&?#",
+      2,
+      null
+    ],
+    [
+      "simple match 0",
+      "my-test",
+      "http://example.com?my-test=0",
+      2,
+      0
+    ],
+    [
+      "simple match 1",
+      "my-test",
+      "http://example.com?my-test=1",
+      2,
+      1
+    ],
+    [
+      "negative variation",
+      "my-test",
+      "http://example.com?my-test=-1",
+      2,
+      null
+    ],
+    [
+      "float",
+      "my-test",
+      "http://example.com?my-test=2.054",
+      2,
+      null
+    ],
+    [
+      "string",
+      "my-test",
+      "http://example.com?my-test=foo",
+      2,
+      null
+    ],
+    [
+      "variation too high",
+      "my-test",
+      "http://example.com?my-test=5",
+      2,
+      null
+    ],
+    [
+      "high numVariations",
+      "my-test",
+      "http://example.com?my-test=5",
+      6,
+      5
+    ],
     [
       "equal to numVariations",
       "my-test",
@@ -5854,33 +7731,215 @@
       2,
       1
     ],
-    ["anchor", "my-test", "http://example.com?my-test=1#foo", 2, 1]
+    [
+      "anchor",
+      "my-test",
+      "http://example.com?my-test=1#foo",
+      2,
+      1
+    ]
   ],
   "inNamespace": [
-    ["user 1, namespace1, 1", "1", ["namespace1", 0, 0.4], false],
-    ["user 1, namespace1, 2", "1", ["namespace1", 0.4, 1], true],
-    ["user 1, namespace2, 1", "1", ["namespace2", 0, 0.4], false],
-    ["user 1, namespace2, 2", "1", ["namespace2", 0.4, 1], true],
-    ["user 2, namespace1, 1", "2", ["namespace1", 0, 0.4], false],
-    ["user 2, namespace1, 2", "2", ["namespace1", 0.4, 1], true],
-    ["user 2, namespace2, 1", "2", ["namespace2", 0, 0.4], false],
-    ["user 2, namespace2, 2", "2", ["namespace2", 0.4, 1], true],
-    ["user 3, namespace1, 1", "3", ["namespace1", 0, 0.4], false],
-    ["user 3, namespace1, 2", "3", ["namespace1", 0.4, 1], true],
-    ["user 3, namespace2, 1", "3", ["namespace2", 0, 0.4], true],
-    ["user 3, namespace2, 2", "3", ["namespace2", 0.4, 1], false],
-    ["user 4, namespace1, 1", "4", ["namespace1", 0, 0.4], false],
-    ["user 4, namespace1, 2", "4", ["namespace1", 0.4, 1], true],
-    ["user 4, namespace2, 1", "4", ["namespace2", 0, 0.4], true],
-    ["user 4, namespace2, 2", "4", ["namespace2", 0.4, 1], false]
+    [
+      "user 1, namespace1, 1",
+      "1",
+      [
+        "namespace1",
+        0,
+        0.4
+      ],
+      false
+    ],
+    [
+      "user 1, namespace1, 2",
+      "1",
+      [
+        "namespace1",
+        0.4,
+        1
+      ],
+      true
+    ],
+    [
+      "user 1, namespace2, 1",
+      "1",
+      [
+        "namespace2",
+        0,
+        0.4
+      ],
+      false
+    ],
+    [
+      "user 1, namespace2, 2",
+      "1",
+      [
+        "namespace2",
+        0.4,
+        1
+      ],
+      true
+    ],
+    [
+      "user 2, namespace1, 1",
+      "2",
+      [
+        "namespace1",
+        0,
+        0.4
+      ],
+      false
+    ],
+    [
+      "user 2, namespace1, 2",
+      "2",
+      [
+        "namespace1",
+        0.4,
+        1
+      ],
+      true
+    ],
+    [
+      "user 2, namespace2, 1",
+      "2",
+      [
+        "namespace2",
+        0,
+        0.4
+      ],
+      false
+    ],
+    [
+      "user 2, namespace2, 2",
+      "2",
+      [
+        "namespace2",
+        0.4,
+        1
+      ],
+      true
+    ],
+    [
+      "user 3, namespace1, 1",
+      "3",
+      [
+        "namespace1",
+        0,
+        0.4
+      ],
+      false
+    ],
+    [
+      "user 3, namespace1, 2",
+      "3",
+      [
+        "namespace1",
+        0.4,
+        1
+      ],
+      true
+    ],
+    [
+      "user 3, namespace2, 1",
+      "3",
+      [
+        "namespace2",
+        0,
+        0.4
+      ],
+      true
+    ],
+    [
+      "user 3, namespace2, 2",
+      "3",
+      [
+        "namespace2",
+        0.4,
+        1
+      ],
+      false
+    ],
+    [
+      "user 4, namespace1, 1",
+      "4",
+      [
+        "namespace1",
+        0,
+        0.4
+      ],
+      false
+    ],
+    [
+      "user 4, namespace1, 2",
+      "4",
+      [
+        "namespace1",
+        0.4,
+        1
+      ],
+      true
+    ],
+    [
+      "user 4, namespace2, 1",
+      "4",
+      [
+        "namespace2",
+        0,
+        0.4
+      ],
+      true
+    ],
+    [
+      "user 4, namespace2, 2",
+      "4",
+      [
+        "namespace2",
+        0.4,
+        1
+      ],
+      false
+    ]
   ],
   "getEqualWeights": [
-    [-1, []],
-    [0, []],
-    [1, [1]],
-    [2, [0.5, 0.5]],
-    [3, [0.33333333, 0.33333333, 0.33333333]],
-    [4, [0.25, 0.25, 0.25, 0.25]]
+    [
+      -1,
+      []
+    ],
+    [
+      0,
+      []
+    ],
+    [
+      1,
+      [
+        1
+      ]
+    ],
+    [
+      2,
+      [
+        0.5,
+        0.5
+      ]
+    ],
+    [
+      3,
+      [
+        0.33333333,
+        0.33333333,
+        0.33333333
+      ]
+    ],
+    [
+      4,
+      [
+        0.25,
+        0.25,
+        0.25,
+        0.25
+      ]
+    ]
   ],
   "decrypt": [
     [
@@ -5948,13 +8007,20 @@
     [
       "use fallbackAttribute when missing hashAttribute",
       {
-        "attributes": { "anonymousId": "123" },
+        "attributes": {
+          "anonymousId": "123"
+        },
         "features": {
           "feature": {
             "defaultValue": 0,
             "rules": [
               {
-                "variations": [0, 1, 2, 3],
+                "variations": [
+                  0,
+                  1,
+                  2,
+                  3
+                ],
                 "hashAttribute": "id",
                 "fallbackAttribute": "anonymousId"
               }
@@ -5978,7 +8044,9 @@
       },
       {
         "anonymousId||123": {
-          "assignments": { "feature__0": "3" },
+          "assignments": {
+            "feature__0": "3"
+          },
           "attributeName": "anonymousId",
           "attributeValue": "123"
         }
@@ -6004,11 +8072,31 @@
                 "fallbackAttribute": "deviceId",
                 "hashVersion": 2,
                 "bucketVersion": 0,
-                "condition": { "country": "USA" },
-                "variations": ["control", "red", "blue"],
-                "meta": [{ "key": "0" }, { "key": "1" }, { "key": "2" }],
+                "condition": {
+                  "country": "USA"
+                },
+                "variations": [
+                  "control",
+                  "red",
+                  "blue"
+                ],
+                "meta": [
+                  {
+                    "key": "0"
+                  },
+                  {
+                    "key": "1"
+                  },
+                  {
+                    "key": "2"
+                  }
+                ],
                 "coverage": 1,
-                "weights": [0.3334, 0.3333, 0.3333],
+                "weights": [
+                  0.3334,
+                  0.3333,
+                  0.3333
+                ],
                 "phase": "0"
               }
             ]
@@ -6032,7 +8120,9 @@
       },
       {
         "deviceId||d123": {
-          "assignments": { "feature-exp__0": "1" },
+          "assignments": {
+            "feature-exp__0": "1"
+          },
           "attributeName": "deviceId",
           "attributeValue": "d123"
         }
@@ -6058,11 +8148,31 @@
                 "fallbackAttribute": "deviceId",
                 "hashVersion": 2,
                 "bucketVersion": 0,
-                "condition": { "country": "USA" },
-                "variations": ["control", "red", "blue"],
-                "meta": [{ "key": "0" }, { "key": "1" }, { "key": "2" }],
+                "condition": {
+                  "country": "USA"
+                },
+                "variations": [
+                  "control",
+                  "red",
+                  "blue"
+                ],
+                "meta": [
+                  {
+                    "key": "0"
+                  },
+                  {
+                    "key": "1"
+                  },
+                  {
+                    "key": "2"
+                  }
+                ],
                 "coverage": 1,
-                "weights": [0.3334, 0.3333, 0.3333],
+                "weights": [
+                  0.3334,
+                  0.3333,
+                  0.3333
+                ],
                 "phase": "0"
               }
             ]
@@ -6093,7 +8203,9 @@
       },
       {
         "deviceId||d123": {
-          "assignments": { "feature-exp__0": "2" },
+          "assignments": {
+            "feature-exp__0": "2"
+          },
           "attributeName": "deviceId",
           "attributeValue": "d123"
         }
@@ -6119,11 +8231,31 @@
                 "fallbackAttribute": "deviceId",
                 "hashVersion": 2,
                 "bucketVersion": 0,
-                "condition": { "country": "USA" },
-                "variations": ["control", "red", "blue"],
-                "meta": [{ "key": "0" }, { "key": "1" }, { "key": "2" }],
+                "condition": {
+                  "country": "USA"
+                },
+                "variations": [
+                  "control",
+                  "red",
+                  "blue"
+                ],
+                "meta": [
+                  {
+                    "key": "0"
+                  },
+                  {
+                    "key": "1"
+                  },
+                  {
+                    "key": "2"
+                  }
+                ],
                 "coverage": 1,
-                "weights": [0.3334, 0.3333, 0.3333],
+                "weights": [
+                  0.3334,
+                  0.3333,
+                  0.3333
+                ],
                 "phase": "0"
               }
             ]
@@ -6154,7 +8286,9 @@
       },
       {
         "deviceId||d123": {
-          "assignments": { "feature-exp__0": "1" },
+          "assignments": {
+            "feature-exp__0": "1"
+          },
           "attributeName": "deviceId",
           "attributeValue": "d123"
         }
@@ -6180,11 +8314,31 @@
                 "fallbackAttribute": "anonymousId",
                 "hashVersion": 2,
                 "bucketVersion": 0,
-                "condition": { "country": "USA" },
-                "variations": ["control", "red", "blue"],
-                "meta": [{ "key": "0" }, { "key": "1" }, { "key": "2" }],
+                "condition": {
+                  "country": "USA"
+                },
+                "variations": [
+                  "control",
+                  "red",
+                  "blue"
+                ],
+                "meta": [
+                  {
+                    "key": "0"
+                  },
+                  {
+                    "key": "1"
+                  },
+                  {
+                    "key": "2"
+                  }
+                ],
                 "coverage": 1,
-                "weights": [0.3334, 0.3333, 0.3333],
+                "weights": [
+                  0.3334,
+                  0.3333,
+                  0.3333
+                ],
                 "phase": "0"
               }
             ]
@@ -6215,12 +8369,16 @@
       },
       {
         "anonymousId||ses123": {
-          "assignments": { "feature-exp__0": "1" },
+          "assignments": {
+            "feature-exp__0": "1"
+          },
           "attributeName": "anonymousId",
           "attributeValue": "ses123"
         },
         "id||i123": {
-          "assignments": { "feature-exp__0": "1" },
+          "assignments": {
+            "feature-exp__0": "1"
+          },
           "attributeName": "id",
           "attributeValue": "i123"
         }
@@ -6246,11 +8404,31 @@
                 "fallbackAttribute": "anonymousId",
                 "hashVersion": 2,
                 "bucketVersion": 0,
-                "condition": { "country": "USA" },
-                "variations": ["control", "red", "blue"],
-                "meta": [{ "key": "0" }, { "key": "1" }, { "key": "2" }],
+                "condition": {
+                  "country": "USA"
+                },
+                "variations": [
+                  "control",
+                  "red",
+                  "blue"
+                ],
+                "meta": [
+                  {
+                    "key": "0"
+                  },
+                  {
+                    "key": "1"
+                  },
+                  {
+                    "key": "2"
+                  }
+                ],
                 "coverage": 1,
-                "weights": [0.3334, 0.3333, 0.3333],
+                "weights": [
+                  0.3334,
+                  0.3333,
+                  0.3333
+                ],
                 "phase": "0"
               }
             ]
@@ -6288,12 +8466,16 @@
       },
       {
         "anonymousId||ses123": {
-          "assignments": { "feature-exp__0": "2" },
+          "assignments": {
+            "feature-exp__0": "2"
+          },
           "attributeName": "anonymousId",
           "attributeValue": "ses123"
         },
         "id||i123": {
-          "assignments": { "feature-exp__0": "1" },
+          "assignments": {
+            "feature-exp__0": "1"
+          },
           "attributeName": "id",
           "attributeValue": "i123"
         }
@@ -6318,11 +8500,31 @@
                 "fallbackAttribute": "deviceId",
                 "hashVersion": 2,
                 "bucketVersion": 3,
-                "condition": { "country": "USA" },
-                "variations": ["control", "red", "blue"],
-                "meta": [{ "key": "0" }, { "key": "1" }, { "key": "2" }],
+                "condition": {
+                  "country": "USA"
+                },
+                "variations": [
+                  "control",
+                  "red",
+                  "blue"
+                ],
+                "meta": [
+                  {
+                    "key": "0"
+                  },
+                  {
+                    "key": "1"
+                  },
+                  {
+                    "key": "2"
+                  }
+                ],
                 "coverage": 1,
-                "weights": [0.3334, 0.3333, 0.3333],
+                "weights": [
+                  0.3334,
+                  0.3333,
+                  0.3333
+                ],
                 "phase": "0"
               }
             ]
@@ -6331,7 +8533,9 @@
       },
       [
         {
-          "assignments": { "feature-exp__0": "1" },
+          "assignments": {
+            "feature-exp__0": "1"
+          },
           "attributeName": "id",
           "attributeValue": "i123"
         }
@@ -6380,11 +8584,31 @@
                 "hashVersion": 2,
                 "bucketVersion": 3,
                 "minBucketVersion": 3,
-                "condition": { "country": "USA" },
-                "variations": ["control", "red", "blue"],
-                "meta": [{ "key": "0" }, { "key": "1" }, { "key": "2" }],
+                "condition": {
+                  "country": "USA"
+                },
+                "variations": [
+                  "control",
+                  "red",
+                  "blue"
+                ],
+                "meta": [
+                  {
+                    "key": "0"
+                  },
+                  {
+                    "key": "1"
+                  },
+                  {
+                    "key": "2"
+                  }
+                ],
                 "coverage": 1,
-                "weights": [0.3334, 0.3333, 0.3333],
+                "weights": [
+                  0.3334,
+                  0.3333,
+                  0.3333
+                ],
                 "phase": "0"
               }
             ]
@@ -6393,7 +8617,9 @@
       },
       [
         {
-          "assignments": { "feature-exp__0": "1" },
+          "assignments": {
+            "feature-exp__0": "1"
+          },
           "attributeName": "id",
           "attributeValue": "i123"
         }
@@ -6430,11 +8656,31 @@
                 "hashVersion": 2,
                 "bucketVersion": 1,
                 "disableStickyBucketing": true,
-                "condition": { "country": "USA" },
-                "variations": ["control", "red", "blue"],
-                "meta": [{ "key": "0" }, { "key": "1" }, { "key": "2" }],
+                "condition": {
+                  "country": "USA"
+                },
+                "variations": [
+                  "control",
+                  "red",
+                  "blue"
+                ],
+                "meta": [
+                  {
+                    "key": "0"
+                  },
+                  {
+                    "key": "1"
+                  },
+                  {
+                    "key": "2"
+                  }
+                ],
                 "coverage": 1,
-                "weights": [0.3334, 0.3333, 0.3333],
+                "weights": [
+                  0.3334,
+                  0.3333,
+                  0.3333
+                ],
                 "phase": "0"
               }
             ]
@@ -6445,7 +8691,9 @@
         {
           "attributeName": "id",
           "attributeValue": "i123",
-          "assignments": { "feature-exp__0": "1" }
+          "assignments": {
+            "feature-exp__0": "1"
+          }
         }
       ],
       "exp1",
@@ -6465,7 +8713,9 @@
         "id||i123": {
           "attributeName": "id",
           "attributeValue": "i123",
-          "assignments": { "feature-exp__0": "1" }
+          "assignments": {
+            "feature-exp__0": "1"
+          }
         }
       }
     ],
@@ -6490,11 +8740,31 @@
                 "hashVersion": 2,
                 "bucketVersion": 3,
                 "minBucketVersion": 3,
-                "condition": { "country": "USA" },
-                "variations": ["control", "red", "blue"],
-                "meta": [{ "key": "0" }, { "key": "1" }, { "key": "2" }],
+                "condition": {
+                  "country": "USA"
+                },
+                "variations": [
+                  "control",
+                  "red",
+                  "blue"
+                ],
+                "meta": [
+                  {
+                    "key": "0"
+                  },
+                  {
+                    "key": "1"
+                  },
+                  {
+                    "key": "2"
+                  }
+                ],
                 "coverage": 1,
-                "weights": [0.3334, 0.3333, 0.3333],
+                "weights": [
+                  0.3334,
+                  0.3333,
+                  0.3333
+                ],
                 "phase": "0"
               }
             ]
@@ -6525,7 +8795,9 @@
       },
       {
         "deviceId||d123": {
-          "assignments": { "feature-exp__3": "2" },
+          "assignments": {
+            "feature-exp__3": "2"
+          },
           "attributeName": "deviceId",
           "attributeValue": "d123"
         }
@@ -6552,11 +8824,31 @@
                 "hashVersion": 2,
                 "bucketVersion": 3,
                 "minBucketVersion": 3,
-                "condition": { "country": "USA" },
-                "variations": ["control", "red", "blue"],
-                "meta": [{ "key": "0" }, { "key": "1" }, { "key": "2" }],
+                "condition": {
+                  "country": "USA"
+                },
+                "variations": [
+                  "control",
+                  "red",
+                  "blue"
+                ],
+                "meta": [
+                  {
+                    "key": "0"
+                  },
+                  {
+                    "key": "1"
+                  },
+                  {
+                    "key": "2"
+                  }
+                ],
                 "coverage": 1,
-                "weights": [0.3334, 0.3333, 0.3333],
+                "weights": [
+                  0.3334,
+                  0.3333,
+                  0.3333
+                ],
                 "phase": "0"
               }
             ]
@@ -6576,7 +8868,9 @@
       null,
       {
         "deviceId||d123": {
-          "assignments": { "feature-exp__2": "2" },
+          "assignments": {
+            "feature-exp__2": "2"
+          },
           "attributeName": "deviceId",
           "attributeValue": "d123"
         }
@@ -6603,11 +8897,31 @@
                 "hashVersion": 2,
                 "bucketVersion": 3,
                 "minBucketVersion": 3,
-                "condition": { "country": "USA" },
-                "variations": ["control", "red", "blue"],
-                "meta": [{ "key": "0" }, { "key": "1" }, { "key": "2" }],
+                "condition": {
+                  "country": "USA"
+                },
+                "variations": [
+                  "control",
+                  "red",
+                  "blue"
+                ],
+                "meta": [
+                  {
+                    "key": "0"
+                  },
+                  {
+                    "key": "1"
+                  },
+                  {
+                    "key": "2"
+                  }
+                ],
                 "coverage": 1,
-                "weights": [0.3334, 0.3333, 0.3333],
+                "weights": [
+                  0.3334,
+                  0.3333,
+                  0.3333
+                ],
                 "phase": "0"
               }
             ]
@@ -6668,11 +8982,31 @@
                 "hashVersion": 2,
                 "bucketVersion": 4,
                 "minBucketVersion": 3,
-                "condition": { "country": "USA" },
-                "variations": ["control", "red", "blue"],
-                "meta": [{ "key": "0" }, { "key": "1" }, { "key": "2" }],
+                "condition": {
+                  "country": "USA"
+                },
+                "variations": [
+                  "control",
+                  "red",
+                  "blue"
+                ],
+                "meta": [
+                  {
+                    "key": "0"
+                  },
+                  {
+                    "key": "1"
+                  },
+                  {
+                    "key": "2"
+                  }
+                ],
                 "coverage": 1,
-                "weights": [0.3334, 0.3333, 0.3333],
+                "weights": [
+                  0.3334,
+                  0.3333,
+                  0.3333
+                ],
                 "phase": "0"
               }
             ]
@@ -6717,7 +9051,9 @@
     [
       "redirects correctly without query strings",
       {
-        "attributes": { "id": "1" },
+        "attributes": {
+          "id": "1"
+        },
         "url": "http://www.example.com/home",
         "experiments": [
           {
@@ -6729,7 +9065,10 @@
                 "pattern": "http://www.example.com/home"
               }
             ],
-            "weights": [0.1, 0.9],
+            "weights": [
+              0.1,
+              0.9
+            ],
             "variations": [
               {},
               {
@@ -6750,7 +9089,9 @@
     [
       "redirects with query string on original url and persistQueryString enabled",
       {
-        "attributes": { "id": "1" },
+        "attributes": {
+          "id": "1"
+        },
         "url": "http://www.example.com/home?color=blue&food=sushi",
         "experiments": [
           {
@@ -6762,7 +9103,10 @@
                 "pattern": "http://www.example.com/home"
               }
             ],
-            "weights": [0.1, 0.9],
+            "weights": [
+              0.1,
+              0.9
+            ],
             "variations": [
               {},
               {
@@ -6784,7 +9128,9 @@
     [
       "merges query strings on original url & redirect url with param conflicts correctly when persistQueryString enabled",
       {
-        "attributes": { "id": "1" },
+        "attributes": {
+          "id": "1"
+        },
         "url": "http://www.example.com/home?color=blue&food=sushi&title=original",
         "experiments": [
           {
@@ -6796,7 +9142,10 @@
                 "pattern": "http://www.example.com/home"
               }
             ],
-            "weights": [0.1, 0.9],
+            "weights": [
+              0.1,
+              0.9
+            ],
             "variations": [
               {},
               {
@@ -6818,7 +9167,9 @@
     [
       "only performs a redirect for first eligible experiment when there are multiple eligible experiments",
       {
-        "attributes": { "id": "1" },
+        "attributes": {
+          "id": "1"
+        },
         "url": "http://www.example.com/home",
         "experiments": [
           {
@@ -6830,7 +9181,10 @@
                 "pattern": "http://www.example.com/"
               }
             ],
-            "weights": [0.1, 0.9],
+            "weights": [
+              0.1,
+              0.9
+            ],
             "variations": [
               {},
               {
@@ -6847,7 +9201,10 @@
                 "pattern": "http://www.example.com/home"
               }
             ],
-            "weights": [0.1, 0.9],
+            "weights": [
+              0.1,
+              0.9
+            ],
             "variations": [
               {},
               {
@@ -6864,7 +9221,10 @@
                 "pattern": "http://www.example.com/home"
               }
             ],
-            "weights": [0.1, 0.9],
+            "weights": [
+              0.1,
+              0.9
+            ],
             "variations": [
               {},
               {

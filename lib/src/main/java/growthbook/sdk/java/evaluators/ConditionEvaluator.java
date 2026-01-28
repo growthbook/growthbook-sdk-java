@@ -363,17 +363,16 @@ public class ConditionEvaluator implements IConditionEvaluator {
                 break;
 
             case REGEX:
-                if (actual == null || DataType.NULL.equals(attributeDataType)) return false;
-                Pattern pattern = Pattern.compile(expected.getAsString());
-                Matcher matcher = pattern.matcher(actual.getAsString());
+                return evalRegex(actual, expected, attributeDataType, false, false);
 
-                boolean matches = false;
+            case REGEX_I:
+                return evalRegex(actual, expected, attributeDataType, true, false);
 
-                while (matcher.find()) {
-                    matches = true;
-                }
+            case NOT_REGEX:
+                return evalRegex(actual, expected, attributeDataType, false, true);
 
-                return matches;
+            case NOT_REGEX_I:
+                return evalRegex(actual, expected, attributeDataType, true, true);
 
             case NE:
                 if (DataType.NULL.equals(attributeDataType)) return false;
@@ -680,5 +679,24 @@ public class ConditionEvaluator implements IConditionEvaluator {
                         conditionValue.getAsJsonPrimitive())
                 .equals(extractor.apply(
                         attributeValue.getAsJsonPrimitive()));
+    }
+
+    private static Boolean evalRegex(@Nullable JsonElement actual,
+                                              JsonElement expected,
+                                              DataType attributeDataType,
+                                              boolean caseInsensitive,
+                                              boolean negate) {
+        if (actual == null || DataType.NULL.equals(attributeDataType)) return false;
+
+        int flags = caseInsensitive ? Pattern.CASE_INSENSITIVE : 0;
+
+        try {
+            Pattern pattern = Pattern.compile(expected.getAsString(), flags);
+            Matcher matcher = pattern.matcher(actual.getAsString());
+            boolean matches = matcher.find();
+            return negate != matches;
+        } catch (Exception e) {
+            return false;
+        }
     }
 }
