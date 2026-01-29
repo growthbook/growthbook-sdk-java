@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.10.6](https://github.com/growthbook/growthbook-sdk-java/compare/v0.10.5...0.10.6) (2026-01-29)
+
+
+### Features
+
+* add support for regexi operator ([#191](https://github.com/growthbook/growthbook-sdk-java/issues/191)) ([e65a514](https://github.com/growthbook/growthbook-sdk-java/commit/e65a514b858b5ea46ecf59f3e9025a49a11c75cb))
+* Implement ETag caching ([#187](https://github.com/growthbook/growthbook-sdk-java/issues/187)) ([16ef464](https://github.com/growthbook/growthbook-sdk-java/commit/16ef4641e835c0f0279dc8c7d906bd63ed6a091f))
+
 ## [0.10.5](https://github.com/growthbook/growthbook-sdk-java/compare/v0.10.4...0.10.5) (2025-12-18)
 
 
