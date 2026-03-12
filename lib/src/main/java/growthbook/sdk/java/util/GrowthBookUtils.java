@@ -918,7 +918,7 @@ public class GrowthBookUtils {
     }
 
     public static <K, V> Map<K, V> mergeMaps(@Nullable Map<K, V> base, @Nullable Map<K, V> overrides) {
-        if (base == null || base.isEmpty()) return overrides != null ? overrides : Collections.emptyMap();
+        if (base == null || base.isEmpty()) return overrides != null ? new HashMap<>(overrides) : Collections.emptyMap();
         if (overrides == null || overrides.isEmpty()) return new HashMap<>(base);
         Map<K, V> merged = new HashMap<>(base);
         merged.putAll(overrides);
