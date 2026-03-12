@@ -32,8 +32,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-import java.util.stream.Collectors;
-
 /**
  * <b>INTERNAL</b>: Implementation of for internal utility methods to support {@link growthbook.sdk.java.GrowthBook}
  */
@@ -919,17 +917,12 @@ public class GrowthBookUtils {
         return -1;
     }
 
-    public static  <K, V> Map<K, V> mergeMaps(List<Map<K, V>> maps) {
-        return maps.stream()
-                .filter(Objects::nonNull)
-                .flatMap(map -> map.entrySet()
-                        .stream())
-                .collect(Collectors.toMap(
-                                Map.Entry::getKey,
-                                Map.Entry::getValue,
-                                (v1, v2) -> v2
-                        )
-                );
-
+    public static <K, V> Map<K, V> mergeMaps(@Nullable Map<K, V> base, @Nullable Map<K, V> overrides) {
+        if (base == null && overrides == null) return Collections.emptyMap();
+        if (base == null || base.isEmpty()) return overrides != null ? overrides : Collections.emptyMap();
+        if (overrides == null || overrides.isEmpty()) return base;
+        Map<K, V> merged = new HashMap<>(base);
+        merged.putAll(overrides);
+        return merged;
     }
 }

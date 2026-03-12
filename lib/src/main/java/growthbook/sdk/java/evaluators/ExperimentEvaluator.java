@@ -419,13 +419,11 @@ public class ExperimentEvaluator implements IExperimentEvaluator {
 
     private Map<String, Integer> getForcedVariations(EvaluationContext evaluationContext) {
         Map<String, Integer> globalForcedVariations = evaluationContext.getGlobal() != null
-                ? evaluationContext.getGlobal().getForcedVariations()
-                : Collections.emptyMap();
+                ? evaluationContext.getGlobal().getForcedVariations() : null;
 
         Map<String, Integer> userForcedVariations = evaluationContext.getUser() != null
-                ? evaluationContext.getUser().getForcedVariationsMap()
-                : Collections.emptyMap();
+                ? evaluationContext.getUser().getForcedVariationsMap() : null;
 
-        return GrowthBookUtils.mergeMaps(Arrays.asList(globalForcedVariations, userForcedVariations));
+        return GrowthBookUtils.mergeMaps(globalForcedVariations, userForcedVariations);
     }
 }

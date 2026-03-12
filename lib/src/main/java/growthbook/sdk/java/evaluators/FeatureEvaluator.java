@@ -472,12 +472,6 @@ public class FeatureEvaluator implements IFeatureEvaluator {
                 ? evaluationContext.getUser().getForcedFeatureValues()
                 : null;
 
-        if (globalFeatures == null || globalFeatures.isEmpty()) {
-            return userFeatures == null ? new HashMap<>() : userFeatures;
-        } else if (userFeatures == null || userFeatures.isEmpty()) {
-            return globalFeatures;
-        }
-
-        return GrowthBookUtils.mergeMaps(Arrays.asList(globalFeatures, userFeatures));
+        return GrowthBookUtils.mergeMaps(globalFeatures, userFeatures);
     }
 }
