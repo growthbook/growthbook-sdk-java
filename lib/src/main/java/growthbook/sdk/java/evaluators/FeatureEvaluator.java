@@ -466,12 +466,12 @@ public class FeatureEvaluator implements IFeatureEvaluator {
     private Map<String, Object> getForcedFeatureValues(EvaluationContext evaluationContext) {
         Map<String, Object> globalFeatures = evaluationContext.getGlobal() != null
                 ? evaluationContext.getGlobal().getForcedFeatureValues()
-                : Collections.emptyMap();
+                : null;
 
         Map<String, Object> userFeatures = evaluationContext.getUser() != null
                 ? evaluationContext.getUser().getForcedFeatureValues()
-                : Collections.emptyMap();
+                : null;
 
-        return GrowthBookUtils.mergeMaps(Arrays.asList(globalFeatures, userFeatures));
+        return GrowthBookUtils.mergeMaps(globalFeatures, userFeatures);
     }
 }
