@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.10.7](https://github.com/growthbook/growthbook-sdk-java/compare/v0.10.6...0.10.7) (2026-03-17)
+
+
+### Bug Fixes
+
+* isOn() returns true for map/object and other missing types ([#195](https://github.com/growthbook/growthbook-sdk-java/issues/195)) ([30bf5e2](https://github.com/growthbook/growthbook-sdk-java/commit/30bf5e2fd03a498015aa82ac6f9707e60634d8c9))
+
 ## [0.10.6](https://github.com/growthbook/growthbook-sdk-java/compare/v0.10.5...0.10.6) (2026-01-29)
 
 
