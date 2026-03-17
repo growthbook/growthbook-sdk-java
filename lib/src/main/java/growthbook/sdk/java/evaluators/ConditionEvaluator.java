@@ -5,7 +5,6 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
 import com.google.gson.JsonSyntaxException;
-import com.google.gson.reflect.TypeToken;
 import growthbook.sdk.java.util.GrowthBookJsonUtils;
 import growthbook.sdk.java.model.Operator;
 import growthbook.sdk.java.util.StringUtils;
@@ -13,7 +12,6 @@ import growthbook.sdk.java.model.DataType;
 import lombok.extern.slf4j.Slf4j;
 
 import javax.annotation.Nullable;
-import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Map;
@@ -233,79 +231,23 @@ public class ConditionEvaluator implements IConditionEvaluator {
         switch (operator) {
             case IN:
                 if (actual == null) return false;
+                if (!expected.isJsonArray()) return false;
+                return isIn(actual, expected.getAsJsonArray(), false);
 
-                if (DataType.ARRAY == attributeDataType) {
-                    if (!expected.isJsonArray()) return false;
-
-                    JsonArray value = actual.getAsJsonArray();
-                    JsonArray expectedArr = expected.getAsJsonArray();
-
-                    return isIn(value, expectedArr);
-                }
-
-                if (DataType.STRING == attributeDataType) {
-                    String value = actual.getAsString();
-                    Type listType = new TypeToken<ArrayList<String>>() {
-                    }.getType();
-                    ArrayList<String> conditionsList = jsonUtils.gson.fromJson(expected, listType);
-                    return conditionsList.contains(value);
-                }
-
-                if (DataType.NUMBER == attributeDataType) {
-                    Float value = actual.getAsFloat();
-                    Type listType = new TypeToken<ArrayList<Float>>() {
-                    }.getType();
-                    ArrayList<Float> conditionsList = jsonUtils.gson.fromJson(expected, listType);
-                    return conditionsList.contains(value);
-                }
-
-                if (DataType.BOOLEAN == attributeDataType) {
-                    Boolean value = actual.getAsBoolean();
-                    Type listType = new TypeToken<ArrayList<Boolean>>() {
-                    }.getType();
-                    ArrayList<Boolean> conditionsList = jsonUtils.gson.fromJson(expected, listType);
-                    return conditionsList.contains(value);
-                }
-                break;
-
+            case INI:
+                if (actual == null) return false;
+                if (!expected.isJsonArray()) return false;
+                return isIn(actual, expected.getAsJsonArray(), true);
 
             case NIN:
                 if (actual == null) return false;
+                if (!expected.isJsonArray()) return false;
+                return !isIn(actual, expected.getAsJsonArray(), false);
 
-                if (DataType.ARRAY == attributeDataType) {
-                    if (!expected.isJsonArray()) return false;
-
-                    JsonArray value = actual.getAsJsonArray();
-                    JsonArray expectedArr = expected.getAsJsonArray();
-
-                    return !isIn(value, expectedArr);
-                }
-
-                if (DataType.STRING == attributeDataType) {
-                    String value = actual.getAsString();
-                    Type listType = new TypeToken<ArrayList<String>>() {
-                    }.getType();
-                    ArrayList<String> conditionsList = jsonUtils.gson.fromJson(expected, listType);
-                    return !conditionsList.contains(value);
-                }
-
-                if (DataType.NUMBER == attributeDataType) {
-                    Float value = actual.getAsFloat();
-                    Type listType = new TypeToken<ArrayList<Float>>() {
-                    }.getType();
-                    ArrayList<Float> conditionsList = jsonUtils.gson.fromJson(expected, listType);
-                    return !conditionsList.contains(value);
-                }
-
-                if (DataType.BOOLEAN == attributeDataType) {
-                    Boolean value = actual.getAsBoolean();
-                    Type listType = new TypeToken<ArrayList<Boolean>>() {
-                    }.getType();
-                    ArrayList<Boolean> conditionsList = jsonUtils.gson.fromJson(expected, listType);
-                    return !conditionsList.contains(value);
-                }
-                break;
-
+            case NINI:
+                if (actual == null) return false;
+                if (!expected.isJsonArray()) return false;
+                return !isIn(actual, expected.getAsJsonArray(), true);
 
             case GT:
                 if (actual == null || DataType.NULL.equals(attributeDataType)) {
@@ -394,20 +336,13 @@ public class ConditionEvaluator implements IConditionEvaluator {
 
             case ALL:
                 if (actual == null || !actual.isJsonArray()) return false;
-                JsonArray actualArrayForAll = (JsonArray) actual;
-                JsonArray expectedArrayForAll = (JsonArray) expected;
+                if (!expected.isJsonArray()) return false;
+                return isInAll(actual.getAsJsonArray(), expected.getAsJsonArray(), savedGroups, false);
 
-                for (int i = 0; i < expectedArrayForAll.size(); i++) {
-                    boolean passed = false;
-                    for (int j = 0; j < actualArrayForAll.size(); j++) {
-                        if (evalConditionValue(expectedArrayForAll.get(i), actualArrayForAll.get(j), savedGroups)) {
-                            passed = true;
-                            break;
-                        }
-                    }
-                    if (!passed) return false;
-                }
-                return true;
+            case ALLI:
+                if (actual == null || !actual.isJsonArray()) return false;
+                if (!expected.isJsonArray()) return false;
+                return isInAll(actual.getAsJsonArray(), expected.getAsJsonArray(), savedGroups, true);
 
             case NOT:
                 return !evalConditionValue(expected, actual, savedGroups);
@@ -472,17 +407,17 @@ public class ConditionEvaluator implements IConditionEvaluator {
                 if (actual != null && expected != null) {
                     JsonElement jsonElement = savedGroups != null ? savedGroups.get(expected.getAsString()) : null;
                     if (jsonElement != null) {
-                        return isIn(actual, jsonElement.getAsJsonArray());
+                        return isIn(actual, jsonElement.getAsJsonArray(), false);
                     }
-                    return isIn(actual, new JsonArray());
+                    return isIn(actual, new JsonArray(), false);
                 }
             case NOT_IN_GROUP:
                 if (actual != null && expected != null) {
                     JsonElement jsonElement = savedGroups != null ? savedGroups.get(expected.getAsString()) : null;
                     if (jsonElement != null) {
-                        return !isIn(actual, jsonElement.getAsJsonArray());
+                        return !isIn(actual, jsonElement.getAsJsonArray(), false);
                     }
-                    return !isIn(actual, new JsonArray());
+                    return !isIn(actual, new JsonArray(), false);
                 }
             default:
                 return false;
@@ -533,12 +468,19 @@ public class ConditionEvaluator implements IConditionEvaluator {
      * @param attributeValue Object or primitive
      * @return true if equal
      */
-    Boolean evalConditionValue(JsonElement conditionValue, @Nullable JsonElement attributeValue, @Nullable JsonObject savedGroups) {
+    Boolean evalConditionValue(JsonElement conditionValue, @Nullable JsonElement attributeValue, @Nullable JsonObject savedGroups, boolean inSensitive) {
 
         if (conditionValue == null) {
             return attributeValue == null;
         }
         DataType conditionValueElementType = GrowthBookJsonUtils.getElementType(conditionValue);
+        DataType attributeValueElementType = GrowthBookJsonUtils.getElementType(attributeValue);
+
+        if (inSensitive && attributeValue != null
+                && attributeValueElementType == DataType.STRING
+                && conditionValueElementType == DataType.STRING) {
+            return conditionValue.getAsString().equalsIgnoreCase(attributeValue.getAsString());
+        }
 
         switch (conditionValueElementType) {
             case STRING:
@@ -576,6 +518,10 @@ public class ConditionEvaluator implements IConditionEvaluator {
             default:
                 return conditionValue.toString().equals(attributeValue != null ? attributeValue.toString() : null);
         }
+    }
+
+    Boolean evalConditionValue(JsonElement conditionValue, @Nullable JsonElement attributeValue, @Nullable JsonObject savedGroups) {
+        return evalConditionValue(conditionValue, attributeValue, savedGroups, false);
     }
 
     Boolean elemMatch(JsonElement actual, JsonElement expected, @Nullable JsonObject savedGroups) {
@@ -641,33 +587,67 @@ public class ConditionEvaluator implements IConditionEvaluator {
         return true;
     }
 
-    private Boolean isIn(JsonElement actual, JsonArray expected) {
-        Type listType = new TypeToken<ArrayList<Object>>() {
-        }.getType();
-        ArrayList<JsonElement> expectedAsList = jsonUtils.gson.fromJson(expected, listType);
+    private Boolean isIn(JsonElement actual, JsonArray expected, boolean inSensitive) {
+        if (actual == null) return false;
 
-        if (!actual.isJsonArray()) return expected.contains(actual);
+        if (!actual.isJsonArray()) {
+            // actual is a primitive — check if expected contains it
+            if (inSensitive) {
+                for (JsonElement exp : expected) {
+                    if (caseFold(actual).equals(caseFold(exp))) {
+                        return true;
+                    }
+                }
+                return false;
+            }
+            return expected.contains(actual);
+        }
 
+        // actual is an array — check if any actual element matches any expected element
         JsonArray actualArr = actual.getAsJsonArray();
 
         if (actualArr.isEmpty()) return false;
 
-        DataType attributeDataType = GrowthBookJsonUtils.getElementType(actualArr.get(0));
-        ArrayList<Object> actualAsList = jsonUtils.gson.fromJson(actualArr, listType);
-
-        return actualAsList.stream()
-                .anyMatch(o -> {
-                    if (
-                            attributeDataType == DataType.STRING ||
-                                    attributeDataType == DataType.NUMBER ||
-                                    attributeDataType == DataType.BOOLEAN
-                    ) {
-                        return expectedAsList.contains(o);
+        for (JsonElement actualItem : actualArr) {
+            for (JsonElement expectedItem : expected) {
+                if (inSensitive) {
+                    if (caseFold(actualItem).equals(caseFold(expectedItem))) {
+                        return true;
                     }
-
-                    return false;
-                });
+                } else {
+                    if (Objects.equals(actualItem, expectedItem)) {
+                        return true;
+                    }
+                }
+            }
+        }
+        return false;
     }
+
+    /**
+     * Checks that for every element in expected, there is at least one matching element in actual.
+     * Uses evalConditionValue for comparison, which supports operator objects.
+     *
+     * @param actual      the attribute value (must be an array)
+     * @param expected    the condition array — every item must match at least one in actual
+     * @param savedGroups saved groups for group-based conditions
+     * @param inSensitive if true, string comparisons are case-insensitive
+     * @return true if all expected items are matched
+     */
+    private Boolean isInAll(JsonArray actual, JsonArray expected, @Nullable JsonObject savedGroups, boolean inSensitive) {
+        for (int i = 0; i < expected.size(); i++) {
+            boolean passed = false;
+            for (int j = 0; j < actual.size(); j++) {
+                if (evalConditionValue(expected.get(i), actual.get(j), savedGroups, inSensitive)) {
+                    passed = true;
+                    break;
+                }
+            }
+            if (!passed) return false;
+        }
+        return true;
+    }
+
 
     private <T> boolean isMatchingPrimitive(
             JsonElement conditionValue,
@@ -698,5 +678,18 @@ public class ConditionEvaluator implements IConditionEvaluator {
         } catch (Exception e) {
             return false;
         }
+    }
+
+    /**
+     * Folds a JsonElement to lowercase if it's a string and inSensitive is true.
+     * Used where you need a folded value rather than a comparison.
+     */
+    private JsonElement caseFold(@Nullable JsonElement value) {
+        if (value != null
+                && value.isJsonPrimitive()
+                && value.getAsJsonPrimitive().isString()) {
+            return new JsonPrimitive(value.getAsString().toLowerCase());
+        }
+        return value;
     }
 }
