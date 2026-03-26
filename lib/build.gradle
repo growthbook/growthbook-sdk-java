@@ -133,6 +133,20 @@ test {
     finalizedBy jacocoTestReport // report is always generated after tests run
 }
 
+tasks.register('runPerfHarness', JavaExec) {
+    group = 'verification'
+    description = 'Runs the evaluation performance harness with optional JFR recording.'
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = 'growthbook.sdk.java.perf.EvaluationPerfHarness'
+    systemProperty 'perf.warmupIterations', project.findProperty('perfWarmupIterations') ?: '50000'
+    systemProperty 'perf.iterations', project.findProperty('perfIterations') ?: '200000'
+
+    if (project.hasProperty('perfJfrFile')) {
+        jvmArgs "-XX:StartFlightRecording=filename=${project.property('perfJfrFile')},settings=profile,dumponexit=true"
+    }
+}
+
 // More configuration options, including enforcing code coverage available here:
 // https://docs.gradle.org/current/userguide/jacoco_plugin.html
 jacocoTestReport {
