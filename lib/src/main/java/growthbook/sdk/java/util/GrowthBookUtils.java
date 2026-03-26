@@ -917,6 +917,18 @@ public class GrowthBookUtils {
         return -1;
     }
 
+    public static <K, V> Map<K, V> mergeMaps(@Nullable List<Map<K, V>> maps) {
+        if (maps == null || maps.isEmpty()) {
+            return Collections.emptyMap();
+        }
+
+        Map<K, V> merged = Collections.emptyMap();
+        for (Map<K, V> map : maps) {
+            merged = mergeMaps(merged, map);
+        }
+        return merged;
+    }
+
     public static <K, V> Map<K, V> mergeMaps(@Nullable Map<K, V> base, @Nullable Map<K, V> overrides) {
         if (base == null || base.isEmpty()) return overrides != null ? new HashMap<>(overrides) : Collections.emptyMap();
         if (overrides == null || overrides.isEmpty()) return new HashMap<>(base);
