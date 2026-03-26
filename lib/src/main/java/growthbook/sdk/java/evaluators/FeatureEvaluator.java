@@ -28,6 +28,7 @@ import java.util.*;
  */
 @Slf4j
 public class FeatureEvaluator implements IFeatureEvaluator {
+    private static final Object NO_FORCED_FEATURE_VALUE = new Object();
 
     private final GrowthBookJsonUtils jsonUtils = GrowthBookJsonUtils.getInstance();
     private final ConditionEvaluator conditionEvaluator = new ConditionEvaluator();
@@ -82,11 +83,10 @@ public class FeatureEvaluator implements IFeatureEvaluator {
             addFeatureToEvalStack(key, context);
 
             // Global override
-            Map<String, Object> forcedFeatureValues = getForcedFeatureValues(context);
-            if (forcedFeatureValues.containsKey(key)) {
-                ValueType unwrapForceFeatureValue = (ValueType) GrowthBookJsonUtils.unwrap(forcedFeatureValues.get(key));
-                log.info("Global override for forced feature with key: {} and value {}", key,
-                        forcedFeatureValues.get(key).toString());
+            Object forcedFeatureValue = getForcedFeatureValue(key, context);
+            if (forcedFeatureValue != NO_FORCED_FEATURE_VALUE) {
+                ValueType unwrapForceFeatureValue = (ValueType) GrowthBookJsonUtils.unwrap(forcedFeatureValue);
+                log.info("Forced feature override with key: {} and value {}", key, forcedFeatureValue);
 
                 FeatureResult<ValueType> overrideResult = FeatureResult
                         .<ValueType>builder()
@@ -463,15 +463,21 @@ public class FeatureEvaluator implements IFeatureEvaluator {
         return result;
     }
 
-    private Map<String, Object> getForcedFeatureValues(EvaluationContext evaluationContext) {
-        Map<String, Object> globalFeatures = evaluationContext.getGlobal() != null
-                ? evaluationContext.getGlobal().getForcedFeatureValues()
-                : null;
-
+    private Object getForcedFeatureValue(String key, EvaluationContext evaluationContext) {
         Map<String, Object> userFeatures = evaluationContext.getUser() != null
                 ? evaluationContext.getUser().getForcedFeatureValues()
                 : null;
+        if (userFeatures != null && userFeatures.containsKey(key)) {
+            return userFeatures.get(key);
+        }
 
-        return GrowthBookUtils.mergeMaps(globalFeatures, userFeatures);
+        Map<String, Object> globalFeatures = evaluationContext.getGlobal() != null
+                ? evaluationContext.getGlobal().getForcedFeatureValues()
+                : null;
+        if (globalFeatures != null && globalFeatures.containsKey(key)) {
+            return globalFeatures.get(key);
+        }
+
+        return NO_FORCED_FEATURE_VALUE;
     }
 }
