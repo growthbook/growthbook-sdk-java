@@ -1,0 +1,62 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="520" viewBox="0 0 1200 520">
+  <style>
+    .title { font: 700 26px sans-serif; fill: #1f2937; }
+    .subtitle { font: 14px sans-serif; fill: #4b5563; }
+    .label { font: 14px sans-serif; fill: #111827; }
+    .value { font: 12px sans-serif; fill: #111827; }
+    .legend { font: 13px sans-serif; fill: #111827; }
+    .axis { stroke: #d1d5db; stroke-width: 1; }
+    .grid { stroke: #e5e7eb; stroke-width: 1; }
+  </style>
+  <rect width="1200" height="520" fill="#fcfcfd" />
+  <text x="40" y="40" class="title">PR-196 Follow-Up: Feature Evaluation Footprint</text>
+  <text x="40" y="66" class="subtitle">Lower is better. Measured with runPerfHarness at 100,000 iterations on JDK 17.</text>
+
+  <rect x="40" y="86" width="14" height="14" fill="#9ca3af" />
+  <text x="62" y="98" class="legend">main</text>
+  <rect x="140" y="86" width="14" height="14" fill="#60a5fa" />
+  <text x="162" y="98" class="legend">pr-196</text>
+  <rect x="250" y="86" width="14" height="14" fill="#10b981" />
+  <text x="272" y="98" class="legend">fix/perf-imp-pr-196</text>
+
+  <line x1="280" y1="130" x2="1080" y2="130" class="axis" />
+  <line x1="280" y1="240" x2="1080" y2="240" class="axis" />
+  <line x1="280" y1="350" x2="1080" y2="350" class="axis" />
+  <line x1="280" y1="460" x2="1080" y2="460" class="axis" />
+
+  <line x1="280" y1="130" x2="280" y2="460" class="axis" />
+  <line x1="550" y1="130" x2="550" y2="460" class="grid" />
+  <line x1="820" y1="130" x2="820" y2="460" class="grid" />
+  <line x1="1080" y1="130" x2="1080" y2="460" class="axis" />
+
+  <text x="280" y="120" class="subtitle">0</text>
+  <text x="540" y="120" class="subtitle">400 ns/op</text>
+  <text x="810" y="120" class="subtitle">800 ns/op</text>
+  <text x="1065" y="120" class="subtitle">1200 ns/op</text>
+
+  <text x="40" y="178" class="label">Feature no overrides</text>
+  <rect x="280" y="150" width="391" height="16" fill="#9ca3af" />
+  <text x="679" y="162" class="value">586.8</text>
+  <rect x="280" y="171" width="134" height="16" fill="#60a5fa" />
+  <text x="422" y="183" class="value">201.4</text>
+  <rect x="280" y="192" width="135" height="16" fill="#10b981" />
+  <text x="423" y="204" class="value">201.5</text>
+
+  <text x="40" y="288" class="label">Global forced feature override</text>
+  <rect x="280" y="260" width="781" height="16" fill="#9ca3af" />
+  <text x="1069" y="272" class="value">1171.7</text>
+  <rect x="280" y="281" width="212" height="16" fill="#60a5fa" />
+  <text x="500" y="293" class="value">318.6</text>
+  <rect x="280" y="302" width="101" height="16" fill="#10b981" />
+  <text x="389" y="314" class="value">152.2</text>
+
+  <text x="40" y="398" class="label">User forced feature override</text>
+  <rect x="280" y="370" width="583" height="16" fill="#9ca3af" />
+  <text x="871" y="382" class="value">874.0</text>
+  <rect x="280" y="391" width="309" height="16" fill="#60a5fa" />
+  <text x="597" y="403" class="value">463.6</text>
+  <rect x="280" y="412" width="156" height="16" fill="#10b981" />
+  <text x="444" y="424" class="value">234.5</text>
+  
+  <text x="40" y="490" class="subtitle">Follow-up branch removes merged-map allocation from forced feature lookups and outperforms both main and the client PR on override-heavy paths.</text>
+</svg>

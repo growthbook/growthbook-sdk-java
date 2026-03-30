@@ -33,10 +33,12 @@ public class UserContext {
     private String attributesJson;
 
     private UserContext(UserContextBuilder userContextBuilder) {
-        attributes = userContextBuilder.attributes;
+        attributes = userContextBuilder.attributes == null ? new JsonObject() : userContextBuilder.attributes;
         url = userContextBuilder.url;
         stickyBucketAssignmentDocs = userContextBuilder.stickyBucketAssignmentDocs;
-        forcedVariationsMap = userContextBuilder.forcedVariationsMap;
+        forcedVariationsMap = userContextBuilder.forcedVariationsMap == null
+                ? new HashMap<>()
+                : userContextBuilder.forcedVariationsMap;
         forcedFeatureValues = userContextBuilder.forcedFeatureValues;
         attributesJson = userContextBuilder.attributesJson;
     }
@@ -67,15 +69,11 @@ public class UserContext {
     }
 
     public JsonObject getAttributes() {
-        if (this.attributes == null) {
-            return new JsonObject();
-        }
-
         return this.attributes;
     }
 
     public Map<String, Integer> getForcedVariationsMap() {
-        return this.forcedVariationsMap == null ? new HashMap<>() : this.forcedVariationsMap;
+        return this.forcedVariationsMap;
     }
 
     @Nullable

@@ -66,14 +66,9 @@ public class ExperimentEvaluator implements IExperimentEvaluator {
         }
 
         // If no forced variation, not in experiment, variation 0
-        Map<String, Integer> forcedVariations = getForcedVariations(context);
-        if (forcedVariations == null) {
-            forcedVariations = new HashMap<>();
-        }
-
         // If context.forcedVariations[experiment.trackingKey] is defined,
         // return immediately (not in experiment, forced variation)
-        Integer forcedVariation = forcedVariations.get(experiment.getKey());
+        Integer forcedVariation = getForcedVariation(experiment.getKey(), context);
         if (forcedVariation != null) {
             return getExperimentResult(context, experiment, forcedVariation, false, featureId, null, null);
         }
@@ -417,15 +412,21 @@ public class ExperimentEvaluator implements IExperimentEvaluator {
                 && !Boolean.TRUE.equals(experiment.getDisableStickyBucketing());
     }
 
-    private Map<String, Integer> getForcedVariations(EvaluationContext evaluationContext) {
-        Map<String, Integer> globalForcedVariations = evaluationContext.getGlobal() != null
-                ? evaluationContext.getGlobal().getForcedVariations()
-                : Collections.emptyMap();
-
+    private Integer getForcedVariation(String key, EvaluationContext evaluationContext) {
         Map<String, Integer> userForcedVariations = evaluationContext.getUser() != null
                 ? evaluationContext.getUser().getForcedVariationsMap()
-                : Collections.emptyMap();
+                : null;
+        if (userForcedVariations != null && userForcedVariations.containsKey(key)) {
+            return userForcedVariations.get(key);
+        }
 
-        return GrowthBookUtils.mergeMaps(Arrays.asList(globalForcedVariations, userForcedVariations));
+        Map<String, Integer> globalForcedVariations = evaluationContext.getGlobal() != null
+                ? evaluationContext.getGlobal().getForcedVariations()
+                : null;
+        if (globalForcedVariations != null && globalForcedVariations.containsKey(key)) {
+            return globalForcedVariations.get(key);
+        }
+
+        return null;
     }
 }
