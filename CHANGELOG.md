@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.10.8](https://github.com/growthbook/growthbook-sdk-java/compare/0.10.7...0.10.8) (2026-03-30)
+
+
+### Performance Improvements
+
+* Reduce allocations in evalPath ([#199](https://github.com/growthbook/growthbook-sdk-java/issues/199)) ([44b08d9](https://github.com/growthbook/growthbook-sdk-java/commit/44b08d9d2f91f868b78a5ee5c0e28b9d36ae4ac2))
+  - Remove merged-map allocation from forced feature & variation lookups
+  - Normalize `UserContext` defaults
+  - Avoid eager string work in override logging
+
 ## [0.10.7](https://github.com/growthbook/growthbook-sdk-java/compare/v0.10.6...0.10.7) (2026-03-17)
 
 
