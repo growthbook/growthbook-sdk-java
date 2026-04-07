@@ -11,9 +11,17 @@ public enum Operator {
      */
     IN("$in"),
     /**
+     * $ini
+     */
+    INI("$ini"),
+    /**
      * $nin
      */
     NIN("$nin"),
+    /**
+     * $nin
+     */
+    NINI("$nini"),
     /**
      * $gt
      */
@@ -66,6 +74,10 @@ public enum Operator {
      * $all
      */
     ALL("$all"),
+    /**
+     * $all
+     */
+    ALLI("$alli"),
     /**
      * $not
      */
