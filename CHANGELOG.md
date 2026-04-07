@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.10.9](https://github.com/growthbook/growthbook-sdk-java/compare/v0.10.8...0.10.9) (2026-04-07)
+
+
+### Features
+
+* add case-insensitive operators ini, nini, alli to condition evaluator ([#194](https://github.com/growthbook/growthbook-sdk-java/issues/194)) ([5e9b94c](https://github.com/growthbook/growthbook-sdk-java/commit/5e9b94cb831687f3147237157bcc76ef5cab11a6))
+
 ## [0.10.8](https://github.com/growthbook/growthbook-sdk-java/compare/0.10.7...0.10.8) (2026-03-30)
 
 
