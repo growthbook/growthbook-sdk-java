@@ -35,14 +35,11 @@ import javax.annotation.Nullable;
 import java.io.IOException;
 import java.net.HttpURLConnection;
 import java.time.Instant;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Objects;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
+import java.util.*;
+import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.logging.Logger;
 
 /**
@@ -81,7 +78,7 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
      * Strategy for building url
      */
     @Getter
-    private FeatureRefreshStrategy refreshStrategy;
+    private volatile FeatureRefreshStrategy refreshStrategy;
 
     /**
      * @deprecated Use decryptionKey instead.
@@ -107,7 +104,7 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
      * Seconds after that cache is expired
      */
     @Getter
-    private Long expiresAt;
+    private AtomicLong expiresAt = new AtomicLong(0);
 
     /**
      * Http request client for send GET request
@@ -117,28 +114,28 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
     /**
      * Http request client for establish SSE connection
      */
-    @Nullable
-    private OkHttpClient sseHttpClient;
+    private final AtomicReference<OkHttpClient> sseHttpClient = new AtomicReference<>(null);
 
     /**
      * Optional callbacks for getting updates when features are refreshed
      */
-    private final ArrayList<FeatureRefreshCallback> refreshCallbacks = new ArrayList<>();
+    private final List<FeatureRefreshCallback> refreshCallbacks = new CopyOnWriteArrayList<>();
 
     /**
      * Flag to know whether GBFeatureRepository is initialized
      */
     @Getter
-    private Boolean initialized = false;
+    private AtomicBoolean initialized = new AtomicBoolean(false);
 
     /**
      * Flag to know whether sse connection is allowed
      */
-    private Boolean sseAllowed = false;
+    private AtomicBoolean sseAllowed = new AtomicBoolean(false);
+
     @Nullable
-    private Request sseRequest = null;
-    @Nullable
-    private EventSource sseEventSource = null;
+    private volatile Request sseRequest = null;
+
+    private final AtomicReference<EventSource> sseEventSource = new AtomicReference<>(null);
 
     /**
      * Allows you to get the saved groups JSON from the provided {@link GBFeaturesRepository#getFeaturesEndpoint()}.
@@ -147,7 +144,7 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
      */
     @Getter
     @Nullable
-    private String savedGroupsJson = EMPTY_JSON_OBJECT_STRING;
+    private AtomicReference<String> savedGroupsJson = new AtomicReference<>(EMPTY_JSON_OBJECT_STRING);
 
     /**
      * Allows you to get the features JSON from the provided {@link GBFeaturesRepository#getFeaturesEndpoint()}.
@@ -156,8 +153,7 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
      *
      * @return feature data JSON in a type of String. Handle refresh strategy
      */
-    @Getter
-    private String featuresJson = EMPTY_JSON_OBJECT_STRING;
+    private AtomicReference<String> featuresJson = new AtomicReference<>(EMPTY_JSON_OBJECT_STRING);
 
     /**
      * Keys are unique identifiers for the features and the values are Feature objects.
@@ -165,24 +161,16 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
      */
     //@Getter
     @Getter
-    private Map<String, Feature<?>> parsedFeatures = new HashMap<>();
+    private final AtomicReference<Map<String, Feature<?>>> parsedFeatures = new AtomicReference<>(new HashMap<>());
 
     @Getter
-    private JsonObject parsedSavedGroups = new JsonObject();
-
-    public void setCacheManager(GbCacheManager cacheManager) {
-        if (!isCacheDisabled) {
-            this.cacheManager = cacheManager;
-        } else {
-            log.warn("Cache is disabled. Please enable it and set the CacheManager");
-        }
-    }
+    private final AtomicReference<JsonObject> parsedSavedGroups = new AtomicReference<>(new JsonObject());
 
     /**
      * CachingManger allows to cache features data to file
      */
     @Getter
-    private GbCacheManager cacheManager;
+    private final AtomicReference<GbCacheManager> cacheManager = new AtomicReference<>(null);
 
     /**
      * Flag that enable CachingManager
@@ -201,6 +189,12 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
     @Getter
     private final String remoteEvalEndPoint;
 
+    // Getter for deprecated encryptionKey
+    @Deprecated
+    @Nullable
+    public String getEncryptionKey() {
+        return encryptionKey;
+    }
 
     /**
      * Create a new GBFeaturesRepository
@@ -331,15 +325,16 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
             this.okHttpClient = okHttpClient;
         }
         if (!this.isCacheDisabled) {
-            this.cacheManager = cacheManager != null ? cacheManager : createCacheManager();
+            this.cacheManager.set(cacheManager != null ? cacheManager : createCacheManager());
         }
     }
 
-    // Getter for deprecated encryptionKey
-    @Deprecated
-    @Nullable
-    public String getEncryptionKey() {
-        return encryptionKey;
+    public void setCacheManager(GbCacheManager cacheManager) {
+        if (!isCacheDisabled) {
+            this.cacheManager.set(cacheManager);
+        } else {
+            log.warn("Cache is disabled. Please enable it and set the CacheManager");
+        }
     }
 
     /**
@@ -374,14 +369,21 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
     }
 
     // Scheduled polling (non-SSE) drives refresh for STALE_WHILE_REVALIDATE strategy
-    private ScheduledExecutorService pollScheduler;
+    private final AtomicReference<ScheduledExecutorService> pollScheduler = new AtomicReference<>(null);
     private final AtomicBoolean polling = new AtomicBoolean(false);
 
     private void schedulePolling() {
-        if (pollScheduler != null || this.refreshStrategy == FeatureRefreshStrategy.SERVER_SENT_EVENTS) return;
+        if (this.refreshStrategy == FeatureRefreshStrategy.SERVER_SENT_EVENTS) {
+            return;
+        }
+
+        ScheduledExecutorService newScheduler = Executors.newSingleThreadScheduledExecutor();
+        if (!pollScheduler.compareAndSet(null, newScheduler)) {
+            newScheduler.shutdown();
+            return;
+        }
         // create single threaded executor
-        pollScheduler = Executors.newSingleThreadScheduledExecutor();
-        pollScheduler.scheduleWithFixedDelay(this::pollOnceSafe, this.swrTtlSeconds, this.swrTtlSeconds, TimeUnit.SECONDS);
+        pollScheduler.get().scheduleWithFixedDelay(this::pollOnceSafe, this.swrTtlSeconds, this.swrTtlSeconds, TimeUnit.SECONDS);
     }
 
     private void pollOnceSafe() {
@@ -407,29 +409,37 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
 
     @Override
     public void initialize(Boolean retryOnFailure) throws FeatureFetchException {
-        if (this.initialized) return;
+        if (!this.initialized.compareAndSet(false, true)) return;
 
-        switch (this.refreshStrategy) {
-            case STALE_WHILE_REVALIDATE:
-                fetchFeatures();
-                schedulePolling();
-                break;
+        try {
+            switch (this.refreshStrategy) {
+                case STALE_WHILE_REVALIDATE:
+                    fetchFeatures();
+                    schedulePolling();
+                    break;
 
-            case SERVER_SENT_EVENTS:
-                fetchFeatures();
-                initializeSSE(retryOnFailure);
-                break;
+                case SERVER_SENT_EVENTS:
+                    fetchFeatures();
+                    initializeSSE(retryOnFailure);
+                    break;
 
-            case REMOTE_EVAL_STRATEGY:
-                fetchForRemoteEval(this.requestBodyForRemoteEval);
-                break;
+                case REMOTE_EVAL_STRATEGY:
+                    fetchForRemoteEval(this.requestBodyForRemoteEval);
+                    break;
+            }
+        } catch (Exception e) {
+            this.initialized.set(false);
+            throw e;
         }
+    }
 
-        this.initialized = true;
+    @Override
+    public String getFeaturesJson() {
+        return this.featuresJson.get();
     }
 
     private void initializeSSE(Boolean retryOnFailure) {
-        if (!this.sseAllowed) {
+        if (!this.sseAllowed.get()) {
             log.info("\nFalling back to stale-while-revalidate refresh strategy. 'X-Sse-Support: enabled' not present on resource returned at {}", this.featuresEndpoint);
             this.refreshStrategy = FeatureRefreshStrategy.STALE_WHILE_REVALIDATE;
         }
@@ -443,17 +453,22 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
      * Assigns a close listener to recreate the connection.
      */
     private void createEventSourceListenerAndStartListening(Boolean retryOnFailure) {
-        this.sseEventSource = null;
+        this.sseEventSource.set(null);
         this.sseRequest = null;
 
-        if (this.sseHttpClient == null) {
-            this.sseHttpClient = new OkHttpClient.Builder()
+        if (this.sseHttpClient.get() == null) {
+
+            OkHttpClient newHttpClient = new OkHttpClient.Builder()
                     .addInterceptor(new GBFeaturesRepositoryRequestInterceptor())
                     .retryOnConnectionFailure(true)
                     .connectTimeout(0, TimeUnit.SECONDS)
                     .readTimeout(0, TimeUnit.SECONDS)
                     .writeTimeout(0, TimeUnit.SECONDS)
                     .build();
+
+            if (!this.sseHttpClient.compareAndSet(null, newHttpClient)) {
+                newHttpClient.dispatcher().executorService().shutdown();
+            }
         }
 
         this.sseRequest = new Request.Builder()
@@ -497,11 +512,11 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
                     }
                 };
 
-        this.sseEventSource = EventSources
-                .createFactory(this.sseHttpClient)
-                .newEventSource(sseRequest, gbEventSourceListener);
+        this.sseEventSource.set(EventSources
+                .createFactory(this.sseHttpClient.get())
+                .newEventSource(sseRequest, gbEventSourceListener));
 
-        this.sseHttpClient.newCall(sseRequest).enqueue(new Callback() {
+        this.sseHttpClient.get().newCall(sseRequest).enqueue(new Callback() {
             @Override
             public void onFailure(@NotNull Call call, @NotNull IOException e) {
                 log.error("SSE connection failed: {}", e.getMessage(), e);
@@ -527,12 +542,12 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
     }
 
     private void refreshExpiresAt() {
-        this.expiresAt = Instant.now().getEpochSecond() + this.swrTtlSeconds;
+        this.expiresAt.set(Instant.now().getEpochSecond() + this.swrTtlSeconds);
     }
 
     private Boolean isCacheExpired() {
         long now = Instant.now().getEpochSecond();
-        return now >= this.expiresAt;
+        return now >= this.expiresAt.get();
     }
 
     /**
@@ -560,7 +575,7 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
 
         try (Response response = this.okHttpClient.newCall(request).execute()) {
             String sseSupportHeader = response.header(HttpHeaders.X_SSE_SUPPORT.getHeader());
-            this.sseAllowed = Objects.equals(sseSupportHeader, ENABLED);
+            this.sseAllowed.set(Objects.equals(sseSupportHeader, ENABLED));
 
             this.onSuccess(response);
         } catch (IOException e) {
@@ -581,9 +596,9 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
      */
     private void onResponseJson(String responseJsonString, boolean isFromCache) throws FeatureFetchException {
         try {
-            if (!isFromCache && !isCacheDisabled && cacheManager != null) {
+            if (!isFromCache && !isCacheDisabled && cacheManager.get() != null) {
                 try {
-                    cacheManager.saveContent(FILE_NAME, responseJsonString);
+                    cacheManager.get().saveContent(FILE_NAME, responseJsonString);
                 } catch (RuntimeException ignored) {
                 }
             }
@@ -640,16 +655,17 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
                 refreshedFeatures = featuresJsonElement.toString().trim();
             }
 
-            this.featuresJson = refreshedFeatures;
-            this.savedGroupsJson = refreshedSavedGroups;
+            this.featuresJson.set(refreshedFeatures);
+            this.savedGroupsJson.set(refreshedSavedGroups);
 
-            Map<String, Feature<?>> newParsed = TransformationUtil.transformFeatures(this.featuresJson);
-            JsonObject newSaved = TransformationUtil.transformSavedGroups(this.savedGroupsJson);
-            this.parsedFeatures = newParsed;
-            this.parsedSavedGroups = newSaved == null ? new JsonObject() : newSaved;
+            Map<String, Feature<?>> newParsed = TransformationUtil.transformFeatures(this.featuresJson.get());
+            JsonObject newSaved = TransformationUtil.transformSavedGroups(this.savedGroupsJson.get());
+            this.parsedFeatures.set(newParsed);
+            JsonObject passedSavedGroups = newSaved == null ? new JsonObject() : newSaved;
+            this.parsedSavedGroups.set(passedSavedGroups);
 
             if (!isFromCache) {
-                this.onRefreshSuccess(this.featuresJson);
+                this.onRefreshSuccess(this.featuresJson.get());
             }
             // bump TTL only after successful processing
             this.refreshExpiresAt();
@@ -692,7 +708,7 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
             if (response.code() == HttpURLConnection.HTTP_NOT_MODIFIED) {
                 log.info("Features not modified (304). Using existing data.");
                 this.refreshExpiresAt();
-                this.onRefreshSuccess(this.featuresJson);
+                this.onRefreshSuccess(this.featuresJson.get());
                 return;
             }
 
@@ -784,37 +800,40 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
 
     public void shutdown() {
         // stop polling
-        if (this.pollScheduler != null) {
-            this.pollScheduler.shutdownNow();
-            this.pollScheduler = null;
+        ScheduledExecutorService executorService = this.pollScheduler.getAndSet(null);
+
+        if (executorService != null) {
+            executorService.shutdown();
             log.info("Polling scheduler shut down");
         }
-        if (this.sseEventSource != null) {
-            this.sseEventSource.cancel();
-            this.sseEventSource = null;
+
+        EventSource eventSource = this.sseEventSource.getAndSet(null);
+        if (eventSource != null) {
+            eventSource.cancel();
             log.info("SseEventSource cancel");
         }
-        if (this.sseHttpClient != null) {
-            this.sseHttpClient.dispatcher().cancelAll();
-            this.sseHttpClient.connectionPool().evictAll();
-            if (this.sseHttpClient.cache() != null) {
+
+        OkHttpClient nullSseHttpClient = this.sseHttpClient.getAndSet(null);
+        if (nullSseHttpClient != null) {
+            nullSseHttpClient.dispatcher().cancelAll();
+            nullSseHttpClient.connectionPool().evictAll();
+            if (nullSseHttpClient.cache() != null) {
                 try {
-                    this.sseHttpClient.cache().close();
+                    nullSseHttpClient.cache().close();
                 } catch (IOException e) {
                     log.error(e.getMessage(), e);
                 }
             }
-            this.sseHttpClient = null;
             log.info("SseHttpClient shutdown");
-            if (this.cacheManager != null) {
-                try {
-                    this.cacheManager.clearCache();
-                } catch (Exception ignored) {
-                }
-                this.cacheManager = null;
-                log.info("CacheManager shutdown");
-            }
+        }
 
+        GbCacheManager gbCacheManager = this.cacheManager.getAndSet(null);
+        if (gbCacheManager != null) {
+            try {
+                gbCacheManager.clearCache();
+            } catch (Exception ignored) {
+            }
+            log.info("CacheManager shutdown");
         }
     }
 
@@ -846,7 +865,12 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
 
 
     private String getCachedFeatures() throws FeatureFetchException {
-        String cachedData = cacheManager.loadCache(FILE_NAME);
+        GbCacheManager gbCacheManager = this.cacheManager.get();
+
+        if (gbCacheManager == null) {
+            throw new FeatureFetchException(FeatureFetchException.FeatureFetchErrorCode.NO_RESPONSE_ERROR);
+        }
+        String cachedData = gbCacheManager.loadCache(FILE_NAME);
         if (cachedData == null) {
             log.error("FeatureFetchException: No Features from Cache");
             throw new FeatureFetchException(FeatureFetchException.FeatureFetchErrorCode.NO_RESPONSE_ERROR);
