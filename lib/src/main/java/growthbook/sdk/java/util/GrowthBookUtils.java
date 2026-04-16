@@ -4,18 +4,9 @@ import com.google.gson.Gson;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
-import growthbook.sdk.java.model.GeneratedStickyBucketAssignmentDocModel;
-import growthbook.sdk.java.model.BucketRange;
-import growthbook.sdk.java.model.Feature;
-import growthbook.sdk.java.model.FeatureRule;
-import growthbook.sdk.java.model.Filter;
-import growthbook.sdk.java.model.GBContext;
-import growthbook.sdk.java.model.HashAttributeAndHashValue;
-import growthbook.sdk.java.model.Namespace;
-import growthbook.sdk.java.model.StickyBucketVariation;
-import growthbook.sdk.java.model.VariationMeta;
+import growthbook.sdk.java.callback.ExperimentRunCallback;
+import growthbook.sdk.java.model.*;
 import growthbook.sdk.java.multiusermode.configurations.EvaluationContext;
-import growthbook.sdk.java.model.StickyAssignmentsDocument;
 import growthbook.sdk.java.multiusermode.util.TransformationUtil;
 import growthbook.sdk.java.stickyBucketing.StickyBucketService;
 import lombok.extern.slf4j.Slf4j;
@@ -935,5 +926,34 @@ public class GrowthBookUtils {
         Map<K, V> merged = new HashMap<>(base);
         merged.putAll(overrides);
         return merged;
+    }
+
+    public static <ValueType> void fireSubscriptions(Map<String, AssignedExperiment> assigned,
+                                                     List<ExperimentRunCallback> callbacks,
+                                                     Experiment<ValueType> experiment,
+                                                     ExperimentResult<ValueType> result
+    ) {
+        String key = experiment.getKey();
+        if (key == null) return;
+        // If assigned variation has changed, fire subscriptions
+        AssignedExperiment prev = assigned.get(key);
+        if (prev == null
+                || !Objects.equals(prev.getInExperiment(), result.getInExperiment())
+                || !Objects.equals(prev.getVariationId(), result.getVariationId())) {
+            AssignedExperiment current = new AssignedExperiment(
+                    experiment.getKey(),
+                    result.getInExperiment(),
+                    result.getVariationId()
+            );
+            assigned.put(key, current);
+
+            for (ExperimentRunCallback cb : callbacks) {
+                try {
+                    cb.onRun(experiment, result);
+                } catch (Exception e) {
+                    log.error(e.getMessage());
+                }
+            }
+        }
     }
 }

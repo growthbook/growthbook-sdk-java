@@ -21,14 +21,15 @@ import growthbook.sdk.java.sandbox.CacheManagerFactory;
 import growthbook.sdk.java.sandbox.CacheMode;
 import growthbook.sdk.java.sandbox.GbCacheManager;
 import growthbook.sdk.java.util.GrowthBookJsonUtils;
+import growthbook.sdk.java.util.GrowthBookUtils;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -37,10 +38,10 @@ public class GrowthBookClient {
     private final Options options;
     private final FeatureEvaluator featureEvaluator;
     private final ExperimentEvaluator experimentEvaluatorEvaluator;
-    private static GBFeaturesRepository repository;
-    private List<ExperimentRunCallback> callbacks;
+    private static volatile GBFeaturesRepository repository;
+    private final List<ExperimentRunCallback> callbacks;
     private final Map<String, AssignedExperiment> assigned;
-    private GlobalContext globalContext;
+    private volatile GlobalContext globalContext;
 
     public GrowthBookClient() {
         this(Options.builder().build());
@@ -49,22 +50,26 @@ public class GrowthBookClient {
     public GrowthBookClient(Options opts) {
         this.options = opts == null ? Options.builder().build() : opts;
 
-        this.assigned = new HashMap<>();
-        this.callbacks = new ArrayList<>();
+        this.assigned = new ConcurrentHashMap<>();
+        this.callbacks = new CopyOnWriteArrayList<>();
         this.featureEvaluator = new FeatureEvaluator();
         this.experimentEvaluatorEvaluator = new ExperimentEvaluator();
-        this.callbacks = new ArrayList<>();
     }
 
     public boolean initialize() {
-        boolean isReady = false;
-        try {
+        synchronized (GrowthBookClient.class) {
 
-            if (repository == null) {
+            if (repository != null) {
+                return repository.getInitialized().get();
+            }
+
+            boolean isReady = false;
+            try {
+
                 GbCacheManager cm = this.options.getCacheManager() != null
                         ? this.options.getCacheManager()
                         : CacheManagerFactory.create(this.options.getCacheMode(), this.options.getCacheDirectory()
-                        );
+                );
 
                 repository = GBFeaturesRepository.builder()
                         .apiHost(this.options.getApiHost())
@@ -93,21 +98,22 @@ public class GrowthBookClient {
 
                 // instantiate a global context that holds features & savedGroups.
                 this.globalContext = GlobalContext.builder()
-                        .features(repository.getParsedFeatures())
-                        .savedGroups(repository.getParsedSavedGroups())
+                        .features(repository.getParsedFeatures().get())
+                        .savedGroups(repository.getParsedSavedGroups().get())
                         .enabled(this.options.getEnabled())
                         .qaMode(this.options.getIsQaMode())
                         .forcedFeatureValues(this.options.getGlobalForcedFeatureValues())
                         .forcedVariations(this.options.getGlobalForcedVariationsMap())
                         .build();
 
-                isReady = repository.getInitialized();
+                isReady = repository.getInitialized().get();
                 log.info("GrowthBookClient initialized repository and registered feature refresh callbacks.");
+
+            } catch (Exception e) {
+                log.error("Failed to initialize growthbook instance", e);
             }
-        } catch (Exception e) {
-            log.error("Failed to initialize growthbook instance", e);
+            return isReady;
         }
-        return isReady;
     }
 
     public void setGlobalAttributes(String attributes) {
@@ -176,7 +182,7 @@ public class GrowthBookClient {
         ExperimentResult<ValueType> result = experimentEvaluatorEvaluator
                 .evaluateExperiment(experiment, getEvalContext(userContext), null);
 
-        fireSubscriptions(experiment, result);
+        GrowthBookUtils.fireSubscriptions(this.assigned, this.callbacks, experiment, result);
 
         return result;
     }
@@ -186,33 +192,11 @@ public class GrowthBookClient {
     }
 
     public void shutdown() {
-      if (repository != null) {
-        repository.shutdown();
-        repository = null;
-        log.info("Repository shut down");
-      }
-    }
-
-    private <ValueType> void fireSubscriptions(Experiment<ValueType> experiment, ExperimentResult<ValueType> result) {
-        String key = experiment.getKey();
-        // If assigned variation has changed, fire subscriptions
-        AssignedExperiment prev = this.assigned.get(key);
-        if (prev == null
-                || !Objects.equals(prev.getInExperiment(), result.getInExperiment())
-                || !Objects.equals(prev.getVariationId(), result.getVariationId())) {
-            AssignedExperiment current = new AssignedExperiment(
-                    experiment.getKey(),
-                    result.getInExperiment(),
-                    result.getVariationId()
-            );
-            this.assigned.put(key, current);
-
-            for (ExperimentRunCallback cb : this.callbacks) {
-                try {
-                    cb.onRun(experiment, result);
-                } catch (Exception e) {
-                    log.error(e.getMessage());
-                }
+        synchronized (GrowthBookClient.class) {
+            if (repository != null) {
+                repository.shutdown();
+                repository = null;
+                log.info("Repository shut down");
             }
         }
     }
@@ -221,15 +205,17 @@ public class GrowthBookClient {
         return new FeatureRefreshCallback() {
             @Override
             public void onRefresh(String featuresJson) {
+                GBFeaturesRepository repo = repository;
+                if (repo == null) return;
                 // refer the global context with latest features & saved groups
                 if (globalContext != null) {
-                    globalContext.setFeatures(repository.getParsedFeatures());
-                    globalContext.setSavedGroups(repository.getParsedSavedGroups());
+                    globalContext.setFeatures(repo.getParsedFeatures().get());
+                    globalContext.setSavedGroups(repo.getParsedSavedGroups().get());
                 } else {
                     // TBD:M This should never happen! Just to be cautious about race conditions at the time of initialization
                     globalContext = GlobalContext.builder()
-                            .features(repository.getParsedFeatures())
-                            .savedGroups(repository.getParsedSavedGroups())
+                            .features(repo.getParsedFeatures().get())
+                            .savedGroups(repo.getParsedSavedGroups().get())
                             .enabled(options.getEnabled())
                             .qaMode(options.getIsQaMode())
                             .forcedFeatureValues(options.getGlobalForcedFeatureValues())
