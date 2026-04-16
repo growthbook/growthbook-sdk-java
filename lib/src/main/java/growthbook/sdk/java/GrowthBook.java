@@ -2,9 +2,9 @@ package growthbook.sdk.java;
 
 import java.util.Map;
 import java.util.HashMap;
-import java.util.ArrayList;
 import java.util.List;
-import java.util.Objects;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArrayList;
 import javax.annotation.Nullable;
 import com.google.gson.JsonObject;
 import growthbook.sdk.java.callback.ExperimentRunCallback;
@@ -47,10 +47,10 @@ public class GrowthBook implements IGrowthBook {
 
     private final GrowthBookJsonUtils jsonUtils = GrowthBookJsonUtils.getInstance();
 
-    private List<ExperimentRunCallback> callbacks;
+    private volatile List<ExperimentRunCallback> callbacks;
     @Getter @Setter private JsonObject attributeOverrides;
 
-    public EvaluationContext evaluationContext = null;
+    public volatile EvaluationContext evaluationContext = null;
     private final Map<String, AssignedExperiment> assigned;
 
     @Getter @Setter private Map<String, Object> forcedFeatureValues;
@@ -62,8 +62,8 @@ public class GrowthBook implements IGrowthBook {
     public GrowthBook(GBContext context) {
         this.context = context;
 
-        this.assigned = new HashMap<>();
-        this.callbacks = new ArrayList<>();
+        this.assigned = new ConcurrentHashMap<>();
+        this.callbacks = new CopyOnWriteArrayList<>();
         this.featureEvaluator = new FeatureEvaluator();
         this.conditionEvaluator = new ConditionEvaluator();
         this.experimentEvaluatorEvaluator = new ExperimentEvaluator();
@@ -80,8 +80,8 @@ public class GrowthBook implements IGrowthBook {
         this.context = GBContext.builder().build();
 
         // dependencies
-        this.assigned = new HashMap<>();
-        this.callbacks = new ArrayList<>();
+        this.assigned = new ConcurrentHashMap<>();
+        this.callbacks = new CopyOnWriteArrayList<>();
         this.featureEvaluator = new FeatureEvaluator();
         this.conditionEvaluator = new ConditionEvaluator();
         this.experimentEvaluatorEvaluator = new ExperimentEvaluator();
@@ -104,8 +104,8 @@ public class GrowthBook implements IGrowthBook {
         this.conditionEvaluator = conditionEvaluator;
         this.experimentEvaluatorEvaluator = experimentEvaluator;
         this.context = context;
-        this.assigned = new HashMap<>();
-        this.callbacks = new ArrayList<>();
+        this.assigned = new ConcurrentHashMap<>();
+        this.callbacks = new CopyOnWriteArrayList<>();
         this.attributeOverrides = context.getAttributes() == null ? new JsonObject() : context.getAttributes();
         //this.savedGroups = context.getSavedGroups() == null ? new JsonObject() : context.getSavedGroups();
 
@@ -223,7 +223,7 @@ public class GrowthBook implements IGrowthBook {
         ExperimentResult<ValueType> result = experimentEvaluatorEvaluator
                 .evaluateExperiment(experiment, getEvaluationContext(), null);
 
-        fireSubscriptions(experiment, result);
+        GrowthBookUtils.fireSubscriptions(this.assigned, this.callbacks, experiment, result);
 
         return result;
     }
@@ -498,7 +498,7 @@ public class GrowthBook implements IGrowthBook {
      */
     @Override
     public void destroy() {
-        this.callbacks = new ArrayList<>();
+        this.callbacks = new CopyOnWriteArrayList<>();
     }
 
     /**
@@ -534,30 +534,6 @@ public class GrowthBook implements IGrowthBook {
     private void refreshStickyBucketService(@Nullable String featuresDataModel) {
         if (context.getStickyBucketService() != null) {
             GrowthBookUtils.refreshStickyBuckets(context, featuresDataModel, attributeOverrides);
-        }
-    }
-
-    private <ValueType> void fireSubscriptions(Experiment<ValueType> experiment, ExperimentResult<ValueType> result) {
-        String key = experiment.getKey();
-        // If assigned variation has changed, fire subscriptions
-        AssignedExperiment prev = this.assigned.get(key);
-        if (prev == null
-                || !Objects.equals(prev.getInExperiment(), result.getInExperiment())
-                || !Objects.equals(prev.getVariationId(), result.getVariationId())) {
-            AssignedExperiment current = new AssignedExperiment(
-                    experiment.getKey(),
-                    result.getInExperiment(),
-                    result.getVariationId()
-            );
-            this.assigned.put(key, current);
-
-            for (ExperimentRunCallback cb : this.callbacks) {
-                try {
-                    cb.onRun(experiment, result);
-                } catch (Exception e) {
-                    log.error(e.getMessage());
-                }
-            }
         }
     }
 }
