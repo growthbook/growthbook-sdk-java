@@ -138,7 +138,7 @@ public class NativeJavaGbFeatureRepository implements IGBFeaturesRepository {
     /**
      * CachingManger allows to cache features data to file
      */
-    private AtomicReference<GbCacheManager> cacheManager;
+    private final AtomicReference<GbCacheManager> cacheManager;
     /**
      * Flag that enable CachingManager
      */
@@ -186,10 +186,9 @@ public class NativeJavaGbFeatureRepository implements IGBFeaturesRepository {
         this.encryptionKey = encryptionKey;
         this.swrTtlSeconds = swrTtlSeconds == null ? new AtomicInteger(60) : new AtomicInteger(swrTtlSeconds);
         this.refreshExpiresAt();
-            if (!this.isCacheDisabled.get()) {
-                this.cacheManager = cacheManager != null ? new AtomicReference<>(cacheManager) : new AtomicReference<>(determineCacheManager());
-            }
-
+        GbCacheManager resolvedManager = this.isCacheDisabled.get() ? null :
+                (cacheManager != null ? cacheManager : determineCacheManager());
+        this.cacheManager = new AtomicReference<>(resolvedManager);
     }
 
     /**
