@@ -16,7 +16,10 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.MockedStatic;
 
 import java.lang.reflect.Field;
+import java.util.HashMap;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
@@ -81,7 +84,7 @@ class GrowthBookClientTest {
     void test_initialization_withFailedFeatureFetch() throws FeatureFetchException {
         // Configures a mock repository that simulates initialization failure
         mockRepository = mock(GBFeaturesRepository.class);
-        when(mockRepository.getInitialized()).thenReturn(false);
+        when(mockRepository.getInitialized()).thenReturn(new AtomicBoolean(false));
         doThrow(new FeatureFetchException(FeatureFetchException
                 .FeatureFetchErrorCode.NO_RESPONSE_ERROR)).when(mockRepository).initialize();
 
@@ -174,9 +177,11 @@ class GrowthBookClientTest {
 
     private GBFeaturesRepository createMockRepository() {
         GBFeaturesRepository repository = mock(GBFeaturesRepository.class);
-        when(repository.getInitialized()).thenReturn(true);
+        when(repository.getInitialized()).thenReturn(new AtomicBoolean(true));
         when(repository.getFeaturesJson()).thenReturn("{}");
-        when(repository.getSavedGroupsJson()).thenReturn("{}");
+        when(repository.getSavedGroupsJson()).thenReturn(new AtomicReference<>(("{}")));
+        when(repository.getParsedFeatures()).thenReturn(new AtomicReference<>(new HashMap<>()));
+        when(repository.getParsedSavedGroups()).thenReturn(new AtomicReference<>(new JsonObject()));
         return repository;
     }
 

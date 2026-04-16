@@ -275,7 +275,7 @@ class GBFeaturesRepositoryTest {
         verify(featureRefreshCallback).onError(requestFailed);
         verify(featureRefreshCallback, never()).onRefresh(anyString());
 
-        subject.getCacheManager().clearCache();
+        subject.getCacheManager().get().clearCache();
     }
 
 

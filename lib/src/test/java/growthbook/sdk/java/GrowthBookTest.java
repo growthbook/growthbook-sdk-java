@@ -205,7 +205,7 @@ class GrowthBookTest {
         GrowthBook subject = new GrowthBook();
         ExperimentRunCallback mockCallback1 = mock(ExperimentRunCallback.class);
         ExperimentRunCallback mockCallback2 = mock(ExperimentRunCallback.class);
-        Experiment<String> mockExperiment = Experiment.<String>builder().build();
+        Experiment<String> mockExperiment = Experiment.<String>builder().key("").build();
 
         subject.subscribe(mockCallback1);
         subject.subscribe(mockCallback2);
@@ -219,7 +219,7 @@ class GrowthBookTest {
     void run_executesExperimentResultCallbacksOnceWhenRunInvokeMultipleTimes() {
         GrowthBook subject = new GrowthBook();
         ExperimentRunCallback mockCallback = mock(ExperimentRunCallback.class);
-        Experiment<String> mockExperiment = Experiment.<String>builder().build();
+        Experiment<String> mockExperiment = Experiment.<String>builder().key("").build();
 
         subject.subscribe(mockCallback);
         subject.run(mockExperiment);
@@ -678,7 +678,7 @@ class GrowthBookTest {
         GrowthBook subject = new GrowthBook();
         ExperimentRunCallback mockCallback1 = mock(ExperimentRunCallback.class);
         ExperimentRunCallback mockCallback2 = mock(ExperimentRunCallback.class);
-        Experiment<String> mockExperiment = Experiment.<String>builder().build();
+        Experiment<String> mockExperiment = Experiment.<String>builder().key("").build();
 
         // Add callbacks
         subject.subscribe(mockCallback1);
