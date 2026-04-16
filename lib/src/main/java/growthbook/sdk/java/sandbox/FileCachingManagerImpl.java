@@ -10,6 +10,8 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.io.FileNotFoundException;
 import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 
 /**
  * Class responsible for caching data to a file
@@ -33,62 +35,83 @@ public class FileCachingManagerImpl implements GbCacheManager {
 
     /**
      * Method that saves feature JSON as String to a cache file
+     *
      * @param fileName The name of file in the cache directory
-     * @param content Feature JSON as String type
+     * @param content  Feature JSON as String type
      */
     public void saveContent(String fileName, String content) {
-        File file = new File(cacheDir, fileName);
-        try (BufferedWriter writer = new BufferedWriter(new FileWriter(file))) {
-           writer.write(content);
-       } catch (IOException e) {
-           log.error("Error occur while writing data to file with name: {} error message was {}", fileName, e.getMessage());
-           throw new RuntimeException(e);
-       }
+        synchronized (FileCachingManagerImpl.class) {
+            try {
+                File dest = cacheDir.toPath().resolve(fileName).toFile();
+                if (dest.exists() && !dest.canWrite()) {
+                    throw new IOException("File is not writable: " + dest.getAbsolutePath());
+                }
+
+                Path tmp = Files.createTempFile(cacheDir.toPath(), fileName, ".tmp");
+
+                try (BufferedWriter writer = new BufferedWriter(new FileWriter(tmp.toFile()))) {
+                    writer.write(content);
+                }
+
+                Files.move(tmp, cacheDir.toPath().resolve(fileName),
+                        StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING);
+
+            } catch (IOException e) {
+                log.error("Error occur while writing data to file with name: {} error message was {}",
+                        fileName, e.getMessage());
+                throw new RuntimeException(e);
+            }
+        }
     }
 
     /**
      * Method that fetches data from cache by file name
+     *
      * @param fileName The name of the file in the cache directory.
      * @return The cached data as a String.
      */
     public String loadCache(String fileName) {
-        File file = new File(cacheDir, fileName);
+        synchronized (FileCachingManagerImpl.class) {
+            File file = new File(cacheDir, fileName);
 
-        if (!file.exists()) {
-            return null;
-        }
-
-        try (BufferedReader reader = new BufferedReader(new FileReader(file))) {
-            StringBuilder builder = new StringBuilder();
-            String line;
-
-            while ((line = reader.readLine()) != null) {
-                builder.append(line);
+            if (!file.exists()) {
+                return null;
             }
 
-            return builder.toString().trim();
-        } catch (FileNotFoundException e) {
-            log.error("Error was occur because of file isn't exist, error message was - {}", e.getMessage());
-            throw new RuntimeException(e);
-        } catch (IOException e) {
-            log.error("Error was occur during reading data from file, error message was - {}", e.getMessage());
+            try (BufferedReader reader = new BufferedReader(new FileReader(file))) {
+                StringBuilder builder = new StringBuilder();
+                String line;
 
-            throw new RuntimeException(e);
+                while ((line = reader.readLine()) != null) {
+                    builder.append(line);
+                }
+
+                return builder.toString().trim();
+            } catch (FileNotFoundException e) {
+                log.error("Error was occur because of file isn't exist, error message was - {}", e.getMessage());
+                throw new RuntimeException(e);
+            } catch (IOException e) {
+                log.error("Error was occur during reading data from file, error message was - {}", e.getMessage());
+
+                throw new RuntimeException(e);
+            }
         }
     }
 
     /**
      * Clears all cache files in the directory
      */
-    public void clearCache(){
-        if (cacheDir.exists() && cacheDir.isDirectory()) {
-            File[] files = cacheDir.listFiles();
-            if (files != null) {
-                for (File file : files) {
-                    try {
-                        Files.delete(file.toPath());
-                    } catch (IOException e) {
-                        log.error("Failed to delete cache file: {}", file.getName(), e);
+    public void clearCache() {
+        synchronized (FileCachingManagerImpl.class) {
+            if (cacheDir.exists() && cacheDir.isDirectory()) {
+                File[] files = cacheDir.listFiles();
+                if (files != null) {
+                    for (File file : files) {
+                        try {
+                            Files.delete(file.toPath());
+                        } catch (IOException e) {
+                            log.error("Failed to delete cache file: {}", file.getName(), e);
+                        }
                     }
                 }
             }
