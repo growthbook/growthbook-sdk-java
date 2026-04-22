@@ -5,6 +5,7 @@ import growthbook.sdk.java.util.ExperimentHelper;
 import growthbook.sdk.java.callback.FeatureUsageCallback;
 import growthbook.sdk.java.callback.TrackingCallback;
 import growthbook.sdk.java.multiusermode.util.TransformationUtil;
+import growthbook.sdk.java.plugin.GrowthBookPlugin;
 import growthbook.sdk.java.stickyBucketing.StickyBucketService;
 import lombok.Builder;
 import lombok.Data;
@@ -61,7 +62,8 @@ public class GBContext {
             @Nullable StickyBucketService stickyBucketService,
             @Nullable Map<String, StickyAssignmentsDocument> stickyBucketAssignmentDocs,
             @Nullable List<String> stickyBucketIdentifierAttributes,
-            @Nullable JsonObject savedGroups
+            @Nullable JsonObject savedGroups,
+            @Nullable List<GrowthBookPlugin> plugins
     ) {
         this.encryptionKey = encryptionKey;
         this.attributesJson = attributesJson == null ? "{}" : attributesJson;
@@ -85,6 +87,7 @@ public class GBContext {
         this.stickyBucketAssignmentDocs = stickyBucketAssignmentDocs;
         this.stickyBucketIdentifierAttributes = stickyBucketIdentifierAttributes;
         this.savedGroups = savedGroups == null ? new JsonObject() : savedGroups;
+        this.plugins = plugins;
     }
 
     /**
@@ -233,6 +236,14 @@ public class GBContext {
      */
     @Nullable
     private String stickyBucketIdentifierAttributesSignature;
+
+    /**
+     * Plugins registered with the GrowthBook instance. See
+     * {@link GrowthBookPlugin} and
+     * {@link growthbook.sdk.java.plugin.tracking.GrowthBookTrackingPlugin}.
+     */
+    @Nullable
+    private List<GrowthBookPlugin> plugins;
 
     /**
      * The builder class to help create a context. You can use {@link #builder()} or the {@link GBContext} constructor

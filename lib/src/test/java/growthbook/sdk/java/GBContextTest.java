@@ -66,6 +66,7 @@ class GBContextTest {
                 null,
                 null,
                 null,
+                null,
                 null
         );
 
@@ -147,6 +148,7 @@ class GBContextTest {
                 allowUrlOverride,
                 forcedVariations,
                 trackingCallback,
+                null,
                 null,
                 null,
                 null,
