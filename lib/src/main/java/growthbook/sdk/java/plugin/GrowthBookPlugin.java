@@ -3,6 +3,7 @@ package growthbook.sdk.java.plugin;
 import growthbook.sdk.java.model.Experiment;
 import growthbook.sdk.java.model.ExperimentResult;
 import growthbook.sdk.java.model.FeatureResult;
+import growthbook.sdk.java.multiusermode.configurations.EvaluationContext;
 
 /**
  * A plugin that can observe experiment and feature evaluations on a GrowthBook
@@ -32,9 +33,33 @@ public interface GrowthBookPlugin {
     }
 
     /**
+     * Invoked after a user is bucketed into an experiment, with the evaluation
+     * context that triggered the event.
+     */
+    default <V> void onExperimentViewed(
+            Experiment<V> experiment,
+            ExperimentResult<V> result,
+            EvaluationContext context
+    ) {
+        onExperimentViewed(experiment, result);
+    }
+
+    /**
      * Invoked every time a feature is evaluated.
      */
     default <V> void onFeatureEvaluated(String featureKey, FeatureResult<V> result) {
+    }
+
+    /**
+     * Invoked every time a feature is evaluated, with the evaluation context
+     * that triggered the event.
+     */
+    default <V> void onFeatureEvaluated(
+            String featureKey,
+            FeatureResult<V> result,
+            EvaluationContext context
+    ) {
+        onFeatureEvaluated(featureKey, result);
     }
 
     /**

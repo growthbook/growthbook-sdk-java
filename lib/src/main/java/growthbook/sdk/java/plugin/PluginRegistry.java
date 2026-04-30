@@ -3,6 +3,7 @@ package growthbook.sdk.java.plugin;
 import growthbook.sdk.java.model.Experiment;
 import growthbook.sdk.java.model.ExperimentResult;
 import growthbook.sdk.java.model.FeatureResult;
+import growthbook.sdk.java.multiusermode.configurations.EvaluationContext;
 import lombok.extern.slf4j.Slf4j;
 
 import javax.annotation.Nullable;
@@ -47,10 +48,22 @@ public final class PluginRegistry {
     }
 
     public <V> void fireExperimentViewed(Experiment<V> experiment, ExperimentResult<V> result) {
+        fireExperimentViewed(experiment, result, null);
+    }
+
+    public <V> void fireExperimentViewed(
+            Experiment<V> experiment,
+            ExperimentResult<V> result,
+            @Nullable EvaluationContext context
+    ) {
         if (plugins.isEmpty()) return;
         for (GrowthBookPlugin plugin : plugins) {
             try {
-                plugin.onExperimentViewed(experiment, result);
+                if (context == null) {
+                    plugin.onExperimentViewed(experiment, result);
+                } else {
+                    plugin.onExperimentViewed(experiment, result, context);
+                }
             } catch (Throwable t) {
                 log.warn("Plugin {} onExperimentViewed failed",
                         plugin.getClass().getName(), t);
@@ -59,10 +72,22 @@ public final class PluginRegistry {
     }
 
     public <V> void fireFeatureEvaluated(String featureKey, FeatureResult<V> result) {
+        fireFeatureEvaluated(featureKey, result, null);
+    }
+
+    public <V> void fireFeatureEvaluated(
+            String featureKey,
+            FeatureResult<V> result,
+            @Nullable EvaluationContext context
+    ) {
         if (plugins.isEmpty()) return;
         for (GrowthBookPlugin plugin : plugins) {
             try {
-                plugin.onFeatureEvaluated(featureKey, result);
+                if (context == null) {
+                    plugin.onFeatureEvaluated(featureKey, result);
+                } else {
+                    plugin.onFeatureEvaluated(featureKey, result, context);
+                }
             } catch (Throwable t) {
                 log.warn("Plugin {} onFeatureEvaluated failed",
                         plugin.getClass().getName(), t);

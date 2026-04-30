@@ -10,6 +10,7 @@ import growthbook.sdk.java.model.ExperimentResult;
 import growthbook.sdk.java.model.Feature;
 import growthbook.sdk.java.model.FeatureResult;
 import growthbook.sdk.java.model.GBContext;
+import growthbook.sdk.java.multiusermode.configurations.EvaluationContext;
 import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
@@ -104,5 +105,43 @@ class PluginIntegrationTest {
         assertNotNull(r);
         assertTrue(keys.contains("flag"));
         gb.close();
+    }
+
+    @Test
+    void contextAwarePluginReceivesAttributesForOwningInstanceOnly() {
+        List<String> firstInstanceIds = new ArrayList<>();
+        List<String> secondInstanceIds = new ArrayList<>();
+
+        GrowthBookPlugin firstPlugin = new GrowthBookPlugin() {
+            @Override
+            public <V> void onFeatureEvaluated(String k, FeatureResult<V> r, EvaluationContext context) {
+                firstInstanceIds.add(context.getUser().getAttributes().get("id").getAsString());
+            }
+        };
+        GrowthBookPlugin secondPlugin = new GrowthBookPlugin() {
+            @Override
+            public <V> void onFeatureEvaluated(String k, FeatureResult<V> r, EvaluationContext context) {
+                secondInstanceIds.add(context.getUser().getAttributes().get("id").getAsString());
+            }
+        };
+
+        GrowthBook first = new GrowthBook(GBContext.builder()
+                .featuresJson("{\"flag\": {\"defaultValue\": true}}")
+                .attributesJson("{\"id\":\"first\"}")
+                .plugins(Collections.singletonList(firstPlugin))
+                .build());
+        GrowthBook second = new GrowthBook(GBContext.builder()
+                .featuresJson("{\"flag\": {\"defaultValue\": true}}")
+                .attributesJson("{\"id\":\"second\"}")
+                .plugins(Collections.singletonList(secondPlugin))
+                .build());
+
+        first.isOn("flag");
+        second.isOn("flag");
+        first.close();
+        second.close();
+
+        assertEquals(Collections.singletonList("first"), firstInstanceIds);
+        assertEquals(Collections.singletonList("second"), secondInstanceIds);
     }
 }

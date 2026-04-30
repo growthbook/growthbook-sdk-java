@@ -316,7 +316,7 @@ public class ExperimentEvaluator implements IExperimentEvaluator {
 
             PluginRegistry pluginRegistry = context.getOptions().getPluginRegistry();
             if (pluginRegistry != null) {
-                pluginRegistry.fireExperimentViewed(experiment, result);
+                pluginRegistry.fireExperimentViewed(experiment, result, context);
             }
         }
 

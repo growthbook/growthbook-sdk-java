@@ -278,7 +278,8 @@ public class FeatureEvaluator implements IFeatureEvaluator {
                             if (pluginRegistry != null) {
                                 pluginRegistry.fireExperimentViewed(
                                         t.getExperiment(),
-                                        t.getResult().getExperimentResult()
+                                        t.getResult().getExperimentResult(),
+                                        context
                                 );
                             }
                         });
@@ -451,7 +452,7 @@ public class FeatureEvaluator implements IFeatureEvaluator {
         }
         PluginRegistry registry = context.getOptions().getPluginRegistry();
         if (registry != null) {
-            registry.fireFeatureEvaluated(key, result);
+            registry.fireFeatureEvaluated(key, result, context);
         }
     }
 
