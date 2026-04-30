@@ -1,10 +1,13 @@
 package growthbook.sdk.java.plugin.tracking;
 
 import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import growthbook.sdk.java.model.Experiment;
 import growthbook.sdk.java.model.ExperimentResult;
 import growthbook.sdk.java.model.FeatureResult;
+import growthbook.sdk.java.multiusermode.configurations.EvaluationContext;
+import growthbook.sdk.java.multiusermode.configurations.UserContext;
 import growthbook.sdk.java.plugin.GrowthBookPlugin;
 import growthbook.sdk.java.util.GrowthBookJsonUtils;
 import lombok.extern.slf4j.Slf4j;
@@ -114,9 +117,29 @@ public final class GrowthBookTrackingPlugin implements GrowthBookPlugin {
     }
 
     @Override
+    public <V> void onExperimentViewed(
+            Experiment<V> experiment,
+            ExperimentResult<V> result,
+            EvaluationContext context
+    ) {
+        if (disabled || closed.get()) return;
+        enqueue(TrackingEvent.forExperiment(experiment, result, snapshotAttributes(context)));
+    }
+
+    @Override
     public <V> void onFeatureEvaluated(String featureKey, FeatureResult<V> result) {
         if (disabled || closed.get()) return;
         enqueue(TrackingEvent.forFeature(featureKey, result, null));
+    }
+
+    @Override
+    public <V> void onFeatureEvaluated(
+            String featureKey,
+            FeatureResult<V> result,
+            EvaluationContext context
+    ) {
+        if (disabled || closed.get()) return;
+        enqueue(TrackingEvent.forFeature(featureKey, result, snapshotAttributes(context)));
     }
 
     @Override
@@ -270,5 +293,13 @@ public final class GrowthBookTrackingPlugin implements GrowthBookPlugin {
             t.setDaemon(true);
             return t;
         };
+    }
+
+    @Nullable
+    private static JsonElement snapshotAttributes(@Nullable EvaluationContext context) {
+        if (context == null) return null;
+        UserContext user = context.getUser();
+        if (user == null || user.getAttributes() == null) return null;
+        return user.getAttributes().deepCopy();
     }
 }

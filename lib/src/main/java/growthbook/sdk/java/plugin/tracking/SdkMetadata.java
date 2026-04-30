@@ -1,5 +1,7 @@
 package growthbook.sdk.java.plugin.tracking;
 
+import growthbook.sdk.java.Version;
+
 /**
  * Identifying metadata for this SDK. Emitted on every tracked event and in
  * the {@code User-Agent} of outbound ingest requests.
@@ -22,6 +24,6 @@ public final class SdkMetadata {
         if (implVersion != null && !implVersion.isEmpty()) {
             return implVersion;
         }
-        return "unknown";
+        return Version.SDK_VERSION;
     }
 }

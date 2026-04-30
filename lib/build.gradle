@@ -30,7 +30,7 @@ sourceCompatibility = JavaVersion.VERSION_1_8
 targetCompatibility = JavaVersion.VERSION_1_8
 
 group = 'com.github.growthbook'
-version = 'main-SNAPSHOT'
+version = findProperty('version') ?: 'main-SNAPSHOT'
 
 repositories {
     // Use Maven Central for resolving dependencies.
@@ -65,6 +65,15 @@ dependencies {
 
     // logging
     implementation 'org.slf4j:slf4j-api:2.0.7'
+}
+
+jar {
+    manifest {
+        attributes(
+                'Implementation-Title': 'growthbook-java-sdk',
+                'Implementation-Version': project.version
+        )
+    }
 }
 
 publishing {
@@ -146,6 +155,15 @@ tasks.register('runPerfHarness', JavaExec) {
     if (project.hasProperty('perfJfrFile')) {
         jvmArgs "-XX:StartFlightRecording=filename=${project.property('perfJfrFile')},settings=profile,dumponexit=true"
     }
+}
+
+tasks.register('runTrackingPluginSmoke', JavaExec) {
+    group = 'verification'
+    description = 'Runs a local end-to-end smoke test for the GrowthBook tracking plugin.'
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = 'growthbook.sdk.java.plugin.tracking.TrackingPluginSmokeHarness'
+    systemProperty 'trackingSmokeMode', project.findProperty('trackingSmokeMode') ?: 'both'
 }
 
 // More configuration options, including enforcing code coverage available here:
