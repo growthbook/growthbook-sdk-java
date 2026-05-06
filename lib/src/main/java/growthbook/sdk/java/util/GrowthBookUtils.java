@@ -533,9 +533,14 @@ public class GrowthBookUtils {
         HashAttributeAndHashValue hashAttributeAndHashValue = GrowthBookUtils
                 .getHashAttribute(hashAttribute, fallbackAttribute, attributes);
 
+        String hashValue = hashAttributeAndHashValue.getHashValue();
+        if (hashValue == null || hashValue.isEmpty()) {
+            return false;
+        }
+
         // Determine the bucket for the user
         Float hash = GrowthBookUtils.hash(
-                hashAttributeAndHashValue.getHashValue(),
+                hashValue,
                 hashVersion,
                 seed
         );
