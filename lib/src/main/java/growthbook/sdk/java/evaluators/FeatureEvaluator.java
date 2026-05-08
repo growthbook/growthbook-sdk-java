@@ -296,25 +296,6 @@ public class FeatureEvaluator implements IFeatureEvaluator {
                         );
                     }
 
-                    if (rule.getRange() == null) {
-                        if (rule.getCoverage() != null) {
-                            String attributeValue = context.getUser().getAttributes().get(ruleKey) == null
-                                    ? null : context.getUser().getAttributes().get(ruleKey).getAsString();
-
-                            if (attributeValue == null || attributeValue.isEmpty()) {
-                                continue;
-                            }
-
-                            Float hashFNV = GrowthBookUtils.hash(attributeValue, 1, key);
-                            if (hashFNV == null) {
-                                hashFNV = 0f;
-                            }
-                            if (hashFNV > rule.getCoverage()) {
-                                continue;
-                            }
-                        }
-                    }
-
                     ValueType value = (ValueType) GrowthBookJsonUtils.unwrap(rule.getForce().getValue());
 
                     // Apply the force rule
