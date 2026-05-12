@@ -8,6 +8,8 @@ import growthbook.sdk.java.model.FeatureResult;
 import growthbook.sdk.java.multiusermode.usage.FeatureUsageCallbackWithUser;
 import growthbook.sdk.java.multiusermode.usage.TrackingCallbackWithUser;
 import growthbook.sdk.java.multiusermode.util.TransformationUtil;
+import growthbook.sdk.java.plugin.GrowthBookPlugin;
+import growthbook.sdk.java.plugin.PluginRegistry;
 import growthbook.sdk.java.repository.FeatureRefreshStrategy;
 import growthbook.sdk.java.sandbox.GbCacheManager;
 import growthbook.sdk.java.sandbox.CacheMode;
@@ -47,7 +49,8 @@ public class Options {
                    @Nullable Map<String, Integer> globalForcedVariationsMap,
                    @Nullable GbCacheManager cacheManager,
                    @Nullable CacheMode cacheMode,
-                   @Nullable String cacheDirectory
+                   @Nullable String cacheDirectory,
+                   @Nullable List<GrowthBookPlugin> plugins
 
     ) {
         this.enabled = enabled == null || enabled;
@@ -71,6 +74,7 @@ public class Options {
         this.cacheManager = cacheManager;
         this.cacheMode = cacheMode == null ? CacheMode.AUTO : cacheMode;
         this.cacheDirectory = cacheDirectory;
+        this.plugins = plugins;
     }
 
     /**
@@ -196,6 +200,22 @@ public class Options {
 
     @Nullable
     private String cacheDirectory;
+
+    /**
+     * Plugins registered with the GrowthBook client. See
+     * {@link GrowthBookPlugin} and
+     * {@link growthbook.sdk.java.plugin.tracking.GrowthBookTrackingPlugin}.
+     */
+    @Nullable
+    private List<GrowthBookPlugin> plugins;
+
+    /**
+     * Internal: set by {@code GrowthBookClient}/{@code GrowthBook} after
+     * constructing a registry from {@link #plugins}. Exposed so the evaluators
+     * can dispatch events without knowing which caller built the registry.
+     */
+    @Nullable
+    private PluginRegistry pluginRegistry;
 
     public CacheMode getCacheMode() { return cacheMode == null ? CacheMode.AUTO : cacheMode; }
     @Nullable

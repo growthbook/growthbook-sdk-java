@@ -18,6 +18,7 @@ import growthbook.sdk.java.model.StickyBucketVariation;
 import growthbook.sdk.java.model.VariationMeta;
 import growthbook.sdk.java.multiusermode.configurations.EvaluationContext;
 import growthbook.sdk.java.multiusermode.usage.TrackingCallbackWithUser;
+import growthbook.sdk.java.plugin.PluginRegistry;
 import lombok.extern.slf4j.Slf4j;
 
 import javax.annotation.Nullable;
@@ -311,6 +312,11 @@ public class ExperimentEvaluator implements IExperimentEvaluator {
 
             if (trackingCallBackWithUser != null) {
                 trackingCallBackWithUser.onTrack(experiment, result, context.getUser());
+            }
+
+            PluginRegistry pluginRegistry = context.getOptions().getPluginRegistry();
+            if (pluginRegistry != null) {
+                pluginRegistry.fireExperimentViewed(experiment, result, context);
             }
         }
 

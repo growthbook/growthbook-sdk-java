@@ -27,6 +27,7 @@ import growthbook.sdk.java.multiusermode.configurations.Options;
 import growthbook.sdk.java.multiusermode.configurations.UserContext;
 import growthbook.sdk.java.multiusermode.usage.FeatureUsageCallbackAdapter;
 import growthbook.sdk.java.multiusermode.usage.TrackingCallbackAdapter;
+import growthbook.sdk.java.plugin.PluginRegistry;
 import growthbook.sdk.java.stickyBucketing.InMemoryStickyBucketServiceImpl;
 import growthbook.sdk.java.stickyBucketing.StickyBucketService;
 
@@ -52,6 +53,7 @@ public class GrowthBook implements IGrowthBook {
 
     public EvaluationContext evaluationContext = null;
     private final Map<String, AssignedExperiment> assigned;
+    private final PluginRegistry pluginRegistry;
 
     @Getter @Setter private Map<String, Object> forcedFeatureValues;
     /**
@@ -68,8 +70,10 @@ public class GrowthBook implements IGrowthBook {
         this.conditionEvaluator = new ConditionEvaluator();
         this.experimentEvaluatorEvaluator = new ExperimentEvaluator();
         this.attributeOverrides = context.getAttributes() == null ? new JsonObject() : context.getAttributes();
+        this.pluginRegistry = new PluginRegistry(context.getPlugins());
 
         this.initializeEvalContext();
+        this.pluginRegistry.initAll();
     }
 
     /**
@@ -86,9 +90,11 @@ public class GrowthBook implements IGrowthBook {
         this.conditionEvaluator = new ConditionEvaluator();
         this.experimentEvaluatorEvaluator = new ExperimentEvaluator();
         this.attributeOverrides = context.getAttributes() == null ? new JsonObject() : context.getAttributes();
+        this.pluginRegistry = new PluginRegistry(context.getPlugins());
 
 
         this.initializeEvalContext();
+        this.pluginRegistry.initAll();
     }
 
     /**
@@ -108,8 +114,10 @@ public class GrowthBook implements IGrowthBook {
         this.callbacks = new ArrayList<>();
         this.attributeOverrides = context.getAttributes() == null ? new JsonObject() : context.getAttributes();
         //this.savedGroups = context.getSavedGroups() == null ? new JsonObject() : context.getSavedGroups();
+        this.pluginRegistry = new PluginRegistry(context.getPlugins());
 
         this.initializeEvalContext();
+        this.pluginRegistry.initAll();
     }
 
     private void initializeEvalContext() {
@@ -125,6 +133,9 @@ public class GrowthBook implements IGrowthBook {
                 .featureUsageCallbackWithUser(new FeatureUsageCallbackAdapter(this.context.getFeatureUsageCallback()))
                 .globalForcedFeatureValues(this.forcedFeatureValues)
                 .build();
+        if (this.pluginRegistry != null) {
+            options.setPluginRegistry(this.pluginRegistry);
+        }
 
         // build global
         GlobalContext globalContext = GlobalContext.builder()
@@ -499,6 +510,18 @@ public class GrowthBook implements IGrowthBook {
     @Override
     public void destroy() {
         this.callbacks = new ArrayList<>();
+        close();
+    }
+
+    /**
+     * Flushes registered plugins (including the built-in tracking plugin)
+     * so any buffered events are sent before the instance is discarded.
+     * Safe to call multiple times.
+     */
+    public void close() {
+        if (this.pluginRegistry != null) {
+            this.pluginRegistry.closeAll();
+        }
     }
 
     /**

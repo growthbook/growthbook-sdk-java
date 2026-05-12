@@ -16,6 +16,7 @@ import growthbook.sdk.java.multiusermode.configurations.EvaluationContext;
 import growthbook.sdk.java.multiusermode.configurations.GlobalContext;
 import growthbook.sdk.java.multiusermode.configurations.Options;
 import growthbook.sdk.java.multiusermode.configurations.UserContext;
+import growthbook.sdk.java.plugin.PluginRegistry;
 import growthbook.sdk.java.repository.GBFeaturesRepository;
 import growthbook.sdk.java.sandbox.CacheManagerFactory;
 import growthbook.sdk.java.sandbox.CacheMode;
@@ -54,6 +55,10 @@ public class GrowthBookClient {
         this.featureEvaluator = new FeatureEvaluator();
         this.experimentEvaluatorEvaluator = new ExperimentEvaluator();
         this.callbacks = new ArrayList<>();
+
+        PluginRegistry registry = new PluginRegistry(this.options.getPlugins());
+        this.options.setPluginRegistry(registry);
+        registry.initAll();
     }
 
     public boolean initialize() {
@@ -190,6 +195,19 @@ public class GrowthBookClient {
         repository.shutdown();
         repository = null;
         log.info("Repository shut down");
+      }
+      close();
+    }
+
+    /**
+     * Flushes registered plugins (including the built-in tracking plugin)
+     * so any buffered events are sent before the client is discarded.
+     * Safe to call multiple times.
+     */
+    public void close() {
+      PluginRegistry registry = this.options.getPluginRegistry();
+      if (registry != null) {
+        registry.closeAll();
       }
     }
 
