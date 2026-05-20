@@ -20,6 +20,7 @@ import growthbook.sdk.java.repository.GBFeaturesRepository;
 import growthbook.sdk.java.sandbox.CacheManagerFactory;
 import growthbook.sdk.java.sandbox.CacheMode;
 import growthbook.sdk.java.sandbox.GbCacheManager;
+import growthbook.sdk.java.model.StickyAssignmentsDocument;
 import growthbook.sdk.java.util.GrowthBookJsonUtils;
 import lombok.extern.slf4j.Slf4j;
 
@@ -259,6 +260,22 @@ public class GrowthBookClient {
             }
         }
         UserContext updatedUserContext = userContext.withAttributes(merged);
+
+        // If a sticky bucket service is configured and the caller hasn't pre-loaded docs,
+        // fetch docs for this user's attributes now (one call per request).
+        if (this.options.getStickyBucketService() != null
+                && updatedUserContext.getStickyBucketAssignmentDocs() == null) {
+            Map<String, String> attrStrings = new HashMap<>();
+            for (Map.Entry<String, JsonElement> e : merged.entrySet()) {
+                if (e.getValue() != null && e.getValue().isJsonPrimitive()) {
+                    attrStrings.put(e.getKey(), e.getValue().getAsString());
+                }
+            }
+            Map<String, StickyAssignmentsDocument> docs =
+                    this.options.getStickyBucketService().getAllAssignments(attrStrings);
+            updatedUserContext.setStickyBucketAssignmentDocs(docs);
+        }
+
         return new EvaluationContext(this.globalContext, updatedUserContext, new EvaluationContext.StackContext(), this.options);
     }
 

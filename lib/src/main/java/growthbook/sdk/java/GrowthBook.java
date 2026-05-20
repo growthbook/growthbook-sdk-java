@@ -183,6 +183,9 @@ public class GrowthBook implements IGrowthBook {
     @Override
     public void setAttributes(String attributesJsonString) {
         this.context.setAttributesJson(attributesJsonString);
+        // Reload sticky docs for the new attributes before rebuilding the eval context,
+        // matching TypeScript/Kotlin/Swift behaviour.
+        refreshStickyBucketService(null);
         initializeEvalContext();
     }
 
@@ -236,6 +239,7 @@ public class GrowthBook implements IGrowthBook {
     @Override
     public void setOwnStickyBucketService(@Nullable StickyBucketService stickyBucketService) {
         this.context.setStickyBucketService(stickyBucketService);
+        refreshStickyBucketService(null);
         initializeEvalContext();
     }
 
@@ -245,6 +249,7 @@ public class GrowthBook implements IGrowthBook {
     @Override
     public void setInMemoryStickyBucketService() {
         this.context.setStickyBucketService(new InMemoryStickyBucketServiceImpl(new HashMap<>()));
+        refreshStickyBucketService(null);
         initializeEvalContext();
     }
 
@@ -511,10 +516,18 @@ public class GrowthBook implements IGrowthBook {
     }
 
     /**
-     * Update sticky bucketing configuration
-     * Method that get cached assignments
-     * and set it to Context's Sticky Bucket Assignments documents
-     * @param featuresDataModel Json in format of String. See info how it looks like here <a href="https://docs.growthbook.io/app/api#sdk-connection-endpoints">...</a>
+     * Call this whenever features are refreshed so that sticky bucket assignment docs are
+     * reloaded for the current user.  Unlike Swift/Kotlin where an equivalent method was
+     * invoked automatically via a delegate, in Java this must be wired up explicitly, e.g.:
+     * <pre>
+     *   repository.onFeaturesRefresh(gb::featuresAPIModelSuccessfully);
+     * </pre>
+     * Passing the new features JSON allows {@code deriveStickyBucketIdentifierAttributes} to
+     * pick up any new {@code hashAttribute}/{@code fallbackAttribute} values introduced by the
+     * updated feature definitions before re-fetching docs from the service.
+     *
+     * @param featuresDataModel JSON string returned by the GrowthBook SDK endpoint.
+     *                          See <a href="https://docs.growthbook.io/app/api#sdk-connection-endpoints">SDK Connection Endpoints</a>
      */
     @Override
     public void featuresAPIModelSuccessfully(String featuresDataModel) {
@@ -534,6 +547,10 @@ public class GrowthBook implements IGrowthBook {
     private void refreshStickyBucketService(@Nullable String featuresDataModel) {
         if (context.getStickyBucketService() != null) {
             GrowthBookUtils.refreshStickyBuckets(context, featuresDataModel, attributeOverrides);
+            // Sync updated docs into the evaluation context so the next evalFeature call sees them.
+            if (evaluationContext != null && evaluationContext.getUser() != null) {
+                evaluationContext.getUser().setStickyBucketAssignmentDocs(context.getStickyBucketAssignmentDocs());
+            }
         }
     }
 
