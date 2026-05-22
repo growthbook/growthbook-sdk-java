@@ -183,8 +183,9 @@ public class GrowthBook implements IGrowthBook {
     @Override
     public void setAttributes(String attributesJsonString) {
         this.context.setAttributesJson(attributesJsonString);
-        // Reload sticky docs for the new attributes before rebuilding the eval context,
-        // matching TypeScript/Kotlin/Swift behaviour.
+        // Keep attributeOverrides in sync with the new attributes so that
+        // refreshStickyBucketService fetches docs for the *new* user, not the old one.
+        this.attributeOverrides = this.context.getAttributes();
         refreshStickyBucketService(null);
         initializeEvalContext();
     }
