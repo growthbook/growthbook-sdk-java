@@ -44,7 +44,7 @@ public class EvaluateFeatureWithStickyBucketingFeatureTest {
         List<Integer> failingIndexes = new ArrayList<>();
         JsonArray stickyBucketTestCases = helper.getStickyBucketTestCases();
         for (int i = 0; i < stickyBucketTestCases.size(); i++) {
-            // Create a fresh service per iteration — same as Kotlin test.
+
             stickyBucketService = new InMemoryStickyBucketServiceImpl(new HashMap<>());
             JsonArray testCase = stickyBucketTestCases.get(i).getAsJsonArray();
             // name of testcase
@@ -59,7 +59,7 @@ public class EvaluateFeatureWithStickyBucketingFeatureTest {
             String attributesJsonAsStringOrNull = attributesJson == null ? null : attributesJson.toString();
 
             // Write input docs to the service, then call getAllAssignments to get only
-            // docs that belong to the current user — same approach as TypeScript/Kotlin.
+            // docs that belong to the current user.
             JsonArray stickyAssignmentsJsonArray = testCase.get(2).getAsJsonArray();
             for (JsonElement element : stickyAssignmentsJsonArray) {
                 StickyAssignmentsDocument doc = utils.gson.fromJson(element, StickyAssignmentsDocument.class);

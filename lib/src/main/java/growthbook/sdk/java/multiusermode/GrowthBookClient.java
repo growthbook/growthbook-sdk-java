@@ -261,7 +261,7 @@ public class GrowthBookClient {
         }
         UserContext updatedUserContext = userContext.withAttributes(merged);
 
-        // If a sticky bucket service is configured and the caller hasn't pre-loaded docs,
+        // If a sticky bucket service is configured and the caller hasn't preloaded docs,
         // fetch docs for this user's attributes now (one call per request).
         if (this.options.getStickyBucketService() != null
                 && updatedUserContext.getStickyBucketAssignmentDocs() == null) {

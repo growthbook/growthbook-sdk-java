@@ -510,7 +510,7 @@ public class GrowthBook implements IGrowthBook {
     }
 
     /**
-     * This method add new calback to list of ExperimentRunCallback
+     * This method add new callback to list of ExperimentRunCallback
      * @param callback ExperimentRunCallback interface
      */
     @Override
@@ -520,8 +520,7 @@ public class GrowthBook implements IGrowthBook {
 
     /**
      * Call this whenever features are refreshed so that sticky bucket assignment docs are
-     * reloaded for the current user.  Unlike Swift/Kotlin where an equivalent method was
-     * invoked automatically via a delegate, in Java this must be wired up explicitly, e.g.:
+     * reloaded for the current user.
      * <pre>
      *   repository.onFeaturesRefresh(gb::featuresAPIModelSuccessfully);
      * </pre>
