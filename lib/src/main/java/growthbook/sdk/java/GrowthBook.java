@@ -69,6 +69,8 @@ public class GrowthBook implements IGrowthBook {
         this.experimentEvaluatorEvaluator = new ExperimentEvaluator();
         this.attributeOverrides = context.getAttributes() == null ? new JsonObject() : context.getAttributes();
 
+        // Load sticky bucket docs on construction if a service is configured,
+        refreshStickyBucketService(null);
         this.initializeEvalContext();
     }
 
