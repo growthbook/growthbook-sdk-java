@@ -4,7 +4,6 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import growthbook.sdk.java.model.Feature;
 import growthbook.sdk.java.multiusermode.util.TransformationUtil;
-import growthbook.sdk.java.sandbox.FileCachingManagerImpl;
 import growthbook.sdk.java.sandbox.GbCacheManager;
 import growthbook.sdk.java.util.DecryptionUtils;
 import growthbook.sdk.java.exception.FeatureFetchException;
@@ -531,7 +530,7 @@ public class NativeJavaGbFeatureRepository implements IGBFeaturesRepository {
                             dataBuffer.append(line.substring(QUANTITY_TO_CUT_SSE).trim()).append("\n");
                         } else if (line.isEmpty()) {
                             String data = dataBuffer.toString();
-                            if (!data.isEmpty()) {
+                            if (!data.trim().isEmpty()) {
                                 onResponseJson(data, false);
                             }
                             dataBuffer.setLength(0);
