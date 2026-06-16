@@ -21,10 +21,58 @@ import javax.annotation.Nullable;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.Executor;
 
 @Data
 @Slf4j
 public class Options {
+
+    public Options(@Nullable Boolean enabled,
+                   Boolean isQaMode,
+                   @Nullable Boolean isCacheDisabled,
+                   Boolean allowUrlOverrides,
+                   @Nullable String url,
+                   @Nullable String apiHost,
+                   @Nullable String clientKey,
+                   @Nullable String decryptionKey,
+                   @Nullable List<String> stickyBucketIdentifierAttributes,
+                   @Nullable StickyBucketService stickyBucketService,
+                   @Nullable TrackingCallbackWithUser trackingCallBackWithUser,
+                   @Nullable FeatureUsageCallbackWithUser featureUsageCallbackWithUser,
+                   @Nullable FeatureRefreshStrategy refreshStrategy,
+                   @Nullable Integer swrTtlSeconds,
+                   @Deprecated @Nullable FeatureRefreshCallback featureRefreshCallback,
+                   @Nullable JsonObject globalAttributes,
+                   @Nullable Map<String, Object> globalForcedFeatureValues,
+                   @Nullable Map<String, Integer> globalForcedVariationsMap,
+                   @Nullable GbCacheManager cacheManager,
+                   @Nullable CacheMode cacheMode,
+                   @Nullable String cacheDirectory) {
+        this(
+                enabled,
+                isQaMode,
+                isCacheDisabled,
+                allowUrlOverrides,
+                url,
+                apiHost,
+                clientKey,
+                decryptionKey,
+                stickyBucketIdentifierAttributes,
+                stickyBucketService,
+                trackingCallBackWithUser,
+                featureUsageCallbackWithUser,
+                refreshStrategy,
+                swrTtlSeconds,
+                featureRefreshCallback,
+                globalAttributes,
+                globalForcedFeatureValues,
+                globalForcedVariationsMap,
+                cacheManager,
+                cacheMode,
+                cacheDirectory,
+                null
+        );
+    }
 
     @Builder
     public Options(@Nullable Boolean enabled,
@@ -41,13 +89,14 @@ public class Options {
                    @Nullable FeatureUsageCallbackWithUser featureUsageCallbackWithUser,
                    @Nullable FeatureRefreshStrategy refreshStrategy,
                    @Nullable Integer swrTtlSeconds,
-                   @Nullable FeatureRefreshCallback featureRefreshCallback,
+                   @Deprecated @Nullable FeatureRefreshCallback featureRefreshCallback,
                    @Nullable JsonObject globalAttributes,
                    @Nullable Map<String, Object> globalForcedFeatureValues,
                    @Nullable Map<String, Integer> globalForcedVariationsMap,
                    @Nullable GbCacheManager cacheManager,
                    @Nullable CacheMode cacheMode,
-                   @Nullable String cacheDirectory
+                   @Nullable String cacheDirectory,
+                   @Nullable Executor featureRefreshListenerExecutor
 
     ) {
         this.enabled = enabled == null || enabled;
@@ -71,6 +120,7 @@ public class Options {
         this.cacheManager = cacheManager;
         this.cacheMode = cacheMode == null ? CacheMode.AUTO : cacheMode;
         this.cacheDirectory = cacheDirectory;
+        this.featureRefreshListenerExecutor = featureRefreshListenerExecutor;
     }
 
     /**
@@ -185,6 +235,13 @@ public class Options {
         return this.refreshStrategy;
     }
 
+    /**
+     * Legacy feature refresh callback.
+     *
+     * @deprecated Use {@code GrowthBookClient.addFeatureRefreshListener(...)} or
+     * {@code GrowthBookClient.subscribeFeatureRefreshListener(...)} after constructing the client.
+     */
+    @Deprecated
     @Nullable
     private FeatureRefreshCallback featureRefreshCallback;
 
@@ -196,6 +253,13 @@ public class Options {
 
     @Nullable
     private String cacheDirectory;
+
+    /**
+     * Optional executor for client-level feature refresh listeners. When not supplied, the client
+     * dispatches listener callbacks on a dedicated daemon thread it owns and shuts down.
+     */
+    @Nullable
+    private Executor featureRefreshListenerExecutor;
 
     public CacheMode getCacheMode() { return cacheMode == null ? CacheMode.AUTO : cacheMode; }
     @Nullable

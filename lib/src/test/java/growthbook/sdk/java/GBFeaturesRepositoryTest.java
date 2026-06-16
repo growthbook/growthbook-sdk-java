@@ -1,13 +1,17 @@
 package growthbook.sdk.java;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
@@ -16,6 +20,9 @@ import static org.mockito.Mockito.when;
 import com.google.gson.JsonObject;
 import growthbook.sdk.java.callback.FeatureRefreshCallback;
 import growthbook.sdk.java.exception.FeatureFetchException;
+import growthbook.sdk.java.listener.FeatureRefreshListener;
+import growthbook.sdk.java.model.FeatureRefreshEvent;
+import growthbook.sdk.java.model.FeatureRefreshSource;
 import growthbook.sdk.java.model.RequestBodyForRemoteEval;
 import growthbook.sdk.java.repository.FeatureRefreshStrategy;
 import growthbook.sdk.java.repository.GBFeaturesRepository;
@@ -245,6 +252,154 @@ class GBFeaturesRepositoryTest {
     }
 
     @Test
+    void testOnFeaturesRefresh_ContinuesAfterCallbackFailure() throws IOException, FeatureFetchException {
+        String responseJson = "{\"features\":{\"test-feature\":{\"defaultValue\":true}}}";
+        FeatureRefreshCallback failingCallback = mock(FeatureRefreshCallback.class);
+        FeatureRefreshCallback successfulCallback = mock(FeatureRefreshCallback.class);
+        doThrow(new RuntimeException("callback failed")).when(failingCallback).onRefresh(anyString());
+
+        GBFeaturesRepository subject = new GBFeaturesRepository(
+                "http://localhost:80",
+                "sdk-abc123",
+                null,
+                null,
+                60,
+                mockHttpClient(responseJson),
+                null,
+                null,
+                null,
+                null
+        );
+
+        subject.onFeaturesRefresh(failingCallback);
+        subject.onFeaturesRefresh(successfulCallback);
+        subject.initialize();
+
+        verify(successfulCallback).onRefresh("{\"test-feature\":{\"defaultValue\":true}}");
+        subject.shutdown();
+    }
+
+    @Test
+    void testFeatureRefreshListener_receivesInitializationMetadata() throws IOException, FeatureFetchException {
+        FeatureRefreshListener listener = mock(FeatureRefreshListener.class);
+        GBFeaturesRepository subject = new GBFeaturesRepository(
+                "http://localhost:80",
+                "sdk-abc123",
+                null,
+                null,
+                60,
+                mockHttpClient("{\"features\":{\"test-feature\":{\"defaultValue\":true}}}"),
+                true,
+                null,
+                null
+        );
+        subject.addFeatureRefreshListener(listener);
+
+        subject.initialize();
+
+        ArgumentCaptor<FeatureRefreshEvent> eventCaptor = ArgumentCaptor.forClass(FeatureRefreshEvent.class);
+        verify(listener).onRefresh(eventCaptor.capture());
+        FeatureRefreshEvent event = eventCaptor.getValue();
+        assertTrue(event.isSuccessful());
+        assertTrue(event.isFeaturesChanged());
+        assertFalse(event.isLoadedFromCache());
+        assertEquals(1, event.getActiveFeatureCount());
+        assertEquals(FeatureRefreshSource.INITIALIZATION, event.getSource());
+        assertTrue(event.getDurationMillis() >= 0);
+        subject.shutdown();
+    }
+
+    @Test
+    void testFeatureRefreshListener_receivesManualNotModifiedMetadata() throws IOException, FeatureFetchException {
+        OkHttpClient mockOkHttpClient = mock(OkHttpClient.class);
+        Call mockCall = mock(Call.class);
+        Response response = mock(Response.class);
+        when(mockOkHttpClient.newCall(any(Request.class))).thenReturn(mockCall);
+        when(mockCall.execute()).thenReturn(response);
+        when(response.code()).thenReturn(304);
+
+        FeatureRefreshListener listener = mock(FeatureRefreshListener.class);
+        GBFeaturesRepository subject = new GBFeaturesRepository(
+                "http://localhost:80",
+                "sdk-abc123",
+                null,
+                null,
+                60,
+                mockOkHttpClient,
+                true,
+                null,
+                null
+        );
+        subject.addFeatureRefreshListener(listener);
+
+        subject.fetchFeatures();
+
+        ArgumentCaptor<FeatureRefreshEvent> eventCaptor = ArgumentCaptor.forClass(FeatureRefreshEvent.class);
+        verify(listener).onRefresh(eventCaptor.capture());
+        FeatureRefreshEvent event = eventCaptor.getValue();
+        assertTrue(event.isSuccessful());
+        assertFalse(event.isFeaturesChanged());
+        assertEquals(FeatureRefreshSource.MANUAL, event.getSource());
+    }
+
+    @Test
+    void testFeatureRefreshListener_continuesAfterListenerFailure() throws IOException, FeatureFetchException {
+        FeatureRefreshListener failingListener = mock(FeatureRefreshListener.class);
+        FeatureRefreshListener successfulListener = mock(FeatureRefreshListener.class);
+        doThrow(new RuntimeException("listener failed")).when(failingListener).onRefresh(any());
+        GBFeaturesRepository subject = new GBFeaturesRepository(
+                "http://localhost:80",
+                "sdk-abc123",
+                null,
+                null,
+                60,
+                mockHttpClient("{\"features\":{}}"),
+                true,
+                null,
+                null
+        );
+        subject.addFeatureRefreshListener(failingListener);
+        subject.addFeatureRefreshListener(successfulListener);
+
+        subject.fetchFeatures();
+
+        verify(successfulListener).onRefresh(any(FeatureRefreshEvent.class));
+    }
+
+    @Test
+    void shutdownClearsRegisteredListeners() throws IOException, FeatureFetchException {
+        OkHttpClient mockOkHttpClient = mock(OkHttpClient.class);
+        Call mockCall = mock(Call.class);
+        Response response = mock(Response.class);
+        when(mockOkHttpClient.newCall(any(Request.class))).thenReturn(mockCall);
+        when(mockCall.execute()).thenReturn(response);
+        when(response.code()).thenReturn(304);
+
+        FeatureRefreshListener listener = mock(FeatureRefreshListener.class);
+        GBFeaturesRepository subject = new GBFeaturesRepository(
+                "http://localhost:80",
+                "sdk-abc123",
+                null,
+                null,
+                60,
+                mockOkHttpClient,
+                true,
+                null,
+                null
+        );
+        subject.addFeatureRefreshListener(listener);
+
+        subject.fetchFeatures();
+        verify(listener, times(1)).onRefresh(any(FeatureRefreshEvent.class));
+
+        // shutdown must release listeners so a shut-down repository notifies no one
+        subject.shutdown();
+        subject.fetchFeatures();
+
+        verify(listener, times(1)).onRefresh(any(FeatureRefreshEvent.class));
+    }
+
+    @Test
     void testOnFeaturesRefresh_Error() throws IOException {
         OkHttpClient mockOkHttpClient = mock(OkHttpClient.class);
         IOException requestFailed = new IOException("Request failed");
@@ -300,6 +455,8 @@ class GBFeaturesRepositoryTest {
 
         RequestBodyForRemoteEval requestBody = new RequestBodyForRemoteEval();
         String expectedResponse = "{\"features\": {}}";
+        FeatureRefreshListener listener = mock(FeatureRefreshListener.class);
+        repository.addFeatureRefreshListener(listener);
 
 
 
@@ -319,6 +476,9 @@ class GBFeaturesRepositoryTest {
         verify(mockCall).execute();
         verify(mockResponseBody).string();
         assertEquals("{}", repository.getFeaturesJson());
+        ArgumentCaptor<FeatureRefreshEvent> eventCaptor = ArgumentCaptor.forClass(FeatureRefreshEvent.class);
+        verify(listener).onRefresh(eventCaptor.capture());
+        assertEquals(FeatureRefreshSource.REMOTE_EVALUATION, eventCaptor.getValue().getSource());
     }
 
     @Test
@@ -507,10 +667,19 @@ class GBFeaturesRepositoryTest {
         when(mockCacheManager.loadCache(anyString())).thenReturn(cachedData);
 
         subject.setCacheManager(mockCacheManager);
+        FeatureRefreshListener listener = mock(FeatureRefreshListener.class);
+        subject.addFeatureRefreshListener(listener);
         subject.initialize();
         String actualResult = subject.getFeaturesJson();
         assertEquals(expectedResult, actualResult);
         verify(mockCacheManager).loadCache(anyString());
+        ArgumentCaptor<FeatureRefreshEvent> eventCaptor = ArgumentCaptor.forClass(FeatureRefreshEvent.class);
+        verify(listener).onRefresh(eventCaptor.capture());
+        FeatureRefreshEvent event = eventCaptor.getValue();
+        assertFalse(event.isSuccessful());
+        assertTrue(event.isLoadedFromCache());
+        assertTrue(event.isFeaturesChanged());
+        assertEquals(FeatureRefreshSource.INITIALIZATION, event.getSource());
         mockCacheManager.clearCache();
     }
 

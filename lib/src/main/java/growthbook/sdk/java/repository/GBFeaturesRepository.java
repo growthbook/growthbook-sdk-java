@@ -4,12 +4,15 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import growthbook.sdk.java.callback.FeatureRefreshCallback;
 import growthbook.sdk.java.exception.FeatureFetchException;
+import growthbook.sdk.java.listener.FeatureRefreshListener;
 import growthbook.sdk.java.model.Feature;
+import growthbook.sdk.java.model.FeatureRefreshSource;
 import growthbook.sdk.java.model.FeatureResponseKey;
 import growthbook.sdk.java.model.GBContext;
 import growthbook.sdk.java.model.HttpHeaders;
 import growthbook.sdk.java.model.RequestBodyForRemoteEval;
 import growthbook.sdk.java.multiusermode.util.TransformationUtil;
+import growthbook.sdk.java.repository.internal.FeatureRefreshNotifier;
 import growthbook.sdk.java.sandbox.CacheManagerFactory;
 import growthbook.sdk.java.sandbox.CacheMode;
 import growthbook.sdk.java.sandbox.GbCacheManager;
@@ -35,10 +38,10 @@ import javax.annotation.Nullable;
 import java.io.IOException;
 import java.net.HttpURLConnection;
 import java.time.Instant;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -61,7 +64,7 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
     private static final String FEATURES_PATH_PATTERN = ".*/api/features/[^/]+";
 
     /**
-     * Thread-safe LRU cache with max 100 entries to prevent unbounded growth
+     * Thread-safe LRU cache wi<t>h max 100 entries to prevent unbounded growth
      */
     private final LruETagCache eTagCache = new LruETagCache(100);
 
@@ -121,9 +124,17 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
     private OkHttpClient sseHttpClient;
 
     /**
-     * Optional callbacks for getting updates when features are refreshed
+     * Legacy callbacks for getting updates when features are refreshed.
+     *
+     * @deprecated Use {@link #addFeatureRefreshListener(FeatureRefreshListener)}.
      */
-    private final ArrayList<FeatureRefreshCallback> refreshCallbacks = new ArrayList<>();
+    @Deprecated
+    private final CopyOnWriteArrayList<FeatureRefreshCallback> refreshCallbacks = new CopyOnWriteArrayList<>();
+
+    /**
+     * Metadata-only listeners used by the client-level refresh listener API.
+     */
+    private final FeatureRefreshNotifier featureRefreshNotifier = new FeatureRefreshNotifier(this::getActiveFeatureCount, () -> this.refreshStrategy);
 
     /**
      * Flag to know whether GBFeatureRepository is initialized
@@ -348,20 +359,49 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
      * This is called even if the features have not changed.
      *
      * @param callback This callback will be called when features are refreshed
+     * @deprecated Use {@link #addFeatureRefreshListener(FeatureRefreshListener)}.
      */
+    @Deprecated
     @Override
-    public synchronized void onFeaturesRefresh(FeatureRefreshCallback callback) {
+    public void onFeaturesRefresh(FeatureRefreshCallback callback) {
         if (callback == null) {
             return;
         }
-        if (!this.refreshCallbacks.contains(callback)) {
-            this.refreshCallbacks.add(callback);
+        this.refreshCallbacks.addIfAbsent(callback);
+    }
+
+    /**
+     * Clears legacy feature refresh callbacks.
+     *
+     * @deprecated Use listener-specific unsubscription with
+     * {@link #removeFeatureRefreshListener(FeatureRefreshListener)} where available.
+     */
+    @Deprecated
+    @Override
+    public void clearCallbacks() {
+        this.refreshCallbacks.clear();
+    }
+
+    /**
+     * Adds a metadata-only feature refresh listener.
+     *
+     * @param listener listener to add
+     */
+    public void addFeatureRefreshListener(FeatureRefreshListener listener) {
+        if (listener != null) {
+            this.featureRefreshNotifier.add(listener);
         }
     }
 
-    @Override
-    public synchronized void clearCallbacks() {
-        this.refreshCallbacks.clear();
+    /**
+     * Removes a previously registered feature refresh listener.
+     *
+     * @param listener listener to remove
+     */
+    public void removeFeatureRefreshListener(FeatureRefreshListener listener) {
+        if (listener != null) {
+            this.featureRefreshNotifier.remove(listener);
+        }
     }
 
     private GbCacheManager createCacheManager() {
@@ -391,7 +431,7 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
         long started = System.currentTimeMillis();
         try {
             log.debug("GrowthBook Features Refresh polling starts");
-            fetchFeatures();
+            fetchFeatures(FeatureRefreshSource.POLLING);
         } catch (Exception e) {
             log.error("Features Refresh polling failed.", e);
         } finally {
@@ -411,17 +451,17 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
 
         switch (this.refreshStrategy) {
             case STALE_WHILE_REVALIDATE:
-                fetchFeatures();
+                fetchFeatures(FeatureRefreshSource.INITIALIZATION);
                 schedulePolling();
                 break;
 
             case SERVER_SENT_EVENTS:
-                fetchFeatures();
+                fetchFeatures(FeatureRefreshSource.INITIALIZATION);
                 initializeSSE(retryOnFailure);
                 break;
 
             case REMOTE_EVAL_STRATEGY:
-                fetchForRemoteEval(this.requestBodyForRemoteEval);
+                fetchForRemoteEval(this.requestBodyForRemoteEval, FeatureRefreshSource.REMOTE_EVALUATION);
                 break;
         }
 
@@ -473,7 +513,7 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
 
                             @Override
                             public void onFeaturesResponse(String featuresJsonResponse) throws FeatureFetchException {
-                                onResponseJson(featuresJsonResponse, false);
+                                refreshFromJson(featuresJsonResponse, FeatureRefreshSource.SSE);
                             }
                         }
                 ) {
@@ -484,7 +524,7 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
                             createEventSourceListenerAndStartListening(true);
 
                             try {
-                                fetchFeatures();
+                                fetchFeatures(FeatureRefreshSource.SSE);
                             } catch (FeatureFetchException featureFetchException) {
                                 Logger.getAnonymousLogger()
                                         .throwing(
@@ -542,10 +582,15 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
      * This method will attempt to decrypt the encrypted features with the provided encryptionKey.
      */
     public void fetchFeatures() throws FeatureFetchException {
+        fetchFeatures(FeatureRefreshSource.MANUAL);
+    }
+
+    private void fetchFeatures(FeatureRefreshSource source) throws FeatureFetchException {
         if (this.featuresEndpoint == null) {
             throw new IllegalArgumentException("features endpoint cannot be null");
         }
 
+        long startedAtNanos = System.nanoTime();
         Request.Builder requestBuilder = new Request.Builder()
                 .url(this.featuresEndpoint);
 
@@ -562,15 +607,33 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
             String sseSupportHeader = response.header(HttpHeaders.X_SSE_SUPPORT.getHeader());
             this.sseAllowed = Objects.equals(sseSupportHeader, ENABLED);
 
-            this.onSuccess(response);
+            this.onSuccess(response, source, startedAtNanos);
         } catch (IOException e) {
             log.error(e.getMessage(), e);
+            boolean featuresChanged = false;
+            boolean loadedFromCache = false;
+            FeatureFetchException cacheFailure = null;
             if (!isCacheDisabled) {
-                String cachedData = getCachedFeatures();
-                onResponseJson(cachedData, true);
+                try {
+                    String cachedData = getCachedFeatures();
+                    featuresChanged = onResponseJson(cachedData, true);
+                    loadedFromCache = true;
+                } catch (FeatureFetchException exception) {
+                    cacheFailure = exception;
+                }
             }
-            // Notify listeners about network failure
+            long durationMillis = FeatureRefreshNotifier.elapsedMillis(startedAtNanos);
             this.onRefreshFailed(e);
+            this.featureRefreshNotifier.notifyFailure(
+                    e,
+                    source,
+                    featuresChanged,
+                    loadedFromCache,
+                    durationMillis
+            );
+            if (cacheFailure != null) {
+                throw cacheFailure;
+            }
         }
     }
 
@@ -579,7 +642,7 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
      *
      * @param responseJsonString JSON response object
      */
-    private void onResponseJson(String responseJsonString, boolean isFromCache) throws FeatureFetchException {
+    private boolean onResponseJson(String responseJsonString, boolean isFromCache) throws FeatureFetchException {
         try {
             if (!isFromCache && !isCacheDisabled && cacheManager != null) {
                 try {
@@ -640,19 +703,19 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
                 refreshedFeatures = featuresJsonElement.toString().trim();
             }
 
+            boolean featuresChanged = !Objects.equals(this.featuresJson, refreshedFeatures)
+                    || !Objects.equals(this.savedGroupsJson, refreshedSavedGroups);
+
+            Map<String, Feature<?>> newParsed = TransformationUtil.transformFeatures(refreshedFeatures);
+            JsonObject newSaved = TransformationUtil.transformSavedGroups(refreshedSavedGroups);
             this.featuresJson = refreshedFeatures;
             this.savedGroupsJson = refreshedSavedGroups;
-
-            Map<String, Feature<?>> newParsed = TransformationUtil.transformFeatures(this.featuresJson);
-            JsonObject newSaved = TransformationUtil.transformSavedGroups(this.savedGroupsJson);
             this.parsedFeatures = newParsed;
             this.parsedSavedGroups = newSaved == null ? new JsonObject() : newSaved;
 
-            if (!isFromCache) {
-                this.onRefreshSuccess(this.featuresJson);
-            }
             // bump TTL only after successful processing
             this.refreshExpiresAt();
+            return featuresChanged;
         } catch (DecryptionUtils.DecryptionException e) {
             log.error("FeatureFetchException: UNKNOWN feature fetch error code {}",
                     e.getMessage(), e);
@@ -664,20 +727,57 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
         }
     }
 
+    private void refreshFromJson(String responseJsonString, FeatureRefreshSource source) throws FeatureFetchException {
+        long startedAtNanos = System.nanoTime();
+        try {
+            boolean featuresChanged = onResponseJson(responseJsonString, false);
+            long durationMillis = FeatureRefreshNotifier.elapsedMillis(startedAtNanos);
+            this.onRefreshSuccess(this.featuresJson);
+            this.featureRefreshNotifier.notifySuccess(source, featuresChanged, false, durationMillis);
+        } catch (FeatureFetchException e) {
+            this.featureRefreshNotifier.notifyFailure(e, source, false, false, FeatureRefreshNotifier.elapsedMillis(startedAtNanos));
+            throw e;
+        }
+    }
+
+    /**
+     * Dispatches legacy feature refresh callbacks.
+     *
+     * @deprecated Use {@link FeatureRefreshNotifier}.
+     */
+    @Deprecated
     private void onRefreshSuccess(String featuresJson) {
         for (FeatureRefreshCallback callback : this.refreshCallbacks) {
             if (callback != null) {
-                callback.onRefresh(featuresJson);
+                try {
+                    callback.onRefresh(featuresJson);
+                } catch (Exception e) {
+                    log.warn("Feature refresh callback failed", e);
+                }
             }
         }
     }
 
+    /**
+     * Dispatches legacy feature refresh error callbacks.
+     *
+     * @deprecated Use {@link FeatureRefreshNotifier}.
+     */
+    @Deprecated
     private void onRefreshFailed(Throwable throwable) {
         for (FeatureRefreshCallback callback : this.refreshCallbacks) {
             if (callback != null) {
-                callback.onError(throwable);
+                try {
+                    callback.onError(throwable);
+                } catch (Exception e) {
+                    log.warn("Feature refresh error callback failed", e);
+                }
             }
         }
+    }
+
+    private int getActiveFeatureCount() {
+        return this.parsedFeatures == null ? 0 : this.parsedFeatures.size();
     }
 
     /**
@@ -685,14 +785,22 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
      *
      * @param response Successful response
      */
-    private void onSuccess(Response response) throws FeatureFetchException {
+    private void onSuccess(
+            Response response,
+            FeatureRefreshSource source,
+            long startedAtNanos
+    ) throws FeatureFetchException {
+        boolean refreshEventNotified = false;
         try {
             ResponseBody responseBody = response.body();
 
             if (response.code() == HttpURLConnection.HTTP_NOT_MODIFIED) {
                 log.info("Features not modified (304). Using existing data.");
                 this.refreshExpiresAt();
+                long durationMillis = FeatureRefreshNotifier.elapsedMillis(startedAtNanos);
                 this.onRefreshSuccess(this.featuresJson);
+                this.featureRefreshNotifier.notifySuccess(source, false, false, durationMillis);
+                refreshEventNotified = true;
                 return;
             }
 
@@ -705,37 +813,86 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
 
             // if response code is not 200 or response body is null - try cache
             if (response.code() != HttpURLConnection.HTTP_OK || responseBody == null) {
+                FeatureFetchException refreshFailure = new FeatureFetchException(
+                        responseBody == null
+                                ? FeatureFetchException.FeatureFetchErrorCode.NO_RESPONSE_ERROR
+                                : FeatureFetchException.FeatureFetchErrorCode.HTTP_RESPONSE_ERROR,
+                        "Failed to fetch data from server"
+                );
                 log.error("FeatureFetchException: {} with status {}, response: {}",
                         responseBody == null ? FeatureFetchException.FeatureFetchErrorCode.NO_RESPONSE_ERROR : FeatureFetchException.FeatureFetchErrorCode.HTTP_RESPONSE_ERROR,
                         response.code(),
                         responseBody != null ? responseBody.string() : "null");
 
                 if (isCacheDisabled) {
-                    throw new FeatureFetchException(
+                    FeatureFetchException cacheDisabledFailure = new FeatureFetchException(
                             FeatureFetchException.FeatureFetchErrorCode.HTTP_RESPONSE_ERROR,
                             "Failed to fetch data from server and cache is disabled"
                     );
+                    this.featureRefreshNotifier.notifyFailure(
+                            cacheDisabledFailure,
+                            source,
+                            false,
+                            false,
+                            FeatureRefreshNotifier.elapsedMillis(startedAtNanos)
+                    );
+                    refreshEventNotified = true;
+                    throw cacheDisabledFailure;
                 }
                 log.info("Fetching data from cache...");
 
                 String featuresFromCache = getCachedFeatures();
                 if (featuresFromCache.isEmpty()) {
-                    throw new FeatureFetchException(
+                    FeatureFetchException cacheFailure = new FeatureFetchException(
                             FeatureFetchException.FeatureFetchErrorCode.NO_RESPONSE_ERROR,
                             "Failed to fetch data from cache"
                     );
+                    this.featureRefreshNotifier.notifyFailure(
+                            cacheFailure,
+                            source,
+                            false,
+                            false,
+                            FeatureRefreshNotifier.elapsedMillis(startedAtNanos)
+                    );
+                    refreshEventNotified = true;
+                    throw cacheFailure;
                 }
-                onResponseJson(featuresFromCache, true);
+                boolean featuresChanged = onResponseJson(featuresFromCache, true);
+                this.featureRefreshNotifier.notifyFailure(
+                        refreshFailure,
+                        source,
+                        featuresChanged,
+                        true,
+                        FeatureRefreshNotifier.elapsedMillis(startedAtNanos)
+                );
+                refreshEventNotified = true;
                 return;
             }
-            onResponseJson(responseBody.string(), false);
+            boolean featuresChanged = onResponseJson(responseBody.string(), false);
+            long durationMillis = FeatureRefreshNotifier.elapsedMillis(startedAtNanos);
+            this.onRefreshSuccess(this.featuresJson);
+            this.featureRefreshNotifier.notifySuccess(source, featuresChanged, false, durationMillis);
+            refreshEventNotified = true;
 
         } catch (IOException e) {
             log.error("FeatureFetchException: UNKNOWN feature fetch error code {}", e.getMessage(), e);
-            throw new FeatureFetchException(
+            FeatureFetchException featureFetchException = new FeatureFetchException(
                     FeatureFetchException.FeatureFetchErrorCode.UNKNOWN,
                     e.getMessage()
             );
+            this.featureRefreshNotifier.notifyFailure(
+                    featureFetchException,
+                    source,
+                    false,
+                    false,
+                    FeatureRefreshNotifier.elapsedMillis(startedAtNanos)
+            );
+            throw featureFetchException;
+        } catch (FeatureFetchException e) {
+            if (!refreshEventNotified) {
+                this.featureRefreshNotifier.notifyFailure(e, source, false, false, FeatureRefreshNotifier.elapsedMillis(startedAtNanos));
+            }
+            throw e;
         }
     }
 
@@ -783,6 +940,9 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
     }
 
     public void shutdown() {
+        // release refresh callbacks and listeners so a shut-down repository holds no caller references
+        this.refreshCallbacks.clear();
+        this.featureRefreshNotifier.clear();
         // stop polling
         if (this.pollScheduler != null) {
             this.pollScheduler.shutdownNow();
@@ -819,9 +979,17 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
     }
 
     public void fetchForRemoteEval(RequestBodyForRemoteEval requestBodyForRemoteEval) throws FeatureFetchException {
+        fetchForRemoteEval(requestBodyForRemoteEval, FeatureRefreshSource.REMOTE_EVALUATION);
+    }
+
+    private void fetchForRemoteEval(
+            RequestBodyForRemoteEval requestBodyForRemoteEval,
+            FeatureRefreshSource source
+    ) throws FeatureFetchException {
         if (this.remoteEvalEndPoint == null) {
             throw new IllegalArgumentException("remote eval features endpoint cannot be null");
         }
+        long startedAtNanos = System.nanoTime();
         String jsonBody = GrowthBookJsonUtils.getInstance().gson.toJson(requestBodyForRemoteEval);
         RequestBody requestBody = RequestBody.create(
                 jsonBody,
@@ -834,12 +1002,16 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
 
         try (Response response = this.okHttpClient.newCall(request).execute()) {
             if (response.isSuccessful() && response.code() == 200) {
-                onSuccess(response);
+                onSuccess(response, source, startedAtNanos);
             } else {
-                onRefreshFailed(new Throwable("Response is not success, response code is:" + response.code() + ". And message is: " + response.message()));
+                Throwable error = new Throwable("Response is not success, response code is:" + response.code() + ". And message is: " + response.message());
+                long durationMillis = FeatureRefreshNotifier.elapsedMillis(startedAtNanos);
+                onRefreshFailed(error);
+                featureRefreshNotifier.notifyFailure(error, source, false, false, durationMillis);
             }
         } catch (IOException e) {
             log.error(e.getMessage(), e);
+            featureRefreshNotifier.notifyFailure(e, source, false, false, FeatureRefreshNotifier.elapsedMillis(startedAtNanos));
             throw new FeatureFetchException(FeatureFetchException.FeatureFetchErrorCode.NO_RESPONSE_ERROR, e.getMessage());
         }
     }
