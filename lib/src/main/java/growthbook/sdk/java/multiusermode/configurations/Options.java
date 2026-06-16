@@ -13,6 +13,7 @@ import growthbook.sdk.java.sandbox.GbCacheManager;
 import growthbook.sdk.java.sandbox.CacheMode;
 import growthbook.sdk.java.stickyBucketing.InMemoryStickyBucketServiceImpl;
 import growthbook.sdk.java.stickyBucketing.StickyBucketService;
+import growthbook.sdk.java.util.ForcedVariationsUtils;
 import lombok.Builder;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
@@ -44,7 +45,7 @@ public class Options {
                    @Nullable FeatureRefreshCallback featureRefreshCallback,
                    @Nullable JsonObject globalAttributes,
                    @Nullable Map<String, Object> globalForcedFeatureValues,
-                   @Nullable Map<String, Integer> globalForcedVariationsMap,
+                   @Nullable Map<String, ?> globalForcedVariationsMap,
                    @Nullable GbCacheManager cacheManager,
                    @Nullable CacheMode cacheMode,
                    @Nullable String cacheDirectory
@@ -67,7 +68,7 @@ public class Options {
         this.featureRefreshCallback = featureRefreshCallback;
         this.globalAttributes = globalAttributes;
         this.globalForcedFeatureValues = globalForcedFeatureValues;
-        this.globalForcedVariationsMap = globalForcedVariationsMap;
+        this.globalForcedVariationsMap = ForcedVariationsUtils.normalize(globalForcedVariationsMap);
         this.cacheManager = cacheManager;
         this.cacheMode = cacheMode == null ? CacheMode.AUTO : cacheMode;
         this.cacheDirectory = cacheDirectory;
@@ -177,6 +178,10 @@ public class Options {
      */
     @Nullable
     private Map<String, Integer> globalForcedVariationsMap;
+
+    public void setGlobalForcedVariationsMap(@Nullable Map<String, ?> globalForcedVariationsMap) {
+        this.globalForcedVariationsMap = ForcedVariationsUtils.normalize(globalForcedVariationsMap);
+    }
 
     public FeatureRefreshStrategy getRefreshingStrategy() {
         if (this.refreshStrategy == null) {
