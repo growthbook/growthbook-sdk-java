@@ -9,43 +9,34 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 
 import growthbook.sdk.java.callback.FeatureRefreshCallback;
 import growthbook.sdk.java.exception.FeatureFetchException;
+import growthbook.sdk.java.retry.FeatureFetchRetryPolicy;
 import growthbook.sdk.java.repository.FeatureRefreshStrategy;
 import growthbook.sdk.java.repository.NativeJavaGbFeatureRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
-import java.io.IOException;
-import java.net.HttpURLConnection;
-import java.net.URL;
+import java.time.Duration;
 
 class NativeJavaGbFeatureRepositoryTest {
     private static final String API_HOST = "https://cdn.growthbook.io";
     private static final String CLIENT_KEY = "java_NsrWldWd5bxQJZftGsWKl7R2yD2LtAK8C8EUYh9L8";
-
-    @Mock
-    private HttpURLConnection mockConnection;
-
-    @Mock
-    private URL mockUrl;
+    private static final FeatureFetchRetryPolicy NO_DELAY_RETRY_POLICY =
+            new FeatureFetchRetryPolicy(5, Duration.ZERO, Duration.ZERO);
 
     private NativeJavaGbFeatureRepository repository;
 
 
     @BeforeEach
     void setUp() {
-        MockitoAnnotations.openMocks(this);
-
         repository = NativeJavaGbFeatureRepository.builder()
                 .apiHost(API_HOST)
                 .clientKey(CLIENT_KEY)
                 .encryptionKey(null)
                 .refreshStrategy(FeatureRefreshStrategy.STALE_WHILE_REVALIDATE)
                 .swrTtlSeconds(60)
+                .retryPolicy(NO_DELAY_RETRY_POLICY)
                 .build();
     }
 
@@ -163,8 +154,12 @@ class NativeJavaGbFeatureRepositoryTest {
 
     @Test
     void fetchFeaturesFails() throws Exception {
-        when(mockConnection.getResponseCode()).thenReturn(HttpURLConnection.HTTP_BAD_REQUEST);
-        when(mockConnection.getErrorStream()).thenReturn(this.getClass().getResourceAsStream("/mock_error_response.json"));
+        repository = NativeJavaGbFeatureRepository.builder()
+                .apiHost("http://127.0.0.1:1")
+                .clientKey(CLIENT_KEY)
+                .isCacheDisabled(true)
+                .retryPolicy(NO_DELAY_RETRY_POLICY)
+                .build();
 
         assertThrows(FeatureFetchException.class, () -> repository.fetchFeatures());
 
@@ -172,12 +167,11 @@ class NativeJavaGbFeatureRepositoryTest {
 
     @Test
     void initializeFails() throws Exception {
-        when(mockUrl.openConnection()).thenReturn(mockConnection);
-        when(mockConnection.getInputStream()).thenThrow(new IOException("Test exception"));
-
         repository = NativeJavaGbFeatureRepository.builder()
-                .apiHost(API_HOST)
+                .apiHost("http://127.0.0.1:1")
                 .clientKey(CLIENT_KEY)
+                .isCacheDisabled(true)
+                .retryPolicy(NO_DELAY_RETRY_POLICY)
                 .build();
 
         assertThrows(FeatureFetchException.class, () -> repository.initialize());
