@@ -11,10 +11,8 @@ import growthbook.sdk.java.model.FeatureResult;
 import growthbook.sdk.java.model.FeatureResultSource;
 import growthbook.sdk.java.model.FeatureRule;
 import growthbook.sdk.java.model.Filter;
-import growthbook.sdk.java.model.TrackData;
 import growthbook.sdk.java.multiusermode.configurations.EvaluationContext;
 import growthbook.sdk.java.multiusermode.usage.FeatureUsageCallbackWithUser;
-import growthbook.sdk.java.multiusermode.usage.TrackingCallbackWithUser;
 import lombok.extern.slf4j.Slf4j;
 import javax.annotation.Nullable;
 import java.net.MalformedURLException;
@@ -281,20 +279,9 @@ public class FeatureEvaluator implements IFeatureEvaluator {
                         continue;
                     }
 
-                    // Call the tracking callback with all the track data
-                    List<TrackData<ValueType>> trackData = rule.getTracks();
-                    TrackingCallbackWithUser trackingCallBackWithUser = context.getOptions().getTrackingCallBackWithUser();
-
-                    // If this was a remotely evaluated experiment, fire the tracking callbacks
-                    if (trackData != null && trackingCallBackWithUser != null) {
-                        trackData.forEach(t ->
-                                trackingCallBackWithUser.onTrack(
-                                        t.getExperiment(),
-                                        t.getResult().getExperimentResult(),
-                                        context.getUser()
-                                )
-                        );
-                    }
+                    // Fire tracking callbacks for remotely evaluated experiments, de-duplicated per
+                    // assignment so repeated cached evaluations don't re-fire exposures.
+                    experimentEvaluator.fireRemoteEvaluationTracks(rule.getTracks(), context);
 
                     ValueType value = (ValueType) GrowthBookJsonUtils.unwrap(rule.getForce().getValue());
 
