@@ -10,12 +10,10 @@ import growthbook.sdk.java.repository.FeatureRefreshStrategy;
 import growthbook.sdk.java.repository.GBFeaturesRepository;
 import growthbook.sdk.java.testhelpers.TestCasesJsonHelper;
 import growthbook.sdk.java.util.GrowthBookJsonUtils;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.MockedStatic;
 
-import java.lang.reflect.Field;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -30,14 +28,6 @@ class GrowthBookClientTest {
     // Mock instances that might be needed across tests
     private GBFeaturesRepository mockRepository;
     private GBFeaturesRepository.GBFeaturesRepositoryBuilder mockBuilder;
-
-    @AfterEach
-    void tearDown() throws Exception {
-        // Reset static repository after each test
-        Field field = GrowthBookClient.class.getDeclaredField("repository");
-        field.setAccessible(true);
-        field.set(null, null);
-    }
 
     @Test
     void test_initialization_withValidConfiguration() throws FeatureFetchException {

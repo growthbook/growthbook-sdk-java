@@ -10,6 +10,7 @@ import growthbook.sdk.java.model.GBContext;
 import growthbook.sdk.java.model.HttpHeaders;
 import growthbook.sdk.java.model.RequestBodyForRemoteEval;
 import growthbook.sdk.java.multiusermode.util.TransformationUtil;
+import growthbook.sdk.java.remoteeval.RemoteEvalEndpoints;
 import growthbook.sdk.java.sandbox.CacheManagerFactory;
 import growthbook.sdk.java.sandbox.CacheMode;
 import growthbook.sdk.java.sandbox.GbCacheManager;
@@ -314,7 +315,7 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
         // Build the endpoints from the apiHost and clientKey
         this.featuresEndpoint = apiHost + "/api/features/" + clientKey;
         this.eventsEndpoint = apiHost + "/sub/" + clientKey;
-        this.remoteEvalEndPoint = apiHost + "/api/eval/" + clientKey;
+        this.remoteEvalEndPoint = RemoteEvalEndpoints.evalEndpoint(apiHost, clientKey);
 
         this.encryptionKey = decryptionKey;
         this.decryptionKey = decryptionKey;
@@ -474,6 +475,11 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
                             @Override
                             public void onFeaturesResponse(String featuresJsonResponse) throws FeatureFetchException {
                                 onResponseJson(featuresJsonResponse, false);
+                            }
+
+                            @Override
+                            public void onFeaturesUpdated() {
+                                onRefreshSuccess(featuresJson);
                             }
                         }
                 ) {
@@ -743,6 +749,8 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
         void onClose(EventSource eventSource);
 
         void onFeaturesResponse(String featuresJsonResponse) throws FeatureFetchException;
+
+        void onFeaturesUpdated() throws FeatureFetchException;
     }
 
     private static class GBEventSourceListener extends EventSourceListener {
@@ -762,9 +770,11 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
         public void onEvent(@NotNull EventSource eventSource, @Nullable String id, @Nullable String type, @NotNull String data) {
             super.onEvent(eventSource, id, type, data);
 
-            if (data.trim().isEmpty()) return;
-
             try {
+                if (data.trim().isEmpty()) {
+                    handler.onFeaturesUpdated();
+                    return;
+                }
                 handler.onFeaturesResponse(data);
             } catch (FeatureFetchException e) {
                 log.error(e.getMessage(), e);
@@ -822,7 +832,10 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
         if (this.remoteEvalEndPoint == null) {
             throw new IllegalArgumentException("remote eval features endpoint cannot be null");
         }
-        String jsonBody = GrowthBookJsonUtils.getInstance().gson.toJson(requestBodyForRemoteEval);
+        RequestBodyForRemoteEval payload = requestBodyForRemoteEval == null
+                ? new RequestBodyForRemoteEval()
+                : requestBodyForRemoteEval;
+        String jsonBody = GrowthBookJsonUtils.getInstance().gson.toJson(payload);
         RequestBody requestBody = RequestBody.create(
                 jsonBody,
                 MediaType.parse("application/json")
