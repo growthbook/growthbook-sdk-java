@@ -32,6 +32,7 @@ import growthbook.sdk.java.multiusermode.util.TransformationUtil;
 import growthbook.sdk.java.testhelpers.PaperCupsConfig;
 import growthbook.sdk.java.testhelpers.TestCasesJsonHelper;
 import growthbook.sdk.java.testhelpers.TestContext;
+import growthbook.sdk.java.util.ForcedVariationsUtils;
 import growthbook.sdk.java.util.GrowthBookJsonUtils;
 import lombok.Getter;
 import org.junit.jupiter.api.DisplayName;
@@ -66,8 +67,9 @@ class GrowthBookTest {
             JsonElement attributesJson = testCase.get(1).getAsJsonObject().get("attributes");
             String attributesJsonAsStringOrNull = attributesJson == null ? null : attributesJson.toString();
 
-            Type forcedVariationsType = new TypeToken<HashMap<String, Integer>>() {}.getType();
-            HashMap<String, Integer> forcedVariations = jsonUtils.gson.fromJson(testCase.get(1).getAsJsonObject().get("forcedVariations"), forcedVariationsType);
+            Type forcedVariationsType = new TypeToken<HashMap<String, Object>>() {}.getType();
+            HashMap<String, Object> rawForcedVariations = jsonUtils.gson.fromJson(testCase.get(1).getAsJsonObject().get("forcedVariations"), forcedVariationsType);
+            Map<String, Integer> forcedVariations = ForcedVariationsUtils.normalize(rawForcedVariations);
 
             JsonElement savedGroupsJson = testCase.get(1).getAsJsonObject().get("savedGroups");
             JsonObject savedGroups = savedGroupsJson == null ? null : (JsonObject) savedGroupsJson;
@@ -364,8 +366,9 @@ class GrowthBookTest {
                 JsonElement attributesJson = itemArray.get(1).getAsJsonObject().get("attributes");
                 String attributesJsonString = attributesJson == null ? "null" : attributesJson.toString();
 
-                Type forcedVariationsType = new TypeToken<HashMap<String, Integer>>() {}.getType();
-                HashMap<String, Integer> forcedVariations = jsonUtils.gson.fromJson(itemArray.get(1).getAsJsonObject().get("forcedVariations"), forcedVariationsType);
+                Type forcedVariationsType = new TypeToken<HashMap<String, Object>>() {}.getType();
+                HashMap<String, Object> rawForcedVariations = jsonUtils.gson.fromJson(itemArray.get(1).getAsJsonObject().get("forcedVariations"), forcedVariationsType);
+                Map<String, Integer> forcedVariations = ForcedVariationsUtils.normalize(rawForcedVariations);
 
                 JsonElement savedGroups = itemArray.get(1).getAsJsonObject().get("savedGroups");
                 JsonObject savedGroupToPass = savedGroups == null ? null : savedGroups.getAsJsonObject();

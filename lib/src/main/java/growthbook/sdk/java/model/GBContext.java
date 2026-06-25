@@ -6,6 +6,7 @@ import growthbook.sdk.java.callback.FeatureUsageCallback;
 import growthbook.sdk.java.callback.TrackingCallback;
 import growthbook.sdk.java.multiusermode.util.TransformationUtil;
 import growthbook.sdk.java.stickyBucketing.StickyBucketService;
+import growthbook.sdk.java.util.ForcedVariationsUtils;
 import lombok.Builder;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
@@ -55,7 +56,7 @@ public class GBContext {
             Boolean isQaMode,
             @Nullable String url,
             Boolean allowUrlOverrides,
-            @Nullable Map<String, Integer> forcedVariationsMap,
+            @Nullable Map<String, ?> forcedVariationsMap,
             @Nullable TrackingCallback trackingCallback,
             @Nullable FeatureUsageCallback featureUsageCallback,
             @Nullable StickyBucketService stickyBucketService,
@@ -78,7 +79,7 @@ public class GBContext {
         this.isQaMode = isQaMode != null && isQaMode;
         this.allowUrlOverride = allowUrlOverrides != null && allowUrlOverrides;
         this.url = url;
-        this.forcedVariationsMap = forcedVariationsMap == null ? new HashMap<>() : forcedVariationsMap;
+        this.forcedVariationsMap = ForcedVariationsUtils.normalize(forcedVariationsMap);
         this.trackingCallback = trackingCallback;
         this.featureUsageCallback = featureUsageCallback;
         this.stickyBucketService = stickyBucketService;
@@ -209,6 +210,10 @@ public class GBContext {
      */
     @Nullable
     private Map<String, Integer> forcedVariationsMap;
+
+    public void setForcedVariationsMap(@Nullable Map<String, ?> forcedVariationsMap) {
+        this.forcedVariationsMap = ForcedVariationsUtils.normalize(forcedVariationsMap);
+    }
 
     /**
      * Service that provide functionality of Sticky Bucketing
