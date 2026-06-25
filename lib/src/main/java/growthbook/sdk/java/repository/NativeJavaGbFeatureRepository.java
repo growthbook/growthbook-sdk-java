@@ -112,6 +112,7 @@ public class NativeJavaGbFeatureRepository implements IGBFeaturesRepository {
     /**
      * Flag to know whether GBFeatureRepository is initialized
      */
+    @Getter
     private final AtomicBoolean initialized = new AtomicBoolean(false);
 
     /**

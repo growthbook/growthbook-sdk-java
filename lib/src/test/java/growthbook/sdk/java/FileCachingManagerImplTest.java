@@ -1,6 +1,7 @@
 package growthbook.sdk.java;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -125,5 +126,42 @@ class FileCachingManagerImplTest {
 
         assertEquals("Content 1", fileCachingManagerImpl.loadCache("file1.txt"));
         assertEquals("Content 2", fileCachingManagerImpl.loadCache("file2.txt"));
+    }
+
+    @Test
+    void shouldClearAllCachedFiles() {
+        fileCachingManagerImpl.saveContent("a.txt", "aaa");
+        fileCachingManagerImpl.saveContent("b.txt", "bbb");
+
+        fileCachingManagerImpl.clearCache();
+
+        Assertions.assertNull(fileCachingManagerImpl.loadCache("a.txt"));
+        Assertions.assertNull(fileCachingManagerImpl.loadCache("b.txt"));
+        assertEquals(0, tempDir.listFiles().length);
+    }
+
+    @Test
+    void shouldCreateCacheDirIfNotExists() {
+        File subDir = new File(tempDir, "nested/cache");
+        assertFalse(subDir.exists());
+
+        FileCachingManagerImpl manager = new FileCachingManagerImpl(subDir.getAbsolutePath());
+        manager.saveContent("x.txt", "hello");
+
+        assertEquals("hello", manager.loadCache("x.txt"));
+    }
+
+    @Test
+    void shouldThrowWhenCacheDirectoryCannotBeCreated() {
+        File file = new File(tempDir, "notadir.txt");
+        try {
+            file.createNewFile();
+        } catch (IOException e) {
+            fail("Precondition setup failed");
+        }
+        // A path *inside* a plain file cannot be a directory.
+        String impossiblePath = file.getAbsolutePath() + File.separator + "subdir";
+
+        assertThrows(RuntimeException.class, () -> new FileCachingManagerImpl(impossiblePath));
     }
 }
