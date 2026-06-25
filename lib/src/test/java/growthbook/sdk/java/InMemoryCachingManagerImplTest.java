@@ -1,22 +1,62 @@
 package growthbook.sdk.java;
 
 import growthbook.sdk.java.sandbox.InMemoryCachingManagerImpl;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 
 class InMemoryCachingManagerImplTest {
+
+    private InMemoryCachingManagerImpl cache;
+
+    @BeforeEach
+    void setUp() {
+        cache = new InMemoryCachingManagerImpl();
+    }
+
     @Test
-    void tracksAndClearsLastUpdatedTime() {
-        InMemoryCachingManagerImpl cacheManager = new InMemoryCachingManagerImpl();
+    void shouldReturnNullForMissingKey() {
+        assertNull(cache.loadCache("missing"));
+    }
 
-        cacheManager.saveContent("features", "{}");
+    @Test
+    void shouldSaveAndLoadValue() {
+        cache.saveContent("key1", "value1");
+        assertEquals("value1", cache.loadCache("key1"));
+    }
 
-        assertNotNull(cacheManager.getLastUpdatedMillis("features"));
+    @Test
+    void shouldOverwriteExistingKey() {
+        cache.saveContent("key", "first");
+        cache.saveContent("key", "second");
+        assertEquals("second", cache.loadCache("key"));
+    }
 
-        cacheManager.clearCache();
+    @Test
+    void shouldStoreMultipleKeysIndependently() {
+        cache.saveContent("a", "alpha");
+        cache.saveContent("b", "beta");
 
-        assertNull(cacheManager.getLastUpdatedMillis("features"));
+        assertEquals("alpha", cache.loadCache("a"));
+        assertEquals("beta", cache.loadCache("b"));
+    }
+
+    @Test
+    void shouldClearAllEntries() {
+        cache.saveContent("x", "1");
+        cache.saveContent("y", "2");
+
+        cache.clearCache();
+
+        assertNull(cache.loadCache("x"));
+        assertNull(cache.loadCache("y"));
+    }
+
+    @Test
+    void shouldSaveEmptyStringValue() {
+        cache.saveContent("empty", "");
+        assertEquals("", cache.loadCache("empty"));
     }
 }

@@ -1,49 +1,35 @@
 package growthbook.sdk.java;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.Mockito.doAnswer;
-import static org.mockito.Mockito.doReturn;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.spy;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
-
 import com.google.gson.JsonObject;
 import growthbook.sdk.java.callback.FeatureRefreshCallback;
 import growthbook.sdk.java.exception.FeatureFetchException;
 import growthbook.sdk.java.model.RequestBodyForRemoteEval;
 import growthbook.sdk.java.repository.FeatureRefreshStrategy;
-import growthbook.sdk.java.retry.FeatureFetchRetryPolicy;
 import growthbook.sdk.java.repository.GBFeaturesRepository;
 import growthbook.sdk.java.sandbox.FileCachingManagerImpl;
-import okhttp3.Call;
-import okhttp3.Callback;
-import okhttp3.MediaType;
-import okhttp3.OkHttpClient;
-import okhttp3.Protocol;
-import okhttp3.Request;
-import okhttp3.Response;
-import okhttp3.ResponseBody;
+import growthbook.sdk.java.sandbox.GbCacheManager;
+import okhttp3.*;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
+import java.io.File;
 import java.io.IOException;
-import java.time.Duration;
+import java.lang.reflect.Field;
+import java.lang.reflect.Method;
+import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Objects;
 
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.*;
+
 class GBFeaturesRepositoryTest {
-    private static final FeatureFetchRetryPolicy NO_DELAY_RETRY_POLICY =
-            new FeatureFetchRetryPolicy(5, Duration.ZERO, Duration.ZERO);
 
     @Test
-    void canBeConstructed_withNullEncryptionKey() {
+    void constructor_withNullEncryptionKey_buildsSuccessfully() {
         GBFeaturesRepository subject = new GBFeaturesRepository(
                 "https://cdn.growthbook.io",
                 "java_NsrWldWd5bxQJZftGsWKl7R2yD2LtAK8C8EUYh9L8",
@@ -57,12 +43,13 @@ class GBFeaturesRepositoryTest {
         );
 
         assertNotNull(subject);
-        assertEquals("https://cdn.growthbook.io/api/features/java_NsrWldWd5bxQJZftGsWKl7R2yD2LtAK8C8EUYh9L8", subject.getFeaturesEndpoint());
+        assertEquals("https://cdn.growthbook.io/api/features/java_NsrWldWd5bxQJZftGsWKl7R2yD2LtAK8C8EUYh9L8",
+                subject.getFeaturesEndpoint());
         assertEquals(FeatureRefreshStrategy.STALE_WHILE_REVALIDATE, subject.getRefreshStrategy());
     }
 
     @Test
-    void canBeConstructed_withEncryptionKey() {
+    void constructor_withEncryptionKey_buildsSuccessfully() {
         GBFeaturesRepository subject = new GBFeaturesRepository(
                 "https://cdn.growthbook.io",
                 "sdk-862b5mHcP9XPugqD",
@@ -76,12 +63,13 @@ class GBFeaturesRepositoryTest {
         );
 
         assertNotNull(subject);
-        assertEquals("https://cdn.growthbook.io/api/features/sdk-862b5mHcP9XPugqD", subject.getFeaturesEndpoint());
+        assertEquals("https://cdn.growthbook.io/api/features/sdk-862b5mHcP9XPugqD",
+                subject.getFeaturesEndpoint());
         assertEquals("BhB1wORFmZLTDjbvstvS8w==", subject.getDecryptionKey());
     }
 
     @Test
-    void canBeBuilt_withNullEncryptionKey() {
+    void builder_withNullEncryptionKey_buildsSuccessfully() {
         GBFeaturesRepository subject = GBFeaturesRepository
                 .builder()
                 .apiHost("https://cdn.growthbook.io")
@@ -89,11 +77,12 @@ class GBFeaturesRepositoryTest {
                 .build();
 
         assertNotNull(subject);
-        assertEquals("https://cdn.growthbook.io/api/features/java_NsrWldWd5bxQJZftGsWKl7R2yD2LtAK8C8EUYh9L8", subject.getFeaturesEndpoint());
+        assertEquals("https://cdn.growthbook.io/api/features/java_NsrWldWd5bxQJZftGsWKl7R2yD2LtAK8C8EUYh9L8",
+                subject.getFeaturesEndpoint());
     }
 
     @Test
-    void canBeBuilt_withEncryptionKey() {
+    void builder_withEncryptionKey_buildsSuccessfully() {
         GBFeaturesRepository subject = GBFeaturesRepository
                 .builder()
                 .apiHost("https://cdn.growthbook.io")
@@ -107,12 +96,11 @@ class GBFeaturesRepositoryTest {
     }
 
     @Test
-    void pollingDoesNotThrowAndDoesNotOverlap() throws Exception {
+    void pollOnceSafe_whenCalledTwice_secondCallIsIgnored() throws Exception {
         GBFeaturesRepository subject = GBFeaturesRepository.builder()
                 .apiHost("http://localhost")
                 .clientKey("sdk-123")
                 .refreshStrategy(FeatureRefreshStrategy.STALE_WHILE_REVALIDATE)
-                .retryPolicy(NO_DELAY_RETRY_POLICY)
                 .build();
 
         // initialize creates http client but will fail network; we just want to ensure no exceptions in poll
@@ -121,7 +109,7 @@ class GBFeaturesRepositoryTest {
         } catch (Exception ignored) {}
 
         // invoke internal poll method via reflection to ensure no overlap protection throws
-        java.lang.reflect.Method m = GBFeaturesRepository.class.getDeclaredMethod("pollOnceSafe");
+        Method m = GBFeaturesRepository.class.getDeclaredMethod("pollOnceSafe");
         m.setAccessible(true);
         m.invoke(subject); // first call
         m.invoke(subject); // second immediate call should be ignored by AtomicBoolean guard
@@ -131,7 +119,77 @@ class GBFeaturesRepositoryTest {
     }
 
     @Test
-    void canFetchUnencryptedFeatures_mockedResponse() throws FeatureFetchException, IOException {
+    void shutdown_withSseStrategy_completesWithoutException() {
+        GBFeaturesRepository subject = GBFeaturesRepository.builder()
+                .apiHost("http://localhost")
+                .clientKey("sdk-123")
+                .refreshStrategy(FeatureRefreshStrategy.SERVER_SENT_EVENTS)
+                .build();
+
+        try {
+            subject.initialize();
+        } catch (Exception ignored) {}
+
+        // shutdown should not throw
+        subject.shutdown();
+    }
+
+    @Test
+    void shutdown_whenCachePresent_closesHttpClientCache() throws Exception {
+        GBFeaturesRepository subject = GBFeaturesRepository.builder()
+                .apiHost("http://localhost")
+                .clientKey("sdk-123")
+                .refreshStrategy(FeatureRefreshStrategy.SERVER_SENT_EVENTS)
+                .build();
+
+        // Create file for okhttp cache
+        File cacheDir = Files.createTempDirectory("okhttp-cache").toFile();
+        Cache cache = new Cache(cacheDir, 1024 * 1024);
+        OkHttpClient clientWithCache = new OkHttpClient.Builder()
+                .cache(cache)
+                .build();
+
+        // set sseHttpClient through  reflection
+        Field field = GBFeaturesRepository.class.getDeclaredField("sseHttpClient");
+        field.setAccessible(true);
+        field.set(subject, clientWithCache);
+
+        subject.shutdown();
+
+        assertTrue(cache.isClosed());
+    }
+
+    @Test
+    void shutdown_whenCacheCloseFails_doesNotThrow() throws Exception {
+        GBFeaturesRepository subject = GBFeaturesRepository.builder()
+                .apiHost("http://localhost")
+                .clientKey("sdk-123")
+                .refreshStrategy(FeatureRefreshStrategy.SERVER_SENT_EVENTS)
+                .build();
+
+        Cache mockCache = mock(Cache.class);
+        doThrow(new IOException("cache close failed")).when(mockCache).close();
+
+        OkHttpClient mockHttpClient = mock(OkHttpClient.class);
+
+        when(mockHttpClient.cache()).thenReturn(mockCache);
+        when(mockHttpClient.dispatcher()).thenReturn(new Dispatcher());
+        when(mockHttpClient.connectionPool()).thenReturn(new ConnectionPool());
+
+        // set sseHttpClient through  reflection
+        Field field = GBFeaturesRepository.class.getDeclaredField("sseHttpClient");
+        field.setAccessible(true);
+        field.set(subject, mockHttpClient);
+
+        // shutdown shouldn't throw exception — IOException omitted
+        assertDoesNotThrow(subject::shutdown);
+
+        // check if close() was invoked
+        verify(mockCache).close();
+    }
+
+    @Test
+    void initialize_withUnencryptedResponse_setsFeaturesJson() throws FeatureFetchException, IOException {
         String fakeResponseJson = "{\"status\":200,\"features\":{\"banner_text\":{\"defaultValue\":\"Welcome to Acme Donuts!\",\"rules\":[{\"condition\":{\"country\":\"france\"},\"force\":\"Bienvenue au Beignets Acme !\"},{\"condition\":{\"country\":\"spain\"},\"force\":\"¡Bienvenidos y bienvenidas a Donas Acme!\"}]},\"dark_mode\":{\"defaultValue\":false,\"rules\":[{\"condition\":{\"loggedIn\":true},\"force\":true,\"coverage\":0.5,\"hashAttribute\":\"id\"}]},\"donut_price\":{\"defaultValue\":2.5,\"rules\":[{\"condition\":{\"employee\":true},\"force\":0}]},\"meal_overrides_gluten_free\":{\"defaultValue\":{\"meal_type\":\"standard\",\"dessert\":\"Strawberry Cheesecake\"},\"rules\":[{\"condition\":{\"dietaryRestrictions\":{\"$elemMatch\":{\"$eq\":\"gluten_free\"}}},\"force\":{\"meal_type\":\"gf\",\"dessert\":\"French Vanilla Ice Cream\"}}]}},\"dateUpdated\":\"2023-01-11T00:26:01.745Z\"}";
         OkHttpClient mockOkHttpClient = mockHttpClient(fakeResponseJson);
 
@@ -173,7 +231,7 @@ class GBFeaturesRepositoryTest {
     */
 
     @Test
-    void canFetchEncryptedFeatures_mockedResponse() throws IOException, FeatureFetchException {
+    void initialize_withEncryptedResponse_decryptsAndSetsFeaturesJson() throws IOException, FeatureFetchException {
         String fakeResponseJson = "{\n" +
                 "  \"status\": 200,\n" +
                 "  \"features\": {},\n" +
@@ -201,7 +259,7 @@ class GBFeaturesRepositoryTest {
     }
 
     @Test
-    void testOnFeaturesRefresh_Success() {
+    void onFeaturesRefresh_whenRefreshSucceeds_callsOnRefreshCallback() {
         String fakeResponseJson = "{\"status\":200,\"features\":{\"banner_text\":{\"defaultValue\":\"Welcome to Acme Donuts!\",\"rules\":[{\"condition\":{\"country\":\"france\"},\"force\":\"Bienvenue au Beignets Acme !\"},{\"condition\":{\"country\":\"spain\"},\"force\":\"¡Bienvenidos y bienvenidas a Donas Acme!\"}]},\"dark_mode\":{\"defaultValue\":false,\"rules\":[{\"condition\":{\"loggedIn\":true},\"force\":true,\"coverage\":0.5,\"hashAttribute\":\"id\"}]},\"donut_price\":{\"defaultValue\":2.5,\"rules\":[{\"condition\":{\"employee\":true},\"force\":0}]},\"meal_overrides_gluten_free\":{\"defaultValue\":{\"meal_type\":\"standard\",\"dessert\":\"Strawberry Cheesecake\"},\"rules\":[{\"condition\":{\"dietaryRestrictions\":{\"$elemMatch\":{\"$eq\":\"gluten_free\"}}},\"force\":{\"meal_type\":\"gf\",\"dessert\":\"French Vanilla Ice Cream\"}}]}},\"dateUpdated\":\"2023-01-11T00:26:01.745Z\"}";
 
         OkHttpClient mockOkHttpClient = mock(OkHttpClient.class);
@@ -236,15 +294,16 @@ class GBFeaturesRepositoryTest {
                 null,
                 null,
                 null,
-                null,
-                null,
-                NO_DELAY_RETRY_POLICY
+                null
         );
 
         subject.onFeaturesRefresh(featureRefreshCallback);
 
         // trigger initialize to perform initial fetch which will call callbacks
-        try { subject.initialize(); } catch (Exception ignored) {}
+        try {
+            subject.initialize();
+        } catch (Exception ignored) {
+        }
 
         String expected = "{\"banner_text\":{\"defaultValue\":\"Welcome to Acme Donuts!\",\"rules\":[{\"condition\":{\"country\":\"france\"},\"force\":\"Bienvenue au Beignets Acme !\"},{\"condition\":{\"country\":\"spain\"},\"force\":\"¡Bienvenidos y bienvenidas a Donas Acme!\"}]},\"dark_mode\":{\"defaultValue\":false,\"rules\":[{\"condition\":{\"loggedIn\":true},\"force\":true,\"coverage\":0.5,\"hashAttribute\":\"id\"}]},\"donut_price\":{\"defaultValue\":2.5,\"rules\":[{\"condition\":{\"employee\":true},\"force\":0}]},\"meal_overrides_gluten_free\":{\"defaultValue\":{\"meal_type\":\"standard\",\"dessert\":\"Strawberry Cheesecake\"},\"rules\":[{\"condition\":{\"dietaryRestrictions\":{\"$elemMatch\":{\"$eq\":\"gluten_free\"}}},\"force\":{\"meal_type\":\"gf\",\"dessert\":\"French Vanilla Ice Cream\"}}]}}";
         verify(featureRefreshCallback).onRefresh(expected);
@@ -252,7 +311,7 @@ class GBFeaturesRepositoryTest {
     }
 
     @Test
-    void testOnFeaturesRefresh_Error() throws IOException {
+    void onFeaturesRefresh_whenNetworkError_callsOnErrorCallback() throws IOException {
         OkHttpClient mockOkHttpClient = mock(OkHttpClient.class);
         IOException requestFailed = new IOException("Request failed");
 
@@ -270,11 +329,9 @@ class GBFeaturesRepositoryTest {
                 0,
                 mockOkHttpClient,
                 null,
+                true,
                 null,
-                null,
-                null,
-                null,
-                NO_DELAY_RETRY_POLICY
+                null
         );
 
         subject.onFeaturesRefresh(featureRefreshCallback);
@@ -284,18 +341,18 @@ class GBFeaturesRepositoryTest {
         verify(featureRefreshCallback).onError(requestFailed);
         verify(featureRefreshCallback, never()).onRefresh(anyString());
 
-        subject.getCacheManager().clearCache();
+        subject.shutdown();
     }
 
 
     @Test
-    void test_fetchForRemoteEval_success() throws FeatureFetchException, IOException {
+    void fetchForRemoteEval_whenResponseSuccessful_updatesFeaturesJson() throws FeatureFetchException, IOException {
         OkHttpClient mockHttpClient = mock(OkHttpClient.class);
         Call mockCall = mock(Call.class);
         Response mockResponse = mock(Response.class);
         ResponseBody mockResponseBody = mock(ResponseBody.class);
         // Arrange
-        GBFeaturesRepository repository = spy(new GBFeaturesRepository(
+        GBFeaturesRepository repository = new GBFeaturesRepository(
                 "https://cdn.growthbook.io",
                 "sdk-abc123",
                 null,
@@ -305,11 +362,10 @@ class GBFeaturesRepositoryTest {
                 true,
                 null,
                 null
-        ));
+        );
 
         RequestBodyForRemoteEval requestBody = new RequestBodyForRemoteEval();
         String expectedResponse = "{\"features\": {}}";
-
 
 
         when(mockHttpClient.newCall(any(Request.class))).thenReturn(mockCall);
@@ -331,12 +387,12 @@ class GBFeaturesRepositoryTest {
     }
 
     @Test
-    void test_fetchForRemoteEval_networkError() throws IOException {
+    void fetchForRemoteEval_whenNetworkError_throwsFeatureFetchException() throws IOException {
         // Arrange
         OkHttpClient mockHttpClient = mock(OkHttpClient.class);
         Call mockCall = mock(Call.class);
 
-        GBFeaturesRepository repository = spy(new GBFeaturesRepository(
+        GBFeaturesRepository repository = new GBFeaturesRepository(
                 "https://cdn.growthbook.io",
                 "sdk-abc123",
                 null,
@@ -346,10 +402,9 @@ class GBFeaturesRepositoryTest {
                 true,
                 null,
                 null
-        ));
+        );
 
         RequestBodyForRemoteEval requestBody = new RequestBodyForRemoteEval();
-
 
 
         when(mockHttpClient.newCall(any(Request.class))).thenReturn(mockCall);
@@ -360,7 +415,7 @@ class GBFeaturesRepositoryTest {
     }
 
     @Test
-    void test_fetchForRemoteEval_invalidResponse() throws IOException, FeatureFetchException {
+    void fetchForRemoteEval_whenResponseUnsuccessful_callsOnErrorCallback() throws IOException, FeatureFetchException {
         // Arrange
         OkHttpClient mockHttpClient = mock(OkHttpClient.class);
         Call mockCall = mock(Call.class);
@@ -368,7 +423,7 @@ class GBFeaturesRepositoryTest {
 
         FeatureRefreshCallback mockCallback = mock(FeatureRefreshCallback.class);
 
-        GBFeaturesRepository repository = spy(new GBFeaturesRepository(
+        GBFeaturesRepository repository = new GBFeaturesRepository(
                 "https://cdn.growthbook.io",
                 "sdk-abc123",
                 null,
@@ -378,7 +433,7 @@ class GBFeaturesRepositoryTest {
                 true,
                 null,
                 null
-        ));
+        );
 
         repository.onFeaturesRefresh(mockCallback);
 
@@ -402,7 +457,7 @@ class GBFeaturesRepositoryTest {
     }
 
     @Test
-    void test_fetchForRemoteEval_requestBody() throws FeatureFetchException, IOException {
+    void fetchForRemoteEval_whenCalled_sendsJsonRequestBody() throws FeatureFetchException, IOException {
         RequestBodyForRemoteEval requestBody = new RequestBodyForRemoteEval();
         requestBody.setAttributes(new JsonObject());
         requestBody.setUrl("");
@@ -414,7 +469,7 @@ class GBFeaturesRepositoryTest {
         Response mockResponse = mock(Response.class);
         ResponseBody mockResponseBody = mock(ResponseBody.class);
 
-        GBFeaturesRepository repository = spy(new GBFeaturesRepository(
+        GBFeaturesRepository repository = new GBFeaturesRepository(
                 "https://cdn.growthbook.io",
                 "sdk-abc123",
                 null,
@@ -424,7 +479,7 @@ class GBFeaturesRepositoryTest {
                 null,
                 requestBody,
                 null
-        ));
+        );
 
         when(mockHttpClient.newCall(any(Request.class))).thenReturn(mockCall);
         when(mockCall.execute()).thenReturn(mockResponse);
@@ -446,7 +501,7 @@ class GBFeaturesRepositoryTest {
     }
 
     @Test()
-    void testOnInitializeHttpError() throws IOException {
+    void initialize_whenHttpError_throwsFeatureFetchException() throws IOException {
         OkHttpClient mockOkHttpClient = mock(OkHttpClient.class);
 
         String errorResponseJson = "{\"status\": 400, \"error\": \"Invalid API Key\"}";
@@ -493,7 +548,7 @@ class GBFeaturesRepositoryTest {
     */
 
     @Test
-    void test_getFeaturesFromCacheSuccessfully() throws FeatureFetchException, IOException {
+    void fetchFeatures_whenNetworkFails_loadsFromCache() throws FeatureFetchException, IOException {
         OkHttpClient mockHttpClient = mock(OkHttpClient.class);
         FileCachingManagerImpl mockCacheManager = mock(FileCachingManagerImpl.class);
         String cachedData = "{\"status\":200,\"features\":{\"banner_text\":{\"defaultValue\":\"Welcome to Acme Donuts!\",\"rules\":[{\"condition\":{\"country\":\"france\"},\"force\":\"Bienvenue au Beignets Acme !\"},{\"condition\":{\"country\":\"spain\"},\"force\":\"¡Bienvenidos y bienvenidas a Donas Acme!\"}]},\"dark_mode\":{\"defaultValue\":false,\"rules\":[{\"condition\":{\"loggedIn\":true},\"force\":true,\"coverage\":0.5,\"hashAttribute\":\"id\"}]},\"donut_price\":{\"defaultValue\":2.5,\"rules\":[{\"condition\":{\"employee\":true},\"force\":0}]},\"meal_overrides_gluten_free\":{\"defaultValue\":{\"meal_type\":\"standard\",\"dessert\":\"Strawberry Cheesecake\"},\"rules\":[{\"condition\":{\"dietaryRestrictions\":{\"$elemMatch\":{\"$eq\":\"gluten_free\"}}},\"force\":{\"meal_type\":\"gf\",\"dessert\":\"French Vanilla Ice Cream\"}}]}},\"dateUpdated\":\"2023-01-11T00:26:01.745Z\"}";
@@ -507,9 +562,7 @@ class GBFeaturesRepositoryTest {
                 mockHttpClient,
                 false,
                 null,
-                null,
-                null,
-                NO_DELAY_RETRY_POLICY
+                null
         );
 
         Call mockCall = mock(Call.class);
@@ -523,6 +576,57 @@ class GBFeaturesRepositoryTest {
         assertEquals(expectedResult, actualResult);
         verify(mockCacheManager).loadCache(anyString());
         mockCacheManager.clearCache();
+    }
+
+    @Test
+    void cacheManager_isNull_whenCacheDisabled() {
+        GBFeaturesRepository subject = new GBFeaturesRepository(
+                "",
+                "",
+                null,
+                null,
+                null,
+                null,
+                true,
+                null,
+                null
+        );
+
+        assertNull(subject.getCacheManager());
+    }
+
+    @Test
+    void cacheManager_usesProvided_notCreateNew() {
+        GbCacheManager mock = mock(GbCacheManager.class);
+        GBFeaturesRepository subject = new GBFeaturesRepository(
+                "",
+                "",
+                null,
+                null,
+                null,
+                null,
+                false,
+                null,
+                mock
+        );
+        assertSame(mock, subject.getCacheManager());
+    }
+
+    @Test
+    void cacheManager_isCreatedAutomatically_whenNotProvided() {
+        GbCacheManager mock = mock(GbCacheManager.class);
+        GBFeaturesRepository subject = new GBFeaturesRepository(
+                "",
+                "",
+                null,
+                null,
+                null,
+                null,
+                false,
+                null,
+                null
+        );
+        assertNotNull(subject.getCacheManager());
     }
 
 
