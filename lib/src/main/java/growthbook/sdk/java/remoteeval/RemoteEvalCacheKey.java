@@ -20,6 +20,7 @@ public final class RemoteEvalCacheKey {
     private static final String PAYLOAD_SEPARATOR = "||";
     private static final String ATTRIBUTES_KEY = "ca";
     private static final String FORCED_VARIATIONS_KEY = "fv";
+    private static final String FORCED_FEATURES_KEY = "ff";
     private static final String URL_KEY = "url";
 
     private RemoteEvalCacheKey() {
@@ -30,12 +31,14 @@ public final class RemoteEvalCacheKey {
             String clientKey,
             JsonObject attributes,
             @Nullable Map<String, Integer> forcedVariations,
+            @Nullable Map<String, Object> forcedFeatures,
             @Nullable String url,
             @Nullable List<String> cacheKeyAttributes
     ) {
         JsonObject keyPayload = new JsonObject();
         keyPayload.add(ATTRIBUTES_KEY, selectCacheAttributes(attributes, cacheKeyAttributes));
         keyPayload.add(FORCED_VARIATIONS_KEY, toSortedJsonObject(forcedVariations));
+        keyPayload.add(FORCED_FEATURES_KEY, toSortedForcedFeatures(forcedFeatures));
         keyPayload.add(URL_KEY, GrowthBookJsonUtils.getInstance().gson.toJsonTree(RemoteEvalRequestBuilder.normalizeUrl(url)));
         return normalize(apiHost) + CLIENT_SEPARATOR + normalize(clientKey)
                 + PAYLOAD_SEPARATOR + GrowthBookJsonUtils.getInstance().gson.toJson(keyPayload);
@@ -46,10 +49,11 @@ public final class RemoteEvalCacheKey {
             String clientKey,
             JsonObject attributes,
             @Nullable Map<String, Integer> forcedVariations,
+            @Nullable Map<String, Object> forcedFeatures,
             @Nullable String url,
             @Nullable List<String> cacheKeyAttributes
     ) {
-        return fromContext(apiHost, clientKey, attributes, forcedVariations, url, cacheKeyAttributes);
+        return fromContext(apiHost, clientKey, attributes, forcedVariations, forcedFeatures, url, cacheKeyAttributes);
     }
 
     private static JsonObject selectCacheAttributes(JsonObject attributes, @Nullable List<String> cacheKeyAttributes) {
@@ -83,6 +87,20 @@ public final class RemoteEvalCacheKey {
         TreeMap<String, Integer> sortedValues = new TreeMap<>(values);
         for (Map.Entry<String, Integer> entry : sortedValues.entrySet()) {
             jsonObject.addProperty(entry.getKey(), entry.getValue());
+        }
+        return jsonObject;
+    }
+
+    private static JsonObject toSortedForcedFeatures(@Nullable Map<String, Object> forcedFeatures) {
+        JsonObject jsonObject = new JsonObject();
+        if (forcedFeatures == null || forcedFeatures.isEmpty()) {
+            return jsonObject;
+        }
+
+        TreeSet<String> keys = new TreeSet<>(forcedFeatures.keySet());
+        for (String key : keys) {
+            JsonElement value = GrowthBookJsonUtils.getInstance().gson.toJsonTree(forcedFeatures.get(key));
+            jsonObject.add(key, canonicalize(value));
         }
         return jsonObject;
     }

@@ -189,6 +189,7 @@ public class GrowthBook implements IGrowthBook {
                 this.context.getClientKey(),
                 this.context.getAttributes(),
                 this.context.getForcedVariationsMap(),
+                this.forcedFeatureValues,
                 url,
                 this.context.getCacheKeyAttributes()
         );

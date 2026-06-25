@@ -203,33 +203,60 @@ class RemoteEvalSupportTest {
     }
 
     @Test
-    @DisplayName("Forced features are sent in the payload but excluded from the cache key")
-    void growthBookClient_forcedFeaturesAreSentButExcludedFromCacheKey() throws Exception {
+    @DisplayName("Forced features are sent in the payload and contribute to the cache key")
+    void growthBookClient_forcedFeaturesAreSentAndContributeToCacheKey() throws Exception {
         try (RemoteEvalTestServer server = new RemoteEvalTestServer(featureResponse(true))) {
             GrowthBookClient client = new GrowthBookClient(remoteEvalOptions(server));
             assertTrue(client.initialize());
 
             Map<String, Object> firstForcedFeatures = new HashMap<>();
-            firstForcedFeatures.put("irrelevant-feature", true);
+            firstForcedFeatures.put("overridden-feature", true);
             Map<String, Object> secondForcedFeatures = new HashMap<>();
-            secondForcedFeatures.put("irrelevant-feature", false);
+            secondForcedFeatures.put("overridden-feature", false);
 
             JsonObject attributes = jsonObject("{\"id\":\"user-1\"}");
             client.isOn("remote-feature", UserContext.builder()
                     .attributes(attributes)
                     .forcedFeatureValues(firstForcedFeatures)
                     .build());
+            // Same user/url/forced variations but different forced feature values must not reuse the cached response.
             client.isOn("remote-feature", UserContext.builder()
                     .attributes(attributes)
                     .forcedFeatureValues(secondForcedFeatures)
                     .build());
 
-            assertEquals(1, server.callCount());
+            assertEquals(2, server.callCount());
 
             JsonArray forcedFeatures = jsonObject(server.lastBody()).getAsJsonArray("forcedFeatures");
             assertEquals(1, forcedFeatures.size());
-            assertEquals("irrelevant-feature", forcedFeatures.get(0).getAsJsonArray().get(0).getAsString());
-            assertTrue(forcedFeatures.get(0).getAsJsonArray().get(1).getAsBoolean());
+            assertEquals("overridden-feature", forcedFeatures.get(0).getAsJsonArray().get(0).getAsString());
+            assertFalse(forcedFeatures.get(0).getAsJsonArray().get(1).getAsBoolean());
+        }
+    }
+
+    @Test
+    @DisplayName("Reuses the cached response when forced feature values are identical")
+    void growthBookClient_forcedFeaturesReuseCacheWhenIdentical() throws Exception {
+        try (RemoteEvalTestServer server = new RemoteEvalTestServer(featureResponse(true))) {
+            GrowthBookClient client = new GrowthBookClient(remoteEvalOptions(server));
+            assertTrue(client.initialize());
+
+            JsonObject attributes = jsonObject("{\"id\":\"user-1\"}");
+            Map<String, Object> firstForcedFeatures = new HashMap<>();
+            firstForcedFeatures.put("overridden-feature", true);
+            Map<String, Object> sameForcedFeatures = new HashMap<>();
+            sameForcedFeatures.put("overridden-feature", true);
+
+            client.isOn("remote-feature", UserContext.builder()
+                    .attributes(attributes)
+                    .forcedFeatureValues(firstForcedFeatures)
+                    .build());
+            client.isOn("remote-feature", UserContext.builder()
+                    .attributes(attributes)
+                    .forcedFeatureValues(sameForcedFeatures)
+                    .build());
+
+            assertEquals(1, server.callCount());
         }
     }
 

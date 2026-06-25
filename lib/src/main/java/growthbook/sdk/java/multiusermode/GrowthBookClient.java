@@ -384,6 +384,7 @@ public class GrowthBookClient {
                 this.options.getClientKey(),
                 userContext.getAttributes(),
                 forcedVariations,
+                forcedFeatures,
                 url,
                 this.options.getCacheKeyAttributes()
         );
