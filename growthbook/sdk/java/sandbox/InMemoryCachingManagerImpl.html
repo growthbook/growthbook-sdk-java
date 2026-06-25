@@ -114,13 +114,18 @@ implements <a href="GbCacheManager.html" title="interface in growthbook.sdk.java
 <div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>void</code></div>
 <div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#clearCache()" class="member-name-link">clearCache</a>()</code></div>
 <div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">&nbsp;</div>
-<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a></code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#loadCache(java.lang.String)" class="member-name-link">loadCache</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;key)</code></div>
-<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">&nbsp;</div>
-<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>void</code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#saveContent(java.lang.String,java.lang.String)" class="member-name-link">saveContent</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;key,
- <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;data)</code></div>
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Long.html" title="class or interface in java.lang" class="external-link">Long</a></code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#getLastUpdatedMillis(java.lang.String)" class="member-name-link">getLastUpdatedMillis</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;key)</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="block">Returns when the cached value was last updated, in epoch milliseconds.</div>
+</div>
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a></code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#loadCache(java.lang.String)" class="member-name-link">loadCache</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;key)</code></div>
 <div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">&nbsp;</div>
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>void</code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#saveContent(java.lang.String,java.lang.String)" class="member-name-link">saveContent</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;key,
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;data)</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">&nbsp;</div>
 </div>
 </div>
 </div>
@@ -170,6 +175,27 @@ implements <a href="GbCacheManager.html" title="interface in growthbook.sdk.java
 <dl class="notes">
 <dt>Specified by:</dt>
 <dd><code><a href="GbCacheManager.html#loadCache(java.lang.String)">loadCache</a></code>&nbsp;in interface&nbsp;<code><a href="GbCacheManager.html" title="interface in growthbook.sdk.java.sandbox">GbCacheManager</a></code></dd>
+</dl>
+</section>
+</li>
+<li>
+<section class="detail" id="getLastUpdatedMillis(java.lang.String)">
+<h3>getLastUpdatedMillis</h3>
+<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Long.html" title="class or interface in java.lang" class="external-link">Long</a></span>&nbsp;<span class="element-name">getLastUpdatedMillis</span><wbr><span class="parameters">(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;key)</span></div>
+<div class="block"><span class="descfrm-type-label">Description copied from interface:&nbsp;<code><a href="GbCacheManager.html#getLastUpdatedMillis(java.lang.String)">GbCacheManager</a></code></span></div>
+<div class="block">Returns when the cached value was last updated, in epoch milliseconds.
+
+ <p>The optional background feature refresh interval uses this timestamp
+ to decide whether cached features are fresh enough to skip a network
+ refresh. Custom cache implementations may return <code>null</code> when
+ timestamp tracking is unsupported or when the key does not exist; in that
+ case the SDK treats cache freshness as unknown and performs the network
+ refresh. Implementations should throw
+ <a href="../exception/FeatureCacheException.html" title="class in growthbook.sdk.java.exception"><code>FeatureCacheException</code></a> for real cache
+ access failures.</div>
+<dl class="notes">
+<dt>Specified by:</dt>
+<dd><code><a href="GbCacheManager.html#getLastUpdatedMillis(java.lang.String)">getLastUpdatedMillis</a></code>&nbsp;in interface&nbsp;<code><a href="GbCacheManager.html" title="interface in growthbook.sdk.java.sandbox">GbCacheManager</a></code></dd>
 </dl>
 </section>
 </li>

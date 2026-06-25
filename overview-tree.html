@@ -55,12 +55,14 @@ loadScripts(document, 'script');</script>
 <li><a href="growthbook/sdk/java/callback/package-tree.html">growthbook.sdk.java.callback</a>, </li>
 <li><a href="growthbook/sdk/java/evaluators/package-tree.html">growthbook.sdk.java.evaluators</a>, </li>
 <li><a href="growthbook/sdk/java/exception/package-tree.html">growthbook.sdk.java.exception</a>, </li>
+<li><a href="growthbook/sdk/java/featurefetch/package-tree.html">growthbook.sdk.java.featurefetch</a>, </li>
 <li><a href="growthbook/sdk/java/model/package-tree.html">growthbook.sdk.java.model</a>, </li>
 <li><a href="growthbook/sdk/java/multiusermode/package-tree.html">growthbook.sdk.java.multiusermode</a>, </li>
 <li><a href="growthbook/sdk/java/multiusermode/configurations/package-tree.html">growthbook.sdk.java.multiusermode.configurations</a>, </li>
 <li><a href="growthbook/sdk/java/multiusermode/usage/package-tree.html">growthbook.sdk.java.multiusermode.usage</a>, </li>
 <li><a href="growthbook/sdk/java/multiusermode/util/package-tree.html">growthbook.sdk.java.multiusermode.util</a>, </li>
 <li><a href="growthbook/sdk/java/repository/package-tree.html">growthbook.sdk.java.repository</a>, </li>
+<li><a href="growthbook/sdk/java/retry/package-tree.html">growthbook.sdk.java.retry</a>, </li>
 <li><a href="growthbook/sdk/java/sandbox/package-tree.html">growthbook.sdk.java.sandbox</a>, </li>
 <li><a href="growthbook/sdk/java/serializers/package-tree.html">growthbook.sdk.java.serializers</a>, </li>
 <li><a href="growthbook/sdk/java/stickyBucketing/package-tree.html">growthbook.sdk.java.stickyBucketing</a>, </li>
@@ -89,6 +91,12 @@ loadScripts(document, 'script');</script>
 <li class="circle">growthbook.sdk.java.multiusermode.<a href="growthbook/sdk/java/multiusermode/ExperimentTracker.html" class="type-name-link" title="class in growthbook.sdk.java.multiusermode">ExperimentTracker</a></li>
 <li class="circle">growthbook.sdk.java.model.<a href="growthbook/sdk/java/model/Feature.html" class="type-name-link" title="class in growthbook.sdk.java.model">Feature</a>&lt;ValueType&gt;</li>
 <li class="circle">growthbook.sdk.java.evaluators.<a href="growthbook/sdk/java/evaluators/FeatureEvaluator.html" class="type-name-link" title="class in growthbook.sdk.java.evaluators">FeatureEvaluator</a></li>
+<li class="circle">growthbook.sdk.java.featurefetch.<a href="growthbook/sdk/java/featurefetch/FeatureFetchFailureHandler.html" class="type-name-link" title="class in growthbook.sdk.java.featurefetch">FeatureFetchFailureHandler</a></li>
+<li class="circle">growthbook.sdk.java.featurefetch.<a href="growthbook/sdk/java/featurefetch/FeatureFetchHttpStatus.html" class="type-name-link" title="class in growthbook.sdk.java.featurefetch">FeatureFetchHttpStatus</a></li>
+<li class="circle">growthbook.sdk.java.retry.<a href="growthbook/sdk/java/retry/FeatureFetchRetryExecutor.html" class="type-name-link" title="class in growthbook.sdk.java.retry">FeatureFetchRetryExecutor</a></li>
+<li class="circle">growthbook.sdk.java.retry.<a href="growthbook/sdk/java/retry/FeatureFetchRetryPolicy.html" class="type-name-link" title="class in growthbook.sdk.java.retry">FeatureFetchRetryPolicy</a></li>
+<li class="circle">growthbook.sdk.java.featurefetch.<a href="growthbook/sdk/java/featurefetch/FeatureRefreshCacheFreshness.html" class="type-name-link" title="class in growthbook.sdk.java.featurefetch">FeatureRefreshCacheFreshness</a></li>
+<li class="circle">growthbook.sdk.java.featurefetch.<a href="growthbook/sdk/java/featurefetch/FeatureRefreshScheduler.html" class="type-name-link" title="class in growthbook.sdk.java.featurefetch">FeatureRefreshScheduler</a></li>
 <li class="circle">growthbook.sdk.java.model.<a href="growthbook/sdk/java/model/FeatureResult.html" class="type-name-link" title="class in growthbook.sdk.java.model">FeatureResult</a>&lt;ValueType&gt;</li>
 <li class="circle">growthbook.sdk.java.model.<a href="growthbook/sdk/java/model/FeatureResult.FeatureResultBuilder.html" class="type-name-link" title="class in growthbook.sdk.java.model">FeatureResult.FeatureResultBuilder</a>&lt;ValueType&gt;</li>
 <li class="circle">growthbook.sdk.java.model.<a href="growthbook/sdk/java/model/FeatureRule.FeatureRuleBuilder.html" class="type-name-link" title="class in growthbook.sdk.java.model">FeatureRule.FeatureRuleBuilder</a>&lt;ValueType&gt;</li>
@@ -137,7 +145,17 @@ loadScripts(document, 'script');</script>
 <li class="circle">java.lang.<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Exception.html" class="type-name-link external-link" title="class or interface in java.lang">Exception</a>
 <ul>
 <li class="circle">growthbook.sdk.java.util.<a href="growthbook/sdk/java/util/DecryptionUtils.DecryptionException.html" class="type-name-link" title="class in growthbook.sdk.java.util">DecryptionUtils.DecryptionException</a></li>
-<li class="circle">growthbook.sdk.java.exception.<a href="growthbook/sdk/java/exception/FeatureFetchException.html" class="type-name-link" title="class in growthbook.sdk.java.exception">FeatureFetchException</a></li>
+<li class="circle">growthbook.sdk.java.exception.<a href="growthbook/sdk/java/exception/FeatureFetchException.html" class="type-name-link" title="class in growthbook.sdk.java.exception">FeatureFetchException</a>
+<ul>
+<li class="circle">growthbook.sdk.java.exception.<a href="growthbook/sdk/java/exception/RetryableFeatureFetchException.html" class="type-name-link" title="class in growthbook.sdk.java.exception">RetryableFeatureFetchException</a></li>
+</ul>
+</li>
+<li class="circle">java.lang.<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/RuntimeException.html" class="type-name-link external-link" title="class or interface in java.lang">RuntimeException</a>
+<ul>
+<li class="circle">growthbook.sdk.java.exception.<a href="growthbook/sdk/java/exception/FeatureCacheException.html" class="type-name-link" title="class in growthbook.sdk.java.exception">FeatureCacheException</a></li>
+<li class="circle">growthbook.sdk.java.exception.<a href="growthbook/sdk/java/exception/GrowthBookClientInitializationException.html" class="type-name-link" title="class in growthbook.sdk.java.exception">GrowthBookClientInitializationException</a></li>
+</ul>
+</li>
 </ul>
 </li>
 </ul>
@@ -159,7 +177,9 @@ loadScripts(document, 'script');</script>
 <h2 title="Interface Hierarchy">Interface Hierarchy</h2>
 <ul>
 <li class="circle">growthbook.sdk.java.callback.<a href="growthbook/sdk/java/callback/ExperimentRunCallback.html" class="type-name-link" title="interface in growthbook.sdk.java.callback">ExperimentRunCallback</a></li>
+<li class="circle">growthbook.sdk.java.retry.<a href="growthbook/sdk/java/retry/FeatureFetchRetryExecutor.FeatureFetchAttempt.html" class="type-name-link" title="interface in growthbook.sdk.java.retry">FeatureFetchRetryExecutor.FeatureFetchAttempt</a></li>
 <li class="circle">growthbook.sdk.java.callback.<a href="growthbook/sdk/java/callback/FeatureRefreshCallback.html" class="type-name-link" title="interface in growthbook.sdk.java.callback">FeatureRefreshCallback</a></li>
+<li class="circle">growthbook.sdk.java.featurefetch.<a href="growthbook/sdk/java/featurefetch/FeatureRefreshScheduler.FeatureRefreshAction.html" class="type-name-link" title="interface in growthbook.sdk.java.featurefetch">FeatureRefreshScheduler.FeatureRefreshAction</a></li>
 <li class="circle">growthbook.sdk.java.callback.<a href="growthbook/sdk/java/callback/FeatureUsageCallback.html" class="type-name-link" title="interface in growthbook.sdk.java.callback">FeatureUsageCallback</a></li>
 <li class="circle">growthbook.sdk.java.multiusermode.usage.<a href="growthbook/sdk/java/multiusermode/usage/FeatureUsageCallbackWithUser.html" class="type-name-link" title="interface in growthbook.sdk.java.multiusermode.usage">FeatureUsageCallbackWithUser</a></li>
 <li class="circle">growthbook.sdk.java.sandbox.<a href="growthbook/sdk/java/sandbox/GbCacheManager.html" class="type-name-link" title="interface in growthbook.sdk.java.sandbox">GbCacheManager</a></li>
@@ -185,6 +205,7 @@ loadScripts(document, 'script');</script>
 <li class="circle">growthbook.sdk.java.model.<a href="growthbook/sdk/java/model/HttpHeaders.html" class="type-name-link" title="enum class in growthbook.sdk.java.model">HttpHeaders</a></li>
 <li class="circle">growthbook.sdk.java.model.<a href="growthbook/sdk/java/model/HttpMethods.html" class="type-name-link" title="enum class in growthbook.sdk.java.model">HttpMethods</a></li>
 <li class="circle">growthbook.sdk.java.model.<a href="growthbook/sdk/java/model/Operator.html" class="type-name-link" title="enum class in growthbook.sdk.java.model">Operator</a></li>
+<li class="circle">growthbook.sdk.java.repository.<a href="growthbook/sdk/java/repository/RefreshMode.html" class="type-name-link" title="enum class in growthbook.sdk.java.repository">RefreshMode</a></li>
 <li class="circle">growthbook.sdk.java.model.<a href="growthbook/sdk/java/model/SseKey.html" class="type-name-link" title="enum class in growthbook.sdk.java.model">SseKey</a></li>
 </ul>
 </li>

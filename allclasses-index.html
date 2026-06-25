@@ -122,31 +122,66 @@ loadScripts(document, 'script');</script>
 <div class="col-last odd-row-color all-classes-table all-classes-table-tab2">
 <div class="block">The feature with a generic value type.</div>
 </div>
-<div class="col-first even-row-color all-classes-table all-classes-table-tab2"><a href="growthbook/sdk/java/evaluators/FeatureEvaluator.html" title="class in growthbook.sdk.java.evaluators">FeatureEvaluator</a></div>
-<div class="col-last even-row-color all-classes-table all-classes-table-tab2">
+<div class="col-first even-row-color all-classes-table all-classes-table-tab5"><a href="growthbook/sdk/java/exception/FeatureCacheException.html" title="class in growthbook.sdk.java.exception">FeatureCacheException</a></div>
+<div class="col-last even-row-color all-classes-table all-classes-table-tab5">
+<div class="block">Thrown when a configured feature cache cannot be accessed.</div>
+</div>
+<div class="col-first odd-row-color all-classes-table all-classes-table-tab2"><a href="growthbook/sdk/java/evaluators/FeatureEvaluator.html" title="class in growthbook.sdk.java.evaluators">FeatureEvaluator</a></div>
+<div class="col-last odd-row-color all-classes-table all-classes-table-tab2">
 <div class="block"><b>INTERNAL</b>: Implementation of feature evaluation.</div>
 </div>
-<div class="col-first odd-row-color all-classes-table all-classes-table-tab5"><a href="growthbook/sdk/java/exception/FeatureFetchException.html" title="class in growthbook.sdk.java.exception">FeatureFetchException</a></div>
-<div class="col-last odd-row-color all-classes-table all-classes-table-tab5">
+<div class="col-first even-row-color all-classes-table all-classes-table-tab5"><a href="growthbook/sdk/java/exception/FeatureFetchException.html" title="class in growthbook.sdk.java.exception">FeatureFetchException</a></div>
+<div class="col-last even-row-color all-classes-table all-classes-table-tab5">
 <div class="block">This error is thrown by <a href="growthbook/sdk/java/repository/GBFeaturesRepository.html" title="class in growthbook.sdk.java.repository"><code>GBFeaturesRepository</code></a>
  You can call getErrorCode() to get an enum of various error types you can handle.</div>
 </div>
-<div class="col-first even-row-color all-classes-table all-classes-table-tab3"><a href="growthbook/sdk/java/exception/FeatureFetchException.FeatureFetchErrorCode.html" title="enum class in growthbook.sdk.java.exception">FeatureFetchException.FeatureFetchErrorCode</a></div>
-<div class="col-last even-row-color all-classes-table all-classes-table-tab3">
+<div class="col-first odd-row-color all-classes-table all-classes-table-tab3"><a href="growthbook/sdk/java/exception/FeatureFetchException.FeatureFetchErrorCode.html" title="enum class in growthbook.sdk.java.exception">FeatureFetchException.FeatureFetchErrorCode</a></div>
+<div class="col-last odd-row-color all-classes-table all-classes-table-tab3">
 <div class="block">Error codes available for a <a href="growthbook/sdk/java/exception/FeatureFetchException.html" title="class in growthbook.sdk.java.exception"><code>FeatureFetchException</code></a></div>
 </div>
-<div class="col-first odd-row-color all-classes-table all-classes-table-tab1"><a href="growthbook/sdk/java/callback/FeatureRefreshCallback.html" title="interface in growthbook.sdk.java.callback">FeatureRefreshCallback</a></div>
+<div class="col-first even-row-color all-classes-table all-classes-table-tab2"><a href="growthbook/sdk/java/featurefetch/FeatureFetchFailureHandler.html" title="class in growthbook.sdk.java.featurefetch">FeatureFetchFailureHandler</a></div>
+<div class="col-last even-row-color all-classes-table all-classes-table-tab2">
+<div class="block">Applies the shared failure behavior after feature fetch retries are exhausted.</div>
+</div>
+<div class="col-first odd-row-color all-classes-table all-classes-table-tab2"><a href="growthbook/sdk/java/featurefetch/FeatureFetchHttpStatus.html" title="class in growthbook.sdk.java.featurefetch">FeatureFetchHttpStatus</a></div>
+<div class="col-last odd-row-color all-classes-table all-classes-table-tab2">
+<div class="block">Classifies feature fetch HTTP responses for retry behavior.</div>
+</div>
+<div class="col-first even-row-color all-classes-table all-classes-table-tab2"><a href="growthbook/sdk/java/retry/FeatureFetchRetryExecutor.html" title="class in growthbook.sdk.java.retry">FeatureFetchRetryExecutor</a></div>
+<div class="col-last even-row-color all-classes-table all-classes-table-tab2">
+<div class="block">Executes feature fetch attempts with a bounded retry policy.</div>
+</div>
+<div class="col-first odd-row-color all-classes-table all-classes-table-tab1"><a href="growthbook/sdk/java/retry/FeatureFetchRetryExecutor.FeatureFetchAttempt.html" title="interface in growthbook.sdk.java.retry">FeatureFetchRetryExecutor.FeatureFetchAttempt</a></div>
 <div class="col-last odd-row-color all-classes-table all-classes-table-tab1">
+<div class="block">Unit of feature fetch work that can be retried by this executor.</div>
+</div>
+<div class="col-first even-row-color all-classes-table all-classes-table-tab2"><a href="growthbook/sdk/java/retry/FeatureFetchRetryPolicy.html" title="class in growthbook.sdk.java.retry">FeatureFetchRetryPolicy</a></div>
+<div class="col-last even-row-color all-classes-table all-classes-table-tab2">
+<div class="block">Configures bounded exponential backoff for feature fetch requests.</div>
+</div>
+<div class="col-first odd-row-color all-classes-table all-classes-table-tab2"><a href="growthbook/sdk/java/featurefetch/FeatureRefreshCacheFreshness.html" title="class in growthbook.sdk.java.featurefetch">FeatureRefreshCacheFreshness</a></div>
+<div class="col-last odd-row-color all-classes-table all-classes-table-tab2">
+<div class="block">Decides whether a non-forced feature refresh can skip the network request
+ because cached or in-memory feature data is still fresh enough.</div>
+</div>
+<div class="col-first even-row-color all-classes-table all-classes-table-tab1"><a href="growthbook/sdk/java/callback/FeatureRefreshCallback.html" title="interface in growthbook.sdk.java.callback">FeatureRefreshCallback</a></div>
+<div class="col-last even-row-color all-classes-table all-classes-table-tab1">
 <div class="block">See <a href="growthbook/sdk/java/repository/GBFeaturesRepository.html#onFeaturesRefresh(growthbook.sdk.java.callback.FeatureRefreshCallback)"><code>GBFeaturesRepository.onFeaturesRefresh(FeatureRefreshCallback)</code></a></div>
 </div>
-<div class="col-first even-row-color all-classes-table all-classes-table-tab3"><a href="growthbook/sdk/java/repository/FeatureRefreshStrategy.html" title="enum class in growthbook.sdk.java.repository">FeatureRefreshStrategy</a></div>
-<div class="col-last even-row-color all-classes-table all-classes-table-tab3">
+<div class="col-first odd-row-color all-classes-table all-classes-table-tab2"><a href="growthbook/sdk/java/featurefetch/FeatureRefreshScheduler.html" title="class in growthbook.sdk.java.featurefetch">FeatureRefreshScheduler</a></div>
+<div class="col-last odd-row-color all-classes-table all-classes-table-tab2">
+<div class="block">Owns refresh execution mode selection and background refresh scheduling.</div>
+</div>
+<div class="col-first even-row-color all-classes-table all-classes-table-tab1"><a href="growthbook/sdk/java/featurefetch/FeatureRefreshScheduler.FeatureRefreshAction.html" title="interface in growthbook.sdk.java.featurefetch">FeatureRefreshScheduler.FeatureRefreshAction</a></div>
+<div class="col-last even-row-color all-classes-table all-classes-table-tab1">&nbsp;</div>
+<div class="col-first odd-row-color all-classes-table all-classes-table-tab3"><a href="growthbook/sdk/java/repository/FeatureRefreshStrategy.html" title="enum class in growthbook.sdk.java.repository">FeatureRefreshStrategy</a></div>
+<div class="col-last odd-row-color all-classes-table all-classes-table-tab3">
 <div class="block">Enum that used in strategy for building url</div>
 </div>
-<div class="col-first odd-row-color all-classes-table all-classes-table-tab3"><a href="growthbook/sdk/java/model/FeatureResponseKey.html" title="enum class in growthbook.sdk.java.model">FeatureResponseKey</a></div>
-<div class="col-last odd-row-color all-classes-table all-classes-table-tab3">&nbsp;</div>
-<div class="col-first even-row-color all-classes-table all-classes-table-tab2"><a href="growthbook/sdk/java/model/FeatureResult.html" title="class in growthbook.sdk.java.model">FeatureResult</a>&lt;<a href="growthbook/sdk/java/model/FeatureResult.html" title="type parameter in FeatureResult">ValueType</a>&gt;</div>
-<div class="col-last even-row-color all-classes-table all-classes-table-tab2">
+<div class="col-first even-row-color all-classes-table all-classes-table-tab3"><a href="growthbook/sdk/java/model/FeatureResponseKey.html" title="enum class in growthbook.sdk.java.model">FeatureResponseKey</a></div>
+<div class="col-last even-row-color all-classes-table all-classes-table-tab3">&nbsp;</div>
+<div class="col-first odd-row-color all-classes-table all-classes-table-tab2"><a href="growthbook/sdk/java/model/FeatureResult.html" title="class in growthbook.sdk.java.model">FeatureResult</a>&lt;<a href="growthbook/sdk/java/model/FeatureResult.html" title="type parameter in FeatureResult">ValueType</a>&gt;</div>
+<div class="col-last odd-row-color all-classes-table all-classes-table-tab2">
 <div class="block">Results for a <a href="growthbook/sdk/java/evaluators/FeatureEvaluator.html#evaluateFeature(java.lang.String,growthbook.sdk.java.multiusermode.configurations.EvaluationContext,java.lang.Class)"><code>FeatureEvaluator.evaluateFeature(String, EvaluationContext, Class)</code></a>
 
  
@@ -158,74 +193,76 @@ loadScripts(document, 'script');</script>
  experimentResult (ExperimentResult or null) - When source is "experiment", this will be an ExperimentResult object
  </div>
 </div>
-<div class="col-first odd-row-color all-classes-table all-classes-table-tab2"><a href="growthbook/sdk/java/model/FeatureResult.FeatureResultBuilder.html" title="class in growthbook.sdk.java.model">FeatureResult.FeatureResultBuilder</a>&lt;<a href="growthbook/sdk/java/model/FeatureResult.FeatureResultBuilder.html" title="type parameter in FeatureResult.FeatureResultBuilder">ValueType</a>&gt;</div>
-<div class="col-last odd-row-color all-classes-table all-classes-table-tab2">&nbsp;</div>
-<div class="col-first even-row-color all-classes-table all-classes-table-tab3"><a href="growthbook/sdk/java/model/FeatureResultSource.html" title="enum class in growthbook.sdk.java.model">FeatureResultSource</a></div>
-<div class="col-last even-row-color all-classes-table all-classes-table-tab3">
+<div class="col-first even-row-color all-classes-table all-classes-table-tab2"><a href="growthbook/sdk/java/model/FeatureResult.FeatureResultBuilder.html" title="class in growthbook.sdk.java.model">FeatureResult.FeatureResultBuilder</a>&lt;<a href="growthbook/sdk/java/model/FeatureResult.FeatureResultBuilder.html" title="type parameter in FeatureResult.FeatureResultBuilder">ValueType</a>&gt;</div>
+<div class="col-last even-row-color all-classes-table all-classes-table-tab2">&nbsp;</div>
+<div class="col-first odd-row-color all-classes-table all-classes-table-tab3"><a href="growthbook/sdk/java/model/FeatureResultSource.html" title="enum class in growthbook.sdk.java.model">FeatureResultSource</a></div>
+<div class="col-last odd-row-color all-classes-table all-classes-table-tab3">
 <div class="block">An enum of the possible sources for the feature result</div>
 </div>
-<div class="col-first odd-row-color all-classes-table all-classes-table-tab2"><a href="growthbook/sdk/java/model/FeatureRule.html" title="class in growthbook.sdk.java.model">FeatureRule</a>&lt;<a href="growthbook/sdk/java/model/FeatureRule.html" title="type parameter in FeatureRule">ValueType</a>&gt;</div>
-<div class="col-last odd-row-color all-classes-table all-classes-table-tab2">
+<div class="col-first even-row-color all-classes-table all-classes-table-tab2"><a href="growthbook/sdk/java/model/FeatureRule.html" title="class in growthbook.sdk.java.model">FeatureRule</a>&lt;<a href="growthbook/sdk/java/model/FeatureRule.html" title="type parameter in FeatureRule">ValueType</a>&gt;</div>
+<div class="col-last even-row-color all-classes-table all-classes-table-tab2">
 <div class="block">Overrides the defaultValue of a Feature based on a set of requirements.</div>
 </div>
-<div class="col-first even-row-color all-classes-table all-classes-table-tab2"><a href="growthbook/sdk/java/model/FeatureRule.FeatureRuleBuilder.html" title="class in growthbook.sdk.java.model">FeatureRule.FeatureRuleBuilder</a>&lt;<a href="growthbook/sdk/java/model/FeatureRule.FeatureRuleBuilder.html" title="type parameter in FeatureRule.FeatureRuleBuilder">ValueType</a>&gt;</div>
-<div class="col-last even-row-color all-classes-table all-classes-table-tab2">&nbsp;</div>
-<div class="col-first odd-row-color all-classes-table all-classes-table-tab1"><a href="growthbook/sdk/java/callback/FeatureUsageCallback.html" title="interface in growthbook.sdk.java.callback">FeatureUsageCallback</a></div>
-<div class="col-last odd-row-color all-classes-table all-classes-table-tab1">
+<div class="col-first odd-row-color all-classes-table all-classes-table-tab2"><a href="growthbook/sdk/java/model/FeatureRule.FeatureRuleBuilder.html" title="class in growthbook.sdk.java.model">FeatureRule.FeatureRuleBuilder</a>&lt;<a href="growthbook/sdk/java/model/FeatureRule.FeatureRuleBuilder.html" title="type parameter in FeatureRule.FeatureRuleBuilder">ValueType</a>&gt;</div>
+<div class="col-last odd-row-color all-classes-table all-classes-table-tab2">&nbsp;</div>
+<div class="col-first even-row-color all-classes-table all-classes-table-tab1"><a href="growthbook/sdk/java/callback/FeatureUsageCallback.html" title="interface in growthbook.sdk.java.callback">FeatureUsageCallback</a></div>
+<div class="col-last even-row-color all-classes-table all-classes-table-tab1">
 <div class="block">Listen for feature usage events</div>
 </div>
-<div class="col-first even-row-color all-classes-table all-classes-table-tab2"><a href="growthbook/sdk/java/multiusermode/usage/FeatureUsageCallbackAdapter.html" title="class in growthbook.sdk.java.multiusermode.usage">FeatureUsageCallbackAdapter</a></div>
-<div class="col-last even-row-color all-classes-table all-classes-table-tab2">&nbsp;</div>
-<div class="col-first odd-row-color all-classes-table all-classes-table-tab1"><a href="growthbook/sdk/java/multiusermode/usage/FeatureUsageCallbackWithUser.html" title="interface in growthbook.sdk.java.multiusermode.usage">FeatureUsageCallbackWithUser</a></div>
-<div class="col-last odd-row-color all-classes-table all-classes-table-tab1">&nbsp;</div>
-<div class="col-first even-row-color all-classes-table all-classes-table-tab2"><a href="growthbook/sdk/java/sandbox/FileCachingManagerImpl.html" title="class in growthbook.sdk.java.sandbox">FileCachingManagerImpl</a></div>
-<div class="col-last even-row-color all-classes-table all-classes-table-tab2">
+<div class="col-first odd-row-color all-classes-table all-classes-table-tab2"><a href="growthbook/sdk/java/multiusermode/usage/FeatureUsageCallbackAdapter.html" title="class in growthbook.sdk.java.multiusermode.usage">FeatureUsageCallbackAdapter</a></div>
+<div class="col-last odd-row-color all-classes-table all-classes-table-tab2">&nbsp;</div>
+<div class="col-first even-row-color all-classes-table all-classes-table-tab1"><a href="growthbook/sdk/java/multiusermode/usage/FeatureUsageCallbackWithUser.html" title="interface in growthbook.sdk.java.multiusermode.usage">FeatureUsageCallbackWithUser</a></div>
+<div class="col-last even-row-color all-classes-table all-classes-table-tab1">&nbsp;</div>
+<div class="col-first odd-row-color all-classes-table all-classes-table-tab2"><a href="growthbook/sdk/java/sandbox/FileCachingManagerImpl.html" title="class in growthbook.sdk.java.sandbox">FileCachingManagerImpl</a></div>
+<div class="col-last odd-row-color all-classes-table all-classes-table-tab2">
 <div class="block">Class responsible for caching data to a file</div>
 </div>
-<div class="col-first odd-row-color all-classes-table all-classes-table-tab2"><a href="growthbook/sdk/java/model/Filter.html" title="class in growthbook.sdk.java.model">Filter</a></div>
-<div class="col-last odd-row-color all-classes-table all-classes-table-tab2">
+<div class="col-first even-row-color all-classes-table all-classes-table-tab2"><a href="growthbook/sdk/java/model/Filter.html" title="class in growthbook.sdk.java.model">Filter</a></div>
+<div class="col-last even-row-color all-classes-table all-classes-table-tab2">
 <div class="block">Object used for mutual exclusion and filtering users out of experiments based on random hashes.</div>
 </div>
-<div class="col-first even-row-color all-classes-table all-classes-table-tab2"><a href="growthbook/sdk/java/model/Filter.FilterBuilder.html" title="class in growthbook.sdk.java.model">Filter.FilterBuilder</a></div>
-<div class="col-last even-row-color all-classes-table all-classes-table-tab2">&nbsp;</div>
-<div class="col-first odd-row-color all-classes-table all-classes-table-tab2"><a href="growthbook/sdk/java/util/ForcedVariationsUtils.html" title="class in growthbook.sdk.java.util">ForcedVariationsUtils</a></div>
-<div class="col-last odd-row-color all-classes-table all-classes-table-tab2">
+<div class="col-first odd-row-color all-classes-table all-classes-table-tab2"><a href="growthbook/sdk/java/model/Filter.FilterBuilder.html" title="class in growthbook.sdk.java.model">Filter.FilterBuilder</a></div>
+<div class="col-last odd-row-color all-classes-table all-classes-table-tab2">&nbsp;</div>
+<div class="col-first even-row-color all-classes-table all-classes-table-tab2"><a href="growthbook/sdk/java/util/ForcedVariationsUtils.html" title="class in growthbook.sdk.java.util">ForcedVariationsUtils</a></div>
+<div class="col-last even-row-color all-classes-table all-classes-table-tab2">
 <div class="block">Normalizes forced variation values from external inputs into integer variation IDs.</div>
 </div>
-<div class="col-first even-row-color all-classes-table all-classes-table-tab1"><a href="growthbook/sdk/java/sandbox/GbCacheManager.html" title="interface in growthbook.sdk.java.sandbox">GbCacheManager</a></div>
-<div class="col-last even-row-color all-classes-table all-classes-table-tab1">&nbsp;</div>
-<div class="col-first odd-row-color all-classes-table all-classes-table-tab2"><a href="growthbook/sdk/java/model/GBContext.html" title="class in growthbook.sdk.java.model">GBContext</a></div>
-<div class="col-last odd-row-color all-classes-table all-classes-table-tab2">
+<div class="col-first odd-row-color all-classes-table all-classes-table-tab1"><a href="growthbook/sdk/java/sandbox/GbCacheManager.html" title="interface in growthbook.sdk.java.sandbox">GbCacheManager</a></div>
+<div class="col-last odd-row-color all-classes-table all-classes-table-tab1">&nbsp;</div>
+<div class="col-first even-row-color all-classes-table all-classes-table-tab2"><a href="growthbook/sdk/java/model/GBContext.html" title="class in growthbook.sdk.java.model">GBContext</a></div>
+<div class="col-last even-row-color all-classes-table all-classes-table-tab2">
 <div class="block">Context object passed into the GrowthBook constructor.</div>
 </div>
-<div class="col-first even-row-color all-classes-table all-classes-table-tab2"><a href="growthbook/sdk/java/model/GBContext.GBContextBuilder.html" title="class in growthbook.sdk.java.model">GBContext.GBContextBuilder</a></div>
-<div class="col-last even-row-color all-classes-table all-classes-table-tab2">
+<div class="col-first odd-row-color all-classes-table all-classes-table-tab2"><a href="growthbook/sdk/java/model/GBContext.GBContextBuilder.html" title="class in growthbook.sdk.java.model">GBContext.GBContextBuilder</a></div>
+<div class="col-last odd-row-color all-classes-table all-classes-table-tab2">
 <div class="block">The builder class to help create a context.</div>
 </div>
-<div class="col-first odd-row-color all-classes-table all-classes-table-tab2"><a href="growthbook/sdk/java/repository/GBFeaturesRepository.html" title="class in growthbook.sdk.java.repository">GBFeaturesRepository</a></div>
-<div class="col-last odd-row-color all-classes-table all-classes-table-tab2">
+<div class="col-first even-row-color all-classes-table all-classes-table-tab2"><a href="growthbook/sdk/java/repository/GBFeaturesRepository.html" title="class in growthbook.sdk.java.repository">GBFeaturesRepository</a></div>
+<div class="col-last even-row-color all-classes-table all-classes-table-tab2">
 <div class="block">This class can be created with its `builder()` or constructor.</div>
 </div>
-<div class="col-first even-row-color all-classes-table all-classes-table-tab2"><a href="growthbook/sdk/java/repository/GBFeaturesRepository.GBFeaturesRepositoryBuilder.html" title="class in growthbook.sdk.java.repository">GBFeaturesRepository.GBFeaturesRepositoryBuilder</a></div>
-<div class="col-last even-row-color all-classes-table all-classes-table-tab2">&nbsp;</div>
-<div class="col-first odd-row-color all-classes-table all-classes-table-tab2"><a href="growthbook/sdk/java/repository/GBFeaturesRepositoryRequestInterceptor.html" title="class in growthbook.sdk.java.repository">GBFeaturesRepositoryRequestInterceptor</a></div>
-<div class="col-last odd-row-color all-classes-table all-classes-table-tab2">
+<div class="col-first odd-row-color all-classes-table all-classes-table-tab2"><a href="growthbook/sdk/java/repository/GBFeaturesRepository.GBFeaturesRepositoryBuilder.html" title="class in growthbook.sdk.java.repository">GBFeaturesRepository.GBFeaturesRepositoryBuilder</a></div>
+<div class="col-last odd-row-color all-classes-table all-classes-table-tab2">&nbsp;</div>
+<div class="col-first even-row-color all-classes-table all-classes-table-tab2"><a href="growthbook/sdk/java/repository/GBFeaturesRepositoryRequestInterceptor.html" title="class in growthbook.sdk.java.repository">GBFeaturesRepositoryRequestInterceptor</a></div>
+<div class="col-last even-row-color all-classes-table all-classes-table-tab2">
 <div class="block">Appends User-Agent info to the request headers.</div>
 </div>
-<div class="col-first even-row-color all-classes-table all-classes-table-tab2"><a href="growthbook/sdk/java/model/GeneratedStickyBucketAssignmentDocModel.html" title="class in growthbook.sdk.java.model">GeneratedStickyBucketAssignmentDocModel</a></div>
-<div class="col-last even-row-color all-classes-table all-classes-table-tab2">
+<div class="col-first odd-row-color all-classes-table all-classes-table-tab2"><a href="growthbook/sdk/java/model/GeneratedStickyBucketAssignmentDocModel.html" title="class in growthbook.sdk.java.model">GeneratedStickyBucketAssignmentDocModel</a></div>
+<div class="col-last odd-row-color all-classes-table all-classes-table-tab2">
 <div class="block">Model that created for generating StickyBucketAssignmentDocModel</div>
 </div>
-<div class="col-first odd-row-color all-classes-table all-classes-table-tab2"><a href="growthbook/sdk/java/multiusermode/configurations/GlobalContext.html" title="class in growthbook.sdk.java.multiusermode.configurations">GlobalContext</a></div>
-<div class="col-last odd-row-color all-classes-table all-classes-table-tab2">&nbsp;</div>
-<div class="col-first even-row-color all-classes-table all-classes-table-tab2"><a href="growthbook/sdk/java/multiusermode/configurations/GlobalContext.GlobalContextBuilder.html" title="class in growthbook.sdk.java.multiusermode.configurations">GlobalContext.GlobalContextBuilder</a></div>
+<div class="col-first even-row-color all-classes-table all-classes-table-tab2"><a href="growthbook/sdk/java/multiusermode/configurations/GlobalContext.html" title="class in growthbook.sdk.java.multiusermode.configurations">GlobalContext</a></div>
 <div class="col-last even-row-color all-classes-table all-classes-table-tab2">&nbsp;</div>
-<div class="col-first odd-row-color all-classes-table all-classes-table-tab2"><a href="growthbook/sdk/java/GrowthBook.html" title="class in growthbook.sdk.java">GrowthBook</a></div>
-<div class="col-last odd-row-color all-classes-table all-classes-table-tab2">
+<div class="col-first odd-row-color all-classes-table all-classes-table-tab2"><a href="growthbook/sdk/java/multiusermode/configurations/GlobalContext.GlobalContextBuilder.html" title="class in growthbook.sdk.java.multiusermode.configurations">GlobalContext.GlobalContextBuilder</a></div>
+<div class="col-last odd-row-color all-classes-table all-classes-table-tab2">&nbsp;</div>
+<div class="col-first even-row-color all-classes-table all-classes-table-tab2"><a href="growthbook/sdk/java/GrowthBook.html" title="class in growthbook.sdk.java">GrowthBook</a></div>
+<div class="col-last even-row-color all-classes-table all-classes-table-tab2">
 <div class="block">GrowthBook SDK class.</div>
 </div>
-<div class="col-first even-row-color all-classes-table all-classes-table-tab2"><a href="growthbook/sdk/java/multiusermode/GrowthBookClient.html" title="class in growthbook.sdk.java.multiusermode">GrowthBookClient</a></div>
-<div class="col-last even-row-color all-classes-table all-classes-table-tab2">&nbsp;</div>
+<div class="col-first odd-row-color all-classes-table all-classes-table-tab2"><a href="growthbook/sdk/java/multiusermode/GrowthBookClient.html" title="class in growthbook.sdk.java.multiusermode">GrowthBookClient</a></div>
+<div class="col-last odd-row-color all-classes-table all-classes-table-tab2">&nbsp;</div>
+<div class="col-first even-row-color all-classes-table all-classes-table-tab5"><a href="growthbook/sdk/java/exception/GrowthBookClientInitializationException.html" title="class in growthbook.sdk.java.exception">GrowthBookClientInitializationException</a></div>
+<div class="col-last even-row-color all-classes-table all-classes-table-tab5">&nbsp;</div>
 <div class="col-first odd-row-color all-classes-table all-classes-table-tab2"><a href="growthbook/sdk/java/util/GrowthBookJsonUtils.html" title="class in growthbook.sdk.java.util">GrowthBookJsonUtils</a></div>
 <div class="col-last odd-row-color all-classes-table all-classes-table-tab2">
 <div class="block"><b>INTERNAL</b>: This convenience class was created to help with the serialization and deserialization of custom types.</div>
@@ -284,8 +321,14 @@ loadScripts(document, 'script');</script>
 <div class="col-last even-row-color all-classes-table all-classes-table-tab2">
 <div class="block">A ParentCondition defines a prerequisite.</div>
 </div>
-<div class="col-first odd-row-color all-classes-table all-classes-table-tab2"><a href="growthbook/sdk/java/model/RequestBodyForRemoteEval.html" title="class in growthbook.sdk.java.model">RequestBodyForRemoteEval</a></div>
-<div class="col-last odd-row-color all-classes-table all-classes-table-tab2">&nbsp;</div>
+<div class="col-first odd-row-color all-classes-table all-classes-table-tab3"><a href="growthbook/sdk/java/repository/RefreshMode.html" title="enum class in growthbook.sdk.java.repository">RefreshMode</a></div>
+<div class="col-last odd-row-color all-classes-table all-classes-table-tab3">
+<div class="block">Controls whether a feature refresh may use cache freshness checks.</div>
+</div>
+<div class="col-first even-row-color all-classes-table all-classes-table-tab2"><a href="growthbook/sdk/java/model/RequestBodyForRemoteEval.html" title="class in growthbook.sdk.java.model">RequestBodyForRemoteEval</a></div>
+<div class="col-last even-row-color all-classes-table all-classes-table-tab2">&nbsp;</div>
+<div class="col-first odd-row-color all-classes-table all-classes-table-tab5"><a href="growthbook/sdk/java/exception/RetryableFeatureFetchException.html" title="class in growthbook.sdk.java.exception">RetryableFeatureFetchException</a></div>
+<div class="col-last odd-row-color all-classes-table all-classes-table-tab5">&nbsp;</div>
 <div class="col-first even-row-color all-classes-table all-classes-table-tab3"><a href="growthbook/sdk/java/model/SseKey.html" title="enum class in growthbook.sdk.java.model">SseKey</a></div>
 <div class="col-last even-row-color all-classes-table all-classes-table-tab3">&nbsp;</div>
 <div class="col-first odd-row-color all-classes-table all-classes-table-tab2"><a href="growthbook/sdk/java/model/StickyAssignmentsDocument.html" title="class in growthbook.sdk.java.model">StickyAssignmentsDocument</a></div>
