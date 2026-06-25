@@ -16,6 +16,7 @@ import growthbook.sdk.java.serializers.SuperTypeToken;
 import javax.annotation.Nullable;
 import java.lang.reflect.Type;
 import java.util.ArrayList;
+import java.util.Map;
 
 /**
  * Overrides the defaultValue of a Feature based on a set of requirements. Has a number of optional properties
@@ -178,16 +179,72 @@ public class FeatureRule<ValueType> extends SuperTypeToken<ValueType> implements
     @Nullable
     Integer minBucketVersion;
 
+    @Nullable
+    Map<String, Object> customFields;
+
     /**
      * Array of tracking calls to fire
      */
     @Nullable
     ArrayList<TrackData<ValueType>> tracks;
 
+    public FeatureRule(
+            @Nullable String id,
+            @Nullable String key,
+            @Nullable Float coverage,
+            @Nullable OptionalField<ValueType> force,
+            @Nullable ArrayList<ValueType> variations,
+            @Nullable ArrayList<Float> weights,
+            @Nullable Namespace namespace,
+            String hashAttribute,
+            @Nullable JsonObject condition,
+            @Nullable ArrayList<ParentCondition> parentConditions,
+            @Nullable Integer hashVersion,
+            @Nullable BucketRange range,
+            @Nullable ArrayList<BucketRange> ranges,
+            @Nullable ArrayList<VariationMeta> meta,
+            @Nullable ArrayList<Filter> filters,
+            @Nullable String seed,
+            @Nullable String name,
+            @Nullable String phase,
+            @Nullable String fallbackAttribute,
+            @Nullable Boolean disableStickyBucketing,
+            @Nullable Integer bucketVersion,
+            @Nullable Integer minBucketVersion,
+            @Nullable ArrayList<TrackData<ValueType>> tracks
+    ) {
+        this(
+                id,
+                key,
+                coverage,
+                force,
+                variations,
+                weights,
+                namespace,
+                hashAttribute,
+                condition,
+                parentConditions,
+                hashVersion,
+                range,
+                ranges,
+                meta,
+                filters,
+                seed,
+                name,
+                phase,
+                fallbackAttribute,
+                disableStickyBucketing,
+                bucketVersion,
+                minBucketVersion,
+                null,
+                tracks
+        );
+    }
+
     @Override
     public FeatureRule<ValueType> deserialize(JsonElement json, Type typeOfT, JsonDeserializationContext context) {
         JsonObject jsonObject = json.getAsJsonObject();
-        FeatureRule.FeatureRuleBuilder<ValueType> builder = FeatureRule.builder();
+        FeatureRule.FeatureRuleBuilder<ValueType> builder = FeatureRule.<ValueType>builder();
 
         builder.id(jsonObject.has("id") ? context.deserialize(jsonObject.get("id"), String.class) : "");
         builder.key(jsonObject.has("key") ? context.deserialize(jsonObject.get("key"), String.class) : null);
@@ -250,6 +307,11 @@ public class FeatureRule<ValueType> extends SuperTypeToken<ValueType> implements
         builder.disableStickyBucketing(jsonObject.has("disableStickyBucketing") ? context.deserialize(jsonObject.get("disableStickyBucketing"), Boolean.class) : null);
         builder.bucketVersion(jsonObject.has("bucketVersion") ? context.deserialize(jsonObject.get("bucketVersion"), Integer.class) : null);
         builder.minBucketVersion(jsonObject.has("minBucketVersion") ? context.deserialize(jsonObject.get("minBucketVersion"), Integer.class) : null);
+
+        if (jsonObject.has("customFields")) {
+            builder.customFields(context.deserialize(jsonObject.get("customFields"), new TypeToken<Map<String, Object>>() {
+            }.getType()));
+        }
 
         if (jsonObject.has("tracks")) {
             builder.tracks(context.deserialize(jsonObject.get("tracks"), TypeToken.getParameterized(ArrayList.class, TrackData.class).getType()));

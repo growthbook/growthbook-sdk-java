@@ -343,6 +343,7 @@ public class FeatureEvaluator implements IFeatureEvaluator {
                                 .hashVersion(rule.getHashVersion())
                                 .filters(rule.getFilters())
                                 .conditionJson(rule.getCondition())
+                                .customFields(rule.getCustomFields())
                                 .build();
 
                         // Only return a value if the user is part of the experiment
