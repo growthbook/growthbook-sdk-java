@@ -15,6 +15,7 @@ import growthbook.sdk.java.model.HttpMethods;
 import growthbook.sdk.java.model.RequestBodyForRemoteEval;
 import growthbook.sdk.java.model.SseKey;
 import growthbook.sdk.java.model.GBContext;
+import growthbook.sdk.java.sse.SseEventPayloadValidator;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
@@ -524,16 +525,20 @@ public class NativeJavaGbFeatureRepository implements IGBFeaturesRepository {
                     reader = new BufferedReader(new InputStreamReader(connection.getInputStream()));
                     String line;
                     StringBuilder dataBuffer = new StringBuilder();
+                    String eventType = null;
 
                     while ((line = reader.readLine()) != null) {
                         if (line.startsWith(SseKey.DATA.getKey())) {
                             dataBuffer.append(line.substring(QUANTITY_TO_CUT_SSE).trim()).append("\n");
+                        } else if (line.startsWith(SseKey.EVENT.getKey())) {
+                            eventType = line.substring(SseKey.EVENT.getKey().length()).trim();
                         } else if (line.isEmpty()) {
                             String data = dataBuffer.toString();
-                            if (!data.trim().isEmpty()) {
+                            if (SseEventPayloadValidator.isValidFeaturePayload(eventType, data)) {
                                 onResponseJson(data, false);
                             }
                             dataBuffer.setLength(0);
+                            eventType = null;
                         }
                     }
                 } catch (Exception e) {
