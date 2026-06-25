@@ -150,9 +150,8 @@ loadScripts(document, 'script');</script>
 <div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>void</code></div>
 <div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#featuresAPIModelSuccessfully(java.lang.String)" class="member-name-link">featuresAPIModelSuccessfully</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;featuresDataModel)</code></div>
 <div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
-<div class="block">Update sticky bucketing configuration
- Method that get cached assignments
- and set it to Context's Sticky Bucket Assignments documents</div>
+<div class="block">Call this whenever features are refreshed so that sticky bucket assignment docs are
+ reloaded for the current user.</div>
 </div>
 <div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>com.google.gson.JsonObject</code></div>
 <div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#getAttributeOverrides()" class="member-name-link">getAttributeOverrides</a>()</code></div>
@@ -259,7 +258,7 @@ loadScripts(document, 'script');</script>
 <div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>void</code></div>
 <div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#subscribe(growthbook.sdk.java.callback.ExperimentRunCallback)" class="member-name-link">subscribe</a><wbr>(<a href="callback/ExperimentRunCallback.html" title="interface in growthbook.sdk.java.callback">ExperimentRunCallback</a>&nbsp;callback)</code></div>
 <div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
-<div class="block">This method add new calback to list of ExperimentRunCallback</div>
+<div class="block">This method add new callback to list of ExperimentRunCallback</div>
 </div>
 </div>
 </div>
@@ -608,7 +607,7 @@ loadScripts(document, 'script');</script>
 <section class="detail" id="subscribe(growthbook.sdk.java.callback.ExperimentRunCallback)">
 <h3>subscribe</h3>
 <div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type">void</span>&nbsp;<span class="element-name">subscribe</span><wbr><span class="parameters">(<a href="callback/ExperimentRunCallback.html" title="interface in growthbook.sdk.java.callback">ExperimentRunCallback</a>&nbsp;callback)</span></div>
-<div class="block">This method add new calback to list of ExperimentRunCallback</div>
+<div class="block">This method add new callback to list of ExperimentRunCallback</div>
 <dl class="notes">
 <dt>Parameters:</dt>
 <dd><code>callback</code> - ExperimentRunCallback interface</dd>
@@ -619,12 +618,18 @@ loadScripts(document, 'script');</script>
 <section class="detail" id="featuresAPIModelSuccessfully(java.lang.String)">
 <h3>featuresAPIModelSuccessfully</h3>
 <div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type">void</span>&nbsp;<span class="element-name">featuresAPIModelSuccessfully</span><wbr><span class="parameters">(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;featuresDataModel)</span></div>
-<div class="block">Update sticky bucketing configuration
- Method that get cached assignments
- and set it to Context's Sticky Bucket Assignments documents</div>
+<div class="block">Call this whenever features are refreshed so that sticky bucket assignment docs are
+ reloaded for the current user.
+ <pre>
+   repository.onFeaturesRefresh(gb::featuresAPIModelSuccessfully);
+ </pre>
+ Passing the new features JSON allows <code>deriveStickyBucketIdentifierAttributes</code> to
+ pick up any new <code>hashAttribute</code>/<code>fallbackAttribute</code> values introduced by the
+ updated feature definitions before re-fetching docs from the service.</div>
 <dl class="notes">
 <dt>Parameters:</dt>
-<dd><code>featuresDataModel</code> - Json in format of String. See info how it looks like here <a href="https://docs.growthbook.io/app/api#sdk-connection-endpoints">...</a></dd>
+<dd><code>featuresDataModel</code> - JSON string returned by the GrowthBook SDK endpoint.
+                          See <a href="https://docs.growthbook.io/app/api#sdk-connection-endpoints">SDK Connection Endpoints</a></dd>
 </dl>
 </section>
 </li>

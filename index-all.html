@@ -590,9 +590,8 @@ loadScripts(document, 'script');</script>
 <dd>&nbsp;</dd>
 <dt><a href="growthbook/sdk/java/GrowthBook.html#featuresAPIModelSuccessfully(java.lang.String)" class="member-name-link">featuresAPIModelSuccessfully(String)</a> - Method in class growthbook.sdk.java.<a href="growthbook/sdk/java/GrowthBook.html" title="class in growthbook.sdk.java">GrowthBook</a></dt>
 <dd>
-<div class="block">Update sticky bucketing configuration
- Method that get cached assignments
- and set it to Context's Sticky Bucket Assignments documents</div>
+<div class="block">Call this whenever features are refreshed so that sticky bucket assignment docs are
+ reloaded for the current user.</div>
 </dd>
 <dt><a href="growthbook/sdk/java/model/GBContext.GBContextBuilder.html#featuresJson(java.lang.String)" class="member-name-link">featuresJson(String)</a> - Method in class growthbook.sdk.java.model.<a href="growthbook/sdk/java/model/GBContext.GBContextBuilder.html" title="class in growthbook.sdk.java.model">GBContext.GBContextBuilder</a></dt>
 <dd>&nbsp;</dd>
@@ -1497,10 +1496,6 @@ loadScripts(document, 'script');</script>
 <dt><a href="growthbook/sdk/java/multiusermode/configurations/Options.html#getStickyBucketIdentifierAttributes()" class="member-name-link">getStickyBucketIdentifierAttributes()</a> - Method in class growthbook.sdk.java.multiusermode.configurations.<a href="growthbook/sdk/java/multiusermode/configurations/Options.html" title="class in growthbook.sdk.java.multiusermode.configurations">Options</a></dt>
 <dd>
 <div class="block">List of user's attributes keys.</div>
-</dd>
-<dt><a href="growthbook/sdk/java/model/GBContext.html#getStickyBucketIdentifierAttributesSignature()" class="member-name-link">getStickyBucketIdentifierAttributesSignature()</a> - Method in class growthbook.sdk.java.model.<a href="growthbook/sdk/java/model/GBContext.html" title="class in growthbook.sdk.java.model">GBContext</a></dt>
-<dd>
-<div class="block">Fingerprint of the feature payload used to derive sticky bucket identifiers.</div>
 </dd>
 <dt><a href="growthbook/sdk/java/model/GBContext.html#getStickyBucketService()" class="member-name-link">getStickyBucketService()</a> - Method in class growthbook.sdk.java.model.<a href="growthbook/sdk/java/model/GBContext.html" title="class in growthbook.sdk.java.model">GBContext</a></dt>
 <dd>
@@ -2789,14 +2784,12 @@ loadScripts(document, 'script');</script>
 <dt><a href="growthbook/sdk/java/multiusermode/configurations/UserContext.html#setStickyBucketAssignmentDocs(java.util.Map)" class="member-name-link">setStickyBucketAssignmentDocs(Map&lt;String, StickyAssignmentsDocument&gt;)</a> - Method in class growthbook.sdk.java.multiusermode.configurations.<a href="growthbook/sdk/java/multiusermode/configurations/UserContext.html" title="class in growthbook.sdk.java.multiusermode.configurations">UserContext</a></dt>
 <dd>&nbsp;</dd>
 <dt><a href="growthbook/sdk/java/model/GBContext.html#setStickyBucketIdentifierAttributes(java.util.List)" class="member-name-link">setStickyBucketIdentifierAttributes(List&lt;String&gt;)</a> - Method in class growthbook.sdk.java.model.<a href="growthbook/sdk/java/model/GBContext.html" title="class in growthbook.sdk.java.model">GBContext</a></dt>
-<dd>&nbsp;</dd>
+<dd>
+<div class="block">List of user's attributes keys</div>
+</dd>
 <dt><a href="growthbook/sdk/java/multiusermode/configurations/Options.html#setStickyBucketIdentifierAttributes(java.util.List)" class="member-name-link">setStickyBucketIdentifierAttributes(List&lt;String&gt;)</a> - Method in class growthbook.sdk.java.multiusermode.configurations.<a href="growthbook/sdk/java/multiusermode/configurations/Options.html" title="class in growthbook.sdk.java.multiusermode.configurations">Options</a></dt>
 <dd>
 <div class="block">List of user's attributes keys.</div>
-</dd>
-<dt><a href="growthbook/sdk/java/model/GBContext.html#setStickyBucketIdentifierAttributesSignature(java.lang.String)" class="member-name-link">setStickyBucketIdentifierAttributesSignature(String)</a> - Method in class growthbook.sdk.java.model.<a href="growthbook/sdk/java/model/GBContext.html" title="class in growthbook.sdk.java.model">GBContext</a></dt>
-<dd>
-<div class="block">Fingerprint of the feature payload used to derive sticky bucket identifiers.</div>
 </dd>
 <dt><a href="growthbook/sdk/java/model/GBContext.html#setStickyBucketService(growthbook.sdk.java.stickyBucketing.StickyBucketService)" class="member-name-link">setStickyBucketService(StickyBucketService)</a> - Method in class growthbook.sdk.java.model.<a href="growthbook/sdk/java/model/GBContext.html" title="class in growthbook.sdk.java.model">GBContext</a></dt>
 <dd>
@@ -2945,7 +2938,7 @@ loadScripts(document, 'script');</script>
 <dd>&nbsp;</dd>
 <dt><a href="growthbook/sdk/java/GrowthBook.html#subscribe(growthbook.sdk.java.callback.ExperimentRunCallback)" class="member-name-link">subscribe(ExperimentRunCallback)</a> - Method in class growthbook.sdk.java.<a href="growthbook/sdk/java/GrowthBook.html" title="class in growthbook.sdk.java">GrowthBook</a></dt>
 <dd>
-<div class="block">This method add new calback to list of ExperimentRunCallback</div>
+<div class="block">This method add new callback to list of ExperimentRunCallback</div>
 </dd>
 <dt><a href="growthbook/sdk/java/multiusermode/GrowthBookClient.html#subscribe(growthbook.sdk.java.callback.ExperimentRunCallback)" class="member-name-link">subscribe(ExperimentRunCallback)</a> - Method in class growthbook.sdk.java.multiusermode.<a href="growthbook/sdk/java/multiusermode/GrowthBookClient.html" title="class in growthbook.sdk.java.multiusermode">GrowthBookClient</a></dt>
 <dd>&nbsp;</dd>
