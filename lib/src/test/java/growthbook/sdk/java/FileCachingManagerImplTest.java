@@ -3,12 +3,14 @@ package growthbook.sdk.java;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
+import growthbook.sdk.java.exception.FeatureCacheException;
 import growthbook.sdk.java.sandbox.FileCachingManagerImpl;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -40,7 +42,18 @@ class FileCachingManagerImplTest {
     @Test
     void shouldReturnNullWhenFileDoesNotExist() {
         String loadedContent = fileCachingManagerImpl.loadCache("nonexistent.txt");
-        Assertions.assertNull(loadedContent);
+        assertNull(loadedContent);
+        assertNull(fileCachingManagerImpl.getLastUpdatedMillis("nonexistent.txt"));
+    }
+
+    @Test
+    void shouldExposeLastUpdatedTime() {
+        String fileName = "timestamped.txt";
+
+        fileCachingManagerImpl.saveContent(fileName, "cached");
+
+        assertNotNull(fileCachingManagerImpl.getLastUpdatedMillis(fileName));
+        assertTrue(fileCachingManagerImpl.getLastUpdatedMillis(fileName) > 0);
     }
 
     @Test
@@ -57,7 +70,10 @@ class FileCachingManagerImplTest {
             fail("Creating test file was not successful.");
         }
 
-        RuntimeException thrown = assertThrows(RuntimeException.class, () -> fileCachingManagerImpl.saveContent(fileName, "This should fail"));
+        FeatureCacheException thrown = assertThrows(
+                FeatureCacheException.class,
+                () -> fileCachingManagerImpl.saveContent(fileName, "This should fail")
+        );
 
         assertInstanceOf(IOException.class, thrown.getCause());
     }
@@ -135,8 +151,8 @@ class FileCachingManagerImplTest {
 
         fileCachingManagerImpl.clearCache();
 
-        Assertions.assertNull(fileCachingManagerImpl.loadCache("a.txt"));
-        Assertions.assertNull(fileCachingManagerImpl.loadCache("b.txt"));
+        assertNull(fileCachingManagerImpl.loadCache("a.txt"));
+        assertNull(fileCachingManagerImpl.loadCache("b.txt"));
         assertEquals(0, tempDir.listFiles().length);
     }
 

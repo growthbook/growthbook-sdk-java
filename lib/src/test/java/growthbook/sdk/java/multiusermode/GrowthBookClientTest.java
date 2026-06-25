@@ -13,9 +13,9 @@ import growthbook.sdk.java.multiusermode.configurations.UserContext;
 import growthbook.sdk.java.multiusermode.util.TransformationUtil;
 import growthbook.sdk.java.repository.FeatureRefreshStrategy;
 import growthbook.sdk.java.repository.GBFeaturesRepository;
+import growthbook.sdk.java.repository.RefreshMode;
 import growthbook.sdk.java.testhelpers.TestCasesJsonHelper;
 import lombok.SneakyThrows;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.MockedStatic;
@@ -24,6 +24,7 @@ import java.lang.reflect.Field;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicReference;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
@@ -34,14 +35,6 @@ class GrowthBookClientTest {
     // Mock instances that might be needed across tests
     private GBFeaturesRepository mockRepository;
     private GBFeaturesRepository.GBFeaturesRepositoryBuilder mockBuilder;
-
-    @AfterEach
-    void tearDown() throws Exception {
-        // Reset static repository after each test
-        Field field = GrowthBookClient.class.getDeclaredField("repository");
-        field.setAccessible(true);
-        field.set(null, null);
-    }
 
     @Test
     void initialize_validConfiguration_registersCallbacksAndReturnsTrue() throws FeatureFetchException {
@@ -148,7 +141,7 @@ class GrowthBookClientTest {
 
     @SneakyThrows
     @Test
-    void refreshFeature_afterInitialization_callsFetchFeatures() {
+    void refreshFeature_afterInitialization_callsDefaultRefresh() {
         mockRepository = createMockRepository();
         mockBuilder = createMockBuilder(mockRepository);
         FeatureRefreshCallback mockCallback = mock(FeatureRefreshCallback.class);
@@ -163,13 +156,13 @@ class GrowthBookClientTest {
 
             client.refreshFeature();
 
-            verify(mockRepository).fetchFeatures();
+            verify(mockRepository).refreshFeatures(RefreshMode.DEFAULT);
         }
     }
 
     @SneakyThrows
     @Test
-    void refreshFeature_fetchThrows_doesNotThrow() {
+    void refreshFeature_refreshThrows_doesNotThrow() throws FeatureFetchException {
         mockRepository = createMockRepository();
         mockBuilder = createMockBuilder(mockRepository);
         FeatureRefreshCallback mockCallback = mock(FeatureRefreshCallback.class);
@@ -184,10 +177,29 @@ class GrowthBookClientTest {
 
             doThrow(
                     new FeatureFetchException(FeatureFetchException.FeatureFetchErrorCode.CONFIGURATION_ERROR))
-                    .when(mockRepository).fetchFeatures();
+                    .when(mockRepository).refreshFeatures(RefreshMode.DEFAULT);
             client.refreshFeature();
 
             assertDoesNotThrow(client::refreshFeature);
+        }
+    }
+
+    @SneakyThrows
+    @Test
+    void refreshFeatures_forceRefreshBlocksOnRepositoryRefresh() {
+        mockRepository = createMockRepository();
+        mockBuilder = createMockBuilder(mockRepository);
+
+        try (MockedStatic<GBFeaturesRepository> mockedStatic = mockStatic(GBFeaturesRepository.class)) {
+            mockedStatic.when(GBFeaturesRepository::builder).thenReturn(mockBuilder);
+
+            GrowthBookClient client = new GrowthBookClient(createDefaultOptions(mock(FeatureRefreshCallback.class)));
+            client.initialize();
+
+            client.refreshFeatures(RefreshMode.FORCE);
+
+            verify(mockRepository).refreshFeatures(RefreshMode.FORCE);
+            verify(mockRepository, never()).requestFeatureRefresh(RefreshMode.FORCE);
         }
     }
 
@@ -350,7 +362,8 @@ class GrowthBookClientTest {
 
         client.setGlobalForceVariations(null);
 
-        assertNull(options.getGlobalForcedVariationsMap());
+        assertNotNull(options.getGlobalForcedVariationsMap());
+        assertTrue(options.getGlobalForcedVariationsMap().isEmpty());
     }
 
     @Test
@@ -393,11 +406,12 @@ class GrowthBookClientTest {
 
             Field field = GrowthBookClient.class.getDeclaredField("globalContext");
             field.setAccessible(true);
-            field.set(client, null);
+            AtomicReference<GlobalContext> reference = (AtomicReference<GlobalContext>) field.get(client);
+            reference.set(null);
 
             internalCallback.onRefresh("{}");
 
-            GlobalContext ctx = (GlobalContext) field.get(client);
+            GlobalContext ctx = reference.get();
             assertNotNull(ctx);
         }
     }
@@ -430,7 +444,8 @@ class GrowthBookClientTest {
 
             Field field = GrowthBookClient.class.getDeclaredField("globalContext");
             field.setAccessible(true);
-            GlobalContext ctx = (GlobalContext) field.get(client);
+            AtomicReference<GlobalContext> reference = (AtomicReference<GlobalContext>) field.get(client);
+            GlobalContext ctx = reference.get();
 
             assertNotNull(ctx);
             assertSame(newFeatures, ctx.getFeatures());
@@ -513,6 +528,8 @@ class GrowthBookClientTest {
         when(repository.getInitialized()).thenReturn(true);
         when(repository.getFeaturesJson()).thenReturn("{}");
         when(repository.getSavedGroupsJson()).thenReturn("{}");
+        when(repository.getParsedFeatures()).thenReturn(new HashMap<>());
+        when(repository.getParsedSavedGroups()).thenReturn(new com.google.gson.JsonObject());
         return repository;
     }
 
@@ -528,6 +545,8 @@ class GrowthBookClientTest {
         when(builder.isCacheDisabled(anyBoolean())).thenReturn(builder);
         when(builder.requestBodyForRemoteEval(any())).thenReturn(builder);
         when(builder.cacheManager(any())).thenReturn(builder);
+        when(builder.backgroundFetchInterval(any())).thenReturn(builder);
+        when(builder.retryPolicy(any())).thenReturn(builder);
         when(builder.build()).thenReturn(repository);
 
         return builder;
