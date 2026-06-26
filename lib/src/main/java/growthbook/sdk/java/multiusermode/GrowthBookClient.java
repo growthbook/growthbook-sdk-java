@@ -41,6 +41,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
 @Slf4j
@@ -55,8 +56,9 @@ public class GrowthBookClient {
     private final ExperimentEvaluator experimentEvaluatorEvaluator;
     private final AtomicReference<GlobalContext> globalContext = new AtomicReference<>();
     private final AtomicReference<GBFeaturesRepository> repository = new AtomicReference<>();
-    private RemoteEvalService remoteEvalService;
-    private RemoteEvalCache remoteEvalCache;
+    private volatile RemoteEvalService remoteEvalService;
+    private volatile RemoteEvalCache remoteEvalCache;
+    private final AtomicBoolean remoteEvalReady = new AtomicBoolean(false);
 
     public GrowthBookClient() {
         this(Options.builder().build());
@@ -310,12 +312,21 @@ public class GrowthBookClient {
     }
 
     private boolean ensureRemoteEvalReady() {
-        RemoteEvalOptionsValidator.validate(this.options);
-        getRemoteEvalService();
-        getRemoteEvalCache();
-        initializeRemoteEvalSseInvalidationIfNeeded();
-        this.globalContext.compareAndSet(null, buildGlobalContext(Collections.emptyMap(), new JsonObject()));
-        return true;
+        if (this.remoteEvalReady.get()) {
+            return true;
+        }
+        synchronized (this) {
+            if (this.remoteEvalReady.get()) {
+                return true;
+            }
+            RemoteEvalOptionsValidator.validate(this.options);
+            getRemoteEvalService();
+            getRemoteEvalCache();
+            initializeRemoteEvalSseInvalidationIfNeeded();
+            this.globalContext.compareAndSet(null, buildGlobalContext(Collections.emptyMap(), new JsonObject()));
+            this.remoteEvalReady.set(true);
+            return true;
+        }
     }
 
     private void initializeRemoteEvalSseInvalidationIfNeeded() {
@@ -518,8 +529,9 @@ public class GrowthBookClient {
     }
 
     private void clearRemoteEvalCache() {
-        if (this.remoteEvalCache != null) {
-            this.remoteEvalCache.invalidateAll();
+        RemoteEvalCache cache = this.remoteEvalCache;
+        if (cache != null) {
+            cache.invalidateAll();
         }
     }
 
