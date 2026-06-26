@@ -18,7 +18,9 @@ public class InMemoryStickyBucketServiceImpl implements StickyBucketService {
      * @param localStorage a map to store sticky assignments documents in memory.
      */
     public InMemoryStickyBucketServiceImpl(Map<String, StickyAssignmentsDocument> localStorage) {
-        this.localStorage = new ConcurrentHashMap<>(localStorage);
+        this.localStorage = localStorage == null
+                ? new ConcurrentHashMap<>()
+                : new ConcurrentHashMap<>(localStorage);
     }
 
     /**

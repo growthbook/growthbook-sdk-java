@@ -6,6 +6,7 @@ package growthbook.sdk.java;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
@@ -221,6 +222,25 @@ class GrowthBookTest {
         assertNotNull(result.getExperiment());
         assertEquals("APX-123", result.getExperiment().getCustomField("cfl_ticket"));
         assertEquals("growth", result.getExperiment().getCustomField("cfl_owner"));
+    }
+
+    @Test
+    @DisplayName("Evaluation uses a per-call StackContext and never mutates the shared root context")
+    void evalFeature_doesNotMutateSharedRootStackContext() {
+        String features = TestCasesJsonHelper.getInstance().getDemoFeaturesJson();
+        GBContext context = GBContext.builder().featuresJson(features).build();
+        GrowthBook subject = new GrowthBook(context);
+
+        growthbook.sdk.java.multiusermode.configurations.EvaluationContext.StackContext rootStackBefore =
+                subject.getRootEvaluationContext().getStack();
+
+        subject.evalFeature("h1-title", String.class);
+        subject.evalFeature("h1-title", String.class);
+
+        // The shared root context's StackContext must remain untouched by evaluations so that
+        // concurrent evaluations (each getting their own per-call StackContext) cannot corrupt
+        // one another's cycle-detection / memoization state.
+        assertSame(rootStackBefore, subject.getRootEvaluationContext().getStack());
     }
 
     @Test

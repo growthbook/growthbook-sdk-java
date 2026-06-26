@@ -471,10 +471,11 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
     // Scheduled polling (non-SSE) drives refresh for STALE_WHILE_REVALIDATE strategy
     private final AtomicReference<ScheduledExecutorService> pollScheduler = new AtomicReference<>(null);
     private final AtomicBoolean polling = new AtomicBoolean(false);
-    private ScheduledExecutorService sseRetryScheduler;
+    private volatile ScheduledExecutorService sseRetryScheduler;
     private final AtomicBoolean sseReconnectScheduled = new AtomicBoolean(false);
     private final AtomicInteger sseRetryAttempts = new AtomicInteger(0);
     private final AtomicBoolean shuttingDown = new AtomicBoolean(false);
+    private final Object initLock = new Object();
 
     private void schedulePolling() {
         if (this.refreshStrategy == FeatureRefreshStrategy.SERVER_SENT_EVENTS) {
@@ -513,9 +514,14 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
 
     @Override
     public void initialize(Boolean retryOnFailure) throws FeatureFetchException {
-        if (!this.initialized.compareAndSet(false, true)) return;
+        if (this.initialized.get()) return;
 
-        try {
+        // Serialize initialization and only mark the repository initialized AFTER the first
+        // successful fetch completes, so getInitialized() never reports "ready" while features are
+        // still being loaded. On failure the flag stays false and a later call can retry.
+        synchronized (this.initLock) {
+            if (this.initialized.get()) return;
+
             switch (this.refreshStrategy) {
                 case STALE_WHILE_REVALIDATE:
                     fetchFeatures();
@@ -531,9 +537,8 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
                     fetchForRemoteEval(this.requestBodyForRemoteEval);
                     break;
             }
-        } catch (Exception e) {
-            this.initialized.set(false);
-            throw e;
+
+            this.initialized.set(true);
         }
     }
 
@@ -1081,10 +1086,16 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
             executorService.shutdown();
             log.info("Polling scheduler shut down");
         }
-        if (this.sseRetryScheduler != null) {
-            this.sseRetryScheduler.shutdownNow();
-            this.sseRetryScheduler = null;
-            log.info("SSE retry scheduler shut down");
+        // Synchronize on the same monitor as scheduleSseReconnect() so a reconnect that passed the
+        // shuttingDown check cannot create a new scheduler after we have torn it down (which would
+        // leak an executor). shuttingDown is set above, so once we hold the lock no new scheduler
+        // will be created.
+        synchronized (this) {
+            if (this.sseRetryScheduler != null) {
+                this.sseRetryScheduler.shutdownNow();
+                this.sseRetryScheduler = null;
+                log.info("SSE retry scheduler shut down");
+            }
         }
 
         EventSource eventSource = this.sseEventSource.getAndSet(null);

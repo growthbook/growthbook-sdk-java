@@ -48,12 +48,12 @@ public class GrowthBook implements IGrowthBook {
     private final GrowthBookJsonUtils jsonUtils = GrowthBookJsonUtils.getInstance();
 
     private volatile List<ExperimentRunCallback> callbacks;
-    @Getter @Setter private JsonObject attributeOverrides;
+    @Getter @Setter private volatile JsonObject attributeOverrides;
 
-    public volatile EvaluationContext evaluationContext = null;
+    private volatile EvaluationContext evaluationContext = null;
     private final Map<String, AssignedExperiment> assigned;
 
-    @Getter @Setter private Map<String, Object> forcedFeatureValues;
+    @Getter @Setter private volatile Map<String, Object> forcedFeatureValues;
     /**
      * Initialize the GrowthBook SDK with a provided {@link GBContext}
      *
@@ -148,8 +148,23 @@ public class GrowthBook implements IGrowthBook {
     }
 
     private EvaluationContext getEvaluationContext() {
-        // Reset the stackContext for every evaluation.
-        this.evaluationContext.setStack(new EvaluationContext.StackContext());
+        // Snapshot the shared context once (volatile read) and return a per-call copy with its own
+        // StackContext. The StackContext is mutable per-evaluation scratch state (cycle detection,
+        // memoized results); sharing/resetting it on a single instance would let concurrent
+        // evaluations corrupt each other's state.
+        EvaluationContext base = this.evaluationContext;
+        return new EvaluationContext(
+                base.getGlobal(),
+                base.getUser(),
+                new EvaluationContext.StackContext(),
+                base.getOptions());
+    }
+
+    /**
+     * <b>INTERNAL/testing:</b> the shared (root) evaluation context that holds the global, user and
+     * options used to derive per-evaluation contexts. Package-private on purpose.
+     */
+    EvaluationContext getRootEvaluationContext() {
         return this.evaluationContext;
     }
 

@@ -901,18 +901,30 @@ public class GrowthBookUtils {
     ) {
         String key = experiment.getKey();
         if (key == null) return;
-        // If assigned variation has changed, fire subscriptions
-        AssignedExperiment prev = assigned.get(key);
-        if (prev == null
-                || !Objects.equals(prev.getInExperiment(), result.getInExperiment())
-                || !Objects.equals(prev.getVariationId(), result.getVariationId())) {
-            AssignedExperiment current = new AssignedExperiment(
-                    experiment.getKey(),
-                    result.getInExperiment(),
-                    result.getVariationId()
-            );
-            assigned.put(key, current);
 
+        AssignedExperiment current = new AssignedExperiment(
+                experiment.getKey(),
+                result.getInExperiment(),
+                result.getVariationId()
+        );
+
+        // Atomically update the assignment and detect whether it actually changed.
+        // Doing the compare-and-set inside compute() avoids the check-then-act race where two
+        // threads with the same key both see a stale value and fire the callback twice.
+        boolean[] changed = {false};
+        assigned.compute(key, (k, prev) -> {
+            if (prev == null
+                    || !Objects.equals(prev.getInExperiment(), current.getInExperiment())
+                    || !Objects.equals(prev.getVariationId(), current.getVariationId())) {
+                changed[0] = true;
+                return current;
+            }
+            return prev;
+        });
+
+        // Fire callbacks outside the map's locked region so a callback that re-enters the SDK
+        // (e.g. calls run() again) cannot block or deadlock on the same map bin.
+        if (changed[0]) {
             for (ExperimentRunCallback cb : callbacks) {
                 try {
                     cb.onRun(experiment, result);
