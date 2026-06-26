@@ -7,6 +7,7 @@ import growthbook.sdk.java.callback.FeatureRefreshCallback;
 import growthbook.sdk.java.evaluators.ExperimentEvaluator;
 import growthbook.sdk.java.evaluators.FeatureEvaluator;
 import growthbook.sdk.java.exception.FeatureFetchException;
+import growthbook.sdk.java.exception.GrowthBookClientInitializationException;
 import growthbook.sdk.java.model.AssignedExperiment;
 import growthbook.sdk.java.model.Experiment;
 import growthbook.sdk.java.model.ExperimentResult;
@@ -16,17 +17,19 @@ import growthbook.sdk.java.multiusermode.configurations.EvaluationContext;
 import growthbook.sdk.java.multiusermode.configurations.GlobalContext;
 import growthbook.sdk.java.multiusermode.configurations.Options;
 import growthbook.sdk.java.multiusermode.configurations.UserContext;
-import growthbook.sdk.java.repository.FeatureRefreshStrategy;
-import growthbook.sdk.java.repository.GBFeaturesRepository;
 import growthbook.sdk.java.remoteeval.RemoteEvalCache;
 import growthbook.sdk.java.remoteeval.RemoteEvalCacheKey;
 import growthbook.sdk.java.remoteeval.RemoteEvalOptionsValidator;
 import growthbook.sdk.java.remoteeval.RemoteEvalRequestBuilder;
 import growthbook.sdk.java.remoteeval.RemoteEvalResponse;
 import growthbook.sdk.java.remoteeval.RemoteEvalService;
+import growthbook.sdk.java.repository.FeatureRefreshStrategy;
+import growthbook.sdk.java.repository.GBFeaturesRepository;
+import growthbook.sdk.java.repository.RefreshMode;
 import growthbook.sdk.java.sandbox.CacheManagerFactory;
 import growthbook.sdk.java.sandbox.CacheMode;
 import growthbook.sdk.java.sandbox.GbCacheManager;
+import growthbook.sdk.java.model.StickyAssignmentsDocument;
 import growthbook.sdk.java.util.GrowthBookJsonUtils;
 import lombok.extern.slf4j.Slf4j;
 
@@ -38,6 +41,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.concurrent.atomic.AtomicReference;
 
 @Slf4j
 public class GrowthBookClient {
@@ -45,14 +49,14 @@ public class GrowthBookClient {
     private static final int DEFAULT_SWR_TTL_SECONDS = 60;
 
     private final Options options;
+    private List<ExperimentRunCallback> callbacks;
     private final FeatureEvaluator featureEvaluator;
+    private final Map<String, AssignedExperiment> assigned;
     private final ExperimentEvaluator experimentEvaluatorEvaluator;
-    private GBFeaturesRepository repository;
+    private final AtomicReference<GlobalContext> globalContext = new AtomicReference<>();
+    private final AtomicReference<GBFeaturesRepository> repository = new AtomicReference<>();
     private RemoteEvalService remoteEvalService;
     private RemoteEvalCache remoteEvalCache;
-    private List<ExperimentRunCallback> callbacks;
-    private final Map<String, AssignedExperiment> assigned;
-    private GlobalContext globalContext;
 
     public GrowthBookClient() {
         this(Options.builder().build());
@@ -68,15 +72,92 @@ public class GrowthBookClient {
     }
 
     public boolean initialize() {
-        try {
-            if (this.options.isRemoteEvalEnabled()) {
+        if (this.options.isRemoteEvalEnabled()) {
+            try {
                 return ensureRemoteEvalReady();
+            } catch (RuntimeException e) {
+                log.error("Failed to initialize growthbook instance", e);
+                return false;
+            }
+        }
+
+        GBFeaturesRepository repositoryToInitialize = null;
+        try {
+            repositoryToInitialize = prepareRepositoryForInitialization();
+            if (repositoryToInitialize == null) {
+                GBFeaturesRepository repositorySnapshot = this.repository.get();
+                return repositorySnapshot != null && repositorySnapshot.getInitialized();
             }
 
-            return initializeRepository();
-        } catch (Exception e) {
+            initializeFeaturesRepository(repositoryToInitialize);
+            replaceGlobalContextFrom(repositoryToInitialize);
+
+            boolean isReady = this.repository.get() == repositoryToInitialize
+                    && repositoryToInitialize.getInitialized();
+            if (isReady) {
+                log.info("GrowthBookClient initialized repository and registered feature refresh callbacks.");
+            }
+            return isReady;
+        } catch (RuntimeException e) {
+            clearFailedInitialization(repositoryToInitialize);
             log.error("Failed to initialize growthbook instance", e);
             return false;
+        }
+    }
+
+    private synchronized GBFeaturesRepository prepareRepositoryForInitialization() {
+        if (this.repository.get() != null) {
+            return null;
+        }
+
+        GBFeaturesRepository repositoryToInitialize = createFeaturesRepository();
+        repositoryToInitialize.onFeaturesRefresh(this.options.getFeatureRefreshCallback());
+        repositoryToInitialize.onFeaturesRefresh(this.refreshGlobalContext());
+        this.repository.set(repositoryToInitialize);
+        return repositoryToInitialize;
+    }
+
+    private GBFeaturesRepository createFeaturesRepository() {
+        GbCacheManager cacheManager = this.options.getCacheManager() != null
+                ? this.options.getCacheManager()
+                : CacheManagerFactory.create(
+                        this.options.getCacheMode(),
+                        this.options.getCacheDirectory()
+                );
+
+        return GBFeaturesRepository.builder()
+                .apiHost(this.options.getApiHost())
+                .clientKey(this.options.getClientKey())
+                .decryptionKey(this.options.getDecryptionKey())
+                .refreshStrategy(this.options.getRefreshStrategy())
+                .swrTtlSeconds(this.options.getSwrTtlSeconds())
+                .isCacheDisabled(this.options.getIsCacheDisabled() || this.options.getCacheMode() == CacheMode.NONE)
+                .cacheManager(cacheManager)
+                .backgroundFetchInterval(this.options.getBackgroundFetchInterval())
+                .retryPolicy(this.options.getRetryPolicy())
+                .requestBodyForRemoteEval(configurePayloadForRemoteEval(this.options))
+                .build();
+    }
+
+    private void initializeFeaturesRepository(GBFeaturesRepository repositorySnapshot) {
+        try {
+            repositorySnapshot.initialize();
+        } catch (FeatureFetchException e) {
+            throw new GrowthBookClientInitializationException(
+                    "Failed to initialize features repository", e);
+        }
+    }
+
+    private void clearFailedInitialization(GBFeaturesRepository failedRepository) {
+        if (failedRepository == null || !this.repository.compareAndSet(failedRepository, null)) {
+            return;
+        }
+
+        this.globalContext.set(null);
+        try {
+            failedRepository.shutdown();
+        } catch (RuntimeException shutdownException) {
+            log.warn("Failed to shut down repository after unsuccessful initialization", shutdownException);
         }
     }
 
@@ -95,38 +176,58 @@ public class GrowthBookClient {
         clearRemoteEvalCache();
     }
 
+    @Deprecated
     public void refreshFeature() {
         if (this.options.isRemoteEvalEnabled()) {
             clearRemoteEvalCache();
             return;
         }
+        refreshFeatures();
+    }
 
-        if (repository == null) {
+    public void refreshFeatures() {
+        refreshFeatures(RefreshMode.DEFAULT);
+    }
+
+    /**
+     * Refreshes features using the provided refresh mode.
+     *
+     * @param refreshMode refresh behavior to use
+     */
+    public void refreshFeatures(RefreshMode refreshMode) {
+        GBFeaturesRepository repositorySnapshot = this.repository.get();
+        if (repositorySnapshot == null) {
             log.warn("Cannot refresh features before GrowthBookClient is initialized.");
             return;
         }
 
         try {
-            repository.fetchFeatures();
+            repositorySnapshot.refreshFeatures(refreshMode == null ? RefreshMode.DEFAULT : refreshMode);
         } catch (FeatureFetchException e) {
-            log.error("Refreshing wasn't successful. Message is: {}", e.getMessage(), e);
+            log.error("Refreshing features wasn't successful. Message is: {}", e.getMessage(), e);
         }
     }
 
     public void refreshForRemoteEval(RequestBodyForRemoteEval requestBodyForRemoteEval) {
-        try {
-            if (this.options.isRemoteEvalEnabled()) {
+        if (this.options.isRemoteEvalEnabled()) {
+            try {
                 RemoteEvalResponse response = getRemoteEvalService().fetch(requestBodyForRemoteEval);
-                this.globalContext = buildGlobalContext(response.getFeatures(), response.getSavedGroups());
+                this.globalContext.set(buildGlobalContext(response.getFeatures(), response.getSavedGroups()));
                 clearRemoteEvalCache();
-                return;
+            } catch (FeatureFetchException e) {
+                log.error("Refreshing for remote eval wasn't successful. Message is: {}", e.getMessage(), e);
             }
+            return;
+        }
 
-            if (repository == null) {
-                log.warn("Cannot refresh remote evaluation features before GrowthBookClient is initialized.");
-                return;
-            }
-            repository.fetchForRemoteEval(requestBodyForRemoteEval);
+        GBFeaturesRepository repositorySnapshot = this.repository.get();
+        if (repositorySnapshot == null) {
+            log.warn("Cannot refresh remote eval before GrowthBookClient is initialized.");
+            return;
+        }
+
+        try {
+            repositorySnapshot.fetchForRemoteEval(requestBodyForRemoteEval);
         } catch (FeatureFetchException e) {
             log.error("Refreshing for remote eval wasn't successful. Message is: {}", e.getMessage(), e);
         }
@@ -193,10 +294,11 @@ public class GrowthBookClient {
         this.callbacks.add(callback);
     }
 
-    public void shutdown() {
-        if (repository != null) {
-            repository.shutdown();
-            repository = null;
+    public synchronized void shutdown() {
+        GBFeaturesRepository repositorySnapshot = this.repository.getAndSet(null);
+        this.globalContext.set(null);
+        if (repositorySnapshot != null) {
+            repositorySnapshot.shutdown();
             log.info("Repository shut down");
         }
         if (this.remoteEvalCache != null) {
@@ -207,63 +309,27 @@ public class GrowthBookClient {
         }
     }
 
-    private boolean initializeRepository() throws FeatureFetchException {
-        if (this.repository != null) {
-            return this.repository.getInitialized();
-        }
-
-        GbCacheManager cacheManager = this.options.getCacheManager() != null
-                ? this.options.getCacheManager()
-                : CacheManagerFactory.create(this.options.getCacheMode(), this.options.getCacheDirectory());
-
-        this.repository = GBFeaturesRepository.builder()
-                .apiHost(this.options.getApiHost())
-                .clientKey(this.options.getClientKey())
-                .decryptionKey(this.options.getDecryptionKey())
-                .refreshStrategy(this.options.getRefreshStrategy())
-                .swrTtlSeconds(this.options.getSwrTtlSeconds())
-                .isCacheDisabled(this.options.getIsCacheDisabled() || this.options.getCacheMode() == CacheMode.NONE)
-                .cacheManager(cacheManager)
-                .requestBodyForRemoteEval(configurePayloadForRemoteEval(this.options))
-                .build();
-
-        this.repository.onFeaturesRefresh(this.options.getFeatureRefreshCallback());
-        this.repository.onFeaturesRefresh(this.refreshGlobalContext());
-        try {
-            this.repository.initialize();
-        } catch (FeatureFetchException e) {
-            this.repository = null;
-            throw e;
-        }
-        this.globalContext = buildGlobalContext(this.repository.getParsedFeatures(), this.repository.getParsedSavedGroups());
-        log.info("GrowthBookClient initialized repository and registered feature refresh callbacks.");
-
-        return this.repository.getInitialized();
-    }
-
     private boolean ensureRemoteEvalReady() {
         RemoteEvalOptionsValidator.validate(this.options);
         getRemoteEvalService();
         getRemoteEvalCache();
         initializeRemoteEvalSseInvalidationIfNeeded();
-        if (this.globalContext == null) {
-            this.globalContext = buildGlobalContext(Collections.emptyMap(), new JsonObject());
-        }
+        this.globalContext.compareAndSet(null, buildGlobalContext(Collections.emptyMap(), new JsonObject()));
         return true;
     }
 
     private void initializeRemoteEvalSseInvalidationIfNeeded() {
-        if (this.options.getRefreshStrategy() != FeatureRefreshStrategy.SERVER_SENT_EVENTS || this.repository != null) {
+        if (this.options.getRefreshStrategy() != FeatureRefreshStrategy.SERVER_SENT_EVENTS || this.repository.get() != null) {
             return;
         }
 
-        this.repository = GBFeaturesRepository.builder()
+        GBFeaturesRepository sseRepository = GBFeaturesRepository.builder()
                 .apiHost(this.options.getApiHost())
                 .clientKey(this.options.getClientKey())
                 .refreshStrategy(FeatureRefreshStrategy.SERVER_SENT_EVENTS)
                 .isCacheDisabled(true)
                 .build();
-        this.repository.onFeaturesRefresh(new FeatureRefreshCallback() {
+        sseRepository.onFeaturesRefresh(new FeatureRefreshCallback() {
             @Override
             public void onRefresh(String featuresJson) {
                 clearRemoteEvalCache();
@@ -275,8 +341,12 @@ public class GrowthBookClient {
             }
         });
 
+        if (!this.repository.compareAndSet(null, sseRepository)) {
+            return;
+        }
+
         try {
-            this.repository.initialize();
+            sseRepository.initialize();
         } catch (FeatureFetchException e) {
             log.warn("Remote evaluation SSE invalidation could not be initialized", e);
         }
@@ -310,24 +380,13 @@ public class GrowthBookClient {
         return new FeatureRefreshCallback() {
             @Override
             public void onRefresh(String featuresJson) {
-                GBFeaturesRepository currentRepository = repository;
+                GBFeaturesRepository currentRepository = GrowthBookClient.this.repository.get();
                 if (currentRepository == null) {
-                    log.debug("Skipping global context refresh because repository is not initialized.");
+                    log.debug("Skipping global context refresh because the features repository is not initialized.");
                     return;
                 }
-                if (globalContext != null) {
-                    globalContext.setFeatures(currentRepository.getParsedFeatures());
-                    globalContext.setSavedGroups(currentRepository.getParsedSavedGroups());
-                } else {
-                    globalContext = GlobalContext.builder()
-                            .features(currentRepository.getParsedFeatures())
-                            .savedGroups(currentRepository.getParsedSavedGroups())
-                            .enabled(options.getEnabled())
-                            .qaMode(options.getIsQaMode())
-                            .forcedFeatureValues(options.getGlobalForcedFeatureValues())
-                            .forcedVariations(options.getGlobalForcedVariationsMap())
-                            .build();
-                }
+
+                replaceGlobalContextFrom(currentRepository);
             }
 
             @Override
@@ -335,6 +394,26 @@ public class GrowthBookClient {
                 log.warn("Unable to refresh global context with latest features", throwable);
             }
         };
+    }
+
+    private synchronized void replaceGlobalContextFrom(GBFeaturesRepository refreshedRepository) {
+        if (this.repository.get() != refreshedRepository) {
+            log.debug("Skipping global context refresh from a stale features repository.");
+            return;
+        }
+
+        this.globalContext.set(buildGlobalContext(refreshedRepository));
+    }
+
+    private GlobalContext buildGlobalContext(GBFeaturesRepository sourceRepository) {
+        return GlobalContext.builder()
+                .features(sourceRepository.getParsedFeatures())
+                .savedGroups(sourceRepository.getParsedSavedGroups())
+                .enabled(this.options.getEnabled())
+                .qaMode(this.options.getIsQaMode())
+                .forcedFeatureValues(this.options.getGlobalForcedFeatureValues())
+                .forcedVariations(this.options.getGlobalForcedVariationsMap())
+                .build();
     }
 
     private EvaluationContext getEvalContext(UserContext userContext) {
@@ -369,7 +448,24 @@ public class GrowthBookClient {
                 merged.add(e.getKey(), e.getValue());
             }
         }
-        return currentUserContext.withAttributes(merged);
+        UserContext updatedUserContext = currentUserContext.withAttributes(merged);
+
+        // If a sticky bucket service is configured and the caller hasn't preloaded docs,
+        // fetch docs for this user's attributes now (one call per request).
+        if (this.options.getStickyBucketService() != null
+                && updatedUserContext.getStickyBucketAssignmentDocs() == null) {
+            Map<String, String> attrStrings = new HashMap<>();
+            for (Map.Entry<String, JsonElement> e : merged.entrySet()) {
+                if (e.getValue() != null && e.getValue().isJsonPrimitive()) {
+                    attrStrings.put(e.getKey(), e.getValue().getAsString());
+                }
+            }
+            Map<String, StickyAssignmentsDocument> docs =
+                    this.options.getStickyBucketService().getAllAssignments(attrStrings);
+            updatedUserContext.setStickyBucketAssignmentDocs(docs);
+        }
+
+        return updatedUserContext;
     }
 
     private RemoteEvalResponse getRemoteEvalResponse(UserContext userContext) throws FeatureFetchException {
@@ -428,10 +524,8 @@ public class GrowthBookClient {
     }
 
     private GlobalContext getLocalGlobalContext() {
-        if (this.globalContext == null) {
-            this.globalContext = buildGlobalContext(Collections.emptyMap(), new JsonObject());
-        }
-        return this.globalContext;
+        this.globalContext.compareAndSet(null, buildGlobalContext(Collections.emptyMap(), new JsonObject()));
+        return this.globalContext.get();
     }
 
     private GlobalContext buildGlobalContext(Map<String, growthbook.sdk.java.model.Feature<?>> features, JsonObject savedGroups) {

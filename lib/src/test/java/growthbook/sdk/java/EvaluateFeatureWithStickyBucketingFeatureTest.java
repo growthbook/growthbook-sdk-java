@@ -6,6 +6,7 @@ import com.google.common.reflect.TypeToken;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonNull;
+import com.google.gson.JsonObject;
 import growthbook.sdk.java.model.ExperimentResult;
 import growthbook.sdk.java.model.FeatureResult;
 import growthbook.sdk.java.model.GBContext;
@@ -36,11 +37,6 @@ public class EvaluateFeatureWithStickyBucketingFeatureTest {
 
     }
 
-    @BeforeEach
-    void setUp() {
-        stickyBucketService = new InMemoryStickyBucketServiceImpl(new HashMap<>());
-    }
-
     @Test
     void testsStickyBucketingFeature() {
         List<String> passedTests = new ArrayList<>();
@@ -48,6 +44,8 @@ public class EvaluateFeatureWithStickyBucketingFeatureTest {
         List<Integer> failingIndexes = new ArrayList<>();
         JsonArray stickyBucketTestCases = helper.getStickyBucketTestCases();
         for (int i = 0; i < stickyBucketTestCases.size(); i++) {
+
+            stickyBucketService = new InMemoryStickyBucketServiceImpl(new HashMap<>());
             JsonArray testCase = stickyBucketTestCases.get(i).getAsJsonArray();
             // name of testcase
             String description = testCase.get(0).getAsString();
@@ -60,22 +58,25 @@ public class EvaluateFeatureWithStickyBucketingFeatureTest {
             JsonElement attributesJson = testCase.get(1).getAsJsonObject().get("attributes");
             String attributesJsonAsStringOrNull = attributesJson == null ? null : attributesJson.toString();
 
-            // create sticky assignments document map for context
+            // Write input docs to the service, then call getAllAssignments to get only
+            // docs that belong to the current user.
             JsonArray stickyAssignmentsJsonArray = testCase.get(2).getAsJsonArray();
-            List<StickyAssignmentsDocument> stickyAssigmentList = new ArrayList<>();
             for (JsonElement element : stickyAssignmentsJsonArray) {
-                StickyAssignmentsDocument stickyAssignmentsDocument = utils.gson.fromJson(
-                        element,
-                        StickyAssignmentsDocument.class
-                );
-                stickyAssigmentList.add(stickyAssignmentsDocument);
+                StickyAssignmentsDocument doc = utils.gson.fromJson(element, StickyAssignmentsDocument.class);
+                stickyBucketService.saveAssignments(doc);
             }
 
-            Map<String, StickyAssignmentsDocument> initialStickyBucketAssignmentDocs = new HashMap<>();
-            for (StickyAssignmentsDocument doc : stickyAssigmentList) {
-                String key = doc.getAttributeName() + "||" + doc.getAttributeValue();
-                initialStickyBucketAssignmentDocs.put(key, doc);
+            JsonObject attrsJson = attributesJsonAsStringOrNull != null
+                    ? utils.gson.fromJson(attributesJsonAsStringOrNull, JsonObject.class)
+                    : new JsonObject();
+            Map<String, String> attributesAsStrings = new HashMap<>();
+            if (attrsJson != null) {
+                for (Map.Entry<String, JsonElement> entry : attrsJson.entrySet()) {
+                    attributesAsStrings.put(entry.getKey(), entry.getValue().getAsString());
+                }
             }
+            Map<String, StickyAssignmentsDocument> filteredDocs =
+                    stickyBucketService.getAllAssignments(attributesAsStrings);
 
             // initialize actual data
             GBContext context = GBContext
@@ -83,7 +84,7 @@ public class EvaluateFeatureWithStickyBucketingFeatureTest {
                     .featuresJson(featuresJsonAsStringOrNull)
                     .attributesJson(attributesJsonAsStringOrNull)
                     .stickyBucketService(stickyBucketService)
-                    .stickyBucketAssignmentDocs(initialStickyBucketAssignmentDocs)
+                    .stickyBucketAssignmentDocs(filteredDocs)
                     .build();
 
             GrowthBook subject = new GrowthBook(context);

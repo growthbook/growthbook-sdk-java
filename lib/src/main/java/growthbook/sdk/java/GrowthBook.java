@@ -80,6 +80,8 @@ public class GrowthBook implements IGrowthBook {
         this.experimentEvaluatorEvaluator = new ExperimentEvaluator();
         this.attributeOverrides = context.getAttributes() == null ? new JsonObject() : context.getAttributes();
 
+        // Load sticky bucket docs on construction if a service is configured,
+        refreshStickyBucketService(null);
         this.initializeEvalContext();
     }
 
@@ -267,6 +269,10 @@ public class GrowthBook implements IGrowthBook {
     @Override
     public void setAttributes(String attributesJsonString) {
         this.context.setAttributesJson(attributesJsonString);
+        // Keep attributeOverrides in sync with the new attributes so that
+        // refreshStickyBucketService fetches docs for the *new* user, not the old one.
+        this.attributeOverrides = this.context.getAttributes();
+        refreshStickyBucketService(null);
         initializeEvalContext();
     }
 
@@ -336,6 +342,7 @@ public class GrowthBook implements IGrowthBook {
     @Override
     public void setOwnStickyBucketService(@Nullable StickyBucketService stickyBucketService) {
         this.context.setStickyBucketService(stickyBucketService);
+        refreshStickyBucketService(null);
         initializeEvalContext();
     }
 
@@ -345,6 +352,7 @@ public class GrowthBook implements IGrowthBook {
     @Override
     public void setInMemoryStickyBucketService() {
         this.context.setStickyBucketService(new InMemoryStickyBucketServiceImpl(new HashMap<>()));
+        refreshStickyBucketService(null);
         initializeEvalContext();
     }
 
@@ -608,7 +616,7 @@ public class GrowthBook implements IGrowthBook {
     }
 
     /**
-     * This method add new calback to list of ExperimentRunCallback
+     * This method add new callback to list of ExperimentRunCallback
      * @param callback ExperimentRunCallback interface
      */
     @Override
@@ -617,10 +625,17 @@ public class GrowthBook implements IGrowthBook {
     }
 
     /**
-     * Update sticky bucketing configuration
-     * Method that get cached assignments
-     * and set it to Context's Sticky Bucket Assignments documents
-     * @param featuresDataModel Json in format of String. See info how it looks like here <a href="https://docs.growthbook.io/app/api#sdk-connection-endpoints">...</a>
+     * Call this whenever features are refreshed so that sticky bucket assignment docs are
+     * reloaded for the current user.
+     * <pre>
+     *   repository.onFeaturesRefresh(gb::featuresAPIModelSuccessfully);
+     * </pre>
+     * Passing the new features JSON allows {@code deriveStickyBucketIdentifierAttributes} to
+     * pick up any new {@code hashAttribute}/{@code fallbackAttribute} values introduced by the
+     * updated feature definitions before re-fetching docs from the service.
+     *
+     * @param featuresDataModel JSON string returned by the GrowthBook SDK endpoint.
+     *                          See <a href="https://docs.growthbook.io/app/api#sdk-connection-endpoints">SDK Connection Endpoints</a>
      */
     @Override
     public void featuresAPIModelSuccessfully(String featuresDataModel) {
@@ -640,6 +655,10 @@ public class GrowthBook implements IGrowthBook {
     private void refreshStickyBucketService(@Nullable String featuresDataModel) {
         if (context.getStickyBucketService() != null) {
             GrowthBookUtils.refreshStickyBuckets(context, featuresDataModel, attributeOverrides);
+            // Sync updated docs into the evaluation context so the next evalFeature call sees them.
+            if (evaluationContext != null && evaluationContext.getUser() != null) {
+                evaluationContext.getUser().setStickyBucketAssignmentDocs(context.getStickyBucketAssignmentDocs());
+            }
         }
     }
 

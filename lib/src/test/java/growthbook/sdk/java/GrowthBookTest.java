@@ -32,8 +32,10 @@ import growthbook.sdk.java.multiusermode.util.TransformationUtil;
 import growthbook.sdk.java.testhelpers.PaperCupsConfig;
 import growthbook.sdk.java.testhelpers.TestCasesJsonHelper;
 import growthbook.sdk.java.testhelpers.TestContext;
+import growthbook.sdk.java.util.ForcedVariationsUtils;
 import growthbook.sdk.java.util.GrowthBookJsonUtils;
 import lombok.Getter;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import java.lang.reflect.Type;
@@ -65,8 +67,9 @@ class GrowthBookTest {
             JsonElement attributesJson = testCase.get(1).getAsJsonObject().get("attributes");
             String attributesJsonAsStringOrNull = attributesJson == null ? null : attributesJson.toString();
 
-            Type forcedVariationsType = new TypeToken<HashMap<String, Integer>>() {}.getType();
-            HashMap<String, Integer> forcedVariations = jsonUtils.gson.fromJson(testCase.get(1).getAsJsonObject().get("forcedVariations"), forcedVariationsType);
+            Type forcedVariationsType = new TypeToken<HashMap<String, Object>>() {}.getType();
+            HashMap<String, Object> rawForcedVariations = jsonUtils.gson.fromJson(testCase.get(1).getAsJsonObject().get("forcedVariations"), forcedVariationsType);
+            Map<String, Integer> forcedVariations = ForcedVariationsUtils.normalize(rawForcedVariations);
 
             JsonElement savedGroupsJson = testCase.get(1).getAsJsonObject().get("savedGroups");
             JsonObject savedGroups = savedGroupsJson == null ? null : (JsonObject) savedGroupsJson;
@@ -198,6 +201,26 @@ class GrowthBookTest {
         assertEquals("Welcome to our app!!!", value);
         assertEquals("Welcome to our app!!!", featureResult.getValue());
         assertEquals(FeatureResultSource.DEFAULT_VALUE, featureResult.getSource());
+    }
+
+    @Test
+    @DisplayName("Preserves custom fields on the experiment returned by feature evaluation")
+    void test_evalFeature_preservesExperimentCustomFields() {
+        String features = "{\"signup-copy\":{\"defaultValue\":false,\"rules\":[{\"key\":\"signup-copy-exp\",\"variations\":[false,true],\"coverage\":1,\"hashAttribute\":\"id\",\"customFields\":{\"cfl_ticket\":\"APX-123\",\"cfl_owner\":\"growth\"}}]}}";
+        GBContext context = GBContext
+                .builder()
+                .featuresJson(features)
+                .attributesJson("{\"id\":\"user-1\"}")
+                .build();
+        GrowthBook subject = new GrowthBook(context);
+
+        FeatureResult<Boolean> result = subject.evalFeature("signup-copy", Boolean.class);
+
+        assertNotNull(result);
+        assertEquals(FeatureResultSource.EXPERIMENT, result.getSource());
+        assertNotNull(result.getExperiment());
+        assertEquals("APX-123", result.getExperiment().getCustomField("cfl_ticket"));
+        assertEquals("growth", result.getExperiment().getCustomField("cfl_owner"));
     }
 
     @Test
@@ -343,8 +366,9 @@ class GrowthBookTest {
                 JsonElement attributesJson = itemArray.get(1).getAsJsonObject().get("attributes");
                 String attributesJsonString = attributesJson == null ? "null" : attributesJson.toString();
 
-                Type forcedVariationsType = new TypeToken<HashMap<String, Integer>>() {}.getType();
-                HashMap<String, Integer> forcedVariations = jsonUtils.gson.fromJson(itemArray.get(1).getAsJsonObject().get("forcedVariations"), forcedVariationsType);
+                Type forcedVariationsType = new TypeToken<HashMap<String, Object>>() {}.getType();
+                HashMap<String, Object> rawForcedVariations = jsonUtils.gson.fromJson(itemArray.get(1).getAsJsonObject().get("forcedVariations"), forcedVariationsType);
+                Map<String, Integer> forcedVariations = ForcedVariationsUtils.normalize(rawForcedVariations);
 
                 JsonElement savedGroups = itemArray.get(1).getAsJsonObject().get("savedGroups");
                 JsonObject savedGroupToPass = savedGroups == null ? null : savedGroups.getAsJsonObject();
