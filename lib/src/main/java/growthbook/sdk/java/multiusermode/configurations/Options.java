@@ -8,6 +8,7 @@ import growthbook.sdk.java.model.FeatureResult;
 import growthbook.sdk.java.multiusermode.usage.FeatureUsageCallbackWithUser;
 import growthbook.sdk.java.multiusermode.usage.TrackingCallbackWithUser;
 import growthbook.sdk.java.multiusermode.util.TransformationUtil;
+import growthbook.sdk.java.remoteeval.RemoteEvalRequestBuilder;
 import growthbook.sdk.java.repository.FeatureRefreshStrategy;
 import growthbook.sdk.java.retry.FeatureFetchRetryPolicy;
 import growthbook.sdk.java.sandbox.GbCacheManager;
@@ -53,7 +54,8 @@ public class Options {
                    @Nullable Map<String, Integer> globalForcedVariationsMap,
                    @Nullable GbCacheManager cacheManager,
                    @Nullable CacheMode cacheMode,
-                   @Nullable String cacheDirectory) {
+                   @Nullable String cacheDirectory
+    ) {
         this(
                 enabled,
                 isQaMode,
@@ -76,6 +78,10 @@ public class Options {
                 cacheManager,
                 cacheMode,
                 cacheDirectory,
+                null,
+                null,
+                null,
+                null,
                 null,
                 null
         );
@@ -103,9 +109,12 @@ public class Options {
                    @Nullable GbCacheManager cacheManager,
                    @Nullable CacheMode cacheMode,
                    @Nullable String cacheDirectory,
+                   @Nullable Boolean remoteEval,
+                   @Nullable List<String> cacheKeyAttributes,
+                   @Nullable Integer remoteEvalCacheSize,
+                   @Nullable Integer remoteEvalCacheTtlSeconds,
                    @Nullable Duration backgroundFetchInterval,
                    @Nullable FeatureFetchRetryPolicy retryPolicy
-
     ) {
         this.enabled = enabled == null || enabled;
         this.isQaMode = isQaMode != null && isQaMode;
@@ -128,6 +137,10 @@ public class Options {
         this.cacheManager = cacheManager;
         this.cacheMode = cacheMode == null ? CacheMode.AUTO : cacheMode;
         this.cacheDirectory = cacheDirectory;
+        this.remoteEval = remoteEval != null && remoteEval;
+        this.cacheKeyAttributes = cacheKeyAttributes;
+        this.remoteEvalCacheSize = RemoteEvalRequestBuilder.normalizeCacheSize(remoteEvalCacheSize);
+        this.remoteEvalCacheTtlSeconds = remoteEvalCacheTtlSeconds;
         this.backgroundFetchInterval = backgroundFetchInterval;
         this.retryPolicy = retryPolicy;
     }
@@ -260,6 +273,21 @@ public class Options {
     @Nullable
     private String cacheDirectory;
 
+    private Boolean remoteEval;
+
+    @Nullable
+    private List<String> cacheKeyAttributes;
+
+    private Integer remoteEvalCacheSize;
+
+    /**
+     * Hard expiry (seconds) for cached remote-eval responses; {@code null} disables time-based expiry.
+     */
+    @Nullable
+    private Integer remoteEvalCacheTtlSeconds;
+
+    public CacheMode getCacheMode() { return cacheMode == null ? CacheMode.AUTO : cacheMode; }
+
     /**
      * Optional minimum interval between non-forced background feature refreshes.
      */
@@ -271,10 +299,6 @@ public class Options {
      */
     @Nullable
     private FeatureFetchRetryPolicy retryPolicy;
-
-    public CacheMode getCacheMode() {
-        return cacheMode == null ? CacheMode.AUTO : cacheMode;
-    }
 
     @Nullable
     public String getCacheDirectory() {
@@ -293,5 +317,9 @@ public class Options {
     public void setGlobalAttributes(@Nullable String attributesJson) {
         this.attributesJson = attributesJson;
         this.globalAttributes = TransformationUtil.transformAttributes(attributesJson);
+    }
+
+    public boolean isRemoteEvalEnabled() {
+        return Boolean.TRUE.equals(this.remoteEval);
     }
 }

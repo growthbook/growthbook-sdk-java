@@ -4,7 +4,8 @@ import lombok.Getter;
 
 @Getter
 public enum SseKey {
-    DATA("data:");
+    DATA("data:"),
+    EVENT("event:");
     private final String key;
 
     SseKey(String key) {

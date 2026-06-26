@@ -15,6 +15,7 @@ import growthbook.sdk.java.model.GBContext;
 import growthbook.sdk.java.model.HttpHeaders;
 import growthbook.sdk.java.model.RequestBodyForRemoteEval;
 import growthbook.sdk.java.multiusermode.util.TransformationUtil;
+import growthbook.sdk.java.remoteeval.RemoteEvalEndpoints;
 import growthbook.sdk.java.retry.FeatureFetchRetryExecutor;
 import growthbook.sdk.java.retry.FeatureFetchRetryPolicy;
 import growthbook.sdk.java.sandbox.CacheManagerFactory;
@@ -22,6 +23,7 @@ import growthbook.sdk.java.sandbox.CacheMode;
 import growthbook.sdk.java.sandbox.GbCacheManager;
 import growthbook.sdk.java.util.DecryptionUtils;
 import growthbook.sdk.java.util.GrowthBookJsonUtils;
+import growthbook.sdk.java.sse.SseEventPayloadValidator;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
@@ -399,7 +401,7 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
         // Build the endpoints from the apiHost and clientKey
         this.featuresEndpoint = apiHost + "/api/features/" + clientKey;
         this.eventsEndpoint = apiHost + "/sub/" + clientKey;
-        this.remoteEvalEndPoint = apiHost + "/api/eval/" + clientKey;
+        this.remoteEvalEndPoint = RemoteEvalEndpoints.evalEndpoint(apiHost, clientKey);
 
         this.encryptionKey = decryptionKey;
         this.decryptionKey = decryptionKey;
@@ -637,6 +639,11 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
                                 onResponseJson(featuresJsonResponse, false);
                                 sseRetryAttempts.set(0);
                                 sseReconnectScheduled.set(false);
+                            }
+
+                            @Override
+                            public void onFeaturesUpdated() {
+                                onRefreshSuccess(featuresJson.get());
                             }
                         }
                 ) {
@@ -1037,6 +1044,8 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
         void onClose(EventSource eventSource);
 
         void onFeaturesResponse(String featuresJsonResponse) throws FeatureFetchException;
+
+        void onFeaturesUpdated() throws FeatureFetchException;
     }
 
     private static class GBEventSourceListener extends EventSourceListener {
@@ -1055,13 +1064,22 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
         @Override
         public void onEvent(@NotNull EventSource eventSource, @Nullable String id, @Nullable String type, @NotNull String data) {
             super.onEvent(eventSource, id, type, data);
-
-            if (data.trim().isEmpty()) return;
+            // Heartbeat/keepalive events carry no feature changes; ignore them so they neither
+            // trigger a refresh nor get parsed as a feature payload.
+            if (SseEventPayloadValidator.isHeartbeatEvent(type)) {
+                return;
+            }
 
             try {
+                if (data.trim().isEmpty()) {
+                    handler.onFeaturesUpdated();
+                    return;
+                }
                 handler.onFeaturesResponse(data);
             } catch (FeatureFetchException e) {
-                log.error(e.getMessage(), e);
+                log.error("Failed to process SSE feature payload: {}", e.getMessage(), e);
+            } catch (RuntimeException e) {
+                log.error("Unexpected error while processing SSE feature payload.", e);
             }
         }
 
@@ -1132,7 +1150,10 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
         if (this.remoteEvalEndPoint == null) {
             throw new IllegalArgumentException("remote eval features endpoint cannot be null");
         }
-        String jsonBody = GrowthBookJsonUtils.getInstance().gson.toJson(requestBodyForRemoteEval);
+        RequestBodyForRemoteEval payload = requestBodyForRemoteEval == null
+                ? new RequestBodyForRemoteEval()
+                : requestBodyForRemoteEval;
+        String jsonBody = GrowthBookJsonUtils.getInstance().gson.toJson(payload);
         RequestBody requestBody = RequestBody.create(
                 jsonBody,
                 MediaType.parse("application/json")

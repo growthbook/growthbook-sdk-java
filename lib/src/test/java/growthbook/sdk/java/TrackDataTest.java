@@ -4,7 +4,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import growthbook.sdk.java.model.Experiment;
 import growthbook.sdk.java.model.ExperimentResult;
-import growthbook.sdk.java.model.FeatureResult;
 import growthbook.sdk.java.model.TrackData;
 import org.junit.jupiter.api.Test;
 
@@ -19,13 +18,10 @@ class TrackDataTest {
                 .inExperiment(true)
                 .key("my_experiment")
                 .build();
-        FeatureResult<Integer> featureResult = FeatureResult.<Integer>builder()
-                .experimentResult(experimentResult)
-                .build();
 
-        TrackData<Integer> subject = new TrackData<>(experiment, featureResult);
+        TrackData<Integer> subject = new TrackData<>(experiment, experimentResult);
 
         assertEquals(experiment, subject.getExperiment());
-        assertEquals(experimentResult, subject.getResult().getExperimentResult());
+        assertEquals(experimentResult, subject.getResult());
     }
 }
