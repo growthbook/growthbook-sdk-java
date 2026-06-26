@@ -8,16 +8,20 @@ import growthbook.sdk.java.model.FeatureResult;
 import growthbook.sdk.java.multiusermode.usage.FeatureUsageCallbackWithUser;
 import growthbook.sdk.java.multiusermode.usage.TrackingCallbackWithUser;
 import growthbook.sdk.java.multiusermode.util.TransformationUtil;
+import growthbook.sdk.java.remoteeval.RemoteEvalRequestBuilder;
 import growthbook.sdk.java.repository.FeatureRefreshStrategy;
+import growthbook.sdk.java.retry.FeatureFetchRetryPolicy;
 import growthbook.sdk.java.sandbox.GbCacheManager;
 import growthbook.sdk.java.sandbox.CacheMode;
 import growthbook.sdk.java.stickyBucketing.InMemoryStickyBucketServiceImpl;
 import growthbook.sdk.java.stickyBucketing.StickyBucketService;
+import growthbook.sdk.java.util.ForcedVariationsUtils;
 import lombok.Builder;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 
 import javax.annotation.Nullable;
+import java.time.Duration;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -70,6 +74,12 @@ public class Options {
                 cacheManager,
                 cacheMode,
                 cacheDirectory,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
                 null
         );
     }
@@ -92,11 +102,17 @@ public class Options {
                    @Deprecated @Nullable FeatureRefreshCallback featureRefreshCallback,
                    @Nullable JsonObject globalAttributes,
                    @Nullable Map<String, Object> globalForcedFeatureValues,
-                   @Nullable Map<String, Integer> globalForcedVariationsMap,
+                   @Nullable Map<String, ?> globalForcedVariationsMap,
                    @Nullable GbCacheManager cacheManager,
                    @Nullable CacheMode cacheMode,
                    @Nullable String cacheDirectory,
-                   @Nullable Executor featureRefreshListenerExecutor
+                   @Nullable Executor featureRefreshListenerExecutor,
+                   @Nullable Duration backgroundFetchInterval,
+                   @Nullable FeatureFetchRetryPolicy retryPolicy,
+                   @Nullable Boolean remoteEval,
+                   @Nullable List<String> cacheKeyAttributes,
+                   @Nullable Integer remoteEvalCacheSize,
+                   @Nullable Integer remoteEvalCacheTtlSeconds
 
     ) {
         this.enabled = enabled == null || enabled;
@@ -116,11 +132,17 @@ public class Options {
         this.featureRefreshCallback = featureRefreshCallback;
         this.globalAttributes = globalAttributes;
         this.globalForcedFeatureValues = globalForcedFeatureValues;
-        this.globalForcedVariationsMap = globalForcedVariationsMap;
+        this.globalForcedVariationsMap = ForcedVariationsUtils.normalize(globalForcedVariationsMap);
         this.cacheManager = cacheManager;
         this.cacheMode = cacheMode == null ? CacheMode.AUTO : cacheMode;
         this.cacheDirectory = cacheDirectory;
         this.featureRefreshListenerExecutor = featureRefreshListenerExecutor;
+        this.backgroundFetchInterval = backgroundFetchInterval;
+        this.retryPolicy = retryPolicy;
+        this.remoteEval = remoteEval != null && remoteEval;
+        this.cacheKeyAttributes = cacheKeyAttributes;
+        this.remoteEvalCacheSize = RemoteEvalRequestBuilder.normalizeCacheSize(remoteEvalCacheSize);
+        this.remoteEvalCacheTtlSeconds = remoteEvalCacheTtlSeconds;
     }
 
     /**
@@ -228,6 +250,10 @@ public class Options {
     @Nullable
     private Map<String, Integer> globalForcedVariationsMap;
 
+    public void setGlobalForcedVariationsMap(@Nullable Map<String, ?> globalForcedVariationsMap) {
+        this.globalForcedVariationsMap = ForcedVariationsUtils.normalize(globalForcedVariationsMap);
+    }
+
     public FeatureRefreshStrategy getRefreshingStrategy() {
         if (this.refreshStrategy == null) {
             return FeatureRefreshStrategy.STALE_WHILE_REVALIDATE;
@@ -261,6 +287,31 @@ public class Options {
     @Nullable
     private Executor featureRefreshListenerExecutor;
 
+    /**
+     * Optional minimum interval between non-forced background feature refreshes.
+     */
+    @Nullable
+    private Duration backgroundFetchInterval;
+
+    /**
+     * Optional bounded retry policy. Repositories use the default policy when null.
+     */
+    @Nullable
+    private FeatureFetchRetryPolicy retryPolicy;
+
+    private Boolean remoteEval;
+
+    @Nullable
+    private List<String> cacheKeyAttributes;
+
+    private Integer remoteEvalCacheSize;
+
+    /**
+     * Hard expiry (seconds) for cached remote-eval responses; {@code null} disables time-based expiry.
+     */
+    @Nullable
+    private Integer remoteEvalCacheTtlSeconds;
+
     public CacheMode getCacheMode() { return cacheMode == null ? CacheMode.AUTO : cacheMode; }
     @Nullable
     public String getCacheDirectory() { return cacheDirectory; }
@@ -277,5 +328,9 @@ public class Options {
     public void setGlobalAttributes(@Nullable String attributesJson) {
         this.attributesJson = attributesJson;
         this.globalAttributes = TransformationUtil.transformAttributes(attributesJson);
+    }
+
+    public boolean isRemoteEvalEnabled() {
+        return Boolean.TRUE.equals(this.remoteEval);
     }
 }

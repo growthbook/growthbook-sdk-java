@@ -25,6 +25,7 @@ import growthbook.sdk.java.model.FeatureRefreshEvent;
 import growthbook.sdk.java.model.FeatureRefreshSource;
 import growthbook.sdk.java.model.RequestBodyForRemoteEval;
 import growthbook.sdk.java.repository.FeatureRefreshStrategy;
+import growthbook.sdk.java.retry.FeatureFetchRetryPolicy;
 import growthbook.sdk.java.repository.GBFeaturesRepository;
 import growthbook.sdk.java.sandbox.FileCachingManagerImpl;
 import okhttp3.Call;
@@ -39,11 +40,14 @@ import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
 import java.io.IOException;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Objects;
 
 class GBFeaturesRepositoryTest {
+    private static final FeatureFetchRetryPolicy NO_DELAY_RETRY_POLICY =
+            new FeatureFetchRetryPolicy(5, Duration.ZERO, Duration.ZERO);
 
     @Test
     void canBeConstructed_withNullEncryptionKey() {
@@ -115,6 +119,7 @@ class GBFeaturesRepositoryTest {
                 .apiHost("http://localhost")
                 .clientKey("sdk-123")
                 .refreshStrategy(FeatureRefreshStrategy.STALE_WHILE_REVALIDATE)
+                .retryPolicy(NO_DELAY_RETRY_POLICY)
                 .build();
 
         // initialize creates http client but will fail network; we just want to ensure no exceptions in poll
@@ -238,7 +243,9 @@ class GBFeaturesRepositoryTest {
                 null,
                 null,
                 null,
-                null
+                null,
+                null,
+                NO_DELAY_RETRY_POLICY
         );
 
         subject.onFeaturesRefresh(featureRefreshCallback);
@@ -420,7 +427,9 @@ class GBFeaturesRepositoryTest {
                 null,
                 null,
                 null,
-                null
+                null,
+                null,
+                NO_DELAY_RETRY_POLICY
         );
 
         subject.onFeaturesRefresh(featureRefreshCallback);
@@ -658,7 +667,9 @@ class GBFeaturesRepositoryTest {
                 mockHttpClient,
                 false,
                 null,
-                null
+                null,
+                null,
+                NO_DELAY_RETRY_POLICY
         );
 
         Call mockCall = mock(Call.class);

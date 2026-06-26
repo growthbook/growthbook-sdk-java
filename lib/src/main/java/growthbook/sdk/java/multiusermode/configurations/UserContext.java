@@ -1,13 +1,13 @@
 package growthbook.sdk.java.multiusermode.configurations;
 
 import com.google.gson.JsonObject;
+import growthbook.sdk.java.util.ForcedVariationsUtils;
 import growthbook.sdk.java.model.StickyAssignmentsDocument;
 import growthbook.sdk.java.multiusermode.util.TransformationUtil;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 
 import javax.annotation.Nullable;
-import java.util.HashMap;
 import java.util.Map;
 
 @Slf4j
@@ -36,9 +36,7 @@ public class UserContext {
         attributes = userContextBuilder.attributes == null ? new JsonObject() : userContextBuilder.attributes;
         url = userContextBuilder.url;
         stickyBucketAssignmentDocs = userContextBuilder.stickyBucketAssignmentDocs;
-        forcedVariationsMap = userContextBuilder.forcedVariationsMap == null
-                ? new HashMap<>()
-                : userContextBuilder.forcedVariationsMap;
+        forcedVariationsMap = ForcedVariationsUtils.normalize(userContextBuilder.forcedVariationsMap);
         forcedFeatureValues = userContextBuilder.forcedFeatureValues;
         attributesJson = userContextBuilder.attributesJson;
     }
@@ -107,7 +105,7 @@ public class UserContext {
         private Map<String, StickyAssignmentsDocument> stickyBucketAssignmentDocs;
 
         @Nullable
-        private Map<String, Integer> forcedVariationsMap;
+        private Map<String, ?> forcedVariationsMap;
 
         @Nullable
         private Map<String, Object> forcedFeatureValues;
@@ -139,7 +137,7 @@ public class UserContext {
             return this;
         }
 
-        public UserContextBuilder forcedVariationsMap(Map<String, Integer> forcedVariationsMap) {
+        public UserContextBuilder forcedVariationsMap(Map<String, ?> forcedVariationsMap) {
             this.forcedVariationsMap = forcedVariationsMap;
             return this;
         }
