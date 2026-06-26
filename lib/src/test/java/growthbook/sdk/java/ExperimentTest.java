@@ -1,16 +1,21 @@
 package growthbook.sdk.java;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.google.gson.JsonObject;
 import com.google.gson.reflect.TypeToken;
 import growthbook.sdk.java.model.Experiment;
 import growthbook.sdk.java.model.Namespace;
 import growthbook.sdk.java.util.GrowthBookJsonUtils;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import java.lang.reflect.Type;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.Map;
 
 class ExperimentTest {
 
@@ -152,5 +157,70 @@ class ExperimentTest {
         assertEquals(Boolean.TRUE, subject.getIsActive());
         assertEquals(100, subject.getVariations().get(0));
         assertEquals(200, subject.getVariations().get(1));
+    }
+
+    @Test
+    @DisplayName("Deserializes experiment custom fields with mixed value types")
+    void test_deserializesCustomFields() {
+        Type experimentType = new TypeToken<Experiment<Integer>>() {}.getType();
+
+        Experiment<Integer> subject = jsonUtils.gson.fromJson("{\"key\":\"my_experiment\",\"variations\":[100,200],\"customFields\":{\"cfl_string\":\"text value\",\"cfl_number\":42,\"cfl_decimal\":99.99,\"cfl_bool\":true,\"cfl_null\":null}}", experimentType);
+
+        assertTrue(subject.hasCustomField("cfl_string"));
+        assertTrue(subject.hasCustomField("cfl_null"));
+        assertFalse(subject.hasCustomField("cfl_missing"));
+        assertEquals("text value", subject.getCustomField("cfl_string"));
+        assertEquals(42L, subject.getCustomField("cfl_number"));
+        assertEquals(99.99, subject.getCustomField("cfl_decimal"));
+        assertEquals(Boolean.TRUE, subject.getCustomField("cfl_bool"));
+        assertNull(subject.getCustomField("cfl_null"));
+        assertEquals(Integer.valueOf(42), subject.getCustomField("cfl_number", Integer.class));
+        assertEquals("42", subject.getCustomField("cfl_number", String.class));
+        assertEquals(Boolean.TRUE, subject.getCustomField("cfl_bool", Boolean.class));
+        assertNull(subject.getCustomField("cfl_string", Integer.class));
+    }
+
+    @Test
+    @DisplayName("Typed custom field accessor coerces compatible types, including numeric strings")
+    void test_typedCustomFieldCoercion() {
+        Type experimentType = new TypeToken<Experiment<Integer>>() {}.getType();
+
+        Experiment<Integer> subject = jsonUtils.gson.fromJson("{\"key\":\"my_experiment\",\"variations\":[100,200],\"customFields\":{\"cfl_numeric_string\":\"42\",\"cfl_number\":42}}", experimentType);
+
+        assertEquals(Integer.valueOf(42), subject.getCustomField("cfl_numeric_string", Integer.class));
+        assertEquals(Double.valueOf(42.0), subject.getCustomField("cfl_number", Double.class));
+        assertEquals(Long.valueOf(42), subject.getCustomField("cfl_number", Long.class));
+    }
+
+    @Test
+    @DisplayName("Keeps custom fields nullable when the API omits them")
+    void test_missingCustomFieldsStayNull() {
+        Type experimentType = new TypeToken<Experiment<Integer>>() {}.getType();
+
+        Experiment<Integer> subject = jsonUtils.gson.fromJson("{\"key\":\"my_experiment\",\"variations\":[100,200]}", experimentType);
+
+        assertNull(subject.getCustomFields());
+        assertNull(subject.getCustomField("cfl_missing"));
+        assertFalse(subject.hasCustomField("cfl_missing"));
+    }
+
+    @Test
+    @DisplayName("Serializes custom fields and reads them back")
+    void test_serializesCustomFields() {
+        Type experimentType = new TypeToken<Experiment<Integer>>() {}.getType();
+        Map<String, Object> customFields = new LinkedHashMap<>();
+        customFields.put("cfl_string", "text value");
+        customFields.put("cfl_number", 42);
+
+        Experiment<Integer> subject = Experiment
+                .<Integer>builder()
+                .key("my_experiment")
+                .customFields(customFields)
+                .build();
+
+        Experiment<Integer> deserialized = jsonUtils.gson.fromJson(subject.toJson(), experimentType);
+
+        assertEquals("text value", deserialized.getCustomField("cfl_string"));
+        assertEquals(42L, deserialized.getCustomField("cfl_number"));
     }
 }
