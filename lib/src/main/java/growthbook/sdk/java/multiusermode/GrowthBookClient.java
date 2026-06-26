@@ -19,7 +19,9 @@ import growthbook.sdk.java.multiusermode.internal.FeatureRefreshListenerRegistry
 import growthbook.sdk.java.multiusermode.internal.FeatureRepositoryProvider;
 import growthbook.sdk.java.multiusermode.internal.GlobalContextManager;
 import growthbook.sdk.java.multiusermode.internal.ManagedListenerExecutor;
+import growthbook.sdk.java.multiusermode.internal.RemoteEvalCoordinator;
 import growthbook.sdk.java.repository.GBFeaturesRepository;
+import growthbook.sdk.java.repository.RefreshMode;
 import growthbook.sdk.java.util.GrowthBookJsonUtils;
 import lombok.extern.slf4j.Slf4j;
 
@@ -28,9 +30,8 @@ import java.util.Map;
 /**
  * Multi-user GrowthBook SDK facade.
  *
- * <p>The client owns one feature repository per instance. Repository initialization is lazy,
- * idempotent, and shared by concurrent callers. Feature evaluation reads from the most recent
- * global context built from repository data.
+ * <p>The client owns one feature repository per instance in local mode. In remote-eval mode,
+ * feature evaluation is fetched through the remote eval service and cached per user context.
  */
 @Slf4j
 public class GrowthBookClient {
@@ -39,10 +40,11 @@ public class GrowthBookClient {
     private final FeatureEvaluator featureEvaluator;
     private final ExperimentEvaluator experimentEvaluator;
     private final GlobalContextManager globalContextManager;
+    private final ManagedListenerExecutor listenerExecutor;
+    private final RemoteEvalCoordinator remoteEvalCoordinator;
+    private final FeatureRepositoryProvider featureRepositoryProvider;
     private final ExperimentSubscriptionManager experimentSubscriptions;
     private final FeatureRefreshListenerRegistry featureRefreshListeners;
-    private final FeatureRepositoryProvider featureRepositoryProvider;
-    private final ManagedListenerExecutor listenerExecutor;
 
     /**
      * Creates a client with default options.
@@ -65,6 +67,7 @@ public class GrowthBookClient {
         this.experimentSubscriptions = new ExperimentSubscriptionManager();
         this.listenerExecutor = ManagedListenerExecutor.resolve(this.options.getFeatureRefreshListenerExecutor());
         this.featureRefreshListeners = new FeatureRefreshListenerRegistry(listenerExecutor.executor());
+        this.remoteEvalCoordinator = new RemoteEvalCoordinator(this.options, this.featureRefreshListeners);
         this.featureRepositoryProvider = new FeatureRepositoryProvider(
                 this.options,
                 this::registerRefreshHandlers,
@@ -73,16 +76,22 @@ public class GrowthBookClient {
     }
 
     /**
-     * Initializes the feature repository and global evaluation context.
+     * Initializes the feature repository or remote-eval service.
      *
-     * <p>Calling this method multiple times is safe. Concurrent calls share the same repository
-     * initialization attempt. If initialization fails, a later call may try to initialize again.
-     *
-     * @return true when the repository is initialized and ready for evaluation
+     * @return true when the client is ready for evaluation
      */
     public boolean initialize() {
-        GBFeaturesRepository repository = featureRepositoryProvider.initialize();
-        return repository != null && repository.getInitialized();
+        try {
+            if (this.options.isRemoteEvalEnabled()) {
+                return this.remoteEvalCoordinator.initialize();
+            }
+
+            GBFeaturesRepository repository = featureRepositoryProvider.initialize();
+            return repository != null && repository.getInitialized();
+        } catch (Exception e) {
+            log.error("Failed to initialize growthbook instance", e);
+            return false;
+        }
     }
 
     /**
@@ -92,6 +101,7 @@ public class GrowthBookClient {
      */
     public void setGlobalAttributes(String attributes) {
         this.options.setGlobalAttributes(attributes);
+        this.remoteEvalCoordinator.invalidateCache();
     }
 
     /**
@@ -101,6 +111,7 @@ public class GrowthBookClient {
      */
     public void setGlobalForceFeatures(Map<String, Object> forceFeatures) {
         this.options.setGlobalForcedFeatureValues(forceFeatures);
+        this.remoteEvalCoordinator.invalidateCache();
     }
 
     /**
@@ -110,48 +121,77 @@ public class GrowthBookClient {
      */
     public void setGlobalForceVariations(Map<String, Integer> forceVariations) {
         this.options.setGlobalForcedVariationsMap(forceVariations);
+        this.remoteEvalCoordinator.invalidateCache();
     }
 
     /**
      * Fetches the latest feature definitions using the default refresh path.
      *
-     * <p>The client must be initialized first. Calling this method before initialization logs a
-     * warning and returns without throwing.
+     * @deprecated Use {@link #refreshFeatures()} or {@link #refreshFeatures(RefreshMode)}.
      */
+    @Deprecated
     public void refreshFeature() {
+        refreshFeatures();
+    }
+
+    /**
+     * Refreshes feature definitions using the default refresh behavior.
+     */
+    public void refreshFeatures() {
+        refreshFeatures(RefreshMode.DEFAULT);
+    }
+
+    /**
+     * Refreshes feature definitions using the provided refresh mode.
+     *
+     * <p>In remote-eval mode this invalidates the remote-eval response cache. The next evaluation
+     * fetches a fresh remote response for that user context.
+     *
+     * @param refreshMode refresh behavior to use
+     */
+    public void refreshFeatures(RefreshMode refreshMode) {
+        if (this.options.isRemoteEvalEnabled()) {
+            this.remoteEvalCoordinator.invalidateCache();
+            return;
+        }
+
         GBFeaturesRepository repositorySnapshot = currentRepository();
         if (repositorySnapshot == null) {
             log.warn("Cannot refresh features before GrowthBookClient is initialized.");
             return;
         }
 
-        try {
-            repositorySnapshot.fetchFeatures();
-        } catch (FeatureFetchException e) {
-            log.error("Refreshing wasn't successful. Message is: {}", e.getMessage(), e);
-        }
+        repositorySnapshot.requestFeatureRefresh(refreshMode == null ? RefreshMode.DEFAULT : refreshMode);
     }
 
     /**
      * Refreshes feature definitions using remote evaluation payload.
      *
-     * <p>The client must be initialized first. Calling this method before initialization logs a
-     * warning and returns without throwing.
-     *
      * @param requestBodyForRemoteEval remote evaluation request payload
      */
     public void refreshForRemoteEval(RequestBodyForRemoteEval requestBodyForRemoteEval) {
-        GBFeaturesRepository repositorySnapshot = currentRepository();
-        if (repositorySnapshot == null) {
-            log.warn("Cannot refresh remote evaluation features before GrowthBookClient is initialized.");
-            return;
-        }
-
         try {
+            if (this.options.isRemoteEvalEnabled()) {
+                this.remoteEvalCoordinator.refresh(requestBodyForRemoteEval);
+                return;
+            }
+
+            GBFeaturesRepository repositorySnapshot = currentRepository();
+            if (repositorySnapshot == null) {
+                log.warn("Cannot refresh remote evaluation features before GrowthBookClient is initialized.");
+                return;
+            }
             repositorySnapshot.fetchForRemoteEval(requestBodyForRemoteEval);
         } catch (FeatureFetchException e) {
             log.error("Refreshing for remote eval wasn't successful. Message is: {}", e.getMessage(), e);
         }
+    }
+
+    public boolean preloadRemoteEval(UserContext userContext) {
+        if (!this.options.isRemoteEvalEnabled()) {
+            return false;
+        }
+        return this.remoteEvalCoordinator.preload(userContext);
     }
 
     /**
@@ -250,13 +290,6 @@ public class GrowthBookClient {
     /**
      * Adds a listener that is notified after a feature refresh succeeds or fails.
      *
-     * <p>Listener failures are isolated from SDK refresh processing. Notifications are dispatched off
-     * the refresh thread: through the executor configured in {@link Options} when supplied, otherwise
-     * on a dedicated daemon thread owned by this client.
-     *
-     * <p>To observe the initial {@code INITIALIZATION} refresh, register the listener before
-     * calling {@link #initialize()}; events emitted before registration are not replayed.
-     *
      * @param listener listener to add
      */
     public void addFeatureRefreshListener(FeatureRefreshListener listener) {
@@ -265,9 +298,6 @@ public class GrowthBookClient {
 
     /**
      * Adds a listener and returns an idempotent handle that removes it.
-     *
-     * <p>To observe the initial {@code INITIALIZATION} refresh, register the listener before
-     * calling {@link #initialize()}; events emitted before registration are not replayed.
      *
      * @param listener listener to add
      * @return subscription handle
@@ -287,13 +317,10 @@ public class GrowthBookClient {
 
     /**
      * Stops repository background work and releases repository resources.
-     *
-     * <p>This method is idempotent. If initialization is still in progress, the client cancels its
-     * ownership of that initialization and closes the repository once the initialization attempt
-     * exits.
      */
     public void shutdown() {
         featureRepositoryProvider.shutdown();
+        this.remoteEvalCoordinator.shutdown();
         listenerExecutor.shutdown();
     }
 
@@ -318,7 +345,11 @@ public class GrowthBookClient {
     }
 
     private EvaluationContext getEvalContext(UserContext userContext) {
-        return this.globalContextManager.createEvaluationContext(userContext);
+        UserContext safeUserContext = userContext == null ? UserContext.builder().build() : userContext;
+        if (this.options.isRemoteEvalEnabled()) {
+            return this.remoteEvalCoordinator.createEvaluationContext(safeUserContext);
+        }
+        return this.globalContextManager.createEvaluationContext(safeUserContext);
     }
 
     @SuppressWarnings("deprecation")
@@ -330,5 +361,4 @@ public class GrowthBookClient {
     private GBFeaturesRepository currentRepository() {
         return featureRepositoryProvider.currentRepository();
     }
-
 }

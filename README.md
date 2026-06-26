@@ -204,13 +204,30 @@ public Boolean isOff(String featureKey, UserContext userContext);
 public <ValueType> ExperimentResult<ValueType> run(Experiment<ValueType> experiment, UserContext userContext);
 ```
 
-- If you changed, added or removed any features, call `refreshFeature()` to download the latest feature definitions.
-  For remote evaluation payloads, use `refreshForRemoteEval(...)`.
+- If you changed, added or removed any features, trigger a feature refresh. A forced refresh always performs a
+  network request in the background and bypasses cache freshness checks, while current features remain available
+  for evaluation. For remote evaluation payloads, use `refreshForRemoteEval(...)`.
 
 ```java
-public void refreshFeature();
+growthBook.refreshFeatures(RefreshMode.FORCE);
 
-public void refreshForRemoteEval(RequestBodyForRemoteEval requestBodyForRemoteEval);
+growthBook.refreshForRemoteEval(requestBodyForRemoteEval);
+```
+
+- You can optionally configure a minimum interval between non-forced background refreshes and customize the bounded
+  exponential retry policy. Both options are disabled/defaulted when omitted.
+
+```java
+Options options = Options.builder()
+    .apiHost("https://cdn.growthbook.io")
+    .clientKey("sdk-abc123")
+    .backgroundFetchInterval(Duration.ofHours(48))
+    .retryPolicy(new FeatureFetchRetryPolicy(
+        5,
+        Duration.ofSeconds(1),
+        Duration.ofSeconds(16)
+    ))
+    .build();
 ```
 
 ## Remote Evaluation

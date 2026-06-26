@@ -1,10 +1,19 @@
 package growthbook.sdk.java.util;
 
+import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.stream.Collectors;
 
+import lombok.experimental.UtilityClass;
+
+@UtilityClass
 public class StringUtils {
+
+    public static boolean isBlank(@Nullable String value) {
+        return value == null || value.trim().isEmpty();
+    }
+
     public static String padLeftZeros(String inputString, Integer length) {
         if (inputString.length() >= length) {
             return inputString;

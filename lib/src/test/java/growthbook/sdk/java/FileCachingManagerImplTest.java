@@ -1,13 +1,16 @@
 package growthbook.sdk.java;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
+import growthbook.sdk.java.exception.FeatureCacheException;
 import growthbook.sdk.java.sandbox.FileCachingManagerImpl;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -39,7 +42,18 @@ class FileCachingManagerImplTest {
     @Test
     void shouldReturnNullWhenFileDoesNotExist() {
         String loadedContent = fileCachingManagerImpl.loadCache("nonexistent.txt");
-        Assertions.assertNull(loadedContent);
+        assertNull(loadedContent);
+        assertNull(fileCachingManagerImpl.getLastUpdatedMillis("nonexistent.txt"));
+    }
+
+    @Test
+    void shouldExposeLastUpdatedTime() {
+        String fileName = "timestamped.txt";
+
+        fileCachingManagerImpl.saveContent(fileName, "cached");
+
+        assertNotNull(fileCachingManagerImpl.getLastUpdatedMillis(fileName));
+        assertTrue(fileCachingManagerImpl.getLastUpdatedMillis(fileName) > 0);
     }
 
     @Test
@@ -56,7 +70,10 @@ class FileCachingManagerImplTest {
             fail("Creating test file was not successful.");
         }
 
-        RuntimeException thrown = assertThrows(RuntimeException.class, () -> fileCachingManagerImpl.saveContent(fileName, "This should fail"));
+        FeatureCacheException thrown = assertThrows(
+                FeatureCacheException.class,
+                () -> fileCachingManagerImpl.saveContent(fileName, "This should fail")
+        );
 
         assertInstanceOf(IOException.class, thrown.getCause());
     }
@@ -125,5 +142,42 @@ class FileCachingManagerImplTest {
 
         assertEquals("Content 1", fileCachingManagerImpl.loadCache("file1.txt"));
         assertEquals("Content 2", fileCachingManagerImpl.loadCache("file2.txt"));
+    }
+
+    @Test
+    void shouldClearAllCachedFiles() {
+        fileCachingManagerImpl.saveContent("a.txt", "aaa");
+        fileCachingManagerImpl.saveContent("b.txt", "bbb");
+
+        fileCachingManagerImpl.clearCache();
+
+        assertNull(fileCachingManagerImpl.loadCache("a.txt"));
+        assertNull(fileCachingManagerImpl.loadCache("b.txt"));
+        assertEquals(0, tempDir.listFiles().length);
+    }
+
+    @Test
+    void shouldCreateCacheDirIfNotExists() {
+        File subDir = new File(tempDir, "nested/cache");
+        assertFalse(subDir.exists());
+
+        FileCachingManagerImpl manager = new FileCachingManagerImpl(subDir.getAbsolutePath());
+        manager.saveContent("x.txt", "hello");
+
+        assertEquals("hello", manager.loadCache("x.txt"));
+    }
+
+    @Test
+    void shouldThrowWhenCacheDirectoryCannotBeCreated() {
+        File file = new File(tempDir, "notadir.txt");
+        try {
+            file.createNewFile();
+        } catch (IOException e) {
+            fail("Precondition setup failed");
+        }
+        // A path *inside* a plain file cannot be a directory.
+        String impossiblePath = file.getAbsolutePath() + File.separator + "subdir";
+
+        assertThrows(RuntimeException.class, () -> new FileCachingManagerImpl(impossiblePath));
     }
 }

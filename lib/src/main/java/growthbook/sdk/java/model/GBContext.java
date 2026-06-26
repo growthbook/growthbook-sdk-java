@@ -5,7 +5,9 @@ import growthbook.sdk.java.util.ExperimentHelper;
 import growthbook.sdk.java.callback.FeatureUsageCallback;
 import growthbook.sdk.java.callback.TrackingCallback;
 import growthbook.sdk.java.multiusermode.util.TransformationUtil;
+import growthbook.sdk.java.remoteeval.RemoteEvalRequestBuilder;
 import growthbook.sdk.java.stickyBucketing.StickyBucketService;
+import growthbook.sdk.java.util.ForcedVariationsUtils;
 import lombok.Builder;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
@@ -43,8 +45,69 @@ public class GBContext {
      * @param stickyBucketService              Service that provide functionality of Sticky Bucketing.
      * @param stickyBucketAssignmentDocs       Map of Sticky Bucket documents.
      * @param stickyBucketIdentifierAttributes List of user's attributes keys.
+     * @param savedGroups                      Saved Groups data.
+     * @param apiHost                          GrowthBook API host for remote evaluation.
+     * @param clientKey                        GrowthBook SDK client key for remote evaluation.
+     * @param remoteEval                       Whether to use remote evaluation.
+     * @param cacheKeyAttributes               Attribute names used to build the remote eval cache key.
+     * @param remoteEvalCacheSize              Maximum number of remote eval responses kept in memory.
+     * @param remoteEvalCacheTtlSeconds        Hard expiry (seconds) for cached remote eval responses; null disables time-based expiry.
      */
     @Builder
+    public GBContext(
+            @Nullable String attributesJson,
+            @Nullable JsonObject attributes,
+            @Nullable String featuresJson,
+            @Nullable Map<String, Feature<?>> features,
+            @Nullable String encryptionKey,
+            @Nullable Boolean enabled,
+            Boolean isQaMode,
+            @Nullable String url,
+            Boolean allowUrlOverrides,
+            @Nullable Map<String, ?> forcedVariationsMap,
+            @Nullable TrackingCallback trackingCallback,
+            @Nullable FeatureUsageCallback featureUsageCallback,
+            @Nullable StickyBucketService stickyBucketService,
+            @Nullable Map<String, StickyAssignmentsDocument> stickyBucketAssignmentDocs,
+            @Nullable List<String> stickyBucketIdentifierAttributes,
+            @Nullable JsonObject savedGroups,
+            @Nullable String apiHost,
+            @Nullable String clientKey,
+            @Nullable Boolean remoteEval,
+            @Nullable List<String> cacheKeyAttributes,
+            @Nullable Integer remoteEvalCacheSize,
+            @Nullable Integer remoteEvalCacheTtlSeconds
+    ) {
+        this.encryptionKey = encryptionKey;
+        this.attributesJson = attributesJson == null ? "{}" : attributesJson;
+        this.attributes = attributes == null ? new JsonObject() : attributes;
+
+        if (featuresJson != null) {
+            this.features = TransformationUtil.transformEncryptedFeatures(featuresJson, encryptionKey);
+        }
+        if (features != null) {
+            this.features = features;
+        }
+
+        this.enabled = enabled == null || enabled;
+        this.isQaMode = isQaMode != null && isQaMode;
+        this.allowUrlOverride = allowUrlOverrides != null && allowUrlOverrides;
+        this.url = url;
+        this.forcedVariationsMap = ForcedVariationsUtils.normalize(forcedVariationsMap);
+        this.trackingCallback = trackingCallback;
+        this.featureUsageCallback = featureUsageCallback;
+        this.stickyBucketService = stickyBucketService;
+        this.stickyBucketAssignmentDocs = stickyBucketAssignmentDocs;
+        this.stickyBucketIdentifierAttributes = stickyBucketIdentifierAttributes;
+        this.savedGroups = savedGroups == null ? new JsonObject() : savedGroups;
+        this.apiHost = apiHost;
+        this.clientKey = clientKey;
+        this.remoteEval = remoteEval != null && remoteEval;
+        this.cacheKeyAttributes = cacheKeyAttributes;
+        this.remoteEvalCacheSize = RemoteEvalRequestBuilder.normalizeCacheSize(remoteEvalCacheSize);
+        this.remoteEvalCacheTtlSeconds = remoteEvalCacheTtlSeconds;
+    }
+
     public GBContext(
             @Nullable String attributesJson,
             @Nullable JsonObject attributes,
@@ -63,28 +126,30 @@ public class GBContext {
             @Nullable List<String> stickyBucketIdentifierAttributes,
             @Nullable JsonObject savedGroups
     ) {
-        this.encryptionKey = encryptionKey;
-        this.attributesJson = attributesJson == null ? "{}" : attributesJson;
-        this.attributes = attributes == null ? new JsonObject() : attributes;
-
-        if (featuresJson != null) {
-            this.features = TransformationUtil.transformEncryptedFeatures(featuresJson, encryptionKey);
-        }
-        if (features != null) {
-            this.features = features;
-        }
-
-        this.enabled = enabled == null || enabled;
-        this.isQaMode = isQaMode != null && isQaMode;
-        this.allowUrlOverride = allowUrlOverrides != null && allowUrlOverrides;
-        this.url = url;
-        this.forcedVariationsMap = forcedVariationsMap == null ? new HashMap<>() : forcedVariationsMap;
-        this.trackingCallback = trackingCallback;
-        this.featureUsageCallback = featureUsageCallback;
-        this.stickyBucketService = stickyBucketService;
-        this.stickyBucketAssignmentDocs = stickyBucketAssignmentDocs;
-        this.stickyBucketIdentifierAttributes = stickyBucketIdentifierAttributes;
-        this.savedGroups = savedGroups == null ? new JsonObject() : savedGroups;
+        this(
+                attributesJson,
+                attributes,
+                featuresJson,
+                features,
+                encryptionKey,
+                enabled,
+                isQaMode,
+                url,
+                allowUrlOverrides,
+                forcedVariationsMap,
+                trackingCallback,
+                featureUsageCallback,
+                stickyBucketService,
+                stickyBucketAssignmentDocs,
+                stickyBucketIdentifierAttributes,
+                savedGroups,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null
+        );
     }
 
     /**
@@ -179,13 +244,6 @@ public class GBContext {
         this.attributes = (attributes == null) ? new JsonObject() : attributes;
     }
 
-    public void setStickyBucketIdentifierAttributes(@Nullable List<String> stickyBucketIdentifierAttributes) {
-        this.stickyBucketIdentifierAttributes = stickyBucketIdentifierAttributes;
-        if (stickyBucketIdentifierAttributes == null) {
-            this.stickyBucketIdentifierAttributesSignature = null;
-        }
-    }
-
     /**
      * Optional encryption key. If this is not null, featuresJson should be an encrypted payload.
      */
@@ -210,6 +268,10 @@ public class GBContext {
     @Nullable
     private Map<String, Integer> forcedVariationsMap;
 
+    public void setForcedVariationsMap(@Nullable Map<String, ?> forcedVariationsMap) {
+        this.forcedVariationsMap = ForcedVariationsUtils.normalize(forcedVariationsMap);
+    }
+
     /**
      * Service that provide functionality of Sticky Bucketing
      */
@@ -233,6 +295,29 @@ public class GBContext {
      */
     @Nullable
     private String stickyBucketIdentifierAttributesSignature;
+
+    @Nullable
+    private String apiHost;
+
+    @Nullable
+    private String clientKey;
+
+    private Boolean remoteEval;
+
+    @Nullable
+    private List<String> cacheKeyAttributes;
+
+    private Integer remoteEvalCacheSize;
+
+    /**
+     * Hard expiry (seconds) for cached remote-eval responses; {@code null} disables time-based expiry.
+     */
+    @Nullable
+    private Integer remoteEvalCacheTtlSeconds;
+
+    public boolean isRemoteEvalEnabled() {
+        return Boolean.TRUE.equals(this.remoteEval);
+    }
 
     /**
      * The builder class to help create a context. You can use {@link #builder()} or the {@link GBContext} constructor
