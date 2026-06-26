@@ -593,7 +593,7 @@ class GBFeaturesRepositoryTest {
                 null
         );
 
-        assertNull(subject.getCacheManager());
+        assertNull(subject.getCacheManager().get());
     }
 
     @Test
@@ -610,7 +610,7 @@ class GBFeaturesRepositoryTest {
                 null,
                 mock
         );
-        assertSame(mock, subject.getCacheManager());
+        assertSame(mock, subject.getCacheManager().get());
     }
 
     @Test
@@ -627,7 +627,7 @@ class GBFeaturesRepositoryTest {
                 null,
                 null
         );
-        assertNotNull(subject.getCacheManager());
+        assertNotNull(subject.getCacheManager().get());
     }
 
 
