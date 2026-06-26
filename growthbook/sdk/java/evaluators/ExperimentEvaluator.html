@@ -113,6 +113,13 @@ loadScripts(document, 'script');</script>
 <div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">Takes Context, Experiment and returns Experiment Result</div>
 </div>
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>&lt;ValueType&gt;<br>void</code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#fireRemoteEvaluationTracks(java.util.List,growthbook.sdk.java.multiusermode.configurations.EvaluationContext)" class="member-name-link">fireRemoteEvaluationTracks</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/List.html" title="class or interface in java.util" class="external-link">List</a>&lt;<a href="../model/TrackData.html" title="class in growthbook.sdk.java.model">TrackData</a>&lt;ValueType&gt;&gt;&nbsp;tracks,
+ <a href="../multiusermode/configurations/EvaluationContext.html" title="class in growthbook.sdk.java.multiusermode.configurations">EvaluationContext</a>&nbsp;context)</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="block">Fires tracking callbacks for experiments that were evaluated remotely (a feature rule's
+ <code>tracks</code>).</div>
+</div>
 </div>
 </div>
 </div>
@@ -160,6 +167,18 @@ loadScripts(document, 'script');</script>
 <dt>Returns:</dt>
 <dd>ExperimentResult</dd>
 </dl>
+</section>
+</li>
+<li>
+<section class="detail" id="fireRemoteEvaluationTracks(java.util.List,growthbook.sdk.java.multiusermode.configurations.EvaluationContext)">
+<h3>fireRemoteEvaluationTracks</h3>
+<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="type-parameters">&lt;ValueType&gt;</span>&nbsp;<span class="return-type">void</span>&nbsp;<span class="element-name">fireRemoteEvaluationTracks</span><wbr><span class="parameters">(@Nullable
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/List.html" title="class or interface in java.util" class="external-link">List</a>&lt;<a href="../model/TrackData.html" title="class in growthbook.sdk.java.model">TrackData</a>&lt;ValueType&gt;&gt;&nbsp;tracks,
+ <a href="../multiusermode/configurations/EvaluationContext.html" title="class in growthbook.sdk.java.multiusermode.configurations">EvaluationContext</a>&nbsp;context)</span></div>
+<div class="block">Fires tracking callbacks for experiments that were evaluated remotely (a feature rule's
+ <code>tracks</code>). De-duplicates per <code>(hashAttribute, hashValue, experimentKey, variationId)</code>
+ using the same <a href="../multiusermode/ExperimentTracker.html" title="class in growthbook.sdk.java.multiusermode"><code>ExperimentTracker</code></a> as local evaluation, so reusing a cached remote-eval
+ response does not re-fire exposure events.</div>
 </section>
 </li>
 </ul>

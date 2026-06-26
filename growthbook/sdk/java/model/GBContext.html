@@ -109,7 +109,7 @@ loadScripts(document, 'script');</script>
 <div class="summary-table two-column-summary">
 <div class="table-header col-first">Constructor</div>
 <div class="table-header col-last">Description</div>
-<div class="col-constructor-name even-row-color"><code><a href="#%3Cinit%3E(java.lang.String,com.google.gson.JsonObject,java.lang.String,java.util.Map,java.lang.String,java.lang.Boolean,java.lang.Boolean,java.lang.String,java.lang.Boolean,java.util.Map,growthbook.sdk.java.callback.TrackingCallback,growthbook.sdk.java.callback.FeatureUsageCallback,growthbook.sdk.java.stickyBucketing.StickyBucketService,java.util.Map,java.util.List,com.google.gson.JsonObject)" class="member-name-link">GBContext</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;attributesJson,
+<div class="col-constructor-name even-row-color"><code><a href="#%3Cinit%3E(java.lang.String,com.google.gson.JsonObject,java.lang.String,java.util.Map,java.lang.String,java.lang.Boolean,java.lang.Boolean,java.lang.String,java.lang.Boolean,java.util.Map,growthbook.sdk.java.callback.TrackingCallback,growthbook.sdk.java.callback.FeatureUsageCallback,growthbook.sdk.java.stickyBucketing.StickyBucketService,java.util.Map,java.util.List,com.google.gson.JsonObject,java.lang.String,java.lang.String,java.lang.Boolean,java.util.List,java.lang.Integer,java.lang.Integer)" class="member-name-link">GBContext</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;attributesJson,
  com.google.gson.JsonObject&nbsp;attributes,
  <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;featuresJson,
  <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/Map.html" title="class or interface in java.util" class="external-link">Map</a>&lt;<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>,<wbr><a href="Feature.html" title="class in growthbook.sdk.java.model">Feature</a>&lt;?&gt;&gt;&nbsp;features,
@@ -124,10 +124,33 @@ loadScripts(document, 'script');</script>
  <a href="../stickyBucketing/StickyBucketService.html" title="interface in growthbook.sdk.java.stickyBucketing">StickyBucketService</a>&nbsp;stickyBucketService,
  <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/Map.html" title="class or interface in java.util" class="external-link">Map</a>&lt;<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>,<wbr><a href="StickyAssignmentsDocument.html" title="class in growthbook.sdk.java.model">StickyAssignmentsDocument</a>&gt;&nbsp;stickyBucketAssignmentDocs,
  <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/List.html" title="class or interface in java.util" class="external-link">List</a>&lt;<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&gt;&nbsp;stickyBucketIdentifierAttributes,
- com.google.gson.JsonObject&nbsp;savedGroups)</code></div>
+ com.google.gson.JsonObject&nbsp;savedGroups,
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;apiHost,
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;clientKey,
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Boolean.html" title="class or interface in java.lang" class="external-link">Boolean</a>&nbsp;remoteEval,
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/List.html" title="class or interface in java.util" class="external-link">List</a>&lt;<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&gt;&nbsp;cacheKeyAttributes,
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Integer.html" title="class or interface in java.lang" class="external-link">Integer</a>&nbsp;remoteEvalCacheSize,
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Integer.html" title="class or interface in java.lang" class="external-link">Integer</a>&nbsp;remoteEvalCacheTtlSeconds)</code></div>
 <div class="col-last even-row-color">
 <div class="block">The <a href="GBContext.GBContextBuilder.html" title="class in growthbook.sdk.java.model"><code>GBContext.GBContextBuilder</code></a> is recommended for constructing a Context.</div>
 </div>
+<div class="col-constructor-name odd-row-color"><code><a href="#%3Cinit%3E(java.lang.String,com.google.gson.JsonObject,java.lang.String,java.util.Map,java.lang.String,java.lang.Boolean,java.lang.Boolean,java.lang.String,java.lang.Boolean,java.util.Map,growthbook.sdk.java.callback.TrackingCallback,growthbook.sdk.java.callback.FeatureUsageCallback,growthbook.sdk.java.stickyBucketing.StickyBucketService,java.util.Map,java.util.List,com.google.gson.JsonObject)" class="member-name-link">GBContext</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;attributesJson,
+ com.google.gson.JsonObject&nbsp;attributes,
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;featuresJson,
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/Map.html" title="class or interface in java.util" class="external-link">Map</a>&lt;<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>,<wbr><a href="Feature.html" title="class in growthbook.sdk.java.model">Feature</a>&lt;?&gt;&gt;&nbsp;features,
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;encryptionKey,
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Boolean.html" title="class or interface in java.lang" class="external-link">Boolean</a>&nbsp;enabled,
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Boolean.html" title="class or interface in java.lang" class="external-link">Boolean</a>&nbsp;isQaMode,
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;url,
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Boolean.html" title="class or interface in java.lang" class="external-link">Boolean</a>&nbsp;allowUrlOverrides,
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/Map.html" title="class or interface in java.util" class="external-link">Map</a>&lt;<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>,<wbr><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Integer.html" title="class or interface in java.lang" class="external-link">Integer</a>&gt;&nbsp;forcedVariationsMap,
+ <a href="../callback/TrackingCallback.html" title="interface in growthbook.sdk.java.callback">TrackingCallback</a>&nbsp;trackingCallback,
+ <a href="../callback/FeatureUsageCallback.html" title="interface in growthbook.sdk.java.callback">FeatureUsageCallback</a>&nbsp;featureUsageCallback,
+ <a href="../stickyBucketing/StickyBucketService.html" title="interface in growthbook.sdk.java.stickyBucketing">StickyBucketService</a>&nbsp;stickyBucketService,
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/Map.html" title="class or interface in java.util" class="external-link">Map</a>&lt;<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>,<wbr><a href="StickyAssignmentsDocument.html" title="class in growthbook.sdk.java.model">StickyAssignmentsDocument</a>&gt;&nbsp;stickyBucketAssignmentDocs,
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/List.html" title="class or interface in java.util" class="external-link">List</a>&lt;<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&gt;&nbsp;stickyBucketIdentifierAttributes,
+ com.google.gson.JsonObject&nbsp;savedGroups)</code></div>
+<div class="col-last odd-row-color">&nbsp;</div>
 </div>
 </section>
 </li>
@@ -155,50 +178,70 @@ loadScripts(document, 'script');</script>
 <div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">Boolean flag to allow URL overrides (default: false)</div>
 </div>
-<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>com.google.gson.JsonObject</code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#getAttributes()" class="member-name-link">getAttributes</a>()</code></div>
-<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a></code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#getApiHost()" class="member-name-link">getApiHost</a>()</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">&nbsp;</div>
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>com.google.gson.JsonObject</code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#getAttributes()" class="member-name-link">getAttributes</a>()</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">Map of user attributes that are used to assign variations</div>
 </div>
-<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a></code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#getAttributesJson()" class="member-name-link">getAttributesJson</a>()</code></div>
-<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a></code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#getAttributesJson()" class="member-name-link">getAttributesJson</a>()</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">String format of user attributes that are used to assign variations</div>
 </div>
-<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Boolean.html" title="class or interface in java.lang" class="external-link">Boolean</a></code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#getEnabled()" class="member-name-link">getEnabled</a>()</code></div>
-<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/List.html" title="class or interface in java.util" class="external-link">List</a>&lt;<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&gt;</code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#getCacheKeyAttributes()" class="member-name-link">getCacheKeyAttributes</a>()</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">&nbsp;</div>
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a></code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#getClientKey()" class="member-name-link">getClientKey</a>()</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">&nbsp;</div>
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Boolean.html" title="class or interface in java.lang" class="external-link">Boolean</a></code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#getEnabled()" class="member-name-link">getEnabled</a>()</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">Switch to globally disable all experiments.</div>
 </div>
-<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a></code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#getEncryptionKey()" class="member-name-link">getEncryptionKey</a>()</code></div>
-<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a></code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#getEncryptionKey()" class="member-name-link">getEncryptionKey</a>()</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">Optional encryption key.</div>
 </div>
-<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="../util/ExperimentHelper.html" title="class in growthbook.sdk.java.util">ExperimentHelper</a></code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#getExperimentHelper()" class="member-name-link">getExperimentHelper</a>()</code></div>
-<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="../util/ExperimentHelper.html" title="class in growthbook.sdk.java.util">ExperimentHelper</a></code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#getExperimentHelper()" class="member-name-link">getExperimentHelper</a>()</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">Helper class for differentiate whether specific experiment was evaluated before or not.</div>
 </div>
-<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/Map.html" title="class or interface in java.util" class="external-link">Map</a>&lt;<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>,<wbr><a href="Feature.html" title="class in growthbook.sdk.java.model">Feature</a>&lt;?&gt;&gt;</code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#getFeatures()" class="member-name-link">getFeatures</a>()</code></div>
-<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/Map.html" title="class or interface in java.util" class="external-link">Map</a>&lt;<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>,<wbr><a href="Feature.html" title="class in growthbook.sdk.java.model">Feature</a>&lt;?&gt;&gt;</code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#getFeatures()" class="member-name-link">getFeatures</a>()</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">Keys are unique identifiers for the features and the values are Feature objects.</div>
 </div>
-<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="../callback/FeatureUsageCallback.html" title="interface in growthbook.sdk.java.callback">FeatureUsageCallback</a></code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#getFeatureUsageCallback()" class="member-name-link">getFeatureUsageCallback</a>()</code></div>
-<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="../callback/FeatureUsageCallback.html" title="interface in growthbook.sdk.java.callback">FeatureUsageCallback</a></code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#getFeatureUsageCallback()" class="member-name-link">getFeatureUsageCallback</a>()</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">A function that takes <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link"><code>String</code></a> and <a href="FeatureResult.html" title="class in growthbook.sdk.java.model"><code>FeatureResult</code></a> as arguments.</div>
 </div>
-<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/Map.html" title="class or interface in java.util" class="external-link">Map</a>&lt;<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>,<wbr><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Integer.html" title="class or interface in java.lang" class="external-link">Integer</a>&gt;</code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#getForcedVariationsMap()" class="member-name-link">getForcedVariationsMap</a>()</code></div>
-<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/Map.html" title="class or interface in java.util" class="external-link">Map</a>&lt;<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>,<wbr><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Integer.html" title="class or interface in java.lang" class="external-link">Integer</a>&gt;</code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#getForcedVariationsMap()" class="member-name-link">getForcedVariationsMap</a>()</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">Force specific experiments to always assign a specific variation (used for QA)</div>
 </div>
-<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Boolean.html" title="class or interface in java.lang" class="external-link">Boolean</a></code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#getIsQaMode()" class="member-name-link">getIsQaMode</a>()</code></div>
-<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Boolean.html" title="class or interface in java.lang" class="external-link">Boolean</a></code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#getIsQaMode()" class="member-name-link">getIsQaMode</a>()</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">If true, random assignment is disabled and only explicitly forced variations are used.</div>
+</div>
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Boolean.html" title="class or interface in java.lang" class="external-link">Boolean</a></code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#getRemoteEval()" class="member-name-link">getRemoteEval</a>()</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">&nbsp;</div>
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Integer.html" title="class or interface in java.lang" class="external-link">Integer</a></code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#getRemoteEvalCacheSize()" class="member-name-link">getRemoteEvalCacheSize</a>()</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">&nbsp;</div>
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Integer.html" title="class or interface in java.lang" class="external-link">Integer</a></code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#getRemoteEvalCacheTtlSeconds()" class="member-name-link">getRemoteEvalCacheTtlSeconds</a>()</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="block">Hard expiry (seconds) for cached remote-eval responses; <code>null</code> disables time-based expiry.</div>
 </div>
 <div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>com.google.gson.JsonObject</code></div>
 <div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#getSavedGroups()" class="member-name-link">getSavedGroups</a>()</code></div>
@@ -215,23 +258,31 @@ loadScripts(document, 'script');</script>
 <div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">List of user's attributes keys</div>
 </div>
-<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="../stickyBucketing/StickyBucketService.html" title="interface in growthbook.sdk.java.stickyBucketing">StickyBucketService</a></code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#getStickyBucketService()" class="member-name-link">getStickyBucketService</a>()</code></div>
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a></code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#getStickyBucketIdentifierAttributesSignature()" class="member-name-link">getStickyBucketIdentifierAttributesSignature</a>()</code></div>
 <div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="block">Fingerprint of the feature payload used to derive sticky bucket identifiers.</div>
+</div>
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="../stickyBucketing/StickyBucketService.html" title="interface in growthbook.sdk.java.stickyBucketing">StickyBucketService</a></code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#getStickyBucketService()" class="member-name-link">getStickyBucketService</a>()</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">Service that provide functionality of Sticky Bucketing</div>
 </div>
-<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="../callback/TrackingCallback.html" title="interface in growthbook.sdk.java.callback">TrackingCallback</a></code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#getTrackingCallback()" class="member-name-link">getTrackingCallback</a>()</code></div>
-<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="../callback/TrackingCallback.html" title="interface in growthbook.sdk.java.callback">TrackingCallback</a></code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#getTrackingCallback()" class="member-name-link">getTrackingCallback</a>()</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">A function that takes <a href="Experiment.html" title="class in growthbook.sdk.java.model"><code>Experiment</code></a> and <a href="ExperimentResult.html" title="class in growthbook.sdk.java.model"><code>ExperimentResult</code></a> as arguments.</div>
 </div>
-<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a></code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#getUrl()" class="member-name-link">getUrl</a>()</code></div>
-<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a></code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#getUrl()" class="member-name-link">getUrl</a>()</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">The URL of the current page</div>
 </div>
-<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>int</code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#hashCode()" class="member-name-link">hashCode</a>()</code></div>
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>int</code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#hashCode()" class="member-name-link">hashCode</a>()</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">&nbsp;</div>
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>boolean</code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#isRemoteEvalEnabled()" class="member-name-link">isRemoteEvalEnabled</a>()</code></div>
 <div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">&nbsp;</div>
 <div class="col-first odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code>static void</code></div>
 <div class="col-second odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code><a href="#main(java.lang.String%5B%5D)" class="member-name-link">main</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>[]&nbsp;args)</code></div>
@@ -242,52 +293,72 @@ loadScripts(document, 'script');</script>
 <div class="block">Boolean flag to allow URL overrides (default: false)</div>
 </div>
 <div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>void</code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#setAttributes(com.google.gson.JsonObject)" class="member-name-link">setAttributes</a><wbr>(com.google.gson.JsonObject&nbsp;attributes)</code></div>
-<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
-<div class="block">You can update the attributes with new user attributes to evaluate against.</div>
-</div>
-<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>void</code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#setAttributesJson(java.lang.String)" class="member-name-link">setAttributesJson</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;attributesJson)</code></div>
-<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
-<div class="block">You can update the attributes JSON with new user attributes to evaluate against.</div>
-</div>
-<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>void</code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#setEnabled(java.lang.Boolean)" class="member-name-link">setEnabled</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Boolean.html" title="class or interface in java.lang" class="external-link">Boolean</a>&nbsp;enabled)</code></div>
-<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
-<div class="block">Switch to globally disable all experiments.</div>
-</div>
-<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>void</code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#setEncryptionKey(java.lang.String)" class="member-name-link">setEncryptionKey</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;encryptionKey)</code></div>
-<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
-<div class="block">Optional encryption key.</div>
-</div>
-<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>void</code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#setExperimentHelper(growthbook.sdk.java.util.ExperimentHelper)" class="member-name-link">setExperimentHelper</a><wbr>(<a href="../util/ExperimentHelper.html" title="class in growthbook.sdk.java.util">ExperimentHelper</a>&nbsp;experimentHelper)</code></div>
-<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
-<div class="block">Helper class for differentiate whether specific experiment was evaluated before or not.</div>
-</div>
-<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>void</code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#setFeatures(java.util.Map)" class="member-name-link">setFeatures</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/Map.html" title="class or interface in java.util" class="external-link">Map</a>&lt;<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>,<wbr><a href="Feature.html" title="class in growthbook.sdk.java.model">Feature</a>&lt;?&gt;&gt;&nbsp;features)</code></div>
-<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
-<div class="block">Keys are unique identifiers for the features and the values are Feature objects.</div>
-</div>
-<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>void</code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#setFeaturesJson(java.lang.String)" class="member-name-link">setFeaturesJson</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;featuresJson)</code></div>
-<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
-<div class="block">You can update the features JSON with new features to evaluate against.</div>
-</div>
-<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>void</code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#setFeatureUsageCallback(growthbook.sdk.java.callback.FeatureUsageCallback)" class="member-name-link">setFeatureUsageCallback</a><wbr>(<a href="../callback/FeatureUsageCallback.html" title="interface in growthbook.sdk.java.callback">FeatureUsageCallback</a>&nbsp;featureUsageCallback)</code></div>
-<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
-<div class="block">A function that takes <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link"><code>String</code></a> and <a href="FeatureResult.html" title="class in growthbook.sdk.java.model"><code>FeatureResult</code></a> as arguments.</div>
-</div>
-<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>void</code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#setForcedVariationsMap(java.util.Map)" class="member-name-link">setForcedVariationsMap</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/Map.html" title="class or interface in java.util" class="external-link">Map</a>&lt;<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>,<wbr>?&gt;&nbsp;forcedVariationsMap)</code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#setApiHost(java.lang.String)" class="member-name-link">setApiHost</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;apiHost)</code></div>
 <div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">&nbsp;</div>
 <div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>void</code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#setIsQaMode(java.lang.Boolean)" class="member-name-link">setIsQaMode</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Boolean.html" title="class or interface in java.lang" class="external-link">Boolean</a>&nbsp;isQaMode)</code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#setAttributes(com.google.gson.JsonObject)" class="member-name-link">setAttributes</a><wbr>(com.google.gson.JsonObject&nbsp;attributes)</code></div>
 <div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="block">You can update the attributes with new user attributes to evaluate against.</div>
+</div>
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>void</code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#setAttributesJson(java.lang.String)" class="member-name-link">setAttributesJson</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;attributesJson)</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="block">You can update the attributes JSON with new user attributes to evaluate against.</div>
+</div>
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>void</code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#setCacheKeyAttributes(java.util.List)" class="member-name-link">setCacheKeyAttributes</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/List.html" title="class or interface in java.util" class="external-link">List</a>&lt;<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&gt;&nbsp;cacheKeyAttributes)</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">&nbsp;</div>
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>void</code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#setClientKey(java.lang.String)" class="member-name-link">setClientKey</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;clientKey)</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">&nbsp;</div>
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>void</code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#setEnabled(java.lang.Boolean)" class="member-name-link">setEnabled</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Boolean.html" title="class or interface in java.lang" class="external-link">Boolean</a>&nbsp;enabled)</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="block">Switch to globally disable all experiments.</div>
+</div>
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>void</code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#setEncryptionKey(java.lang.String)" class="member-name-link">setEncryptionKey</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;encryptionKey)</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="block">Optional encryption key.</div>
+</div>
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>void</code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#setExperimentHelper(growthbook.sdk.java.util.ExperimentHelper)" class="member-name-link">setExperimentHelper</a><wbr>(<a href="../util/ExperimentHelper.html" title="class in growthbook.sdk.java.util">ExperimentHelper</a>&nbsp;experimentHelper)</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="block">Helper class for differentiate whether specific experiment was evaluated before or not.</div>
+</div>
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>void</code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#setFeatures(java.util.Map)" class="member-name-link">setFeatures</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/Map.html" title="class or interface in java.util" class="external-link">Map</a>&lt;<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>,<wbr><a href="Feature.html" title="class in growthbook.sdk.java.model">Feature</a>&lt;?&gt;&gt;&nbsp;features)</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="block">Keys are unique identifiers for the features and the values are Feature objects.</div>
+</div>
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>void</code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#setFeaturesJson(java.lang.String)" class="member-name-link">setFeaturesJson</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;featuresJson)</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="block">You can update the features JSON with new features to evaluate against.</div>
+</div>
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>void</code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#setFeatureUsageCallback(growthbook.sdk.java.callback.FeatureUsageCallback)" class="member-name-link">setFeatureUsageCallback</a><wbr>(<a href="../callback/FeatureUsageCallback.html" title="interface in growthbook.sdk.java.callback">FeatureUsageCallback</a>&nbsp;featureUsageCallback)</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="block">A function that takes <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link"><code>String</code></a> and <a href="FeatureResult.html" title="class in growthbook.sdk.java.model"><code>FeatureResult</code></a> as arguments.</div>
+</div>
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>void</code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#setForcedVariationsMap(java.util.Map)" class="member-name-link">setForcedVariationsMap</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/Map.html" title="class or interface in java.util" class="external-link">Map</a>&lt;<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>,<wbr>?&gt;&nbsp;forcedVariationsMap)</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">&nbsp;</div>
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>void</code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#setIsQaMode(java.lang.Boolean)" class="member-name-link">setIsQaMode</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Boolean.html" title="class or interface in java.lang" class="external-link">Boolean</a>&nbsp;isQaMode)</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">If true, random assignment is disabled and only explicitly forced variations are used.</div>
+</div>
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>void</code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#setRemoteEval(java.lang.Boolean)" class="member-name-link">setRemoteEval</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Boolean.html" title="class or interface in java.lang" class="external-link">Boolean</a>&nbsp;remoteEval)</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">&nbsp;</div>
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>void</code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#setRemoteEvalCacheSize(java.lang.Integer)" class="member-name-link">setRemoteEvalCacheSize</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Integer.html" title="class or interface in java.lang" class="external-link">Integer</a>&nbsp;remoteEvalCacheSize)</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">&nbsp;</div>
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>void</code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#setRemoteEvalCacheTtlSeconds(java.lang.Integer)" class="member-name-link">setRemoteEvalCacheTtlSeconds</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Integer.html" title="class or interface in java.lang" class="external-link">Integer</a>&nbsp;remoteEvalCacheTtlSeconds)</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="block">Hard expiry (seconds) for cached remote-eval responses; <code>null</code> disables time-based expiry.</div>
 </div>
 <div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>void</code></div>
 <div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#setSavedGroups(com.google.gson.JsonObject)" class="member-name-link">setSavedGroups</a><wbr>(com.google.gson.JsonObject&nbsp;savedGroups)</code></div>
@@ -305,23 +376,28 @@ loadScripts(document, 'script');</script>
 <div class="block">List of user's attributes keys</div>
 </div>
 <div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>void</code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#setStickyBucketService(growthbook.sdk.java.stickyBucketing.StickyBucketService)" class="member-name-link">setStickyBucketService</a><wbr>(<a href="../stickyBucketing/StickyBucketService.html" title="interface in growthbook.sdk.java.stickyBucketing">StickyBucketService</a>&nbsp;stickyBucketService)</code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#setStickyBucketIdentifierAttributesSignature(java.lang.String)" class="member-name-link">setStickyBucketIdentifierAttributesSignature</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;stickyBucketIdentifierAttributesSignature)</code></div>
 <div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
-<div class="block">Service that provide functionality of Sticky Bucketing</div>
+<div class="block">Fingerprint of the feature payload used to derive sticky bucket identifiers.</div>
 </div>
 <div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>void</code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#setTrackingCallback(growthbook.sdk.java.callback.TrackingCallback)" class="member-name-link">setTrackingCallback</a><wbr>(<a href="../callback/TrackingCallback.html" title="interface in growthbook.sdk.java.callback">TrackingCallback</a>&nbsp;trackingCallback)</code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#setStickyBucketService(growthbook.sdk.java.stickyBucketing.StickyBucketService)" class="member-name-link">setStickyBucketService</a><wbr>(<a href="../stickyBucketing/StickyBucketService.html" title="interface in growthbook.sdk.java.stickyBucketing">StickyBucketService</a>&nbsp;stickyBucketService)</code></div>
 <div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
-<div class="block">A function that takes <a href="Experiment.html" title="class in growthbook.sdk.java.model"><code>Experiment</code></a> and <a href="ExperimentResult.html" title="class in growthbook.sdk.java.model"><code>ExperimentResult</code></a> as arguments.</div>
+<div class="block">Service that provide functionality of Sticky Bucketing</div>
 </div>
 <div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>void</code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#setUrl(java.lang.String)" class="member-name-link">setUrl</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;url)</code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#setTrackingCallback(growthbook.sdk.java.callback.TrackingCallback)" class="member-name-link">setTrackingCallback</a><wbr>(<a href="../callback/TrackingCallback.html" title="interface in growthbook.sdk.java.callback">TrackingCallback</a>&nbsp;trackingCallback)</code></div>
 <div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="block">A function that takes <a href="Experiment.html" title="class in growthbook.sdk.java.model"><code>Experiment</code></a> and <a href="ExperimentResult.html" title="class in growthbook.sdk.java.model"><code>ExperimentResult</code></a> as arguments.</div>
+</div>
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>void</code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#setUrl(java.lang.String)" class="member-name-link">setUrl</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;url)</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">The URL of the current page</div>
 </div>
-<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a></code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#toString()" class="member-name-link">toString</a>()</code></div>
-<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">&nbsp;</div>
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a></code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#toString()" class="member-name-link">toString</a>()</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">&nbsp;</div>
 </div>
 </div>
 </div>
@@ -340,7 +416,7 @@ loadScripts(document, 'script');</script>
 <h2>Constructor Details</h2>
 <ul class="member-list">
 <li>
-<section class="detail" id="&lt;init&gt;(java.lang.String,com.google.gson.JsonObject,java.lang.String,java.util.Map,java.lang.String,java.lang.Boolean,java.lang.Boolean,java.lang.String,java.lang.Boolean,java.util.Map,growthbook.sdk.java.callback.TrackingCallback,growthbook.sdk.java.callback.FeatureUsageCallback,growthbook.sdk.java.stickyBucketing.StickyBucketService,java.util.Map,java.util.List,com.google.gson.JsonObject)">
+<section class="detail" id="&lt;init&gt;(java.lang.String,com.google.gson.JsonObject,java.lang.String,java.util.Map,java.lang.String,java.lang.Boolean,java.lang.Boolean,java.lang.String,java.lang.Boolean,java.util.Map,growthbook.sdk.java.callback.TrackingCallback,growthbook.sdk.java.callback.FeatureUsageCallback,growthbook.sdk.java.stickyBucketing.StickyBucketService,java.util.Map,java.util.List,com.google.gson.JsonObject,java.lang.String,java.lang.String,java.lang.Boolean,java.util.List,java.lang.Integer,java.lang.Integer)">
 <h3>GBContext</h3>
 <div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="element-name">GBContext</span><wbr><span class="parameters">(@Nullable
  <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;attributesJson,
@@ -371,7 +447,19 @@ loadScripts(document, 'script');</script>
  @Nullable
  <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/List.html" title="class or interface in java.util" class="external-link">List</a>&lt;<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&gt;&nbsp;stickyBucketIdentifierAttributes,
  @Nullable
- com.google.gson.JsonObject&nbsp;savedGroups)</span></div>
+ com.google.gson.JsonObject&nbsp;savedGroups,
+ @Nullable
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;apiHost,
+ @Nullable
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;clientKey,
+ @Nullable
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Boolean.html" title="class or interface in java.lang" class="external-link">Boolean</a>&nbsp;remoteEval,
+ @Nullable
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/List.html" title="class or interface in java.util" class="external-link">List</a>&lt;<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&gt;&nbsp;cacheKeyAttributes,
+ @Nullable
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Integer.html" title="class or interface in java.lang" class="external-link">Integer</a>&nbsp;remoteEvalCacheSize,
+ @Nullable
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Integer.html" title="class or interface in java.lang" class="external-link">Integer</a>&nbsp;remoteEvalCacheTtlSeconds)</span></div>
 <div class="block">The <a href="GBContext.GBContextBuilder.html" title="class in growthbook.sdk.java.model"><code>GBContext.GBContextBuilder</code></a> is recommended for constructing a Context.
  Alternatively, you can use this static method instead of the builder.</div>
 <dl class="notes">
@@ -392,7 +480,49 @@ loadScripts(document, 'script');</script>
 <dd><code>stickyBucketService</code> - Service that provide functionality of Sticky Bucketing.</dd>
 <dd><code>stickyBucketAssignmentDocs</code> - Map of Sticky Bucket documents.</dd>
 <dd><code>stickyBucketIdentifierAttributes</code> - List of user's attributes keys.</dd>
+<dd><code>savedGroups</code> - Saved Groups data.</dd>
+<dd><code>apiHost</code> - GrowthBook API host for remote evaluation.</dd>
+<dd><code>clientKey</code> - GrowthBook SDK client key for remote evaluation.</dd>
+<dd><code>remoteEval</code> - Whether to use remote evaluation.</dd>
+<dd><code>cacheKeyAttributes</code> - Attribute names used to build the remote eval cache key.</dd>
+<dd><code>remoteEvalCacheSize</code> - Maximum number of remote eval responses kept in memory.</dd>
+<dd><code>remoteEvalCacheTtlSeconds</code> - Hard expiry (seconds) for cached remote eval responses; null disables time-based expiry.</dd>
 </dl>
+</section>
+</li>
+<li>
+<section class="detail" id="&lt;init&gt;(java.lang.String,com.google.gson.JsonObject,java.lang.String,java.util.Map,java.lang.String,java.lang.Boolean,java.lang.Boolean,java.lang.String,java.lang.Boolean,java.util.Map,growthbook.sdk.java.callback.TrackingCallback,growthbook.sdk.java.callback.FeatureUsageCallback,growthbook.sdk.java.stickyBucketing.StickyBucketService,java.util.Map,java.util.List,com.google.gson.JsonObject)">
+<h3>GBContext</h3>
+<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="element-name">GBContext</span><wbr><span class="parameters">(@Nullable
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;attributesJson,
+ @Nullable
+ com.google.gson.JsonObject&nbsp;attributes,
+ @Nullable
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;featuresJson,
+ @Nullable
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/Map.html" title="class or interface in java.util" class="external-link">Map</a>&lt;<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>,<wbr><a href="Feature.html" title="class in growthbook.sdk.java.model">Feature</a>&lt;?&gt;&gt;&nbsp;features,
+ @Nullable
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;encryptionKey,
+ @Nullable
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Boolean.html" title="class or interface in java.lang" class="external-link">Boolean</a>&nbsp;enabled,
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Boolean.html" title="class or interface in java.lang" class="external-link">Boolean</a>&nbsp;isQaMode,
+ @Nullable
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;url,
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Boolean.html" title="class or interface in java.lang" class="external-link">Boolean</a>&nbsp;allowUrlOverrides,
+ @Nullable
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/Map.html" title="class or interface in java.util" class="external-link">Map</a>&lt;<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>,<wbr><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Integer.html" title="class or interface in java.lang" class="external-link">Integer</a>&gt;&nbsp;forcedVariationsMap,
+ @Nullable
+ <a href="../callback/TrackingCallback.html" title="interface in growthbook.sdk.java.callback">TrackingCallback</a>&nbsp;trackingCallback,
+ @Nullable
+ <a href="../callback/FeatureUsageCallback.html" title="interface in growthbook.sdk.java.callback">FeatureUsageCallback</a>&nbsp;featureUsageCallback,
+ @Nullable
+ <a href="../stickyBucketing/StickyBucketService.html" title="interface in growthbook.sdk.java.stickyBucketing">StickyBucketService</a>&nbsp;stickyBucketService,
+ @Nullable
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/Map.html" title="class or interface in java.util" class="external-link">Map</a>&lt;<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>,<wbr><a href="StickyAssignmentsDocument.html" title="class in growthbook.sdk.java.model">StickyAssignmentsDocument</a>&gt;&nbsp;stickyBucketAssignmentDocs,
+ @Nullable
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/List.html" title="class or interface in java.util" class="external-link">List</a>&lt;<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&gt;&nbsp;stickyBucketIdentifierAttributes,
+ @Nullable
+ com.google.gson.JsonObject&nbsp;savedGroups)</span></div>
 </section>
 </li>
 </ul>
@@ -442,6 +572,12 @@ loadScripts(document, 'script');</script>
 <h3>setForcedVariationsMap</h3>
 <div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type">void</span>&nbsp;<span class="element-name">setForcedVariationsMap</span><wbr><span class="parameters">(@Nullable
  <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/Map.html" title="class or interface in java.util" class="external-link">Map</a>&lt;<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>,<wbr>?&gt;&nbsp;forcedVariationsMap)</span></div>
+</section>
+</li>
+<li>
+<section class="detail" id="isRemoteEvalEnabled()">
+<h3>isRemoteEvalEnabled</h3>
+<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type">boolean</span>&nbsp;<span class="element-name">isRemoteEvalEnabled</span>()</div>
 </section>
 </li>
 <li>
@@ -595,6 +731,55 @@ loadScripts(document, 'script');</script>
 </section>
 </li>
 <li>
+<section class="detail" id="getStickyBucketIdentifierAttributesSignature()">
+<h3>getStickyBucketIdentifierAttributesSignature</h3>
+<div class="member-signature"><span class="annotations">@Nullable
+</span><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a></span>&nbsp;<span class="element-name">getStickyBucketIdentifierAttributesSignature</span>()</div>
+<div class="block">Fingerprint of the feature payload used to derive sticky bucket identifiers.</div>
+</section>
+</li>
+<li>
+<section class="detail" id="getApiHost()">
+<h3>getApiHost</h3>
+<div class="member-signature"><span class="annotations">@Nullable
+</span><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a></span>&nbsp;<span class="element-name">getApiHost</span>()</div>
+</section>
+</li>
+<li>
+<section class="detail" id="getClientKey()">
+<h3>getClientKey</h3>
+<div class="member-signature"><span class="annotations">@Nullable
+</span><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a></span>&nbsp;<span class="element-name">getClientKey</span>()</div>
+</section>
+</li>
+<li>
+<section class="detail" id="getRemoteEval()">
+<h3>getRemoteEval</h3>
+<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Boolean.html" title="class or interface in java.lang" class="external-link">Boolean</a></span>&nbsp;<span class="element-name">getRemoteEval</span>()</div>
+</section>
+</li>
+<li>
+<section class="detail" id="getCacheKeyAttributes()">
+<h3>getCacheKeyAttributes</h3>
+<div class="member-signature"><span class="annotations">@Nullable
+</span><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/List.html" title="class or interface in java.util" class="external-link">List</a>&lt;<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&gt;</span>&nbsp;<span class="element-name">getCacheKeyAttributes</span>()</div>
+</section>
+</li>
+<li>
+<section class="detail" id="getRemoteEvalCacheSize()">
+<h3>getRemoteEvalCacheSize</h3>
+<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Integer.html" title="class or interface in java.lang" class="external-link">Integer</a></span>&nbsp;<span class="element-name">getRemoteEvalCacheSize</span>()</div>
+</section>
+</li>
+<li>
+<section class="detail" id="getRemoteEvalCacheTtlSeconds()">
+<h3>getRemoteEvalCacheTtlSeconds</h3>
+<div class="member-signature"><span class="annotations">@Nullable
+</span><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Integer.html" title="class or interface in java.lang" class="external-link">Integer</a></span>&nbsp;<span class="element-name">getRemoteEvalCacheTtlSeconds</span>()</div>
+<div class="block">Hard expiry (seconds) for cached remote-eval responses; <code>null</code> disables time-based expiry.</div>
+</section>
+</li>
+<li>
 <section class="detail" id="setFeatures(java.util.Map)">
 <h3>setFeatures</h3>
 <div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type">void</span>&nbsp;<span class="element-name">setFeatures</span><wbr><span class="parameters">(@Nullable
@@ -701,6 +886,55 @@ loadScripts(document, 'script');</script>
 <div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type">void</span>&nbsp;<span class="element-name">setStickyBucketIdentifierAttributes</span><wbr><span class="parameters">(@Nullable
  <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/List.html" title="class or interface in java.util" class="external-link">List</a>&lt;<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&gt;&nbsp;stickyBucketIdentifierAttributes)</span></div>
 <div class="block">List of user's attributes keys</div>
+</section>
+</li>
+<li>
+<section class="detail" id="setStickyBucketIdentifierAttributesSignature(java.lang.String)">
+<h3>setStickyBucketIdentifierAttributesSignature</h3>
+<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type">void</span>&nbsp;<span class="element-name">setStickyBucketIdentifierAttributesSignature</span><wbr><span class="parameters">(@Nullable
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;stickyBucketIdentifierAttributesSignature)</span></div>
+<div class="block">Fingerprint of the feature payload used to derive sticky bucket identifiers.</div>
+</section>
+</li>
+<li>
+<section class="detail" id="setApiHost(java.lang.String)">
+<h3>setApiHost</h3>
+<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type">void</span>&nbsp;<span class="element-name">setApiHost</span><wbr><span class="parameters">(@Nullable
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;apiHost)</span></div>
+</section>
+</li>
+<li>
+<section class="detail" id="setClientKey(java.lang.String)">
+<h3>setClientKey</h3>
+<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type">void</span>&nbsp;<span class="element-name">setClientKey</span><wbr><span class="parameters">(@Nullable
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;clientKey)</span></div>
+</section>
+</li>
+<li>
+<section class="detail" id="setRemoteEval(java.lang.Boolean)">
+<h3>setRemoteEval</h3>
+<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type">void</span>&nbsp;<span class="element-name">setRemoteEval</span><wbr><span class="parameters">(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Boolean.html" title="class or interface in java.lang" class="external-link">Boolean</a>&nbsp;remoteEval)</span></div>
+</section>
+</li>
+<li>
+<section class="detail" id="setCacheKeyAttributes(java.util.List)">
+<h3>setCacheKeyAttributes</h3>
+<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type">void</span>&nbsp;<span class="element-name">setCacheKeyAttributes</span><wbr><span class="parameters">(@Nullable
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/List.html" title="class or interface in java.util" class="external-link">List</a>&lt;<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&gt;&nbsp;cacheKeyAttributes)</span></div>
+</section>
+</li>
+<li>
+<section class="detail" id="setRemoteEvalCacheSize(java.lang.Integer)">
+<h3>setRemoteEvalCacheSize</h3>
+<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type">void</span>&nbsp;<span class="element-name">setRemoteEvalCacheSize</span><wbr><span class="parameters">(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Integer.html" title="class or interface in java.lang" class="external-link">Integer</a>&nbsp;remoteEvalCacheSize)</span></div>
+</section>
+</li>
+<li>
+<section class="detail" id="setRemoteEvalCacheTtlSeconds(java.lang.Integer)">
+<h3>setRemoteEvalCacheTtlSeconds</h3>
+<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type">void</span>&nbsp;<span class="element-name">setRemoteEvalCacheTtlSeconds</span><wbr><span class="parameters">(@Nullable
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Integer.html" title="class or interface in java.lang" class="external-link">Integer</a>&nbsp;remoteEvalCacheTtlSeconds)</span></div>
+<div class="block">Hard expiry (seconds) for cached remote-eval responses; <code>null</code> disables time-based expiry.</div>
 </section>
 </li>
 <li>
