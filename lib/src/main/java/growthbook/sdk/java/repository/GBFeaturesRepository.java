@@ -23,6 +23,7 @@ import growthbook.sdk.java.sandbox.CacheMode;
 import growthbook.sdk.java.sandbox.GbCacheManager;
 import growthbook.sdk.java.util.DecryptionUtils;
 import growthbook.sdk.java.util.GrowthBookJsonUtils;
+import growthbook.sdk.java.sse.SseEventPayloadValidator;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
@@ -1014,6 +1015,11 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
         @Override
         public void onEvent(@NotNull EventSource eventSource, @Nullable String id, @Nullable String type, @NotNull String data) {
             super.onEvent(eventSource, id, type, data);
+            // Heartbeat/keepalive events carry no feature changes; ignore them so they neither
+            // trigger a refresh nor get parsed as a feature payload.
+            if (SseEventPayloadValidator.isHeartbeatEvent(type)) {
+                return;
+            }
 
             try {
                 if (data.trim().isEmpty()) {
@@ -1022,7 +1028,9 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
                 }
                 handler.onFeaturesResponse(data);
             } catch (FeatureFetchException e) {
-                log.error(e.getMessage(), e);
+                log.error("Failed to process SSE feature payload: {}", e.getMessage(), e);
+            } catch (RuntimeException e) {
+                log.error("Unexpected error while processing SSE feature payload.", e);
             }
         }
 
