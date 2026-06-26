@@ -9,15 +9,18 @@ import growthbook.sdk.java.multiusermode.usage.FeatureUsageCallbackWithUser;
 import growthbook.sdk.java.multiusermode.usage.TrackingCallbackWithUser;
 import growthbook.sdk.java.multiusermode.util.TransformationUtil;
 import growthbook.sdk.java.repository.FeatureRefreshStrategy;
+import growthbook.sdk.java.retry.FeatureFetchRetryPolicy;
 import growthbook.sdk.java.sandbox.GbCacheManager;
 import growthbook.sdk.java.sandbox.CacheMode;
 import growthbook.sdk.java.stickyBucketing.InMemoryStickyBucketServiceImpl;
 import growthbook.sdk.java.stickyBucketing.StickyBucketService;
+import growthbook.sdk.java.util.ForcedVariationsUtils;
 import lombok.Builder;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 
 import javax.annotation.Nullable;
+import java.time.Duration;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -26,7 +29,10 @@ import java.util.Map;
 @Slf4j
 public class Options {
 
-    @Builder
+    /**
+     * Backward-compatible constructor retained for integrations created before
+     * background refresh intervals and retry policies were introduced.
+     */
     public Options(@Nullable Boolean enabled,
                    Boolean isQaMode,
                    @Nullable Boolean isCacheDisabled,
@@ -47,7 +53,58 @@ public class Options {
                    @Nullable Map<String, Integer> globalForcedVariationsMap,
                    @Nullable GbCacheManager cacheManager,
                    @Nullable CacheMode cacheMode,
-                   @Nullable String cacheDirectory
+                   @Nullable String cacheDirectory) {
+        this(
+                enabled,
+                isQaMode,
+                isCacheDisabled,
+                allowUrlOverrides,
+                url,
+                apiHost,
+                clientKey,
+                decryptionKey,
+                stickyBucketIdentifierAttributes,
+                stickyBucketService,
+                trackingCallBackWithUser,
+                featureUsageCallbackWithUser,
+                refreshStrategy,
+                swrTtlSeconds,
+                featureRefreshCallback,
+                globalAttributes,
+                globalForcedFeatureValues,
+                globalForcedVariationsMap,
+                cacheManager,
+                cacheMode,
+                cacheDirectory,
+                null,
+                null
+        );
+    }
+
+    @Builder
+    public Options(@Nullable Boolean enabled,
+                   Boolean isQaMode,
+                   @Nullable Boolean isCacheDisabled,
+                   Boolean allowUrlOverrides,
+                   @Nullable String url,
+                   @Nullable String apiHost,
+                   @Nullable String clientKey,
+                   @Nullable String decryptionKey,
+                   @Nullable List<String> stickyBucketIdentifierAttributes,
+                   @Nullable StickyBucketService stickyBucketService,
+                   @Nullable TrackingCallbackWithUser trackingCallBackWithUser,
+                   @Nullable FeatureUsageCallbackWithUser featureUsageCallbackWithUser,
+                   @Nullable FeatureRefreshStrategy refreshStrategy,
+                   @Nullable Integer swrTtlSeconds,
+                   @Nullable FeatureRefreshCallback featureRefreshCallback,
+                   @Nullable JsonObject globalAttributes,
+                   @Nullable Map<String, Object> globalForcedFeatureValues,
+                   @Nullable Map<String, ?> globalForcedVariationsMap,
+                   @Nullable GbCacheManager cacheManager,
+                   @Nullable CacheMode cacheMode,
+                   @Nullable String cacheDirectory,
+                   @Nullable Duration backgroundFetchInterval,
+                   @Nullable FeatureFetchRetryPolicy retryPolicy
 
     ) {
         this.enabled = enabled == null || enabled;
@@ -67,10 +124,12 @@ public class Options {
         this.featureRefreshCallback = featureRefreshCallback;
         this.globalAttributes = globalAttributes;
         this.globalForcedFeatureValues = globalForcedFeatureValues;
-        this.globalForcedVariationsMap = globalForcedVariationsMap;
+        this.globalForcedVariationsMap = ForcedVariationsUtils.normalize(globalForcedVariationsMap);
         this.cacheManager = cacheManager;
         this.cacheMode = cacheMode == null ? CacheMode.AUTO : cacheMode;
         this.cacheDirectory = cacheDirectory;
+        this.backgroundFetchInterval = backgroundFetchInterval;
+        this.retryPolicy = retryPolicy;
     }
 
     /**
@@ -178,6 +237,10 @@ public class Options {
     @Nullable
     private Map<String, Integer> globalForcedVariationsMap;
 
+    public void setGlobalForcedVariationsMap(@Nullable Map<String, ?> globalForcedVariationsMap) {
+        this.globalForcedVariationsMap = ForcedVariationsUtils.normalize(globalForcedVariationsMap);
+    }
+
     public FeatureRefreshStrategy getRefreshingStrategy() {
         if (this.refreshStrategy == null) {
             return FeatureRefreshStrategy.STALE_WHILE_REVALIDATE;
@@ -197,9 +260,26 @@ public class Options {
     @Nullable
     private String cacheDirectory;
 
-    public CacheMode getCacheMode() { return cacheMode == null ? CacheMode.AUTO : cacheMode; }
+    /**
+     * Optional minimum interval between non-forced background feature refreshes.
+     */
     @Nullable
-    public String getCacheDirectory() { return cacheDirectory; }
+    private Duration backgroundFetchInterval;
+
+    /**
+     * Optional bounded retry policy. Repositories use the default policy when null.
+     */
+    @Nullable
+    private FeatureFetchRetryPolicy retryPolicy;
+
+    public CacheMode getCacheMode() {
+        return cacheMode == null ? CacheMode.AUTO : cacheMode;
+    }
+
+    @Nullable
+    public String getCacheDirectory() {
+        return cacheDirectory;
+    }
 
     @Nullable
     public StickyBucketService getStickyBucketService() {

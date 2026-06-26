@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.10.10](https://github.com/growthbook/growthbook-sdk-java/compare/v0.10.9...0.10.10) (2026-05-08)
+
+
+### Bug Fixes
+
+* remove duplicate rollout check in force rule evaluation ([#208](https://github.com/growthbook/growthbook-sdk-java/issues/208)) ([4f76450](https://github.com/growthbook/growthbook-sdk-java/commit/4f764505f8581009f9828b5ad3a0e50c455de146))
+
 ## [0.10.9](https://github.com/growthbook/growthbook-sdk-java/compare/v0.10.8...0.10.9) (2026-04-07)
 
 

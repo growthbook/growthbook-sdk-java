@@ -23,5 +23,5 @@ public class TestContext {
     public String url;
 
     @Nullable
-    public HashMap<String, Integer> forcedVariations;
+    public HashMap<String, Object> forcedVariations;
 }

@@ -524,9 +524,14 @@ public class GrowthBookUtils {
         HashAttributeAndHashValue hashAttributeAndHashValue = GrowthBookUtils
                 .getHashAttribute(hashAttribute, fallbackAttribute, attributes);
 
+        String hashValue = hashAttributeAndHashValue.getHashValue();
+        if (hashValue == null || hashValue.isEmpty()) {
+            return false;
+        }
+
         // Determine the bucket for the user
         Float hash = GrowthBookUtils.hash(
-                hashAttributeAndHashValue.getHashValue(),
+                hashValue,
                 hashVersion,
                 seed
         );
@@ -581,28 +586,8 @@ public class GrowthBookUtils {
                                                                 String featuresDataModel,
                                                                 JsonObject attributeOverrides) {
         Map<String, String> attributes = new HashMap<>();
-        List<String> identifierAttributes = context.getStickyBucketIdentifierAttributes();
 
-        if (identifierAttributes == null || identifierAttributes.isEmpty()) {
-            return attributes;
-        }
-
-        // 1. generate payload signature for sticky-bucket identifier derivation to re-use it later.
-        // context.getFeatures() - shouldn't be null!
-        String signature = Integer.toString(featuresDataModel == null
-                ? context.getFeatures().hashCode() : featuresDataModel.hashCode());
-
-        // 2. derive attributes only if the signature changes
-        boolean shouldDerive = !signature.equals(context.getStickyBucketIdentifierAttributesSignature());
-
-        if (shouldDerive) {
-            List<String> derived = deriveStickyBucketIdentifierAttributes(context, featuresDataModel);
-            identifierAttributes = derived;
-
-            // 3. store the derived attributes to re-use in evaluations.
-            context.setStickyBucketIdentifierAttributes(derived);
-            context.setStickyBucketIdentifierAttributesSignature(signature);
-        }
+        List<String> identifierAttributes = deriveStickyBucketIdentifierAttributes(context, featuresDataModel);
 
         for (String attr : identifierAttributes) {
             HashAttributeAndHashValue hashAttribute = getHashAttribute(
@@ -698,8 +683,8 @@ public class GrowthBookUtils {
                 + hashAttributeAndHashValueWithoutFallbackPass.getHashValue();
 
         HashAttributeAndHashValue hashAttributeAndHashValueWithFallbackAttribute = getHashAttribute(
-                null,
                 expFallbackAttribute,
+                null,
                 context.getUser().getAttributes()
         );
         String fallBackKey = hashAttributeAndHashValueWithFallbackAttribute.getHashValue().isEmpty()
@@ -709,25 +694,6 @@ public class GrowthBookUtils {
                 + hashAttributeAndHashValueWithFallbackAttribute.getHashValue();
 
         Map<String, StickyAssignmentsDocument> stickyAssignmentsDocuments = context.getUser().getStickyBucketAssignmentDocs();
-
-        if (context.getUser().getAttributes().get(expFallbackAttribute) != null) {
-            String leftOperand = stickyAssignmentsDocuments.get(
-                    expFallbackAttribute + "||" + context.getUser().getAttributes().get(expFallbackAttribute).getAsString()
-            ) == null
-                    ? null
-                    : stickyAssignmentsDocuments.get(
-                    expFallbackAttribute + "||" + context.getUser().getAttributes().get(expFallbackAttribute).getAsString()
-            ).getAttributeValue();
-
-            if (!Objects.equals(leftOperand, context.getUser().getAttributes().get(expFallbackAttribute).getAsString())) {
-                context.getUser().setStickyBucketAssignmentDocs(new HashMap<>());
-            }
-        }
-
-        if (context.getUser().getStickyBucketAssignmentDocs() != null) {
-            context.getUser().getStickyBucketAssignmentDocs().values()
-                    .forEach(it -> mergedAssignments.putAll(it.getAssignments()));
-        }
 
         if (fallBackKey != null) {
             if (stickyAssignmentsDocuments.get(fallBackKey) != null) {
