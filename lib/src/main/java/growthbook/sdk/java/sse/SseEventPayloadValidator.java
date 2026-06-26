@@ -12,7 +12,7 @@ public class SseEventPayloadValidator {
         return !StringUtils.isBlank(data) && !isHeartbeatEvent(eventType);
     }
 
-    private boolean isHeartbeatEvent(@Nullable String eventType) {
+    public boolean isHeartbeatEvent(@Nullable String eventType) {
         if (StringUtils.isBlank(eventType)) {
             return false;
         }
