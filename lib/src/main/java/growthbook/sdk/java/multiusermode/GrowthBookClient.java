@@ -31,6 +31,7 @@ import growthbook.sdk.java.sandbox.CacheMode;
 import growthbook.sdk.java.sandbox.GbCacheManager;
 import growthbook.sdk.java.model.StickyAssignmentsDocument;
 import growthbook.sdk.java.util.GrowthBookJsonUtils;
+import growthbook.sdk.java.util.GrowthBookUtils;
 import lombok.extern.slf4j.Slf4j;
 
 import javax.annotation.Nullable;
@@ -40,7 +41,8 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -67,8 +69,8 @@ public class GrowthBookClient {
     public GrowthBookClient(Options opts) {
         this.options = opts == null ? Options.builder().build() : opts;
 
-        this.assigned = new HashMap<>();
-        this.callbacks = new ArrayList<>();
+        this.assigned = new ConcurrentHashMap<>();
+        this.callbacks = new CopyOnWriteArrayList<>();
         this.featureEvaluator = new FeatureEvaluator();
         this.experimentEvaluatorEvaluator = new ExperimentEvaluator();
     }
@@ -287,7 +289,7 @@ public class GrowthBookClient {
         ExperimentResult<ValueType> result = experimentEvaluatorEvaluator
                 .evaluateExperiment(experiment, getEvalContext(userContext), null);
 
-        fireSubscriptions(experiment, result);
+        GrowthBookUtils.fireSubscriptions(this.assigned, this.callbacks, experiment, result);
 
         return result;
     }
@@ -360,30 +362,6 @@ public class GrowthBookClient {
             sseRepository.initialize();
         } catch (FeatureFetchException e) {
             log.warn("Remote evaluation SSE invalidation could not be initialized", e);
-        }
-    }
-
-    private <ValueType> void fireSubscriptions(Experiment<ValueType> experiment, ExperimentResult<ValueType> result) {
-        String key = experiment.getKey();
-        // If assigned variation has changed, fire subscriptions
-        AssignedExperiment prev = this.assigned.get(key);
-        if (prev == null
-                || !Objects.equals(prev.getInExperiment(), result.getInExperiment())
-                || !Objects.equals(prev.getVariationId(), result.getVariationId())) {
-            AssignedExperiment current = new AssignedExperiment(
-                    experiment.getKey(),
-                    result.getInExperiment(),
-                    result.getVariationId()
-            );
-            this.assigned.put(key, current);
-
-            for (ExperimentRunCallback cb : this.callbacks) {
-                try {
-                    cb.onRun(experiment, result);
-                } catch (Exception e) {
-                    log.error(e.getMessage());
-                }
-            }
         }
     }
 

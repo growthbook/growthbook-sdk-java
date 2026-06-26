@@ -93,7 +93,7 @@ public class EvaluateFeatureWithStickyBucketingFeatureTest {
                     Object.class
             );
             ExperimentResult<Object> actualExperimentResult = actualFeatureResult == null ? null : actualFeatureResult.getExperimentResult();
-            Map<String, StickyAssignmentsDocument> actualStickyBucketAssignmentDocs = subject.evaluationContext.getUser().getStickyBucketAssignmentDocs();
+            Map<String, StickyAssignmentsDocument> actualStickyBucketAssignmentDocs = subject.getRootEvaluationContext().getUser().getStickyBucketAssignmentDocs();
 
             // initialize expected data
             ExperimentResult expectedExperimentResult = (testCase.get(4) instanceof JsonNull) ? null : utils.gson.fromJson(

@@ -4,18 +4,9 @@ import com.google.gson.Gson;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
-import growthbook.sdk.java.model.GeneratedStickyBucketAssignmentDocModel;
-import growthbook.sdk.java.model.BucketRange;
-import growthbook.sdk.java.model.Feature;
-import growthbook.sdk.java.model.FeatureRule;
-import growthbook.sdk.java.model.Filter;
-import growthbook.sdk.java.model.GBContext;
-import growthbook.sdk.java.model.HashAttributeAndHashValue;
-import growthbook.sdk.java.model.Namespace;
-import growthbook.sdk.java.model.StickyBucketVariation;
-import growthbook.sdk.java.model.VariationMeta;
+import growthbook.sdk.java.callback.ExperimentRunCallback;
+import growthbook.sdk.java.model.*;
 import growthbook.sdk.java.multiusermode.configurations.EvaluationContext;
-import growthbook.sdk.java.model.StickyAssignmentsDocument;
 import growthbook.sdk.java.multiusermode.util.TransformationUtil;
 import growthbook.sdk.java.stickyBucketing.StickyBucketService;
 import lombok.extern.slf4j.Slf4j;
@@ -901,5 +892,46 @@ public class GrowthBookUtils {
         Map<K, V> merged = new HashMap<>(base);
         merged.putAll(overrides);
         return merged;
+    }
+
+    public static <ValueType> void fireSubscriptions(Map<String, AssignedExperiment> assigned,
+                                                     List<ExperimentRunCallback> callbacks,
+                                                     Experiment<ValueType> experiment,
+                                                     ExperimentResult<ValueType> result
+    ) {
+        String key = experiment.getKey();
+        if (key == null) return;
+
+        AssignedExperiment current = new AssignedExperiment(
+                experiment.getKey(),
+                result.getInExperiment(),
+                result.getVariationId()
+        );
+
+        // Atomically update the assignment and detect whether it actually changed.
+        // Doing the compare-and-set inside compute() avoids the check-then-act race where two
+        // threads with the same key both see a stale value and fire the callback twice.
+        boolean[] changed = {false};
+        assigned.compute(key, (k, prev) -> {
+            if (prev == null
+                    || !Objects.equals(prev.getInExperiment(), current.getInExperiment())
+                    || !Objects.equals(prev.getVariationId(), current.getVariationId())) {
+                changed[0] = true;
+                return current;
+            }
+            return prev;
+        });
+
+        // Fire callbacks outside the map's locked region so a callback that re-enters the SDK
+        // (e.g. calls run() again) cannot block or deadlock on the same map bin.
+        if (changed[0]) {
+            for (ExperimentRunCallback cb : callbacks) {
+                try {
+                    cb.onRun(experiment, result);
+                } catch (Exception e) {
+                    log.error(e.getMessage());
+                }
+            }
+        }
     }
 }

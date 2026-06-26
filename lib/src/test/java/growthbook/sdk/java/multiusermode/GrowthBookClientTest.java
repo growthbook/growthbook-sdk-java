@@ -483,7 +483,7 @@ class GrowthBookClientTest {
     void run_sameResultMultipleTimes_firesCallbackOnce() {
         GrowthBookClient subject = new GrowthBookClient();
         ExperimentRunCallback mockCallback = mock(ExperimentRunCallback.class);
-        Experiment<String> mockExperiment = Experiment.<String>builder().build();
+        Experiment<String> mockExperiment = Experiment.<String>builder().key("my-experiment").build();
 
         subject.subscribe(mockCallback);
         subject.run(mockExperiment, UserContext.builder().build());

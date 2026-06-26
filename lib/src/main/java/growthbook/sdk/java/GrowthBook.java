@@ -2,9 +2,9 @@ package growthbook.sdk.java;
 
 import java.util.Map;
 import java.util.HashMap;
-import java.util.ArrayList;
 import java.util.List;
-import java.util.Objects;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArrayList;
 import javax.annotation.Nullable;
 import java.time.Duration;
 import com.google.gson.JsonObject;
@@ -56,15 +56,15 @@ public class GrowthBook implements IGrowthBook {
 
     private final GrowthBookJsonUtils jsonUtils = GrowthBookJsonUtils.getInstance();
 
-    private List<ExperimentRunCallback> callbacks;
-    @Getter @Setter private JsonObject attributeOverrides;
+    private volatile List<ExperimentRunCallback> callbacks;
+    @Getter @Setter private volatile JsonObject attributeOverrides;
 
-    public EvaluationContext evaluationContext = null;
+    private volatile EvaluationContext evaluationContext = null;
     private final Map<String, AssignedExperiment> assigned;
     private RemoteEvalService remoteEvalService;
     private RemoteEvalCache remoteEvalCache;
 
-    @Getter private Map<String, Object> forcedFeatureValues;
+    @Getter private volatile Map<String, Object> forcedFeatureValues;
     /**
      * Initialize the GrowthBook SDK with a provided {@link GBContext}
      *
@@ -73,8 +73,8 @@ public class GrowthBook implements IGrowthBook {
     public GrowthBook(GBContext context) {
         this.context = context;
 
-        this.assigned = new HashMap<>();
-        this.callbacks = new ArrayList<>();
+        this.assigned = new ConcurrentHashMap<>();
+        this.callbacks = new CopyOnWriteArrayList<>();
         this.featureEvaluator = new FeatureEvaluator();
         this.conditionEvaluator = new ConditionEvaluator();
         this.experimentEvaluatorEvaluator = new ExperimentEvaluator();
@@ -93,8 +93,8 @@ public class GrowthBook implements IGrowthBook {
         this.context = GBContext.builder().build();
 
         // dependencies
-        this.assigned = new HashMap<>();
-        this.callbacks = new ArrayList<>();
+        this.assigned = new ConcurrentHashMap<>();
+        this.callbacks = new CopyOnWriteArrayList<>();
         this.featureEvaluator = new FeatureEvaluator();
         this.conditionEvaluator = new ConditionEvaluator();
         this.experimentEvaluatorEvaluator = new ExperimentEvaluator();
@@ -117,8 +117,8 @@ public class GrowthBook implements IGrowthBook {
         this.conditionEvaluator = conditionEvaluator;
         this.experimentEvaluatorEvaluator = experimentEvaluator;
         this.context = context;
-        this.assigned = new HashMap<>();
-        this.callbacks = new ArrayList<>();
+        this.assigned = new ConcurrentHashMap<>();
+        this.callbacks = new CopyOnWriteArrayList<>();
         this.attributeOverrides = context.getAttributes() == null ? new JsonObject() : context.getAttributes();
         //this.savedGroups = context.getSavedGroups() == null ? new JsonObject() : context.getSavedGroups();
 
@@ -232,8 +232,23 @@ public class GrowthBook implements IGrowthBook {
     }
 
     private EvaluationContext getEvaluationContext() {
-        // Reset the stackContext for every evaluation.
-        this.evaluationContext.setStack(new EvaluationContext.StackContext());
+        // Snapshot the shared context once (volatile read) and return a per-call copy with its own
+        // StackContext. The StackContext is mutable per-evaluation scratch state (cycle detection,
+        // memoized results); sharing/resetting it on a single instance would let concurrent
+        // evaluations corrupt each other's state.
+        EvaluationContext base = this.evaluationContext;
+        return new EvaluationContext(
+                base.getGlobal(),
+                base.getUser(),
+                new EvaluationContext.StackContext(),
+                base.getOptions());
+    }
+
+    /**
+     * <b>INTERNAL/testing:</b> the shared (root) evaluation context that holds the global, user and
+     * options used to derive per-evaluation contexts. Package-private on purpose.
+     */
+    EvaluationContext getRootEvaluationContext() {
         return this.evaluationContext;
     }
 
@@ -329,7 +344,7 @@ public class GrowthBook implements IGrowthBook {
         ExperimentResult<ValueType> result = experimentEvaluatorEvaluator
                 .evaluateExperiment(experiment, getEvaluationContext(), null);
 
-        fireSubscriptions(experiment, result);
+        GrowthBookUtils.fireSubscriptions(this.assigned, this.callbacks, experiment, result);
 
         return result;
     }
@@ -606,7 +621,7 @@ public class GrowthBook implements IGrowthBook {
      */
     @Override
     public void destroy() {
-        this.callbacks = new ArrayList<>();
+        this.callbacks = new CopyOnWriteArrayList<>();
         if (this.remoteEvalCache != null) {
             this.remoteEvalCache.shutdown();
         }
@@ -658,30 +673,6 @@ public class GrowthBook implements IGrowthBook {
             // Sync updated docs into the evaluation context so the next evalFeature call sees them.
             if (evaluationContext != null && evaluationContext.getUser() != null) {
                 evaluationContext.getUser().setStickyBucketAssignmentDocs(context.getStickyBucketAssignmentDocs());
-            }
-        }
-    }
-
-    private <ValueType> void fireSubscriptions(Experiment<ValueType> experiment, ExperimentResult<ValueType> result) {
-        String key = experiment.getKey();
-        // If assigned variation has changed, fire subscriptions
-        AssignedExperiment prev = this.assigned.get(key);
-        if (prev == null
-                || !Objects.equals(prev.getInExperiment(), result.getInExperiment())
-                || !Objects.equals(prev.getVariationId(), result.getVariationId())) {
-            AssignedExperiment current = new AssignedExperiment(
-                    experiment.getKey(),
-                    result.getInExperiment(),
-                    result.getVariationId()
-            );
-            this.assigned.put(key, current);
-
-            for (ExperimentRunCallback cb : this.callbacks) {
-                try {
-                    cb.onRun(experiment, result);
-                } catch (Exception e) {
-                    log.error(e.getMessage());
-                }
             }
         }
     }
