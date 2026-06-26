@@ -11,5 +11,5 @@ import lombok.Getter;
 @Getter
 public class TrackData<ValueType> {
     Experiment<ValueType> experiment;
-    FeatureResult<ValueType> result;
+    ExperimentResult<ValueType> result;
 }

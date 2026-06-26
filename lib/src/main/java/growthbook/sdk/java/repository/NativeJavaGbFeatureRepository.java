@@ -22,6 +22,7 @@ import growthbook.sdk.java.model.HttpMethods;
 import growthbook.sdk.java.model.RequestBodyForRemoteEval;
 import growthbook.sdk.java.model.SseKey;
 import growthbook.sdk.java.model.GBContext;
+import growthbook.sdk.java.remoteeval.RemoteEvalEndpoints;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
@@ -235,7 +236,7 @@ public class NativeJavaGbFeatureRepository implements IGBFeaturesRepository {
         this.refreshStrategy = refreshStrategy == null ? FeatureRefreshStrategy.STALE_WHILE_REVALIDATE : refreshStrategy;
         this.featuresEndpoint = apiHost + "/api/features/" + clientKey;
         this.eventsEndpoint = apiHost + "/sub/" + clientKey;
-        this.remoteEvalEndPoint = apiHost + "/api/eval/" + clientKey;
+        this.remoteEvalEndPoint = RemoteEvalEndpoints.evalEndpoint(apiHost, clientKey);
         this.requestBodyForRemoteEval = requestBodyForRemoteEval;
 
         this.encryptionKey = encryptionKey;
@@ -741,7 +742,10 @@ public class NativeJavaGbFeatureRepository implements IGBFeaturesRepository {
     private void fetchForRemoteEval(RequestBodyForRemoteEval requestBodyForRemoteEval) throws FeatureFetchException {
         HttpURLConnection urlConnection = null;
         try {
-            String body = GrowthBookJsonUtils.getInstance().gson.toJson(requestBodyForRemoteEval);
+            RequestBodyForRemoteEval payload = requestBodyForRemoteEval == null
+                    ? new RequestBodyForRemoteEval()
+                    : requestBodyForRemoteEval;
+            String body = GrowthBookJsonUtils.getInstance().gson.toJson(payload);
 
             URL url = new URL(this.remoteEvalEndPoint);
             urlConnection = (HttpURLConnection) url.openConnection();
