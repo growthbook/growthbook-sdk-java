@@ -67,14 +67,14 @@ public class GrowthBookClient {
             repositoryToInitialize = prepareRepositoryForInitialization();
             if (repositoryToInitialize == null) {
                 GBFeaturesRepository repositorySnapshot = this.repository.get();
-                return repositorySnapshot != null && repositorySnapshot.getInitialized().get();
+                return repositorySnapshot != null && repositorySnapshot.getInitialized();
             }
 
             initializeFeaturesRepository(repositoryToInitialize);
             replaceGlobalContextFrom(repositoryToInitialize);
 
             boolean isReady = this.repository.get() == repositoryToInitialize
-                    && repositoryToInitialize.getInitialized().get();
+                    && repositoryToInitialize.getInitialized();
             if (isReady) {
                 log.info("GrowthBookClient initialized repository and registered feature refresh callbacks.");
             }
@@ -283,8 +283,8 @@ public class GrowthBookClient {
 
     private GlobalContext buildGlobalContext(GBFeaturesRepository sourceRepository) {
         return GlobalContext.builder()
-                .features(sourceRepository.getParsedFeatures().get())
-                .savedGroups(sourceRepository.getParsedSavedGroups().get())
+                .features(sourceRepository.getParsedFeatures())
+                .savedGroups(sourceRepository.getParsedSavedGroups())
                 .enabled(this.options.getEnabled())
                 .qaMode(this.options.getIsQaMode())
                 .forcedFeatureValues(this.options.getGlobalForcedFeatureValues())
