@@ -65,8 +65,8 @@ Next, add the dependency with the latest version to your project's dependencies:
 
 `GrowthBookClient` lets you share the same instance for all requests with an ability to accept the user attributes
 while calling the feature methods like `isOn()`. This `GrowthBookClient` instance is decoupled from the `GBContext`,
-creates a singleton featureRepository based on your refreshStrategy and uses the latest features at the time of
-evaluation, all managed internally.
+owns a feature repository based on your refresh strategy and uses the latest features at the time of evaluation,
+all managed internally.
 
 ```java
 
@@ -79,13 +79,33 @@ Options options = Options.builder()
 // Create growthbook instance using the options you need
 GrowthBookClient gb = new GrowthBookClient(options);
 
+// Optional metadata-only listener for successful and failed feature refreshes
+FeatureRefreshSubscription refreshSubscription = gb.subscribeFeatureRefreshListener(event -> {
+    if (event.isSuccessful()) {
+        System.out.println("Refresh source: " + event.getSource());
+        System.out.println("Features changed: " + event.isFeaturesChanged());
+        System.out.println("Loaded from cache: " + event.isLoadedFromCache());
+        System.out.println("Refresh duration: " + event.getDurationMillis() + " ms");
+        System.out.println("Active features: " + event.getActiveFeatureCount());
+    } else {
+        System.out.println("Feature refresh failed: " + event.getError());
+    }
+});
+
 // call the init method to load features 
 gb.initialize();
 
 gb.isOn("featureKey", UserContext.builder()
     .attributesJson("{\"id\" : \"123\"}").build()
 );
+
+// Stop receiving refresh events when no longer needed
+refreshSubscription.close();
 ```
+
+Feature refresh listeners are dispatched off the refresh thread on a dedicated daemon thread owned by
+the client. Supply your own executor with
+`Options.builder().featureRefreshListenerExecutor(executor).build()` to control the threading yourself.
 
 ### Manually create separate instance of GBContext, Repository and Growthbook classes
 
@@ -98,18 +118,17 @@ GBFeaturesRepository featuresRepository = GBFeaturesRepository
     .refreshStrategy(FeatureRefreshStrategy.SERVER_SENT_EVENTS) // optional; options: STALE_WHILE_REVALIDATE, SERVER_SENT_EVENTS (default: STALE_WHILE_REVALIDATE)
     .build();
 
-// Optional callback for getting updates when features are refreshed
-featuresRepository.onFeaturesRefresh(new FeatureRefreshCallback() {
-    @Override
-    public void onRefresh(String featuresJson) {
+// Optional listener for getting metadata when features are refreshed
+FeatureRefreshListener refreshListener = event -> {
+    if (event.isSuccessful()) {
         System.out.println("Features have been refreshed");
-        System.out.println(featuresJson);
-    }
-    @Override
-    public void onError(Throwable throwable) {
+        System.out.println("Features changed: " + event.isFeaturesChanged());
+    } else {
         System.out.println("Features refreshed with error");
+        System.out.println(event.getError());
     }
-});
+};
+featuresRepository.addFeatureRefreshListener(refreshListener);
 
 try {
     featuresRepository.initialize();
@@ -150,7 +169,7 @@ With the SWR strategy, the repository will:
 
 - Perform an initial synchronous fetch during `initialize()`.
 - Start a lightweight background poller that revalidates features on a fixed delay (by default equal to the TTL). The poller is protected against overlapping runs and logs start/end of each polling cycle.
-- Keep the latest features in memory and invoke registered `FeatureRefreshCallback`s when updated so the `GlobalContext` stays fresh.
+- Keep the latest features in memory and publish `FeatureRefreshListener` events when updated so the `GlobalContext` stays fresh.
 
 For SSE connections, the repository establishes a server‑sent events stream and updates as changes arrive; the SWR poller is not used.
 
@@ -187,7 +206,7 @@ public <ValueType> ExperimentResult<ValueType> run(Experiment<ValueType> experim
 
 - If you changed, added or removed any features, trigger a feature refresh. A forced refresh always performs a
   network request in the background and bypasses cache freshness checks, while current features remain available
-  for evaluation.
+  for evaluation. For remote evaluation payloads, use `refreshForRemoteEval(...)`.
 
 ```java
 growthBook.refreshFeatures(RefreshMode.FORCE);

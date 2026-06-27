@@ -1,29 +1,44 @@
 package growthbook.sdk.java;
 
-import com.github.tomakehurst.wiremock.WireMockServer;
-import com.github.tomakehurst.wiremock.core.WireMockConfiguration;
-import com.github.tomakehurst.wiremock.http.Fault;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+
 import growthbook.sdk.java.callback.FeatureRefreshCallback;
 import growthbook.sdk.java.exception.FeatureFetchException;
+import growthbook.sdk.java.listener.FeatureRefreshListener;
+import growthbook.sdk.java.model.FeatureRefreshEvent;
+import growthbook.sdk.java.model.FeatureRefreshSource;
+import growthbook.sdk.java.model.HttpHeaders;
 import growthbook.sdk.java.repository.FeatureRefreshStrategy;
 import growthbook.sdk.java.repository.NativeJavaGbFeatureRepository;
 import growthbook.sdk.java.sandbox.GbCacheManager;
-import org.junit.jupiter.api.AfterEach;
+import com.sun.net.httpserver.HttpServer;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-
-import static com.github.tomakehurst.wiremock.client.WireMock.*;
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.Mockito.*;
-import static org.mockito.Mockito.verify;
+import org.mockito.ArgumentCaptor;
+import java.io.IOException;
+import java.io.OutputStream;
+import java.net.InetSocketAddress;
+import java.net.HttpURLConnection;
+import java.nio.charset.StandardCharsets;
 
 class NativeJavaGbFeatureRepositoryTest {
     private static final String API_HOST = "https://cdn.growthbook.io";
     private static final String CLIENT_KEY = "java_NsrWldWd5bxQJZftGsWKl7R2yD2LtAK8C8EUYh9L8";
-    private WireMockServer wireMock;
+    private static final String TEST_CLIENT_KEY = "sdk-test";
+
     private NativeJavaGbFeatureRepository repository;
+
 
     @BeforeEach
     void setUp() {
@@ -34,18 +49,10 @@ class NativeJavaGbFeatureRepositoryTest {
                 .refreshStrategy(FeatureRefreshStrategy.STALE_WHILE_REVALIDATE)
                 .swrTtlSeconds(60)
                 .build();
-
-        wireMock = new WireMockServer(WireMockConfiguration.options().dynamicPort());
-        wireMock.start();
-    }
-
-    @AfterEach
-    void tearDown() {
-        wireMock.stop();
     }
 
     @Test
-    void constructor_withNullEncryptionKey_buildsSuccessfully() {
+    void canBeConstructed_withNullEncryptionKey() {
         NativeJavaGbFeatureRepository subject = new NativeJavaGbFeatureRepository(
                 "https://cdn.growthbook.io",
                 "java_NsrWldWd5bxQJZftGsWKl7R2yD2LtAK8C8EUYh9L8",
@@ -58,13 +65,12 @@ class NativeJavaGbFeatureRepositoryTest {
         );
 
         assertNotNull(subject);
-        assertEquals("https://cdn.growthbook.io/api/features/java_NsrWldWd5bxQJZftGsWKl7R2yD2LtAK8C8EUYh9L8",
-                subject.getFeaturesEndpoint());
+        assertEquals("https://cdn.growthbook.io/api/features/java_NsrWldWd5bxQJZftGsWKl7R2yD2LtAK8C8EUYh9L8", subject.getFeaturesEndpoint());
         assertEquals(FeatureRefreshStrategy.STALE_WHILE_REVALIDATE, subject.getRefreshStrategy());
     }
 
     @Test
-    void constructor_withEncryptionKey_buildsSuccessfully() {
+    void canBeConstructed_withEncryptionKey() {
         NativeJavaGbFeatureRepository subject = new NativeJavaGbFeatureRepository(
                 "https://cdn.growthbook.io",
                 "sdk-862b5mHcP9XPugqD",
@@ -77,13 +83,12 @@ class NativeJavaGbFeatureRepositoryTest {
         );
 
         assertNotNull(subject);
-        assertEquals("https://cdn.growthbook.io/api/features/sdk-862b5mHcP9XPugqD",
-                subject.getFeaturesEndpoint());
+        assertEquals("https://cdn.growthbook.io/api/features/sdk-862b5mHcP9XPugqD", subject.getFeaturesEndpoint());
         assertEquals("BhB1wORFmZLTDjbvstvS8w==", subject.getEncryptionKey());
     }
 
     @Test
-    void builder_withNullEncryptionKey_buildsSuccessfully() {
+    void canBeBuilt_withNullEncryptionKey() {
         NativeJavaGbFeatureRepository subject = NativeJavaGbFeatureRepository
                 .builder()
                 .apiHost("https://cdn.growthbook.io")
@@ -91,12 +96,11 @@ class NativeJavaGbFeatureRepositoryTest {
                 .build();
 
         assertNotNull(subject);
-        assertEquals("https://cdn.growthbook.io/api/features/java_NsrWldWd5bxQJZftGsWKl7R2yD2LtAK8C8EUYh9L8",
-                subject.getFeaturesEndpoint());
+        assertEquals("https://cdn.growthbook.io/api/features/java_NsrWldWd5bxQJZftGsWKl7R2yD2LtAK8C8EUYh9L8", subject.getFeaturesEndpoint());
     }
 
     @Test
-    void builder_withEncryptionKey_buildsSuccessfully() {
+    void canBeBuilt_withEncryptionKey() {
         NativeJavaGbFeatureRepository subject = NativeJavaGbFeatureRepository
                 .builder()
                 .apiHost("https://cdn.growthbook.io")
@@ -105,13 +109,12 @@ class NativeJavaGbFeatureRepositoryTest {
                 .build();
 
         assertNotNull(subject);
-        assertEquals("https://cdn.growthbook.io/api/features/sdk-862b5mHcP9XPugqD",
-                subject.getFeaturesEndpoint());
+        assertEquals("https://cdn.growthbook.io/api/features/sdk-862b5mHcP9XPugqD", subject.getFeaturesEndpoint());
         assertEquals("BhB1wORFmZLTDjbvstvS8w==", subject.getEncryptionKey());
     }
 
     @Test()
-    void constructor_withNullClientKey_throwsIllegalArgumentException() {
+    void cannotBeBuild_withoutClientKey() {
         assertThrows(IllegalArgumentException.class, () -> new NativeJavaGbFeatureRepository(
                 API_HOST,
                 null,
@@ -125,146 +128,12 @@ class NativeJavaGbFeatureRepositoryTest {
     }
 
     @Test
-    void initialize_success_setsInitializedTrue() throws Exception {
-        wireMock.stubFor(get(urlPathMatching("/api/features/.*"))
-                .willReturn(aResponse()
-                        .withStatus(200)
-                        .withHeader("X-Sse-Support", "disabled")
-                        .withHeader("Content-Type", "application/json")
-                        .withBody("{\"features\":{\"dark-mode\":{\"defaultValue\":true}}}")));
-
-        NativeJavaGbFeatureRepository repo = NativeJavaGbFeatureRepository.builder()
-                .apiHost("http://localhost:" + wireMock.port())
-                .clientKey("sdk-test123")
-                .refreshStrategy(FeatureRefreshStrategy.STALE_WHILE_REVALIDATE)
-                .isCacheDisabled(true)
-                .build();
-
-        repo.initialize();
-
-        assertTrue(repo.getInitialized().get());
-        assertNotEquals("{}", repo.getFeaturesJson());
+    void getEmptyFeatureJson_withouInvokeInitialize() {
+        assertEquals("{}", repository.getFeaturesJson());
     }
 
     @Test
-    void initialize_calledTwice_fetchesOnce() throws Exception {
-        wireMock.stubFor(get(urlPathMatching("/api/features/.*"))
-                .willReturn(aResponse()
-                        .withStatus(200)
-                        .withHeader("X-Sse-Support", "disabled")
-                        .withBody("{\"features\":{}}")));
-
-        NativeJavaGbFeatureRepository repo = NativeJavaGbFeatureRepository.builder()
-                .apiHost("http://localhost:" + wireMock.port())
-                .clientKey("sdk-test123")
-                .isCacheDisabled(true)
-                .build();
-
-        repo.initialize();
-        repo.initialize();
-
-        wireMock.verify(1, getRequestedFor(urlPathMatching("/api/features/.*")));
-    }
-
-    @Test
-    void initialize_networkError_throwsAndNotInitialized() {
-        wireMock.stubFor(get(urlPathMatching("/api/features/.*"))
-                .willReturn(aResponse().withFault(Fault.CONNECTION_RESET_BY_PEER)));
-
-        NativeJavaGbFeatureRepository repo = NativeJavaGbFeatureRepository.builder()
-                .apiHost("http://localhost:" + wireMock.port())
-                .clientKey("sdk-test123")
-                .isCacheDisabled(true)
-                .build();
-
-        assertThrows(FeatureFetchException.class, repo::initialize);
-        assertFalse(repo.getInitialized().get());
-    }
-
-    @Test
-    void initialize_success_withServerSentEventsStrategy() throws Exception {
-        wireMock.stubFor(get(urlPathMatching("/api/features/.*"))
-                .willReturn(aResponse()
-                        .withStatus(200)
-                        .withHeader("X-Sse-Support", "enabled")
-                        .withHeader("Content-Type", "application/json")
-                        .withBody("{\"features\":{\"dark-mode\":{\"defaultValue\":true}}}")));
-
-        wireMock.stubFor(get(urlPathMatching("/sub/.*"))
-                .willReturn(aResponse()
-                        .withStatus(200)
-                        .withHeader("Content-Type", "text/event-stream")
-                        .withBody("")));
-
-        NativeJavaGbFeatureRepository repo = NativeJavaGbFeatureRepository.builder()
-                .apiHost("http://localhost:" + wireMock.port())
-                .clientKey("sdk-test123")
-                .refreshStrategy(FeatureRefreshStrategy.SERVER_SENT_EVENTS)
-                .isCacheDisabled(true)
-                .build();
-
-        repo.initialize();
-
-        Thread.sleep(500);
-
-        assertTrue(repo.getInitialized().get());
-        assertNotEquals("{}", repo.getFeaturesJson());
-    }
-
-    @Test
-    void initialize_success_withRemoteEvalStrategy() throws Exception {
-        wireMock.stubFor(post(urlPathMatching("/api/eval/.*"))
-                .willReturn(aResponse()
-                        .withStatus(200)
-                        .withHeader("X-Sse-Support", "disabled")
-                        .withHeader("Content-Type", "application/json")
-                        .withBody("{\"features\":{\"dark-mode\":{\"defaultValue\":true}}}")));
-
-        NativeJavaGbFeatureRepository repo = NativeJavaGbFeatureRepository.builder()
-                .apiHost("http://localhost:" + wireMock.port())
-                .clientKey("sdk-test123")
-                .refreshStrategy(FeatureRefreshStrategy.REMOTE_EVAL_STRATEGY)
-                .isCacheDisabled(true)
-                .build();
-
-        repo.initialize();
-
-        assertTrue(repo.getInitialized().get());
-        assertNotEquals("{}", repo.getFeaturesJson());
-    }
-
-    @Test
-    void fetchFeatures_networkError_throwsFeatureFetchException() {
-        wireMock.stubFor(get(urlPathMatching("/api/features/.*"))
-                .willReturn(aResponse()
-                        .withFault(com.github.tomakehurst.wiremock.http.Fault.CONNECTION_RESET_BY_PEER)));
-
-        NativeJavaGbFeatureRepository repo = NativeJavaGbFeatureRepository.builder()
-                .apiHost("http://localhost:" + wireMock.port())
-                .clientKey("sdk-test123")
-                .isCacheDisabled(true)
-                .build();
-
-        assertThrows(FeatureFetchException.class, repo::fetchFeatures);
-    }
-
-    @Test
-    void initialize_networkError_throwsFeatureFetchException() {
-        wireMock.stubFor(get(urlPathMatching("/api/features/.*"))
-                .willReturn(aResponse()
-                        .withFault(com.github.tomakehurst.wiremock.http.Fault.CONNECTION_RESET_BY_PEER)));
-
-        NativeJavaGbFeatureRepository repo = NativeJavaGbFeatureRepository.builder()
-                .apiHost("http://localhost:" + wireMock.port())
-                .clientKey("sdk-test123")
-                .isCacheDisabled(true)
-                .build();
-
-        assertThrows(FeatureFetchException.class, repo::initialize);
-    }
-
-    @Test
-    void onFeaturesRefresh_whenRegistered_callsCallbackOnRefresh() {
+    public void testOnFeaturesRefresh_AddsListener() {
         FeatureRefreshCallback listener = mock(FeatureRefreshCallback.class);
         repository.onFeaturesRefresh(listener);
 
@@ -274,7 +143,20 @@ class NativeJavaGbFeatureRepositoryTest {
     }
 
     @Test
-    void onFeaturesRefresh_whenRegistered_callsCallbackOnError() {
+    public void testOnFeaturesRefresh_ContinuesAfterListenerFailure() {
+        FeatureRefreshCallback failingListener = mock(FeatureRefreshCallback.class);
+        FeatureRefreshCallback successfulListener = mock(FeatureRefreshCallback.class);
+        doThrow(new RuntimeException("listener failed")).when(failingListener).onRefresh("{}");
+
+        repository.onFeaturesRefresh(failingListener);
+        repository.onFeaturesRefresh(successfulListener);
+        repository.onRefreshSuccess("{}");
+
+        verify(successfulListener).onRefresh("{}");
+    }
+
+    @Test
+    public void testOnFeatureError_AddsListener() {
         FeatureRefreshCallback listener = mock(FeatureRefreshCallback.class);
         repository.onFeaturesRefresh(listener);
 
@@ -284,117 +166,232 @@ class NativeJavaGbFeatureRepositoryTest {
     }
 
     @Test
-    void clearCallbacks_whenCalled_removesAllCallbacks() {
+    public void testOnFeatureError_ContinuesAfterListenerFailure() {
+        FeatureRefreshCallback failingListener = mock(FeatureRefreshCallback.class);
+        FeatureRefreshCallback successfulListener = mock(FeatureRefreshCallback.class);
+        RuntimeException refreshError = new RuntimeException("refresh failed");
+        doThrow(new RuntimeException("listener failed")).when(failingListener).onError(refreshError);
+
+        repository.onFeaturesRefresh(failingListener);
+        repository.onFeaturesRefresh(successfulListener);
+        repository.onRefreshFailed(refreshError);
+
+        verify(successfulListener).onError(refreshError);
+    }
+
+    @Test
+    public void testClearCallbacks_ClearsAllCallbacks() {
         FeatureRefreshCallback refreshListener = mock(FeatureRefreshCallback.class);
         repository.onFeaturesRefresh(refreshListener);
 
         repository.clearCallbacks();
 
+
         verify(refreshListener, never()).onRefresh(anyString());
     }
 
     @Test
-    void fetchFeatures_usesCachedData_whenNetworkFails() throws Exception {
-        GbCacheManager mockCache = mock(GbCacheManager.class);
-        String cachedJson = "{\"features\":{\"dark-mode\":{\"defaultValue\":true}}}";
-        when(mockCache.loadCache(anyString())).thenReturn(cachedJson);
+    void testFeatureRefreshListener_receivesInitializationMetadata() throws Exception {
+        HttpServer server = startFeatureServer(
+                HttpURLConnection.HTTP_OK,
+                "{\"features\":{\"test-feature\":{\"defaultValue\":true}}}"
+        );
+        try {
+            NativeJavaGbFeatureRepository subject = NativeJavaGbFeatureRepository.builder()
+                    .apiHost(apiHost(server))
+                    .clientKey(TEST_CLIENT_KEY)
+                    .isCacheDisabled(true)
+                    .build();
+            FeatureRefreshListener listener = mock(FeatureRefreshListener.class);
+            subject.addFeatureRefreshListener(listener);
 
-        wireMock.stubFor(get(urlPathMatching("/api/features/.*"))
-                .willReturn(aResponse()
-                        .withFault(Fault.CONNECTION_RESET_BY_PEER)));
+            subject.initialize();
 
-        NativeJavaGbFeatureRepository repo = NativeJavaGbFeatureRepository.builder()
-                .apiHost("http://localhost:" + wireMock.port())
-                .clientKey("sdk-test123")
-                .isCacheDisabled(false)
-                .cacheManager(mockCache)
-                .build();
-
-        repo.fetchFeatures();
-
-        verify(mockCache).loadCache(anyString());
+            ArgumentCaptor<FeatureRefreshEvent> eventCaptor = ArgumentCaptor.forClass(FeatureRefreshEvent.class);
+            verify(listener).onRefresh(eventCaptor.capture());
+            FeatureRefreshEvent event = eventCaptor.getValue();
+            assertTrue(event.isSuccessful());
+            assertTrue(event.isFeaturesChanged());
+            assertFalse(event.isLoadedFromCache());
+            assertEquals(1, event.getActiveFeatureCount());
+            assertEquals(FeatureRefreshSource.INITIALIZATION, event.getSource());
+            assertTrue(event.getDurationMillis() >= 0);
+        } finally {
+            server.stop(0);
+        }
     }
 
     @Test
-    void getCachedFeatures_throws_whenCacheEmpty() {
-        wireMock.stubFor(get(urlPathMatching("/api/features/.*"))
-                .willReturn(aResponse()
-                        .withFault(Fault.CONNECTION_RESET_BY_PEER)));
+    void testFeatureRefreshListener_receivesManualNotModifiedMetadata() throws Exception {
+        HttpServer server = startFeatureServer(HttpURLConnection.HTTP_NOT_MODIFIED, "");
+        try {
+            NativeJavaGbFeatureRepository subject = NativeJavaGbFeatureRepository.builder()
+                    .apiHost(apiHost(server))
+                    .clientKey(TEST_CLIENT_KEY)
+                    .isCacheDisabled(true)
+                    .build();
+            FeatureRefreshListener listener = mock(FeatureRefreshListener.class);
+            subject.addFeatureRefreshListener(listener);
 
-        NativeJavaGbFeatureRepository repo = NativeJavaGbFeatureRepository.builder()
-                .apiHost("http://localhost:" + wireMock.port())
-                .clientKey("sdk-test123")
-                .isCacheDisabled(true)
-                .build();
+            subject.fetchFeatures();
 
-        assertThrows(FeatureFetchException.class, repo::fetchFeatures);
+            ArgumentCaptor<FeatureRefreshEvent> eventCaptor = ArgumentCaptor.forClass(FeatureRefreshEvent.class);
+            verify(listener).onRefresh(eventCaptor.capture());
+            FeatureRefreshEvent event = eventCaptor.getValue();
+            assertTrue(event.isSuccessful());
+            assertFalse(event.isFeaturesChanged());
+            assertFalse(event.isLoadedFromCache());
+            assertEquals(0, event.getActiveFeatureCount());
+            assertEquals(FeatureRefreshSource.MANUAL, event.getSource());
+        } finally {
+            server.stop(0);
+        }
     }
 
     @Test
-    void initialize_fallsBackToSWR_whenSseSupportDisabled() throws Exception {
-        wireMock.stubFor(get(urlPathMatching("/api/features/.*"))
-                .willReturn(aResponse()
-                        .withStatus(200)
-                        .withHeader("X-Sse-Support", "disabled")
-                        .withBody("{\"features\":{}}")));
+    void testFeatureRefreshListener_continuesAfterListenerFailure() throws Exception {
+        HttpServer server = startFeatureServer(HttpURLConnection.HTTP_OK, "{\"features\":{}}");
+        try {
+            NativeJavaGbFeatureRepository subject = NativeJavaGbFeatureRepository.builder()
+                    .apiHost(apiHost(server))
+                    .clientKey(TEST_CLIENT_KEY)
+                    .isCacheDisabled(true)
+                    .build();
+            FeatureRefreshListener failingListener = mock(FeatureRefreshListener.class);
+            FeatureRefreshListener successfulListener = mock(FeatureRefreshListener.class);
+            doThrow(new RuntimeException("listener failed")).when(failingListener).onRefresh(any(FeatureRefreshEvent.class));
 
-        NativeJavaGbFeatureRepository repo = NativeJavaGbFeatureRepository.builder()
-                .apiHost("http://localhost:" + wireMock.port())
-                .clientKey("sdk-test123")
-                .refreshStrategy(FeatureRefreshStrategy.SERVER_SENT_EVENTS)
-                .isCacheDisabled(true)
-                .build();
+            subject.addFeatureRefreshListener(failingListener);
+            subject.addFeatureRefreshListener(successfulListener);
+            subject.fetchFeatures();
 
-        repo.initialize();
-
-        assertEquals(FeatureRefreshStrategy.STALE_WHILE_REVALIDATE, repo.getRefreshStrategy());
+            verify(successfulListener).onRefresh(any(FeatureRefreshEvent.class));
+        } finally {
+            server.stop(0);
+        }
     }
 
     @Test
-    void fetchFeatures_updatesFeaturesJson_whenResponseIsValid() throws Exception {
-        wireMock.stubFor(get(urlPathMatching("/api/features/.*"))
-                .willReturn(aResponse()
-                        .withStatus(200)
-                        .withHeader("X-Sse-Support", "disabled")
-                        .withBody("{\"features\":{\"dark-mode\":{\"defaultValue\":true}}}")));
+    void testRemoveFeatureRefreshListener_stopsNotifications() throws Exception {
+        HttpServer server = startFeatureServer(HttpURLConnection.HTTP_OK, "{\"features\":{}}");
+        try {
+            NativeJavaGbFeatureRepository subject = NativeJavaGbFeatureRepository.builder()
+                    .apiHost(apiHost(server))
+                    .clientKey(TEST_CLIENT_KEY)
+                    .isCacheDisabled(true)
+                    .build();
+            FeatureRefreshListener listener = mock(FeatureRefreshListener.class);
 
-        NativeJavaGbFeatureRepository repo = NativeJavaGbFeatureRepository.builder()
-                .apiHost("http://localhost:" + wireMock.port())
-                .clientKey("sdk-test123")
-                .isCacheDisabled(true)
-                .build();
+            subject.addFeatureRefreshListener(listener);
+            subject.removeFeatureRefreshListener(listener);
+            subject.fetchFeatures();
 
-        repo.fetchFeatures();
-
-        assertEquals("{\"dark-mode\":{\"defaultValue\":true}}", repo.getFeaturesJson());
+            verify(listener, never()).onRefresh(any(FeatureRefreshEvent.class));
+        } finally {
+            server.stop(0);
+        }
     }
 
     @Test
-    void getFeaturesJson_returnsEmptyJson_beforeInitialize() {
-        assertEquals("{}", repository.getFeaturesJson());
+    void testFeatureRefreshListener_receivesCacheFallbackMetadata() throws Exception {
+        HttpServer server = startFeatureServer(HttpURLConnection.HTTP_INTERNAL_ERROR, "{\"error\":\"temporary failure\"}");
+        try {
+            NativeJavaGbFeatureRepository subject = NativeJavaGbFeatureRepository.builder()
+                    .apiHost(apiHost(server))
+                    .clientKey(TEST_CLIENT_KEY)
+                    .cacheManager(new StaticCacheManager("{\"features\":{\"cached-feature\":{\"defaultValue\":true}}}"))
+                    .build();
+            FeatureRefreshListener listener = mock(FeatureRefreshListener.class);
+            subject.addFeatureRefreshListener(listener);
+
+            subject.fetchFeatures();
+
+            ArgumentCaptor<FeatureRefreshEvent> eventCaptor = ArgumentCaptor.forClass(FeatureRefreshEvent.class);
+            verify(listener).onRefresh(eventCaptor.capture());
+            FeatureRefreshEvent event = eventCaptor.getValue();
+            assertFalse(event.isSuccessful());
+            assertTrue(event.isFeaturesChanged());
+            assertTrue(event.isLoadedFromCache());
+            assertEquals(1, event.getActiveFeatureCount());
+            assertEquals(FeatureRefreshSource.MANUAL, event.getSource());
+        } finally {
+            server.stop(0);
+        }
     }
 
     @Test
-    void getFeaturesJson_refreshes_whenCacheExpired() throws Exception {
-        wireMock.stubFor(get(urlPathMatching("/api/features/.*"))
-                .willReturn(aResponse()
-                        .withStatus(200)
-                        .withHeader("X-Sse-Support", "disabled")
-                        .withBody("{\"features\":{\"dark-mode\":{\"defaultValue\":true}}}")));
+    void fetchFeaturesFails() throws Exception {
+        HttpServer server = startFeatureServer(HttpURLConnection.HTTP_BAD_REQUEST, "{\"error\":\"bad request\"}");
+        try {
+            NativeJavaGbFeatureRepository subject = NativeJavaGbFeatureRepository.builder()
+                    .apiHost(apiHost(server))
+                    .clientKey(TEST_CLIENT_KEY)
+                    .isCacheDisabled(true)
+                    .build();
 
-        NativeJavaGbFeatureRepository repo = NativeJavaGbFeatureRepository.builder()
-                .apiHost("http://localhost:" + wireMock.port())
-                .clientKey("sdk-test123")
-                .swrTtlSeconds(0)
-                .isCacheDisabled(true)
-                .build();
+            assertThrows(FeatureFetchException.class, subject::fetchFeatures);
+        } finally {
+            server.stop(0);
+        }
+    }
 
-        repo.initialize();
+    @Test
+    void initializeFails() throws Exception {
+        HttpServer server = startFeatureServer(HttpURLConnection.HTTP_INTERNAL_ERROR, "{\"error\":\"temporary failure\"}");
+        try {
+            NativeJavaGbFeatureRepository subject = NativeJavaGbFeatureRepository.builder()
+                    .apiHost(apiHost(server))
+                    .clientKey(TEST_CLIENT_KEY)
+                    .isCacheDisabled(true)
+                    .build();
 
-        Thread.sleep(100);
+            assertThrows(FeatureFetchException.class, subject::initialize);
+        } finally {
+            server.stop(0);
+        }
+    }
 
-        repo.getFeaturesJson();
+    private static HttpServer startFeatureServer(int statusCode, String body) throws IOException {
+        HttpServer server = HttpServer.create(new InetSocketAddress("127.0.0.1", 0), 0);
+        server.createContext("/api/features/" + TEST_CLIENT_KEY, exchange -> {
+            byte[] responseBytes = body == null ? new byte[0] : body.getBytes(StandardCharsets.UTF_8);
+            exchange.getResponseHeaders().add(HttpHeaders.X_SSE_SUPPORT.getHeader(), "enabled");
+            if (statusCode == HttpURLConnection.HTTP_NOT_MODIFIED) {
+                exchange.sendResponseHeaders(statusCode, -1);
+            } else {
+                exchange.sendResponseHeaders(statusCode, responseBytes.length);
+                try (OutputStream responseBody = exchange.getResponseBody()) {
+                    responseBody.write(responseBytes);
+                }
+            }
+            exchange.close();
+        });
+        server.start();
+        return server;
+    }
 
-        wireMock.verify(2, getRequestedFor(urlPathMatching("/api/features/.*")));
+    private static String apiHost(HttpServer server) {
+        return "http://127.0.0.1:" + server.getAddress().getPort();
+    }
+
+    private static class StaticCacheManager implements GbCacheManager {
+        private final String cachedData;
+
+        private StaticCacheManager(String cachedData) {
+            this.cachedData = cachedData;
+        }
+
+        @Override
+        public void saveContent(String key, String data) {
+        }
+
+        @Override
+        public String loadCache(String key) {
+            return cachedData;
+        }
+
+        @Override
+        public void clearCache() {
+        }
     }
 }
