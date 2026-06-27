@@ -4,7 +4,6 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
-import com.google.gson.JsonSyntaxException;
 import growthbook.sdk.java.util.GrowthBookJsonUtils;
 import growthbook.sdk.java.model.Operator;
 import growthbook.sdk.java.util.StringUtils;
@@ -12,15 +11,10 @@ import growthbook.sdk.java.model.DataType;
 import lombok.extern.slf4j.Slf4j;
 
 import javax.annotation.Nullable;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Map;
 import java.util.Objects;
-import java.util.Set;
 import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.util.regex.PatternSyntaxException;
 
 /**
  * <b>INTERNAL</b>: Implementation of condition evaluation
@@ -40,71 +34,33 @@ public class ConditionEvaluator implements IConditionEvaluator {
      * @return Whether the condition should be true for the user
      */
     @Override
-    public Boolean evaluateCondition(JsonObject attributes, JsonObject conditionJson, @Nullable JsonObject savedGroups) {
+    public Boolean evaluateCondition(
+        JsonObject attributes,
+        JsonObject conditionJson,
+        @Nullable JsonObject savedGroups) {
         try {
-            // Loop through the conditionObj key/value pairs
-            for (Map.Entry<String, JsonElement> entry : conditionJson.entrySet()) {
-                String key = entry.getKey();
-                JsonElement value = entry.getValue();
-
-                switch (key) {
-                    case "$or":
-                        // If conditionObj has a key $or, return evalOr(attributes, condition["$or"])
-                        JsonArray orTargetItems = value.getAsJsonArray();
-                        if (orTargetItems != null) {
-                            if (!evalOr(attributes, orTargetItems, savedGroups)) {
-                                return false;
-                            }
-                        }
-                        break;
-                    case "$nor":
-                        // If conditionObj has a key $nor, return !evalOr(attributes, condition["$nor"])
-                        JsonArray norTargetItems = value.getAsJsonArray();
-                        if (norTargetItems != null) {
-                            if (evalOr(attributes, norTargetItems, savedGroups)) {
-                                return false;
-                            }
-                        }
-                        break;
-                    case "$and":
-                        // If conditionObj has a key $and, return !evalAnd(attributes, condition["$and"])
-                        JsonArray andTargetItems = value.getAsJsonArray();
-                        if (andTargetItems != null) {
-                            if (!evalAnd(attributes, andTargetItems, savedGroups)) {
-                                return false;
-                            }
-                        }
-                        break;
-                    case "$not":
-                        // If conditionObj has a key $not, return !evalCondition(attributes, condition["$not"])
-                        if (value != null) {
-                            if (evaluateCondition(attributes, value.getAsJsonObject(), savedGroups)) {
-                                return false;
-                            }
-                        }
-                        break;
-                    default:
-                        JsonElement element = (JsonElement) getPath(attributes, key);
-                        // If evalConditionValue(value, getPath(attributes, key)) is false,
-                        // break out of loop and return false
-                        if (!evalConditionValue(value, element, savedGroups)) {
-                            return false;
-                        }
-                        break;
-                }
-            }
-            // If none of the entries failed their checks, `evalCondition` returns true
-            return true;
-        } catch (JsonSyntaxException jsonSyntaxException) {
-            log.error(jsonSyntaxException.getMessage(), jsonSyntaxException);
-            return false;
-        } catch (PatternSyntaxException patternSyntaxException) {
-            log.error(patternSyntaxException.getMessage(), patternSyntaxException);
-            return false;
-        } catch (Exception exception) { // for the case if something was missed
+            return conditionJson.entrySet().stream()
+                    .allMatch(entry ->
+                        matchesConditionEntry(entry.getKey(), entry.getValue(), attributes, savedGroups));
+        } catch (Exception exception) {
             log.error(exception.getMessage(), exception);
             return false;
         }
+    }
+
+    /**
+     * Evaluates a single top-level condition entry: a logical operator ($or/$nor/$and/$not) is
+     * handled by its strategy (recursing back through this evaluator); any other key is treated as
+     * an attribute path and compared as a leaf value.
+     */
+    private boolean matchesConditionEntry(
+        String key, JsonElement value,
+        JsonObject attributes,
+        @Nullable JsonObject savedGroups) {
+        Condition operator = Condition.fromValue(key);
+        return operator != null
+                ? operator.apply(attributes, value, savedGroups, this)
+                : evalConditionValue(value, (JsonElement) getPath(attributes, key), savedGroups);
     }
 
     /**
@@ -117,19 +73,8 @@ public class ConditionEvaluator implements IConditionEvaluator {
         if (!object.isJsonObject()) {
             return false;
         }
-
-        Set<Map.Entry<String, JsonElement>> entries = ((JsonObject) object).entrySet();
-
-        if (entries.isEmpty()) {
-            return true;
-        }
-
-        long without$Prefix = entries
-                .stream()
-                .filter(o -> !o.getKey().startsWith("$"))
-                .count();
-
-        return without$Prefix == 0;
+        return object.getAsJsonObject().entrySet().stream()
+                .allMatch(entry -> entry.getKey().startsWith("$"));
     }
 
     /**
@@ -141,85 +86,37 @@ public class ConditionEvaluator implements IConditionEvaluator {
      */
     @Nullable
     public Object getPath(JsonElement attributes, String path) {
-        if (Objects.equals(path, "")) return null;
-
-        ArrayList<String> paths = new ArrayList<>();
-
-        if (path.contains(".")) {
-            String[] pathSegments = path.split("\\.");
-
-            Collections.addAll(paths, pathSegments);
-        } else {
-            paths.add(path);
+        if (Objects.equals(path, "")) {
+            return null;
         }
 
         JsonElement element = attributes;
-
-        for (String segment : paths) {
-            if (element == null || element instanceof JsonArray) {
+        for (String segment : path.split("\\.")) {
+            if (!(element instanceof JsonObject)) {
                 return null;
             }
-            if (element instanceof JsonObject) {
-                element = ((JsonObject) element).get(segment);
-            } else {
-                return null;
-            }
+            element = ((JsonObject) element).get(segment);
         }
-
         return element;
     }
 
-
     /**
-     * Evaluates the condition using the operator. For example, if you provide the following condition:
+     * Evaluates a single operator condition (the {@code attributeValue {op} conditionValue} form).
      *
-     * <pre>
-     * {
-     *   "$not": {
-     *     "country": "usa"
-     *   }
-     * }
-     * </pre>
-     * <p>
-     * And the following attributes:
+     * <p>Operators fall into a few families:</p>
+     * <ul>
+     *   <li>comparison: <code>$eq, $ne, $lt, $lte, $gt, $gte, $regex</code></li>
+     *   <li>array conditionValue: <code>$in, $nin</code></li>
+     *   <li>array attributeValue: <code>$elemMatch, $size</code></li>
+     *   <li>both arrays: <code>$all</code></li>
+     *   <li>version: <code>$vgt, $vgte, $vlt, $vlte, $vne, $veq</code></li>
+     *   <li>saved groups: <code>$inGroup, $notInGroup</code></li>
+     *   <li>other: <code>$exists, $type, $not</code></li>
+     * </ul>
      *
-     * <pre>
-     * {
-     *   "country": "canada"
-     * }
-     * </pre>
-     * <p>
-     * It will evaluate to true because the <code>country</code> is not <code>usa</code>.
-     * </p>
-     *
-     * <p>
-     * There are basic comparison operators in the form attributeValue {op} conditionValue,
-     * i.e. <code>$eq, $ne, $lt, $lte, $gt, $gte, $regex</code>
-     * </p>
-     *
-     * <p>
-     * There are 2 operators where conditionValue is an array,
-     * i.e. <code>$in, $nin</code>
-     * </p>
-     *
-     * <p>
-     * There are 2 operators where attributeValue is an array,
-     * i.e. <code>$elemMatch, $size</code>
-     * </p>
-     *
-     * <p>
-     * There is 1 operator where both attributeValue and conditionValue are arrays,
-     * i.e. <code>$all</code>
-     * </p>
-     *
-     * <p>
-     * There are 3 other operators,
-     * i.e. <code>$exists, $type, $not</code>
-     * </p>
-     *
-     * @param actual         Nullable JSON element
      * @param operatorString String value of the operator
-     * @param expected       The conditions to use to verify that the attributes match, based on the operator
+     * @param actual         Nullable attribute value
+     * @param expected       The condition value to compare against
      * @return if it's a match
      */
     Boolean evalOperatorCondition(String operatorString, @Nullable JsonElement actual, JsonElement expected, @Nullable JsonObject savedGroups) {
@@ -230,89 +127,23 @@ public class ConditionEvaluator implements IConditionEvaluator {
 
         switch (operator) {
             case IN:
-                if (actual == null) return false;
-                if (!expected.isJsonArray()) return false;
-                return isIn(actual, expected.getAsJsonArray(), false);
-
             case INI:
-                if (actual == null) return false;
-                if (!expected.isJsonArray()) return false;
-                return isIn(actual, expected.getAsJsonArray(), true);
-
             case NIN:
-                if (actual == null) return false;
-                if (!expected.isJsonArray()) return false;
-                return !isIn(actual, expected.getAsJsonArray(), false);
-
             case NINI:
-                if (actual == null) return false;
-                if (!expected.isJsonArray()) return false;
-                return !isIn(actual, expected.getAsJsonArray(), true);
+                return evalMembership(operator, actual, expected);
 
             case GT:
-                if (actual == null || DataType.NULL.equals(attributeDataType)) {
-                    return (!expected.isJsonPrimitive() || expected.getAsJsonPrimitive().isNumber())
-                            && 0.0 > expected.getAsDouble();
-                }
-                if (actual.getAsJsonPrimitive().isNumber()) {
-                    return actual.getAsNumber().floatValue() > expected.getAsNumber().floatValue();
-                }
-                if (actual.getAsJsonPrimitive().isString()) {
-                    return actual.getAsString().compareTo(expected.getAsString()) > 0;
-                }
-                break;
-
             case GTE:
-                if (actual == null || DataType.NULL.equals(attributeDataType)) {
-                    return (!expected.isJsonPrimitive() || expected.getAsJsonPrimitive().isNumber())
-                            && 0.0 >= expected.getAsDouble();
-                }
-                if (actual.getAsJsonPrimitive().isNumber()) {
-                    return actual.getAsNumber().floatValue() >= expected.getAsNumber().floatValue();
-                }
-                if (actual.getAsJsonPrimitive().isString()) {
-                    return actual.getAsString().compareTo(expected.getAsString()) >= 0;
-                }
-                break;
-
             case LT:
-                if (actual == null || DataType.NULL.equals(attributeDataType)) {
-                    return (!expected.isJsonPrimitive() || expected.getAsJsonPrimitive().isNumber())
-                            && 0.0 < expected.getAsDouble();
-                }
-                if (actual.getAsString().toLowerCase().matches("\\d+")) {
-                    return Double.parseDouble(actual.getAsString()) < expected.getAsDouble();
-                }
-                if (actual.getAsJsonPrimitive().isNumber()) {
-                    return actual.getAsNumber().floatValue() < expected.getAsNumber().floatValue();
-                }
-                if (actual.getAsJsonPrimitive().isString()) {
-                    return actual.getAsString().compareTo(expected.getAsString()) < 0;
-                }
-                break;
-
             case LTE:
-                if (actual == null || DataType.NULL.equals(attributeDataType)) {
-                    return (!expected.isJsonPrimitive() || expected.getAsJsonPrimitive().isNumber())
-                            && 0.0 <= expected.getAsDouble();
-                }
-                if (actual.getAsJsonPrimitive().isNumber()) {
-                    return actual.getAsNumber().floatValue() <= expected.getAsNumber().floatValue();
-                }
-                if (actual.getAsJsonPrimitive().isString()) {
-                    return actual.getAsString().compareTo(expected.getAsString()) <= 0;
-                }
-                break;
+                return evalComparison(operator, actual, expected, attributeDataType);
 
             case REGEX:
                 return evalRegex(actual, expected, attributeDataType, false, false);
-
             case REGEX_I:
                 return evalRegex(actual, expected, attributeDataType, true, false);
-
             case NOT_REGEX:
                 return evalRegex(actual, expected, attributeDataType, false, true);
-
             case NOT_REGEX_I:
                 return evalRegex(actual, expected, attributeDataType, true, true);
 
@@ -326,22 +157,17 @@ public class ConditionEvaluator implements IConditionEvaluator {
 
             case SIZE:
                 if (actual == null || !actual.isJsonArray()) return false;
-                JsonArray attributeValueArrayForSize = (JsonArray) actual;
-                JsonElement size = new JsonPrimitive(attributeValueArrayForSize.size());
-                return evalConditionValue(expected, size, savedGroups);
+                return evalConditionValue(expected, new JsonPrimitive(actual.getAsJsonArray().size()), savedGroups);
 
             case ELEMENT_MATCH:
                 if (actual == null) return false;
                 return elemMatch(actual, expected, savedGroups);
 
             case ALL:
-                if (actual == null || !actual.isJsonArray()) return false;
-                if (!expected.isJsonArray()) return false;
+                if (actual == null || !actual.isJsonArray() || !expected.isJsonArray()) return false;
                 return isInAll(actual.getAsJsonArray(), expected.getAsJsonArray(), savedGroups, false);
-
             case ALLI:
-                if (actual == null || !actual.isJsonArray()) return false;
-                if (!expected.isJsonArray()) return false;
+                if (actual == null || !actual.isJsonArray() || !expected.isJsonArray()) return false;
                 return isInAll(actual.getAsJsonArray(), expected.getAsJsonArray(), savedGroups, true);
 
             case NOT:
@@ -351,78 +177,104 @@ public class ConditionEvaluator implements IConditionEvaluator {
                 return GrowthBookJsonUtils.getElementType(actual).toString().equals(expected.getAsString());
 
             case EXISTS:
-                boolean exists = expected.getAsBoolean();
-
-                if (exists) {
-                    // Ensure it's present
-                    return actual != null;
-                } else {
-                    // Ensure it's not present
-                    return actual == null || actual.isJsonNull();
-                }
+                return expected.getAsBoolean() ? actual != null : (actual == null || actual.isJsonNull());
 
             case VERSION_GT:
-                if (actual == null || expected == null || DataType.NULL.equals(attributeDataType))
-                    return false;
-
-                return StringUtils.paddedVersionString(actual.getAsString())
-                        .compareTo(StringUtils.paddedVersionString(expected.getAsString())) > 0;
-
             case VERSION_GTE:
-                if (actual == null || expected == null || DataType.NULL.equals(attributeDataType))
-                    return false;
-
-                return StringUtils.paddedVersionString(actual.getAsString())
-                        .compareTo(StringUtils.paddedVersionString(expected.getAsString())) >= 0;
-
             case VERSION_LT:
-                if (actual == null || expected == null || DataType.NULL.equals(attributeDataType))
-                    return false;
-
-                return StringUtils.paddedVersionString(actual.getAsString())
-                        .compareTo(StringUtils.paddedVersionString(expected.getAsString())) < 0;
-
             case VERSION_LTE:
-                if (actual == null || expected == null || DataType.NULL.equals(attributeDataType))
-                    return false;
-
-                return StringUtils.paddedVersionString(actual.getAsString())
-                        .compareTo(StringUtils.paddedVersionString(expected.getAsString())) <= 0;
-
             case VERSION_NE:
-                if (actual == null || expected == null || DataType.NULL.equals(attributeDataType))
-                    return false;
-
-                return StringUtils.paddedVersionString(actual.getAsString())
-                        .compareTo(StringUtils.paddedVersionString(expected.getAsString())) != 0;
-
             case VERSION_EQ:
-                if (actual == null || expected == null || DataType.NULL.equals(attributeDataType))
-                    return false;
-
-                return StringUtils.paddedVersionString(actual.getAsString())
-                        .compareTo(StringUtils.paddedVersionString(expected.getAsString())) == 0;
+                return evalVersion(operator, actual, expected, attributeDataType);
 
             case IN_GROUP:
-                if (actual != null && expected != null) {
-                    JsonElement jsonElement = savedGroups != null ? savedGroups.get(expected.getAsString()) : null;
-                    if (jsonElement != null) {
-                        return isIn(actual, jsonElement.getAsJsonArray(), false);
-                    }
-                    return isIn(actual, new JsonArray(), false);
-                }
             case NOT_IN_GROUP:
-                if (actual != null && expected != null) {
-                    JsonElement jsonElement = savedGroups != null ? savedGroups.get(expected.getAsString()) : null;
-                    if (jsonElement != null) {
-                        return !isIn(actual, jsonElement.getAsJsonArray(), false);
-                    }
-                    return !isIn(actual, new JsonArray(), false);
-                }
+                return evalSavedGroup(operator, actual, expected, savedGroups);
+
             default:
                 return false;
         }
+    }
+
+    /**
+     * {@code $in}/{@code $nin} (and their case-insensitive variants): tests array membership.
+     */
+    private Boolean evalMembership(Operator operator, @Nullable JsonElement actual, JsonElement expected) {
+        if (actual == null || !expected.isJsonArray()) {
+            return false;
+        }
+        boolean caseInsensitive = operator == Operator.INI || operator == Operator.NINI;
+        boolean negate = operator == Operator.NIN || operator == Operator.NINI;
+        return negate != isIn(actual, expected.getAsJsonArray(), caseInsensitive);
+    }
+
+    /**
+     * {@code $gt}/{@code $gte}/{@code $lt}/{@code $lte}: numeric or lexical comparison.
+     */
+    private Boolean evalComparison(Operator operator, @Nullable JsonElement actual, JsonElement expected, DataType attributeDataType) {
+        if (actual == null || DataType.NULL.equals(attributeDataType)) {
+            if (expected.isJsonPrimitive() && !expected.getAsJsonPrimitive().isNumber()) {
+                return false;
+            }
+            return matchesSign(operator, Double.compare(0.0, expected.getAsDouble()));
+        }
+        if (operator == Operator.LT && actual.getAsString().toLowerCase().matches("\\d+")) {
+            return Double.parseDouble(actual.getAsString()) < expected.getAsDouble();
+        }
+        if (actual.getAsJsonPrimitive().isNumber()) {
+            return matchesSign(operator, Float.compare(actual.getAsNumber().floatValue(), expected.getAsNumber().floatValue()));
+        }
+        if (actual.getAsJsonPrimitive().isString()) {
+            return matchesSign(operator, actual.getAsString().compareTo(expected.getAsString()));
+        }
         return false;
+    }
+
+    /**
+     * {@code $vgt}/{@code $vgte}/{@code $vlt}/{@code $vlte}/{@code $vne}/{@code $veq}:
+     * compares padded semantic-version strings.
+     */
+    private Boolean evalVersion(Operator operator, @Nullable JsonElement actual, JsonElement expected, DataType attributeDataType) {
+        if (actual == null || expected == null || DataType.NULL.equals(attributeDataType)) {
+            return false;
+        }
+        int cmp = StringUtils.paddedVersionString(actual.getAsString())
+                .compareTo(StringUtils.paddedVersionString(expected.getAsString()));
+        switch (operator) {
+            case VERSION_GT:  return cmp > 0;
+            case VERSION_GTE: return cmp >= 0;
+            case VERSION_LT:  return cmp < 0;
+            case VERSION_LTE: return cmp <= 0;
+            case VERSION_NE:  return cmp != 0;
+            case VERSION_EQ:  return cmp == 0;
+            default:          return false;
+        }
+    }
+
+    /**
+     * {@code $inGroup}/{@code $notInGroup}: membership in a named saved group (empty if unknown).
+     */
+    private Boolean evalSavedGroup(Operator operator, @Nullable JsonElement actual, @Nullable JsonElement expected, @Nullable JsonObject savedGroups) {
+        if (actual == null || expected == null) {
+            return false;
+        }
+        JsonElement group = savedGroups != null ? savedGroups.get(expected.getAsString()) : null;
+        JsonArray groupValues = group != null ? group.getAsJsonArray() : new JsonArray();
+        boolean inGroup = isIn(actual, groupValues, false);
+        return operator == Operator.NOT_IN_GROUP ? !inGroup : inGroup;
+    }
+
+    /**
+     * Maps a {@link Integer#compare}-style sign to the requested comparison operator.
+     */
+    private static boolean matchesSign(Operator operator, int comparison) {
+        switch (operator) {
+            case GT:  return comparison > 0;
+            case GTE: return comparison >= 0;
+            case LT:  return comparison < 0;
+            case LTE: return comparison <= 0;
+            default:  return false;
+        }
     }
 
     /**
@@ -530,7 +382,6 @@ public class ConditionEvaluator implements IConditionEvaluator {
         }
 
         JsonArray actualArray = actual.getAsJsonArray();
-
         boolean isOperator = isOperatorObject(expected);
 
         for (JsonElement actualElement : actualArray) {
@@ -544,47 +395,6 @@ public class ConditionEvaluator implements IConditionEvaluator {
         }
 
         return false;
-    }
-
-
-    /**
-     * @param attributes User attributes
-     * @param conditions an array of condition objects
-     * @return if matches
-     */
-    Boolean evalOr(JsonElement attributes, JsonArray conditions, @Nullable JsonObject savedGroups) {
-        if (conditions.isEmpty()) {
-            return true;
-        }
-
-        for (JsonElement condition : conditions) {
-            JsonObject attributesObj = (null == attributes) ? new JsonObject() : attributes.getAsJsonObject();
-            Boolean matches = evaluateCondition(attributesObj, condition.getAsJsonObject(), savedGroups);
-
-            if (matches) {
-                return true;
-            }
-        }
-
-        return false;
-    }
-
-    /**
-     * @param attributes User attributes
-     * @param conditions an array of condition objects
-     * @return if matches
-     */
-    Boolean evalAnd(JsonElement attributes, JsonArray conditions, @Nullable JsonObject savedGroups) {
-        for (JsonElement condition : conditions) {
-            JsonObject attributesObj = (null == attributes) ? new JsonObject() : attributes.getAsJsonObject();
-            Boolean matches = evaluateCondition(attributesObj, condition.getAsJsonObject(), savedGroups);
-
-            if (!matches) {
-                return false;
-            }
-        }
-
-        return true;
     }
 
     private Boolean isIn(JsonElement actual, JsonArray expected, boolean inSensitive) {
@@ -648,7 +458,6 @@ public class ConditionEvaluator implements IConditionEvaluator {
         return true;
     }
 
-
     private <T> boolean isMatchingPrimitive(
             JsonElement conditionValue,
             JsonElement attributeValue,
@@ -662,10 +471,10 @@ public class ConditionEvaluator implements IConditionEvaluator {
     }
 
     private static Boolean evalRegex(@Nullable JsonElement actual,
-                                              JsonElement expected,
-                                              DataType attributeDataType,
-                                              boolean caseInsensitive,
-                                              boolean negate) {
+                                     JsonElement expected,
+                                     DataType attributeDataType,
+                                     boolean caseInsensitive,
+                                     boolean negate) {
         if (actual == null || DataType.NULL.equals(attributeDataType)) return negate;
 
         int flags = caseInsensitive ? Pattern.CASE_INSENSITIVE : 0;
@@ -681,8 +490,8 @@ public class ConditionEvaluator implements IConditionEvaluator {
     }
 
     /**
-     * Folds a JsonElement to lowercase if it's a string and inSensitive is true.
-     * Used where you need a folded value rather than a comparison.
+     * Folds a JsonElement to lowercase if it's a string. Used where you need a folded value
+     * rather than a comparison.
      */
     private JsonElement caseFold(@Nullable JsonElement value) {
         if (value != null
