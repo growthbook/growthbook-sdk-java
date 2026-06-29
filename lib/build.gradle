@@ -53,9 +53,9 @@ dependencies {
 
 
     // https://square.github.io/okhttp
-    implementation 'com.squareup.okhttp3:okhttp:4.11.0'
+    implementation 'com.squareup.okhttp3:okhttp:5.4.0'
     // https://mvnrepository.com/artifact/com.squareup.okhttp3/okhttp-sse
-    implementation 'com.squareup.okhttp3:okhttp-sse:4.11.0'
+    implementation 'com.squareup.okhttp3:okhttp-sse:5.4.0'
 
     // Adds getter, setter and builder boilerplate
     // https://projectlombok.org/
