@@ -44,16 +44,18 @@ class FileCachingManagerImplTest {
 
     @Test
     void shouldThrowExceptionWhenWritingFails() {
-        String fileName = "readonly.txt";
-        File file = new File(tempDir, fileName);
-
+        // The atomic write (temp file + rename) is governed by directory permissions, so a
+        // read-only target file is simply replaced. To exercise a genuine write failure
+        // deterministically (independent of OS permissions / running as root), collide the
+        // target name with a non-empty directory: renaming a file over it must fail with an
+        // IOException.
+        String fileName = "collision";
+        File collision = new File(tempDir, fileName);
         try {
-            boolean created = file.createNewFile();
-            assertTrue(created);
-            boolean readOnly = file.setReadOnly();
-            assertTrue(readOnly);
+            assertTrue(collision.mkdir());
+            assertTrue(new File(collision, "child").createNewFile());
         } catch (IOException e) {
-            fail("Creating test file was not successful.");
+            fail("Creating test fixture was not successful.");
         }
 
         RuntimeException thrown = assertThrows(RuntimeException.class, () -> fileCachingManagerImpl.saveContent(fileName, "This should fail"));

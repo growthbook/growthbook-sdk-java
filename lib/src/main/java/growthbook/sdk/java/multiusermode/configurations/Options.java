@@ -17,9 +17,9 @@ import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 
 import javax.annotation.Nullable;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 @Data
 @Slf4j
@@ -188,7 +188,7 @@ public class Options {
     }
 
     public void setInMemoryStickyBucketService() {
-        this.setStickyBucketService(new InMemoryStickyBucketServiceImpl(new HashMap<>()));
+        this.setStickyBucketService(new InMemoryStickyBucketServiceImpl(new ConcurrentHashMap<>()));
     }
 
     public void setGlobalAttributes(@Nullable String attributesJson) {
