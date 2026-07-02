@@ -1,4 +1,4 @@
-package serializers;
+package growthbook.sdk.java.serializers;
 
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;

@@ -1,0 +1,20 @@
+{
+    "packages": {
+        ".": {
+            "release-type": "java-yoshi",
+            "package-name": "com.github.growthbook.growthbook-sdk-java",
+            "include-v-in-tag": false,
+            "include-component-in-tag": false,
+            "bump-minor-pre-major": true,
+            "bump-patch-for-minor-pre-major": true,
+            "snapshot-label": "SNAPSHOT",
+            "versioning": "default",
+            "extra-files": [
+                "gradle.properties",
+                "versions.txt",
+                "lib/src/main/java/growthbook/sdk/java/Version.java"
+            ]
+        }
+    },
+    "$schema": "https://raw.githubusercontent.com/googleapis/release-please/main/schemas/config.json"
+}

@@ -1,6 +1,8 @@
 package growthbook.sdk.java.model;
 
+import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
+import com.google.gson.JsonNull;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
 import com.google.gson.JsonSerializer;
@@ -84,6 +86,30 @@ public class FeatureResult<ValueType> {
     public Boolean isOn() {
         if (value == null) return false;
 
+        if (value instanceof JsonNull) return false;
+
+        if (value instanceof JsonPrimitive) {
+            JsonPrimitive jsonPrimitive = (JsonPrimitive) value;
+            if (jsonPrimitive.isBoolean()) {
+                return jsonPrimitive.getAsBoolean();
+            }
+            if (jsonPrimitive.isString()) {
+                return !jsonPrimitive.getAsString().isEmpty();
+            }
+            if (jsonPrimitive.isNumber()) {
+                return jsonPrimitive.getAsDouble() != 0;
+            }
+            return true;
+        }
+
+        if (value instanceof JsonArray) {
+            return true;
+        }
+
+        if (value instanceof JsonObject) {
+            return true;
+        }
+
         if (value instanceof Boolean) {
             return (Boolean) value;
         }
@@ -92,28 +118,15 @@ public class FeatureResult<ValueType> {
             return !((String) value).isEmpty();
         }
 
-        if (value instanceof Integer) {
-            return (Integer) value != 0;
-        }
-
-        if (value instanceof Float) {
-            return (Float) value != 0.0f;
-        }
-
-        if (value instanceof Double) {
-            return (Double) value != 0;
-        }
-
-        if (value instanceof Long) {
-            return (Long) value != 0;
-
+        if (value instanceof Number) {
+            return ((Number) value).doubleValue() != 0;
         }
 
         if (value instanceof Collection<?>) {
-            return !((Collection<?>) value).isEmpty();
+            return true;
         }
 
-        return false;
+        return true;
     }
 
     /**

@@ -14,7 +14,11 @@ import org.junit.jupiter.api.Test;
 import javax.annotation.Nullable;
 import java.lang.reflect.Type;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 
 class GrowthBookUtilsTest {
@@ -182,5 +186,45 @@ class GrowthBookUtilsTest {
                 assertEquals(expectedBucketRange, resultingBucketRange, error);
             }
         });
+    }
+
+    @Test
+    void test_mergeMaps_twoMapOverwritesWithoutMutatingInputs() {
+        Map<String, Integer> base = new HashMap<>();
+        base.put("shared", 1);
+        base.put("baseOnly", 7);
+
+        Map<String, Integer> overrides = new HashMap<>();
+        overrides.put("shared", 2);
+        overrides.put("overrideOnly", 9);
+
+        Map<String, Integer> merged = GrowthBookUtils.mergeMaps(base, overrides);
+
+        assertEquals(Integer.valueOf(2), merged.get("shared"));
+        assertEquals(Integer.valueOf(7), merged.get("baseOnly"));
+        assertEquals(Integer.valueOf(9), merged.get("overrideOnly"));
+        assertEquals(Integer.valueOf(1), base.get("shared"));
+        assertEquals(Integer.valueOf(2), overrides.get("shared"));
+    }
+
+    @Test
+    void test_mergeMaps_handlesNullAndEmptyInputs() {
+        Map<String, Integer> mergedFromNull = GrowthBookUtils.mergeMaps((Map<String, Integer>) null, null);
+        Map<String, Integer> mergedFromEmpty = GrowthBookUtils.mergeMaps(Collections.<String, Integer>emptyMap(), null);
+
+        assertEquals(Collections.emptyMap(), mergedFromNull);
+        assertEquals(Collections.emptyMap(), mergedFromEmpty);
+    }
+
+    @Test
+    void test_mergeMaps_listOverloadPreservesOverrideOrder() {
+        Map<String, Integer> first = Collections.singletonMap("key", 1);
+        Map<String, Integer> second = Collections.singletonMap("key", 2);
+        Map<String, Integer> third = Collections.singletonMap("other", 3);
+
+        Map<String, Integer> merged = GrowthBookUtils.mergeMaps(Arrays.asList(first, null, second, third));
+
+        assertEquals(Integer.valueOf(2), merged.get("key"));
+        assertEquals(Integer.valueOf(3), merged.get("other"));
     }
 }

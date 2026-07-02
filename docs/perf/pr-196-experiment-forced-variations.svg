@@ -1,0 +1,62 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="520" viewBox="0 0 1200 520">
+  <style>
+    .title { font: 700 26px sans-serif; fill: #1f2937; }
+    .subtitle { font: 14px sans-serif; fill: #4b5563; }
+    .label { font: 14px sans-serif; fill: #111827; }
+    .value { font: 12px sans-serif; fill: #111827; }
+    .legend { font: 13px sans-serif; fill: #111827; }
+    .axis { stroke: #d1d5db; stroke-width: 1; }
+    .grid { stroke: #e5e7eb; stroke-width: 1; }
+  </style>
+  <rect width="1200" height="520" fill="#fcfcfd" />
+  <text x="40" y="40" class="title">PR-196 Follow-Up: Experiment Evaluation Footprint</text>
+  <text x="40" y="66" class="subtitle">Lower is better. Measured with runPerfHarness at 100,000 iterations on JDK 17.</text>
+
+  <rect x="40" y="86" width="14" height="14" fill="#9ca3af" />
+  <text x="62" y="98" class="legend">main</text>
+  <rect x="140" y="86" width="14" height="14" fill="#60a5fa" />
+  <text x="162" y="98" class="legend">pr-196</text>
+  <rect x="250" y="86" width="14" height="14" fill="#10b981" />
+  <text x="272" y="98" class="legend">fix/perf-imp-pr-196</text>
+
+  <line x1="280" y1="130" x2="1080" y2="130" class="axis" />
+  <line x1="280" y1="240" x2="1080" y2="240" class="axis" />
+  <line x1="280" y1="350" x2="1080" y2="350" class="axis" />
+  <line x1="280" y1="460" x2="1080" y2="460" class="axis" />
+
+  <line x1="280" y1="130" x2="280" y2="460" class="axis" />
+  <line x1="550" y1="130" x2="550" y2="460" class="grid" />
+  <line x1="820" y1="130" x2="820" y2="460" class="grid" />
+  <line x1="1080" y1="130" x2="1080" y2="460" class="axis" />
+
+  <text x="280" y="120" class="subtitle">0</text>
+  <text x="540" y="120" class="subtitle">500 ns/op</text>
+  <text x="810" y="120" class="subtitle">1000 ns/op</text>
+  <text x="1055" y="120" class="subtitle">1500 ns/op</text>
+
+  <text x="40" y="178" class="label">Experiment no forced variations</text>
+  <rect x="280" y="150" width="790" height="16" fill="#9ca3af" />
+  <text x="1078" y="162" class="value">1482.1</text>
+  <rect x="280" y="171" width="599" height="16" fill="#60a5fa" />
+  <text x="887" y="183" class="value">1123.6</text>
+  <rect x="280" y="192" width="568" height="16" fill="#10b981" />
+  <text x="856" y="204" class="value">1065.6</text>
+
+  <text x="40" y="288" class="label">Global forced variation</text>
+  <rect x="280" y="260" width="160" height="16" fill="#9ca3af" />
+  <text x="448" y="272" class="value">300.6</text>
+  <rect x="280" y="281" width="205" height="16" fill="#60a5fa" />
+  <text x="493" y="293" class="value">384.9</text>
+  <rect x="280" y="302" width="105" height="16" fill="#10b981" />
+  <text x="393" y="314" class="value">197.2</text>
+
+  <text x="40" y="398" class="label">User forced variation</text>
+  <rect x="280" y="370" width="189" height="16" fill="#9ca3af" />
+  <text x="477" y="382" class="value">353.7</text>
+  <rect x="280" y="391" width="257" height="16" fill="#60a5fa" />
+  <text x="545" y="403" class="value">481.3</text>
+  <rect x="280" y="412" width="109" height="16" fill="#10b981" />
+  <text x="397" y="424" class="value">203.4</text>
+
+  <text x="40" y="490" class="subtitle">The follow-up keeps the client PR improvement and further cuts overhead in both forced variation cases.</text>
+</svg>

@@ -15,6 +15,7 @@ import growthbook.sdk.java.model.FeatureResult;
 import growthbook.sdk.java.model.FeatureResultSource;
 import growthbook.sdk.java.model.Filter;
 import growthbook.sdk.java.model.StickyBucketVariation;
+import growthbook.sdk.java.model.TrackData;
 import growthbook.sdk.java.model.VariationMeta;
 import growthbook.sdk.java.multiusermode.configurations.EvaluationContext;
 import growthbook.sdk.java.multiusermode.usage.TrackingCallbackWithUser;
@@ -30,6 +31,9 @@ import java.util.*;
 public class ExperimentEvaluator implements IExperimentEvaluator {
 
     private final ConditionEvaluator conditionEvaluator = new ConditionEvaluator();
+    private final GrowthBookJsonUtils jsonUtils = GrowthBookJsonUtils.getInstance();
+    private final ExperimentTracker experimentTracker = new ExperimentTracker();
+
 
     /**
      * Takes Context, Experiment and returns Experiment Result
@@ -63,14 +67,9 @@ public class ExperimentEvaluator implements IExperimentEvaluator {
         }
 
         // If no forced variation, not in experiment, variation 0
-        Map<String, Integer> forcedVariations = getForcedVariations(context);
-        if (forcedVariations == null) {
-            forcedVariations = new HashMap<>();
-        }
-
         // If context.forcedVariations[experiment.trackingKey] is defined,
         // return immediately (not in experiment, forced variation)
-        Integer forcedVariation = forcedVariations.get(experiment.getKey());
+        Integer forcedVariation = getForcedVariation(experiment.getKey(), context);
         if (forcedVariation != null) {
             return getExperimentResult(context, experiment, forcedVariation, false, featureId, null, null);
         }
@@ -308,8 +307,7 @@ public class ExperimentEvaluator implements IExperimentEvaluator {
 
         // Fire context.trackingClosure if set and the combination of hashAttribute,
         // hashValue, experiment.key, and variationId has not been tracked before
-        ExperimentTracker experimentTracker = context.getGlobal().getExperimentTracker();
-        if (!GrowthBookUtils.isExperimentTracked(experimentTracker, experiment, result)) {
+        if (!isExperimentTracked(experiment, result)) {
             TrackingCallbackWithUser trackingCallBackWithUser = context.getOptions().getTrackingCallBackWithUser();
 
             if (trackingCallBackWithUser != null) {
@@ -392,21 +390,86 @@ public class ExperimentEvaluator implements IExperimentEvaluator {
                 .build();
     }
 
+    //  Track experiments to trigger callbacks. Returns true if this experiment/result
+    //  combination was already tracked, so the caller can skip re-firing the callback.
+    private <ValueType> boolean isExperimentTracked(Experiment<ValueType> experiment, ExperimentResult<ValueType> result) {
+        return alreadyTracked(experiment, result);
+    }
+
+    /**
+     * Fires tracking callbacks for experiments that were evaluated remotely (a feature rule's
+     * {@code tracks}). De-duplicates per {@code (hashAttribute, hashValue, experimentKey, variationId)}
+     * using the same {@link ExperimentTracker} as local evaluation, so reusing a cached remote-eval
+     * response does not re-fire exposure events.
+     */
+    public <ValueType> void fireRemoteEvaluationTracks(
+            @Nullable List<TrackData<ValueType>> tracks,
+            EvaluationContext context
+    ) {
+        if (tracks == null) {
+            return;
+        }
+        TrackingCallbackWithUser trackingCallBackWithUser = context.getOptions().getTrackingCallBackWithUser();
+        if (trackingCallBackWithUser == null) {
+            return;
+        }
+
+        for (TrackData<ValueType> track : tracks) {
+            if (track == null
+                    || track.getExperiment() == null
+                    || track.getResult() == null
+                    || track.getExperiment().getKey() == null
+                    || track.getExperiment().getVariations() == null) {
+                log.debug("Skipping malformed remote evaluation tracking payload.");
+                continue;
+            }
+            if (alreadyTracked(track.getExperiment(), track.getResult())) {
+                continue;
+            }
+            try {
+                trackingCallBackWithUser.onTrack(track.getExperiment(), track.getResult(), context.getUser());
+            } catch (RuntimeException e) {
+                log.warn("Tracking callback failed for remote evaluation payload.", e);
+            }
+        }
+    }
+
+    private <ValueType> boolean alreadyTracked(Experiment<ValueType> experiment, ExperimentResult<ValueType> result) {
+        String key = trackingKey(experiment, result);
+        if (experimentTracker.isExperimentTracked(key)) {
+            return true;
+        }
+        experimentTracker.trackExperiment(key);
+        return false;
+    }
+
+    private <ValueType> String trackingKey(Experiment<ValueType> experiment, ExperimentResult<ValueType> result) {
+        return (result.getHashAttribute() != null ? result.getHashAttribute() : "")
+                + (result.getHashValue() != null ? result.getHashValue() : "")
+                + experiment.getKey() + result.getVariationId();
+    }
+
     private <ValueType> boolean isStickyBucketingEnabledForExperiment(EvaluationContext context,
                                                                       Experiment<ValueType> experiment) {
         return context.getOptions().getStickyBucketService() != null
                 && !Boolean.TRUE.equals(experiment.getDisableStickyBucketing());
     }
 
-    private Map<String, Integer> getForcedVariations(EvaluationContext evaluationContext) {
-        Map<String, Integer> globalForcedVariations = evaluationContext.getGlobal() != null
-                ? evaluationContext.getGlobal().getForcedVariations()
-                : Collections.emptyMap();
-
+    private Integer getForcedVariation(String key, EvaluationContext evaluationContext) {
         Map<String, Integer> userForcedVariations = evaluationContext.getUser() != null
                 ? evaluationContext.getUser().getForcedVariationsMap()
-                : Collections.emptyMap();
+                : null;
+        if (userForcedVariations != null && userForcedVariations.containsKey(key)) {
+            return userForcedVariations.get(key);
+        }
 
-        return GrowthBookUtils.mergeMaps(Arrays.asList(globalForcedVariations, userForcedVariations));
+        Map<String, Integer> globalForcedVariations = evaluationContext.getGlobal() != null
+                ? evaluationContext.getGlobal().getForcedVariations()
+                : null;
+        if (globalForcedVariations != null && globalForcedVariations.containsKey(key)) {
+            return globalForcedVariations.get(key);
+        }
+
+        return null;
     }
 }

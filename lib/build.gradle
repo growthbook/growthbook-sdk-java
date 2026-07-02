@@ -21,6 +21,7 @@ plugins {
     // Apply the java-library plugin for API and implementation separation.
     id 'java-library'
     id 'maven-publish'
+    id 'net.researchgate.release' version '3.0.2'
     id 'jacoco'
     id "io.freefair.lombok" version "8.6"
 }
@@ -42,6 +43,7 @@ dependencies {
     // Use JUnit Jupiter for testing.
     testImplementation 'org.junit.jupiter:junit-jupiter:5.8.2'
     testImplementation 'org.mockito:mockito-inline:4.8.0'
+    testImplementation 'com.github.tomakehurst:wiremock-jre8:2.35.0'
 
     implementation 'org.apache.commons:commons-math3:3.6.1'
     implementation 'com.google.guava:guava:33.3.1-jre'
@@ -67,17 +69,49 @@ dependencies {
 
 publishing {
     publications {
-        maven(MavenPublication) {
+        mavenJava(MavenPublication) {
             from components.java
+            
+            pom {
+                name = 'GrowthBook SDK Java'
+                description = 'The Java SDK for GrowthBook (JVM, Android)'
+                url = 'https://github.com/growthbook/growthbook-sdk-java'
+                licenses {
+                    license {
+                        name = 'MIT License'
+                        url = 'https://github.com/growthbook/growthbook-sdk-java/blob/main/LICENSE'
+                    }
+                }
+                developers {
+                    developer {
+                        id = 'growthbook'
+                        name = 'GrowthBook'
+                        email = 'hello@growthbook.io'
+                    }
+                }
+                scm {
+                    connection = 'scm:git:git://github.com/growthbook/growthbook-sdk-java.git'
+                    developerConnection = 'scm:git:ssh://github.com:growthbook/growthbook-sdk-java.git'
+                    url = 'https://github.com/growthbook/growthbook-sdk-java'
+                }
+            }
+        }
+    }
+    
+    repositories {
+        maven {
+            name = "GitHubPackages"
+            url = uri("https://maven.pkg.github.com/growthbook/growthbook-sdk-java")
+            credentials {
+                username = System.getenv("GITHUB_ACTOR")
+                password = System.getenv("GITHUB_TOKEN")
+            }
         }
     }
 }
 
 java {
     withSourcesJar()
-
-    // This fails for Java 19
-    // ref: https://github.com/growthbook/growthbook-sdk-java/actions/runs/3413815008/jobs/5680998078#step:5:44
     withJavadocJar()
 }
 
@@ -100,6 +134,20 @@ test {
     finalizedBy jacocoTestReport // report is always generated after tests run
 }
 
+tasks.register('runPerfHarness', JavaExec) {
+    group = 'verification'
+    description = 'Runs the evaluation performance harness with optional JFR recording.'
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = 'growthbook.sdk.java.perf.EvaluationPerfHarness'
+    systemProperty 'perf.warmupIterations', project.findProperty('perfWarmupIterations') ?: '50000'
+    systemProperty 'perf.iterations', project.findProperty('perfIterations') ?: '200000'
+
+    if (project.hasProperty('perfJfrFile')) {
+        jvmArgs "-XX:StartFlightRecording=filename=${project.property('perfJfrFile')},settings=profile,dumponexit=true"
+    }
+}
+
 // More configuration options, including enforcing code coverage available here:
 // https://docs.gradle.org/current/userguide/jacoco_plugin.html
 jacocoTestReport {
@@ -110,4 +158,21 @@ jacocoTestReport {
         csv.required = false
         html.outputLocation = layout.buildDirectory.dir('jacocoHtml')
     }
+}
+
+// Configuration for Release Plugin
+release {
+    failOnCommitNeeded = true
+    failOnPublishNeeded = true
+    failOnSnapshotDependencies = true
+    failOnUnversionedFiles = true
+    failOnUpdateNeeded = true
+    revertOnFail = true
+    preCommitText = ''
+    preTagCommitMessage = '[Gradle Release Plugin] - pre tag commit: '
+    tagCommitMessage = '[Gradle Release Plugin] - creating tag: '
+    newVersionCommitMessage = '[Gradle Release Plugin] - new version commit: '
+    tagTemplate = '${version}'
+    versionPropertyFile = 'gradle.properties'
+    pushReleaseVersionBranch = 'main'
 }

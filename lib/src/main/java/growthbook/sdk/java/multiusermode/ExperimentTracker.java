@@ -1,36 +1,32 @@
 package growthbook.sdk.java.multiusermode;
 
-import java.util.LinkedHashMap;
-import java.util.Map;
+import com.google.common.cache.Cache;
+import com.google.common.cache.CacheBuilder;
 
 /**
- * An LRU Cache implementation to keep track of the most recent experiments.
- * Uses LinkedHashMap with access-order mode with a configurable size of 30.
+ * A thread-safe LRU Cache implementation to keep track of the most recent experiments.
+ * Uses Guava cache with a maximum size of 30 entries.
  */
 public class ExperimentTracker {
     private static final int MAX_EXPERIMENTS = 30;
 
-    private final Map<String, Boolean> trackedExperiments;
+    private final Cache<String, Boolean> trackedExperiments;
 
     public ExperimentTracker() {
-        // Create a thread-safe LRU cache with max 30 entries
-        this.trackedExperiments = new LinkedHashMap<String, Boolean>(MAX_EXPERIMENTS, 0.75f, true) {
-            @Override
-            protected boolean removeEldestEntry(Map.Entry<String, Boolean> eldest) {
-                return size() > MAX_EXPERIMENTS;
-            }
-        };
+        this.trackedExperiments = CacheBuilder.newBuilder()
+                .maximumSize(MAX_EXPERIMENTS)
+                .build();
     }
 
     public void trackExperiment(String experimentId) {
-        trackedExperiments.put(experimentId, true);
+        trackedExperiments.put(experimentId, Boolean.TRUE);
     }
 
     public boolean isExperimentTracked(String experimentId) {
-        return trackedExperiments.containsKey(experimentId);
+        return trackedExperiments.getIfPresent(experimentId) != null;
     }
 
     public void clearTrackedExperiments() {
-        trackedExperiments.clear();
+        trackedExperiments.invalidateAll();
     }
 }

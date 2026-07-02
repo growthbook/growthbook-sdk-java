@@ -4,8 +4,6 @@ import com.google.gson.Gson;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
-import growthbook.sdk.java.model.Experiment;
-import growthbook.sdk.java.model.ExperimentResult;
 import growthbook.sdk.java.model.GeneratedStickyBucketAssignmentDocModel;
 import growthbook.sdk.java.model.BucketRange;
 import growthbook.sdk.java.model.Feature;
@@ -16,7 +14,6 @@ import growthbook.sdk.java.model.HashAttributeAndHashValue;
 import growthbook.sdk.java.model.Namespace;
 import growthbook.sdk.java.model.StickyBucketVariation;
 import growthbook.sdk.java.model.VariationMeta;
-import growthbook.sdk.java.multiusermode.ExperimentTracker;
 import growthbook.sdk.java.multiusermode.configurations.EvaluationContext;
 import growthbook.sdk.java.model.StickyAssignmentsDocument;
 import growthbook.sdk.java.multiusermode.util.TransformationUtil;
@@ -35,8 +32,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-import java.util.stream.Collectors;
-
 /**
  * <b>INTERNAL</b>: Implementation of for internal utility methods to support {@link growthbook.sdk.java.GrowthBook}
  */
@@ -538,9 +533,14 @@ public class GrowthBookUtils {
         HashAttributeAndHashValue hashAttributeAndHashValue = GrowthBookUtils
                 .getHashAttribute(hashAttribute, fallbackAttribute, attributes);
 
+        String hashValue = hashAttributeAndHashValue.getHashValue();
+        if (hashValue == null || hashValue.isEmpty()) {
+            return false;
+        }
+
         // Determine the bucket for the user
         Float hash = GrowthBookUtils.hash(
-                hashAttributeAndHashValue.getHashValue(),
+                hashValue,
                 hashVersion,
                 seed
         );
@@ -566,6 +566,7 @@ public class GrowthBookUtils {
                                             JsonObject attributeOverrides) {
         StickyBucketService stickyBucketService = context.getStickyBucketService();
         if (stickyBucketService == null) {
+            log.debug("refreshStickyBuckets: sticky bucket service not configured, skipping refresh.");
             return;
         }
         Map<String, String> stickyBucketAttributes =
@@ -595,18 +596,15 @@ public class GrowthBookUtils {
                                                                 JsonObject attributeOverrides) {
         Map<String, String> attributes = new HashMap<>();
 
+        List<String> identifierAttributes = deriveStickyBucketIdentifierAttributes(context, featuresDataModel);
 
-        if (context.getStickyBucketIdentifierAttributes() != null) {
-            context.setStickyBucketIdentifierAttributes(deriveStickyBucketIdentifierAttributes(context, featuresDataModel));
-
-            for (String attr : context.getStickyBucketIdentifierAttributes()) {
-                HashAttributeAndHashValue hashAttribute = getHashAttribute(
-                        attr,
-                        null,
-                        attributeOverrides
-                );
-                attributes.put(attr, hashAttribute.getHashValue());
-            }
+        for (String attr : identifierAttributes) {
+            HashAttributeAndHashValue hashAttribute = getHashAttribute(
+                    attr,
+                    null,
+                    attributeOverrides
+            );
+            attributes.put(attr, hashAttribute.getHashValue());
         }
 
         return attributes;
@@ -625,12 +623,19 @@ public class GrowthBookUtils {
     ) {
         Set<String> attributes = new HashSet<>();
 
-        JsonObject jsonObject = GrowthBookJsonUtils.getInstance()
-                .gson.fromJson(featureDataModel, JsonObject.class);
+        Map<String, Feature<?>> features = context.getFeatures();
 
-        String featuresStringJson = jsonObject.get("features").toString().trim();
-        Map<String, Feature<?>> featuresMap = TransformationUtil.transformFeatures(featuresStringJson);
-        Map<String, Feature<?>> features = !featuresMap.isEmpty() ? featuresMap : context.getFeatures();
+        if (featureDataModel != null && !featureDataModel.isEmpty()) {
+            JsonObject jsonObject = GrowthBookJsonUtils.getInstance()
+                    .gson.fromJson(featureDataModel, JsonObject.class);
+            if (jsonObject != null && jsonObject.has("features") && jsonObject.get("features") != null) {
+                String featuresStringJson = jsonObject.get("features").toString().trim();
+                Map<String, Feature<?>> featuresMap = TransformationUtil.transformFeatures(featuresStringJson);
+                if (!featuresMap.isEmpty()) {
+                    features = featuresMap;
+                }
+            }
+        }
 
         if (features != null) {
             for (Map.Entry<String, Feature<?>> entry : features.entrySet()) {
@@ -687,8 +692,8 @@ public class GrowthBookUtils {
                 + hashAttributeAndHashValueWithoutFallbackPass.getHashValue();
 
         HashAttributeAndHashValue hashAttributeAndHashValueWithFallbackAttribute = getHashAttribute(
-                null,
                 expFallbackAttribute,
+                null,
                 context.getUser().getAttributes()
         );
         String fallBackKey = hashAttributeAndHashValueWithFallbackAttribute.getHashValue().isEmpty()
@@ -698,25 +703,6 @@ public class GrowthBookUtils {
                 + hashAttributeAndHashValueWithFallbackAttribute.getHashValue();
 
         Map<String, StickyAssignmentsDocument> stickyAssignmentsDocuments = context.getUser().getStickyBucketAssignmentDocs();
-
-        if (context.getUser().getAttributes().get(expFallbackAttribute) != null) {
-            String leftOperand = stickyAssignmentsDocuments.get(
-                    expFallbackAttribute + "||" + context.getUser().getAttributes().get(expFallbackAttribute).getAsString()
-            ) == null
-                    ? null
-                    : stickyAssignmentsDocuments.get(
-                    expFallbackAttribute + "||" + context.getUser().getAttributes().get(expFallbackAttribute).getAsString()
-            ).getAttributeValue();
-
-            if (!Objects.equals(leftOperand, context.getUser().getAttributes().get(expFallbackAttribute).getAsString())) {
-                context.getUser().setStickyBucketAssignmentDocs(new HashMap<>());
-            }
-        }
-
-        if (context.getUser().getStickyBucketAssignmentDocs() != null) {
-            context.getUser().getStickyBucketAssignmentDocs().values()
-                    .forEach(it -> mergedAssignments.putAll(it.getAssignments()));
-        }
 
         if (fallBackKey != null) {
             if (stickyAssignmentsDocuments.get(fallBackKey) != null) {
@@ -768,7 +754,8 @@ public class GrowthBookUtils {
                 experimentFallbackAttribute);
 
         if (minExperimentBucketVersion > 0) {
-            for (int i = 0; i <= minExperimentBucketVersion; i++) {
+            // users with any blocked bucket version (0 to minExperimentBucketVersion - 1) are excluded from the test
+            for (int i = 0; i < minExperimentBucketVersion; i++) {
                 String blockedKey = getStickyBucketExperimentKey(experimentKey, i);
                 if (assignments.containsKey(blockedKey)) {
                     return new StickyBucketVariation(-1, true);
@@ -808,6 +795,7 @@ public class GrowthBookUtils {
 
     /**
      * Method for generating a Sticky Bucket Assignment document.
+     * Optimized to avoid unnecessary HashMap copies: detects changes before allocation.
      *
      * @param stickyBucketAssignmentDocs {@code Map<String, StickyAssignmentsDocument>}
      * @param attributeName  String
@@ -826,12 +814,28 @@ public class GrowthBookUtils {
         if (stickyBucketAssignmentDocs != null && stickyBucketAssignmentDocs.get(key) != null) {
             existingAssignments = stickyBucketAssignmentDocs.get(key).getAssignments();
         }
-        Map<String, String> newAssignments = new HashMap<>(existingAssignments);
 
+        // Detect changes before allocating a new map. This avoids O(|assignments|) copies
+        // for experiments with no new assignments.
+        boolean hasChanges = false;
+        for (Map.Entry<String, String> entry : assignments.entrySet()) {
+            if (!Objects.equals(entry.getValue(), existingAssignments.get(entry.getKey()))) {
+                hasChanges = true;
+                break;
+            }
+        }
+
+        if (!hasChanges) {
+            // No changes detected, reuse existing assignments without allocation
+            StickyAssignmentsDocument doc = new StickyAssignmentsDocument(attributeName, attributeValue, existingAssignments);
+            return new GeneratedStickyBucketAssignmentDocModel(key, doc, false);
+        }
+
+        // Changes detected: allocate merged map
+        Map<String, String> newAssignments = new HashMap<>(existingAssignments);
         newAssignments.putAll(assignments);
-        boolean changed = !newAssignments.equals(existingAssignments);
         StickyAssignmentsDocument stickyAssignmentsDocument = new StickyAssignmentsDocument(attributeName, attributeValue, newAssignments);
-        return new GeneratedStickyBucketAssignmentDocModel(key, stickyAssignmentsDocument, changed);
+        return new GeneratedStickyBucketAssignmentDocModel(key, stickyAssignmentsDocument, true);
     }
 
     /**
@@ -879,41 +883,23 @@ public class GrowthBookUtils {
         return -1;
     }
 
-    public static  <K, V> Map<K, V> mergeMaps(List<Map<K, V>> maps) {
-        return maps.stream()
-                .filter(Objects::nonNull)
-                .flatMap(map -> map.entrySet()
-                        .stream())
-                .collect(Collectors.toMap(
-                                Map.Entry::getKey,
-                                Map.Entry::getValue,
-                                (v1, v2) -> v2
-                        )
-                );
+    public static <K, V> Map<K, V> mergeMaps(@Nullable List<Map<K, V>> maps) {
+        if (maps == null || maps.isEmpty()) {
+            return Collections.emptyMap();
+        }
 
+        Map<K, V> merged = Collections.emptyMap();
+        for (Map<K, V> map : maps) {
+            merged = mergeMaps(merged, map);
+        }
+        return merged;
     }
 
-    //  Track experiments to trigger callbacks.
-    public static  <ValueType> boolean isExperimentTracked(ExperimentTracker experimentTracker,
-                                                           Experiment<ValueType> experiment,
-                                                           @Nullable ExperimentResult<ValueType> result) {
-        if (result == null) {
-            return false;
-        }
-        String experimentKey = experiment.getKey();
-
-        String key = (
-                result.getHashAttribute() != null ? result.getHashAttribute() : "")
-                + (result.getHashValue() != null ? result.getHashValue() : "")
-                + (experimentKey + result.getVariationId());
-
-        boolean alreadyTracked = experimentTracker.isExperimentTracked(key);
-
-        // Add the experiment to the tracker if it doesn't exist.
-        if (!alreadyTracked) {
-            experimentTracker.trackExperiment(key);
-        }
-
-        return alreadyTracked;
+    public static <K, V> Map<K, V> mergeMaps(@Nullable Map<K, V> base, @Nullable Map<K, V> overrides) {
+        if (base == null || base.isEmpty()) return overrides != null ? new HashMap<>(overrides) : Collections.emptyMap();
+        if (overrides == null || overrides.isEmpty()) return new HashMap<>(base);
+        Map<K, V> merged = new HashMap<>(base);
+        merged.putAll(overrides);
+        return merged;
     }
 }

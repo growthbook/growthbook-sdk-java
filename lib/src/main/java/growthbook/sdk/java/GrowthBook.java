@@ -6,16 +6,25 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import javax.annotation.Nullable;
+import java.time.Duration;
 import com.google.gson.JsonObject;
 import growthbook.sdk.java.callback.ExperimentRunCallback;
 import growthbook.sdk.java.evaluators.ConditionEvaluator;
 import growthbook.sdk.java.evaluators.ExperimentEvaluator;
 import growthbook.sdk.java.evaluators.FeatureEvaluator;
+import growthbook.sdk.java.exception.FeatureFetchException;
 import growthbook.sdk.java.model.AssignedExperiment;
 import growthbook.sdk.java.model.Experiment;
 import growthbook.sdk.java.model.ExperimentResult;
 import growthbook.sdk.java.model.FeatureResult;
 import growthbook.sdk.java.model.GBContext;
+import growthbook.sdk.java.model.RequestBodyForRemoteEval;
+import growthbook.sdk.java.remoteeval.RemoteEvalCache;
+import growthbook.sdk.java.remoteeval.RemoteEvalCacheKey;
+import growthbook.sdk.java.remoteeval.RemoteEvalOptionsValidator;
+import growthbook.sdk.java.remoteeval.RemoteEvalRequestBuilder;
+import growthbook.sdk.java.remoteeval.RemoteEvalResponse;
+import growthbook.sdk.java.remoteeval.RemoteEvalService;
 import growthbook.sdk.java.util.GrowthBookJsonUtils;
 import growthbook.sdk.java.util.GrowthBookUtils;
 import lombok.Getter;
@@ -52,8 +61,10 @@ public class GrowthBook implements IGrowthBook {
 
     public EvaluationContext evaluationContext = null;
     private final Map<String, AssignedExperiment> assigned;
+    private RemoteEvalService remoteEvalService;
+    private RemoteEvalCache remoteEvalCache;
 
-    @Getter @Setter private Map<String, Object> forcedFeatureValues;
+    @Getter private Map<String, Object> forcedFeatureValues;
     /**
      * Initialize the GrowthBook SDK with a provided {@link GBContext}
      *
@@ -69,6 +80,8 @@ public class GrowthBook implements IGrowthBook {
         this.experimentEvaluatorEvaluator = new ExperimentEvaluator();
         this.attributeOverrides = context.getAttributes() == null ? new JsonObject() : context.getAttributes();
 
+        // Load sticky bucket docs on construction if a service is configured,
+        refreshStickyBucketService(null);
         this.initializeEvalContext();
     }
 
@@ -113,12 +126,37 @@ public class GrowthBook implements IGrowthBook {
     }
 
     private void initializeEvalContext() {
-        // build options
+        if (this.context.isRemoteEvalEnabled()) {
+            refreshRemoteEvalContext();
+            return;
+        }
+
+        this.evaluationContext = buildEvaluationContext(this.context.getFeatures(), this.context.getSavedGroups());
+    }
+
+    private void refreshRemoteEvalContext() {
+        RemoteEvalOptionsValidator.validate(this.context);
+        try {
+            RemoteEvalResponse response = getRemoteEvalResponse();
+            this.context.setFeatures(response.getFeatures());
+            this.context.setSavedGroups(response.getSavedGroups());
+        } catch (FeatureFetchException e) {
+            log.warn("Remote evaluation request failed. Falling back to current local feature context.", e);
+        }
+        this.evaluationContext = buildEvaluationContext(this.context.getFeatures(), this.context.getSavedGroups());
+    }
+
+    private EvaluationContext buildEvaluationContext(Map<String, growthbook.sdk.java.model.Feature<?>> features, JsonObject savedGroups) {
         Options options = Options.builder()
                 .enabled(this.context.getEnabled())
                 .isQaMode(this.context.getIsQaMode())
                 .allowUrlOverrides(this.context.getAllowUrlOverride())
                 .url(this.context.getUrl())
+                .apiHost(this.context.getApiHost())
+                .clientKey(this.context.getClientKey())
+                .remoteEval(this.context.getRemoteEval())
+                .cacheKeyAttributes(this.context.getCacheKeyAttributes())
+                .remoteEvalCacheSize(this.context.getRemoteEvalCacheSize())
                 .stickyBucketIdentifierAttributes(this.context.getStickyBucketIdentifierAttributes())
                 .stickyBucketService(this.context.getStickyBucketService())
                 .trackingCallBackWithUser(new TrackingCallbackAdapter(this.context.getTrackingCallback()))
@@ -126,14 +164,15 @@ public class GrowthBook implements IGrowthBook {
                 .globalForcedFeatureValues(this.forcedFeatureValues)
                 .build();
 
-        // build global
         GlobalContext globalContext = GlobalContext.builder()
-                .features(this.context.getFeatures())
-                .savedGroups(this.context.getSavedGroups())
+                .features(features)
+                .savedGroups(savedGroups)
                 .forcedFeatureValues(this.forcedFeatureValues)
+                .forcedVariations(this.context.getForcedVariationsMap())
+                .enabled(this.context.getEnabled())
+                .qaMode(this.context.getIsQaMode())
                 .build();
 
-        // build user context
         UserContext userContext = new UserContext.UserContextBuilder()
                 .attributes(this.context.getAttributes())
                 .stickyBucketAssignmentDocs(this.context.getStickyBucketAssignmentDocs())
@@ -141,8 +180,55 @@ public class GrowthBook implements IGrowthBook {
                 .forcedFeatureValues(this.forcedFeatureValues)
                 .build();
 
-        this.evaluationContext = new EvaluationContext(globalContext, userContext,
+        return new EvaluationContext(globalContext, userContext,
                 new EvaluationContext.StackContext(), options);
+    }
+
+    private RemoteEvalResponse getRemoteEvalResponse() throws FeatureFetchException {
+        String url = RemoteEvalRequestBuilder.normalizeUrl(this.context.getUrl());
+        String cacheKey = RemoteEvalCacheKey.fromContext(
+                this.context.getApiHost(),
+                this.context.getClientKey(),
+                this.context.getAttributes(),
+                this.context.getForcedVariationsMap(),
+                this.forcedFeatureValues,
+                url,
+                this.context.getCacheKeyAttributes()
+        );
+
+        RequestBodyForRemoteEval requestBody = RemoteEvalRequestBuilder.build(
+                this.context.getAttributes(),
+                this.forcedFeatureValues,
+                this.context.getForcedVariationsMap(),
+                url
+        );
+        return getRemoteEvalCache().get(cacheKey, requestBody);
+    }
+
+    private synchronized RemoteEvalService getRemoteEvalService() {
+        if (this.remoteEvalService == null) {
+            this.remoteEvalService = new RemoteEvalService(this.context.getApiHost(), this.context.getClientKey());
+        }
+        return this.remoteEvalService;
+    }
+
+    private synchronized RemoteEvalCache getRemoteEvalCache() {
+        if (this.remoteEvalCache == null) {
+            Integer cacheTtlSeconds = this.context.getRemoteEvalCacheTtlSeconds();
+            this.remoteEvalCache = new RemoteEvalCache(
+                    getRemoteEvalService(),
+                    RemoteEvalRequestBuilder.normalizeCacheSize(this.context.getRemoteEvalCacheSize()),
+                    null,
+                    cacheTtlSeconds == null ? null : Duration.ofSeconds(cacheTtlSeconds)
+            );
+        }
+        return this.remoteEvalCache;
+    }
+
+    private void clearRemoteEvalCache() {
+        if (this.remoteEvalCache != null) {
+            this.remoteEvalCache.invalidateAll();
+        }
     }
 
     private EvaluationContext getEvaluationContext() {
@@ -183,6 +269,26 @@ public class GrowthBook implements IGrowthBook {
     @Override
     public void setAttributes(String attributesJsonString) {
         this.context.setAttributesJson(attributesJsonString);
+        // Keep attributeOverrides in sync with the new attributes so that
+        // refreshStickyBucketService fetches docs for the *new* user, not the old one.
+        this.attributeOverrides = this.context.getAttributes();
+        refreshStickyBucketService(null);
+        initializeEvalContext();
+    }
+
+    public void setUrl(String url) {
+        this.context.setUrl(url);
+        initializeEvalContext();
+    }
+
+    public void setForcedVariations(Map<String, Integer> forcedVariations) {
+        this.context.setForcedVariationsMap(forcedVariations);
+        initializeEvalContext();
+    }
+
+    public void setForcedFeatureValues(Map<String, Object> forcedFeatureValues) {
+        this.forcedFeatureValues = forcedFeatureValues;
+        clearRemoteEvalCache();
         initializeEvalContext();
     }
 
@@ -236,6 +342,7 @@ public class GrowthBook implements IGrowthBook {
     @Override
     public void setOwnStickyBucketService(@Nullable StickyBucketService stickyBucketService) {
         this.context.setStickyBucketService(stickyBucketService);
+        refreshStickyBucketService(null);
         initializeEvalContext();
     }
 
@@ -245,6 +352,7 @@ public class GrowthBook implements IGrowthBook {
     @Override
     public void setInMemoryStickyBucketService() {
         this.context.setStickyBucketService(new InMemoryStickyBucketServiceImpl(new HashMap<>()));
+        refreshStickyBucketService(null);
         initializeEvalContext();
     }
 
@@ -499,10 +607,16 @@ public class GrowthBook implements IGrowthBook {
     @Override
     public void destroy() {
         this.callbacks = new ArrayList<>();
+        if (this.remoteEvalCache != null) {
+            this.remoteEvalCache.shutdown();
+        }
+        if (this.remoteEvalService != null) {
+            this.remoteEvalService.close();
+        }
     }
 
     /**
-     * This method add new calback to list of ExperimentRunCallback
+     * This method add new callback to list of ExperimentRunCallback
      * @param callback ExperimentRunCallback interface
      */
     @Override
@@ -511,10 +625,17 @@ public class GrowthBook implements IGrowthBook {
     }
 
     /**
-     * Update sticky bucketing configuration
-     * Method that get cached assignments
-     * and set it to Context's Sticky Bucket Assignments documents
-     * @param featuresDataModel Json in format of String. See info how it looks like here <a href="https://docs.growthbook.io/app/api#sdk-connection-endpoints">...</a>
+     * Call this whenever features are refreshed so that sticky bucket assignment docs are
+     * reloaded for the current user.
+     * <pre>
+     *   repository.onFeaturesRefresh(gb::featuresAPIModelSuccessfully);
+     * </pre>
+     * Passing the new features JSON allows {@code deriveStickyBucketIdentifierAttributes} to
+     * pick up any new {@code hashAttribute}/{@code fallbackAttribute} values introduced by the
+     * updated feature definitions before re-fetching docs from the service.
+     *
+     * @param featuresDataModel JSON string returned by the GrowthBook SDK endpoint.
+     *                          See <a href="https://docs.growthbook.io/app/api#sdk-connection-endpoints">SDK Connection Endpoints</a>
      */
     @Override
     public void featuresAPIModelSuccessfully(String featuresDataModel) {
@@ -534,6 +655,10 @@ public class GrowthBook implements IGrowthBook {
     private void refreshStickyBucketService(@Nullable String featuresDataModel) {
         if (context.getStickyBucketService() != null) {
             GrowthBookUtils.refreshStickyBuckets(context, featuresDataModel, attributeOverrides);
+            // Sync updated docs into the evaluation context so the next evalFeature call sees them.
+            if (evaluationContext != null && evaluationContext.getUser() != null) {
+                evaluationContext.getUser().setStickyBucketAssignmentDocs(context.getStickyBucketAssignmentDocs());
+            }
         }
     }
 

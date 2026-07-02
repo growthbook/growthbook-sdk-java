@@ -6,6 +6,10 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 
+import com.google.gson.JsonArray;
+import com.google.gson.JsonNull;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonPrimitive;
 import growthbook.sdk.java.model.FeatureResult;
 import growthbook.sdk.java.model.FeatureResultSource;
 import growthbook.sdk.java.model.GBContext;
@@ -190,14 +194,124 @@ class FeatureResultTest {
     }
 
     @Test
-    void featureResult_isOff_withPerceivedEmptyCollection() {
+    void featureResult_isOn_withPerceivedEmptyCollection() {
         FeatureResult<Object> subject = FeatureResult
                 .builder()
                 .value(Collections.emptyList())
                 .build();
 
+        assertTrue(subject.isOn());
+        assertFalse(subject.isOff());
+    }
+
+    @Test
+    void featureResult_isOn_withJsonObject_returnsTrue() {
+        FeatureResult<Object> subject = FeatureResult
+                .builder()
+                .value(new JsonObject())
+                .build();
+
+        assertTrue(subject.isOn());
+        assertFalse(subject.isOff());
+    }
+
+    @Test
+    void featureResult_isOn_withJsonArray_returnsTrue() {
+        FeatureResult<Object> subject = FeatureResult
+                .builder()
+                .value(new JsonArray())
+                .build();
+
+        assertTrue(subject.isOn());
+        assertFalse(subject.isOff());
+    }
+
+    @Test
+    void featureResult_isOn_withJsonNull_returnsFalse() {
+        FeatureResult<Object> subject = FeatureResult
+                .builder()
+                .value(JsonNull.INSTANCE)
+                .build();
+
         assertFalse(subject.isOn());
         assertTrue(subject.isOff());
+    }
+
+    @Test
+    void featureResult_isOn_withJsonPrimitive_string_returnsTrue() {
+        FeatureResult<Object> subject = FeatureResult
+                .builder()
+                .value(new JsonPrimitive("hello"))
+                .build();
+
+        assertTrue(subject.isOn());
+        assertFalse(subject.isOff());
+    }
+
+    @Test
+    void featureResult_isOn_withJsonPrimitive_emptyString_returnsFalse() {
+        FeatureResult<Object> subject = FeatureResult
+                .builder()
+                .value(new JsonPrimitive(""))
+                .build();
+
+        assertFalse(subject.isOn());
+        assertTrue(subject.isOff());
+    }
+
+    @Test
+    void featureResult_isOn_withJsonPrimitive_zero_returnsFalse() {
+        FeatureResult<Object> subject = FeatureResult
+                .builder()
+                .value(new JsonPrimitive(0))
+                .build();
+
+        assertFalse(subject.isOn());
+        assertTrue(subject.isOff());
+    }
+
+    @Test
+    void featureResult_isOn_withJsonPrimitive_nonZero_returnsTrue() {
+        FeatureResult<Object> subject = FeatureResult
+                .builder()
+                .value(new JsonPrimitive(42))
+                .build();
+
+        assertTrue(subject.isOn());
+        assertFalse(subject.isOff());
+    }
+
+    @Test
+    void featureResult_isOn_withNull_returnsFalse() {
+        FeatureResult<Object> subject = FeatureResult
+                .builder()
+                .value(null)
+                .build();
+
+        assertFalse(subject.isOn());
+        assertTrue(subject.isOff());
+    }
+
+    @Test
+    void featureResult_isOn_withFalse_returnsFalse() {
+        FeatureResult<Boolean> subject = FeatureResult
+                .<Boolean>builder()
+                .value(false)
+                .build();
+
+        assertFalse(subject.isOn());
+        assertTrue(subject.isOff());
+    }
+
+    @Test
+    void featureResult_isOn_withTrue_returnsTrue() {
+        FeatureResult<Boolean> subject = FeatureResult
+                .<Boolean>builder()
+                .value(true)
+                .build();
+
+        assertTrue(subject.isOn());
+        assertFalse(subject.isOff());
     }
 
     @Test
@@ -218,6 +332,17 @@ class FeatureResultTest {
 
         assertInstanceOf(Collection.class, value);
         assertFalse(((Collection<?>) value).isEmpty());
+    }
+
+    @Test
+    void proofOfConceptMapTest() {
+        GBContext ctx = GBContext.builder()
+                .featuresJson(
+                        "{\"test\":{\"defaultValue\":{},\"rules\":[{\"force\":{\"theme\":\"dark\"}}]}}")
+                .build();
+
+        GrowthBook growthBook = new GrowthBook(ctx);
+        assertTrue(growthBook.isOn("test"));
     }
 
     // endregion isOn() isOff()

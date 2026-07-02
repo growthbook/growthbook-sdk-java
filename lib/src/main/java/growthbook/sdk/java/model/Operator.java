@@ -11,9 +11,17 @@ public enum Operator {
      */
     IN("$in"),
     /**
+     * $ini
+     */
+    INI("$ini"),
+    /**
      * $nin
      */
     NIN("$nin"),
+    /**
+     * $nin
+     */
+    NINI("$nini"),
     /**
      * $gt
      */
@@ -35,6 +43,18 @@ public enum Operator {
      */
     REGEX("$regex"),
     /**
+     * $regexi
+     */
+    REGEX_I("$regexi"),
+    /**
+     * $notRegex
+     */
+    NOT_REGEX("$notRegex"),
+    /**
+     * $notRegexi
+     */
+    NOT_REGEX_I("$notRegexi"),
+    /**
      * $ne
      */
     NE("$ne"),
@@ -54,6 +74,10 @@ public enum Operator {
      * $all
      */
     ALL("$all"),
+    /**
+     * $all
+     */
+    ALLI("$alli"),
     /**
      * $not
      */

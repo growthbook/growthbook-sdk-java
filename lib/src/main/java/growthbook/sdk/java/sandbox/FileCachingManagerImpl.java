@@ -1,5 +1,6 @@
 package growthbook.sdk.java.sandbox;
 
+import growthbook.sdk.java.exception.FeatureCacheException;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.BufferedWriter;
@@ -9,21 +10,27 @@ import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.FileNotFoundException;
+import java.nio.file.Files;
+import java.nio.file.NoSuchFileException;
+import java.nio.file.Path;
 
 /**
  * Class responsible for caching data to a file
  */
 @Slf4j
-public class CachingManager {
+public class FileCachingManagerImpl implements GbCacheManager {
     private final File cacheDir;
 
-    public CachingManager(String filePath) {
+    public FileCachingManagerImpl(String filePath) {
         this.cacheDir = new File(filePath);
         if (!cacheDir.exists()) {
             boolean created = cacheDir.mkdirs();
             if (!created) {
-                throw new RuntimeException("Failed to create cache directory at " + filePath);
+                throw new FeatureCacheException("Failed to create cache directory at " + filePath);
             }
+        }
+        if (!cacheDir.canWrite()) {
+            throw new FeatureCacheException("Cache directory is not writable: " + filePath);
         }
     }
 
@@ -38,7 +45,7 @@ public class CachingManager {
            writer.write(content);
        } catch (IOException e) {
            log.error("Error occur while writing data to file with name: {} error message was {}", fileName, e.getMessage());
-           throw new RuntimeException(e);
+           throw new FeatureCacheException("Failed to write feature cache file: " + fileName, e);
        }
     }
 
@@ -59,17 +66,47 @@ public class CachingManager {
             String line;
 
             while ((line = reader.readLine()) != null) {
-                builder.append(line).append(System.lineSeparator());
+                builder.append(line);
             }
 
             return builder.toString().trim();
         } catch (FileNotFoundException e) {
             log.error("Error was occur because of file isn't exist, error message was - {}", e.getMessage());
-            throw new RuntimeException(e);
+            throw new FeatureCacheException("Feature cache file disappeared while reading: " + fileName, e);
         } catch (IOException e) {
             log.error("Error was occur during reading data from file, error message was - {}", e.getMessage());
+            throw new FeatureCacheException("Failed to read feature cache file: " + fileName, e);
+        }
+    }
 
-            throw new RuntimeException(e);
+    @Override
+    public Long getLastUpdatedMillis(String fileName) {
+        Path cacheFile = new File(cacheDir, fileName).toPath();
+        try {
+            long lastModified = Files.getLastModifiedTime(cacheFile).toMillis();
+            return lastModified > 0 ? lastModified : null;
+        } catch (NoSuchFileException e) {
+            return null;
+        } catch (IOException e) {
+            throw new FeatureCacheException("Failed to read last modified time for cache file: " + fileName, e);
+        }
+    }
+
+    /**
+     * Clears all cache files in the directory
+     */
+    public void clearCache(){
+        if (cacheDir.exists() && cacheDir.isDirectory()) {
+            File[] files = cacheDir.listFiles();
+            if (files != null) {
+                for (File file : files) {
+                    try {
+                        Files.delete(file.toPath());
+                    } catch (IOException e) {
+                        log.error("Failed to delete cache file: {}", file.getName(), e);
+                    }
+                }
+            }
         }
     }
 }
