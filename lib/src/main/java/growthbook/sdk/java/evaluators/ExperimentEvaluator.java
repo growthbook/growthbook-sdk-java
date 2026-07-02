@@ -390,16 +390,10 @@ public class ExperimentEvaluator implements IExperimentEvaluator {
                 .build();
     }
 
-    //  Track experiments to trigger callbacks.
+    //  Track experiments to trigger callbacks. Returns true if this experiment/result
+    //  combination was already tracked, so the caller can skip re-firing the callback.
     private <ValueType> boolean isExperimentTracked(Experiment<ValueType> experiment, ExperimentResult<ValueType> result) {
-        String key = trackingKey(experiment, result);
-
-        // Add the experiment to the tracker if it doesn't exist.
-        if (!experimentTracker.isExperimentTracked(key)) {
-            experimentTracker.trackExperiment(key);
-        }
-
-        return false;
+        return alreadyTracked(experiment, result);
     }
 
     /**
