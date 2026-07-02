@@ -3,7 +3,6 @@ package growthbook.sdk.java.stickyBucketing;
 import growthbook.sdk.java.model.StickyAssignmentsDocument;
 
 import javax.annotation.Nullable;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -15,9 +14,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * shared, multi-threaded usage of {@code GrowthBookClient}. When supplying a custom map, it
  * must be thread-safe if the service is accessed concurrently.
  */
-public class InMemoryStickyBucketServiceImpl implements StickyBucketService {
-
-    private static final String KEY_SEPARATOR = "||";
+public class InMemoryStickyBucketServiceImpl extends AbstractStickyBucketService {
 
     private final Map<String, StickyAssignmentsDocument> localStorage;
 
@@ -43,7 +40,7 @@ public class InMemoryStickyBucketServiceImpl implements StickyBucketService {
         if (attributeName == null || attributeValue == null) {
             return null;
         }
-        return localStorage.get(key(attributeName, attributeValue));
+        return localStorage.get(StickyAssignmentsDocument.key(attributeName, attributeValue));
     }
 
     @Override
@@ -51,25 +48,6 @@ public class InMemoryStickyBucketServiceImpl implements StickyBucketService {
         if (doc == null || doc.getAttributeName() == null || doc.getAttributeValue() == null) {
             return;
         }
-        localStorage.put(key(doc.getAttributeName(), doc.getAttributeValue()), doc);
-    }
-
-    @Override
-    public Map<String, StickyAssignmentsDocument> getAllAssignments(Map<String, String> attributes) {
-        Map<String, StickyAssignmentsDocument> docs = new HashMap<>();
-        if (attributes == null) {
-            return docs;
-        }
-        for (Map.Entry<String, String> entry : attributes.entrySet()) {
-            StickyAssignmentsDocument doc = getAssignments(entry.getKey(), entry.getValue());
-            if (doc != null) {
-                docs.put(key(entry.getKey(), entry.getValue()), doc);
-            }
-        }
-        return docs;
-    }
-
-    private String key(String attributeName, String attributeValue) {
-        return attributeName + KEY_SEPARATOR + attributeValue;
+        localStorage.put(doc.getKey(), doc);
     }
 }

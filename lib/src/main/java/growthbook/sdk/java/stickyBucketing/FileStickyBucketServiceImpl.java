@@ -12,8 +12,6 @@ import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
@@ -44,10 +42,9 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
  * </ul>
  */
 @Slf4j
-public class FileStickyBucketServiceImpl implements StickyBucketService {
+public class FileStickyBucketServiceImpl extends AbstractStickyBucketService {
 
     private static final int LOCK_STRIPES = 64;
-    private static final String KEY_SEPARATOR = "||";
     private static final String KEY_PREFIX = "gbStickyBuckets__";
     private static final long DEFAULT_MAX_CACHED_DOCUMENTS = 10_000L;
 
@@ -136,23 +133,8 @@ public class FileStickyBucketServiceImpl implements StickyBucketService {
         }
     }
 
-    @Override
-    public Map<String, StickyAssignmentsDocument> getAllAssignments(Map<String, String> attributes) {
-        Map<String, StickyAssignmentsDocument> docs = new HashMap<>();
-        if (attributes == null) {
-            return docs;
-        }
-        for (Map.Entry<String, String> entry : attributes.entrySet()) {
-            StickyAssignmentsDocument doc = getAssignments(entry.getKey(), entry.getValue());
-            if (doc != null) {
-                docs.put(entry.getKey() + KEY_SEPARATOR + entry.getValue(), doc);
-            }
-        }
-        return docs;
-    }
-
     private String logicalKey(String attributeName, String attributeValue) {
-        return KEY_PREFIX + attributeName + KEY_SEPARATOR + attributeValue;
+        return KEY_PREFIX + StickyAssignmentsDocument.key(attributeName, attributeValue);
     }
 
     /**
