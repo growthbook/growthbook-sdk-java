@@ -1,20 +1,36 @@
 package growthbook.sdk.java.stickyBucketing;
 
 import growthbook.sdk.java.model.StickyAssignmentsDocument;
-import org.jetbrains.annotations.Nullable;
 
+import javax.annotation.Nullable;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * For simple bucket persistence using the in memory's storage(Map) (can be polyfilled for other environments)
+ * Simple in-memory {@link StickyBucketService} backed by a {@link Map}
+ * (can be polyfilled for other environments).
+ *
+ * <p>By default a thread-safe {@link ConcurrentHashMap} is used, which is required for the
+ * shared, multi-threaded usage of {@code GrowthBookClient}. When supplying a custom map, it
+ * must be thread-safe if the service is accessed concurrently.
  */
 public class InMemoryStickyBucketServiceImpl implements StickyBucketService {
+
+    private static final String KEY_SEPARATOR = "||";
+
     private final Map<String, StickyAssignmentsDocument> localStorage;
 
     /**
-     * Constructs a new {@code InMemoryStickyBucketServiceImpl} with the specified local storage.
+     * Constructs a service backed by a thread-safe {@link ConcurrentHashMap}.
+     */
+    public InMemoryStickyBucketServiceImpl() {
+        this(new ConcurrentHashMap<>());
+    }
+
+    /**
+     * Constructs a service backed by the given map. A {@code null} map falls back to a
+     * thread-safe {@link ConcurrentHashMap}.
      *
      * @param localStorage a map to store sticky assignments documents in memory.
      */
@@ -22,51 +38,38 @@ public class InMemoryStickyBucketServiceImpl implements StickyBucketService {
         this.localStorage = localStorage != null ? localStorage : new ConcurrentHashMap<>();
     }
 
-    /**
-     * Method for getting all assignments document from cache (in memory: hashmap)
-     *
-     * @param attributeName  attributeName with attributeValue together present
-     *                       a key that us for find proper StickyAssignmentsDocument
-     * @param attributeValue attributeName with attributeValue together present
-     *                       a key that us for find proper StickyAssignmentsDocument
-     * @return StickyAssignmentsDocument
-     */
     @Override
     public StickyAssignmentsDocument getAssignments(String attributeName, String attributeValue) {
-        return localStorage.get(attributeName + "||" + attributeValue);
+        if (attributeName == null || attributeValue == null) {
+            return null;
+        }
+        return localStorage.get(key(attributeName, attributeValue));
     }
 
-    /**
-     * Method for saving assignments document to cache (in memory: hashmap)
-     *
-     * @param doc StickyAssignmentsDocument
-     */
     @Override
     public void saveAssignments(StickyAssignmentsDocument doc) {
-        localStorage.put(doc.getAttributeName() + "||" + doc.getAttributeValue(), doc);
+        if (doc == null || doc.getAttributeName() == null || doc.getAttributeValue() == null) {
+            return;
+        }
+        localStorage.put(key(doc.getAttributeName(), doc.getAttributeValue()), doc);
     }
 
-    /**
-     * Method for getting sticky bucket assignments from cache (in memory: hashmap) by attributes of context
-     *
-     * @param attributes Map of String key and String value that you have in GBContext
-     * @return Map with key String and value StickyAssignmentsDocument
-     */
     @Override
     public Map<String, StickyAssignmentsDocument> getAllAssignments(Map<String, String> attributes) {
         Map<String, StickyAssignmentsDocument> docs = new HashMap<>();
-
+        if (attributes == null) {
+            return docs;
+        }
         for (Map.Entry<String, String> entry : attributes.entrySet()) {
-            String key = entry.getKey();
-            String value = entry.getValue();
-            StickyAssignmentsDocument doc = getAssignments(key, value);
-
+            StickyAssignmentsDocument doc = getAssignments(entry.getKey(), entry.getValue());
             if (doc != null) {
-                String docKey = doc.getAttributeName() + "||" + doc.getAttributeValue();
-                docs.put(docKey, doc);
+                docs.put(key(entry.getKey(), entry.getValue()), doc);
             }
         }
-
         return docs;
+    }
+
+    private String key(String attributeName, String attributeValue) {
+        return attributeName + KEY_SEPARATOR + attributeValue;
     }
 }
