@@ -96,11 +96,27 @@ class LettuceGbCacheManagerTest {
         stored.put("data", "cached");
         stored.put("updatedAt", "555");
         when(commands.hgetall(PREFIX + "k")).thenReturn(stored);
+        when(commands.hget(PREFIX + "k", "updatedAt")).thenReturn("555");
         LettuceGbCacheManager cache = LettuceGbCacheManager.builder().connection(connection).buildManager();
 
         // Then
         assertEquals("cached", cache.loadCache("k"));
         assertEquals(555L, cache.getLastUpdatedMillis("k"));
+    }
+
+    @Test
+    @DisplayName("Verify: getLastUpdatedMillis reads only the timestamp field, not the payload")
+    void getLastUpdatedMillisReadsSingleField() {
+        // Given
+        when(commands.hget(PREFIX + "k", "updatedAt")).thenReturn("555");
+        LettuceGbCacheManager cache = LettuceGbCacheManager.builder().connection(connection).buildManager();
+
+        // When
+        Long lastUpdated = cache.getLastUpdatedMillis("k");
+
+        // Then
+        assertEquals(555L, lastUpdated);
+        verify(commands, never()).hgetall(anyString());
     }
 
     @Test
@@ -162,10 +178,12 @@ class LettuceGbCacheManagerTest {
     void wrapsFailuresInFeatureCacheException() {
         // Given
         when(commands.hgetall(anyString())).thenThrow(new RedisException("boom"));
+        when(commands.hget(anyString(), anyString())).thenThrow(new RedisException("boom"));
         LettuceGbCacheManager cache = LettuceGbCacheManager.builder().connection(connection).buildManager();
 
         // Then
         assertThrows(FeatureCacheException.class, () -> cache.loadCache("k"));
+        assertThrows(FeatureCacheException.class, () -> cache.getLastUpdatedMillis("k"));
     }
 
     @Test

@@ -55,7 +55,7 @@ final class RedisCacheEntry {
         return new RedisCacheEntry(data, parseTimestamp(hash.get(FIELD_UPDATED_AT)));
     }
 
-    private static long parseTimestamp(String value) {
+    static long parseTimestamp(String value) {
         if (value == null) {
             return 0L;
         }

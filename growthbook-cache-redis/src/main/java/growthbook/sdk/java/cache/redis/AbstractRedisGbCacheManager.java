@@ -11,9 +11,18 @@ import java.util.Map;
  * Shared {@link GbCacheManager} behaviour for Redis adapters, independent of the Redis client.
  *
  * <p>This base owns the common algorithm — key namespacing, hash &harr; entry mapping, cache-miss
- * vs. failure handling, and {@link FeatureCacheException} wrapping — and delegates the three
- * client-specific primitives ({@link #writeHash}, {@link #readHash}, {@link #deleteByPrefix}) to
- * subclasses. Concrete subclasses therefore only translate those primitives to their client's API.
+ * vs. failure handling, and {@link FeatureCacheException} wrapping — and delegates the
+ * client-specific primitives ({@link #writeHash}, {@link #readHash}, {@link #readHashField},
+ * {@link #deleteByPrefix}) to subclasses. Concrete subclasses therefore only translate those
+ * primitives to their client's API.
+ *
+ * <p><strong>Redis Cluster is not supported.</strong> The adapters target standalone and
+ * Sentinel deployments: {@link #clearCache()} issues multi-key {@code DEL} commands, which fail
+ * with {@code CROSSSLOT} when the matched keys hash to different cluster slots, and a plain
+ * {@code SCAN} only iterates the node the connection points at. If you must run against a
+ * cluster, configure a hash-tag key prefix (for example {@code "{growthbook}:features:"}) so
+ * every adapter key maps to the same slot, and be aware that other keys on other nodes are not
+ * scanned.
  */
 public abstract class AbstractRedisGbCacheManager implements GbCacheManager {
 
@@ -46,10 +55,21 @@ public abstract class AbstractRedisGbCacheManager implements GbCacheManager {
         return entry == null ? null : entry.getData();
     }
 
+    /**
+     * {@inheritDoc}
+     *
+     * <p>Reads only the timestamp field ({@code HGET}) instead of the whole hash, so freshness
+     * checks do not transfer the potentially large feature payload.
+     */
     @Override
     public Long getLastUpdatedMillis(String key) {
-        RedisCacheEntry entry = lookup(key);
-        return entry == null ? null : entry.getLastUpdatedMillis();
+        String timestamp;
+        try {
+            timestamp = readHashField(redisKey(key), RedisCacheEntry.FIELD_UPDATED_AT);
+        } catch (RuntimeException e) {
+            throw new FeatureCacheException("Failed to load GrowthBook feature cache entry for key: " + key, e);
+        }
+        return timestamp == null ? null : RedisCacheEntry.parseTimestamp(timestamp);
     }
 
     @Override
@@ -91,6 +111,12 @@ public abstract class AbstractRedisGbCacheManager implements GbCacheManager {
      * @return the hash fields stored for a key, or an empty/{@code null} map when absent
      */
     protected abstract Map<String, String> readHash(String redisKey);
+
+    /**
+     * @return the value of a single hash field for a key, or {@code null} when the key or field
+     * is absent
+     */
+    protected abstract String readHashField(String redisKey, String field);
 
     /**
      * Deletes every key matching the glob pattern (the adapter's namespace).

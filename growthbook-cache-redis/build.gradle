@@ -67,7 +67,7 @@ publishing {
 
             pom {
                 name = 'GrowthBook SDK Java Redis Cache Adapter'
-                description = 'Optional Redis (Jedis) cache adapter for the GrowthBook Java SDK'
+                description = 'Optional Redis (Jedis/Lettuce) cache adapter for the GrowthBook Java SDK'
                 url = 'https://github.com/growthbook/growthbook-sdk-java'
                 licenses {
                     license {

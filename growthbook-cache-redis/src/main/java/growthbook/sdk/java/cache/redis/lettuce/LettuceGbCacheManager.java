@@ -58,6 +58,11 @@ public final class LettuceGbCacheManager extends AbstractRedisGbCacheManager {
     }
 
     @Override
+    protected String readHashField(String redisKey, String field) {
+        return commands.hget(redisKey, field);
+    }
+
+    @Override
     protected void deleteByPrefix(String matchPattern) {
         ScanArgs scanArgs = ScanArgs.Builder.matches(matchPattern).limit(SCAN_BATCH_SIZE);
         ScanCursor cursor = ScanCursor.INITIAL;

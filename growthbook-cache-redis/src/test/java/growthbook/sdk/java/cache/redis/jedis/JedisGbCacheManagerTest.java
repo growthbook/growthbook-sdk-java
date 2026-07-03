@@ -94,11 +94,27 @@ class JedisGbCacheManagerTest {
         stored.put("data", "cached");
         stored.put("updatedAt", "555");
         when(jedis.hgetAll(PREFIX + "k")).thenReturn(stored);
+        when(jedis.hget(PREFIX + "k", "updatedAt")).thenReturn("555");
         JedisGbCacheManager cache = JedisGbCacheManager.builder().jedisPool(pool).buildManager();
 
         // Then
         assertEquals("cached", cache.loadCache("k"));
         assertEquals(555L, cache.getLastUpdatedMillis("k"));
+    }
+
+    @Test
+    @DisplayName("Verify: getLastUpdatedMillis reads only the timestamp field, not the payload")
+    void getLastUpdatedMillisReadsSingleField() {
+        // Given
+        when(jedis.hget(PREFIX + "k", "updatedAt")).thenReturn("555");
+        JedisGbCacheManager cache = JedisGbCacheManager.builder().jedisPool(pool).buildManager();
+
+        // When
+        Long lastUpdated = cache.getLastUpdatedMillis("k");
+
+        // Then
+        assertEquals(555L, lastUpdated);
+        verify(jedis, never()).hgetAll(anyString());
     }
 
     @Test
@@ -155,10 +171,12 @@ class JedisGbCacheManagerTest {
     void wrapsFailuresInFeatureCacheException() {
         // Given
         when(jedis.hgetAll(anyString())).thenThrow(new JedisException("boom"));
+        when(jedis.hget(anyString(), anyString())).thenThrow(new JedisException("boom"));
         JedisGbCacheManager cache = JedisGbCacheManager.builder().jedisPool(pool).buildManager();
 
         // Then
         assertThrows(FeatureCacheException.class, () -> cache.loadCache("k"));
+        assertThrows(FeatureCacheException.class, () -> cache.getLastUpdatedMillis("k"));
     }
 
     @Test

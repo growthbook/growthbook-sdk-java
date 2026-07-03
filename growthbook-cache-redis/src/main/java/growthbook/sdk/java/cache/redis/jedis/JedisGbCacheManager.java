@@ -60,6 +60,13 @@ public final class JedisGbCacheManager extends AbstractRedisGbCacheManager {
     }
 
     @Override
+    protected String readHashField(String redisKey, String field) {
+        try (Jedis jedis = jedisPool.getResource()) {
+            return jedis.hget(redisKey, field);
+        }
+    }
+
+    @Override
     protected void deleteByPrefix(String matchPattern) {
         ScanParams scanParams = new ScanParams().match(matchPattern).count(SCAN_BATCH_SIZE);
         try (Jedis jedis = jedisPool.getResource()) {
