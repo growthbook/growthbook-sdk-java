@@ -11,6 +11,7 @@ import growthbook.sdk.java.exception.GrowthBookClientInitializationException;
 import growthbook.sdk.java.model.AssignedExperiment;
 import growthbook.sdk.java.model.Experiment;
 import growthbook.sdk.java.model.ExperimentResult;
+import growthbook.sdk.java.model.FeatureKey;
 import growthbook.sdk.java.model.FeatureResult;
 import growthbook.sdk.java.model.RequestBodyForRemoteEval;
 import growthbook.sdk.java.multiusermode.configurations.EvaluationContext;
@@ -281,6 +282,130 @@ public class GrowthBookClient {
             log.error(e.getMessage(), e);
             return defaultValue;
         }
+    }
+
+    /**
+     * Evaluate a feature for a user using a type-safe {@link FeatureKey} instead of a raw string key.
+     *
+     * <p>As with {@link #evalFeature(String, Class, UserContext)}, the returned result's
+     * {@link FeatureResult#getValue()} is the raw evaluated value (a boxed primitive, or a
+     * {@code Map}/{@code List} for object and array features); it is <em>not</em> deserialized
+     * into the key's value type. To obtain a deserialized instance of a complex type, use
+     * {@link #getFeatureValue(FeatureKey, Object, UserContext)}.
+     *
+     * @param featureKey  typed feature key, e.g. {@code Features.NEW_HOME}
+     * @param userContext user context
+     * @param <T>         feature value type carried by the key
+     * @return the feature result
+     */
+    public <T> FeatureResult<T> getFeature(FeatureKey<T> featureKey, UserContext userContext) {
+        return evalFeature(featureKey.getKey(), featureKey.getValueType(), userContext);
+    }
+
+    /**
+     * Checks whether the feature identified by the typed key evaluates to on for a user.
+     *
+     * @param featureKey  typed feature key
+     * @param userContext user context
+     * @return true when the feature is on
+     */
+    public Boolean isOn(FeatureKey<?> featureKey, UserContext userContext) {
+        return isOn(featureKey.getKey(), userContext);
+    }
+
+    /**
+     * Checks whether the feature identified by the typed key evaluates to off for a user.
+     *
+     * @param featureKey  typed feature key
+     * @param userContext user context
+     * @return true when the feature is off
+     */
+    public Boolean isOff(FeatureKey<?> featureKey, UserContext userContext) {
+        return isOff(featureKey.getKey(), userContext);
+    }
+
+    /**
+     * Get a feature value using a typed key, inferring the deserialization class from the key.
+     *
+     * @param featureKey   typed feature key
+     * @param defaultValue value to return when the feature is missing or invalid
+     * @param userContext  user context
+     * @param <T>          feature value type carried by the key
+     * @return the found value or defaultValue
+     */
+    public <T> T getFeatureValue(FeatureKey<T> featureKey, T defaultValue, UserContext userContext) {
+        return getFeatureValue(featureKey.getKey(), defaultValue, featureKey.getValueType(), userContext);
+    }
+
+    /**
+     * Get a boolean feature value, defaulting to {@code false} when missing or falsy.
+     *
+     * @param featureKey  typed boolean feature key
+     * @param userContext user context
+     * @return the found value or {@code false}
+     */
+    public Boolean getBooleanFeature(FeatureKey<Boolean> featureKey, UserContext userContext) {
+        return getFeatureValue(featureKey, false, userContext);
+    }
+
+    /**
+     * Get a boolean feature value.
+     *
+     * @param featureKey   typed boolean feature key
+     * @param defaultValue value to return when the feature is missing or invalid
+     * @param userContext  user context
+     * @return the found value or defaultValue
+     */
+    public Boolean getBooleanFeature(FeatureKey<Boolean> featureKey, Boolean defaultValue, UserContext userContext) {
+        return getFeatureValue(featureKey, defaultValue, userContext);
+    }
+
+    /**
+     * Get a string feature value.
+     *
+     * @param featureKey   typed string feature key
+     * @param defaultValue value to return when the feature is missing or invalid
+     * @param userContext  user context
+     * @return the found value or defaultValue
+     */
+    public String getStringFeature(FeatureKey<String> featureKey, String defaultValue, UserContext userContext) {
+        return getFeatureValue(featureKey, defaultValue, userContext);
+    }
+
+    /**
+     * Get an integer feature value.
+     *
+     * @param featureKey   typed integer feature key
+     * @param defaultValue value to return when the feature is missing or invalid
+     * @param userContext  user context
+     * @return the found value or defaultValue
+     */
+    public Integer getIntegerFeature(FeatureKey<Integer> featureKey, Integer defaultValue, UserContext userContext) {
+        return getFeatureValue(featureKey, defaultValue, userContext);
+    }
+
+    /**
+     * Get a double feature value.
+     *
+     * @param featureKey   typed double feature key
+     * @param defaultValue value to return when the feature is missing or invalid
+     * @param userContext  user context
+     * @return the found value or defaultValue
+     */
+    public Double getDoubleFeature(FeatureKey<Double> featureKey, Double defaultValue, UserContext userContext) {
+        return getFeatureValue(featureKey, defaultValue, userContext);
+    }
+
+    /**
+     * Get a float feature value.
+     *
+     * @param featureKey   typed float feature key
+     * @param defaultValue value to return when the feature is missing or invalid
+     * @param userContext  user context
+     * @return the found value or defaultValue
+     */
+    public Float getFloatFeature(FeatureKey<Float> featureKey, Float defaultValue, UserContext userContext) {
+        return getFeatureValue(featureKey, defaultValue, userContext);
     }
 
     public <ValueType> ExperimentResult<ValueType> run(Experiment<ValueType> experiment, UserContext userContext) {

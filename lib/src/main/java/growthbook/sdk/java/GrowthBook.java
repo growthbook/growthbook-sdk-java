@@ -16,6 +16,7 @@ import growthbook.sdk.java.exception.FeatureFetchException;
 import growthbook.sdk.java.model.AssignedExperiment;
 import growthbook.sdk.java.model.Experiment;
 import growthbook.sdk.java.model.ExperimentResult;
+import growthbook.sdk.java.model.FeatureKey;
 import growthbook.sdk.java.model.FeatureResult;
 import growthbook.sdk.java.model.GBContext;
 import growthbook.sdk.java.model.RequestBodyForRemoteEval;
@@ -599,6 +600,74 @@ public class GrowthBook implements IGrowthBook {
             return defaultValue;
         }
     }
+
+    /**
+     * Evaluate a feature using a type-safe {@link FeatureKey} instead of a raw string key.
+     * The key carries both the feature identifier and its value type, so a mistyped key
+     * becomes a compile-time error rather than a silent runtime miss.
+     *
+     * <p>As with {@link #evalFeature(String, Class)}, the returned result's
+     * {@link FeatureResult#getValue()} is the raw evaluated value (a boxed primitive, or a
+     * {@code Map}/{@code List} for object and array features); it is <em>not</em> deserialized
+     * into the key's value type. To obtain a deserialized instance of a complex type, use
+     * {@link #getFeatureValue(FeatureKey, Object)}.
+     *
+     * @param featureKey  typed feature key, e.g. {@code Features.NEW_HOME}
+     * @param <T> feature value type carried by the key
+     * @return the feature result
+     */
+    @Nullable
+    @Override
+    public <T> FeatureResult<T> getFeature(FeatureKey<T> featureKey) {
+        return evalFeature(featureKey.getKey(), featureKey.getValueType());
+    }
+
+    @Override
+    public Boolean isOn(FeatureKey<?> featureKey) {
+        return isOn(featureKey.getKey());
+    }
+
+    @Override
+    public Boolean isOff(FeatureKey<?> featureKey) {
+        return isOff(featureKey.getKey());
+    }
+
+    @Override
+    public <T> T getFeatureValue(FeatureKey<T> featureKey, T defaultValue) {
+        return getFeatureValue(featureKey.getKey(), defaultValue, featureKey.getValueType());
+    }
+
+    @Override
+    public Boolean getBooleanFeature(FeatureKey<Boolean> featureKey) {
+        return getBooleanFeature(featureKey, false);
+    }
+
+    @Override
+    public Boolean getBooleanFeature(FeatureKey<Boolean> featureKey, Boolean defaultValue) {
+        return getFeatureValue(featureKey.getKey(), defaultValue);
+    }
+
+    @Override
+    public String getStringFeature(FeatureKey<String> featureKey, String defaultValue) {
+        return getFeatureValue(featureKey.getKey(), defaultValue);
+    }
+
+    @Override
+    public Integer getIntegerFeature(FeatureKey<Integer> featureKey, Integer defaultValue) {
+        return getFeatureValue(featureKey.getKey(), defaultValue);
+    }
+
+    @Override
+    public Double getDoubleFeature(FeatureKey<Double> featureKey, Double defaultValue) {
+        return getFeatureValue(featureKey.getKey(), defaultValue);
+    }
+
+    @Override
+    public Float getFloatFeature(FeatureKey<Float> featureKey, Float defaultValue) {
+        return getFeatureValue(featureKey.getKey(), defaultValue);
+    }
+
+    // endregion Typed feature access
 
     /**
      * Reinitialized the list of ExperimentRunCallbacks.

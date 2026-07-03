@@ -3,6 +3,7 @@ package growthbook.sdk.java;
 import growthbook.sdk.java.callback.ExperimentRunCallback;
 import growthbook.sdk.java.model.Experiment;
 import growthbook.sdk.java.model.ExperimentResult;
+import growthbook.sdk.java.model.FeatureKey;
 import growthbook.sdk.java.model.FeatureResult;
 import growthbook.sdk.java.stickyBucketing.StickyBucketService;
 import javax.annotation.Nullable;
@@ -118,6 +119,99 @@ interface IGrowthBook {
      * @return ValueType instance
      */
     <ValueType> ValueType getFeatureValue(String featureKey, ValueType defaultValue, Class<ValueType> gsonDeserializableClass);
+
+    /**
+     * Evaluate a feature using a type-safe {@link FeatureKey} instead of a raw string key.
+     * The key carries both the feature identifier and its value type.
+     *
+     * <p>The returned result's {@link FeatureResult#getValue()} is the raw evaluated value; it is
+     * <em>not</em> deserialized into the key's value type. To obtain a deserialized instance of a
+     * complex type, use {@link #getFeatureValue(FeatureKey, Object)}.
+     *
+     * @param featureKey  typed feature key, e.g. {@code Features.NEW_HOME}
+     * @param <ValueType> feature value type carried by the key
+     * @return the feature result
+     */
+    <ValueType> FeatureResult<ValueType> getFeature(FeatureKey<ValueType> featureKey);
+
+    /**
+     * Returns true if the feature identified by the typed key evaluates to a truthy value.
+     *
+     * @param featureKey typed feature key
+     * @return true if the value is truthy
+     */
+    Boolean isOn(FeatureKey<?> featureKey);
+
+    /**
+     * Returns true if the feature identified by the typed key evaluates to a falsy value.
+     *
+     * @param featureKey typed feature key
+     * @return true if the value is falsy
+     */
+    Boolean isOff(FeatureKey<?> featureKey);
+
+    /**
+     * Get the feature value using a typed key, inferring the deserialization class from the key.
+     *
+     * @param featureKey   typed feature key
+     * @param defaultValue value to return when the feature is missing or invalid
+     * @param <ValueType>  feature value type carried by the key
+     * @return the found value or defaultValue
+     */
+    <ValueType> ValueType getFeatureValue(FeatureKey<ValueType> featureKey, ValueType defaultValue);
+
+    /**
+     * Get a boolean feature value, defaulting to {@code false} when missing or falsy.
+     *
+     * @param featureKey typed boolean feature key
+     * @return the found value or {@code false}
+     */
+    Boolean getBooleanFeature(FeatureKey<Boolean> featureKey);
+
+    /**
+     * Get a boolean feature value.
+     *
+     * @param featureKey   typed boolean feature key
+     * @param defaultValue value to return when the feature is missing or invalid
+     * @return the found value or defaultValue
+     */
+    Boolean getBooleanFeature(FeatureKey<Boolean> featureKey, Boolean defaultValue);
+
+    /**
+     * Get a string feature value.
+     *
+     * @param featureKey   typed string feature key
+     * @param defaultValue value to return when the feature is missing or invalid
+     * @return the found value or defaultValue
+     */
+    String getStringFeature(FeatureKey<String> featureKey, String defaultValue);
+
+    /**
+     * Get an integer feature value.
+     *
+     * @param featureKey   typed integer feature key
+     * @param defaultValue value to return when the feature is missing or invalid
+     * @return the found value or defaultValue
+     */
+    Integer getIntegerFeature(FeatureKey<Integer> featureKey, Integer defaultValue);
+
+    /**
+     * Get a double feature value.
+     *
+     * @param featureKey   typed double feature key
+     * @param defaultValue value to return when the feature is missing or invalid
+     * @return the found value or defaultValue
+     */
+    Double getDoubleFeature(FeatureKey<Double> featureKey, Double defaultValue);
+
+    /**
+     * Get a float feature value.
+     *
+     * @param featureKey   typed float feature key
+     * @param defaultValue value to return when the feature is missing or invalid
+     * @return the found value or defaultValue
+     */
+    Float getFloatFeature(FeatureKey<Float> featureKey, Float defaultValue);
 
     // endregion Features
 
