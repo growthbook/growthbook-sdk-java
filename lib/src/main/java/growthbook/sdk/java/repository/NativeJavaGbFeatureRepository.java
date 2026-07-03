@@ -1,7 +1,13 @@
 package growthbook.sdk.java.repository;
 
+import static growthbook.sdk.java.constants.SDKConstants.Endpoints.DEFAULT_API_HOST;
+import static growthbook.sdk.java.constants.SDKConstants.Endpoints.FEATURES_ENDPOINT_PATH;
+import static growthbook.sdk.java.constants.SDKConstants.Endpoints.FEATURES_ENDPOINT_PATTERN;
+import static growthbook.sdk.java.constants.SDKConstants.Endpoints.STREAMING_ENDPOINT_PATH;
+
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import growthbook.sdk.java.constants.SDKConstants;
 import growthbook.sdk.java.exception.RetryableFeatureFetchException;
 import growthbook.sdk.java.featurefetch.FeatureFetchFailureHandler;
 import growthbook.sdk.java.featurefetch.FeatureFetchHttpStatus;
@@ -63,7 +69,6 @@ public class NativeJavaGbFeatureRepository implements IGBFeaturesRepository {
     private static final String FILE_NAME_FOR_CACHE = "FEATURE_CACHE.json";
     public static final String FILE_PATH_FOR_CACHE = "src/main/resources";
     public static final String EMPTY_JSON_OBJECT_STRING = "{}";
-    private static final String FEATURES_PATH_PATTERN = ".*/api/features/[^/]+";
 
     /**
      * Thread-safe LRU cache with max 100 entries to prevent unbounded growth
@@ -232,16 +237,18 @@ public class NativeJavaGbFeatureRepository implements IGBFeaturesRepository {
             throw new IllegalArgumentException("backgroundFetchInterval must not be negative");
         }
         if (apiHost == null) {
-            apiHost = "https://cdn.growthbook.io";
+            apiHost = DEFAULT_API_HOST;
         }
         this.refreshStrategy = refreshStrategy == null ? FeatureRefreshStrategy.STALE_WHILE_REVALIDATE : refreshStrategy;
-        this.featuresEndpoint = apiHost + "/api/features/" + clientKey;
-        this.eventsEndpoint = apiHost + "/sub/" + clientKey;
+        this.featuresEndpoint = apiHost + FEATURES_ENDPOINT_PATH + clientKey;
+        this.eventsEndpoint = apiHost + STREAMING_ENDPOINT_PATH + clientKey;
         this.remoteEvalEndPoint = RemoteEvalEndpoints.evalEndpoint(apiHost, clientKey);
         this.requestBodyForRemoteEval = requestBodyForRemoteEval;
 
         this.encryptionKey = encryptionKey;
-        this.swrTtlSeconds = swrTtlSeconds == null ? new AtomicInteger(60) : new AtomicInteger(swrTtlSeconds);
+        this.swrTtlSeconds = swrTtlSeconds == null
+                ? new AtomicInteger(SDKConstants.DEFAULT_SWR_TTL_SECONDS)
+                : new AtomicInteger(swrTtlSeconds);
         this.backgroundFetchInterval = backgroundFetchInterval;
         this.retryPolicy = retryPolicy == null ? new FeatureFetchRetryPolicy() : retryPolicy;
         this.featureFetchRetryExecutor = new FeatureFetchRetryExecutor(this.retryPolicy);
@@ -429,7 +436,7 @@ public class NativeJavaGbFeatureRepository implements IGBFeaturesRepository {
             URL url = new URL(this.featuresEndpoint);
             connection = (HttpURLConnection) url.openConnection();
             connection.setRequestMethod(HttpMethods.GET.getMethod());
-            if (this.featuresEndpoint.matches(FEATURES_PATH_PATTERN)) {
+            if (this.featuresEndpoint.matches(FEATURES_ENDPOINT_PATTERN)) {
                 if (refreshMode == RefreshMode.FORCE) {
                     connection.setRequestProperty(HttpHeaders.CACHE_CONTROL.getHeader(), "no-cache");
                 } else {
@@ -451,7 +458,7 @@ public class NativeJavaGbFeatureRepository implements IGBFeaturesRepository {
             }
 
             if (responseCode == HttpURLConnection.HTTP_OK) {
-                if (this.featuresEndpoint.matches(FEATURES_PATH_PATTERN)) {
+                if (this.featuresEndpoint.matches(FEATURES_ENDPOINT_PATTERN)) {
                     String newEtag = connection.getHeaderField("ETag");
                     if (newEtag != null) {
                         eTagCache.put(this.featuresEndpoint, newEtag);

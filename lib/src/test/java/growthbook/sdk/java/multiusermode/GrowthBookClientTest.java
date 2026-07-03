@@ -27,6 +27,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
 
+import static growthbook.sdk.java.multiusermode.GrowthBookClientTestFixtures.createDefaultOptions;
+import static growthbook.sdk.java.multiusermode.GrowthBookClientTestFixtures.createMockBuilder;
+import static growthbook.sdk.java.multiusermode.GrowthBookClientTestFixtures.createMockRepository;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
@@ -524,42 +527,4 @@ class GrowthBookClientTest {
         }
     }
 
-    private GBFeaturesRepository createMockRepository() {
-        GBFeaturesRepository repository = mock(GBFeaturesRepository.class);
-        when(repository.getInitialized()).thenReturn(true);
-        when(repository.getFeaturesJson()).thenReturn("{}");
-        when(repository.getSavedGroupsJson()).thenReturn("{}");
-        when(repository.getParsedFeatures()).thenReturn(new HashMap<>());
-        when(repository.getParsedSavedGroups()).thenReturn(new com.google.gson.JsonObject());
-        return repository;
-    }
-
-    private GBFeaturesRepository.GBFeaturesRepositoryBuilder createMockBuilder(GBFeaturesRepository repository) {
-        GBFeaturesRepository.GBFeaturesRepositoryBuilder builder =
-                mock(GBFeaturesRepository.GBFeaturesRepositoryBuilder.class);
-
-        when(builder.apiHost(anyString())).thenReturn(builder);
-        when(builder.clientKey(anyString())).thenReturn(builder);
-        when(builder.decryptionKey(anyString())).thenReturn(builder);
-        when(builder.refreshStrategy(any())).thenReturn(builder);
-        when(builder.swrTtlSeconds(any())).thenReturn(builder);
-        when(builder.isCacheDisabled(anyBoolean())).thenReturn(builder);
-        when(builder.requestBodyForRemoteEval(any())).thenReturn(builder);
-        when(builder.cacheManager(any())).thenReturn(builder);
-        when(builder.backgroundFetchInterval(any())).thenReturn(builder);
-        when(builder.retryPolicy(any())).thenReturn(builder);
-        when(builder.build()).thenReturn(repository);
-
-        return builder;
-    }
-
-    private Options createDefaultOptions(FeatureRefreshCallback callback) {
-        return Options.builder()
-                .apiHost("https://custom.growthbook.io")
-                .clientKey("custom_key")
-                .decryptionKey("test_key")
-                .refreshStrategy(FeatureRefreshStrategy.STALE_WHILE_REVALIDATE)
-                .featureRefreshCallback(callback)
-                .build();
-    }
 }
