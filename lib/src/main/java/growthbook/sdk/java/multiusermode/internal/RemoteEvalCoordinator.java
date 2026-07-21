@@ -1,6 +1,5 @@
 package growthbook.sdk.java.multiusermode.internal;
 
-import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import growthbook.sdk.java.exception.FeatureFetchException;
 import growthbook.sdk.java.model.Feature;
@@ -18,7 +17,6 @@ import growthbook.sdk.java.remoteeval.RemoteEvalResponse;
 import growthbook.sdk.java.remoteeval.RemoteEvalService;
 import growthbook.sdk.java.repository.FeatureRefreshStrategy;
 import growthbook.sdk.java.repository.GBFeaturesRepository;
-import growthbook.sdk.java.util.GrowthBookJsonUtils;
 import lombok.extern.slf4j.Slf4j;
 
 import javax.annotation.Nullable;
@@ -86,7 +84,7 @@ public final class RemoteEvalCoordinator {
      * @return evaluation context used by feature and experiment evaluators
      */
     public EvaluationContext createEvaluationContext(UserContext userContext) {
-        UserContext mergedUserContext = withMergedAttributes(userContext);
+        UserContext mergedUserContext = UserContextMerger.mergeAttributesAndPreloadSticky(this.options, userContext);
         if (this.shutdown.get()) {
             return fallbackEvaluationContext(mergedUserContext);
         }
@@ -111,7 +109,7 @@ public final class RemoteEvalCoordinator {
             return false;
         }
         try {
-            fetchResponse(withMergedAttributes(userContext));
+            fetchResponse(UserContextMerger.mergeAttributesAndPreloadSticky(this.options, userContext));
             return true;
         } catch (FeatureFetchException e) {
             log.warn("Unable to preload remote evaluation response", e);
@@ -216,23 +214,6 @@ public final class RemoteEvalCoordinator {
 
     private EvaluationContext fallbackEvaluationContext(UserContext userContext) {
         return new EvaluationContext(fallbackContext(), userContext, new EvaluationContext.StackContext(), this.options);
-    }
-
-    private UserContext withMergedAttributes(UserContext userContext) {
-        JsonObject merged = new JsonObject();
-        if (this.options.getGlobalAttributes() != null) {
-            merged = GrowthBookJsonUtils.getInstance().gson.fromJson(this.options.getGlobalAttributes(), JsonObject.class);
-            if (merged == null) {
-                merged = new JsonObject();
-            }
-        }
-        JsonObject userAttributes = userContext.getAttributes();
-        if (userAttributes != null) {
-            for (Map.Entry<String, JsonElement> entry : userAttributes.entrySet()) {
-                merged.add(entry.getKey(), entry.getValue());
-            }
-        }
-        return userContext.withAttributes(merged);
     }
 
     private RemoteEvalResponse fetchResponse(UserContext userContext) throws FeatureFetchException {

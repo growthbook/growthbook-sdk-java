@@ -106,14 +106,16 @@ public class Options {
                    @Nullable GbCacheManager cacheManager,
                    @Nullable CacheMode cacheMode,
                    @Nullable String cacheDirectory,
-                   @Nullable Executor featureRefreshListenerExecutor,
-                   @Nullable Duration backgroundFetchInterval,
-                   @Nullable FeatureFetchRetryPolicy retryPolicy,
                    @Nullable Boolean remoteEval,
                    @Nullable List<String> cacheKeyAttributes,
                    @Nullable Integer remoteEvalCacheSize,
-                   @Nullable Integer remoteEvalCacheTtlSeconds
-
+                   @Nullable Integer remoteEvalCacheTtlSeconds,
+                   @Nullable Duration backgroundFetchInterval,
+                   @Nullable FeatureFetchRetryPolicy retryPolicy,
+                   // New in the refresh-listener work: appended last so the existing positional
+                   // constructor signature (remoteEval..retryPolicy after cacheDirectory) is preserved
+                   // for direct (non-builder) callers. Builder users get it via the generated setter.
+                   @Nullable Executor featureRefreshListenerExecutor
     ) {
         this.enabled = enabled == null || enabled;
         this.isQaMode = isQaMode != null && isQaMode;
@@ -136,13 +138,13 @@ public class Options {
         this.cacheManager = cacheManager;
         this.cacheMode = cacheMode == null ? CacheMode.AUTO : cacheMode;
         this.cacheDirectory = cacheDirectory;
-        this.featureRefreshListenerExecutor = featureRefreshListenerExecutor;
-        this.backgroundFetchInterval = backgroundFetchInterval;
-        this.retryPolicy = retryPolicy;
         this.remoteEval = remoteEval != null && remoteEval;
         this.cacheKeyAttributes = cacheKeyAttributes;
         this.remoteEvalCacheSize = RemoteEvalRequestBuilder.normalizeCacheSize(remoteEvalCacheSize);
         this.remoteEvalCacheTtlSeconds = remoteEvalCacheTtlSeconds;
+        this.backgroundFetchInterval = backgroundFetchInterval;
+        this.retryPolicy = retryPolicy;
+        this.featureRefreshListenerExecutor = featureRefreshListenerExecutor;
     }
 
     /**

@@ -15,6 +15,7 @@ import growthbook.sdk.java.multiusermode.configurations.Options;
 import growthbook.sdk.java.multiusermode.configurations.UserContext;
 import growthbook.sdk.java.repository.FeatureRefreshStrategy;
 import growthbook.sdk.java.repository.GBFeaturesRepository;
+import growthbook.sdk.java.stickyBucketing.StickyBucketService;
 import growthbook.sdk.java.testhelpers.TestCasesJsonHelper;
 import growthbook.sdk.java.util.GrowthBookJsonUtils;
 import org.junit.jupiter.api.Test;
@@ -27,6 +28,7 @@ import java.net.HttpURLConnection;
 import java.net.InetSocketAddress;
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
+import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
@@ -581,6 +583,50 @@ class GrowthBookClientTest {
                 client.shutdown();
             }
             server.stop(0);
+        }
+    }
+
+    @Test
+    void evalFeature_withStickyBucketService_preloadsAssignmentsForMergedAttributes() {
+        // Regression: local evaluation through GrowthBookClient must still preload sticky-bucket
+        // assignments before evaluating, as the pre-refactor toUserContextWithMergedAttributes path
+        // did. Without it, multi-user clients configured with a StickyBucketService would evaluate
+        // experiments without their persisted assignments, diverging from the cross-SDK contract.
+        mockRepository = createMockRepository();
+        mockBuilder = createMockBuilder(mockRepository);
+
+        StickyBucketService stickyBucketService = mock(StickyBucketService.class);
+        when(stickyBucketService.getAllAssignments(any())).thenReturn(new HashMap<>());
+
+        JsonObject globalAttributes = new JsonObject();
+        globalAttributes.addProperty("country", "US");
+
+        try (MockedStatic<GBFeaturesRepository> mockedStatic = mockStatic(GBFeaturesRepository.class)) {
+            mockedStatic.when(GBFeaturesRepository::builder).thenReturn(mockBuilder);
+
+            Options options = Options.builder()
+                    .apiHost("https://custom.growthbook.io")
+                    .clientKey("custom_key")
+                    .decryptionKey("test_key")
+                    .refreshStrategy(FeatureRefreshStrategy.STALE_WHILE_REVALIDATE)
+                    .featureRefreshListenerExecutor(Runnable::run)
+                    .stickyBucketService(stickyBucketService)
+                    .globalAttributes(globalAttributes)
+                    .build();
+
+            GrowthBookClient client = new GrowthBookClient(options);
+            assertTrue(client.initialize());
+
+            UserContext userContext = UserContext.builder().attributesJson("{\"id\":\"1\"}").build();
+            client.evalFeature("test-feature", Boolean.class, userContext);
+
+            // The sticky assignments are loaded once for the merged (global + per-user) attributes.
+            @SuppressWarnings("unchecked")
+            ArgumentCaptor<Map<String, String>> attributesCaptor = ArgumentCaptor.forClass(Map.class);
+            verify(stickyBucketService).getAllAssignments(attributesCaptor.capture());
+            Map<String, String> capturedAttributes = attributesCaptor.getValue();
+            assertEquals("US", capturedAttributes.get("country"));
+            assertEquals("1", capturedAttributes.get("id"));
         }
     }
 

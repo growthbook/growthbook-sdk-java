@@ -1,15 +1,11 @@
 package growthbook.sdk.java.multiusermode.internal;
 
-import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
 import growthbook.sdk.java.multiusermode.configurations.EvaluationContext;
 import growthbook.sdk.java.multiusermode.configurations.GlobalContext;
 import growthbook.sdk.java.multiusermode.configurations.Options;
 import growthbook.sdk.java.multiusermode.configurations.UserContext;
 import growthbook.sdk.java.repository.GBFeaturesRepository;
-import growthbook.sdk.java.util.GrowthBookJsonUtils;
 
-import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
 
 /**
@@ -54,7 +50,7 @@ public final class GlobalContextManager {
      * @return evaluation context used by feature and experiment evaluators
      */
     public EvaluationContext createEvaluationContext(UserContext userContext) {
-        UserContext updatedUserContext = userContext.withAttributes(mergeAttributes(userContext));
+        UserContext updatedUserContext = UserContextMerger.mergeAttributesAndPreloadSticky(this.options, userContext);
         return new EvaluationContext(
                 this.globalContext.get(),
                 updatedUserContext,
@@ -72,27 +68,5 @@ public final class GlobalContextManager {
                 .forcedFeatureValues(this.options.getGlobalForcedFeatureValues())
                 .forcedVariations(this.options.getGlobalForcedVariationsMap())
                 .build();
-    }
-
-    private JsonObject mergeAttributes(UserContext userContext) {
-        JsonObject merged = getGlobalAttributes();
-        JsonObject userAttributes = userContext.getAttributes();
-        if (userAttributes != null) {
-            for (Map.Entry<String, JsonElement> entry : userAttributes.entrySet()) {
-                merged.add(entry.getKey(), entry.getValue());
-            }
-        }
-        return merged;
-    }
-
-    private JsonObject getGlobalAttributes() {
-        if (this.options.getGlobalAttributes() == null) {
-            return new JsonObject();
-        }
-
-        JsonObject globalAttributes = GrowthBookJsonUtils.getInstance()
-                .gson
-                .fromJson(this.options.getGlobalAttributes(), JsonObject.class);
-        return globalAttributes == null ? new JsonObject() : globalAttributes;
     }
 }
