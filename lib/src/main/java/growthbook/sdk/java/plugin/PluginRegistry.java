@@ -3,7 +3,6 @@ package growthbook.sdk.java.plugin;
 import growthbook.sdk.java.model.Experiment;
 import growthbook.sdk.java.model.ExperimentResult;
 import growthbook.sdk.java.model.FeatureResult;
-import growthbook.sdk.java.multiusermode.configurations.EvaluationContext;
 import lombok.extern.slf4j.Slf4j;
 
 import javax.annotation.Nullable;
@@ -15,9 +14,10 @@ import java.util.List;
  * Holds a set of {@link GrowthBookPlugin}s registered with a GrowthBook
  * instance and dispatches lifecycle/event callbacks to each one.
  *
- * <p>Dispatch is best-effort: exceptions from one plugin never propagate
- * to the evaluator or other plugins. {@link #initAll()} captures init failures
- * so a failing plugin becomes a no-op rather than aborting registration.
+ * <p>Dispatch is best-effort: a plugin that throws is isolated so the failure
+ * never propagates to the evaluator or other plugins. A plugin whose
+ * {@link GrowthBookPlugin#init()} throws is dropped and receives no further
+ * events. {@link Error}s are not swallowed — only {@link Exception}s are.
  */
 @Slf4j
 public final class PluginRegistry {
@@ -28,7 +28,13 @@ public final class PluginRegistry {
         if (plugins == null || plugins.isEmpty()) {
             this.plugins = Collections.emptyList();
         } else {
-            this.plugins = new ArrayList<>(plugins);
+            List<GrowthBookPlugin> nonNull = new ArrayList<>(plugins.size());
+            for (GrowthBookPlugin plugin : plugins) {
+                if (plugin != null) {
+                    nonNull.add(plugin);
+                }
+            }
+            this.plugins = nonNull;
         }
     }
 
@@ -37,71 +43,60 @@ public final class PluginRegistry {
     }
 
     public void initAll() {
-        for (GrowthBookPlugin plugin : plugins) {
+        if (plugins.isEmpty()) {
+            return;
+        }
+        // Drop any plugin whose init() fails so it never receives later events.
+        plugins.removeIf(plugin -> {
             try {
                 plugin.init();
-            } catch (Throwable t) {
-                log.warn("Plugin {} init failed; continuing as no-op",
-                        plugin.getClass().getName(), t);
+                return false;
+            } catch (Exception e) {
+                log.warn("Plugin {} init failed; it will not receive events",
+                        plugin.getClass().getName(), e);
+                return true;
             }
-        }
+        });
     }
 
     public <V> void fireExperimentViewed(Experiment<V> experiment, ExperimentResult<V> result) {
-        fireExperimentViewed(experiment, result, null);
-    }
-
-    public <V> void fireExperimentViewed(
-            Experiment<V> experiment,
-            ExperimentResult<V> result,
-            @Nullable EvaluationContext context
-    ) {
-        if (plugins.isEmpty()) return;
+        if (plugins.isEmpty()) {
+            return;
+        }
         for (GrowthBookPlugin plugin : plugins) {
             try {
-                if (context == null) {
-                    plugin.onExperimentViewed(experiment, result);
-                } else {
-                    plugin.onExperimentViewed(experiment, result, context);
-                }
-            } catch (Throwable t) {
+                plugin.onExperimentViewed(experiment, result);
+            } catch (Exception e) {
                 log.warn("Plugin {} onExperimentViewed failed",
-                        plugin.getClass().getName(), t);
+                        plugin.getClass().getName(), e);
             }
         }
     }
 
     public <V> void fireFeatureEvaluated(String featureKey, FeatureResult<V> result) {
-        fireFeatureEvaluated(featureKey, result, null);
-    }
-
-    public <V> void fireFeatureEvaluated(
-            String featureKey,
-            FeatureResult<V> result,
-            @Nullable EvaluationContext context
-    ) {
-        if (plugins.isEmpty()) return;
+        if (plugins.isEmpty()) {
+            return;
+        }
         for (GrowthBookPlugin plugin : plugins) {
             try {
-                if (context == null) {
-                    plugin.onFeatureEvaluated(featureKey, result);
-                } else {
-                    plugin.onFeatureEvaluated(featureKey, result, context);
-                }
-            } catch (Throwable t) {
+                plugin.onFeatureEvaluated(featureKey, result);
+            } catch (Exception e) {
                 log.warn("Plugin {} onFeatureEvaluated failed",
-                        plugin.getClass().getName(), t);
+                        plugin.getClass().getName(), e);
             }
         }
     }
 
     public void closeAll() {
+        if (plugins.isEmpty()) {
+            return;
+        }
         for (GrowthBookPlugin plugin : plugins) {
             try {
                 plugin.close();
-            } catch (Throwable t) {
+            } catch (Exception e) {
                 log.warn("Plugin {} close failed",
-                        plugin.getClass().getName(), t);
+                        plugin.getClass().getName(), e);
             }
         }
     }

@@ -6,38 +6,48 @@ import growthbook.sdk.java.model.Experiment;
 import growthbook.sdk.java.model.ExperimentResult;
 import growthbook.sdk.java.model.FeatureResult;
 import growthbook.sdk.java.util.GrowthBookJsonUtils;
+import lombok.AccessLevel;
+import lombok.Builder;
+import lombok.extern.slf4j.Slf4j;
 
 import javax.annotation.Nullable;
-import java.time.Instant;
 
 /**
  * A single event dispatched by {@link GrowthBookTrackingPlugin} to the
- * GrowthBook data-warehouse ingest endpoint. Field names mirror the Go SDK.
+ * GrowthBook data-warehouse ingest endpoint. Field names and shape mirror the
+ * Go SDK's tracking plugin. Serialized by Gson; null fields are omitted, so
+ * each event only carries the keys relevant to its {@link EventType}.
  */
-public final class TrackingEvent {
+@Slf4j
+@Builder(access = AccessLevel.PRIVATE)
+final class TrackingEvent {
 
-    public static final String EVENT_EXPERIMENT_VIEWED = "experiment_viewed";
-    public static final String EVENT_FEATURE_EVALUATED = "feature_evaluated";
+    enum EventType {
+        @SerializedName("experiment_viewed")
+        EXPERIMENT_VIEWED,
+        @SerializedName("feature_evaluated")
+        FEATURE_EVALUATED
+    }
 
     @SerializedName("event_type")
-    private final String eventType;
+    private final EventType eventType;
 
     @SerializedName("timestamp")
-    private final String timestamp;
+    private final long timestamp;
 
     @SerializedName("sdk_language")
-    private final String sdkLanguage = SdkMetadata.LANGUAGE;
+    private final String sdkLanguage;
 
     @SerializedName("sdk_version")
-    private final String sdkVersion = SdkMetadata.VERSION;
+    private final String sdkVersion;
 
     @Nullable
-    @SerializedName("attributes")
-    private final JsonElement attributes;
+    @SerializedName("experiment_id")
+    private final String experimentId;
 
     @Nullable
-    @SerializedName("experiment_key")
-    private final String experimentKey;
+    @SerializedName("experiment_name")
+    private final String experimentName;
 
     @Nullable
     @SerializedName("variation_id")
@@ -48,6 +58,18 @@ public final class TrackingEvent {
     private final String variationKey;
 
     @Nullable
+    @SerializedName("variation_value")
+    private final JsonElement variationValue;
+
+    @Nullable
+    @SerializedName("in_experiment")
+    private final Boolean inExperiment;
+
+    @Nullable
+    @SerializedName("hash_used")
+    private final Boolean hashUsed;
+
+    @Nullable
     @SerializedName("hash_attribute")
     private final String hashAttribute;
 
@@ -56,130 +78,98 @@ public final class TrackingEvent {
     private final String hashValue;
 
     @Nullable
+    @SerializedName("feature_id")
+    private final String featureId;
+
+    @Nullable
     @SerializedName("feature_key")
     private final String featureKey;
 
     @Nullable
-    @SerializedName("feature_source")
-    private final String featureSource;
+    @SerializedName("feature_value")
+    private final JsonElement featureValue;
+
+    @Nullable
+    @SerializedName("source")
+    private final String source;
+
+    @Nullable
+    @SerializedName("on")
+    private final Boolean on;
+
+    @Nullable
+    @SerializedName("off")
+    private final Boolean off;
 
     @Nullable
     @SerializedName("rule_id")
     private final String ruleId;
 
-    @Nullable
-    @SerializedName("value")
-    private final JsonElement value;
-
-    private TrackingEvent(Builder b) {
-        this.eventType = b.eventType;
-        this.timestamp = b.timestamp != null ? b.timestamp : Instant.now().toString();
-        this.attributes = b.attributes;
-        this.experimentKey = b.experimentKey;
-        this.variationId = b.variationId;
-        this.variationKey = b.variationKey;
-        this.hashAttribute = b.hashAttribute;
-        this.hashValue = b.hashValue;
-        this.featureKey = b.featureKey;
-        this.featureSource = b.featureSource;
-        this.ruleId = b.ruleId;
-        this.value = b.value;
-    }
-
-    public String getEventType() {
-        return eventType;
-    }
-
-    public static <V> TrackingEvent forExperiment(
-            Experiment<V> experiment,
-            ExperimentResult<V> result,
-            @Nullable JsonElement attributes
-    ) {
-        return new Builder()
-                .eventType(EVENT_EXPERIMENT_VIEWED)
-                .attributes(attributes)
-                .experimentKey(experiment != null ? experiment.getKey() : null)
+    static <ValueType> TrackingEvent forExperiment(Experiment<ValueType> experiment, ExperimentResult<ValueType> result) {
+        return TrackingEvent.builder()
+                .eventType(EventType.EXPERIMENT_VIEWED)
+                .timestamp(now())
+                .sdkLanguage(SdkMetadata.LANGUAGE)
+                .sdkVersion(SdkMetadata.VERSION)
+                .experimentId(experiment != null ? experiment.getKey() : null)
+                .experimentName(experiment != null ? emptyToNull(experiment.getName()) : null)
                 .variationId(result != null ? result.getVariationId() : null)
                 .variationKey(result != null ? result.getKey() : null)
+                .variationValue(result != null ? toJson(result.getValue()) : null)
+                .inExperiment(result != null ? result.getInExperiment() : null)
+                .hashUsed(result != null ? result.getHashUsed() : null)
                 .hashAttribute(result != null ? result.getHashAttribute() : null)
                 .hashValue(result != null ? result.getHashValue() : null)
-                .value(result != null ? toJson(result.getValue()) : null)
+                .featureId(result != null ? emptyToNull(result.getFeatureId()) : null)
                 .build();
     }
 
-    public static <V> TrackingEvent forFeature(
-            String featureKey,
-            FeatureResult<V> result,
-            @Nullable JsonElement attributes
-    ) {
-        String source = null;
-        String ruleId = null;
-        String experimentKey = null;
-        Integer variationId = null;
-        Object value = null;
+    static <ValueType> TrackingEvent forFeature(String featureKey, FeatureResult<ValueType> result) {
+        TrackingEventBuilder builder = TrackingEvent.builder()
+                .eventType(EventType.FEATURE_EVALUATED)
+                .timestamp(now())
+                .sdkLanguage(SdkMetadata.LANGUAGE)
+                .sdkVersion(SdkMetadata.VERSION)
+                .featureKey(featureKey);
+
         if (result != null) {
-            if (result.getSource() != null) {
-                source = result.getSource().toString();
+            builder.featureValue(toJson(result.getValue()))
+                    .source(result.getSource() != null ? result.getSource().toString() : null)
+                    .on(result.isOn())
+                    .off(result.isOff())
+                    .ruleId(emptyToNull(result.getRuleId()));
+
+            Experiment<ValueType> experiment = result.getExperiment();
+            if (experiment != null) {
+                builder.experimentId(experiment.getKey());
             }
-            ruleId = result.getRuleId();
-            value = result.getValue();
-            Experiment<V> exp = result.getExperiment();
-            ExperimentResult<V> expResult = result.getExperimentResult();
-            if (exp != null) {
-                experimentKey = exp.getKey();
-            }
-            if (expResult != null) {
-                variationId = expResult.getVariationId();
+            ExperimentResult<ValueType> experimentResult = result.getExperimentResult();
+            if (experimentResult != null) {
+                builder.variationId(experimentResult.getVariationId());
             }
         }
-        return new Builder()
-                .eventType(EVENT_FEATURE_EVALUATED)
-                .attributes(attributes)
-                .featureKey(featureKey)
-                .featureSource(source)
-                .ruleId(ruleId)
-                .experimentKey(experimentKey)
-                .variationId(variationId)
-                .value(toJson(value))
-                .build();
+        return builder.build();
+    }
+
+    private static long now() {
+        return System.currentTimeMillis();
+    }
+
+    @Nullable
+    private static String emptyToNull(@Nullable String value) {
+        return value == null || value.isEmpty() ? null : value;
     }
 
     @Nullable
     private static JsonElement toJson(@Nullable Object value) {
-        if (value == null) return null;
-        try {
-            return GrowthBookJsonUtils.getInstance().gson.toJsonTree(value);
-        } catch (Throwable t) {
+        if (value == null) {
             return null;
         }
-    }
-
-    static final class Builder {
-        private String eventType;
-        private String timestamp;
-        private JsonElement attributes;
-        private String experimentKey;
-        private Integer variationId;
-        private String variationKey;
-        private String hashAttribute;
-        private String hashValue;
-        private String featureKey;
-        private String featureSource;
-        private String ruleId;
-        private JsonElement value;
-
-        Builder eventType(String v) { this.eventType = v; return this; }
-        Builder attributes(JsonElement v) { this.attributes = v; return this; }
-        Builder experimentKey(String v) { this.experimentKey = v; return this; }
-        Builder variationId(Integer v) { this.variationId = v; return this; }
-        Builder variationKey(String v) { this.variationKey = v; return this; }
-        Builder hashAttribute(String v) { this.hashAttribute = v; return this; }
-        Builder hashValue(String v) { this.hashValue = v; return this; }
-        Builder featureKey(String v) { this.featureKey = v; return this; }
-        Builder featureSource(String v) { this.featureSource = v; return this; }
-        Builder ruleId(String v) { this.ruleId = v; return this; }
-        Builder value(JsonElement v) { this.value = v; return this; }
-
-        TrackingEvent build() { return new TrackingEvent(this); }
+        try {
+            return GrowthBookJsonUtils.getInstance().gson.toJsonTree(value);
+        } catch (Exception e) {
+            log.debug("Failed to serialize tracking event value; dropping it: {}", e.toString());
+            return null;
+        }
     }
 }

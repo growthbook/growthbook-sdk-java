@@ -72,7 +72,7 @@ public final class TrackingPluginSmokeHarness {
         growthBook.destroy();
 
         JsonObject body = readBody(server);
-        requireAttribute(body, 0, "id", "single-smoke");
+        requireEventField(body, 0, "feature_key", "flag");
         requireHeaderShape(body);
         return body;
     }
@@ -95,9 +95,8 @@ public final class TrackingPluginSmokeHarness {
         client.shutdown();
 
         JsonObject body = readBody(server);
-        requireAttribute(body, 0, "company", "acme");
-        requireAttribute(body, 0, "id", "multi-smoke-1");
-        requireAttribute(body, 1, "id", "multi-smoke-2");
+        requireEventField(body, 0, "feature_key", "flag");
+        requireEventField(body, 1, "feature_key", "flag");
         requireHeaderShape(body);
         return body;
     }
@@ -139,24 +138,28 @@ public final class TrackingPluginSmokeHarness {
         }
     }
 
-    private static void requireAttribute(JsonObject body, int eventIndex, String key, String expected) {
-        JsonObject attributes = body.getAsJsonArray("events")
+    private static void requireEventField(JsonObject body, int eventIndex, String field, String expected) {
+        JsonObject event = body.getAsJsonArray("events")
                 .get(eventIndex)
-                .getAsJsonObject()
-                .getAsJsonObject("attributes");
-        String actual = attributes.get(key).getAsString();
+                .getAsJsonObject();
+        if (!event.has(field)) {
+            throw new IllegalStateException("Event " + eventIndex + " missing field " + field);
+        }
+        String actual = event.get(field).getAsString();
         if (!expected.equals(actual)) {
-            throw new IllegalStateException("Expected attributes." + key + "=" + expected + ", got " + actual);
+            throw new IllegalStateException("Expected events[" + eventIndex + "]." + field + "=" + expected + ", got " + actual);
         }
     }
 
+    @SuppressWarnings("unchecked")
     private static void setGlobalContext(GrowthBookClient client) throws Exception {
-        Field globalContext = GrowthBookClient.class.getDeclaredField("globalContext");
-        globalContext.setAccessible(true);
-        globalContext.set(client, GlobalContext.builder()
+        Field globalContextField = GrowthBookClient.class.getDeclaredField("globalContext");
+        globalContextField.setAccessible(true);
+        GlobalContext globalContext = GlobalContext.builder()
                 .features(TransformationUtil.transformFeatures(FEATURES_JSON))
                 .enabled(true)
-                .build());
+                .build();
+        ((java.util.concurrent.atomic.AtomicReference<GlobalContext>) globalContextField.get(client)).set(globalContext);
     }
 
     private static void printScenario(String scenario, JsonObject body) {

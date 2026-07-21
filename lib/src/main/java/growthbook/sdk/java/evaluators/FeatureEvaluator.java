@@ -113,7 +113,6 @@ public class FeatureEvaluator implements IFeatureEvaluator {
                 return cacheResult(key, unknownFeatureResult, context);
             }
 
-            // The key exists
             Feature<ValueType> feature = (Feature<ValueType>) features.get(key);
             FeatureResult<ValueType> defaultValueFeature = FeatureResult
                     .<ValueType>builder()
@@ -122,7 +121,6 @@ public class FeatureEvaluator implements IFeatureEvaluator {
                     .build();
 
             if (feature == null) {
-                // When key exists but there is no value, should be default value with null value
                 dispatchFeatureUsage(context, key, defaultValueFeature);
                 return cacheResult(key, defaultValueFeature, context);
             }
@@ -412,7 +410,7 @@ public class FeatureEvaluator implements IFeatureEvaluator {
         }
         PluginRegistry registry = context.getOptions().getPluginRegistry();
         if (registry != null) {
-            registry.fireFeatureEvaluated(key, result, context);
+            registry.fireFeatureEvaluated(key, result);
         }
     }
 

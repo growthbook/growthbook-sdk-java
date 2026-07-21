@@ -306,22 +306,11 @@ public class ExperimentEvaluator implements IExperimentEvaluator {
             }
         }
 
-        // Fire the tracking callback and plugin exposure events once per unique
-        // (hashAttribute, hashValue, experiment.key, variationId) combination.
+        // Fire once per unique (hashAttribute, hashValue, experiment.key, variationId).
         if (!alreadyTracked(experiment, result)) {
-            TrackingCallbackWithUser trackingCallBackWithUser = context.getOptions().getTrackingCallBackWithUser();
-
-            if (trackingCallBackWithUser != null) {
-                trackingCallBackWithUser.onTrack(experiment, result, context.getUser());
-            }
-
-            PluginRegistry pluginRegistry = context.getOptions().getPluginRegistry();
-            if (pluginRegistry != null) {
-                pluginRegistry.fireExperimentViewed(experiment, result, context);
-            }
+            dispatchExperimentViewed(context, experiment, result);
         }
 
-        // Return (in experiment, assigned variation)
         return result;
     }
 
@@ -409,9 +398,8 @@ public class ExperimentEvaluator implements IExperimentEvaluator {
         if (tracks == null) {
             return;
         }
-        TrackingCallbackWithUser trackingCallBackWithUser = context.getOptions().getTrackingCallBackWithUser();
-        PluginRegistry pluginRegistry = context.getOptions().getPluginRegistry();
-        if (trackingCallBackWithUser == null && pluginRegistry == null) {
+        if (context.getOptions().getTrackingCallBackWithUser() == null
+                && context.getOptions().getPluginRegistry() == null) {
             return;
         }
 
@@ -427,16 +415,31 @@ public class ExperimentEvaluator implements IExperimentEvaluator {
             if (alreadyTracked(track.getExperiment(), track.getResult())) {
                 continue;
             }
-            if (trackingCallBackWithUser != null) {
-                try {
-                    trackingCallBackWithUser.onTrack(track.getExperiment(), track.getResult(), context.getUser());
-                } catch (RuntimeException e) {
-                    log.warn("Tracking callback failed for remote evaluation payload.", e);
-                }
+            try {
+                dispatchExperimentViewed(context, track.getExperiment(), track.getResult());
+            } catch (RuntimeException e) {
+                log.warn("Tracking callback failed for remote evaluation payload.", e);
             }
-            if (pluginRegistry != null) {
-                pluginRegistry.fireExperimentViewed(track.getExperiment(), track.getResult(), context);
-            }
+        }
+    }
+
+    /**
+     * Fires the user tracking callback and any registered plugins for a single exposure.
+     * Plugin failures are isolated by {@link PluginRegistry}; a throwing user callback
+     * propagates to the caller.
+     */
+    private <ValueType> void dispatchExperimentViewed(
+            EvaluationContext context,
+            Experiment<ValueType> experiment,
+            ExperimentResult<ValueType> result
+    ) {
+        TrackingCallbackWithUser callback = context.getOptions().getTrackingCallBackWithUser();
+        if (callback != null) {
+            callback.onTrack(experiment, result, context.getUser());
+        }
+        PluginRegistry pluginRegistry = context.getOptions().getPluginRegistry();
+        if (pluginRegistry != null) {
+            pluginRegistry.fireExperimentViewed(experiment, result);
         }
     }
 

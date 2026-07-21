@@ -79,4 +79,38 @@ class PluginRegistryTest {
         registry.fireFeatureEvaluated("f", FeatureResult.<String>builder().build());
         registry.closeAll();
     }
+
+    @Test
+    void pluginWhoseInitFailsReceivesNoFurtherEvents() {
+        AtomicInteger events = new AtomicInteger();
+        GrowthBookPlugin failsInit = new GrowthBookPlugin() {
+            @Override public void init() { throw new RuntimeException("boom"); }
+            @Override public <V> void onExperimentViewed(Experiment<V> e, ExperimentResult<V> r) { events.incrementAndGet(); }
+            @Override public <V> void onFeatureEvaluated(String k, FeatureResult<V> r) { events.incrementAndGet(); }
+            @Override public void close() { events.incrementAndGet(); }
+        };
+
+        PluginRegistry registry = new PluginRegistry(Collections.singletonList(failsInit));
+        registry.initAll();
+        registry.fireExperimentViewed(Experiment.<String>builder().key("e").build(), ExperimentResult.<String>builder().build());
+        registry.fireFeatureEvaluated("f", FeatureResult.<String>builder().build());
+        registry.closeAll();
+
+        assertEquals(0, events.get(), "a plugin whose init() failed must be dropped and receive no events");
+    }
+
+    @Test
+    void nullPluginEntriesAreFilteredOut() {
+        AtomicInteger events = new AtomicInteger();
+        GrowthBookPlugin good = new GrowthBookPlugin() {
+            @Override public <V> void onFeatureEvaluated(String k, FeatureResult<V> r) { events.incrementAndGet(); }
+        };
+
+        PluginRegistry registry = new PluginRegistry(Arrays.asList(null, good, null));
+        registry.initAll();
+        registry.fireFeatureEvaluated("f", FeatureResult.<String>builder().build());
+        registry.closeAll();
+
+        assertEquals(1, events.get(), "null entries must be ignored, good plugin still dispatched to");
+    }
 }

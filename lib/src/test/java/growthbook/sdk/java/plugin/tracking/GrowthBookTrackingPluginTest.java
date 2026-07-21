@@ -3,18 +3,10 @@ package growthbook.sdk.java.plugin.tracking;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
-import growthbook.sdk.java.GrowthBook;
 import growthbook.sdk.java.model.Experiment;
 import growthbook.sdk.java.model.ExperimentResult;
 import growthbook.sdk.java.model.FeatureResult;
 import growthbook.sdk.java.model.FeatureResultSource;
-import growthbook.sdk.java.model.GBContext;
-import growthbook.sdk.java.multiusermode.GrowthBookClient;
-import growthbook.sdk.java.multiusermode.configurations.EvaluationContext;
-import growthbook.sdk.java.multiusermode.configurations.GlobalContext;
-import growthbook.sdk.java.multiusermode.configurations.Options;
-import growthbook.sdk.java.multiusermode.configurations.UserContext;
-import growthbook.sdk.java.multiusermode.util.TransformationUtil;
 import okhttp3.mockwebserver.MockResponse;
 import okhttp3.mockwebserver.MockWebServer;
 import okhttp3.mockwebserver.RecordedRequest;
@@ -23,9 +15,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.time.Duration;
-import java.lang.reflect.Field;
-import java.util.concurrent.atomic.AtomicReference;
-import java.util.Collections;
 import java.util.concurrent.TimeUnit;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -62,6 +51,10 @@ class GrowthBookTrackingPluginTest {
     private static ExperimentResult<String> experimentResult(int variation) {
         return ExperimentResult.<String>builder()
                 .variationId(variation)
+                .inExperiment(true)
+                .hashUsed(true)
+                .value("v-" + variation)
+                .key(String.valueOf(variation))
                 .hashAttribute("id")
                 .hashValue("u-" + variation)
                 .build();
@@ -69,27 +62,6 @@ class GrowthBookTrackingPluginTest {
 
     private static FeatureResult<String> featureResult(FeatureResultSource source) {
         return FeatureResult.<String>builder().source(source).build();
-    }
-
-    private static EvaluationContext evalContext(JsonObject attributes) {
-        return new EvaluationContext(
-                GlobalContext.builder().build(),
-                UserContext.builder().attributes(attributes).build(),
-                new EvaluationContext.StackContext(),
-                Options.builder().build()
-        );
-    }
-
-    @SuppressWarnings("unchecked")
-    private static void setGlobalContext(GrowthBookClient client, String featuresJson) throws Exception {
-        Field globalContextField = GrowthBookClient.class.getDeclaredField("globalContext");
-        globalContextField.setAccessible(true);
-        GlobalContext globalContext = GlobalContext.builder()
-                .features(TransformationUtil.transformFeatures(featuresJson))
-                .enabled(true)
-                .build();
-        // globalContext is held in an AtomicReference on the client.
-        ((AtomicReference<GlobalContext>) globalContextField.get(client)).set(globalContext);
     }
 
     @Test
@@ -117,7 +89,61 @@ class GrowthBookTrackingPluginTest {
         JsonArray events = body.getAsJsonArray("events");
         assertEquals(2, events.size());
         assertEquals("experiment_viewed", events.get(0).getAsJsonObject().get("event_type").getAsString());
-        assertEquals("exp1", events.get(0).getAsJsonObject().get("experiment_key").getAsString());
+        assertEquals("exp1", events.get(0).getAsJsonObject().get("experiment_id").getAsString());
+
+        plugin.close();
+    }
+
+    @Test
+    void experimentEventMatchesGoWireContract() throws Exception {
+        server.enqueue(new MockResponse().setResponseCode(200));
+
+        GrowthBookTrackingPlugin plugin = GrowthBookTrackingPlugin.of(configBuilder().batchSize(1).build());
+        plugin.init();
+        plugin.onExperimentViewed(experiment("exp1"), experimentResult(3));
+
+        RecordedRequest req = server.takeRequest(5, TimeUnit.SECONDS);
+        assertNotNull(req);
+        JsonObject event = firstEvent(req);
+
+        assertEquals("experiment_viewed", event.get("event_type").getAsString());
+        assertEquals("java", event.get("sdk_language").getAsString());
+        assertTrue(event.get("timestamp").getAsLong() > 0, "timestamp should be epoch millis");
+        assertEquals("exp1", event.get("experiment_id").getAsString());
+        assertEquals(3, event.get("variation_id").getAsInt());
+        assertEquals("v-3", event.get("variation_value").getAsString());
+        assertEquals(true, event.get("in_experiment").getAsBoolean());
+        assertEquals(true, event.get("hash_used").getAsBoolean());
+        assertEquals("id", event.get("hash_attribute").getAsString());
+        assertEquals("u-3", event.get("hash_value").getAsString());
+        // Go's contract does not include a user attribute map.
+        assertFalse(event.has("attributes"), "events must not carry user attributes");
+        assertFalse(event.has("experiment_key"), "field is experiment_id, not experiment_key");
+
+        plugin.close();
+    }
+
+    @Test
+    void featureEventMatchesGoWireContract() throws Exception {
+        server.enqueue(new MockResponse().setResponseCode(200));
+
+        GrowthBookTrackingPlugin plugin = GrowthBookTrackingPlugin.of(configBuilder().batchSize(1).build());
+        plugin.init();
+        plugin.onFeatureEvaluated("flag1",
+                FeatureResult.<String>builder().source(FeatureResultSource.DEFAULT_VALUE).value("x").build());
+
+        RecordedRequest req = server.takeRequest(5, TimeUnit.SECONDS);
+        assertNotNull(req);
+        JsonObject event = firstEvent(req);
+
+        assertEquals("feature_evaluated", event.get("event_type").getAsString());
+        assertEquals("flag1", event.get("feature_key").getAsString());
+        assertEquals("x", event.get("feature_value").getAsString());
+        assertEquals("defaultValue", event.get("source").getAsString());
+        assertTrue(event.has("on"));
+        assertTrue(event.has("off"));
+        assertFalse(event.has("attributes"), "events must not carry user attributes");
+        assertFalse(event.has("feature_source"), "field is source, not feature_source");
 
         plugin.close();
     }
@@ -167,8 +193,22 @@ class GrowthBookTrackingPluginTest {
     @Test
     void closeIsIdempotent() throws Exception {
         GrowthBookTrackingPlugin plugin = GrowthBookTrackingPlugin.of(configBuilder().build());
+        plugin.init();
         plugin.close();
         plugin.close();
+    }
+
+    @Test
+    void eventsBeforeInitAreNoOps() throws Exception {
+        GrowthBookTrackingPlugin plugin = GrowthBookTrackingPlugin.of(configBuilder().batchSize(1).build());
+
+        // init() has not been called: no resources, event methods must no-op.
+        plugin.onExperimentViewed(experiment("exp"), experimentResult(0));
+        plugin.onFeatureEvaluated("flag", featureResult(FeatureResultSource.DEFAULT_VALUE));
+        plugin.close();
+
+        assertNull(server.takeRequest(500, TimeUnit.MILLISECONDS),
+                "uninitialized plugin must not hit the network");
     }
 
     @Test
@@ -215,93 +255,12 @@ class GrowthBookTrackingPluginTest {
     }
 
     @Test
-    void contextAttributesAreSnapshottedWhenEventIsBuffered() throws Exception {
-        server.enqueue(new MockResponse().setResponseCode(200));
-
-        GrowthBookTrackingPlugin plugin = GrowthBookTrackingPlugin.of(configBuilder()
-                .batchSize(100)
-                .batchTimeout(Duration.ofSeconds(60))
-                .build());
-        plugin.init();
-
-        JsonObject attrs = JsonParser.parseString("{\"id\":\"u1\",\"plan\":\"pro\"}").getAsJsonObject();
-        plugin.onFeatureEvaluated("flag", featureResult(FeatureResultSource.DEFAULT_VALUE), evalContext(attrs));
-        attrs.addProperty("id", "mutated");
-        plugin.close();
-
-        RecordedRequest req = server.takeRequest(5, TimeUnit.SECONDS);
-        assertNotNull(req);
-        JsonObject event = JsonParser.parseString(req.getBody().readUtf8())
-                .getAsJsonObject()
-                .getAsJsonArray("events")
-                .get(0)
-                .getAsJsonObject();
-        assertEquals("u1", event.getAsJsonObject("attributes").get("id").getAsString());
-        assertEquals("pro", event.getAsJsonObject("attributes").get("plan").getAsString());
-    }
-
-    @Test
-    void singleUserGrowthBookTrackingIncludesContextAttributes() throws Exception {
-        server.enqueue(new MockResponse().setResponseCode(200));
-
-        GrowthBookTrackingPlugin plugin = GrowthBookTrackingPlugin.of(configBuilder()
-                .batchSize(100)
-                .batchTimeout(Duration.ofSeconds(60))
-                .build());
-        GBContext context = GBContext.builder()
-                .featuresJson("{\"flag\":{\"defaultValue\":true}}")
-                .attributesJson("{\"id\":\"single-user\",\"tier\":\"gold\"}")
-                .plugins(Collections.singletonList(plugin))
+    void batchSizeIsClampedToMax() {
+        TrackingPluginConfig cfg = TrackingPluginConfig.builder()
+                .clientKey("k")
+                .batchSize(Integer.MAX_VALUE)
                 .build();
-        GrowthBook growthBook = new GrowthBook(context);
-
-        growthBook.evalFeature("flag", Boolean.class);
-        growthBook.destroy();
-
-        RecordedRequest req = server.takeRequest(5, TimeUnit.SECONDS);
-        assertNotNull(req);
-        JsonObject event = JsonParser.parseString(req.getBody().readUtf8())
-                .getAsJsonObject()
-                .getAsJsonArray("events")
-                .get(0)
-                .getAsJsonObject();
-        assertEquals("single-user", event.getAsJsonObject("attributes").get("id").getAsString());
-        assertEquals("gold", event.getAsJsonObject("attributes").get("tier").getAsString());
-    }
-
-    @Test
-    void multiUserGrowthBookClientTrackingUsesMergedScopedAttributes() throws Exception {
-        server.enqueue(new MockResponse().setResponseCode(200));
-
-        GrowthBookTrackingPlugin plugin = GrowthBookTrackingPlugin.of(configBuilder()
-                .batchSize(100)
-                .batchTimeout(Duration.ofSeconds(60))
-                .build());
-        Options options = Options.builder()
-                .globalAttributes(JsonParser.parseString("{\"company\":\"acme\",\"id\":\"global\"}").getAsJsonObject())
-                .plugins(Collections.singletonList(plugin))
-                .build();
-        GrowthBookClient client = new GrowthBookClient(options);
-        setGlobalContext(client, "{\"flag\":{\"defaultValue\":true}}");
-
-        client.evalFeature("flag", Boolean.class,
-                UserContext.builder().attributesJson("{\"id\":\"u1\"}").build());
-        client.evalFeature("flag", Boolean.class,
-                UserContext.builder().attributesJson("{\"id\":\"u2\"}").build());
-        client.shutdown();
-
-        RecordedRequest req = server.takeRequest(5, TimeUnit.SECONDS);
-        assertNotNull(req);
-        JsonArray events = JsonParser.parseString(req.getBody().readUtf8())
-                .getAsJsonObject()
-                .getAsJsonArray("events");
-        assertEquals(2, events.size());
-        JsonObject firstAttributes = events.get(0).getAsJsonObject().getAsJsonObject("attributes");
-        JsonObject secondAttributes = events.get(1).getAsJsonObject().getAsJsonObject("attributes");
-        assertEquals("acme", firstAttributes.get("company").getAsString());
-        assertEquals("u1", firstAttributes.get("id").getAsString());
-        assertEquals("acme", secondAttributes.get("company").getAsString());
-        assertEquals("u2", secondAttributes.get("id").getAsString());
+        assertEquals(TrackingPluginConfig.MAX_BATCH_SIZE, cfg.resolvedBatchSize());
     }
 
     @Test
@@ -320,5 +279,13 @@ class GrowthBookTrackingPluginTest {
         assertFalse(SdkMetadata.VERSION.isEmpty());
         assertFalse("unknown".equals(SdkMetadata.VERSION));
         plugin.close();
+    }
+
+    private static JsonObject firstEvent(RecordedRequest req) {
+        return JsonParser.parseString(req.getBody().readUtf8())
+                .getAsJsonObject()
+                .getAsJsonArray("events")
+                .get(0)
+                .getAsJsonObject();
     }
 }
