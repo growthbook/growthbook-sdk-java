@@ -30,20 +30,20 @@ public abstract class AbstractRedisGbCacheManager implements GbCacheManager {
     protected static final int SCAN_BATCH_SIZE = 256;
 
     private final Clock clock;
-    private final Long ttlSeconds;
+    private final Long ttlMillis;
     private final String keyPrefix;
 
     protected AbstractRedisGbCacheManager(String keyPrefix, Duration ttl, Clock clock) {
         this.keyPrefix = keyPrefix;
         this.clock = clock;
-        this.ttlSeconds = ttl == null ? null : ttl.getSeconds();
+        this.ttlMillis = ttl == null ? null : ttl.toMillis();
     }
 
     @Override
     public void saveContent(String key, String data) {
         Map<String, String> hash = RedisCacheEntry.toHash(data, clock.millis());
         try {
-            writeHash(redisKey(key), hash, ttlSeconds);
+            writeHash(redisKey(key), hash, ttlMillis);
         } catch (RuntimeException e) {
             throw new FeatureCacheException("Failed to save GrowthBook feature cache entry for key: " + key, e);
         }
@@ -103,9 +103,10 @@ public abstract class AbstractRedisGbCacheManager implements GbCacheManager {
     }
 
     /**
-     * Writes the hash fields for a key, applying the TTL (in seconds) when non-null.
+     * Writes the hash fields for a key, applying the TTL (in milliseconds, via {@code PEXPIRE})
+     * when non-null.
      */
-    protected abstract void writeHash(String redisKey, Map<String, String> hash, Long ttlSeconds);
+    protected abstract void writeHash(String redisKey, Map<String, String> hash, Long ttlMillis);
 
     /**
      * @return the hash fields stored for a key, or an empty/{@code null} map when absent

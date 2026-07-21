@@ -43,11 +43,11 @@ public final class JedisGbCacheManager extends AbstractRedisGbCacheManager {
     }
 
     @Override
-    protected void writeHash(String redisKey, Map<String, String> hash, Long ttlSeconds) {
+    protected void writeHash(String redisKey, Map<String, String> hash, Long ttlMillis) {
         try (Jedis jedis = jedisPool.getResource()) {
             jedis.hset(redisKey, hash);
-            if (ttlSeconds != null) {
-                jedis.expire(redisKey, ttlSeconds);
+            if (ttlMillis != null) {
+                jedis.pexpire(redisKey, ttlMillis);
             }
         }
     }

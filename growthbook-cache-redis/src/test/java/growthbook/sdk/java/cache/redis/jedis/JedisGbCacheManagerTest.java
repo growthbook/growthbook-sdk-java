@@ -67,11 +67,11 @@ class JedisGbCacheManagerTest {
         Map<String, String> hash = hashCaptor.getValue();
         assertEquals("{\"features\":{}}", hash.get("data"));
         assertEquals("1234", hash.get("updatedAt"));
-        verify(jedis, never()).expire(anyString(), anyLong());
+        verify(jedis, never()).pexpire(anyString(), anyLong());
     }
 
     @Test
-    @DisplayName("Verify: saveContent applies a TTL when configured")
+    @DisplayName("Verify: saveContent applies a TTL (in milliseconds) when configured")
     void saveContentAppliesTtlWhenConfigured() {
         // Given
         JedisGbCacheManager cache = JedisGbCacheManager.builder()
@@ -83,7 +83,24 @@ class JedisGbCacheManagerTest {
         cache.saveContent("k", "v");
 
         // Then
-        verify(jedis).expire(PREFIX + "k", 30L);
+        verify(jedis).pexpire(PREFIX + "k", 30_000L);
+    }
+
+    @Test
+    @DisplayName("Verify: a sub-second TTL is honoured with millisecond precision, not truncated to 0")
+    void saveContentHonoursSubSecondTtl() {
+        // Given
+        JedisGbCacheManager cache = JedisGbCacheManager.builder()
+                .jedisPool(pool)
+                .ttl(Duration.ofMillis(500))
+                .buildManager();
+
+        // When
+        cache.saveContent("k", "v");
+
+        // Then: PEXPIRE with 500ms, never EXPIRE 0 (which would immediately delete the entry)
+        verify(jedis).pexpire(PREFIX + "k", 500L);
+        verify(jedis, never()).expire(anyString(), anyLong());
     }
 
     @Test
