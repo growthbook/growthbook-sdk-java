@@ -1,5 +1,11 @@
 growthbook.sdk.java
 growthbook.sdk.java.callback
+growthbook.sdk.java.constants
+growthbook.sdk.java.diagnostics.model
+growthbook.sdk.java.diagnostics.model.enums
+growthbook.sdk.java.diagnostics.provider
+growthbook.sdk.java.diagnostics.provider.helper
+growthbook.sdk.java.diagnostics.provider.model
 growthbook.sdk.java.evaluators
 growthbook.sdk.java.exception
 growthbook.sdk.java.featurefetch
