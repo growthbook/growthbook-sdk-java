@@ -9,3 +9,5 @@
 
 rootProject.name = 'growthbook-sdk-java'
 include('lib')
+include('growthbook-cache-jcache')
+include('growthbook-cache-caffeine')
