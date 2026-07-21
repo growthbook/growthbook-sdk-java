@@ -112,9 +112,6 @@ public class Options {
                    @Nullable Integer remoteEvalCacheTtlSeconds,
                    @Nullable Duration backgroundFetchInterval,
                    @Nullable FeatureFetchRetryPolicy retryPolicy,
-                   // New in the refresh-listener work: appended last so the existing positional
-                   // constructor signature (remoteEval..retryPolicy after cacheDirectory) is preserved
-                   // for direct (non-builder) callers. Builder users get it via the generated setter.
                    @Nullable Executor featureRefreshListenerExecutor
     ) {
         this.enabled = enabled == null || enabled;
@@ -276,7 +273,6 @@ public class Options {
     @Nullable
     private GbCacheManager cacheManager;
 
-    // New cache configuration
     private CacheMode cacheMode;
 
     @Nullable

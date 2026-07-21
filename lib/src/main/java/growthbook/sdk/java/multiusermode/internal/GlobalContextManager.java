@@ -5,12 +5,13 @@ import growthbook.sdk.java.multiusermode.configurations.GlobalContext;
 import growthbook.sdk.java.multiusermode.configurations.Options;
 import growthbook.sdk.java.multiusermode.configurations.UserContext;
 import growthbook.sdk.java.repository.GBFeaturesRepository;
+import growthbook.sdk.java.util.UserContextUtils;
 
 import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * Internal coordinator for the client-level {@link GlobalContext}.
- * Keeps feature state updates and evaluation context creation outside of the public facade.
+ * Keeps feature state updates and evaluation context creation outside the public facade.
  */
 public final class GlobalContextManager {
     private final Options options;
@@ -50,7 +51,7 @@ public final class GlobalContextManager {
      * @return evaluation context used by feature and experiment evaluators
      */
     public EvaluationContext createEvaluationContext(UserContext userContext) {
-        UserContext updatedUserContext = UserContextMerger.mergeAttributesAndPreloadSticky(this.options, userContext);
+        UserContext updatedUserContext = UserContextUtils.mergeAttributesAndPreloadSticky(this.options, userContext);
         return new EvaluationContext(
                 this.globalContext.get(),
                 updatedUserContext,

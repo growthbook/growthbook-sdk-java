@@ -17,6 +17,7 @@ import growthbook.sdk.java.remoteeval.RemoteEvalResponse;
 import growthbook.sdk.java.remoteeval.RemoteEvalService;
 import growthbook.sdk.java.repository.FeatureRefreshStrategy;
 import growthbook.sdk.java.repository.GBFeaturesRepository;
+import growthbook.sdk.java.util.UserContextUtils;
 import lombok.extern.slf4j.Slf4j;
 
 import javax.annotation.Nullable;
@@ -84,7 +85,7 @@ public final class RemoteEvalCoordinator {
      * @return evaluation context used by feature and experiment evaluators
      */
     public EvaluationContext createEvaluationContext(UserContext userContext) {
-        UserContext mergedUserContext = UserContextMerger.mergeAttributesAndPreloadSticky(this.options, userContext);
+        UserContext mergedUserContext = UserContextUtils.mergeAttributesAndPreloadSticky(this.options, userContext);
         if (this.shutdown.get()) {
             return fallbackEvaluationContext(mergedUserContext);
         }
@@ -109,7 +110,7 @@ public final class RemoteEvalCoordinator {
             return false;
         }
         try {
-            fetchResponse(UserContextMerger.mergeAttributesAndPreloadSticky(this.options, userContext));
+            fetchResponse(UserContextUtils.mergeAttributesAndPreloadSticky(this.options, userContext));
             return true;
         } catch (FeatureFetchException e) {
             log.warn("Unable to preload remote evaluation response", e);

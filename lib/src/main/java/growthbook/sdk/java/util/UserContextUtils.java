@@ -1,12 +1,14 @@
-package growthbook.sdk.java.multiusermode.internal;
+package growthbook.sdk.java.util;
 
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import growthbook.sdk.java.model.StickyAssignmentsDocument;
 import growthbook.sdk.java.multiusermode.configurations.Options;
 import growthbook.sdk.java.multiusermode.configurations.UserContext;
+import growthbook.sdk.java.multiusermode.internal.GlobalContextManager;
+import growthbook.sdk.java.multiusermode.internal.RemoteEvalCoordinator;
 import growthbook.sdk.java.stickyBucketing.StickyBucketService;
-import growthbook.sdk.java.util.GrowthBookJsonUtils;
+import lombok.experimental.UtilityClass;
 
 import javax.annotation.Nullable;
 import java.util.HashMap;
@@ -24,10 +26,8 @@ import java.util.Map;
  * without their persisted assignments, changing assignment behaviour and diverging from the
  * sticky-bucketing contract shared across GrowthBook SDKs.
  */
-final class UserContextMerger {
-
-    private UserContextMerger() {
-    }
+@UtilityClass
+public final class UserContextUtils {
 
     /**
      * Merges global and per-user attributes and preloads sticky-bucket assignments for the merged
@@ -38,9 +38,7 @@ final class UserContextMerger {
      * @param userContext the per-request user context; {@code null} is treated as an empty context
      * @return a new user context carrying the merged attributes and any preloaded sticky docs
      */
-    static UserContext mergeAttributesAndPreloadSticky(Options options, @Nullable UserContext userContext) {
-        // Null-safe default: callers such as GrowthBookClient.preloadRemoteEval may pass null to warm
-        // the default/global response. Treat that as an empty context (the previous merge helper did).
+    public static UserContext mergeAttributesAndPreloadSticky(Options options, @Nullable UserContext userContext) {
         UserContext safeUserContext = userContext == null ? UserContext.builder().build() : userContext;
         JsonObject mergedAttributes = mergeAttributes(options, safeUserContext);
         UserContext mergedUserContext = safeUserContext.withAttributes(mergedAttributes);
