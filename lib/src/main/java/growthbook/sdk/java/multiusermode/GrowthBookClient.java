@@ -4,18 +4,25 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import growthbook.sdk.java.callback.ExperimentRunCallback;
 import growthbook.sdk.java.callback.FeatureRefreshCallback;
+import growthbook.sdk.java.constants.SDKConstants;
+import growthbook.sdk.java.diagnostics.model.Diagnostics;
+import growthbook.sdk.java.diagnostics.provider.DiagnosticsProvider;
+import growthbook.sdk.java.diagnostics.provider.GrowthBookClientDiagnosticsProvider;
 import growthbook.sdk.java.evaluators.ExperimentEvaluator;
 import growthbook.sdk.java.evaluators.FeatureEvaluator;
 import growthbook.sdk.java.exception.FeatureFetchException;
 import growthbook.sdk.java.exception.GrowthBookClientInitializationException;
+import growthbook.sdk.java.exception.InvalidOptionsException;
 import growthbook.sdk.java.model.AssignedExperiment;
 import growthbook.sdk.java.model.Experiment;
 import growthbook.sdk.java.model.ExperimentResult;
+import growthbook.sdk.java.model.FeatureKey;
 import growthbook.sdk.java.model.FeatureResult;
 import growthbook.sdk.java.model.RequestBodyForRemoteEval;
 import growthbook.sdk.java.multiusermode.configurations.EvaluationContext;
 import growthbook.sdk.java.multiusermode.configurations.GlobalContext;
 import growthbook.sdk.java.multiusermode.configurations.Options;
+import growthbook.sdk.java.multiusermode.configurations.OptionsValidator;
 import growthbook.sdk.java.multiusermode.configurations.UserContext;
 import growthbook.sdk.java.remoteeval.RemoteEvalCache;
 import growthbook.sdk.java.remoteeval.RemoteEvalCacheKey;
@@ -42,12 +49,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
 @Slf4j
 public class GrowthBookClient {
-
-    private static final int DEFAULT_SWR_TTL_SECONDS = 60;
 
     private final Options options;
     private List<ExperimentRunCallback> callbacks;
@@ -59,6 +65,10 @@ public class GrowthBookClient {
     private volatile RemoteEvalService remoteEvalService;
     private volatile RemoteEvalCache remoteEvalCache;
     private final AtomicBoolean remoteEvalReady = new AtomicBoolean(false);
+    private final AtomicBoolean clientShutdown = new AtomicBoolean(false);
+    private final AtomicReference<Throwable> lastInitializationError = new AtomicReference<>();
+    private final AtomicLong lastInitializationErrorAtMillis = new AtomicLong(0);
+    private final DiagnosticsProvider diagnosticsProvider;
 
     public GrowthBookClient() {
         this(Options.builder().build());
@@ -71,9 +81,71 @@ public class GrowthBookClient {
         this.callbacks = new ArrayList<>();
         this.featureEvaluator = new FeatureEvaluator();
         this.experimentEvaluatorEvaluator = new ExperimentEvaluator();
+        this.diagnosticsProvider = new GrowthBookClientDiagnosticsProvider(this.options, clientStateView());
+    }
+
+    private GrowthBookClientDiagnosticsProvider.ClientState clientStateView() {
+        return new GrowthBookClientDiagnosticsProvider.ClientState() {
+            @Override
+            @Nullable
+            public GBFeaturesRepository currentRepository() {
+                return GrowthBookClient.this.repository.get();
+            }
+
+            @Override
+            @Nullable
+            public Throwable lastInitializationError() {
+                return GrowthBookClient.this.lastInitializationError.get();
+            }
+
+            @Override
+            public long lastInitializationErrorAtMillis() {
+                return GrowthBookClient.this.lastInitializationErrorAtMillis.get();
+            }
+
+            @Override
+            public boolean isRemoteEvalReady() {
+                return GrowthBookClient.this.remoteEvalReady.get();
+            }
+
+            @Override
+            public boolean isShutdown() {
+                return GrowthBookClient.this.clientShutdown.get();
+            }
+
+            @Override
+            public boolean isRemoteEvalCacheConfigured() {
+                return GrowthBookClient.this.remoteEvalCache != null;
+            }
+
+            @Override
+            public int fallbackFeatureCount() {
+                GlobalContext context = GrowthBookClient.this.globalContext.get();
+                if (context == null || context.getFeatures() == null) {
+                    return 0;
+                }
+                return context.getFeatures().size();
+            }
+        };
+    }
+
+    /**
+     * Returns a read-only snapshot of the current SDK state.
+     *
+     * @return diagnostics snapshot
+     */
+    public Diagnostics getDiagnostics() {
+        return this.diagnosticsProvider.getDiagnostics();
     }
 
     public boolean initialize() {
+        try {
+            OptionsValidator.validate(this.options);
+        } catch (InvalidOptionsException e) {
+            log.error("Failed to initialize growthbook instance", e);
+            return false;
+        }
+
         if (this.options.isRemoteEvalEnabled()) {
             try {
                 return ensureRemoteEvalReady();
@@ -97,14 +169,22 @@ public class GrowthBookClient {
             boolean isReady = this.repository.get() == repositoryToInitialize
                     && repositoryToInitialize.getInitialized();
             if (isReady) {
+                this.lastInitializationError.set(null);
+                this.lastInitializationErrorAtMillis.set(0);
                 log.info("GrowthBookClient initialized repository and registered feature refresh callbacks.");
             }
             return isReady;
         } catch (RuntimeException e) {
+            recordInitializationFailure(e);
             clearFailedInitialization(repositoryToInitialize);
             log.error("Failed to initialize growthbook instance", e);
             return false;
         }
+    }
+
+    private void recordInitializationFailure(Throwable error) {
+        this.lastInitializationError.set(error);
+        this.lastInitializationErrorAtMillis.set(System.currentTimeMillis());
     }
 
     private synchronized GBFeaturesRepository prepareRepositoryForInitialization() {
@@ -283,6 +363,130 @@ public class GrowthBookClient {
         }
     }
 
+    /**
+     * Evaluate a feature for a user using a type-safe {@link FeatureKey} instead of a raw string key.
+     *
+     * <p>As with {@link #evalFeature(String, Class, UserContext)}, the returned result's
+     * {@link FeatureResult#getValue()} is the raw evaluated value (a boxed primitive, or a
+     * {@code Map}/{@code List} for object and array features); it is <em>not</em> deserialized
+     * into the key's value type. To obtain a deserialized instance of a complex type, use
+     * {@link #getFeatureValue(FeatureKey, Object, UserContext)}.
+     *
+     * @param featureKey  typed feature key, e.g. {@code Features.NEW_HOME}
+     * @param userContext user context
+     * @param <T>         feature value type carried by the key
+     * @return the feature result
+     */
+    public <T> FeatureResult<T> getFeature(FeatureKey<T> featureKey, UserContext userContext) {
+        return evalFeature(featureKey.getKey(), featureKey.getValueType(), userContext);
+    }
+
+    /**
+     * Checks whether the feature identified by the typed key evaluates to on for a user.
+     *
+     * @param featureKey  typed feature key
+     * @param userContext user context
+     * @return true when the feature is on
+     */
+    public Boolean isOn(FeatureKey<?> featureKey, UserContext userContext) {
+        return isOn(featureKey.getKey(), userContext);
+    }
+
+    /**
+     * Checks whether the feature identified by the typed key evaluates to off for a user.
+     *
+     * @param featureKey  typed feature key
+     * @param userContext user context
+     * @return true when the feature is off
+     */
+    public Boolean isOff(FeatureKey<?> featureKey, UserContext userContext) {
+        return isOff(featureKey.getKey(), userContext);
+    }
+
+    /**
+     * Get a feature value using a typed key, inferring the deserialization class from the key.
+     *
+     * @param featureKey   typed feature key
+     * @param defaultValue value to return when the feature is missing or invalid
+     * @param userContext  user context
+     * @param <T>          feature value type carried by the key
+     * @return the found value or defaultValue
+     */
+    public <T> T getFeatureValue(FeatureKey<T> featureKey, T defaultValue, UserContext userContext) {
+        return getFeatureValue(featureKey.getKey(), defaultValue, featureKey.getValueType(), userContext);
+    }
+
+    /**
+     * Get a boolean feature value, defaulting to {@code false} when missing or falsy.
+     *
+     * @param featureKey  typed boolean feature key
+     * @param userContext user context
+     * @return the found value or {@code false}
+     */
+    public Boolean getBooleanFeature(FeatureKey<Boolean> featureKey, UserContext userContext) {
+        return getFeatureValue(featureKey, false, userContext);
+    }
+
+    /**
+     * Get a boolean feature value.
+     *
+     * @param featureKey   typed boolean feature key
+     * @param defaultValue value to return when the feature is missing or invalid
+     * @param userContext  user context
+     * @return the found value or defaultValue
+     */
+    public Boolean getBooleanFeature(FeatureKey<Boolean> featureKey, Boolean defaultValue, UserContext userContext) {
+        return getFeatureValue(featureKey, defaultValue, userContext);
+    }
+
+    /**
+     * Get a string feature value.
+     *
+     * @param featureKey   typed string feature key
+     * @param defaultValue value to return when the feature is missing or invalid
+     * @param userContext  user context
+     * @return the found value or defaultValue
+     */
+    public String getStringFeature(FeatureKey<String> featureKey, String defaultValue, UserContext userContext) {
+        return getFeatureValue(featureKey, defaultValue, userContext);
+    }
+
+    /**
+     * Get an integer feature value.
+     *
+     * @param featureKey   typed integer feature key
+     * @param defaultValue value to return when the feature is missing or invalid
+     * @param userContext  user context
+     * @return the found value or defaultValue
+     */
+    public Integer getIntegerFeature(FeatureKey<Integer> featureKey, Integer defaultValue, UserContext userContext) {
+        return getFeatureValue(featureKey, defaultValue, userContext);
+    }
+
+    /**
+     * Get a double feature value.
+     *
+     * @param featureKey   typed double feature key
+     * @param defaultValue value to return when the feature is missing or invalid
+     * @param userContext  user context
+     * @return the found value or defaultValue
+     */
+    public Double getDoubleFeature(FeatureKey<Double> featureKey, Double defaultValue, UserContext userContext) {
+        return getFeatureValue(featureKey, defaultValue, userContext);
+    }
+
+    /**
+     * Get a float feature value.
+     *
+     * @param featureKey   typed float feature key
+     * @param defaultValue value to return when the feature is missing or invalid
+     * @param userContext  user context
+     * @return the found value or defaultValue
+     */
+    public Float getFloatFeature(FeatureKey<Float> featureKey, Float defaultValue, UserContext userContext) {
+        return getFeatureValue(featureKey, defaultValue, userContext);
+    }
+
     public <ValueType> ExperimentResult<ValueType> run(Experiment<ValueType> experiment, UserContext userContext) {
         ExperimentResult<ValueType> result = experimentEvaluatorEvaluator
                 .evaluateExperiment(experiment, getEvalContext(userContext), null);
@@ -297,6 +501,7 @@ public class GrowthBookClient {
     }
 
     public synchronized void shutdown() {
+        this.clientShutdown.set(true);
         GBFeaturesRepository repositorySnapshot = this.repository.getAndSet(null);
         this.globalContext.set(null);
         if (repositorySnapshot != null) {
@@ -517,7 +722,9 @@ public class GrowthBookClient {
             this.remoteEvalCache = new RemoteEvalCache(
                     getRemoteEvalService(),
                     RemoteEvalRequestBuilder.normalizeCacheSize(this.options.getRemoteEvalCacheSize()),
-                    secondsToDuration(this.options.getSwrTtlSeconds() == null ? DEFAULT_SWR_TTL_SECONDS : this.options.getSwrTtlSeconds()),
+                    secondsToDuration(this.options.getSwrTtlSeconds() == null
+                            ? SDKConstants.DEFAULT_SWR_TTL_SECONDS
+                            : this.options.getSwrTtlSeconds()),
                     secondsToDuration(this.options.getRemoteEvalCacheTtlSeconds())
             );
         }

@@ -1,4 +1,4 @@
-name: CI (macOS, Windows)
+name: CI (Linux, Windows)
 on:
   push:
     branches:
@@ -12,7 +12,7 @@ jobs:
   build_all:
     strategy:
       matrix:
-        os: [ macos-latest, windows-latest ]
+        os: [ ubuntu-latest, windows-latest ]
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v2
