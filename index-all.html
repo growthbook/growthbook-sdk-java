@@ -1131,6 +1131,10 @@ loadScripts(document, 'script');</script>
 <dd>
 <div class="block">Array of filters to apply to the rule</div>
 </dd>
+<dt><a href="growthbook/sdk/java/multiusermode/configurations/OptionsValidator.html#findViolations(growthbook.sdk.java.multiusermode.configurations.Options)" class="member-name-link">findViolations(Options)</a> - Static method in class growthbook.sdk.java.multiusermode.configurations.<a href="growthbook/sdk/java/multiusermode/configurations/OptionsValidator.html" title="class in growthbook.sdk.java.multiusermode.configurations">OptionsValidator</a></dt>
+<dd>
+<div class="block">Collects every validation problem without throwing.</div>
+</dd>
 <dt><a href="growthbook/sdk/java/evaluators/ExperimentEvaluator.html#fireRemoteEvaluationTracks(java.util.List,growthbook.sdk.java.multiusermode.configurations.EvaluationContext)" class="member-name-link">fireRemoteEvaluationTracks(List&lt;TrackData&lt;ValueType&gt;&gt;, EvaluationContext)</a> - Method in class growthbook.sdk.java.evaluators.<a href="growthbook/sdk/java/evaluators/ExperimentEvaluator.html" title="class in growthbook.sdk.java.evaluators">ExperimentEvaluator</a></dt>
 <dd>
 <div class="block">Fires tracking callbacks for experiments that were evaluated remotely (a feature rule's
@@ -2465,6 +2469,10 @@ loadScripts(document, 'script');</script>
 <dd>
 <div class="block">Check if user blocked by sticky bucket version</div>
 </dd>
+<dt><a href="growthbook/sdk/java/exception/InvalidOptionsException.html#getViolations()" class="member-name-link">getViolations()</a> - Method in exception growthbook.sdk.java.exception.<a href="growthbook/sdk/java/exception/InvalidOptionsException.html" title="class in growthbook.sdk.java.exception">InvalidOptionsException</a></dt>
+<dd>
+<div class="block">The individual, human-readable validation problems that were detected.</div>
+</dd>
 <dt><a href="growthbook/sdk/java/model/Experiment.html#getWeights()" class="member-name-link">getWeights()</a> - Method in class growthbook.sdk.java.model.<a href="growthbook/sdk/java/model/Experiment.html" title="class in growthbook.sdk.java.model">Experiment</a></dt>
 <dd>
 <div class="block">How to weight traffic between variations.</div>
@@ -2825,6 +2833,16 @@ loadScripts(document, 'script');</script>
 <div class="block">Streaming was connected/supported and is currently reconnecting.</div>
 </dd>
 <dt><a href="growthbook/sdk/java/remoteeval/RemoteEvalCache.html#invalidateAll()" class="member-name-link">invalidateAll()</a> - Method in class growthbook.sdk.java.remoteeval.<a href="growthbook/sdk/java/remoteeval/RemoteEvalCache.html" title="class in growthbook.sdk.java.remoteeval">RemoteEvalCache</a></dt>
+<dd>&nbsp;</dd>
+<dt><a href="growthbook/sdk/java/exception/InvalidOptionsException.html" class="type-name-link" title="class in growthbook.sdk.java.exception">InvalidOptionsException</a> - Exception in <a href="growthbook/sdk/java/exception/package-summary.html">growthbook.sdk.java.exception</a></dt>
+<dd>
+<div class="block">Thrown when GrowthBook options fail start-up validation.</div>
+</dd>
+<dt><a href="growthbook/sdk/java/exception/InvalidOptionsException.html#%3Cinit%3E(java.lang.String)" class="member-name-link">InvalidOptionsException(String)</a> - Constructor for exception growthbook.sdk.java.exception.<a href="growthbook/sdk/java/exception/InvalidOptionsException.html" title="class in growthbook.sdk.java.exception">InvalidOptionsException</a></dt>
+<dd>
+<div class="block">Creates an exception for a single validation problem, using the message as the only violation.</div>
+</dd>
+<dt><a href="growthbook/sdk/java/exception/InvalidOptionsException.html#%3Cinit%3E(java.lang.String,java.util.List)" class="member-name-link">InvalidOptionsException(String, List&lt;String&gt;)</a> - Constructor for exception growthbook.sdk.java.exception.<a href="growthbook/sdk/java/exception/InvalidOptionsException.html" title="class in growthbook.sdk.java.exception">InvalidOptionsException</a></dt>
 <dd>&nbsp;</dd>
 <dt><a href="growthbook/sdk/java/model/Experiment.ExperimentBuilder.html#isActive(java.lang.Boolean)" class="member-name-link">isActive(Boolean)</a> - Method in class growthbook.sdk.java.model.<a href="growthbook/sdk/java/model/Experiment.ExperimentBuilder.html" title="class in growthbook.sdk.java.model">Experiment.ExperimentBuilder</a></dt>
 <dd>
@@ -3222,6 +3240,8 @@ loadScripts(document, 'script');</script>
 <dd>
 <div class="block">No cache persistence at all.</div>
 </dd>
+<dt><a href="growthbook/sdk/java/util/StringUtils.html#normalize(java.lang.String)" class="member-name-link">normalize(String)</a> - Static method in class growthbook.sdk.java.util.<a href="growthbook/sdk/java/util/StringUtils.html" title="class in growthbook.sdk.java.util">StringUtils</a></dt>
+<dd>&nbsp;</dd>
 <dt><a href="growthbook/sdk/java/util/ForcedVariationsUtils.html#normalize(java.util.Map)" class="member-name-link">normalize(Map&lt;String, ?&gt;)</a> - Static method in class growthbook.sdk.java.util.<a href="growthbook/sdk/java/util/ForcedVariationsUtils.html" title="class in growthbook.sdk.java.util">ForcedVariationsUtils</a></dt>
 <dd>&nbsp;</dd>
 <dt><a href="growthbook/sdk/java/remoteeval/RemoteEvalRequestBuilder.html#normalizeCacheSize(java.lang.Integer)" class="member-name-link">normalizeCacheSize(Integer)</a> - Static method in class growthbook.sdk.java.remoteeval.<a href="growthbook/sdk/java/remoteeval/RemoteEvalRequestBuilder.html" title="class in growthbook.sdk.java.remoteeval">RemoteEvalRequestBuilder</a></dt>
@@ -3340,6 +3360,11 @@ loadScripts(document, 'script');</script>
 </dd>
 <dt><a href="growthbook/sdk/java/multiusermode/configurations/Options.OptionsBuilder.html" class="type-name-link" title="class in growthbook.sdk.java.multiusermode.configurations">Options.OptionsBuilder</a> - Class in <a href="growthbook/sdk/java/multiusermode/configurations/package-summary.html">growthbook.sdk.java.multiusermode.configurations</a></dt>
 <dd>&nbsp;</dd>
+<dt><a href="growthbook/sdk/java/multiusermode/configurations/OptionsValidator.html" class="type-name-link" title="class in growthbook.sdk.java.multiusermode.configurations">OptionsValidator</a> - Class in <a href="growthbook/sdk/java/multiusermode/configurations/package-summary.html">growthbook.sdk.java.multiusermode.configurations</a></dt>
+<dd>
+<div class="block">Validates <a href="growthbook/sdk/java/multiusermode/configurations/Options.html" title="class in growthbook.sdk.java.multiusermode.configurations"><code>Options</code></a> once, at client start-up, so misconfigurations are reported up front with
+ a clear message instead of surfacing later as an opaque fetch failure.</div>
+</dd>
 <dt><a href="growthbook/sdk/java/model/FeatureResultSource.html#OVERRIDE" class="member-name-link">OVERRIDE</a> - Enum constant in enum class growthbook.sdk.java.model.<a href="growthbook/sdk/java/model/FeatureResultSource.html" title="enum class in growthbook.sdk.java.model">FeatureResultSource</a></dt>
 <dd>
 <div class="block">Override Value for the Feature is being processed</div>
@@ -3595,6 +3620,10 @@ loadScripts(document, 'script');</script>
 <dd>&nbsp;</dd>
 <dt><a href="growthbook/sdk/java/remoteeval/RemoteEvalService.html#%3Cinit%3E(java.lang.String,java.lang.String,okhttp3.OkHttpClient,growthbook.sdk.java.remoteeval.RemoteEvalResponseParser)" class="member-name-link">RemoteEvalService(String, String, OkHttpClient, RemoteEvalResponseParser)</a> - Constructor for class growthbook.sdk.java.remoteeval.<a href="growthbook/sdk/java/remoteeval/RemoteEvalService.html" title="class in growthbook.sdk.java.remoteeval">RemoteEvalService</a></dt>
 <dd>&nbsp;</dd>
+<dt><a href="growthbook/sdk/java/remoteeval/RemoteEvalOptionsValidator.html#remoteEvalViolations(growthbook.sdk.java.multiusermode.configurations.Options)" class="member-name-link">remoteEvalViolations(Options)</a> - Static method in class growthbook.sdk.java.remoteeval.<a href="growthbook/sdk/java/remoteeval/RemoteEvalOptionsValidator.html" title="class in growthbook.sdk.java.remoteeval">RemoteEvalOptionsValidator</a></dt>
+<dd>
+<div class="block">Returns the remote-eval specific incompatibilities for the supplied options.</div>
+</dd>
 <dt><a href="growthbook/sdk/java/repository/LruETagCache.html#remove(java.lang.String)" class="member-name-link">remove(String)</a> - Method in class growthbook.sdk.java.repository.<a href="growthbook/sdk/java/repository/LruETagCache.html" title="class in growthbook.sdk.java.repository">LruETagCache</a></dt>
 <dd>&nbsp;</dd>
 <dt><a href="growthbook/sdk/java/diagnostics/provider/model/DiagnosticsCollectionContext.DiagnosticsCollectionContextBuilder.html#repository(growthbook.sdk.java.repository.GBFeaturesRepository)" class="member-name-link">repository(GBFeaturesRepository)</a> - Method in class growthbook.sdk.java.diagnostics.provider.model.<a href="growthbook/sdk/java/diagnostics/provider/model/DiagnosticsCollectionContext.DiagnosticsCollectionContextBuilder.html" title="class in growthbook.sdk.java.diagnostics.provider.model">DiagnosticsCollectionContext.DiagnosticsCollectionContextBuilder</a></dt>
@@ -4798,6 +4827,10 @@ loadScripts(document, 'script');</script>
 <dl class="index">
 <dt><a href="growthbook/sdk/java/remoteeval/RemoteEvalOptionsValidator.html#validate(growthbook.sdk.java.model.GBContext)" class="member-name-link">validate(GBContext)</a> - Static method in class growthbook.sdk.java.remoteeval.<a href="growthbook/sdk/java/remoteeval/RemoteEvalOptionsValidator.html" title="class in growthbook.sdk.java.remoteeval">RemoteEvalOptionsValidator</a></dt>
 <dd>&nbsp;</dd>
+<dt><a href="growthbook/sdk/java/multiusermode/configurations/OptionsValidator.html#validate(growthbook.sdk.java.multiusermode.configurations.Options)" class="member-name-link">validate(Options)</a> - Static method in class growthbook.sdk.java.multiusermode.configurations.<a href="growthbook/sdk/java/multiusermode/configurations/OptionsValidator.html" title="class in growthbook.sdk.java.multiusermode.configurations">OptionsValidator</a></dt>
+<dd>
+<div class="block">Validates the supplied options, throwing when any option is invalid or contradictory.</div>
+</dd>
 <dt><a href="growthbook/sdk/java/remoteeval/RemoteEvalOptionsValidator.html#validate(growthbook.sdk.java.multiusermode.configurations.Options)" class="member-name-link">validate(Options)</a> - Static method in class growthbook.sdk.java.remoteeval.<a href="growthbook/sdk/java/remoteeval/RemoteEvalOptionsValidator.html" title="class in growthbook.sdk.java.remoteeval">RemoteEvalOptionsValidator</a></dt>
 <dd>&nbsp;</dd>
 <dt><a href="growthbook/sdk/java/model/FeatureResult.FeatureResultBuilder.html#value(java.lang.Object)" class="member-name-link">value(Object)</a> - Method in class growthbook.sdk.java.model.<a href="growthbook/sdk/java/model/FeatureResult.FeatureResultBuilder.html" title="class in growthbook.sdk.java.model">FeatureResult.FeatureResultBuilder</a></dt>
