@@ -4,6 +4,10 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import growthbook.sdk.java.callback.ExperimentRunCallback;
 import growthbook.sdk.java.callback.FeatureRefreshCallback;
+import growthbook.sdk.java.constants.SDKConstants;
+import growthbook.sdk.java.diagnostics.model.Diagnostics;
+import growthbook.sdk.java.diagnostics.provider.DiagnosticsProvider;
+import growthbook.sdk.java.diagnostics.provider.GrowthBookClientDiagnosticsProvider;
 import growthbook.sdk.java.evaluators.ExperimentEvaluator;
 import growthbook.sdk.java.evaluators.FeatureEvaluator;
 import growthbook.sdk.java.exception.FeatureFetchException;
@@ -42,12 +46,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
 @Slf4j
 public class GrowthBookClient {
-
-    private static final int DEFAULT_SWR_TTL_SECONDS = 60;
 
     private final Options options;
     private List<ExperimentRunCallback> callbacks;
@@ -59,6 +62,10 @@ public class GrowthBookClient {
     private volatile RemoteEvalService remoteEvalService;
     private volatile RemoteEvalCache remoteEvalCache;
     private final AtomicBoolean remoteEvalReady = new AtomicBoolean(false);
+    private final AtomicBoolean clientShutdown = new AtomicBoolean(false);
+    private final AtomicReference<Throwable> lastInitializationError = new AtomicReference<>();
+    private final AtomicLong lastInitializationErrorAtMillis = new AtomicLong(0);
+    private final DiagnosticsProvider diagnosticsProvider;
 
     public GrowthBookClient() {
         this(Options.builder().build());
@@ -71,6 +78,61 @@ public class GrowthBookClient {
         this.callbacks = new ArrayList<>();
         this.featureEvaluator = new FeatureEvaluator();
         this.experimentEvaluatorEvaluator = new ExperimentEvaluator();
+        this.diagnosticsProvider = new GrowthBookClientDiagnosticsProvider(this.options, clientStateView());
+    }
+
+    private GrowthBookClientDiagnosticsProvider.ClientState clientStateView() {
+        return new GrowthBookClientDiagnosticsProvider.ClientState() {
+            @Override
+            @Nullable
+            public GBFeaturesRepository currentRepository() {
+                return GrowthBookClient.this.repository.get();
+            }
+
+            @Override
+            @Nullable
+            public Throwable lastInitializationError() {
+                return GrowthBookClient.this.lastInitializationError.get();
+            }
+
+            @Override
+            public long lastInitializationErrorAtMillis() {
+                return GrowthBookClient.this.lastInitializationErrorAtMillis.get();
+            }
+
+            @Override
+            public boolean isRemoteEvalReady() {
+                return GrowthBookClient.this.remoteEvalReady.get();
+            }
+
+            @Override
+            public boolean isShutdown() {
+                return GrowthBookClient.this.clientShutdown.get();
+            }
+
+            @Override
+            public boolean isRemoteEvalCacheConfigured() {
+                return GrowthBookClient.this.remoteEvalCache != null;
+            }
+
+            @Override
+            public int fallbackFeatureCount() {
+                GlobalContext context = GrowthBookClient.this.globalContext.get();
+                if (context == null || context.getFeatures() == null) {
+                    return 0;
+                }
+                return context.getFeatures().size();
+            }
+        };
+    }
+
+    /**
+     * Returns a read-only snapshot of the current SDK state.
+     *
+     * @return diagnostics snapshot
+     */
+    public Diagnostics getDiagnostics() {
+        return this.diagnosticsProvider.getDiagnostics();
     }
 
     public boolean initialize() {
@@ -97,14 +159,22 @@ public class GrowthBookClient {
             boolean isReady = this.repository.get() == repositoryToInitialize
                     && repositoryToInitialize.getInitialized();
             if (isReady) {
+                this.lastInitializationError.set(null);
+                this.lastInitializationErrorAtMillis.set(0);
                 log.info("GrowthBookClient initialized repository and registered feature refresh callbacks.");
             }
             return isReady;
         } catch (RuntimeException e) {
+            recordInitializationFailure(e);
             clearFailedInitialization(repositoryToInitialize);
             log.error("Failed to initialize growthbook instance", e);
             return false;
         }
+    }
+
+    private void recordInitializationFailure(Throwable error) {
+        this.lastInitializationError.set(error);
+        this.lastInitializationErrorAtMillis.set(System.currentTimeMillis());
     }
 
     private synchronized GBFeaturesRepository prepareRepositoryForInitialization() {
@@ -297,6 +367,7 @@ public class GrowthBookClient {
     }
 
     public synchronized void shutdown() {
+        this.clientShutdown.set(true);
         GBFeaturesRepository repositorySnapshot = this.repository.getAndSet(null);
         this.globalContext.set(null);
         if (repositorySnapshot != null) {
@@ -517,7 +588,9 @@ public class GrowthBookClient {
             this.remoteEvalCache = new RemoteEvalCache(
                     getRemoteEvalService(),
                     RemoteEvalRequestBuilder.normalizeCacheSize(this.options.getRemoteEvalCacheSize()),
-                    secondsToDuration(this.options.getSwrTtlSeconds() == null ? DEFAULT_SWR_TTL_SECONDS : this.options.getSwrTtlSeconds()),
+                    secondsToDuration(this.options.getSwrTtlSeconds() == null
+                            ? SDKConstants.DEFAULT_SWR_TTL_SECONDS
+                            : this.options.getSwrTtlSeconds()),
                     secondsToDuration(this.options.getRemoteEvalCacheTtlSeconds())
             );
         }
