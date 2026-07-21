@@ -736,6 +736,8 @@ loadScripts(document, 'script');</script>
 <dd>&nbsp;</dd>
 <dt><a href="growthbook/sdk/java/model/StickyBucketVariation.html#equals(java.lang.Object)" class="member-name-link">equals(Object)</a> - Method in class growthbook.sdk.java.model.<a href="growthbook/sdk/java/model/StickyBucketVariation.html" title="class in growthbook.sdk.java.model">StickyBucketVariation</a></dt>
 <dd>&nbsp;</dd>
+<dt><a href="growthbook/sdk/java/model/TypedKey.html#equals(java.lang.Object)" class="member-name-link">equals(Object)</a> - Method in class growthbook.sdk.java.model.<a href="growthbook/sdk/java/model/TypedKey.html" title="class in growthbook.sdk.java.model">TypedKey</a></dt>
+<dd>&nbsp;</dd>
 <dt><a href="growthbook/sdk/java/model/VariationMeta.html#equals(java.lang.Object)" class="member-name-link">equals(Object)</a> - Method in class growthbook.sdk.java.model.<a href="growthbook/sdk/java/model/VariationMeta.html" title="class in growthbook.sdk.java.model">VariationMeta</a></dt>
 <dd>&nbsp;</dd>
 <dt><a href="growthbook/sdk/java/multiusermode/configurations/EvaluationContext.html#equals(java.lang.Object)" class="member-name-link">equals(Object)</a> - Method in class growthbook.sdk.java.multiusermode.configurations.<a href="growthbook/sdk/java/multiusermode/configurations/EvaluationContext.html" title="class in growthbook.sdk.java.multiusermode.configurations">EvaluationContext</a></dt>
@@ -969,6 +971,10 @@ loadScripts(document, 'script');</script>
 </dd>
 <dt><a href="growthbook/sdk/java/model/ExperimentResult.ExperimentResultBuilder.html#featureId(java.lang.String)" class="member-name-link">featureId(String)</a> - Method in class growthbook.sdk.java.model.<a href="growthbook/sdk/java/model/ExperimentResult.ExperimentResultBuilder.html" title="class in growthbook.sdk.java.model">ExperimentResult.ExperimentResultBuilder</a></dt>
 <dd>&nbsp;</dd>
+<dt><a href="growthbook/sdk/java/model/FeatureKey.html" class="type-name-link" title="interface in growthbook.sdk.java.model">FeatureKey</a>&lt;<a href="growthbook/sdk/java/model/FeatureKey.html" title="type parameter in FeatureKey">T</a>&gt; - Interface in <a href="growthbook/sdk/java/model/package-summary.html">growthbook.sdk.java.model</a></dt>
+<dd>
+<div class="block">A type-safe reference to a feature flag.</div>
+</dd>
 <dt><a href="growthbook/sdk/java/diagnostics/model/FeatureKeyDiagnostics.html" class="type-name-link" title="class in growthbook.sdk.java.diagnostics.model">FeatureKeyDiagnostics</a> - Class in <a href="growthbook/sdk/java/diagnostics/model/package-summary.html">growthbook.sdk.java.diagnostics.model</a></dt>
 <dd>
 <div class="block">Diagnostics metadata for feature keys in the current snapshot.</div>
@@ -1366,6 +1372,18 @@ loadScripts(document, 'script');</script>
 <dd>
 <div class="block">Optional minimum interval between background refreshes, in milliseconds.</div>
 </dd>
+<dt><a href="growthbook/sdk/java/GrowthBook.html#getBooleanFeature(growthbook.sdk.java.model.FeatureKey)" class="member-name-link">getBooleanFeature(FeatureKey&lt;Boolean&gt;)</a> - Method in class growthbook.sdk.java.<a href="growthbook/sdk/java/GrowthBook.html" title="class in growthbook.sdk.java">GrowthBook</a></dt>
+<dd>&nbsp;</dd>
+<dt><a href="growthbook/sdk/java/multiusermode/GrowthBookClient.html#getBooleanFeature(growthbook.sdk.java.model.FeatureKey,growthbook.sdk.java.multiusermode.configurations.UserContext)" class="member-name-link">getBooleanFeature(FeatureKey&lt;Boolean&gt;, UserContext)</a> - Method in class growthbook.sdk.java.multiusermode.<a href="growthbook/sdk/java/multiusermode/GrowthBookClient.html" title="class in growthbook.sdk.java.multiusermode">GrowthBookClient</a></dt>
+<dd>
+<div class="block">Get a boolean feature value, defaulting to <code>false</code> when missing or falsy.</div>
+</dd>
+<dt><a href="growthbook/sdk/java/GrowthBook.html#getBooleanFeature(growthbook.sdk.java.model.FeatureKey,java.lang.Boolean)" class="member-name-link">getBooleanFeature(FeatureKey&lt;Boolean&gt;, Boolean)</a> - Method in class growthbook.sdk.java.<a href="growthbook/sdk/java/GrowthBook.html" title="class in growthbook.sdk.java">GrowthBook</a></dt>
+<dd>&nbsp;</dd>
+<dt><a href="growthbook/sdk/java/multiusermode/GrowthBookClient.html#getBooleanFeature(growthbook.sdk.java.model.FeatureKey,java.lang.Boolean,growthbook.sdk.java.multiusermode.configurations.UserContext)" class="member-name-link">getBooleanFeature(FeatureKey&lt;Boolean&gt;, Boolean, UserContext)</a> - Method in class growthbook.sdk.java.multiusermode.<a href="growthbook/sdk/java/multiusermode/GrowthBookClient.html" title="class in growthbook.sdk.java.multiusermode">GrowthBookClient</a></dt>
+<dd>
+<div class="block">Get a boolean feature value.</div>
+</dd>
 <dt><a href="growthbook/sdk/java/model/ExperimentResult.html#getBucket()" class="member-name-link">getBucket()</a> - Method in class growthbook.sdk.java.model.<a href="growthbook/sdk/java/model/ExperimentResult.html" title="class in growthbook.sdk.java.model">ExperimentResult</a></dt>
 <dd>
 <div class="block">The hash value used to assign a variation (float from 0 to 1)</div>
@@ -1512,6 +1530,12 @@ loadScripts(document, 'script');</script>
 <dd>
 <div class="block">If true, sticky bucketing will be disabled for this experiment.</div>
 </dd>
+<dt><a href="growthbook/sdk/java/GrowthBook.html#getDoubleFeature(growthbook.sdk.java.model.FeatureKey,java.lang.Double)" class="member-name-link">getDoubleFeature(FeatureKey&lt;Double&gt;, Double)</a> - Method in class growthbook.sdk.java.<a href="growthbook/sdk/java/GrowthBook.html" title="class in growthbook.sdk.java">GrowthBook</a></dt>
+<dd>&nbsp;</dd>
+<dt><a href="growthbook/sdk/java/multiusermode/GrowthBookClient.html#getDoubleFeature(growthbook.sdk.java.model.FeatureKey,java.lang.Double,growthbook.sdk.java.multiusermode.configurations.UserContext)" class="member-name-link">getDoubleFeature(FeatureKey&lt;Double&gt;, Double, UserContext)</a> - Method in class growthbook.sdk.java.multiusermode.<a href="growthbook/sdk/java/multiusermode/GrowthBookClient.html" title="class in growthbook.sdk.java.multiusermode">GrowthBookClient</a></dt>
+<dd>
+<div class="block">Get a double feature value.</div>
+</dd>
 <dt><a href="growthbook/sdk/java/util/GrowthBookJsonUtils.html#getElementType(com.google.gson.JsonElement)" class="member-name-link">getElementType(JsonElement)</a> - Static method in class growthbook.sdk.java.util.<a href="growthbook/sdk/java/util/GrowthBookJsonUtils.html" title="class in growthbook.sdk.java.util">GrowthBookJsonUtils</a></dt>
 <dd>
 <div class="block">A convenience method to help work with types of JSON elements</div>
@@ -1599,6 +1623,14 @@ loadScripts(document, 'script');</script>
 <dd>
 <div class="block">When using sticky bucketing, can be used as a fallback to assign variations</div>
 </dd>
+<dt><a href="growthbook/sdk/java/GrowthBook.html#getFeature(growthbook.sdk.java.model.FeatureKey)" class="member-name-link">getFeature(FeatureKey&lt;T&gt;)</a> - Method in class growthbook.sdk.java.<a href="growthbook/sdk/java/GrowthBook.html" title="class in growthbook.sdk.java">GrowthBook</a></dt>
+<dd>
+<div class="block">Evaluate a feature using a type-safe <a href="growthbook/sdk/java/model/FeatureKey.html" title="interface in growthbook.sdk.java.model"><code>FeatureKey</code></a> instead of a raw string key.</div>
+</dd>
+<dt><a href="growthbook/sdk/java/multiusermode/GrowthBookClient.html#getFeature(growthbook.sdk.java.model.FeatureKey,growthbook.sdk.java.multiusermode.configurations.UserContext)" class="member-name-link">getFeature(FeatureKey&lt;T&gt;, UserContext)</a> - Method in class growthbook.sdk.java.multiusermode.<a href="growthbook/sdk/java/multiusermode/GrowthBookClient.html" title="class in growthbook.sdk.java.multiusermode">GrowthBookClient</a></dt>
+<dd>
+<div class="block">Evaluate a feature for a user using a type-safe <a href="growthbook/sdk/java/model/FeatureKey.html" title="interface in growthbook.sdk.java.model"><code>FeatureKey</code></a> instead of a raw string key.</div>
+</dd>
 <dt><a href="growthbook/sdk/java/model/ExperimentResult.html#getFeatureId()" class="member-name-link">getFeatureId()</a> - Method in class growthbook.sdk.java.model.<a href="growthbook/sdk/java/model/ExperimentResult.html" title="class in growthbook.sdk.java.model">ExperimentResult</a></dt>
 <dd>
 <div class="block">The id of the feature (if any) that the experiment came from</div>
@@ -1659,6 +1691,12 @@ loadScripts(document, 'script');</script>
 <dd>
 <div class="block">A function that takes <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link"><code>String</code></a> and <a href="growthbook/sdk/java/model/FeatureResult.html" title="class in growthbook.sdk.java.model"><code>FeatureResult</code></a> as arguments.</div>
 </dd>
+<dt><a href="growthbook/sdk/java/GrowthBook.html#getFeatureValue(growthbook.sdk.java.model.FeatureKey,T)" class="member-name-link">getFeatureValue(FeatureKey&lt;T&gt;, T)</a> - Method in class growthbook.sdk.java.<a href="growthbook/sdk/java/GrowthBook.html" title="class in growthbook.sdk.java">GrowthBook</a></dt>
+<dd>&nbsp;</dd>
+<dt><a href="growthbook/sdk/java/multiusermode/GrowthBookClient.html#getFeatureValue(growthbook.sdk.java.model.FeatureKey,T,growthbook.sdk.java.multiusermode.configurations.UserContext)" class="member-name-link">getFeatureValue(FeatureKey&lt;T&gt;, T, UserContext)</a> - Method in class growthbook.sdk.java.multiusermode.<a href="growthbook/sdk/java/multiusermode/GrowthBookClient.html" title="class in growthbook.sdk.java.multiusermode">GrowthBookClient</a></dt>
+<dd>
+<div class="block">Get a feature value using a typed key, inferring the deserialization class from the key.</div>
+</dd>
 <dt><a href="growthbook/sdk/java/GrowthBook.html#getFeatureValue(java.lang.String,java.lang.Boolean)" class="member-name-link">getFeatureValue(String, Boolean)</a> - Method in class growthbook.sdk.java.<a href="growthbook/sdk/java/GrowthBook.html" title="class in growthbook.sdk.java">GrowthBook</a></dt>
 <dd>
 <div class="block">Get the feature value as a boolean</div>
@@ -1696,6 +1734,12 @@ loadScripts(document, 'script');</script>
 <dt><a href="growthbook/sdk/java/model/FeatureRule.html#getFilters()" class="member-name-link">getFilters()</a> - Method in class growthbook.sdk.java.model.<a href="growthbook/sdk/java/model/FeatureRule.html" title="class in growthbook.sdk.java.model">FeatureRule</a></dt>
 <dd>
 <div class="block">Array of filters to apply to the rule</div>
+</dd>
+<dt><a href="growthbook/sdk/java/GrowthBook.html#getFloatFeature(growthbook.sdk.java.model.FeatureKey,java.lang.Float)" class="member-name-link">getFloatFeature(FeatureKey&lt;Float&gt;, Float)</a> - Method in class growthbook.sdk.java.<a href="growthbook/sdk/java/GrowthBook.html" title="class in growthbook.sdk.java">GrowthBook</a></dt>
+<dd>&nbsp;</dd>
+<dt><a href="growthbook/sdk/java/multiusermode/GrowthBookClient.html#getFloatFeature(growthbook.sdk.java.model.FeatureKey,java.lang.Float,growthbook.sdk.java.multiusermode.configurations.UserContext)" class="member-name-link">getFloatFeature(FeatureKey&lt;Float&gt;, Float, UserContext)</a> - Method in class growthbook.sdk.java.multiusermode.<a href="growthbook/sdk/java/multiusermode/GrowthBookClient.html" title="class in growthbook.sdk.java.multiusermode">GrowthBookClient</a></dt>
+<dd>
+<div class="block">Get a float feature value.</div>
 </dd>
 <dt><a href="growthbook/sdk/java/model/Experiment.html#getForce()" class="member-name-link">getForce()</a> - Method in class growthbook.sdk.java.model.<a href="growthbook/sdk/java/model/Experiment.html" title="class in growthbook.sdk.java.model">Experiment</a></dt>
 <dd>
@@ -1857,6 +1901,12 @@ loadScripts(document, 'script');</script>
 <dd>
 <div class="block">The JSON utils singleton</div>
 </dd>
+<dt><a href="growthbook/sdk/java/GrowthBook.html#getIntegerFeature(growthbook.sdk.java.model.FeatureKey,java.lang.Integer)" class="member-name-link">getIntegerFeature(FeatureKey&lt;Integer&gt;, Integer)</a> - Method in class growthbook.sdk.java.<a href="growthbook/sdk/java/GrowthBook.html" title="class in growthbook.sdk.java">GrowthBook</a></dt>
+<dd>&nbsp;</dd>
+<dt><a href="growthbook/sdk/java/multiusermode/GrowthBookClient.html#getIntegerFeature(growthbook.sdk.java.model.FeatureKey,java.lang.Integer,growthbook.sdk.java.multiusermode.configurations.UserContext)" class="member-name-link">getIntegerFeature(FeatureKey&lt;Integer&gt;, Integer, UserContext)</a> - Method in class growthbook.sdk.java.multiusermode.<a href="growthbook/sdk/java/multiusermode/GrowthBookClient.html" title="class in growthbook.sdk.java.multiusermode">GrowthBookClient</a></dt>
+<dd>
+<div class="block">Get an integer feature value.</div>
+</dd>
 <dt><a href="growthbook/sdk/java/model/Experiment.html#getIsActive()" class="member-name-link">getIsActive()</a> - Method in class growthbook.sdk.java.model.<a href="growthbook/sdk/java/model/Experiment.html" title="class in growthbook.sdk.java.model">Experiment</a></dt>
 <dd>
 <div class="block">If set to false, always return the control (first variation)</div>
@@ -1896,6 +1946,10 @@ loadScripts(document, 'script');</script>
 <dd>
 <div class="block">The unique key for the assigned variation</div>
 </dd>
+<dt><a href="growthbook/sdk/java/model/FeatureKey.html#getKey()" class="member-name-link">getKey()</a> - Method in interface growthbook.sdk.java.model.<a href="growthbook/sdk/java/model/FeatureKey.html" title="interface in growthbook.sdk.java.model">FeatureKey</a></dt>
+<dd>
+<div class="block">The feature identifier as configured in GrowthBook, e.g.</div>
+</dd>
 <dt><a href="growthbook/sdk/java/model/FeatureResponseKey.html#getKey()" class="member-name-link">getKey()</a> - Method in enum class growthbook.sdk.java.model.<a href="growthbook/sdk/java/model/FeatureResponseKey.html" title="enum class in growthbook.sdk.java.model">FeatureResponseKey</a></dt>
 <dd>&nbsp;</dd>
 <dt><a href="growthbook/sdk/java/model/FeatureRule.html#getKey()" class="member-name-link">getKey()</a> - Method in class growthbook.sdk.java.model.<a href="growthbook/sdk/java/model/FeatureRule.html" title="class in growthbook.sdk.java.model">FeatureRule</a></dt>
@@ -1907,6 +1961,8 @@ loadScripts(document, 'script');</script>
 <div class="block">Unique key of StickyAssignment Document in format: "attributeName||attributeValue"</div>
 </dd>
 <dt><a href="growthbook/sdk/java/model/SseKey.html#getKey()" class="member-name-link">getKey()</a> - Method in enum class growthbook.sdk.java.model.<a href="growthbook/sdk/java/model/SseKey.html" title="enum class in growthbook.sdk.java.model">SseKey</a></dt>
+<dd>&nbsp;</dd>
+<dt><a href="growthbook/sdk/java/model/TypedKey.html#getKey()" class="member-name-link">getKey()</a> - Method in class growthbook.sdk.java.model.<a href="growthbook/sdk/java/model/TypedKey.html" title="class in growthbook.sdk.java.model">TypedKey</a></dt>
 <dd>&nbsp;</dd>
 <dt><a href="growthbook/sdk/java/model/VariationMeta.html#getKey()" class="member-name-link">getKey()</a> - Method in class growthbook.sdk.java.model.<a href="growthbook/sdk/java/model/VariationMeta.html" title="class in growthbook.sdk.java.model">VariationMeta</a></dt>
 <dd>
@@ -2369,6 +2425,12 @@ loadScripts(document, 'script');</script>
 </dd>
 <dt><a href="growthbook/sdk/java/diagnostics/provider/model/DiagnosticsSnapshot.html#getStreaming()" class="member-name-link">getStreaming()</a> - Method in class growthbook.sdk.java.diagnostics.provider.model.<a href="growthbook/sdk/java/diagnostics/provider/model/DiagnosticsSnapshot.html" title="class in growthbook.sdk.java.diagnostics.provider.model">DiagnosticsSnapshot</a></dt>
 <dd>&nbsp;</dd>
+<dt><a href="growthbook/sdk/java/GrowthBook.html#getStringFeature(growthbook.sdk.java.model.FeatureKey,java.lang.String)" class="member-name-link">getStringFeature(FeatureKey&lt;String&gt;, String)</a> - Method in class growthbook.sdk.java.<a href="growthbook/sdk/java/GrowthBook.html" title="class in growthbook.sdk.java">GrowthBook</a></dt>
+<dd>&nbsp;</dd>
+<dt><a href="growthbook/sdk/java/multiusermode/GrowthBookClient.html#getStringFeature(growthbook.sdk.java.model.FeatureKey,java.lang.String,growthbook.sdk.java.multiusermode.configurations.UserContext)" class="member-name-link">getStringFeature(FeatureKey&lt;String&gt;, String, UserContext)</a> - Method in class growthbook.sdk.java.multiusermode.<a href="growthbook/sdk/java/multiusermode/GrowthBookClient.html" title="class in growthbook.sdk.java.multiusermode">GrowthBookClient</a></dt>
+<dd>
+<div class="block">Get a string feature value.</div>
+</dd>
 <dt><a href="growthbook/sdk/java/diagnostics/model/RefreshDiagnostics.html#getSuccessCount()" class="member-name-link">getSuccessCount()</a> - Method in class growthbook.sdk.java.diagnostics.model.<a href="growthbook/sdk/java/diagnostics/model/RefreshDiagnostics.html" title="class in growthbook.sdk.java.diagnostics.model">RefreshDiagnostics</a></dt>
 <dd>
 <div class="block">Number of successful refresh events observed by the active repository.</div>
@@ -2444,6 +2506,12 @@ loadScripts(document, 'script');</script>
 <div class="block">The assigned value of the feature</div>
 </dd>
 <dt><a href="growthbook/sdk/java/model/OptionalField.html#getValue()" class="member-name-link">getValue()</a> - Method in class growthbook.sdk.java.model.<a href="growthbook/sdk/java/model/OptionalField.html" title="class in growthbook.sdk.java.model">OptionalField</a></dt>
+<dd>&nbsp;</dd>
+<dt><a href="growthbook/sdk/java/model/FeatureKey.html#getValueType()" class="member-name-link">getValueType()</a> - Method in interface growthbook.sdk.java.model.<a href="growthbook/sdk/java/model/FeatureKey.html" title="interface in growthbook.sdk.java.model">FeatureKey</a></dt>
+<dd>
+<div class="block">The Gson-deserializable class of the feature value, e.g.</div>
+</dd>
+<dt><a href="growthbook/sdk/java/model/TypedKey.html#getValueType()" class="member-name-link">getValueType()</a> - Method in class growthbook.sdk.java.model.<a href="growthbook/sdk/java/model/TypedKey.html" title="class in growthbook.sdk.java.model">TypedKey</a></dt>
 <dd>&nbsp;</dd>
 <dt><a href="growthbook/sdk/java/model/StickyBucketVariation.html#getVariation()" class="member-name-link">getVariation()</a> - Method in class growthbook.sdk.java.model.<a href="growthbook/sdk/java/model/StickyBucketVariation.html" title="class in growthbook.sdk.java.model">StickyBucketVariation</a></dt>
 <dd>&nbsp;</dd>
@@ -2691,6 +2759,8 @@ loadScripts(document, 'script');</script>
 <dd>&nbsp;</dd>
 <dt><a href="growthbook/sdk/java/model/StickyBucketVariation.html#hashCode()" class="member-name-link">hashCode()</a> - Method in class growthbook.sdk.java.model.<a href="growthbook/sdk/java/model/StickyBucketVariation.html" title="class in growthbook.sdk.java.model">StickyBucketVariation</a></dt>
 <dd>&nbsp;</dd>
+<dt><a href="growthbook/sdk/java/model/TypedKey.html#hashCode()" class="member-name-link">hashCode()</a> - Method in class growthbook.sdk.java.model.<a href="growthbook/sdk/java/model/TypedKey.html" title="class in growthbook.sdk.java.model">TypedKey</a></dt>
+<dd>&nbsp;</dd>
 <dt><a href="growthbook/sdk/java/model/VariationMeta.html#hashCode()" class="member-name-link">hashCode()</a> - Method in class growthbook.sdk.java.model.<a href="growthbook/sdk/java/model/VariationMeta.html" title="class in growthbook.sdk.java.model">VariationMeta</a></dt>
 <dd>&nbsp;</dd>
 <dt><a href="growthbook/sdk/java/multiusermode/configurations/EvaluationContext.html#hashCode()" class="member-name-link">hashCode()</a> - Method in class growthbook.sdk.java.multiusermode.configurations.<a href="growthbook/sdk/java/multiusermode/configurations/EvaluationContext.html" title="class in growthbook.sdk.java.multiusermode.configurations">EvaluationContext</a></dt>
@@ -2922,6 +2992,12 @@ loadScripts(document, 'script');</script>
 <dd>
 <div class="block">Evaluates to true when the feature is off</div>
 </dd>
+<dt><a href="growthbook/sdk/java/GrowthBook.html#isOff(growthbook.sdk.java.model.FeatureKey)" class="member-name-link">isOff(FeatureKey&lt;?&gt;)</a> - Method in class growthbook.sdk.java.<a href="growthbook/sdk/java/GrowthBook.html" title="class in growthbook.sdk.java">GrowthBook</a></dt>
+<dd>&nbsp;</dd>
+<dt><a href="growthbook/sdk/java/multiusermode/GrowthBookClient.html#isOff(growthbook.sdk.java.model.FeatureKey,growthbook.sdk.java.multiusermode.configurations.UserContext)" class="member-name-link">isOff(FeatureKey&lt;?&gt;, UserContext)</a> - Method in class growthbook.sdk.java.multiusermode.<a href="growthbook/sdk/java/multiusermode/GrowthBookClient.html" title="class in growthbook.sdk.java.multiusermode">GrowthBookClient</a></dt>
+<dd>
+<div class="block">Checks whether the feature identified by the typed key evaluates to off for a user.</div>
+</dd>
 <dt><a href="growthbook/sdk/java/GrowthBook.html#isOff(java.lang.String)" class="member-name-link">isOff(String)</a> - Method in class growthbook.sdk.java.<a href="growthbook/sdk/java/GrowthBook.html" title="class in growthbook.sdk.java">GrowthBook</a></dt>
 <dd>
 <div class="block">Returns true if the value is a falsy value
@@ -2937,6 +3013,12 @@ loadScripts(document, 'script');</script>
 <dt><a href="growthbook/sdk/java/model/FeatureResult.html#isOn()" class="member-name-link">isOn()</a> - Method in class growthbook.sdk.java.model.<a href="growthbook/sdk/java/model/FeatureResult.html" title="class in growthbook.sdk.java.model">FeatureResult</a></dt>
 <dd>
 <div class="block">Evaluates to true when the feature is on</div>
+</dd>
+<dt><a href="growthbook/sdk/java/GrowthBook.html#isOn(growthbook.sdk.java.model.FeatureKey)" class="member-name-link">isOn(FeatureKey&lt;?&gt;)</a> - Method in class growthbook.sdk.java.<a href="growthbook/sdk/java/GrowthBook.html" title="class in growthbook.sdk.java">GrowthBook</a></dt>
+<dd>&nbsp;</dd>
+<dt><a href="growthbook/sdk/java/multiusermode/GrowthBookClient.html#isOn(growthbook.sdk.java.model.FeatureKey,growthbook.sdk.java.multiusermode.configurations.UserContext)" class="member-name-link">isOn(FeatureKey&lt;?&gt;, UserContext)</a> - Method in class growthbook.sdk.java.multiusermode.<a href="growthbook/sdk/java/multiusermode/GrowthBookClient.html" title="class in growthbook.sdk.java.multiusermode">GrowthBookClient</a></dt>
+<dd>
+<div class="block">Checks whether the feature identified by the typed key evaluates to on for a user.</div>
 </dd>
 <dt><a href="growthbook/sdk/java/GrowthBook.html#isOn(java.lang.String)" class="member-name-link">isOn(String)</a> - Method in class growthbook.sdk.java.<a href="growthbook/sdk/java/GrowthBook.html" title="class in growthbook.sdk.java">GrowthBook</a></dt>
 <dd>
@@ -3290,6 +3372,30 @@ loadScripts(document, 'script');</script>
 <dt><a href="growthbook/sdk/java/model/DataType.html#OBJECT" class="member-name-link">OBJECT</a> - Enum constant in enum class growthbook.sdk.java.model.<a href="growthbook/sdk/java/model/DataType.html" title="enum class in growthbook.sdk.java.model">DataType</a></dt>
 <dd>
 <div class="block">when the type is an object</div>
+</dd>
+<dt><a href="growthbook/sdk/java/model/TypedKey.html#of(java.lang.String,java.lang.Class)" class="member-name-link">of(String, Class&lt;T&gt;)</a> - Static method in class growthbook.sdk.java.model.<a href="growthbook/sdk/java/model/TypedKey.html" title="class in growthbook.sdk.java.model">TypedKey</a></dt>
+<dd>
+<div class="block">Creates a typed key for an arbitrary Gson-deserializable value type.</div>
+</dd>
+<dt><a href="growthbook/sdk/java/model/TypedKey.html#ofBoolean(java.lang.String)" class="member-name-link">ofBoolean(String)</a> - Static method in class growthbook.sdk.java.model.<a href="growthbook/sdk/java/model/TypedKey.html" title="class in growthbook.sdk.java.model">TypedKey</a></dt>
+<dd>
+<div class="block">Creates a typed key for a boolean feature.</div>
+</dd>
+<dt><a href="growthbook/sdk/java/model/TypedKey.html#ofDouble(java.lang.String)" class="member-name-link">ofDouble(String)</a> - Static method in class growthbook.sdk.java.model.<a href="growthbook/sdk/java/model/TypedKey.html" title="class in growthbook.sdk.java.model">TypedKey</a></dt>
+<dd>
+<div class="block">Creates a typed key for a double feature.</div>
+</dd>
+<dt><a href="growthbook/sdk/java/model/TypedKey.html#ofFloat(java.lang.String)" class="member-name-link">ofFloat(String)</a> - Static method in class growthbook.sdk.java.model.<a href="growthbook/sdk/java/model/TypedKey.html" title="class in growthbook.sdk.java.model">TypedKey</a></dt>
+<dd>
+<div class="block">Creates a typed key for a float feature.</div>
+</dd>
+<dt><a href="growthbook/sdk/java/model/TypedKey.html#ofInteger(java.lang.String)" class="member-name-link">ofInteger(String)</a> - Static method in class growthbook.sdk.java.model.<a href="growthbook/sdk/java/model/TypedKey.html" title="class in growthbook.sdk.java.model">TypedKey</a></dt>
+<dd>
+<div class="block">Creates a typed key for an integer feature.</div>
+</dd>
+<dt><a href="growthbook/sdk/java/model/TypedKey.html#ofString(java.lang.String)" class="member-name-link">ofString(String)</a> - Static method in class growthbook.sdk.java.model.<a href="growthbook/sdk/java/model/TypedKey.html" title="class in growthbook.sdk.java.model">TypedKey</a></dt>
+<dd>
+<div class="block">Creates a typed key for a string feature.</div>
 </dd>
 <dt><a href="growthbook/sdk/java/repository/GBFeaturesRepository.GBFeaturesRepositoryBuilder.html#okHttpClient(okhttp3.OkHttpClient)" class="member-name-link">okHttpClient(OkHttpClient)</a> - Method in class growthbook.sdk.java.repository.<a href="growthbook/sdk/java/repository/GBFeaturesRepository.GBFeaturesRepositoryBuilder.html" title="class in growthbook.sdk.java.repository">GBFeaturesRepository.GBFeaturesRepositoryBuilder</a></dt>
 <dd>&nbsp;</dd>
@@ -4691,6 +4797,8 @@ loadScripts(document, 'script');</script>
 <dd>&nbsp;</dd>
 <dt><a href="growthbook/sdk/java/model/StickyBucketVariation.html#toString()" class="member-name-link">toString()</a> - Method in class growthbook.sdk.java.model.<a href="growthbook/sdk/java/model/StickyBucketVariation.html" title="class in growthbook.sdk.java.model">StickyBucketVariation</a></dt>
 <dd>&nbsp;</dd>
+<dt><a href="growthbook/sdk/java/model/TypedKey.html#toString()" class="member-name-link">toString()</a> - Method in class growthbook.sdk.java.model.<a href="growthbook/sdk/java/model/TypedKey.html" title="class in growthbook.sdk.java.model">TypedKey</a></dt>
+<dd>&nbsp;</dd>
 <dt><a href="growthbook/sdk/java/model/VariationMeta.html#toString()" class="member-name-link">toString()</a> - Method in class growthbook.sdk.java.model.<a href="growthbook/sdk/java/model/VariationMeta.html" title="class in growthbook.sdk.java.model">VariationMeta</a></dt>
 <dd>&nbsp;</dd>
 <dt><a href="growthbook/sdk/java/model/VariationMeta.VariationMetaBuilder.html#toString()" class="member-name-link">toString()</a> - Method in class growthbook.sdk.java.model.<a href="growthbook/sdk/java/model/VariationMeta.VariationMetaBuilder.html" title="class in growthbook.sdk.java.model">VariationMeta.VariationMetaBuilder</a></dt>
@@ -4768,6 +4876,10 @@ loadScripts(document, 'script');</script>
 <dt><a href="growthbook/sdk/java/model/Operator.html#TYPE" class="member-name-link">TYPE</a> - Enum constant in enum class growthbook.sdk.java.model.<a href="growthbook/sdk/java/model/Operator.html" title="enum class in growthbook.sdk.java.model">Operator</a></dt>
 <dd>
 <div class="block">$type</div>
+</dd>
+<dt><a href="growthbook/sdk/java/model/TypedKey.html" class="type-name-link" title="class in growthbook.sdk.java.model">TypedKey</a>&lt;<a href="growthbook/sdk/java/model/TypedKey.html" title="type parameter in TypedKey">T</a>&gt; - Class in <a href="growthbook/sdk/java/model/package-summary.html">growthbook.sdk.java.model</a></dt>
+<dd>
+<div class="block">Default immutable implementation of <a href="growthbook/sdk/java/model/FeatureKey.html" title="interface in growthbook.sdk.java.model"><code>FeatureKey</code></a>.</div>
 </dd>
 </dl>
 <h2 class="title" id="I:U">U</h2>

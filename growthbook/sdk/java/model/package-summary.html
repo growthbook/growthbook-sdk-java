@@ -79,7 +79,7 @@ loadScripts(document, 'script');</script>
 </li>
 <li>
 <div id="class-summary">
-<div class="table-tabs" role="tablist" aria-orientation="horizontal"><button id="class-summary-tab0" role="tab" aria-selected="true" aria-controls="class-summary.tabpanel" tabindex="0" onkeydown="switchTab(event)" onclick="show('class-summary', 'class-summary', 2)" class="active-table-tab">All Classes and Interfaces</button><button id="class-summary-tab2" role="tab" aria-selected="false" aria-controls="class-summary.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('class-summary', 'class-summary-tab2', 2)" class="table-tab">Classes</button><button id="class-summary-tab3" role="tab" aria-selected="false" aria-controls="class-summary.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('class-summary', 'class-summary-tab3', 2)" class="table-tab">Enum Classes</button></div>
+<div class="table-tabs" role="tablist" aria-orientation="horizontal"><button id="class-summary-tab0" role="tab" aria-selected="true" aria-controls="class-summary.tabpanel" tabindex="0" onkeydown="switchTab(event)" onclick="show('class-summary', 'class-summary', 2)" class="active-table-tab">All Classes and Interfaces</button><button id="class-summary-tab1" role="tab" aria-selected="false" aria-controls="class-summary.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('class-summary', 'class-summary-tab1', 2)" class="table-tab">Interfaces</button><button id="class-summary-tab2" role="tab" aria-selected="false" aria-controls="class-summary.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('class-summary', 'class-summary-tab2', 2)" class="table-tab">Classes</button><button id="class-summary-tab3" role="tab" aria-selected="false" aria-controls="class-summary.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('class-summary', 'class-summary-tab3', 2)" class="table-tab">Enum Classes</button></div>
 <div id="class-summary.tabpanel" role="tabpanel" aria-labelledby="class-summary-tab0">
 <div class="summary-table two-column-summary">
 <div class="table-header col-first">Class</div>
@@ -112,10 +112,14 @@ loadScripts(document, 'script');</script>
 <div class="col-last even-row-color class-summary class-summary-tab2">
 <div class="block">The feature with a generic value type.</div>
 </div>
-<div class="col-first odd-row-color class-summary class-summary-tab3"><a href="FeatureResponseKey.html" title="enum class in growthbook.sdk.java.model">FeatureResponseKey</a></div>
-<div class="col-last odd-row-color class-summary class-summary-tab3">&nbsp;</div>
-<div class="col-first even-row-color class-summary class-summary-tab2"><a href="FeatureResult.html" title="class in growthbook.sdk.java.model">FeatureResult</a>&lt;ValueType&gt;</div>
-<div class="col-last even-row-color class-summary class-summary-tab2">
+<div class="col-first odd-row-color class-summary class-summary-tab1"><a href="FeatureKey.html" title="interface in growthbook.sdk.java.model">FeatureKey</a>&lt;T&gt;</div>
+<div class="col-last odd-row-color class-summary class-summary-tab1">
+<div class="block">A type-safe reference to a feature flag.</div>
+</div>
+<div class="col-first even-row-color class-summary class-summary-tab3"><a href="FeatureResponseKey.html" title="enum class in growthbook.sdk.java.model">FeatureResponseKey</a></div>
+<div class="col-last even-row-color class-summary class-summary-tab3">&nbsp;</div>
+<div class="col-first odd-row-color class-summary class-summary-tab2"><a href="FeatureResult.html" title="class in growthbook.sdk.java.model">FeatureResult</a>&lt;ValueType&gt;</div>
+<div class="col-last odd-row-color class-summary class-summary-tab2">
 <div class="block">Results for a <a href="../evaluators/FeatureEvaluator.html#evaluateFeature(java.lang.String,growthbook.sdk.java.multiusermode.configurations.EvaluationContext,java.lang.Class)"><code>FeatureEvaluator.evaluateFeature(String, EvaluationContext, Class)</code></a>
 
  
@@ -127,74 +131,78 @@ loadScripts(document, 'script');</script>
  experimentResult (ExperimentResult or null) - When source is "experiment", this will be an ExperimentResult object
  </div>
 </div>
-<div class="col-first odd-row-color class-summary class-summary-tab2"><a href="FeatureResult.FeatureResultBuilder.html" title="class in growthbook.sdk.java.model">FeatureResult.FeatureResultBuilder</a>&lt;ValueType&gt;</div>
-<div class="col-last odd-row-color class-summary class-summary-tab2">&nbsp;</div>
-<div class="col-first even-row-color class-summary class-summary-tab3"><a href="FeatureResultSource.html" title="enum class in growthbook.sdk.java.model">FeatureResultSource</a></div>
-<div class="col-last even-row-color class-summary class-summary-tab3">
+<div class="col-first even-row-color class-summary class-summary-tab2"><a href="FeatureResult.FeatureResultBuilder.html" title="class in growthbook.sdk.java.model">FeatureResult.FeatureResultBuilder</a>&lt;ValueType&gt;</div>
+<div class="col-last even-row-color class-summary class-summary-tab2">&nbsp;</div>
+<div class="col-first odd-row-color class-summary class-summary-tab3"><a href="FeatureResultSource.html" title="enum class in growthbook.sdk.java.model">FeatureResultSource</a></div>
+<div class="col-last odd-row-color class-summary class-summary-tab3">
 <div class="block">An enum of the possible sources for the feature result</div>
 </div>
-<div class="col-first odd-row-color class-summary class-summary-tab2"><a href="FeatureRule.html" title="class in growthbook.sdk.java.model">FeatureRule</a>&lt;ValueType&gt;</div>
-<div class="col-last odd-row-color class-summary class-summary-tab2">
+<div class="col-first even-row-color class-summary class-summary-tab2"><a href="FeatureRule.html" title="class in growthbook.sdk.java.model">FeatureRule</a>&lt;ValueType&gt;</div>
+<div class="col-last even-row-color class-summary class-summary-tab2">
 <div class="block">Overrides the defaultValue of a Feature based on a set of requirements.</div>
 </div>
-<div class="col-first even-row-color class-summary class-summary-tab2"><a href="FeatureRule.FeatureRuleBuilder.html" title="class in growthbook.sdk.java.model">FeatureRule.FeatureRuleBuilder</a>&lt;ValueType&gt;</div>
-<div class="col-last even-row-color class-summary class-summary-tab2">&nbsp;</div>
-<div class="col-first odd-row-color class-summary class-summary-tab2"><a href="Filter.html" title="class in growthbook.sdk.java.model">Filter</a></div>
-<div class="col-last odd-row-color class-summary class-summary-tab2">
+<div class="col-first odd-row-color class-summary class-summary-tab2"><a href="FeatureRule.FeatureRuleBuilder.html" title="class in growthbook.sdk.java.model">FeatureRule.FeatureRuleBuilder</a>&lt;ValueType&gt;</div>
+<div class="col-last odd-row-color class-summary class-summary-tab2">&nbsp;</div>
+<div class="col-first even-row-color class-summary class-summary-tab2"><a href="Filter.html" title="class in growthbook.sdk.java.model">Filter</a></div>
+<div class="col-last even-row-color class-summary class-summary-tab2">
 <div class="block">Object used for mutual exclusion and filtering users out of experiments based on random hashes.</div>
 </div>
-<div class="col-first even-row-color class-summary class-summary-tab2"><a href="Filter.FilterBuilder.html" title="class in growthbook.sdk.java.model">Filter.FilterBuilder</a></div>
-<div class="col-last even-row-color class-summary class-summary-tab2">&nbsp;</div>
-<div class="col-first odd-row-color class-summary class-summary-tab2"><a href="GBContext.html" title="class in growthbook.sdk.java.model">GBContext</a></div>
-<div class="col-last odd-row-color class-summary class-summary-tab2">
+<div class="col-first odd-row-color class-summary class-summary-tab2"><a href="Filter.FilterBuilder.html" title="class in growthbook.sdk.java.model">Filter.FilterBuilder</a></div>
+<div class="col-last odd-row-color class-summary class-summary-tab2">&nbsp;</div>
+<div class="col-first even-row-color class-summary class-summary-tab2"><a href="GBContext.html" title="class in growthbook.sdk.java.model">GBContext</a></div>
+<div class="col-last even-row-color class-summary class-summary-tab2">
 <div class="block">Context object passed into the GrowthBook constructor.</div>
 </div>
-<div class="col-first even-row-color class-summary class-summary-tab2"><a href="GBContext.GBContextBuilder.html" title="class in growthbook.sdk.java.model">GBContext.GBContextBuilder</a></div>
-<div class="col-last even-row-color class-summary class-summary-tab2">
+<div class="col-first odd-row-color class-summary class-summary-tab2"><a href="GBContext.GBContextBuilder.html" title="class in growthbook.sdk.java.model">GBContext.GBContextBuilder</a></div>
+<div class="col-last odd-row-color class-summary class-summary-tab2">
 <div class="block">The builder class to help create a context.</div>
 </div>
-<div class="col-first odd-row-color class-summary class-summary-tab2"><a href="GeneratedStickyBucketAssignmentDocModel.html" title="class in growthbook.sdk.java.model">GeneratedStickyBucketAssignmentDocModel</a></div>
-<div class="col-last odd-row-color class-summary class-summary-tab2">
+<div class="col-first even-row-color class-summary class-summary-tab2"><a href="GeneratedStickyBucketAssignmentDocModel.html" title="class in growthbook.sdk.java.model">GeneratedStickyBucketAssignmentDocModel</a></div>
+<div class="col-last even-row-color class-summary class-summary-tab2">
 <div class="block">Model that created for generating StickyBucketAssignmentDocModel</div>
 </div>
-<div class="col-first even-row-color class-summary class-summary-tab2"><a href="HashAttributeAndHashValue.html" title="class in growthbook.sdk.java.model">HashAttributeAndHashValue</a></div>
-<div class="col-last even-row-color class-summary class-summary-tab2">
+<div class="col-first odd-row-color class-summary class-summary-tab2"><a href="HashAttributeAndHashValue.html" title="class in growthbook.sdk.java.model">HashAttributeAndHashValue</a></div>
+<div class="col-last odd-row-color class-summary class-summary-tab2">
 <div class="block">Model for care a pair of hashAttribute and hashValue</div>
 </div>
-<div class="col-first odd-row-color class-summary class-summary-tab3"><a href="HttpHeaders.html" title="enum class in growthbook.sdk.java.model">HttpHeaders</a></div>
-<div class="col-last odd-row-color class-summary class-summary-tab3">&nbsp;</div>
-<div class="col-first even-row-color class-summary class-summary-tab3"><a href="HttpMethods.html" title="enum class in growthbook.sdk.java.model">HttpMethods</a></div>
+<div class="col-first even-row-color class-summary class-summary-tab3"><a href="HttpHeaders.html" title="enum class in growthbook.sdk.java.model">HttpHeaders</a></div>
 <div class="col-last even-row-color class-summary class-summary-tab3">&nbsp;</div>
-<div class="col-first odd-row-color class-summary class-summary-tab2"><a href="Namespace.html" title="class in growthbook.sdk.java.model">Namespace</a></div>
-<div class="col-last odd-row-color class-summary class-summary-tab2">Deprecated.</div>
-<div class="col-first even-row-color class-summary class-summary-tab2"><a href="Namespace.NamespaceBuilder.html" title="class in growthbook.sdk.java.model">Namespace.NamespaceBuilder</a></div>
-<div class="col-last even-row-color class-summary class-summary-tab2">&nbsp;</div>
-<div class="col-first odd-row-color class-summary class-summary-tab3"><a href="Operator.html" title="enum class in growthbook.sdk.java.model">Operator</a></div>
-<div class="col-last odd-row-color class-summary class-summary-tab3">
+<div class="col-first odd-row-color class-summary class-summary-tab3"><a href="HttpMethods.html" title="enum class in growthbook.sdk.java.model">HttpMethods</a></div>
+<div class="col-last odd-row-color class-summary class-summary-tab3">&nbsp;</div>
+<div class="col-first even-row-color class-summary class-summary-tab2"><a href="Namespace.html" title="class in growthbook.sdk.java.model">Namespace</a></div>
+<div class="col-last even-row-color class-summary class-summary-tab2">Deprecated.</div>
+<div class="col-first odd-row-color class-summary class-summary-tab2"><a href="Namespace.NamespaceBuilder.html" title="class in growthbook.sdk.java.model">Namespace.NamespaceBuilder</a></div>
+<div class="col-last odd-row-color class-summary class-summary-tab2">&nbsp;</div>
+<div class="col-first even-row-color class-summary class-summary-tab3"><a href="Operator.html" title="enum class in growthbook.sdk.java.model">Operator</a></div>
+<div class="col-last even-row-color class-summary class-summary-tab3">
 <div class="block">Operator for use in the condition JSON</div>
 </div>
-<div class="col-first even-row-color class-summary class-summary-tab2"><a href="OptionalField.html" title="class in growthbook.sdk.java.model">OptionalField</a>&lt;ValueType&gt;</div>
-<div class="col-last even-row-color class-summary class-summary-tab2">&nbsp;</div>
-<div class="col-first odd-row-color class-summary class-summary-tab2"><a href="ParentCondition.html" title="class in growthbook.sdk.java.model">ParentCondition</a></div>
-<div class="col-last odd-row-color class-summary class-summary-tab2">
+<div class="col-first odd-row-color class-summary class-summary-tab2"><a href="OptionalField.html" title="class in growthbook.sdk.java.model">OptionalField</a>&lt;ValueType&gt;</div>
+<div class="col-last odd-row-color class-summary class-summary-tab2">&nbsp;</div>
+<div class="col-first even-row-color class-summary class-summary-tab2"><a href="ParentCondition.html" title="class in growthbook.sdk.java.model">ParentCondition</a></div>
+<div class="col-last even-row-color class-summary class-summary-tab2">
 <div class="block">A ParentCondition defines a prerequisite.</div>
 </div>
-<div class="col-first even-row-color class-summary class-summary-tab2"><a href="RequestBodyForRemoteEval.html" title="class in growthbook.sdk.java.model">RequestBodyForRemoteEval</a></div>
-<div class="col-last even-row-color class-summary class-summary-tab2">&nbsp;</div>
-<div class="col-first odd-row-color class-summary class-summary-tab3"><a href="SseKey.html" title="enum class in growthbook.sdk.java.model">SseKey</a></div>
-<div class="col-last odd-row-color class-summary class-summary-tab3">&nbsp;</div>
-<div class="col-first even-row-color class-summary class-summary-tab2"><a href="StickyAssignmentsDocument.html" title="class in growthbook.sdk.java.model">StickyAssignmentsDocument</a></div>
-<div class="col-last even-row-color class-summary class-summary-tab2">
+<div class="col-first odd-row-color class-summary class-summary-tab2"><a href="RequestBodyForRemoteEval.html" title="class in growthbook.sdk.java.model">RequestBodyForRemoteEval</a></div>
+<div class="col-last odd-row-color class-summary class-summary-tab2">&nbsp;</div>
+<div class="col-first even-row-color class-summary class-summary-tab3"><a href="SseKey.html" title="enum class in growthbook.sdk.java.model">SseKey</a></div>
+<div class="col-last even-row-color class-summary class-summary-tab3">&nbsp;</div>
+<div class="col-first odd-row-color class-summary class-summary-tab2"><a href="StickyAssignmentsDocument.html" title="class in growthbook.sdk.java.model">StickyAssignmentsDocument</a></div>
+<div class="col-last odd-row-color class-summary class-summary-tab2">
 <div class="block">StickyAssignmentsDocument class is presenting a model
  for accumulate such data as: attributeName, attributeValue and assignments</div>
 </div>
-<div class="col-first odd-row-color class-summary class-summary-tab2"><a href="StickyBucketVariation.html" title="class in growthbook.sdk.java.model">StickyBucketVariation</a></div>
-<div class="col-last odd-row-color class-summary class-summary-tab2">
+<div class="col-first even-row-color class-summary class-summary-tab2"><a href="StickyBucketVariation.html" title="class in growthbook.sdk.java.model">StickyBucketVariation</a></div>
+<div class="col-last even-row-color class-summary class-summary-tab2">
 <div class="block">Model for caring data: variation and versionIsBlocked</div>
 </div>
-<div class="col-first even-row-color class-summary class-summary-tab2"><a href="TrackData.html" title="class in growthbook.sdk.java.model">TrackData</a>&lt;ValueType&gt;</div>
-<div class="col-last even-row-color class-summary class-summary-tab2">
+<div class="col-first odd-row-color class-summary class-summary-tab2"><a href="TrackData.html" title="class in growthbook.sdk.java.model">TrackData</a>&lt;ValueType&gt;</div>
+<div class="col-last odd-row-color class-summary class-summary-tab2">
 <div class="block">Used for remote feature evaluation to trigger the <a href="../callback/TrackingCallback.html" title="interface in growthbook.sdk.java.callback"><code>TrackingCallback</code></a></div>
+</div>
+<div class="col-first even-row-color class-summary class-summary-tab2"><a href="TypedKey.html" title="class in growthbook.sdk.java.model">TypedKey</a>&lt;T&gt;</div>
+<div class="col-last even-row-color class-summary class-summary-tab2">
+<div class="block">Default immutable implementation of <a href="FeatureKey.html" title="interface in growthbook.sdk.java.model"><code>FeatureKey</code></a>.</div>
 </div>
 <div class="col-first odd-row-color class-summary class-summary-tab2"><a href="VariationMeta.html" title="class in growthbook.sdk.java.model">VariationMeta</a></div>
 <div class="col-last odd-row-color class-summary class-summary-tab2">
