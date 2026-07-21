@@ -34,7 +34,6 @@ public class ConditionEvaluator implements IConditionEvaluator {
     @Override
     public Boolean evaluateCondition(JsonObject attributes, JsonObject conditionJson, @Nullable JsonObject savedGroups) {
         try {
-            // The condition matches only if every top-level entry is satisfied.
             return conditionJson.entrySet().stream()
                     .allMatch(entry -> matchesConditionEntry(entry.getKey(), entry.getValue(), attributes, savedGroups));
         } catch (Exception exception) {
@@ -82,7 +81,6 @@ public class ConditionEvaluator implements IConditionEvaluator {
 
         JsonElement element = attributes;
         for (String segment : path.split("\\.")) {
-            // Only objects can be descended into; null, arrays and primitives mean "no value here".
             if (!(element instanceof JsonObject)) {
                 return null;
             }
@@ -209,7 +207,6 @@ public class ConditionEvaluator implements IConditionEvaluator {
             }
             return matchesSign(operator, Double.compare(0.0, expected.getAsDouble()));
         }
-        // Preserved quirk: $lt treats a digit-only attribute string as a number.
         if (operator == Operator.LT && actual.getAsString().toLowerCase().matches("\\d+")) {
             return Double.parseDouble(actual.getAsString()) < expected.getAsDouble();
         }

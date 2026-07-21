@@ -41,10 +41,10 @@ import static org.mockito.Mockito.*;
 
 
 class GrowthBookClientTest {
-    private final GrowthBookJsonUtils jsonUtils = GrowthBookJsonUtils.getInstance();
-    private final TestCasesJsonHelper helper = TestCasesJsonHelper.getInstance();
 
-    // Mock instances that might be needed across tests
+    private final TestCasesJsonHelper helper = TestCasesJsonHelper.getInstance();
+    private final GrowthBookJsonUtils jsonUtils = GrowthBookJsonUtils.getInstance();
+
     private GBFeaturesRepository mockRepository;
     private GBFeaturesRepository.GBFeaturesRepositoryBuilder mockBuilder;
 
@@ -70,7 +70,7 @@ class GrowthBookClientTest {
     }
 
     @Test
-    void test_featureRefreshListener_receivesSuccessEvent() throws FeatureFetchException {
+    void test_featureRefreshListener_receivesSuccessEvent() {
         mockRepository = createMockRepository();
         mockBuilder = createMockBuilder(mockRepository);
         FeatureRefreshListener listener = mock(FeatureRefreshListener.class);
@@ -115,7 +115,7 @@ class GrowthBookClientTest {
     }
 
     @Test
-    void test_featureRefreshListener_receivesFailureEvent() throws FeatureFetchException {
+    void test_featureRefreshListener_receivesFailureEvent() {
         mockRepository = createMockRepository();
         mockBuilder = createMockBuilder(mockRepository);
         FeatureRefreshListener listener = mock(FeatureRefreshListener.class);
@@ -162,7 +162,7 @@ class GrowthBookClientTest {
     }
 
     @Test
-    void test_featureRefreshListener_receivesEventWhenGlobalContextRefreshFails() throws FeatureFetchException {
+    void test_featureRefreshListener_receivesEventWhenGlobalContextRefreshFails() {
         mockRepository = createMockRepository();
         mockBuilder = createMockBuilder(mockRepository);
         FeatureRefreshListener listener = mock(FeatureRefreshListener.class);
@@ -188,7 +188,7 @@ class GrowthBookClientTest {
     }
 
     @Test
-    void test_featureRefreshListener_skipsGlobalContextRefreshWhenFeaturesUnchanged() throws FeatureFetchException {
+    void test_featureRefreshListener_skipsGlobalContextRefreshWhenFeaturesUnchanged() {
         mockRepository = createMockRepository();
         mockBuilder = createMockBuilder(mockRepository);
         FeatureRefreshListener listener = mock(FeatureRefreshListener.class);
@@ -309,7 +309,7 @@ class GrowthBookClientTest {
     }
 
     @Test
-    void test_shutdown_doesNotStopCallerSuppliedExecutor() throws FeatureFetchException {
+    void test_shutdown_doesNotStopCallerSuppliedExecutor() {
         mockRepository = createMockRepository();
         mockBuilder = createMockBuilder(mockRepository);
         ExecutorService suppliedExecutor = mock(ExecutorService.class);
@@ -710,4 +710,8 @@ class GrowthBookClientTest {
                 1
         );
     }
+
+  public TestCasesJsonHelper getHelper() {
+    return helper;
+  }
 }
