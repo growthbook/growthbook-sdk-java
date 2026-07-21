@@ -84,7 +84,48 @@ class PluginIntegrationTest {
             assertEquals(1, trackingCallbackCalls.get(), "existing tracking callback should still fire");
         }
 
-        assertEquals(1, closed.get(), "plugin close() should fire when GrowthBook.close() is called");
+        assertEquals(1, closed.get(), "plugin close() should fire when GrowthBook.destroy() is called");
+    }
+
+    @Test
+    void repeatedExperimentEvaluationFiresExposureOnce() {
+        List<ExperimentResult<?>> experimentSeen = Collections.synchronizedList(new ArrayList<>());
+        AtomicInteger trackingCallbackCalls = new AtomicInteger();
+
+        GrowthBookPlugin plugin = new GrowthBookPlugin() {
+            @Override public <V> void onExperimentViewed(Experiment<V> e, ExperimentResult<V> r) { experimentSeen.add(r); }
+        };
+        TrackingCallback tc = new TrackingCallback() {
+            @Override public <V> void onTrack(Experiment<V> experiment, ExperimentResult<V> result) {
+                trackingCallbackCalls.incrementAndGet();
+            }
+        };
+
+        GBContext ctx = GBContext.builder()
+                .attributesJson("{\"id\":\"u1\"}")
+                .trackingCallback(tc)
+                .plugins(Collections.singletonList(plugin))
+                .build();
+        GrowthBook gb = new GrowthBook(ctx);
+
+        Experiment<String> exp = Experiment.<String>builder()
+                .key("my-exp")
+                .variations(new ArrayList<>(Arrays.asList("A", "B")))
+                .build();
+
+        // Evaluate the SAME experiment for the SAME user three times.
+        ExperimentResult<String> result = gb.run(exp);
+        gb.run(exp);
+        gb.run(exp);
+
+        gb.destroy();
+
+        // Exposure must be de-duplicated per (hashAttribute, hashValue, key, variationId):
+        // one plugin event and one tracking callback, not three.
+        if (Boolean.TRUE.equals(result.getInExperiment())) {
+            assertEquals(1, experimentSeen.size(), "plugin should see the exposure exactly once across repeated evaluations");
+            assertEquals(1, trackingCallbackCalls.get(), "tracking callback should fire exactly once across repeated evaluations");
+        }
     }
 
     @Test
