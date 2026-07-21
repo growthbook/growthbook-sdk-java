@@ -69,7 +69,7 @@ public final class TrackingPluginSmokeHarness {
                 .variations(new ArrayList<>(Arrays.asList("A", "B")))
                 .coverage(1f)
                 .build());
-        growthBook.close();
+        growthBook.destroy();
 
         JsonObject body = readBody(server);
         requireAttribute(body, 0, "id", "single-smoke");
@@ -92,7 +92,7 @@ public final class TrackingPluginSmokeHarness {
                 UserContext.builder().attributesJson("{\"id\":\"multi-smoke-1\"}").build());
         client.evalFeature("flag", Boolean.class,
                 UserContext.builder().attributesJson("{\"id\":\"multi-smoke-2\"}").build());
-        client.close();
+        client.shutdown();
 
         JsonObject body = readBody(server);
         requireAttribute(body, 0, "company", "acme");

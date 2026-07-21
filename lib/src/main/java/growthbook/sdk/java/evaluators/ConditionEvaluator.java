@@ -317,7 +317,7 @@ public class ConditionEvaluator implements IConditionEvaluator {
                 return evalRegex(actual, expected, attributeDataType, true, true);
 
             case NE:
-                if (DataType.NULL.equals(attributeDataType)) return false;
+                if (DataType.NULL.equals(attributeDataType)) return !expected.isJsonNull();
                 return !Objects.equals(actual, expected);
 
             case EQ:
@@ -666,7 +666,7 @@ public class ConditionEvaluator implements IConditionEvaluator {
                                               DataType attributeDataType,
                                               boolean caseInsensitive,
                                               boolean negate) {
-        if (actual == null || DataType.NULL.equals(attributeDataType)) return false;
+        if (actual == null || DataType.NULL.equals(attributeDataType)) return negate;
 
         int flags = caseInsensitive ? Pattern.CASE_INSENSITIVE : 0;
 
@@ -676,7 +676,7 @@ public class ConditionEvaluator implements IConditionEvaluator {
             boolean matches = matcher.find();
             return negate != matches;
         } catch (Exception e) {
-            return false;
+            return negate;
         }
     }
 

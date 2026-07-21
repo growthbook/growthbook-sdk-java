@@ -66,11 +66,27 @@ class GBContextTest {
                 null,
                 null,
                 null,
-                null,
                 null
         );
 
         assertNotNull(subject);
+    }
+
+    @Test
+    void normalizesForcedVariationsFromExternalNumericMap() {
+        Map<String, Object> forcedVariations = new HashMap<>();
+        forcedVariations.put("integer", 1);
+        forcedVariations.put("double", 1.0);
+        forcedVariations.put("invalid", "abc");
+
+        GBContext subject = GBContext
+                .builder()
+                .forcedVariationsMap(forcedVariations)
+                .build();
+
+        assertEquals(Integer.valueOf(1), subject.getForcedVariationsMap().get("integer"));
+        assertEquals(Integer.valueOf(1), subject.getForcedVariationsMap().get("double"));
+        assertFalse(subject.getForcedVariationsMap().containsKey("invalid"));
     }
 
     @Test
@@ -148,7 +164,6 @@ class GBContextTest {
                 allowUrlOverride,
                 forcedVariations,
                 trackingCallback,
-                null,
                 null,
                 null,
                 null,

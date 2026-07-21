@@ -1,0 +1,71 @@
+plugins {
+    id 'java-library'
+    id 'maven-publish'
+}
+
+sourceCompatibility = JavaVersion.VERSION_1_8
+targetCompatibility = JavaVersion.VERSION_1_8
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    api project(':lib')
+
+    implementation 'com.github.ben-manes.caffeine:caffeine:2.9.3'
+
+    testImplementation 'org.junit.jupiter:junit-jupiter:5.8.2'
+}
+
+java {
+    withSourcesJar()
+    withJavadocJar()
+}
+
+tasks.named('test') {
+    useJUnitPlatform()
+}
+
+publishing {
+    publications {
+        mavenJava(MavenPublication) {
+            from components.java
+
+            pom {
+                name = 'GrowthBook SDK Java Caffeine Cache Adapter'
+                description = 'Optional Caffeine cache adapter for the GrowthBook Java SDK'
+                url = 'https://github.com/growthbook/growthbook-sdk-java'
+                licenses {
+                    license {
+                        name = 'MIT License'
+                        url = 'https://github.com/growthbook/growthbook-sdk-java/blob/main/LICENSE'
+                    }
+                }
+                developers {
+                    developer {
+                        id = 'growthbook'
+                        name = 'GrowthBook'
+                        email = 'hello@growthbook.io'
+                    }
+                }
+                scm {
+                    connection = 'scm:git:git://github.com/growthbook/growthbook-sdk-java.git'
+                    developerConnection = 'scm:git:ssh://github.com:growthbook/growthbook-sdk-java.git'
+                    url = 'https://github.com/growthbook/growthbook-sdk-java'
+                }
+            }
+        }
+    }
+
+    repositories {
+        maven {
+            name = "GitHubPackages"
+            url = uri("https://maven.pkg.github.com/growthbook/growthbook-sdk-java")
+            credentials {
+                username = System.getenv("GITHUB_ACTOR")
+                password = System.getenv("GITHUB_TOKEN")
+            }
+        }
+    }
+}

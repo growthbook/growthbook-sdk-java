@@ -1,20 +1,35 @@
 package growthbook.sdk.java.repository;
 
+import static growthbook.sdk.java.constants.SDKConstants.Endpoints.DEFAULT_API_HOST;
+import static growthbook.sdk.java.constants.SDKConstants.Endpoints.FEATURES_ENDPOINT_PATH;
+import static growthbook.sdk.java.constants.SDKConstants.Endpoints.FEATURES_ENDPOINT_PATTERN;
+import static growthbook.sdk.java.constants.SDKConstants.Endpoints.STREAMING_ENDPOINT_PATH;
+
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import growthbook.sdk.java.callback.FeatureRefreshCallback;
+import growthbook.sdk.java.constants.SDKConstants;
 import growthbook.sdk.java.exception.FeatureFetchException;
+import growthbook.sdk.java.exception.RetryableFeatureFetchException;
+import growthbook.sdk.java.featurefetch.FeatureFetchFailureHandler;
+import growthbook.sdk.java.featurefetch.FeatureFetchHttpStatus;
+import growthbook.sdk.java.featurefetch.FeatureRefreshCacheFreshness;
+import growthbook.sdk.java.featurefetch.FeatureRefreshScheduler;
 import growthbook.sdk.java.model.Feature;
 import growthbook.sdk.java.model.FeatureResponseKey;
 import growthbook.sdk.java.model.GBContext;
 import growthbook.sdk.java.model.HttpHeaders;
 import growthbook.sdk.java.model.RequestBodyForRemoteEval;
 import growthbook.sdk.java.multiusermode.util.TransformationUtil;
+import growthbook.sdk.java.remoteeval.RemoteEvalEndpoints;
+import growthbook.sdk.java.retry.FeatureFetchRetryExecutor;
+import growthbook.sdk.java.retry.FeatureFetchRetryPolicy;
 import growthbook.sdk.java.sandbox.CacheManagerFactory;
 import growthbook.sdk.java.sandbox.CacheMode;
 import growthbook.sdk.java.sandbox.GbCacheManager;
 import growthbook.sdk.java.util.DecryptionUtils;
 import growthbook.sdk.java.util.GrowthBookJsonUtils;
+import growthbook.sdk.java.sse.SseEventPayloadValidator;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
@@ -34,16 +49,21 @@ import org.jetbrains.annotations.NotNull;
 import javax.annotation.Nullable;
 import java.io.IOException;
 import java.net.HttpURLConnection;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.logging.Logger;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * This class can be created with its `builder()` or constructor.
@@ -58,7 +78,11 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
     private static final String FILE_NAME = "FEATURE_CACHE.json";
     public static final String FILE_PATH_FOR_CACHE = "src/main/resources";
     public static final String EMPTY_JSON_OBJECT_STRING = "{}";
-    private static final String FEATURES_PATH_PATTERN = ".*/api/features/[^/]+";
+    private static final ThreadFactory SSE_RETRY_THREAD_FACTORY = runnable -> {
+        Thread thread = new Thread(runnable, "growthbook-sse-retry");
+        thread.setDaemon(true);
+        return thread;
+    };
 
     /**
      * Thread-safe LRU cache with max 100 entries to prevent unbounded growth
@@ -104,10 +128,44 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
     private final Integer swrTtlSeconds;
 
     /**
+     * Optional minimum interval between non-forced feature refreshes.
+     */
+    @Nullable
+    @Getter
+    private final Duration backgroundFetchInterval;
+
+    /**
+     * Bounded retry policy for feature fetch requests.
+     */
+    @Getter
+    private final FeatureFetchRetryPolicy retryPolicy;
+
+    private final FeatureFetchRetryExecutor featureFetchRetryExecutor;
+    private final FeatureRefreshScheduler featureRefreshScheduler;
+
+    private final AtomicLong lastSuccessfulFetchAtMillis = new AtomicLong(0);
+
+    private final AtomicReference<Throwable> lastRefreshError = new AtomicReference<>();
+
+    private final AtomicLong lastRefreshErrorAtMillis = new AtomicLong(0);
+
+    private final AtomicLong refreshSuccessCount = new AtomicLong(0);
+
+    private final AtomicLong refreshFailureCount = new AtomicLong(0);
+
+    private final AtomicLong refreshConsecutiveFailures = new AtomicLong(0);
+
+    private final AtomicLong lastRefreshFailureAtMillis = new AtomicLong(0);
+
+    private final AtomicReference<Boolean> lastRefreshLoadedFromCache = new AtomicReference<>();
+
+    private final AtomicBoolean hasFeatureData = new AtomicBoolean(false);
+
+    /**
      * Seconds after that cache is expired
      */
     @Getter
-    private Long expiresAt;
+    private volatile Long expiresAt;
 
     /**
      * Http request client for send GET request
@@ -129,14 +187,16 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
      * Flag to know whether GBFeatureRepository is initialized
      */
     @Getter
-    private Boolean initialized = false;
+    private volatile Boolean initialized = false;
 
     /**
      * Flag to know whether sse connection is allowed
      */
-    private Boolean sseAllowed = false;
+    private volatile Boolean sseAllowed = false;
+
     @Nullable
     private Request sseRequest = null;
+
     @Nullable
     private EventSource sseEventSource = null;
 
@@ -147,7 +207,7 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
      */
     @Getter
     @Nullable
-    private String savedGroupsJson = EMPTY_JSON_OBJECT_STRING;
+    private volatile String savedGroupsJson = EMPTY_JSON_OBJECT_STRING;
 
     /**
      * Allows you to get the features JSON from the provided {@link GBFeaturesRepository#getFeaturesEndpoint()}.
@@ -157,7 +217,7 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
      * @return feature data JSON in a type of String. Handle refresh strategy
      */
     @Getter
-    private String featuresJson = EMPTY_JSON_OBJECT_STRING;
+    private volatile String featuresJson = EMPTY_JSON_OBJECT_STRING;
 
     /**
      * Keys are unique identifiers for the features and the values are Feature objects.
@@ -165,10 +225,10 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
      */
     //@Getter
     @Getter
-    private Map<String, Feature<?>> parsedFeatures = new HashMap<>();
+    private volatile Map<String, Feature<?>> parsedFeatures = new HashMap<>();
 
     @Getter
-    private JsonObject parsedSavedGroups = new JsonObject();
+    private volatile JsonObject parsedSavedGroups = new JsonObject();
 
     public void setCacheManager(GbCacheManager cacheManager) {
         if (!isCacheDisabled) {
@@ -182,7 +242,7 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
      * CachingManger allows to cache features data to file
      */
     @Getter
-    private GbCacheManager cacheManager;
+    private volatile GbCacheManager cacheManager;
 
     /**
      * Flag that enable CachingManager
@@ -195,6 +255,7 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
     @Nullable
     @Getter
     private final RequestBodyForRemoteEval requestBodyForRemoteEval;
+
     /**
      * Endpoint for POST request
      */
@@ -257,7 +318,6 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
     /**
      * New constructor that explicitly supports decryptionKey.
      */
-    @Builder
     public GBFeaturesRepository(
             @Nullable String apiHost,
             String clientKey,
@@ -270,13 +330,46 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
             @Nullable RequestBodyForRemoteEval requestBodyForRemoteEval,
             @Nullable GbCacheManager cacheManager
     ) {
+        this(
+                apiHost,
+                clientKey,
+                encryptionKey,
+                refreshStrategy,
+                swrTtlSeconds,
+                okHttpClient,
+                decryptionKey,
+                isCacheDisabled,
+                requestBodyForRemoteEval,
+                cacheManager,
+                null,
+                null
+        );
+    }
+
+    @Builder
+    public GBFeaturesRepository(
+            @Nullable String apiHost,
+            String clientKey,
+            @Deprecated @Nullable String encryptionKey,
+            @Nullable FeatureRefreshStrategy refreshStrategy,
+            @Nullable Integer swrTtlSeconds,
+            @Nullable OkHttpClient okHttpClient,
+            @Nullable String decryptionKey,
+            @Nullable Boolean isCacheDisabled,
+            @Nullable RequestBodyForRemoteEval requestBodyForRemoteEval,
+            @Nullable GbCacheManager cacheManager,
+            @Nullable Duration backgroundFetchInterval,
+            @Nullable FeatureFetchRetryPolicy retryPolicy
+    ) {
         this(apiHost, clientKey, (decryptionKey != null) ? decryptionKey : encryptionKey,
                 refreshStrategy,
                 swrTtlSeconds,
                 okHttpClient,
                 isCacheDisabled,
                 (requestBodyForRemoteEval != null) ? requestBodyForRemoteEval : new RequestBodyForRemoteEval(),
-                cacheManager
+                cacheManager,
+                backgroundFetchInterval,
+                retryPolicy
         );
     }
 
@@ -302,30 +395,70 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
             @Nullable RequestBodyForRemoteEval requestBodyForRemoteEval,
             @Nullable GbCacheManager cacheManager
     ) {
+        this(
+                apiHost,
+                clientKey,
+                decryptionKey,
+                refreshStrategy,
+                swrTtlSeconds,
+                okHttpClient,
+                isCacheDisabled,
+                requestBodyForRemoteEval,
+                cacheManager,
+                null,
+                null
+        );
+    }
+
+    public GBFeaturesRepository(
+            @Nullable String apiHost,
+            String clientKey,
+            @Nullable String decryptionKey,
+            @Nullable FeatureRefreshStrategy refreshStrategy,
+            @Nullable Integer swrTtlSeconds,
+            @Nullable OkHttpClient okHttpClient,
+            @Nullable Boolean isCacheDisabled,
+            @Nullable RequestBodyForRemoteEval requestBodyForRemoteEval,
+            @Nullable GbCacheManager cacheManager,
+            @Nullable Duration backgroundFetchInterval,
+            @Nullable FeatureFetchRetryPolicy retryPolicy
+    ) {
         this.isCacheDisabled = isCacheDisabled != null && isCacheDisabled; // cache enable by default
         if (clientKey == null) throw new IllegalArgumentException("clientKey cannot be null");
+        if (backgroundFetchInterval != null && backgroundFetchInterval.isNegative()) {
+            throw new IllegalArgumentException("backgroundFetchInterval must not be negative");
+        }
 
         // Set the defaults when the user does not provide them
         if (apiHost == null) {
-            apiHost = "https://cdn.growthbook.io";
+            apiHost = DEFAULT_API_HOST;
         }
         this.refreshStrategy = refreshStrategy == null ? FeatureRefreshStrategy.STALE_WHILE_REVALIDATE : refreshStrategy;
 
         // Build the endpoints from the apiHost and clientKey
-        this.featuresEndpoint = apiHost + "/api/features/" + clientKey;
-        this.eventsEndpoint = apiHost + "/sub/" + clientKey;
-        this.remoteEvalEndPoint = apiHost + "/api/eval/" + clientKey;
+        this.featuresEndpoint = apiHost + FEATURES_ENDPOINT_PATH + clientKey;
+        this.eventsEndpoint = apiHost + STREAMING_ENDPOINT_PATH + clientKey;
+        this.remoteEvalEndPoint = RemoteEvalEndpoints.evalEndpoint(apiHost, clientKey);
 
         this.encryptionKey = decryptionKey;
         this.decryptionKey = decryptionKey;
 
-        this.swrTtlSeconds = swrTtlSeconds == null ? 60 : swrTtlSeconds;
+        this.swrTtlSeconds = swrTtlSeconds == null ? SDKConstants.DEFAULT_SWR_TTL_SECONDS : swrTtlSeconds;
+        this.backgroundFetchInterval = backgroundFetchInterval;
+        this.retryPolicy = retryPolicy == null ? new FeatureFetchRetryPolicy() : retryPolicy;
+        this.featureFetchRetryExecutor = new FeatureFetchRetryExecutor(this.retryPolicy);
+        this.featureRefreshScheduler = new FeatureRefreshScheduler();
         this.requestBodyForRemoteEval = requestBodyForRemoteEval != null ? requestBodyForRemoteEval : new RequestBodyForRemoteEval();
         this.refreshExpiresAt();
 
         // Use provided OkHttpClient or create a new one
         if (okHttpClient == null) {
             this.okHttpClient = this.initializeHttpClient();
+        } else if (okHttpClient.retryOnConnectionFailure()) {
+            log.warn("Disabling OkHttpClient.retryOnConnectionFailure because feature fetch retries are handled by FeatureFetchRetryPolicy.");
+            this.okHttpClient = okHttpClient.newBuilder()
+                    .retryOnConnectionFailure(false)
+                    .build();
         } else {
             // TODO: Check for valid interceptor
             this.okHttpClient = okHttpClient;
@@ -340,6 +473,72 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
     @Nullable
     public String getEncryptionKey() {
         return encryptionKey;
+    }
+
+    public long getLastSuccessfulFetchAtMillis() {
+        return this.lastSuccessfulFetchAtMillis.get();
+    }
+
+    @Override
+    @Nullable
+    public Throwable getLastRefreshError() {
+        return this.lastRefreshError.get();
+    }
+
+    @Override
+    public long getLastRefreshErrorAtMillis() {
+        return this.lastRefreshErrorAtMillis.get();
+    }
+
+    public boolean hasFeatureData() {
+        return this.hasFeatureData.get();
+    }
+
+    public boolean isCacheDisabled() {
+        return this.isCacheDisabled;
+    }
+
+    @Nullable
+    public Long getCacheLastUpdatedMillis() {
+        return readCacheLastUpdatedMillis();
+    }
+
+    public boolean isSseAllowed() {
+        return Boolean.TRUE.equals(this.sseAllowed);
+    }
+
+    public boolean isSseConnected() {
+        return this.sseConnected.get() && !this.shuttingDown.get();
+    }
+
+    public int getSseRetryAttempts() {
+        return this.sseRetryAttempts.get();
+    }
+
+    @Override
+    public long getRefreshSuccessCount() {
+        return this.refreshSuccessCount.get();
+    }
+
+    @Override
+    public long getRefreshFailureCount() {
+        return this.refreshFailureCount.get();
+    }
+
+    @Override
+    public long getRefreshConsecutiveFailureCount() {
+        return this.refreshConsecutiveFailures.get();
+    }
+
+    @Override
+    public long getLastRefreshFailureAtMillis() {
+        return this.lastRefreshFailureAtMillis.get();
+    }
+
+    @Override
+    @Nullable
+    public Boolean getLastRefreshLoadedFromCache() {
+        return this.lastRefreshLoadedFromCache.get();
     }
 
     /**
@@ -376,6 +575,11 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
     // Scheduled polling (non-SSE) drives refresh for STALE_WHILE_REVALIDATE strategy
     private ScheduledExecutorService pollScheduler;
     private final AtomicBoolean polling = new AtomicBoolean(false);
+    private ScheduledExecutorService sseRetryScheduler;
+    private final AtomicBoolean sseReconnectScheduled = new AtomicBoolean(false);
+    private final AtomicBoolean sseConnected = new AtomicBoolean(false);
+    private final AtomicInteger sseRetryAttempts = new AtomicInteger(0);
+    private final AtomicBoolean shuttingDown = new AtomicBoolean(false);
 
     private void schedulePolling() {
         if (pollScheduler != null || this.refreshStrategy == FeatureRefreshStrategy.SERVER_SENT_EVENTS) return;
@@ -391,7 +595,7 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
         long started = System.currentTimeMillis();
         try {
             log.debug("GrowthBook Features Refresh polling starts");
-            fetchFeatures();
+            refreshFeatures();
         } catch (Exception e) {
             log.error("Features Refresh polling failed.", e);
         } finally {
@@ -443,13 +647,14 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
      * Assigns a close listener to recreate the connection.
      */
     private void createEventSourceListenerAndStartListening(Boolean retryOnFailure) {
+        this.sseConnected.set(false);
         this.sseEventSource = null;
         this.sseRequest = null;
 
         if (this.sseHttpClient == null) {
             this.sseHttpClient = new OkHttpClient.Builder()
                     .addInterceptor(new GBFeaturesRepositoryRequestInterceptor())
-                    .retryOnConnectionFailure(true)
+                    .retryOnConnectionFailure(false)
                     .connectTimeout(0, TimeUnit.SECONDS)
                     .readTimeout(0, TimeUnit.SECONDS)
                     .writeTimeout(0, TimeUnit.SECONDS)
@@ -467,33 +672,46 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
                         new GBEventSourceHandler() {
                             @Override
                             public void onClose(EventSource eventSource) {
+                                sseConnected.set(false);
                                 eventSource.cancel();
-                                createEventSourceListenerAndStartListening(retryOnFailure);
+                                scheduleSseReconnect(retryOnFailure);
                             }
 
                             @Override
                             public void onFeaturesResponse(String featuresJsonResponse) throws FeatureFetchException {
-                                onResponseJson(featuresJsonResponse, false);
+                                try {
+                                    onResponseJson(featuresJsonResponse, false);
+                                    recordRefreshSuccess(false);
+                                } catch (FeatureFetchException e) {
+                                    recordRefreshError(e);
+                                    recordRefreshFailure(false);
+                                    throw e;
+                                }
+                                sseRetryAttempts.set(0);
+                                sseReconnectScheduled.set(false);
+                            }
+
+                            @Override
+                            public void onFeaturesUpdated() {
+                                onRefreshSuccess(featuresJson);
+                                recordRefreshSuccess(false);
                             }
                         }
                 ) {
                     @Override
                     public void onFailure(@NotNull EventSource eventSource, @Nullable Throwable t, @Nullable Response response) {
                         super.onFailure(eventSource, t, response);
-                        if (retryOnFailure) {
-                            createEventSourceListenerAndStartListening(true);
+                        sseConnected.set(false);
+                        eventSource.cancel();
+                        scheduleSseReconnect(retryOnFailure);
+                    }
 
-                            try {
-                                fetchFeatures();
-                            } catch (FeatureFetchException featureFetchException) {
-                                Logger.getAnonymousLogger()
-                                        .throwing(
-                                                "GBFeaturesRepository",
-                                                "createEventSourceListenerAndStartListening()",
-                                                featureFetchException
-                                        );
-                            }
-                        }
+                    @Override
+                    public void onOpen(@NotNull EventSource eventSource, @NotNull Response response) {
+                        super.onOpen(eventSource, response);
+                        sseConnected.set(true);
+                        sseRetryAttempts.set(0);
+                        sseReconnectScheduled.set(false);
                     }
                 };
 
@@ -515,6 +733,49 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
         });
     }
 
+    private synchronized void scheduleSseReconnect(Boolean retryOnFailure) {
+        if (!Boolean.TRUE.equals(retryOnFailure)
+                || this.shuttingDown.get()
+                || !this.sseReconnectScheduled.compareAndSet(false, true)) {
+            return;
+        }
+
+        int failedConnectionAttempts = this.sseRetryAttempts.incrementAndGet();
+        int nextConnectionAttempt = failedConnectionAttempts + 1;
+        int maxAttempts = this.retryPolicy.getMaxAttempts();
+        if (nextConnectionAttempt > maxAttempts) {
+            this.sseRetryAttempts.set(maxAttempts);
+            this.sseReconnectScheduled.set(false);
+            log.error("SSE connection retries exhausted after {} attempts.", maxAttempts);
+            return;
+        }
+
+        long delayMillis = this.retryPolicy.getDelayMillisBeforeAttempt(nextConnectionAttempt);
+        log.warn(
+                "SSE connection failed. Retry attempt {}/{} in {}ms.",
+                nextConnectionAttempt,
+                maxAttempts,
+                delayMillis
+        );
+
+        if (this.sseRetryScheduler == null || this.sseRetryScheduler.isShutdown()) {
+            this.sseRetryScheduler = Executors.newSingleThreadScheduledExecutor(SSE_RETRY_THREAD_FACTORY);
+        }
+        this.sseRetryScheduler.schedule(() -> {
+            this.sseReconnectScheduled.set(false);
+            if (this.shuttingDown.get()) {
+                return;
+            }
+
+            try {
+                refreshFeatures(RefreshMode.FORCE);
+            } catch (FeatureFetchException e) {
+                log.error("Failed to fetch features while reconnecting SSE.", e);
+            }
+            createEventSourceListenerAndStartListening(retryOnFailure);
+        }, delayMillis, TimeUnit.MILLISECONDS);
+    }
+
     /**
      * @return A new {@link OkHttpClient} with an interceptor {@link GBFeaturesRepositoryRequestInterceptor}
      */
@@ -522,7 +783,7 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
 
         return new OkHttpClient.Builder()
                 .addInterceptor(new GBFeaturesRepositoryRequestInterceptor())
-                .retryOnConnectionFailure(true)
+                .retryOnConnectionFailure(false)
                 .build();
     }
 
@@ -535,6 +796,17 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
         return now >= this.expiresAt;
     }
 
+    private boolean shouldSkipRefresh(RefreshMode refreshMode) {
+        return FeatureRefreshCacheFreshness.shouldSkipRefresh(
+                refreshMode == RefreshMode.FORCE,
+                this.backgroundFetchInterval,
+                this.lastSuccessfulFetchAtMillis::get,
+                () -> FeatureRefreshCacheFreshness.timestampMillisOrUnknown(readCacheLastUpdatedMillis()),
+                this.hasFeatureData::get,
+                this::loadCachedFeaturesIfAvailable
+        );
+    }
+
     /**
      * Performs a network request to fetch the features from the GrowthBook API
      * with the provided endpoint.
@@ -542,6 +814,37 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
      * This method will attempt to decrypt the encrypted features with the provided encryptionKey.
      */
     public void fetchFeatures() throws FeatureFetchException {
+        refreshFeatures(RefreshMode.DEFAULT);
+    }
+
+    public void refreshFeatures() throws FeatureFetchException {
+        refreshFeatures(RefreshMode.DEFAULT);
+    }
+
+    public void refreshFeatures(RefreshMode refreshMode) throws FeatureFetchException {
+        RefreshMode resolvedRefreshMode = refreshMode == null ? RefreshMode.DEFAULT : refreshMode;
+        if (shouldSkipRefresh(resolvedRefreshMode)) {
+            log.debug("Skipping feature refresh because cached features are newer than the background fetch interval.");
+            return;
+        }
+        fetchFeaturesWithRetries(resolvedRefreshMode);
+    }
+
+    public void requestFeatureRefresh(RefreshMode refreshMode) {
+        this.featureRefreshScheduler.requestRefresh(refreshMode, this::refreshFeatures);
+    }
+
+    private void fetchFeaturesWithRetries(RefreshMode refreshMode) throws FeatureFetchException {
+        Optional<FeatureFetchException> failure = this.featureFetchRetryExecutor.execute(() ->
+                fetchFeaturesOnce(refreshMode)
+        );
+
+        if (failure.isPresent()) {
+            handleFetchFailure(failure.get());
+        }
+    }
+
+    private void fetchFeaturesOnce(RefreshMode refreshMode) throws FeatureFetchException {
         if (this.featuresEndpoint == null) {
             throw new IllegalArgumentException("features endpoint cannot be null");
         }
@@ -549,12 +852,16 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
         Request.Builder requestBuilder = new Request.Builder()
                 .url(this.featuresEndpoint);
 
-        if (this.featuresEndpoint.matches(FEATURES_PATH_PATTERN)) {
-            String cacheETag = eTagCache.get(this.featuresEndpoint);
-            if (cacheETag != null) {
-                requestBuilder.addHeader(HttpHeaders.IF_NONE_MATCH.getHeader(), cacheETag);
+        if (this.featuresEndpoint.matches(FEATURES_ENDPOINT_PATTERN)) {
+            if (refreshMode == RefreshMode.FORCE) {
+                requestBuilder.header(HttpHeaders.CACHE_CONTROL.getHeader(), "no-cache");
+            } else {
+                String cacheETag = eTagCache.get(this.featuresEndpoint);
+                if (cacheETag != null) {
+                    requestBuilder.addHeader(HttpHeaders.IF_NONE_MATCH.getHeader(), cacheETag);
+                }
+                requestBuilder.header(HttpHeaders.CACHE_CONTROL.getHeader(), "max-age=" + this.swrTtlSeconds);
             }
-            requestBuilder.header(HttpHeaders.CACHE_CONTROL.getHeader(), "max-age=" + this.swrTtlSeconds);
         }
         Request request = requestBuilder.build();
 
@@ -565,13 +872,78 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
             this.onSuccess(response);
         } catch (IOException e) {
             log.error(e.getMessage(), e);
-            if (!isCacheDisabled) {
-                String cachedData = getCachedFeatures();
-                onResponseJson(cachedData, true);
-            }
-            // Notify listeners about network failure
-            this.onRefreshFailed(e);
+            throw new RetryableFeatureFetchException(
+                    FeatureFetchException.FeatureFetchErrorCode.NO_RESPONSE_ERROR,
+                    e.getMessage(),
+                    e
+            );
         }
+    }
+
+    private void handleFetchFailure(FeatureFetchException failure) throws FeatureFetchException {
+        boolean hadFeatureData = this.hasFeatureData.get();
+        recordRefreshError(failure);
+        FeatureFetchFailureHandler.handle(
+                failure,
+                this::onRefreshFailed,
+                this.hasFeatureData::get,
+                this::loadCachedFeaturesIfAvailable
+        );
+        boolean loadedFromCache = !hadFeatureData && this.hasFeatureData.get();
+        recordRefreshFailure(loadedFromCache);
+    }
+
+    @Nullable
+    private Long readCacheLastUpdatedMillis() {
+        if (this.isCacheDisabled || this.cacheManager == null) {
+            return null;
+        }
+
+        try {
+            return this.cacheManager.getLastUpdatedMillis(FILE_NAME);
+        } catch (RuntimeException cacheException) {
+            log.warn("Failed to read the feature cache timestamp.", cacheException);
+            return null;
+        }
+    }
+
+    private boolean loadCachedFeaturesIfAvailable() {
+        if (this.isCacheDisabled || this.cacheManager == null) {
+            return false;
+        }
+
+        try {
+            String cachedData = this.cacheManager.loadCache(FILE_NAME);
+            if (cachedData == null || cachedData.trim().isEmpty()) {
+                return false;
+            }
+            onResponseJson(cachedData, true);
+            return this.hasFeatureData.get();
+        } catch (Exception cacheException) {
+            log.warn("Failed to load cached features.", cacheException);
+            return false;
+        }
+    }
+
+    private void recordRefreshError(Throwable throwable) {
+        Throwable error = throwable == null
+                ? new FeatureFetchException(FeatureFetchException.FeatureFetchErrorCode.UNKNOWN)
+                : throwable;
+        this.lastRefreshError.set(error);
+        this.lastRefreshErrorAtMillis.set(System.currentTimeMillis());
+    }
+
+    private void recordRefreshSuccess(boolean loadedFromCache) {
+        this.refreshSuccessCount.incrementAndGet();
+        this.refreshConsecutiveFailures.set(0);
+        this.lastRefreshLoadedFromCache.set(loadedFromCache);
+    }
+
+    private void recordRefreshFailure(boolean loadedFromCache) {
+        this.refreshFailureCount.incrementAndGet();
+        this.refreshConsecutiveFailures.incrementAndGet();
+        this.lastRefreshFailureAtMillis.set(System.currentTimeMillis());
+        this.lastRefreshLoadedFromCache.set(loadedFromCache);
     }
 
     /**
@@ -647,8 +1019,10 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
             JsonObject newSaved = TransformationUtil.transformSavedGroups(this.savedGroupsJson);
             this.parsedFeatures = newParsed;
             this.parsedSavedGroups = newSaved == null ? new JsonObject() : newSaved;
+            this.hasFeatureData.set(true);
 
             if (!isFromCache) {
+                this.lastSuccessfulFetchAtMillis.set(System.currentTimeMillis());
                 this.onRefreshSuccess(this.featuresJson);
             }
             // bump TTL only after successful processing
@@ -680,6 +1054,10 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
         }
     }
 
+    public int getActiveFeatureCount() {
+        return this.parsedFeatures == null ? 0 : this.parsedFeatures.size();
+    }
+
     /**
      * Handles the successful features fetching response
      *
@@ -693,48 +1071,53 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
                 log.info("Features not modified (304). Using existing data.");
                 this.refreshExpiresAt();
                 this.onRefreshSuccess(this.featuresJson);
+                recordRefreshSuccess(false);
                 return;
             }
 
-            if (response.code() == HttpURLConnection.HTTP_OK && this.featuresEndpoint.matches(FEATURES_PATH_PATTERN)) {
+            if (response.code() != HttpURLConnection.HTTP_OK) {
+                String responseText = responseBody != null ? responseBody.string() : "null";
+                log.error(
+                        "FeatureFetchException: HTTP_RESPONSE_ERROR with status {}, response: {}",
+                        response.code(),
+                        responseText
+                );
+
+                if (FeatureFetchHttpStatus.isRetryable(response.code())) {
+                    throw new RetryableFeatureFetchException(
+                            FeatureFetchException.FeatureFetchErrorCode.HTTP_RESPONSE_ERROR,
+                            "responded with status " + response.code()
+                    );
+                }
+                throw new FeatureFetchException(
+                        FeatureFetchException.FeatureFetchErrorCode.HTTP_RESPONSE_ERROR,
+                        "responded with status " + response.code()
+                );
+            }
+
+            if (responseBody == null) {
+                throw new RetryableFeatureFetchException(
+                        FeatureFetchException.FeatureFetchErrorCode.NO_RESPONSE_ERROR,
+                        "Feature response body was null"
+                );
+            }
+
+            if (response.code() == HttpURLConnection.HTTP_OK && this.featuresEndpoint.matches(FEATURES_ENDPOINT_PATTERN)) {
                 String newETag = response.header("ETag");
                 if (newETag != null) {
                     eTagCache.put(this.featuresEndpoint, newETag);
                 }
             }
 
-            // if response code is not 200 or response body is null - try cache
-            if (response.code() != HttpURLConnection.HTTP_OK || responseBody == null) {
-                log.error("FeatureFetchException: {} with status {}, response: {}",
-                        responseBody == null ? FeatureFetchException.FeatureFetchErrorCode.NO_RESPONSE_ERROR : FeatureFetchException.FeatureFetchErrorCode.HTTP_RESPONSE_ERROR,
-                        response.code(),
-                        responseBody != null ? responseBody.string() : "null");
-
-                if (isCacheDisabled) {
-                    throw new FeatureFetchException(
-                            FeatureFetchException.FeatureFetchErrorCode.HTTP_RESPONSE_ERROR,
-                            "Failed to fetch data from server and cache is disabled"
-                    );
-                }
-                log.info("Fetching data from cache...");
-
-                String featuresFromCache = getCachedFeatures();
-                if (featuresFromCache.isEmpty()) {
-                    throw new FeatureFetchException(
-                            FeatureFetchException.FeatureFetchErrorCode.NO_RESPONSE_ERROR,
-                            "Failed to fetch data from cache"
-                    );
-                }
-                onResponseJson(featuresFromCache, true);
-                return;
-            }
             onResponseJson(responseBody.string(), false);
+            recordRefreshSuccess(false);
 
         } catch (IOException e) {
             log.error("FeatureFetchException: UNKNOWN feature fetch error code {}", e.getMessage(), e);
-            throw new FeatureFetchException(
+            throw new RetryableFeatureFetchException(
                     FeatureFetchException.FeatureFetchErrorCode.UNKNOWN,
-                    e.getMessage()
+                    e.getMessage(),
+                    e
             );
         }
     }
@@ -743,6 +1126,8 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
         void onClose(EventSource eventSource);
 
         void onFeaturesResponse(String featuresJsonResponse) throws FeatureFetchException;
+
+        void onFeaturesUpdated() throws FeatureFetchException;
     }
 
     private static class GBEventSourceListener extends EventSourceListener {
@@ -761,13 +1146,22 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
         @Override
         public void onEvent(@NotNull EventSource eventSource, @Nullable String id, @Nullable String type, @NotNull String data) {
             super.onEvent(eventSource, id, type, data);
-
-            if (data.trim().isEmpty()) return;
+            // Heartbeat/keepalive events carry no feature changes; ignore them so they neither
+            // trigger a refresh nor get parsed as a feature payload.
+            if (SseEventPayloadValidator.isHeartbeatEvent(type)) {
+                return;
+            }
 
             try {
+                if (data.trim().isEmpty()) {
+                    handler.onFeaturesUpdated();
+                    return;
+                }
                 handler.onFeaturesResponse(data);
             } catch (FeatureFetchException e) {
-                log.error(e.getMessage(), e);
+                log.error("Failed to process SSE feature payload: {}", e.getMessage(), e);
+            } catch (RuntimeException e) {
+                log.error("Unexpected error while processing SSE feature payload.", e);
             }
         }
 
@@ -783,11 +1177,19 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
     }
 
     public void shutdown() {
+        this.shuttingDown.set(true);
+        this.sseConnected.set(false);
+        this.featureRefreshScheduler.shutdown();
         // stop polling
         if (this.pollScheduler != null) {
             this.pollScheduler.shutdownNow();
             this.pollScheduler = null;
             log.info("Polling scheduler shut down");
+        }
+        if (this.sseRetryScheduler != null) {
+            this.sseRetryScheduler.shutdownNow();
+            this.sseRetryScheduler = null;
+            log.info("SSE retry scheduler shut down");
         }
         if (this.sseEventSource != null) {
             this.sseEventSource.cancel();
@@ -822,7 +1224,10 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
         if (this.remoteEvalEndPoint == null) {
             throw new IllegalArgumentException("remote eval features endpoint cannot be null");
         }
-        String jsonBody = GrowthBookJsonUtils.getInstance().gson.toJson(requestBodyForRemoteEval);
+        RequestBodyForRemoteEval payload = requestBodyForRemoteEval == null
+                ? new RequestBodyForRemoteEval()
+                : requestBodyForRemoteEval;
+        String jsonBody = GrowthBookJsonUtils.getInstance().gson.toJson(payload);
         RequestBody requestBody = RequestBody.create(
                 jsonBody,
                 MediaType.parse("application/json")
@@ -836,11 +1241,17 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
             if (response.isSuccessful() && response.code() == 200) {
                 onSuccess(response);
             } else {
-                onRefreshFailed(new Throwable("Response is not success, response code is:" + response.code() + ". And message is: " + response.message()));
+                Throwable error = new Throwable("Response is not success, response code is:" + response.code() + ". And message is: " + response.message());
+                recordRefreshError(error);
+                recordRefreshFailure(false);
+                onRefreshFailed(error);
             }
         } catch (IOException e) {
             log.error(e.getMessage(), e);
-            throw new FeatureFetchException(FeatureFetchException.FeatureFetchErrorCode.NO_RESPONSE_ERROR, e.getMessage());
+            FeatureFetchException fetchException = new FeatureFetchException(FeatureFetchException.FeatureFetchErrorCode.NO_RESPONSE_ERROR, e.getMessage());
+            recordRefreshError(fetchException);
+            recordRefreshFailure(false);
+            throw fetchException;
         }
     }
 

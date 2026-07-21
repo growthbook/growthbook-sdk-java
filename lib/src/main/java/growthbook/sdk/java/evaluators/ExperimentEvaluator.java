@@ -15,6 +15,7 @@ import growthbook.sdk.java.model.FeatureResult;
 import growthbook.sdk.java.model.FeatureResultSource;
 import growthbook.sdk.java.model.Filter;
 import growthbook.sdk.java.model.StickyBucketVariation;
+import growthbook.sdk.java.model.TrackData;
 import growthbook.sdk.java.model.VariationMeta;
 import growthbook.sdk.java.multiusermode.configurations.EvaluationContext;
 import growthbook.sdk.java.multiusermode.usage.TrackingCallbackWithUser;
@@ -305,9 +306,9 @@ public class ExperimentEvaluator implements IExperimentEvaluator {
             }
         }
 
-        // Fire context.trackingClosure if set and the combination of hashAttribute,
-        // hashValue, experiment.key, and variationId has not been tracked before
-        if (!isExperimentTracked(experiment, result)) {
+        // Fire the tracking callback and plugin exposure events once per unique
+        // (hashAttribute, hashValue, experiment.key, variationId) combination.
+        if (!alreadyTracked(experiment, result)) {
             TrackingCallbackWithUser trackingCallBackWithUser = context.getOptions().getTrackingCallBackWithUser();
 
             if (trackingCallBackWithUser != null) {
@@ -395,21 +396,63 @@ public class ExperimentEvaluator implements IExperimentEvaluator {
                 .build();
     }
 
-    //  Track experiments to trigger callbacks.
-    private <ValueType> boolean isExperimentTracked(Experiment<ValueType> experiment, ExperimentResult<ValueType> result) {
-        String experimentKey = experiment.getKey();
-
-        String key = (
-                result.getHashAttribute() != null ? result.getHashAttribute() : "")
-                + (result.getHashValue() != null ? result.getHashValue() : "")
-                + (experimentKey + result.getVariationId());
-
-        // Add the experiment to the tracker if it doesn't exist.
-        if (!experimentTracker.isExperimentTracked(key)) {
-            experimentTracker.trackExperiment(key);
+    /**
+     * Fires tracking callbacks for experiments that were evaluated remotely (a feature rule's
+     * {@code tracks}). De-duplicates per {@code (hashAttribute, hashValue, experimentKey, variationId)}
+     * using the same {@link ExperimentTracker} as local evaluation, so reusing a cached remote-eval
+     * response does not re-fire exposure events.
+     */
+    public <ValueType> void fireRemoteEvaluationTracks(
+            @Nullable List<TrackData<ValueType>> tracks,
+            EvaluationContext context
+    ) {
+        if (tracks == null) {
+            return;
+        }
+        TrackingCallbackWithUser trackingCallBackWithUser = context.getOptions().getTrackingCallBackWithUser();
+        PluginRegistry pluginRegistry = context.getOptions().getPluginRegistry();
+        if (trackingCallBackWithUser == null && pluginRegistry == null) {
+            return;
         }
 
+        for (TrackData<ValueType> track : tracks) {
+            if (track == null
+                    || track.getExperiment() == null
+                    || track.getResult() == null
+                    || track.getExperiment().getKey() == null
+                    || track.getExperiment().getVariations() == null) {
+                log.debug("Skipping malformed remote evaluation tracking payload.");
+                continue;
+            }
+            if (alreadyTracked(track.getExperiment(), track.getResult())) {
+                continue;
+            }
+            if (trackingCallBackWithUser != null) {
+                try {
+                    trackingCallBackWithUser.onTrack(track.getExperiment(), track.getResult(), context.getUser());
+                } catch (RuntimeException e) {
+                    log.warn("Tracking callback failed for remote evaluation payload.", e);
+                }
+            }
+            if (pluginRegistry != null) {
+                pluginRegistry.fireExperimentViewed(track.getExperiment(), track.getResult(), context);
+            }
+        }
+    }
+
+    private <ValueType> boolean alreadyTracked(Experiment<ValueType> experiment, ExperimentResult<ValueType> result) {
+        String key = trackingKey(experiment, result);
+        if (experimentTracker.isExperimentTracked(key)) {
+            return true;
+        }
+        experimentTracker.trackExperiment(key);
         return false;
+    }
+
+    private <ValueType> String trackingKey(Experiment<ValueType> experiment, ExperimentResult<ValueType> result) {
+        return (result.getHashAttribute() != null ? result.getHashAttribute() : "")
+                + (result.getHashValue() != null ? result.getHashValue() : "")
+                + experiment.getKey() + result.getVariationId();
     }
 
     private <ValueType> boolean isStickyBucketingEnabledForExperiment(EvaluationContext context,

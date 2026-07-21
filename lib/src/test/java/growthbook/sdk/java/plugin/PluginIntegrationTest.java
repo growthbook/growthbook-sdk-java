@@ -74,7 +74,7 @@ class PluginIntegrationTest {
                 .build();
         ExperimentResult<String> result = gb.run(exp);
 
-        gb.close();
+        gb.destroy();
 
         assertTrue(featureSeen.size() >= 2, "plugin should have seen at least 2 feature evaluations");
         assertTrue(featureCallbackCalls.get() >= 2, "existing feature usage callback should still fire");
@@ -104,7 +104,7 @@ class PluginIntegrationTest {
         FeatureResult<Integer> r = gb.evalFeature("flag", Integer.class);
         assertNotNull(r);
         assertTrue(keys.contains("flag"));
-        gb.close();
+        gb.destroy();
     }
 
     @Test
@@ -138,8 +138,8 @@ class PluginIntegrationTest {
 
         first.isOn("flag");
         second.isOn("flag");
-        first.close();
-        second.close();
+        first.destroy();
+        second.destroy();
 
         assertEquals(Collections.singletonList("first"), firstInstanceIds);
         assertEquals(Collections.singletonList("second"), secondInstanceIds);

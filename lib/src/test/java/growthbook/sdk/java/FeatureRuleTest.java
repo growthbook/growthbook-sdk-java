@@ -1,12 +1,17 @@
 package growthbook.sdk.java;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 
+import com.google.gson.reflect.TypeToken;
 import growthbook.sdk.java.model.FeatureRule;
 import growthbook.sdk.java.model.Namespace;
 import growthbook.sdk.java.model.OptionalField;
+import growthbook.sdk.java.util.GrowthBookJsonUtils;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import java.lang.reflect.Type;
 import java.util.ArrayList;
 
 class FeatureRuleTest {
@@ -113,5 +118,18 @@ class FeatureRuleTest {
         assertNull(subject.getWeights());
         assertEquals("id", subject.getHashAttribute());
         assertEquals("id", subject.getHashAttribute());
+    }
+
+    @Test
+    @DisplayName("Deserializes custom fields on experiment feature rules")
+    void deserializesCustomFields() {
+        Type featureRuleType = new TypeToken<FeatureRule<Boolean>>() {}.getType();
+
+        FeatureRule<Boolean> subject = GrowthBookJsonUtils.getInstance().gson.fromJson("{\"key\":\"experiment-key\",\"variations\":[false,true],\"customFields\":{\"cfl_ticket\":\"APX-123\",\"cfl_priority\":2,\"cfl_reviewed\":true}}", featureRuleType);
+
+        assertNotNull(subject.getCustomFields());
+        assertEquals("APX-123", subject.getCustomFields().get("cfl_ticket"));
+        assertEquals(2L, subject.getCustomFields().get("cfl_priority"));
+        assertEquals(Boolean.TRUE, subject.getCustomFields().get("cfl_reviewed"));
     }
 }

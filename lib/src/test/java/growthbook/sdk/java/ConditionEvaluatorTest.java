@@ -16,6 +16,7 @@ import java.io.PrintStream;
 import growthbook.sdk.java.util.GrowthBookJsonUtils;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import java.util.ArrayList;
 import java.util.Objects;
@@ -104,6 +105,40 @@ class ConditionEvaluatorTest {
 
         assertTrue(evaluator.isOperatorObject(condition));
         assertFalse(evaluator.isOperatorObject(attributes));
+    }
+
+    @Test
+    void test_notRegexOperatorsPassForMissingAttributes() {
+        ConditionEvaluator evaluator = new ConditionEvaluator();
+
+        JsonObject attributes = GrowthBookJsonUtils.getInstance().gson
+                .fromJson("{}", JsonObject.class);
+        JsonObject notRegexCondition = GrowthBookJsonUtils.getInstance().gson
+                .fromJson("{\"userAgent\":{\"$notRegex\":\"(Mobile|Tablet)\"}}", JsonObject.class);
+        JsonObject notRegexICondition = GrowthBookJsonUtils.getInstance().gson
+                .fromJson("{\"userAgent\":{\"$notRegexi\":\"(mobile|tablet)\"}}", JsonObject.class);
+
+        assertTrue(evaluator.evaluateCondition(attributes, notRegexCondition, null));
+        assertTrue(evaluator.evaluateCondition(attributes, notRegexICondition, null));
+    }
+
+    @Test
+    @DisplayName("$ne treats missing/null attributes as not equal to a value, but equal to null")
+    void test_notEqualOperatorForMissingOrNullAttributes() {
+        ConditionEvaluator evaluator = new ConditionEvaluator();
+
+        JsonObject neCondition = GrowthBookJsonUtils.getInstance().gson
+                .fromJson("{\"level\":{\"$ne\":\"senior\"}}", JsonObject.class);
+
+        assertTrue(evaluator.evaluateCondition(
+                GrowthBookJsonUtils.getInstance().gson.fromJson("{}", JsonObject.class), neCondition, null));
+        assertTrue(evaluator.evaluateCondition(
+                GrowthBookJsonUtils.getInstance().gson.fromJson("{\"level\":null}", JsonObject.class), neCondition, null));
+
+        JsonObject neNullCondition = GrowthBookJsonUtils.getInstance().gson
+                .fromJson("{\"level\":{\"$ne\":null}}", JsonObject.class);
+        assertFalse(evaluator.evaluateCondition(
+                GrowthBookJsonUtils.getInstance().gson.fromJson("{\"level\":null}", JsonObject.class), neNullCondition, null));
     }
 
     @Test

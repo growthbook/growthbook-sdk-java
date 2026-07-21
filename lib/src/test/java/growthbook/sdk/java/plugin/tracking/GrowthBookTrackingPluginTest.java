@@ -24,6 +24,7 @@ import org.junit.jupiter.api.Test;
 
 import java.time.Duration;
 import java.lang.reflect.Field;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.Collections;
 import java.util.concurrent.TimeUnit;
 
@@ -79,13 +80,16 @@ class GrowthBookTrackingPluginTest {
         );
     }
 
+    @SuppressWarnings("unchecked")
     private static void setGlobalContext(GrowthBookClient client, String featuresJson) throws Exception {
-        Field globalContext = GrowthBookClient.class.getDeclaredField("globalContext");
-        globalContext.setAccessible(true);
-        globalContext.set(client, GlobalContext.builder()
+        Field globalContextField = GrowthBookClient.class.getDeclaredField("globalContext");
+        globalContextField.setAccessible(true);
+        GlobalContext globalContext = GlobalContext.builder()
                 .features(TransformationUtil.transformFeatures(featuresJson))
                 .enabled(true)
-                .build());
+                .build();
+        // globalContext is held in an AtomicReference on the client.
+        ((AtomicReference<GlobalContext>) globalContextField.get(client)).set(globalContext);
     }
 
     @Test
@@ -252,7 +256,7 @@ class GrowthBookTrackingPluginTest {
         GrowthBook growthBook = new GrowthBook(context);
 
         growthBook.evalFeature("flag", Boolean.class);
-        growthBook.close();
+        growthBook.destroy();
 
         RecordedRequest req = server.takeRequest(5, TimeUnit.SECONDS);
         assertNotNull(req);
@@ -284,7 +288,7 @@ class GrowthBookTrackingPluginTest {
                 UserContext.builder().attributesJson("{\"id\":\"u1\"}").build());
         client.evalFeature("flag", Boolean.class,
                 UserContext.builder().attributesJson("{\"id\":\"u2\"}").build());
-        client.close();
+        client.shutdown();
 
         RecordedRequest req = server.takeRequest(5, TimeUnit.SECONDS);
         assertNotNull(req);

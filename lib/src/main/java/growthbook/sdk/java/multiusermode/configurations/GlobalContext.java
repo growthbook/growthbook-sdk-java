@@ -3,6 +3,7 @@ package growthbook.sdk.java.multiusermode.configurations;
 import com.google.gson.JsonObject;
 import growthbook.sdk.java.model.Experiment;
 import growthbook.sdk.java.model.Feature;
+import growthbook.sdk.java.util.ForcedVariationsUtils;
 import lombok.Builder;
 import lombok.Data;
 import lombok.Getter;
@@ -13,9 +14,26 @@ import java.util.List;
 import java.util.Map;
 
 @Data
-@Builder
 @Slf4j
 public class GlobalContext {
+    @Builder
+    public GlobalContext(
+            @Nullable Map<String, Feature<?>> features,
+            @Nullable JsonObject savedGroups,
+            @Nullable List<Experiment> experiments,
+            @Nullable Boolean enabled,
+            @Nullable Boolean qaMode,
+            @Nullable Map<String, ?> forcedVariations,
+            @Nullable Map<String, Object> forcedFeatureValues
+    ) {
+        this.features = features;
+        this.savedGroups = savedGroups;
+        this.experiments = experiments;
+        this.enabled = enabled;
+        this.qaMode = qaMode;
+        this.forcedVariations = ForcedVariationsUtils.normalize(forcedVariations);
+        this.forcedFeatureValues = forcedFeatureValues;
+    }
 
 
     /**
@@ -44,6 +62,10 @@ public class GlobalContext {
     @Getter
     @Nullable
     private Map<String, Integer> forcedVariations;
+
+    public void setForcedVariations(@Nullable Map<String, ?> forcedVariations) {
+        this.forcedVariations = ForcedVariationsUtils.normalize(forcedVariations);
+    }
 
     @Getter
     @Nullable

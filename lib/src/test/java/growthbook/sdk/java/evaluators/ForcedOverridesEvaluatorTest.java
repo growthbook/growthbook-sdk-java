@@ -70,6 +70,29 @@ class ForcedOverridesEvaluatorTest {
     }
 
     @Test
+    void userForcedVariationAcceptsWholeNumberDoubleFromExternalInput() {
+        Map<String, Integer> globalForcedVariations = new HashMap<>();
+        globalForcedVariations.put("perf-experiment", 0);
+
+        Map<String, Object> userForcedVariations = new HashMap<>();
+        userForcedVariations.put("perf-experiment", 1.0);
+        userForcedVariations.put("ignored", "abc");
+
+        EvaluationContext context = buildContext(
+                null,
+                null,
+                globalForcedVariations,
+                userForcedVariations,
+                createAttributes("user-1")
+        );
+
+        ExperimentResult<String> result = experimentEvaluator.evaluateExperiment(createExperiment(), context, null);
+
+        assertEquals(Integer.valueOf(1), result.getVariationId());
+        assertTrue(result.getInExperiment());
+    }
+
+    @Test
     void absentForcedMapsStillEvaluatesSafelyInMultiUserMode() {
         EvaluationContext context = buildContext(null, null, null, null, createAttributes("user-1"));
 
@@ -91,8 +114,8 @@ class ForcedOverridesEvaluatorTest {
     private EvaluationContext buildContext(
             Map<String, Object> globalForcedFeatures,
             Map<String, Object> userForcedFeatures,
-            Map<String, Integer> globalForcedVariations,
-            Map<String, Integer> userForcedVariations,
+            Map<String, ?> globalForcedVariations,
+            Map<String, ?> userForcedVariations,
             JsonObject attributes
     ) {
         GlobalContext global = GlobalContext.builder()

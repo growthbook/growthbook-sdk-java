@@ -2,6 +2,7 @@ package growthbook.sdk.java.model;
 
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import com.google.gson.JsonSyntaxException;
 import com.google.gson.annotations.SerializedName;
 import growthbook.sdk.java.util.GrowthBookJsonUtils;
 import lombok.AllArgsConstructor;
@@ -10,6 +11,7 @@ import lombok.Data;
 
 import javax.annotation.Nullable;
 import java.util.ArrayList;
+import java.util.Map;
 
 /**
  * Defines a single Experiment
@@ -152,6 +154,87 @@ public class Experiment<ValueType> {
      */
     @Nullable
     Integer minBucketVersion;
+
+    @Nullable
+    Map<String, Object> customFields;
+
+    public Experiment(
+            String key,
+            ArrayList<ValueType> variations,
+            @Nullable ArrayList<Float> weights,
+            @Nullable Boolean isActive,
+            @Nullable Float coverage,
+            @Nullable JsonObject conditionJson,
+            @Nullable ArrayList<ParentCondition> parentConditions,
+            @Nullable Namespace namespace,
+            @Nullable Integer force,
+            String hashAttribute,
+            @Nullable Integer hashVersion,
+            @Nullable ArrayList<BucketRange> ranges,
+            @Nullable ArrayList<VariationMeta> meta,
+            @Nullable ArrayList<Filter> filters,
+            @Nullable String seed,
+            @Nullable String name,
+            @Nullable String phase,
+            @Nullable String fallbackAttribute,
+            @Nullable Boolean disableStickyBucketing,
+            @Nullable Integer bucketVersion,
+            @Nullable Integer minBucketVersion
+    ) {
+        this(
+                key,
+                variations,
+                weights,
+                isActive,
+                coverage,
+                conditionJson,
+                parentConditions,
+                namespace,
+                force,
+                hashAttribute,
+                hashVersion,
+                ranges,
+                meta,
+                filters,
+                seed,
+                name,
+                phase,
+                fallbackAttribute,
+                disableStickyBucketing,
+                bucketVersion,
+                minBucketVersion,
+                null
+        );
+    }
+
+    @Nullable
+    public Object getCustomField(String fieldId) {
+        if (customFields == null || fieldId == null) {
+            return null;
+        }
+        return customFields.get(fieldId);
+    }
+
+    public boolean hasCustomField(String fieldId) {
+        return customFields != null && customFields.containsKey(fieldId);
+    }
+
+    @Nullable
+    public <FieldType> FieldType getCustomField(String fieldId, Class<FieldType> fieldType) {
+        Object value = getCustomField(fieldId);
+        if (value == null || fieldType == null) {
+            return null;
+        }
+        if (fieldType.isInstance(value)) {
+            return fieldType.cast(value);
+        }
+        try {
+            JsonElement element = GrowthBookJsonUtils.getInstance().gson.toJsonTree(value);
+            return GrowthBookJsonUtils.getInstance().gson.fromJson(element, fieldType);
+        } catch (JsonSyntaxException | NumberFormatException e) {
+            return null;
+        }
+    }
 
     /**
      * Get a Gson JsonElement of the experiment

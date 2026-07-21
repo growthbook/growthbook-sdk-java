@@ -12,17 +12,17 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Multi-user mode plugin lifecycle wiring test. Avoids the feature repository
  * by never calling {@link GrowthBookClient#initialize()}; verifies the
- * registry is built, stashed on {@link Options}, and flushed on close.
+ * registry is built, stashed on {@link Options}, and flushed on shutdown.
  */
 class GrowthBookClientPluginIntegrationTest {
 
     @Test
-    void registryIsBuiltAndFlushedOnClose() {
+    void registryIsBuiltAndFlushedOnShutdown() {
         AtomicInteger inits = new AtomicInteger();
         AtomicInteger closed = new AtomicInteger();
 
@@ -41,21 +41,23 @@ class GrowthBookClientPluginIntegrationTest {
         assertNotNull(options.getPluginRegistry(), "registry should be stashed on options");
         assertEquals(1, inits.get(), "plugin init() should fire on construction");
 
-        client.close();
+        client.shutdown();
 
-        assertEquals(1, closed.get(), "plugin close() should fire on client.close()");
+        assertEquals(1, closed.get(), "plugin close() should fire on client.shutdown()");
     }
 
     @Test
-    void tripleCloseIsSafe() {
-        GrowthBookPlugin plugin = new GrowthBookPlugin() {};
+    void repeatedShutdownIsSafe() {
+        AtomicInteger closed = new AtomicInteger();
+        GrowthBookPlugin plugin = new GrowthBookPlugin() {
+            @Override public void close() { closed.incrementAndGet(); }
+        };
         Options options = Options.builder()
                 .plugins(Collections.singletonList(plugin))
                 .build();
         GrowthBookClient client = new GrowthBookClient(options);
-        client.close();
-        client.close();
         client.shutdown();
-        assertSame(options, options, "no exception on repeated close/shutdown");
+        client.shutdown();
+        assertTrue(closed.get() >= 1, "plugin close() should fire at least once across repeated shutdown");
     }
 }

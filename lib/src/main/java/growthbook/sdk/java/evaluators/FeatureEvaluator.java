@@ -11,10 +11,8 @@ import growthbook.sdk.java.model.FeatureResult;
 import growthbook.sdk.java.model.FeatureResultSource;
 import growthbook.sdk.java.model.FeatureRule;
 import growthbook.sdk.java.model.Filter;
-import growthbook.sdk.java.model.TrackData;
 import growthbook.sdk.java.multiusermode.configurations.EvaluationContext;
 import growthbook.sdk.java.multiusermode.usage.FeatureUsageCallbackWithUser;
-import growthbook.sdk.java.multiusermode.usage.TrackingCallbackWithUser;
 import growthbook.sdk.java.plugin.PluginRegistry;
 import lombok.extern.slf4j.Slf4j;
 import javax.annotation.Nullable;
@@ -260,49 +258,10 @@ public class FeatureEvaluator implements IFeatureEvaluator {
                         continue;
                     }
 
-                    // Call the tracking callback with all the track data
-                    List<TrackData<ValueType>> trackData = rule.getTracks();
-                    TrackingCallbackWithUser trackingCallBackWithUser = context.getOptions().getTrackingCallBackWithUser();
-                    PluginRegistry pluginRegistry = context.getOptions().getPluginRegistry();
-
-                    // If this was a remotely evaluated experiment, fire the tracking callbacks
-                    if (trackData != null) {
-                        trackData.forEach(t -> {
-                            if (trackingCallBackWithUser != null) {
-                                trackingCallBackWithUser.onTrack(
-                                        t.getExperiment(),
-                                        t.getResult().getExperimentResult(),
-                                        context.getUser()
-                                );
-                            }
-                            if (pluginRegistry != null) {
-                                pluginRegistry.fireExperimentViewed(
-                                        t.getExperiment(),
-                                        t.getResult().getExperimentResult(),
-                                        context
-                                );
-                            }
-                        });
-                    }
-
-                    if (rule.getRange() == null) {
-                        if (rule.getCoverage() != null) {
-                            String attributeValue = context.getUser().getAttributes().get(ruleKey) == null
-                                    ? null : context.getUser().getAttributes().get(ruleKey).getAsString();
-
-                            if (attributeValue == null || attributeValue.isEmpty()) {
-                                continue;
-                            }
-
-                            Float hashFNV = GrowthBookUtils.hash(attributeValue, 1, key);
-                            if (hashFNV == null) {
-                                hashFNV = 0f;
-                            }
-                            if (hashFNV > rule.getCoverage()) {
-                                continue;
-                            }
-                        }
-                    }
+                    // Fire tracking callbacks (and plugin exposure events) for remotely evaluated
+                    // experiments, de-duplicated per assignment so repeated cached evaluations
+                    // don't re-fire exposures.
+                    experimentEvaluator.fireRemoteEvaluationTracks(rule.getTracks(), context);
 
                     ValueType value = (ValueType) GrowthBookJsonUtils.unwrap(rule.getForce().getValue());
 
@@ -349,6 +308,7 @@ public class FeatureEvaluator implements IFeatureEvaluator {
                                 .hashVersion(rule.getHashVersion())
                                 .filters(rule.getFilters())
                                 .conditionJson(rule.getCondition())
+                                .customFields(rule.getCustomFields())
                                 .build();
 
                         // Only return a value if the user is part of the experiment

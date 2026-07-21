@@ -144,6 +144,38 @@ The SDK supports multiple cache modes for persisting feature payloads:
 
 You can configure these through `Options` when using `GrowthBookClient`, or via the repository builder’s `cacheManager` directly. When cache is disabled (`isCacheDisabled=true`), the repository won’t attempt any persistence.
 
+### Caffeine cache adapter
+
+The optional `growthbook-cache-caffeine` module provides a Caffeine-backed `GbCacheManager` for applications that want a production-ready in-process cache without using filesystem persistence.
+
+```groovy
+dependencies {
+    implementation 'com.github.growthbook:growthbook-sdk-java:<version>'
+    implementation 'com.github.growthbook:growthbook-cache-caffeine:<version>'
+}
+```
+
+```java
+import growthbook.sdk.java.cache.caffeine.CaffeineGbCacheManager;
+import growthbook.sdk.java.multiusermode.GrowthBookClient;
+import growthbook.sdk.java.multiusermode.configurations.Options;
+import growthbook.sdk.java.sandbox.CacheMode;
+
+import java.time.Duration;
+
+Options options = Options.builder()
+        .apiHost("https://cdn.growthbook.io")
+        .clientKey("sdk-abc123")
+        .cacheMode(CacheMode.CUSTOM)
+        .cacheManager(CaffeineGbCacheManager.builder()
+                .maximumSize(1000)
+                .expireAfterWrite(Duration.ofMinutes(30))
+                .buildManager())
+        .build();
+
+GrowthBookClient gb = new GrowthBookClient(options);
+```
+
 ### STALE_WHILE_REVALIDATE (default)
 
 With the SWR strategy, the repository will:
@@ -185,12 +217,30 @@ public Boolean isOff(String featureKey, UserContext userContext);
 public <ValueType> ExperimentResult<ValueType> run(Experiment<ValueType> experiment, UserContext userContext);
 ```
 
-- If you changed, added or removed any features, you can call the `refreshCache()` / `refreshCacheForRemoteEval()` method to clear the cache and download the latest feature definitions.
+- If you changed, added or removed any features, trigger a feature refresh. A forced refresh always performs a
+  network request in the background and bypasses cache freshness checks, while current features remain available
+  for evaluation.
 
 ```java
-public void refreshFeature();
+growthBook.refreshFeatures(RefreshMode.FORCE);
 
-public void refreshForRemoteEval(RequestBodyForRemoteEval requestBodyForRemoteEval);
+growthBook.refreshForRemoteEval(requestBodyForRemoteEval);
+```
+
+- You can optionally configure a minimum interval between non-forced background refreshes and customize the bounded
+  exponential retry policy. Both options are disabled/defaulted when omitted.
+
+```java
+Options options = Options.builder()
+    .apiHost("https://cdn.growthbook.io")
+    .clientKey("sdk-abc123")
+    .backgroundFetchInterval(Duration.ofHours(48))
+    .retryPolicy(new FeatureFetchRetryPolicy(
+        5,
+        Duration.ofSeconds(1),
+        Duration.ofSeconds(16)
+    ))
+    .build();
 ```
 
 ## Remote Evaluation
