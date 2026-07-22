@@ -10,6 +10,10 @@ import lombok.experimental.UtilityClass;
 @UtilityClass
 public class StringUtils {
 
+    public static String normalize(@Nullable String value) {
+        return value == null ? "" : value;
+    }
+
     public static boolean isBlank(@Nullable String value) {
         return value == null || value.trim().isEmpty();
     }

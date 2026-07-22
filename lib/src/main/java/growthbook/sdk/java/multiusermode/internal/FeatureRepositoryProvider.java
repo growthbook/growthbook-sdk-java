@@ -6,6 +6,7 @@ import growthbook.sdk.java.multiusermode.configurations.Options;
 import growthbook.sdk.java.repository.GBFeaturesRepository;
 import lombok.extern.slf4j.Slf4j;
 
+import javax.annotation.Nullable;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
@@ -26,6 +27,7 @@ public final class FeatureRepositoryProvider {
     private final Consumer<GBFeaturesRepository> configureRepository;
     private final GrowthBookClientRepositoryFactory repositoryFactory;
     private final AtomicReference<CompletableFuture<GBFeaturesRepository>> repositoryState = new AtomicReference<>();
+    private final AtomicReference<Throwable> lastInitializationError = new AtomicReference<>();
 
     /**
      * Creates a provider using the default GrowthBook repository factory.
@@ -61,15 +63,34 @@ public final class FeatureRepositoryProvider {
      */
     public GBFeaturesRepository initialize() {
         try {
-            return repositoryFuture().join();
+            GBFeaturesRepository repository = repositoryFuture().join();
+            this.lastInitializationError.set(null);
+            return repository;
         } catch (CancellationException e) {
             log.debug("GrowthBookClient repository initialization was cancelled.", e);
+            this.lastInitializationError.set(e);
             return null;
         } catch (CompletionException e) {
             Throwable cause = e.getCause() == null ? e : e.getCause();
+            // initializeRepository wraps the fetch failure in GrowthBookInitializationException;
+            // unwrap it so callers and diagnostics see the underlying FeatureFetchException.
+            if (cause instanceof GrowthBookInitializationException && cause.getCause() != null) {
+                cause = cause.getCause();
+            }
             log.error("Failed to initialize GrowthBookClient repository", cause);
+            this.lastInitializationError.set(cause);
             return null;
         }
+    }
+
+    /**
+     * @return the cause of the most recent failed initialization, or {@code null} when the last
+     * initialization succeeded (or none has run). Used to surface repository init failures in
+     * client diagnostics, since {@link #initialize()} intentionally swallows them.
+     */
+    @Nullable
+    public Throwable lastInitializationError() {
+        return this.lastInitializationError.get();
     }
 
     /**

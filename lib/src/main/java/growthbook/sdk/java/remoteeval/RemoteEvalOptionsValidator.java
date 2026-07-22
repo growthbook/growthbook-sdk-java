@@ -1,19 +1,25 @@
 package growthbook.sdk.java.remoteeval;
 
+import growthbook.sdk.java.exception.InvalidOptionsException;
 import growthbook.sdk.java.model.GBContext;
 import growthbook.sdk.java.multiusermode.configurations.Options;
 import growthbook.sdk.java.repository.FeatureRefreshStrategy;
+import growthbook.sdk.java.util.StringUtils;
 
 import javax.annotation.Nullable;
 import java.net.URI;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 import java.util.Locale;
 
 /**
  * Validates SDK options before enabling remote evaluation.
  */
 public final class RemoteEvalOptionsValidator {
-    private static final String DEFAULT_SCHEME = "https://";
+
     private static final String SCHEME_SEPARATOR = "://";
+    private static final String DEFAULT_SCHEME = "https://";
     private static final String GROWTHBOOK_CLOUD_DOMAIN = "growthbook.io";
 
     private RemoteEvalOptionsValidator() {
@@ -24,13 +30,7 @@ public final class RemoteEvalOptionsValidator {
             return;
         }
 
-        validateCommon(
-                options.getApiHost(),
-                options.getClientKey(),
-                options.getDecryptionKey(),
-                options.getStickyBucketService() != null,
-                options.getRefreshStrategy()
-        );
+        throwIfAny(collect(ValidationTarget.from(options), true));
     }
 
     public static void validate(GBContext context) {
@@ -38,45 +38,74 @@ public final class RemoteEvalOptionsValidator {
             return;
         }
 
-        validateCommon(
-                context.getApiHost(),
-                context.getClientKey(),
-                context.getEncryptionKey(),
-                context.getStickyBucketService() != null,
-                null
-        );
+        throwIfAny(collect(ValidationTarget.from(context), true));
     }
 
-    private static void validateCommon(
-            @Nullable String apiHost,
-            @Nullable String clientKey,
-            @Nullable String decryptionKey,
-            boolean hasStickyBucketService,
-            @Nullable FeatureRefreshStrategy refreshStrategy
-    ) {
-        if (isBlank(apiHost)) {
-            throw new IllegalArgumentException("apiHost is required when remoteEval is enabled");
+    /**
+     * Returns the remote-eval specific incompatibilities for the supplied options.
+     *
+     * <p>Intended for callers that already validate {@code apiHost}/{@code clientKey} presence
+     * generally (e.g. {@code OptionsValidator}); this method therefore excludes those checks to
+     * avoid duplicate messages and reports only constraints unique to remote evaluation.
+     *
+     * @param options client options to inspect; {@code null} or non remote-eval yields an empty list
+     * @return an immutable list of human-readable problem descriptions, empty when valid
+     */
+    public static List<String> remoteEvalViolations(@Nullable Options options) {
+        if (options == null || !options.isRemoteEvalEnabled()) {
+            return Collections.emptyList();
         }
-        if (isBlank(clientKey)) {
-            throw new IllegalArgumentException("clientKey is required when remoteEval is enabled");
+
+        return Collections.unmodifiableList(collect(ValidationTarget.from(options), false));
+    }
+
+    private static List<String> collect(ValidationTarget target, boolean includeApiConfiguration) {
+        List<String> violations = new ArrayList<>();
+        if (includeApiConfiguration) {
+            collectApiConfiguration(target, violations);
         }
-        if (!isBlank(decryptionKey)) {
-            throw new IllegalArgumentException("decryptionKey is not supported when remoteEval is enabled");
+        collectUnsupportedOptions(target, violations);
+        collectGrowthBookCloudHost(target.apiHost, violations);
+        return violations;
+    }
+
+    private static void throwIfAny(List<String> violations) {
+        if (!violations.isEmpty()) {
+            throw new InvalidOptionsException(
+                    "Invalid GrowthBook options: " + String.join("; ", violations), violations);
         }
-        if (hasStickyBucketService) {
-            throw new IllegalArgumentException("stickyBucketService is not supported when remoteEval is enabled");
+    }
+
+    private static void collectApiConfiguration(ValidationTarget target, List<String> violations) {
+        if (StringUtils.isBlank(target.apiHost)) {
+            violations.add("apiHost is required when remoteEval is enabled");
         }
-        if (refreshStrategy == FeatureRefreshStrategy.STALE_WHILE_REVALIDATE) {
-            throw new IllegalArgumentException("stale-while-revalidate is not supported when remoteEval is enabled");
+        if (StringUtils.isBlank(target.clientKey)) {
+            violations.add("clientKey is required when remoteEval is enabled");
         }
+    }
+
+    private static void collectUnsupportedOptions(ValidationTarget target, List<String> violations) {
+        if (!StringUtils.isBlank(target.decryptionKey)) {
+            violations.add("decryptionKey is not supported when remoteEval is enabled");
+        }
+        if (target.hasStickyBucketService) {
+            violations.add("stickyBucketService is not supported when remoteEval is enabled");
+        }
+        if (target.refreshStrategy == FeatureRefreshStrategy.STALE_WHILE_REVALIDATE) {
+            violations.add("stale-while-revalidate is not supported when remoteEval is enabled");
+        }
+    }
+
+    private static void collectGrowthBookCloudHost(@Nullable String apiHost, List<String> violations) {
         if (isGrowthBookCloudHost(apiHost)) {
-            throw new IllegalArgumentException("remoteEval requires a self-hosted GrowthBook proxy or edge API host");
+            violations.add("remoteEval requires a self-hosted GrowthBook proxy or edge API host");
         }
     }
 
-    private static boolean isGrowthBookCloudHost(String apiHost) {
+    private static boolean isGrowthBookCloudHost(@Nullable String apiHost) {
         try {
-            String raw = apiHost == null ? "" : apiHost.trim();
+            String raw = StringUtils.normalize(apiHost).trim();
             String normalized = raw.contains(SCHEME_SEPARATOR) ? raw : DEFAULT_SCHEME + raw;
             String host = URI.create(normalized).getHost();
             if (host == null) {
@@ -90,7 +119,54 @@ public final class RemoteEvalOptionsValidator {
         }
     }
 
-    private static boolean isBlank(@Nullable String value) {
-        return value == null || value.trim().isEmpty();
+    private static final class ValidationTarget {
+
+        @Nullable
+        private final String apiHost;
+
+        @Nullable
+        private final String clientKey;
+
+        @Nullable
+        private final String decryptionKey;
+
+        private final boolean hasStickyBucketService;
+
+        @Nullable
+        private final FeatureRefreshStrategy refreshStrategy;
+
+        private ValidationTarget(
+                @Nullable String apiHost,
+                @Nullable String clientKey,
+                @Nullable String decryptionKey,
+                boolean hasStickyBucketService,
+                @Nullable FeatureRefreshStrategy refreshStrategy
+        ) {
+            this.apiHost = apiHost;
+            this.clientKey = clientKey;
+            this.decryptionKey = decryptionKey;
+            this.hasStickyBucketService = hasStickyBucketService;
+            this.refreshStrategy = refreshStrategy;
+        }
+
+        private static ValidationTarget from(Options options) {
+            return new ValidationTarget(
+                    options.getApiHost(),
+                    options.getClientKey(),
+                    options.getDecryptionKey(),
+                    options.getStickyBucketService() != null,
+                    options.getRefreshStrategy()
+            );
+        }
+
+        private static ValidationTarget from(GBContext context) {
+            return new ValidationTarget(
+                    context.getApiHost(),
+                    context.getClientKey(),
+                    context.getEncryptionKey(),
+                    context.getStickyBucketService() != null,
+                    null
+            );
+        }
     }
 }

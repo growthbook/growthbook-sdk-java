@@ -60,6 +60,17 @@ public final class GlobalContextManager {
         );
     }
 
+    /**
+     * @return number of features in the current global context (0 when uninitialized).
+     */
+    public int featureCount() {
+        GlobalContext context = this.globalContext.get();
+        if (context == null || context.getFeatures() == null) {
+            return 0;
+        }
+        return context.getFeatures().size();
+    }
+
     private GlobalContext createGlobalContext(GBFeaturesRepository repository) {
         return GlobalContext.builder()
                 .features(repository.getParsedFeatures())

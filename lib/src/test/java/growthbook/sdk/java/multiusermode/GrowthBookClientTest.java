@@ -2,15 +2,18 @@ package growthbook.sdk.java.multiusermode;
 
 import com.google.gson.JsonObject;
 import com.sun.net.httpserver.HttpServer;
+import growthbook.sdk.java.callback.ExperimentRunCallback;
 import growthbook.sdk.java.callback.FeatureRefreshCallback;
 import growthbook.sdk.java.listener.FeatureRefreshListener;
 import growthbook.sdk.java.listener.FeatureRefreshSubscription;
 import growthbook.sdk.java.exception.FeatureFetchException;
 import growthbook.sdk.java.model.Feature;
+import growthbook.sdk.java.model.FeatureKey;
 import growthbook.sdk.java.model.FeatureRefreshEvent;
 import growthbook.sdk.java.model.FeatureRefreshSource;
 import growthbook.sdk.java.model.FeatureResult;
 import growthbook.sdk.java.model.HttpHeaders;
+import growthbook.sdk.java.model.TypedKey;
 import growthbook.sdk.java.multiusermode.configurations.Options;
 import growthbook.sdk.java.multiusermode.configurations.UserContext;
 import growthbook.sdk.java.repository.FeatureRefreshStrategy;
@@ -35,6 +38,9 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
+import static growthbook.sdk.java.multiusermode.GrowthBookClientTestFixtures.createDefaultOptions;
+import static growthbook.sdk.java.multiusermode.GrowthBookClientTestFixtures.createMockBuilder;
+import static growthbook.sdk.java.multiusermode.GrowthBookClientTestFixtures.createMockRepository;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
@@ -668,23 +674,59 @@ class GrowthBookClientTest {
         return repository;
     }
 
-    private GBFeaturesRepository.GBFeaturesRepositoryBuilder createMockBuilder(GBFeaturesRepository repository) {
-        GBFeaturesRepository.GBFeaturesRepositoryBuilder builder =
-                mock(GBFeaturesRepository.GBFeaturesRepositoryBuilder.class);
+    @Test
+    void test_typedFeatureAccess_evaluatesWithTypedKeys() throws Exception {
+        HttpServer server = startFeatureServer(
+                HttpURLConnection.HTTP_OK,
+                "{\"features\":{"
+                        + "\"new-home\":{\"defaultValue\":true},"
+                        + "\"theme\":{\"defaultValue\":\"dark\"},"
+                        + "\"max-items\":{\"defaultValue\":25},"
+                        + "\"ratio\":{\"defaultValue\":1.5},"
+                        // whole-number JSON: exercises the numeric coercion path for float/double
+                        + "\"weight\":{\"defaultValue\":2}"
+                        + "}}"
+        );
+        GrowthBookClient client = null;
+        try {
+            Options options = Options.builder()
+                    .apiHost(apiHost(server))
+                    .clientKey(TEST_CLIENT_KEY)
+                    .isCacheDisabled(true)
+                    .build();
+            client = new GrowthBookClient(options);
+            assertTrue(client.initialize());
 
-        when(builder.apiHost(anyString())).thenReturn(builder);
-        when(builder.clientKey(anyString())).thenReturn(builder);
-        when(builder.decryptionKey(anyString())).thenReturn(builder);
-        when(builder.refreshStrategy(any())).thenReturn(builder);
-        when(builder.swrTtlSeconds(any())).thenReturn(builder);
-        when(builder.isCacheDisabled(anyBoolean())).thenReturn(builder);
-        when(builder.requestBodyForRemoteEval(any())).thenReturn(builder);
-        when(builder.cacheManager(any())).thenReturn(builder);
-        when(builder.backgroundFetchInterval(any())).thenReturn(builder);
-        when(builder.retryPolicy(any())).thenReturn(builder);
-        when(builder.build()).thenReturn(repository);
+            UserContext userContext = UserContext.builder().attributesJson("{\"id\":\"1\"}").build();
 
-        return builder;
+            FeatureKey<Boolean> newHome = TypedKey.ofBoolean("new-home");
+            FeatureKey<String> theme = TypedKey.ofString("theme");
+            FeatureKey<Integer> maxItems = TypedKey.ofInteger("max-items");
+            FeatureKey<Double> ratio = TypedKey.ofDouble("ratio");
+            FeatureKey<Float> weight = TypedKey.ofFloat("weight");
+
+            FeatureResult<Boolean> result = client.getFeature(newHome, userContext);
+            assertNotNull(result);
+            assertTrue(result.isOn());
+
+            assertTrue(client.isOn(newHome, userContext));
+            assertFalse(client.isOff(newHome, userContext));
+            assertTrue(client.getBooleanFeature(newHome, userContext));
+            assertEquals("dark", client.getStringFeature(theme, "light", userContext));
+            assertEquals(Integer.valueOf(25), client.getIntegerFeature(maxItems, 10, userContext));
+            assertEquals(Integer.valueOf(25), client.getFeatureValue(maxItems, 0, userContext));
+            assertEquals(Double.valueOf(1.5), client.getDoubleFeature(ratio, 0.0, userContext));
+            assertEquals(Float.valueOf(2.0f), client.getFloatFeature(weight, 0.0f, userContext));
+
+            // Unknown key falls back to the supplied default.
+            assertFalse(client.getBooleanFeature(TypedKey.ofBoolean("missing"), userContext));
+            assertEquals("light", client.getStringFeature(TypedKey.ofString("missing"), "light", userContext));
+        } finally {
+            if (client != null) {
+                client.shutdown();
+            }
+            server.stop(0);
+        }
     }
 
     private Options createDefaultOptions(FeatureRefreshCallback callback) {

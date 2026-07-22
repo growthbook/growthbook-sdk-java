@@ -132,6 +132,31 @@ public final class RemoteEvalCoordinator {
     }
 
     /**
+     * @return {@code true} once remote evaluation has been initialized and is ready to serve.
+     */
+    public boolean isReady() {
+        return this.ready.get();
+    }
+
+    /**
+     * @return {@code true} when a remote-eval response cache has been created.
+     */
+    public boolean isCacheConfigured() {
+        return this.remoteEvalCache != null;
+    }
+
+    /**
+     * @return number of features in the remote-eval fallback context (0 when none).
+     */
+    public int fallbackFeatureCount() {
+        GlobalContext context = this.fallbackContext;
+        if (context == null || context.getFeatures() == null) {
+            return 0;
+        }
+        return context.getFeatures().size();
+    }
+
+    /**
      * Drops all cached remote responses; the next evaluation refetches per user context.
      */
     public void invalidateCache() {
