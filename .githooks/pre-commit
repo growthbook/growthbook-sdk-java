@@ -1,0 +1,27 @@
+#!/bin/sh
+# Blocks commits that hand-edit release-please-owned files
+# (see .claude/rules/git-conventions.md). Conscious bypass: git commit --no-verify.
+
+staged=$(git diff --cached --name-only)
+blocked=""
+
+for f in CHANGELOG.md versions.txt lib/src/main/java/growthbook/sdk/java/Version.java; do
+  if printf '%s\n' "$staged" | grep -qx "$f"; then
+    blocked="$blocked $f"
+  fi
+done
+
+# gradle.properties is only blocked when the release-please version line changes
+if printf '%s\n' "$staged" | grep -qx "gradle.properties"; then
+  if git diff --cached -U0 -- gradle.properties | grep -Eq '^[+-]version='; then
+    blocked="$blocked gradle.properties(version-line)"
+  fi
+fi
+
+if [ -n "$blocked" ]; then
+  echo "pre-commit: these files are owned by release-please and must not be hand-edited:" >&2
+  for b in $blocked; do echo "  - $b" >&2; done
+  echo "If you are absolutely sure, bypass with: git commit --no-verify" >&2
+  exit 1
+fi
+exit 0
