@@ -88,9 +88,6 @@ class GrowthBookClientTest {
 
     @Test
     void initialize_sseReconnectDisabled_passesReconnectFlagFalseToRepository() throws FeatureFetchException {
-        // Regression: the client must pass Options.isSseReconnectOnFailure() into
-        // repository.initialize(Boolean). The no-arg initialize() hardwires retryOnFailure=false,
-        // which would disable SSE reconnection regardless of configuration.
         mockRepository = createMockRepository();
         mockBuilder = createMockBuilder(mockRepository);
 
