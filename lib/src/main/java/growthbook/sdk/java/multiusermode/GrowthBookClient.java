@@ -223,7 +223,9 @@ public class GrowthBookClient {
 
     private void initializeFeaturesRepository(GBFeaturesRepository repositorySnapshot) {
         try {
-            repositorySnapshot.initialize();
+            // Honor the configured SSE reconnect behavior; the no-arg initialize() hardwires
+            // retryOnFailure=false, which would disable SSE reconnection.
+            repositorySnapshot.initialize(this.options.isSseReconnectOnFailure());
         } catch (FeatureFetchException e) {
             throw new GrowthBookClientInitializationException(
                     "Failed to initialize features repository", e);

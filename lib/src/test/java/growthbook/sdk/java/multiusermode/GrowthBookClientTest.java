@@ -41,6 +41,7 @@ import static growthbook.sdk.java.multiusermode.GrowthBookClientTestFixtures.cre
 import static growthbook.sdk.java.multiusermode.GrowthBookClientTestFixtures.createMockRepository;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.Mockito.*;
 
 class GrowthBookClientTest {
@@ -63,7 +64,7 @@ class GrowthBookClientTest {
             GrowthBookClient client = new GrowthBookClient(options);
             assertTrue(client.initialize());
 
-            verify(mockRepository).initialize();
+            verify(mockRepository).initialize(true);
 
             // Capture the callbacks for inspection
             ArgumentCaptor<FeatureRefreshCallback> callbackCaptor =
@@ -86,12 +87,39 @@ class GrowthBookClientTest {
     }
 
     @Test
+    void initialize_sseReconnectDisabled_passesReconnectFlagFalseToRepository() throws FeatureFetchException {
+        // Regression: the client must pass Options.isSseReconnectOnFailure() into
+        // repository.initialize(Boolean). The no-arg initialize() hardwires retryOnFailure=false,
+        // which would disable SSE reconnection regardless of configuration.
+        mockRepository = createMockRepository();
+        mockBuilder = createMockBuilder(mockRepository);
+
+        try (MockedStatic<GBFeaturesRepository> mockedStatic = mockStatic(GBFeaturesRepository.class)) {
+            mockedStatic.when(GBFeaturesRepository::builder).thenReturn(mockBuilder);
+
+            Options options = Options.builder()
+                    .apiHost("https://custom.growthbook.io")
+                    .clientKey("custom_key")
+                    .decryptionKey("test_key")
+                    .refreshStrategy(FeatureRefreshStrategy.STALE_WHILE_REVALIDATE)
+                    .sseReconnectOnFailure(false)
+                    .build();
+
+            GrowthBookClient client = new GrowthBookClient(options);
+            assertTrue(client.initialize());
+
+            verify(mockRepository).initialize(false);
+            verify(mockRepository, never()).initialize(true);
+        }
+    }
+
+    @Test
     void initialize_repositoryThrows_returnsFalse() throws FeatureFetchException {
         // Configures a mock repository that simulates initialization failure
         mockRepository = mock(GBFeaturesRepository.class);
         when(mockRepository.getInitialized()).thenReturn(false);
         doThrow(new FeatureFetchException(FeatureFetchException
-                .FeatureFetchErrorCode.NO_RESPONSE_ERROR)).when(mockRepository).initialize();
+                .FeatureFetchErrorCode.NO_RESPONSE_ERROR)).when(mockRepository).initialize(anyBoolean());
 
         // create the mock builder instance
         mockBuilder = createMockBuilder(mockRepository);
@@ -109,7 +137,7 @@ class GrowthBookClientTest {
             assertFalse(result);
 
             // 6. Verify initialize was called and threw exception
-            verify(mockRepository).initialize();
+            verify(mockRepository).initialize(anyBoolean());
         }
     }
 
