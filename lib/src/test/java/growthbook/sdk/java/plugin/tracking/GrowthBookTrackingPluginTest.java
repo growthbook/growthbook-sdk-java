@@ -15,8 +15,9 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.time.Duration;
-import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -194,29 +195,29 @@ class GrowthBookTrackingPluginTest {
 
     @Test
     void closeWaitsForBatchesOnCallerSuppliedExecutor() throws Exception {
-        // Header delay blocks the flush thread inside execute() for ~400ms.
-        server.enqueue(new MockResponse().setResponseCode(200).setHeadersDelay(400, TimeUnit.MILLISECONDS));
+        server.enqueue(new MockResponse().setResponseCode(200));
 
-        ExecutorService userExecutor = Executors.newSingleThreadExecutor();
+        // Executor that starts the task only after a delay. If close() did NOT wait for
+        // the in-flight batch, the POST would not have happened yet when close() returns.
+        ScheduledExecutorService delayer = Executors.newSingleThreadScheduledExecutor();
+        Executor delayedExecutor = task -> delayer.schedule(task, 300, TimeUnit.MILLISECONDS);
         try {
             GrowthBookTrackingPlugin plugin = GrowthBookTrackingPlugin.of(configBuilder()
                     .batchSize(1)
-                    .flushExecutor(userExecutor)
+                    .flushExecutor(delayedExecutor)
                     .build());
             plugin.init();
 
             // batchSize=1 => this submits a batch to the caller-supplied executor immediately.
             plugin.onExperimentViewed(experiment("exp"), experimentResult(0));
 
-            long start = System.currentTimeMillis();
+            // Must block until the delayed batch actually runs and POSTs.
             plugin.close();
-            long elapsed = System.currentTimeMillis() - start;
 
-            assertTrue(elapsed >= 250,
-                    "close() must block for the in-flight batch on a caller-supplied executor, took " + elapsed + "ms");
-            assertNotNull(server.takeRequest(1, TimeUnit.SECONDS), "the batch should have been POSTed");
+            assertEquals(1, server.getRequestCount(),
+                    "close() must wait for the in-flight batch on a caller-supplied executor before returning");
         } finally {
-            userExecutor.shutdownNow();
+            delayer.shutdownNow();
         }
     }
 
