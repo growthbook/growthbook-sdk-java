@@ -7,9 +7,7 @@ import growthbook.sdk.java.model.Experiment;
 import growthbook.sdk.java.model.ExperimentResult;
 import growthbook.sdk.java.model.FeatureResult;
 import growthbook.sdk.java.model.FeatureResultSource;
-import okhttp3.mockwebserver.MockResponse;
-import okhttp3.mockwebserver.MockWebServer;
-import okhttp3.mockwebserver.RecordedRequest;
+import growthbook.sdk.java.plugin.tracking.RecordingHttpServer.RecordedRequest;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -28,22 +26,21 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class GrowthBookTrackingPluginTest {
 
-    private MockWebServer server;
+    private RecordingHttpServer server;
 
     @BeforeEach
     void setUp() throws Exception {
-        server = new MockWebServer();
-        server.start();
+        server = new RecordingHttpServer();
     }
 
     @AfterEach
-    void tearDown() throws Exception {
-        server.shutdown();
+    void tearDown() {
+        server.close();
     }
 
     private TrackingPluginConfig.TrackingPluginConfigBuilder configBuilder() {
         return TrackingPluginConfig.builder()
-                .ingestorHost(server.url("/").toString())
+                .ingestorHost(server.baseUrl())
                 .clientKey("sdk-test");
     }
 
@@ -69,7 +66,7 @@ class GrowthBookTrackingPluginTest {
 
     @Test
     void flushesWhenBatchSizeReached() throws Exception {
-        server.enqueue(new MockResponse().setResponseCode(200));
+        server.enqueue(200);
 
         GrowthBookTrackingPlugin plugin = GrowthBookTrackingPlugin.of(configBuilder()
                 .batchSize(2)
@@ -87,7 +84,7 @@ class GrowthBookTrackingPluginTest {
         assertTrue(req.getHeader("User-Agent").startsWith("growthbook-java-sdk/"));
         assertEquals("application/json; charset=utf-8", req.getHeader("Content-Type"));
 
-        JsonObject body = JsonParser.parseString(req.getBody().readUtf8()).getAsJsonObject();
+        JsonObject body = JsonParser.parseString(req.bodyUtf8()).getAsJsonObject();
         assertEquals("sdk-test", body.get("client_key").getAsString());
         JsonArray events = body.getAsJsonArray("events");
         assertEquals(2, events.size());
@@ -99,7 +96,7 @@ class GrowthBookTrackingPluginTest {
 
     @Test
     void experimentEventMatchesGoWireContract() throws Exception {
-        server.enqueue(new MockResponse().setResponseCode(200));
+        server.enqueue(200);
 
         GrowthBookTrackingPlugin plugin = GrowthBookTrackingPlugin.of(configBuilder().batchSize(1).build());
         plugin.init();
@@ -128,7 +125,7 @@ class GrowthBookTrackingPluginTest {
 
     @Test
     void featureEventMatchesGoWireContract() throws Exception {
-        server.enqueue(new MockResponse().setResponseCode(200));
+        server.enqueue(200);
 
         GrowthBookTrackingPlugin plugin = GrowthBookTrackingPlugin.of(configBuilder().batchSize(1).build());
         plugin.init();
@@ -153,7 +150,7 @@ class GrowthBookTrackingPluginTest {
 
     @Test
     void flushesWhenTimerFires() throws Exception {
-        server.enqueue(new MockResponse().setResponseCode(200));
+        server.enqueue(200);
 
         GrowthBookTrackingPlugin plugin = GrowthBookTrackingPlugin.of(configBuilder()
                 .batchSize(100)
@@ -165,7 +162,7 @@ class GrowthBookTrackingPluginTest {
 
         RecordedRequest req = server.takeRequest(3, TimeUnit.SECONDS);
         assertNotNull(req, "timer-based flush should fire within 3s");
-        JsonObject body = JsonParser.parseString(req.getBody().readUtf8()).getAsJsonObject();
+        JsonObject body = JsonParser.parseString(req.bodyUtf8()).getAsJsonObject();
         JsonArray events = body.getAsJsonArray("events");
         assertEquals(1, events.size());
         assertEquals("feature_evaluated", events.get(0).getAsJsonObject().get("event_type").getAsString());
@@ -176,7 +173,7 @@ class GrowthBookTrackingPluginTest {
 
     @Test
     void closeFlushesRemainingEvents() throws Exception {
-        server.enqueue(new MockResponse().setResponseCode(200));
+        server.enqueue(200);
 
         GrowthBookTrackingPlugin plugin = GrowthBookTrackingPlugin.of(configBuilder()
                 .batchSize(100)
@@ -189,13 +186,13 @@ class GrowthBookTrackingPluginTest {
 
         RecordedRequest req = server.takeRequest(5, TimeUnit.SECONDS);
         assertNotNull(req, "close() should flush the final batch synchronously");
-        JsonObject body = JsonParser.parseString(req.getBody().readUtf8()).getAsJsonObject();
+        JsonObject body = JsonParser.parseString(req.bodyUtf8()).getAsJsonObject();
         assertEquals(1, body.getAsJsonArray("events").size());
     }
 
     @Test
     void closeWaitsForBatchesOnCallerSuppliedExecutor() throws Exception {
-        server.enqueue(new MockResponse().setResponseCode(200));
+        server.enqueue(200);
 
         // Executor that starts the task only after a delay. If close() did NOT wait for
         // the in-flight batch, the POST would not have happened yet when close() returns.
@@ -245,7 +242,7 @@ class GrowthBookTrackingPluginTest {
     @Test
     void noClientKeyDisablesPlugin() throws Exception {
         GrowthBookTrackingPlugin plugin = GrowthBookTrackingPlugin.of(TrackingPluginConfig.builder()
-                .ingestorHost(server.url("/").toString())
+                .ingestorHost(server.baseUrl())
                 .batchSize(1)
                 .build());
         plugin.init();
@@ -260,7 +257,7 @@ class GrowthBookTrackingPluginTest {
 
     @Test
     void httpFailureDoesNotThrow() throws Exception {
-        server.enqueue(new MockResponse().setResponseCode(500));
+        server.enqueue(500);
 
         GrowthBookTrackingPlugin plugin = GrowthBookTrackingPlugin.of(configBuilder()
                 .batchSize(1)
@@ -296,7 +293,7 @@ class GrowthBookTrackingPluginTest {
 
     @Test
     void userAgentDoesNotUseUnknownVersionFallback() throws Exception {
-        server.enqueue(new MockResponse().setResponseCode(200));
+        server.enqueue(200);
 
         GrowthBookTrackingPlugin plugin = GrowthBookTrackingPlugin.of(configBuilder()
                 .batchSize(1)
@@ -313,7 +310,7 @@ class GrowthBookTrackingPluginTest {
     }
 
     private static JsonObject firstEvent(RecordedRequest req) {
-        return JsonParser.parseString(req.getBody().readUtf8())
+        return JsonParser.parseString(req.bodyUtf8())
                 .getAsJsonObject()
                 .getAsJsonArray("events")
                 .get(0)

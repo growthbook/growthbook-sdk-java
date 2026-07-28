@@ -11,9 +11,7 @@ import growthbook.sdk.java.multiusermode.configurations.GlobalContext;
 import growthbook.sdk.java.multiusermode.configurations.Options;
 import growthbook.sdk.java.multiusermode.configurations.UserContext;
 import growthbook.sdk.java.multiusermode.util.TransformationUtil;
-import okhttp3.mockwebserver.MockResponse;
-import okhttp3.mockwebserver.MockWebServer;
-import okhttp3.mockwebserver.RecordedRequest;
+import growthbook.sdk.java.plugin.tracking.RecordingHttpServer.RecordedRequest;
 
 import java.lang.reflect.Field;
 import java.time.Duration;
@@ -37,8 +35,7 @@ public final class TrackingPluginSmokeHarness {
 
     public static void main(String[] args) throws Exception {
         String mode = System.getProperty("trackingSmokeMode", "both");
-        try (MockWebServer server = new MockWebServer()) {
-            server.start();
+        try (RecordingHttpServer server = new RecordingHttpServer()) {
             if ("single".equals(mode) || "both".equals(mode)) {
                 JsonObject body = runSingleUserScenario(server);
                 printScenario("single", body);
@@ -53,8 +50,8 @@ public final class TrackingPluginSmokeHarness {
         }
     }
 
-    private static JsonObject runSingleUserScenario(MockWebServer server) throws Exception {
-        server.enqueue(new MockResponse().setResponseCode(200));
+    private static JsonObject runSingleUserScenario(RecordingHttpServer server) throws Exception {
+        server.enqueue(200);
         GrowthBookTrackingPlugin plugin = GrowthBookTrackingPlugin.of(config(server));
 
         GBContext context = GBContext.builder()
@@ -77,8 +74,8 @@ public final class TrackingPluginSmokeHarness {
         return body;
     }
 
-    private static JsonObject runMultiUserScenario(MockWebServer server) throws Exception {
-        server.enqueue(new MockResponse().setResponseCode(200));
+    private static JsonObject runMultiUserScenario(RecordingHttpServer server) throws Exception {
+        server.enqueue(200);
         GrowthBookTrackingPlugin plugin = GrowthBookTrackingPlugin.of(config(server));
 
         Options options = Options.builder()
@@ -101,16 +98,16 @@ public final class TrackingPluginSmokeHarness {
         return body;
     }
 
-    private static TrackingPluginConfig config(MockWebServer server) {
+    private static TrackingPluginConfig config(RecordingHttpServer server) {
         return TrackingPluginConfig.builder()
-                .ingestorHost(server.url("/").toString())
+                .ingestorHost(server.baseUrl())
                 .clientKey("sdk-smoke")
                 .batchSize(100)
                 .batchTimeout(Duration.ofSeconds(60))
                 .build();
     }
 
-    private static JsonObject readBody(MockWebServer server) throws Exception {
+    private static JsonObject readBody(RecordingHttpServer server) throws Exception {
         RecordedRequest request = server.takeRequest(5, TimeUnit.SECONDS);
         if (request == null) {
             throw new IllegalStateException("Expected tracking plugin POST request");
@@ -125,7 +122,7 @@ public final class TrackingPluginSmokeHarness {
         if (userAgent == null || userAgent.endsWith("/unknown")) {
             throw new IllegalStateException("Unexpected User-Agent: " + userAgent);
         }
-        return JsonParser.parseString(request.getBody().readUtf8()).getAsJsonObject();
+        return JsonParser.parseString(request.bodyUtf8()).getAsJsonObject();
     }
 
     private static void requireHeaderShape(JsonObject body) {
