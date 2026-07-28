@@ -168,6 +168,11 @@ public final class GrowthBookTrackingPlugin implements GrowthBookPlugin {
             buffer.add(event);
             if (buffer.size() >= config.resolvedBatchSize()) {
                 eagerFlush = drainLocked();
+                if (!eagerFlush.isEmpty()) {
+                    // Reserve the in-flight slot under the lock so a concurrent close()
+                    // cannot shut down before this batch is submitted and flushed.
+                    beginFlush();
+                }
                 if (pendingFlush != null) {
                     pendingFlush.cancel(false);
                     pendingFlush = null;
@@ -195,6 +200,11 @@ public final class GrowthBookTrackingPlugin implements GrowthBookPlugin {
         try {
             pendingFlush = null;
             toFlush = drainLocked();
+            if (!toFlush.isEmpty()) {
+                // Reserve the in-flight slot under the lock so a concurrent close()
+                // cannot shut down before this timer-triggered batch is flushed.
+                beginFlush();
+            }
         } finally {
             lock.unlock();
         }
@@ -212,13 +222,21 @@ public final class GrowthBookTrackingPlugin implements GrowthBookPlugin {
         return out;
     }
 
+    /**
+     * Submits an already-reserved batch (see {@link #beginFlush()}) to the flush executor.
+     * The caller MUST have called {@link #beginFlush()} while holding {@link #lock} so that
+     * a concurrent {@link #close()} observes the batch as in-flight and waits for it.
+     */
     private void submitFlush(List<TrackingEvent> batch) {
         Executor executor = this.flushExecutor;
         if (executor == null) {
-            flushBatch(batch);
+            try {
+                flushBatch(batch);
+            } finally {
+                endFlush();
+            }
             return;
         }
-        beginFlush();
         try {
             executor.execute(() -> {
                 try {

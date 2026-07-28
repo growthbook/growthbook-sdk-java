@@ -219,6 +219,35 @@ class GrowthBookTrackingPluginTest {
     }
 
     @Test
+    void closeDoesNotLoseTimerTriggeredBatch() throws Exception {
+        server.enqueue(200);
+
+        // Delay the actual POST so the timer-scheduled batch is still in flight when close() runs.
+        ScheduledExecutorService delayer = Executors.newSingleThreadScheduledExecutor();
+        Executor delayedExecutor = task -> delayer.schedule(task, 200, TimeUnit.MILLISECONDS);
+        try {
+            GrowthBookTrackingPlugin plugin = GrowthBookTrackingPlugin.of(configBuilder()
+                    .batchSize(100)                       // large: rely on the timer, not eager flush
+                    .batchTimeout(Duration.ofMillis(50))  // timer fires quickly
+                    .flushExecutor(delayedExecutor)
+                    .build());
+            plugin.init();
+
+            plugin.onFeatureEvaluated("flag", featureResult(FeatureResultSource.DEFAULT_VALUE));
+
+            // Give the timer time to fire, drain the buffer, and reserve the in-flight batch.
+            Thread.sleep(150);
+            plugin.close();
+
+            // The timer-triggered batch must be flushed before close() returns, never dropped.
+            assertEquals(1, server.getRequestCount(),
+                    "a timer-triggered batch must not be lost across close()");
+        } finally {
+            delayer.shutdownNow();
+        }
+    }
+
+    @Test
     void closeIsIdempotent() throws Exception {
         GrowthBookTrackingPlugin plugin = GrowthBookTrackingPlugin.of(configBuilder().build());
         plugin.init();
