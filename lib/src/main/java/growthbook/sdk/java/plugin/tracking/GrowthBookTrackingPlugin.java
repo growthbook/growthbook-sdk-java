@@ -354,14 +354,13 @@ public final class GrowthBookTrackingPlugin implements GrowthBookPlugin {
     }
 
     private ExecutorService newBoundedFlushExecutor() {
+        // Default abort policy: a full queue throws RejectedExecutionException, which
+        // submitFlush() catches to drop the newest batch AND release its in-flight slot.
         return new ThreadPoolExecutor(
                 1, 1,
                 0L, TimeUnit.MILLISECONDS,
                 new LinkedBlockingQueue<>(MAX_PENDING_FLUSH_BATCHES),
-                daemonFactory("growthbook-tracking-plugin-flush"),
-                (rejected, executor) ->
-                        log.warn("Tracking flush queue full ({} batches pending); dropping batch",
-                                executor.getQueue().size()));
+                daemonFactory("growthbook-tracking-plugin-flush"));
     }
 
     private static ThreadFactory daemonFactory(String prefix) {
