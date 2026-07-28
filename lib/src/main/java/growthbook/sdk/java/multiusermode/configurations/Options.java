@@ -282,17 +282,12 @@ public class Options {
      * Plugins registered with the GrowthBook client. See
      * {@link GrowthBookPlugin} and
      * {@link growthbook.sdk.java.plugin.tracking.GrowthBookTrackingPlugin}.
+     * The owning client builds a per-instance {@link PluginRegistry} from this
+     * list; the registry itself is carried on {@code EvaluationContext}, not
+     * here, so reusing one {@code Options} across clients stays isolated.
      */
     @Nullable
     private List<GrowthBookPlugin> plugins;
-
-    /**
-     * Internal: set by {@code GrowthBookClient}/{@code GrowthBook} after
-     * constructing a registry from {@link #plugins}. Exposed so the evaluators
-     * can dispatch events without knowing which caller built the registry.
-     */
-    @Nullable
-    private PluginRegistry pluginRegistry;
 
     private Boolean remoteEval;
 

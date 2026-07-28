@@ -86,6 +86,7 @@ public class FeatureEvaluator implements IFeatureEvaluator {
                         .value(unwrapForceFeatureValue)
                         .source(FeatureResultSource.OVERRIDE)
                         .build();
+                dispatchFeatureUsage(context, key, overrideResult);
                 return cacheResult(key, overrideResult, context);
             }
 
@@ -408,7 +409,7 @@ public class FeatureEvaluator implements IFeatureEvaluator {
         if (cb != null) {
             cb.onFeatureUsage(key, result, context.getUser());
         }
-        PluginRegistry registry = context.getOptions().getPluginRegistry();
+        PluginRegistry registry = context.getPluginRegistry();
         if (registry != null) {
             registry.fireFeatureEvaluated(key, result);
         }

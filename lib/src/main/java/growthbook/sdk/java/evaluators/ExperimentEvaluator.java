@@ -399,7 +399,7 @@ public class ExperimentEvaluator implements IExperimentEvaluator {
             return;
         }
         if (context.getOptions().getTrackingCallBackWithUser() == null
-                && context.getOptions().getPluginRegistry() == null) {
+                && context.getPluginRegistry() == null) {
             return;
         }
 
@@ -437,7 +437,7 @@ public class ExperimentEvaluator implements IExperimentEvaluator {
         if (callback != null) {
             callback.onTrack(experiment, result, context.getUser());
         }
-        PluginRegistry pluginRegistry = context.getOptions().getPluginRegistry();
+        PluginRegistry pluginRegistry = context.getPluginRegistry();
         if (pluginRegistry != null) {
             pluginRegistry.fireExperimentViewed(experiment, result);
         }

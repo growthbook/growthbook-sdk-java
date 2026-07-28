@@ -70,6 +70,7 @@ public class GrowthBookClient {
     private final AtomicReference<Throwable> lastInitializationError = new AtomicReference<>();
     private final AtomicLong lastInitializationErrorAtMillis = new AtomicLong(0);
     private final DiagnosticsProvider diagnosticsProvider;
+    private final PluginRegistry pluginRegistry;
 
     public GrowthBookClient() {
         this(Options.builder().build());
@@ -84,9 +85,8 @@ public class GrowthBookClient {
         this.experimentEvaluatorEvaluator = new ExperimentEvaluator();
         this.diagnosticsProvider = new GrowthBookClientDiagnosticsProvider(this.options, clientStateView());
 
-        PluginRegistry registry = new PluginRegistry(this.options.getPlugins());
-        this.options.setPluginRegistry(registry);
-        registry.initAll();
+        this.pluginRegistry = new PluginRegistry(this.options.getPlugins());
+        this.pluginRegistry.initAll();
     }
 
     private GrowthBookClientDiagnosticsProvider.ClientState clientStateView() {
@@ -521,10 +521,7 @@ public class GrowthBookClient {
         }
         // Flush registered plugins (including the built-in tracking plugin) so
         // any buffered events are sent before the client is discarded.
-        PluginRegistry pluginRegistry = this.options.getPluginRegistry();
-        if (pluginRegistry != null) {
-            pluginRegistry.closeAll();
-        }
+        this.pluginRegistry.closeAll();
     }
 
     private boolean ensureRemoteEvalReady() {
@@ -648,18 +645,24 @@ public class GrowthBookClient {
         if (this.options.isRemoteEvalEnabled()) {
             return getRemoteEvalContext(updatedUserContext);
         }
-        return new EvaluationContext(getLocalGlobalContext(), updatedUserContext, new EvaluationContext.StackContext(), this.options);
+        return withPluginRegistry(new EvaluationContext(getLocalGlobalContext(), updatedUserContext, new EvaluationContext.StackContext(), this.options));
     }
 
     private EvaluationContext getRemoteEvalContext(UserContext userContext) {
         try {
             RemoteEvalResponse response = getRemoteEvalResponse(userContext);
             GlobalContext remoteGlobalContext = buildGlobalContext(response.getFeatures(), response.getSavedGroups());
-            return new EvaluationContext(remoteGlobalContext, userContext, new EvaluationContext.StackContext(), this.options);
+            return withPluginRegistry(new EvaluationContext(remoteGlobalContext, userContext, new EvaluationContext.StackContext(), this.options));
         } catch (FeatureFetchException e) {
             log.warn("Remote evaluation request failed. Falling back to local feature context.", e);
-            return new EvaluationContext(getLocalGlobalContext(), userContext, new EvaluationContext.StackContext(), this.options);
+            return withPluginRegistry(new EvaluationContext(getLocalGlobalContext(), userContext, new EvaluationContext.StackContext(), this.options));
         }
+    }
+
+    /** Attaches this client's own plugin registry so events never route through another client's plugins. */
+    private EvaluationContext withPluginRegistry(EvaluationContext context) {
+        context.setPluginRegistry(this.pluginRegistry);
+        return context;
     }
 
     private UserContext toUserContextWithMergedAttributes(UserContext userContext) {

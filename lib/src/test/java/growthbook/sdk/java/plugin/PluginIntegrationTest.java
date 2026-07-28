@@ -9,13 +9,16 @@ import growthbook.sdk.java.model.Experiment;
 import growthbook.sdk.java.model.ExperimentResult;
 import growthbook.sdk.java.model.Feature;
 import growthbook.sdk.java.model.FeatureResult;
+import growthbook.sdk.java.model.FeatureResultSource;
 import growthbook.sdk.java.model.GBContext;
 import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -145,5 +148,30 @@ class PluginIntegrationTest {
         assertNotNull(r);
         assertTrue(keys.contains("flag"));
         gb.destroy();
+    }
+
+    @Test
+    void forcedFeatureOverrideStillEmitsFeatureEvent() {
+        List<FeatureResult<?>> seen = Collections.synchronizedList(new ArrayList<>());
+        GrowthBookPlugin plugin = new GrowthBookPlugin() {
+            @Override public <V> void onFeatureEvaluated(String k, FeatureResult<V> r) { seen.add(r); }
+        };
+        GBContext ctx = GBContext.builder()
+                .featuresJson("{\"flag\": {\"defaultValue\": false}}")
+                .attributesJson("{\"id\":\"u1\"}")
+                .plugins(Collections.singletonList(plugin))
+                .build();
+        GrowthBook gb = new GrowthBook(ctx);
+
+        Map<String, Object> forced = new HashMap<>();
+        forced.put("flag", true);
+        gb.setForcedFeatureValues(forced);
+
+        FeatureResult<Boolean> r = gb.evalFeature("flag", Boolean.class);
+        gb.destroy();
+
+        assertEquals(Boolean.TRUE, r.getValue(), "forced override should win");
+        assertEquals(1, seen.size(), "plugin should still receive feature_evaluated on the forced-override path");
+        assertEquals(FeatureResultSource.OVERRIDE, seen.get(0).getSource());
     }
 }

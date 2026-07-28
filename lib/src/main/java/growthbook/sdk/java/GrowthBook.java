@@ -172,9 +172,6 @@ public class GrowthBook implements IGrowthBook {
                 .featureUsageCallbackWithUser(new FeatureUsageCallbackAdapter(this.context.getFeatureUsageCallback()))
                 .globalForcedFeatureValues(this.forcedFeatureValues)
                 .build();
-        if (this.pluginRegistry != null) {
-            options.setPluginRegistry(this.pluginRegistry);
-        }
 
         GlobalContext globalContext = GlobalContext.builder()
                 .features(features)
@@ -192,8 +189,10 @@ public class GrowthBook implements IGrowthBook {
                 .forcedFeatureValues(this.forcedFeatureValues)
                 .build();
 
-        return new EvaluationContext(globalContext, userContext,
+        EvaluationContext evalContext = new EvaluationContext(globalContext, userContext,
                 new EvaluationContext.StackContext(), options);
+        evalContext.setPluginRegistry(this.pluginRegistry);
+        return evalContext;
     }
 
     private RemoteEvalResponse getRemoteEvalResponse() throws FeatureFetchException {
