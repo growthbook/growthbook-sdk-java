@@ -73,6 +73,11 @@ public final class GrowthBookTrackingPlugin implements GrowthBookPlugin {
     private final AtomicBoolean initialized = new AtomicBoolean(false);
     private final AtomicBoolean closed = new AtomicBoolean(false);
 
+    // Tracks batches handed to the flush executor but not yet completed, so
+    // close() can wait for them even when the executor is caller-supplied.
+    private final Object flushBarrier = new Object();
+    private int inFlightBatches = 0; // guarded by flushBarrier
+
     // Assigned in init(); read only after initialized is observed true.
     private volatile OkHttpClient httpClient;
     private volatile boolean ownsHttpClient;
@@ -147,6 +152,7 @@ public final class GrowthBookTrackingPlugin implements GrowthBookPlugin {
         }
         finalFlush();
         shutdownScheduler();
+        awaitInFlightBatches(config.resolvedCloseTimeout().toMillis());
         shutdownFlushExecutor();
         shutdownHttpClient();
     }
@@ -212,11 +218,54 @@ public final class GrowthBookTrackingPlugin implements GrowthBookPlugin {
             flushBatch(batch);
             return;
         }
+        beginFlush();
         try {
-            executor.execute(() -> flushBatch(batch));
+            executor.execute(() -> {
+                try {
+                    flushBatch(batch);
+                } finally {
+                    endFlush();
+                }
+            });
         } catch (RejectedExecutionException e) {
             // Bounded queue full (or a user executor rejected): drop the newest batch.
+            endFlush();
             log.warn("Tracking flush queue full; dropping batch of {} events", batch.size());
+        }
+    }
+
+    private void beginFlush() {
+        synchronized (flushBarrier) {
+            inFlightBatches++;
+        }
+    }
+
+    private void endFlush() {
+        synchronized (flushBarrier) {
+            inFlightBatches--;
+            if (inFlightBatches <= 0) {
+                flushBarrier.notifyAll();
+            }
+        }
+    }
+
+    /** Waits up to {@code timeoutMillis} for submitted batches to finish (honors close() even with a caller-supplied executor). */
+    private void awaitInFlightBatches(long timeoutMillis) {
+        long deadline = System.currentTimeMillis() + timeoutMillis;
+        synchronized (flushBarrier) {
+            while (inFlightBatches > 0) {
+                long remaining = deadline - System.currentTimeMillis();
+                if (remaining <= 0) {
+                    log.warn("close() timed out with {} flush batch(es) still in flight", inFlightBatches);
+                    return;
+                }
+                try {
+                    flushBarrier.wait(remaining);
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                    return;
+                }
+            }
         }
     }
 

@@ -15,6 +15,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.time.Duration;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -188,6 +190,34 @@ class GrowthBookTrackingPluginTest {
         assertNotNull(req, "close() should flush the final batch synchronously");
         JsonObject body = JsonParser.parseString(req.getBody().readUtf8()).getAsJsonObject();
         assertEquals(1, body.getAsJsonArray("events").size());
+    }
+
+    @Test
+    void closeWaitsForBatchesOnCallerSuppliedExecutor() throws Exception {
+        // Header delay blocks the flush thread inside execute() for ~400ms.
+        server.enqueue(new MockResponse().setResponseCode(200).setHeadersDelay(400, TimeUnit.MILLISECONDS));
+
+        ExecutorService userExecutor = Executors.newSingleThreadExecutor();
+        try {
+            GrowthBookTrackingPlugin plugin = GrowthBookTrackingPlugin.of(configBuilder()
+                    .batchSize(1)
+                    .flushExecutor(userExecutor)
+                    .build());
+            plugin.init();
+
+            // batchSize=1 => this submits a batch to the caller-supplied executor immediately.
+            plugin.onExperimentViewed(experiment("exp"), experimentResult(0));
+
+            long start = System.currentTimeMillis();
+            plugin.close();
+            long elapsed = System.currentTimeMillis() - start;
+
+            assertTrue(elapsed >= 250,
+                    "close() must block for the in-flight batch on a caller-supplied executor, took " + elapsed + "ms");
+            assertNotNull(server.takeRequest(1, TimeUnit.SECONDS), "the batch should have been POSTed");
+        } finally {
+            userExecutor.shutdownNow();
+        }
     }
 
     @Test
