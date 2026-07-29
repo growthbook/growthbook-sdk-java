@@ -13,6 +13,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.time.Duration;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -222,28 +223,56 @@ class GrowthBookTrackingPluginTest {
     void closeDoesNotLoseTimerTriggeredBatch() throws Exception {
         server.enqueue(200);
 
-        // Delay the actual POST so the timer-scheduled batch is still in flight when close() runs.
-        ScheduledExecutorService delayer = Executors.newSingleThreadScheduledExecutor();
-        Executor delayedExecutor = task -> delayer.schedule(task, 200, TimeUnit.MILLISECONDS);
-        try {
-            GrowthBookTrackingPlugin plugin = GrowthBookTrackingPlugin.of(configBuilder()
-                    .batchSize(100)                       // large: rely on the timer, not eager flush
-                    .batchTimeout(Duration.ofMillis(50))  // timer fires quickly
-                    .flushExecutor(delayedExecutor)
-                    .build());
-            plugin.init();
+        // Latches to pin the exact interleaving: the timer thread drains + reserves the batch,
+        // then parks at the drain-to-submit boundary; close() runs; only then does the timer submit.
+        CountDownLatch reachedHandoff = new CountDownLatch(1);
+        CountDownLatch releaseHandoff = new CountDownLatch(1);
 
-            plugin.onFeatureEvaluated("flag", featureResult(FeatureResultSource.DEFAULT_VALUE));
+        GrowthBookTrackingPlugin plugin = GrowthBookTrackingPlugin.of(configBuilder()
+                .batchSize(100)                       // large: rely on the timer, not eager flush
+                .batchTimeout(Duration.ofMillis(50))  // timer fires quickly
+                .build());
+        // Park the timer between reserving the batch and submitting it.
+        plugin.timerFlushHandoffHookForTest = () -> {
+            reachedHandoff.countDown();
+            awaitUninterruptibly(releaseHandoff);
+        };
+        plugin.init();
 
-            // Give the timer time to fire, drain the buffer, and reserve the in-flight batch.
-            Thread.sleep(150);
-            plugin.close();
+        plugin.onFeatureEvaluated("flag", featureResult(FeatureResultSource.DEFAULT_VALUE));
 
-            // The timer-triggered batch must be flushed before close() returns, never dropped.
-            assertEquals(1, server.getRequestCount(),
-                    "a timer-triggered batch must not be lost across close()");
-        } finally {
-            delayer.shutdownNow();
+        // Wait until the timer has drained the buffer and is parked before submit.
+        assertTrue(reachedHandoff.await(5, TimeUnit.SECONDS), "timer flush should have started");
+
+        // Run close() concurrently while the timer is parked at the boundary.
+        Thread closer = new Thread(plugin::close, "close-thread");
+        closer.start();
+
+        // A correct close() must wait for the reserved batch, so it stays alive here; the buggy
+        // version (reserve after releasing the lock) would see nothing in flight and finish now.
+        closer.join(500);
+        boolean closedBeforeSubmit = !closer.isAlive();
+
+        // Let the timer submit its batch, then let close() finish.
+        releaseHandoff.countDown();
+        closer.join(5000);
+
+        assertFalse(closedBeforeSubmit,
+                "close() returned before the reserved timer batch was submitted — events would be lost");
+        assertEquals(1, server.getRequestCount(),
+                "the timer-triggered batch must be flushed, not dropped, across close()");
+    }
+
+    private static void awaitUninterruptibly(CountDownLatch latch) {
+        boolean done = false;
+        while (!done) {
+            try {
+                latch.await();
+                done = true;
+            } catch (InterruptedException e) {
+                // close()'s scheduler.shutdownNow() interrupts this parked timer thread;
+                // keep waiting for the test to release it so the interleaving stays fixed.
+            }
         }
     }
 

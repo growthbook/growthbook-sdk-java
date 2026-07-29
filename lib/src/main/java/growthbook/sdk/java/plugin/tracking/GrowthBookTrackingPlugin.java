@@ -78,6 +78,13 @@ public final class GrowthBookTrackingPlugin implements GrowthBookPlugin {
     private final Object flushBarrier = new Object();
     private int inFlightBatches = 0; // guarded by flushBarrier
 
+    /**
+     * Test seam: invoked on the timer thread after a batch has been drained and reserved
+     * in-flight (under {@link #lock}) but before it is handed to the flush executor. Default
+     * is a no-op; tests set it to coordinate the drain-to-submit boundary against close().
+     */
+    volatile Runnable timerFlushHandoffHookForTest = () -> { };
+
     // Assigned in init(); read only after initialized is observed true.
     private volatile OkHttpClient httpClient;
     private volatile boolean ownsHttpClient;
@@ -209,6 +216,7 @@ public final class GrowthBookTrackingPlugin implements GrowthBookPlugin {
             lock.unlock();
         }
         if (!toFlush.isEmpty()) {
+            timerFlushHandoffHookForTest.run();
             submitFlush(toFlush);
         }
     }
