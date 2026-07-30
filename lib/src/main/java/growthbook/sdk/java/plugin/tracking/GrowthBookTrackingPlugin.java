@@ -52,6 +52,13 @@ import java.util.concurrent.locks.ReentrantLock;
  * failed POSTs are logged but not retried. If the configured {@code clientKey}
  * is blank the plugin is disabled: no resources are created, event methods are
  * no-ops, and {@link #close()} still completes cleanly.
+ *
+ * <p><b>Create one instance per SDK client.</b> A plugin instance owns a single
+ * buffer, scheduler, executor, and lifecycle flag, so sharing one instance
+ * across multiple {@code GrowthBook}/{@code GrowthBookClient} instances means the
+ * first {@code close()}/{@code shutdown()} disables tracking for all of them.
+ * Evaluations still running while the owning instance is shutting down may lose
+ * their telemetry event; stop evaluating before shutdown for complete delivery.
  */
 @Slf4j
 public final class GrowthBookTrackingPlugin implements GrowthBookPlugin {
@@ -111,6 +118,10 @@ public final class GrowthBookTrackingPlugin implements GrowthBookPlugin {
             return;
         }
         if (!initialized.compareAndSet(false, true)) {
+            log.warn("GrowthBookTrackingPlugin.init() called more than once. The same plugin instance "
+                    + "appears to be registered with multiple GrowthBook/GrowthBookClient instances. "
+                    + "Create one tracking plugin per SDK client: a shared instance has one buffer and "
+                    + "one lifecycle, so the first close() disables tracking for all of them.");
             return;
         }
 
@@ -172,6 +183,12 @@ public final class GrowthBookTrackingPlugin implements GrowthBookPlugin {
         List<TrackingEvent> eagerFlush = null;
         lock.lock();
         try {
+            // Re-check under the lock: a close() may have started after isActive() passed and
+            // already drained the buffer and stopped the scheduler. Drop cleanly rather than
+            // orphaning the event or scheduling on a stopped scheduler.
+            if (closed.get()) {
+                return;
+            }
             buffer.add(event);
             if (buffer.size() >= config.resolvedBatchSize()) {
                 eagerFlush = drainLocked();
@@ -296,7 +313,11 @@ public final class GrowthBookTrackingPlugin implements GrowthBookPlugin {
     }
 
     private void flushBatch(List<TrackingEvent> batch) {
-        if (batch.isEmpty() || httpClient == null) {
+        flushBatch(batch, this.httpClient);
+    }
+
+    private void flushBatch(List<TrackingEvent> batch, @Nullable OkHttpClient client) {
+        if (batch.isEmpty() || client == null) {
             return;
         }
         String url = config.resolvedIngestorHost() + "/events";
@@ -315,7 +336,7 @@ public final class GrowthBookTrackingPlugin implements GrowthBookPlugin {
                     .post(RequestBody.create(body.toString(), JSON))
                     .build();
 
-            try (Response response = httpClient.newCall(request).execute()) {
+            try (Response response = client.newCall(request).execute()) {
                 if (!response.isSuccessful()) {
                     log.warn("Tracking ingest POST {} returned status {}", url, response.code());
                 }
@@ -340,7 +361,13 @@ public final class GrowthBookTrackingPlugin implements GrowthBookPlugin {
             pending.cancel(false);
         }
         if (!toFlush.isEmpty()) {
-            flushBatch(toFlush);
+            // Bound the synchronous final POST by closeTimeout so close() can't block on it
+            // longer than the configured budget. The derived client shares the base client's
+            // connection pool and dispatcher.
+            OkHttpClient client = this.httpClient;
+            OkHttpClient boundedClient = client == null ? null
+                    : client.newBuilder().callTimeout(config.resolvedCloseTimeout()).build();
+            flushBatch(toFlush, boundedClient);
         }
     }
 

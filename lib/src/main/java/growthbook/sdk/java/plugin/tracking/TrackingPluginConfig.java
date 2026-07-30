@@ -52,7 +52,11 @@ public final class TrackingPluginConfig {
     @Nullable
     private final Duration batchTimeout;
 
-    /** Max time {@link GrowthBookTrackingPlugin#close()} waits for the final flush. */
+    /**
+     * Time budget for {@link GrowthBookTrackingPlugin#close()}. It bounds both the synchronous
+     * final POST (applied as an OkHttp call timeout on a client derived from the configured one)
+     * and the wait for any already-submitted async batches to complete.
+     */
     @Getter(AccessLevel.NONE)
     @Nullable
     private final Duration closeTimeout;

@@ -30,6 +30,7 @@ final class RecordingHttpServer implements AutoCloseable {
     private final HttpServer server;
     private final BlockingQueue<RecordedRequest> requests = new LinkedBlockingQueue<>();
     private final Queue<Integer> responseCodes = new ConcurrentLinkedQueue<>();
+    private final Queue<Long> responseDelaysMs = new ConcurrentLinkedQueue<>();
     private final AtomicInteger requestCount = new AtomicInteger();
 
     RecordingHttpServer() throws IOException {
@@ -51,6 +52,14 @@ final class RecordingHttpServer implements AutoCloseable {
                         headers,
                         body));
 
+                Long delay = responseDelaysMs.poll();
+                if (delay != null && delay > 0) {
+                    try {
+                        Thread.sleep(delay);
+                    } catch (InterruptedException e) {
+                        Thread.currentThread().interrupt();
+                    }
+                }
                 Integer code = responseCodes.poll();
                 exchange.sendResponseHeaders(code != null ? code : 200, -1);
             } finally {
@@ -66,7 +75,13 @@ final class RecordingHttpServer implements AutoCloseable {
     }
 
     void enqueue(int statusCode) {
+        enqueue(statusCode, 0);
+    }
+
+    /** Queue a response that the server holds for {@code delayMs} before replying. */
+    void enqueue(int statusCode, long delayMs) {
         responseCodes.add(statusCode);
+        responseDelaysMs.add(delayMs);
     }
 
     RecordedRequest takeRequest(long timeout, TimeUnit unit) throws InterruptedException {

@@ -3,7 +3,9 @@ package growthbook.sdk.java.plugin.tracking;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
+import growthbook.sdk.java.GrowthBook;
 import growthbook.sdk.java.model.Experiment;
+import growthbook.sdk.java.model.GBContext;
 import growthbook.sdk.java.model.ExperimentResult;
 import growthbook.sdk.java.model.FeatureResult;
 import growthbook.sdk.java.model.FeatureResultSource;
@@ -13,6 +15,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.time.Duration;
+import java.util.Collections;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
@@ -274,6 +277,57 @@ class GrowthBookTrackingPluginTest {
                 // keep waiting for the test to release it so the interleaving stays fixed.
             }
         }
+    }
+
+    @Test
+    void closeTimeoutBoundsSynchronousFinalFlush() throws Exception {
+        // Server holds the response far longer than closeTimeout; the derived call timeout must cap it.
+        server.enqueue(200, 20_000);
+
+        GrowthBookTrackingPlugin plugin = GrowthBookTrackingPlugin.of(configBuilder()
+                .batchSize(100)                       // buffer the event; it flushes at close()
+                .batchTimeout(Duration.ofSeconds(60))
+                .closeTimeout(Duration.ofMillis(300))
+                .build());
+        plugin.init();
+        plugin.onExperimentViewed(experiment("exp"), experimentResult(0));
+
+        long start = System.currentTimeMillis();
+        plugin.close(); // the final POST hangs; callTimeout(closeTimeout) must abort it
+        long elapsed = System.currentTimeMillis() - start;
+
+        assertTrue(elapsed < 5000,
+                "close() must not block on the hung final POST beyond closeTimeout (took " + elapsed + "ms)");
+    }
+
+    @Test
+    void sharingOnePluginAcrossInstancesIsUnsupported() throws Exception {
+        server.enqueue(200);
+
+        // The same tracking-plugin instance in two SDK instances shares one lifecycle:
+        // the first instance's shutdown closes the plugin for the second.
+        GrowthBookTrackingPlugin plugin = GrowthBookTrackingPlugin.of(configBuilder().batchSize(1).build());
+        GrowthBook a = new GrowthBook(GBContext.builder()
+                .featuresJson("{\"flag\":{\"defaultValue\":true}}")
+                .attributesJson("{\"id\":\"u\"}")
+                .plugins(Collections.singletonList(plugin))
+                .build());
+        GrowthBook b = new GrowthBook(GBContext.builder()
+                .featuresJson("{\"flag\":{\"defaultValue\":true}}")
+                .attributesJson("{\"id\":\"u\"}")
+                .plugins(Collections.singletonList(plugin))
+                .build());
+
+        a.evalFeature("flag", Boolean.class);
+        assertNotNull(server.takeRequest(5, TimeUnit.SECONDS), "first instance should deliver its event");
+
+        a.destroy(); // closes the shared plugin
+
+        b.evalFeature("flag", Boolean.class);
+        assertNull(server.takeRequest(500, TimeUnit.MILLISECONDS),
+                "second instance shares the now-closed plugin, so its event is not delivered");
+
+        b.destroy();
     }
 
     @Test
