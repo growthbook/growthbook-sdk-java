@@ -14,6 +14,8 @@ growthbook.sdk.java.multiusermode
 growthbook.sdk.java.multiusermode.configurations
 growthbook.sdk.java.multiusermode.usage
 growthbook.sdk.java.multiusermode.util
+growthbook.sdk.java.plugin
+growthbook.sdk.java.plugin.tracking
 growthbook.sdk.java.remoteeval
 growthbook.sdk.java.repository
 growthbook.sdk.java.retry
