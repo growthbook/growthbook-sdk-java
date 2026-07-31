@@ -26,6 +26,7 @@ import growthbook.sdk.java.multiusermode.internal.FeatureRepositoryProvider;
 import growthbook.sdk.java.multiusermode.internal.GlobalContextManager;
 import growthbook.sdk.java.multiusermode.internal.ManagedListenerExecutor;
 import growthbook.sdk.java.multiusermode.internal.RemoteEvalCoordinator;
+import growthbook.sdk.java.plugin.PluginRegistry;
 import growthbook.sdk.java.repository.GBFeaturesRepository;
 import growthbook.sdk.java.repository.RefreshMode;
 import growthbook.sdk.java.util.GrowthBookJsonUtils;
@@ -56,6 +57,7 @@ public class GrowthBookClient {
     private final ExperimentSubscriptionManager experimentSubscriptions;
     private final FeatureRefreshListenerRegistry featureRefreshListeners;
     private final DiagnosticsProvider diagnosticsProvider;
+    private final PluginRegistry pluginRegistry;
 
     private final AtomicReference<Throwable> lastInitializationError = new AtomicReference<>();
     private final AtomicLong lastInitializationErrorAtMillis = new AtomicLong(0);
@@ -89,6 +91,9 @@ public class GrowthBookClient {
                 this.globalContextManager::initialize
         );
         this.diagnosticsProvider = new GrowthBookClientDiagnosticsProvider(this.options, clientStateView());
+
+        this.pluginRegistry = new PluginRegistry(this.options.getPlugins());
+        this.pluginRegistry.initAll();
     }
 
     private GrowthBookClientDiagnosticsProvider.ClientState clientStateView() {
@@ -544,6 +549,9 @@ public class GrowthBookClient {
         featureRepositoryProvider.shutdown();
         this.remoteEvalCoordinator.shutdown();
         listenerExecutor.shutdown();
+        // Flush registered plugins (including the built-in tracking plugin) so
+        // any buffered events are sent before the client is discarded.
+        this.pluginRegistry.closeAll();
     }
 
     private void handleInternalRefresh(GBFeaturesRepository repositorySnapshot, FeatureRefreshEvent event) {
@@ -569,9 +577,15 @@ public class GrowthBookClient {
     private EvaluationContext getEvalContext(UserContext userContext) {
         UserContext safeUserContext = userContext == null ? UserContext.builder().build() : userContext;
         if (this.options.isRemoteEvalEnabled()) {
-            return this.remoteEvalCoordinator.createEvaluationContext(safeUserContext);
+            return withPluginRegistry(this.remoteEvalCoordinator.createEvaluationContext(safeUserContext));
         }
-        return this.globalContextManager.createEvaluationContext(safeUserContext);
+        return withPluginRegistry(this.globalContextManager.createEvaluationContext(safeUserContext));
+    }
+
+    /** Attaches this client's own plugin registry so events never route through another client's plugins. */
+    private EvaluationContext withPluginRegistry(EvaluationContext context) {
+        context.setPluginRegistry(this.pluginRegistry);
+        return context;
     }
 
     @SuppressWarnings("deprecation")
