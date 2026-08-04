@@ -397,4 +397,75 @@ class NativeJavaGbFeatureRepositoryTest {
 
         wireMock.verify(2, getRequestedFor(urlPathMatching("/api/features/.*")));
     }
+
+    @Test
+    void initialize_appliesPayload_whenSseSupportHeaderAbsent() throws Exception {
+        wireMock.stubFor(get(urlPathMatching("/api/features/.*"))
+                .willReturn(aResponse()
+                        .withStatus(200)
+                        .withHeader("Content-Type", "application/json")
+                        .withBody("{\"features\":{\"dark-mode\":{\"defaultValue\":true}}}")));
+
+        NativeJavaGbFeatureRepository repo = NativeJavaGbFeatureRepository.builder()
+                .apiHost("http://localhost:" + wireMock.port())
+                .clientKey("sdk-test123")
+                .refreshStrategy(FeatureRefreshStrategy.STALE_WHILE_REVALIDATE)
+                .isCacheDisabled(true)
+                .build();
+
+        repo.initialize();
+
+        assertTrue(repo.getInitialized().get());
+        assertEquals("{\"dark-mode\":{\"defaultValue\":true}}", repo.getFeaturesJson());
+    }
+
+    @Test
+    void initialize_fallsBackToSWR_whenSseSupportHeaderAbsent() throws Exception {
+        wireMock.stubFor(get(urlPathMatching("/api/features/.*"))
+                .willReturn(aResponse()
+                        .withStatus(200)
+                        .withBody("{\"features\":{}}")));
+
+        NativeJavaGbFeatureRepository repo = NativeJavaGbFeatureRepository.builder()
+                .apiHost("http://localhost:" + wireMock.port())
+                .clientKey("sdk-test123")
+                .refreshStrategy(FeatureRefreshStrategy.SERVER_SENT_EVENTS)
+                .isCacheDisabled(true)
+                .build();
+
+        repo.initialize();
+
+        assertEquals(FeatureRefreshStrategy.STALE_WHILE_REVALIDATE, repo.getRefreshStrategy());
+    }
+
+    @Test
+    void fetchFeatures_doesNotCacheEtag_whenPayloadProcessingFails() throws Exception {
+        wireMock.stubFor(get(urlPathMatching("/api/features/.*"))
+                .willReturn(aResponse()
+                        .withStatus(200)
+                        .withHeader("X-Sse-Support", "disabled")
+                        .withHeader("ETag", "W/\"stale-etag\"")
+                        .withBody("null")));
+
+        NativeJavaGbFeatureRepository repo = NativeJavaGbFeatureRepository.builder()
+                .apiHost("http://localhost:" + wireMock.port())
+                .clientKey("sdk-test123")
+                .isCacheDisabled(true)
+                .build();
+
+        assertThrows(Exception.class, repo::fetchFeatures);
+
+        wireMock.stubFor(get(urlPathMatching("/api/features/.*"))
+                .willReturn(aResponse()
+                        .withStatus(200)
+                        .withHeader("X-Sse-Support", "disabled")
+                        .withHeader("ETag", "W/\"fresh-etag\"")
+                        .withBody("{\"features\":{\"dark-mode\":{\"defaultValue\":true}}}")));
+
+        repo.fetchFeatures();
+
+        assertEquals("{\"dark-mode\":{\"defaultValue\":true}}", repo.getFeaturesJson());
+        wireMock.verify(0, getRequestedFor(urlPathMatching("/api/features/.*"))
+                .withHeader("If-None-Match", matching(".*")));
+    }
 }
