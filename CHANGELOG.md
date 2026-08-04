@@ -1,5 +1,31 @@
 # Changelog
 
+## [0.11.0](https://github.com/growthbook/growthbook-sdk-java/compare/v0.10.10...0.11.0) (2026-08-04)
+
+
+### ⚠ BREAKING CHANGES
+
+* update OkHttp dependencies to version 5.4.0 ([#218](https://github.com/growthbook/growthbook-sdk-java/issues/218))
+
+### Features
+
+* add Caffeine cache adapter module ([#220](https://github.com/growthbook/growthbook-sdk-java/issues/220)) ([bee3e01](https://github.com/growthbook/growthbook-sdk-java/commit/bee3e010ac7b4a2be4c9df59ddbdda9c3470d44d))
+* add configuration validation at client start-up ([#223](https://github.com/growthbook/growthbook-sdk-java/issues/223)) ([f0fb1ae](https://github.com/growthbook/growthbook-sdk-java/commit/f0fb1aecbfdf8f713a39b6e8ca0c44b6f9eda3c2))
+* add custom fields ([#217](https://github.com/growthbook/growthbook-sdk-java/issues/217)) ([06c2b98](https://github.com/growthbook/growthbook-sdk-java/commit/06c2b98b68fd37695efc5ad9bd9fdf870707ff94))
+* add diagnostics API ([#219](https://github.com/growthbook/growthbook-sdk-java/issues/219)) ([32925a6](https://github.com/growthbook/growthbook-sdk-java/commit/32925a6b9140808197424eb2aa26ce73d899ae3b))
+* add JCache (JSR-107) cache adapter module ([#221](https://github.com/growthbook/growthbook-sdk-java/issues/221)) ([621121e](https://github.com/growthbook/growthbook-sdk-java/commit/621121e4d2fc84e2efa11213727601dc3e3cb044))
+* add remote evaluation support ([#216](https://github.com/growthbook/growthbook-sdk-java/issues/216)) ([393fdc8](https://github.com/growthbook/growthbook-sdk-java/commit/393fdc8fd4eec5f346556192fe19ad936905ab7d))
+* Typed feature access ([#224](https://github.com/growthbook/growthbook-sdk-java/issues/224)) ([45c57b4](https://github.com/growthbook/growthbook-sdk-java/commit/45c57b45fec74427c4acbae0e5de296d033e5d50))
+
+
+### Bug Fixes
+
+* apply 200 response payload when x-sse-support header is absent ([#231](https://github.com/growthbook/growthbook-sdk-java/issues/231)) ([e1e3b13](https://github.com/growthbook/growthbook-sdk-java/commit/e1e3b130fcf3abbe87c38c5e594f8f7141325407))
+* correct sticky bucketing logic in single-user and multi-user modes ([#211](https://github.com/growthbook/growthbook-sdk-java/issues/211)) ([1ffd7dc](https://github.com/growthbook/growthbook-sdk-java/commit/1ffd7dc30de0fc5e2e56c80cdb69d9ff746aeda1))
+* handle double forced variation values ([#213](https://github.com/growthbook/growthbook-sdk-java/issues/213)) ([0e5cb83](https://github.com/growthbook/growthbook-sdk-java/commit/0e5cb83fcb1126e7cdf4d6bf5fdf21bb37187a6f))
+* prevent unhandled exceptions when processing empty SSE event payloads ([#214](https://github.com/growthbook/growthbook-sdk-java/issues/214)) ([c509792](https://github.com/growthbook/growthbook-sdk-java/commit/c509792a3492ac443f3685b07de7fcff8dbcbf24))
+* update OkHttp dependencies to version 5.4.0 ([#218](https://github.com/growthbook/growthbook-sdk-java/issues/218)) ([72bb348](https://github.com/growthbook/growthbook-sdk-java/commit/72bb348765dc10cca78710dd1e1e6cd487ad4808))
+
 ## [0.10.10](https://github.com/growthbook/growthbook-sdk-java/compare/v0.10.9...0.10.10) (2026-05-08)
 
 
