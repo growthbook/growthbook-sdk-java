@@ -506,12 +506,6 @@ public class NativeJavaGbFeatureRepository implements IGBFeaturesRepository {
             }
 
             if (responseCode == HttpURLConnection.HTTP_OK) {
-                if (this.featuresEndpoint.matches(FEATURES_ENDPOINT_PATTERN)) {
-                    String newEtag = connection.getHeaderField("ETag");
-                    if (newEtag != null) {
-                        eTagCache.put(this.featuresEndpoint, newEtag);
-                    }
-                }
                 reader = new BufferedReader(new InputStreamReader(connection.getInputStream()));
                 StringBuilder responseBuilder = new StringBuilder();
                 String lines;
@@ -523,6 +517,12 @@ public class NativeJavaGbFeatureRepository implements IGBFeaturesRepository {
                 String sseSupportHeader = connection.getHeaderField(HttpHeaders.X_SSE_SUPPORT.getHeader());
                 this.sseAllowed.set(ENABLED.equals(sseSupportHeader));
                 this.onSuccess(responseBody, false, source, startedAtNanos);
+                if (this.featuresEndpoint.matches(FEATURES_ENDPOINT_PATTERN)) {
+                    String newEtag = connection.getHeaderField("ETag");
+                    if (newEtag != null) {
+                        eTagCache.put(this.featuresEndpoint, newEtag);
+                    }
+                }
                 return;
             }
 
