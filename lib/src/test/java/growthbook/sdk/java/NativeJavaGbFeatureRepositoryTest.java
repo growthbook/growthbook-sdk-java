@@ -1,5 +1,10 @@
 package growthbook.sdk.java;
 
+import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
+import static com.github.tomakehurst.wiremock.client.WireMock.get;
+import static com.github.tomakehurst.wiremock.client.WireMock.getRequestedFor;
+import static com.github.tomakehurst.wiremock.client.WireMock.matching;
+import static com.github.tomakehurst.wiremock.client.WireMock.urlPathMatching;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -22,7 +27,10 @@ import growthbook.sdk.java.model.HttpHeaders;
 import growthbook.sdk.java.repository.FeatureRefreshStrategy;
 import growthbook.sdk.java.repository.NativeJavaGbFeatureRepository;
 import growthbook.sdk.java.sandbox.GbCacheManager;
+import com.github.tomakehurst.wiremock.WireMockServer;
+import com.github.tomakehurst.wiremock.core.WireMockConfiguration;
 import com.sun.net.httpserver.HttpServer;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
@@ -38,6 +46,7 @@ class NativeJavaGbFeatureRepositoryTest {
     private static final String TEST_CLIENT_KEY = "sdk-test";
 
     private NativeJavaGbFeatureRepository repository;
+    private WireMockServer wireMock;
 
 
     @BeforeEach
@@ -49,6 +58,16 @@ class NativeJavaGbFeatureRepositoryTest {
                 .refreshStrategy(FeatureRefreshStrategy.STALE_WHILE_REVALIDATE)
                 .swrTtlSeconds(60)
                 .build();
+
+        wireMock = new WireMockServer(WireMockConfiguration.options().dynamicPort());
+        wireMock.start();
+    }
+
+    @AfterEach
+    void tearDown() {
+        if (wireMock != null) {
+            wireMock.stop();
+        }
     }
 
     @Test
