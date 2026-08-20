@@ -312,9 +312,7 @@ public class ExperimentEvaluator implements IExperimentEvaluator {
         }
 
         // Fire once per unique (hashAttribute, hashValue, experiment.key, variationId).
-        if (!alreadyTracked(experiment, result)) {
-            dispatchExperimentViewed(context, experiment, result);
-        }
+        trackExposure(context, experiment, result, context.isSuppressTrackingErrors());
 
         return result;
     }
@@ -417,21 +415,18 @@ public class ExperimentEvaluator implements IExperimentEvaluator {
                 log.debug("Skipping malformed remote evaluation tracking payload.");
                 continue;
             }
-            if (alreadyTracked(track.getExperiment(), track.getResult())) {
-                continue;
-            }
-            try {
-                dispatchExperimentViewed(context, track.getExperiment(), track.getResult());
-            } catch (RuntimeException e) {
-                log.warn("Tracking callback failed for remote evaluation payload.", e);
-            }
+            // Remote-eval track payloads always suppress callback failures
+            // (pre-existing behavior); the failed exposure is now also un-marked
+            // so it retries instead of being lost.
+            trackExposure(context, track.getExperiment(), track.getResult(), true);
         }
     }
 
     /**
      * Fires the user tracking callback and any registered plugins for a single exposure.
      * Plugin failures are isolated by {@link PluginRegistry}; a throwing user callback
-     * propagates to the caller.
+     * propagates to {@code trackExposure}, which un-marks the dedup key and either
+     * logs (multi-user client) or rethrows (legacy single-user contract).
      */
     private <ValueType> void dispatchExperimentViewed(
             EvaluationContext context,
@@ -448,13 +443,45 @@ public class ExperimentEvaluator implements IExperimentEvaluator {
         }
     }
 
-    private <ValueType> boolean alreadyTracked(Experiment<ValueType> experiment, ExperimentResult<ValueType> result) {
+    /**
+     * Deduped exposure delivery. When the callback throws, the dedup key is
+     * un-marked so the exposure is retried on a later evaluation instead of
+     * being lost forever (the tracker used to mark before dispatch and never
+     * un-mark). {@code suppressErrors} controls whether the exception is then
+     * logged (multi-user client — an analytics failure must not fail the
+     * assignment) or rethrown (legacy single-user contract).
+     */
+    private <ValueType> void trackExposure(EvaluationContext context,
+                                           Experiment<ValueType> experiment,
+                                           ExperimentResult<ValueType> result,
+                                           boolean suppressErrors) {
+        ExperimentTracker tracker = trackerFor(context);
         String key = trackingKey(experiment, result);
-        if (experimentTracker.isExperimentTracked(key)) {
-            return true;
+        if (tracker.isExperimentTracked(key)) {
+            return;
         }
-        experimentTracker.trackExperiment(key);
-        return false;
+        tracker.trackExperiment(key);
+        try {
+            dispatchExperimentViewed(context, experiment, result);
+        } catch (RuntimeException e) {
+            tracker.untrack(key);
+            if (suppressErrors) {
+                log.error("Tracking callback failed; the exposure will be retried on the next evaluation.", e);
+            } else {
+                throw e;
+            }
+        }
+    }
+
+    /**
+     * The multi-user client shares one right-sized tracker across evaluations
+     * (carried on the context); without it, each evaluator instance — including
+     * the fresh one allocated per prerequisite evaluation — dedupes against its
+     * own small local cache.
+     */
+    private ExperimentTracker trackerFor(EvaluationContext context) {
+        ExperimentTracker shared = context.getSharedExperimentTracker();
+        return shared != null ? shared : this.experimentTracker;
     }
 
     private <ValueType> String trackingKey(Experiment<ValueType> experiment, ExperimentResult<ValueType> result) {

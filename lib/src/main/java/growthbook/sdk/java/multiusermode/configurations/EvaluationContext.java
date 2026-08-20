@@ -46,6 +46,25 @@ public class EvaluationContext {
     @ToString.Exclude
     private StickyBucketDocWriter stickyBucketDocWriter;
 
+    /**
+     * Exposure-dedup tracker shared by the owning multi-user client across all
+     * of its evaluations (including prerequisite evaluations, which allocate
+     * fresh evaluator instances). Null → the evaluator's own local tracker
+     * (legacy single-user path).
+     */
+    @Nullable
+    @EqualsAndHashCode.Exclude
+    @ToString.Exclude
+    private growthbook.sdk.java.multiusermode.ExperimentTracker sharedExperimentTracker;
+
+    /**
+     * When true (set by the multi-user client), a throwing tracking callback is
+     * logged and its exposure retried instead of propagating out of evaluation —
+     * an analytics failure must not fail the assignment (JS/Python parity).
+     * False preserves the legacy single-user contract: the exception propagates.
+     */
+    private boolean suppressTrackingErrors;
+
     public EvaluationContext(GlobalContext global, UserContext user, StackContext stack, Options options) {
         this.global = global;
         this.user = user;
