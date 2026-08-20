@@ -15,6 +15,7 @@ import growthbook.sdk.java.repository.FeatureRefreshStrategy;
 import growthbook.sdk.java.retry.FeatureFetchRetryPolicy;
 import growthbook.sdk.java.sandbox.GbCacheManager;
 import growthbook.sdk.java.sandbox.CacheMode;
+import growthbook.sdk.java.stickyBucketing.AsyncStickyBucketService;
 import growthbook.sdk.java.stickyBucketing.InMemoryStickyBucketServiceImpl;
 import growthbook.sdk.java.stickyBucketing.StickyBucketService;
 import growthbook.sdk.java.util.ForcedVariationsUtils;
@@ -27,6 +28,7 @@ import java.time.Duration;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.Executor;
 
 @Data
 @Slf4j
@@ -86,6 +88,10 @@ public class Options {
                 null,
                 null,
                 null,
+                null,
+                null,
+                null,
+                null,
                 null
         );
     }
@@ -118,7 +124,11 @@ public class Options {
                    @Nullable Integer remoteEvalCacheTtlSeconds,
                    @Nullable Duration backgroundFetchInterval,
                    @Nullable FeatureFetchRetryPolicy retryPolicy,
-                   @Nullable List<GrowthBookPlugin> plugins
+                   @Nullable List<GrowthBookPlugin> plugins,
+                   @Nullable AsyncStickyBucketService asyncStickyBucketService,
+                   @Nullable Executor asyncExecutor,
+                   @Nullable Long stickyBucketCacheTtlSeconds,
+                   @Nullable Integer stickyBucketCacheSize
     ) {
         this.enabled = enabled == null || enabled;
         this.isQaMode = isQaMode != null && isQaMode;
@@ -148,6 +158,10 @@ public class Options {
         this.backgroundFetchInterval = backgroundFetchInterval;
         this.retryPolicy = retryPolicy;
         this.plugins = plugins;
+        this.asyncStickyBucketService = asyncStickyBucketService;
+        this.asyncExecutor = asyncExecutor;
+        this.stickyBucketCacheTtlSeconds = stickyBucketCacheTtlSeconds;
+        this.stickyBucketCacheSize = stickyBucketCacheSize == null ? 1000 : stickyBucketCacheSize;
     }
 
     /**
@@ -316,6 +330,42 @@ public class Options {
     @Nullable
     private FeatureFetchRetryPolicy retryPolicy;
 
+    /**
+     * Non-blocking sticky bucket service for the multi-user client. Mutually
+     * exclusive with {@link #stickyBucketService} — configure exactly one.
+     * See {@link AsyncStickyBucketService} for the contract.
+     */
+    @Nullable
+    private AsyncStickyBucketService asyncStickyBucketService;
+
+    /**
+     * Executor for the client's asynchronous work: offloading blocking
+     * {@link StickyBucketService} calls and composing async evaluations. When
+     * null, the client creates its own bounded daemon pool and shuts it down in
+     * {@code shutdown()}; a caller-supplied executor is never shut down by the
+     * SDK. On JDK 21+, pass {@code Executors.newVirtualThreadPerTaskExecutor()}
+     * so blocking offloads scale with the store instead of a fixed pool.
+     */
+    @Nullable
+    private Executor asyncExecutor;
+
+    /**
+     * Opt-in TTL, in seconds, for caching sticky bucket reads per user
+     * attributes. Null or non-positive (the default) disables caching:
+     * assignments are fetched per evaluation, so assignment changes made by
+     * other processes are picked up promptly. Enabling trades that freshness
+     * for fewer store lookups on hot users.
+     */
+    @Nullable
+    private Long stickyBucketCacheTtlSeconds;
+
+    /**
+     * Maximum entries in the opt-in sticky bucket read cache (default 1000).
+     * Non-positive disables caching. Only meaningful when
+     * {@link #stickyBucketCacheTtlSeconds} is set.
+     */
+    private Integer stickyBucketCacheSize;
+
     @Nullable
     public String getCacheDirectory() {
         return cacheDirectory;
@@ -330,6 +380,15 @@ public class Options {
         // Thread-safe backing map: this Options instance configures the multi-user
         // GrowthBookClient, which evaluates (and therefore saves assignments) concurrently.
         this.setStickyBucketService(new InMemoryStickyBucketServiceImpl());
+    }
+
+    /**
+     * Whether either flavor of sticky bucket service is configured.
+     *
+     * @return true when a sync or async sticky bucket service is set
+     */
+    public boolean isStickyBucketingConfigured() {
+        return this.stickyBucketService != null || this.asyncStickyBucketService != null;
     }
 
     public void setGlobalAttributes(@Nullable String attributesJson) {
