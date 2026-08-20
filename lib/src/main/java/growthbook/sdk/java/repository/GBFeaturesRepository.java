@@ -51,11 +51,11 @@ import java.io.IOException;
 import java.net.HttpURLConnection;
 import java.time.Duration;
 import java.time.Instant;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ThreadFactory;
@@ -179,9 +179,11 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
     private OkHttpClient sseHttpClient;
 
     /**
-     * Optional callbacks for getting updates when features are refreshed
+     * Optional callbacks for getting updates when features are refreshed.
+     * CopyOnWriteArrayList: registration/clearing happens on caller threads while
+     * the poll/SSE/retry background threads iterate the list during dispatch.
      */
-    private final ArrayList<FeatureRefreshCallback> refreshCallbacks = new ArrayList<>();
+    private final CopyOnWriteArrayList<FeatureRefreshCallback> refreshCallbacks = new CopyOnWriteArrayList<>();
 
     /**
      * Flag to know whether GBFeatureRepository is initialized
@@ -549,17 +551,15 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
      * @param callback This callback will be called when features are refreshed
      */
     @Override
-    public synchronized void onFeaturesRefresh(FeatureRefreshCallback callback) {
+    public void onFeaturesRefresh(FeatureRefreshCallback callback) {
         if (callback == null) {
             return;
         }
-        if (!this.refreshCallbacks.contains(callback)) {
-            this.refreshCallbacks.add(callback);
-        }
+        this.refreshCallbacks.addIfAbsent(callback);
     }
 
     @Override
-    public synchronized void clearCallbacks() {
+    public void clearCallbacks() {
         this.refreshCallbacks.clear();
     }
 
