@@ -166,6 +166,17 @@ tasks.register('runPerfHarness', JavaExec) {
     }
 }
 
+tasks.register('runStickyPerfHarness', JavaExec) {
+    group = 'verification'
+    description = 'Runs the multi-threaded sticky bucket performance harness with a simulated store.'
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = 'growthbook.sdk.java.perf.StickyBucketPerfHarness'
+    systemProperty 'stickyPerf.threads', project.findProperty('stickyPerfThreads') ?: '100'
+    systemProperty 'stickyPerf.requests', project.findProperty('stickyPerfRequests') ?: '2000'
+    systemProperty 'stickyPerf.latencyMs', project.findProperty('stickyPerfLatencyMs') ?: '5'
+}
+
 tasks.register('runTrackingPluginSmoke', JavaExec) {
     group = 'verification'
     description = 'Runs a local end-to-end smoke test for the GrowthBook tracking plugin.'
