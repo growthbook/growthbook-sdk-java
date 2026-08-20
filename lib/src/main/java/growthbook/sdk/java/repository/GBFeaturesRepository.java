@@ -1208,15 +1208,14 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
             }
             this.sseHttpClient = null;
             log.info("SseHttpClient shutdown");
-            if (this.cacheManager != null) {
-                try {
-                    this.cacheManager.clearCache();
-                } catch (Exception ignored) {
-                }
-                this.cacheManager = null;
-                log.info("CacheManager shutdown");
-            }
-
+        }
+        // Release the cache manager reference without clearing the underlying store:
+        // persisted features are meant to survive restarts, and with shared stores
+        // (e.g. a Redis-backed GbCacheManager) clearing here would wipe the cache for
+        // every other SDK instance using the same namespace.
+        if (this.cacheManager != null) {
+            this.cacheManager = null;
+            log.info("CacheManager released");
         }
     }
 

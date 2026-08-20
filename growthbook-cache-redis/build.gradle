@@ -1,0 +1,104 @@
+plugins {
+    id 'java-library'
+    id 'maven-publish'
+}
+
+sourceCompatibility = JavaVersion.VERSION_1_8
+targetCompatibility = JavaVersion.VERSION_1_8
+
+repositories {
+    mavenCentral()
+}
+
+sourceSets {
+    integrationTest {
+        java.srcDir 'src/integrationTest/java'
+        resources.srcDir 'src/integrationTest/resources'
+        compileClasspath += sourceSets.main.output
+        runtimeClasspath += sourceSets.main.output
+    }
+}
+
+configurations {
+    integrationTestImplementation.extendsFrom testImplementation
+    integrationTestRuntimeOnly.extendsFrom testRuntimeOnly
+}
+
+dependencies {
+    api project(':lib')
+
+    // Both Redis clients are optional: a consumer adds the one they use.
+    compileOnly 'redis.clients:jedis:4.4.6'
+    compileOnly 'io.lettuce:lettuce-core:6.2.6.RELEASE'
+
+    testImplementation 'org.junit.jupiter:junit-jupiter:5.8.2'
+    testImplementation 'org.mockito:mockito-core:4.8.0'
+    testImplementation 'redis.clients:jedis:4.4.6'
+    testImplementation 'io.lettuce:lettuce-core:6.2.6.RELEASE'
+
+    // Integration tests run against a real Redis via Testcontainers (require Docker).
+    integrationTestImplementation 'org.testcontainers:testcontainers:1.20.6'
+    integrationTestImplementation 'org.testcontainers:junit-jupiter:1.20.6'
+}
+
+java {
+    withSourcesJar()
+    withJavadocJar()
+}
+
+tasks.named('test') {
+    useJUnitPlatform()
+}
+
+// Opt-in: not wired into `check`, so the standard build never requires Docker.
+tasks.register('integrationTest', Test) {
+    description = 'Runs integration tests against a real Redis (requires Docker).'
+    group = 'verification'
+    testClassesDirs = sourceSets.integrationTest.output.classesDirs
+    classpath = sourceSets.integrationTest.runtimeClasspath
+    useJUnitPlatform()
+    shouldRunAfter tasks.named('test')
+}
+
+publishing {
+    publications {
+        mavenJava(MavenPublication) {
+            from components.java
+
+            pom {
+                name = 'GrowthBook SDK Java Redis Cache Adapter'
+                description = 'Optional Redis (Jedis/Lettuce) cache adapter for the GrowthBook Java SDK'
+                url = 'https://github.com/growthbook/growthbook-sdk-java'
+                licenses {
+                    license {
+                        name = 'MIT License'
+                        url = 'https://github.com/growthbook/growthbook-sdk-java/blob/main/LICENSE'
+                    }
+                }
+                developers {
+                    developer {
+                        id = 'growthbook'
+                        name = 'GrowthBook'
+                        email = 'hello@growthbook.io'
+                    }
+                }
+                scm {
+                    connection = 'scm:git:git://github.com/growthbook/growthbook-sdk-java.git'
+                    developerConnection = 'scm:git:ssh://github.com:growthbook/growthbook-sdk-java.git'
+                    url = 'https://github.com/growthbook/growthbook-sdk-java'
+                }
+            }
+        }
+    }
+
+    repositories {
+        maven {
+            name = "GitHubPackages"
+            url = uri("https://maven.pkg.github.com/growthbook/growthbook-sdk-java")
+            credentials {
+                username = System.getenv("GITHUB_ACTOR")
+                password = System.getenv("GITHUB_TOKEN")
+            }
+        }
+    }
+}
