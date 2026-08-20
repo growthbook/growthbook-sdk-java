@@ -407,7 +407,15 @@ public class FeatureEvaluator implements IFeatureEvaluator {
     ) {
         FeatureUsageCallbackWithUser cb = context.getOptions().getFeatureUsageCallbackWithUser();
         if (cb != null) {
-            cb.onFeatureUsage(key, result, context.getUser());
+            try {
+                cb.onFeatureUsage(key, result, context.getUser());
+            } catch (RuntimeException e) {
+                if (!context.isSuppressTrackingErrors()) {
+                    throw e;
+                }
+                // Multi-user client: an analytics failure must not fail the evaluation.
+                log.error("Feature usage callback failed for key {}", key, e);
+            }
         }
         PluginRegistry registry = context.getPluginRegistry();
         if (registry != null) {

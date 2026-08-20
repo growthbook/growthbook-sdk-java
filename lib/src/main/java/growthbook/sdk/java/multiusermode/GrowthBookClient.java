@@ -88,6 +88,9 @@ public class GrowthBookClient {
     private final DiagnosticsProvider diagnosticsProvider;
     private final PluginRegistry pluginRegistry;
 
+    /** Exposure dedup shared across all of this client's evaluations; sized for multi-user traffic. */
+    private final ExperimentTracker exposureTracker = new ExperimentTracker(10_000);
+
     /** Owns all sticky bucket I/O; null when no sticky bucket service is configured. */
     @Nullable
     private final StickyBucketManager stickyBucketManager;
@@ -1087,6 +1090,12 @@ public class GrowthBookClient {
     /** Attaches this client's own plugin registry so events never route through another client's plugins. */
     private EvaluationContext withPluginRegistry(EvaluationContext context) {
         context.setPluginRegistry(this.pluginRegistry);
+        // One right-sized tracker for the whole client: the evaluator-local
+        // default (30 entries) thrashes under multi-user traffic and prerequisite
+        // evaluations would otherwise dedupe against separate caches.
+        context.setSharedExperimentTracker(this.exposureTracker);
+        // Analytics failures are logged and retried, never fail the assignment.
+        context.setSuppressTrackingErrors(true);
         return context;
     }
 
