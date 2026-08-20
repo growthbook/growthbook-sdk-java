@@ -79,6 +79,9 @@ public class GrowthBookClient {
     private volatile RemoteEvalService remoteEvalService;
     private volatile RemoteEvalCache remoteEvalCache;
     private final AtomicBoolean remoteEvalReady = new AtomicBoolean(false);
+    private final AtomicReference<CompletableFuture<Boolean>> remoteEvalInit = new AtomicReference<>();
+    private final java.util.concurrent.locks.ReentrantLock remoteEvalInitLock =
+            new java.util.concurrent.locks.ReentrantLock();
     private final AtomicBoolean clientShutdown = new AtomicBoolean(false);
     private final AtomicReference<Throwable> lastInitializationError = new AtomicReference<>();
     private final AtomicLong lastInitializationErrorAtMillis = new AtomicLong(0);
@@ -573,8 +576,14 @@ public class GrowthBookClient {
         this.callbacks.add(callback);
     }
 
-    public synchronized void shutdown() {
-        this.clientShutdown.set(true);
+    public void shutdown() {
+        // CAS instead of synchronized: shutdown blocks for seconds (sticky flush,
+        // plugin close) and a monitor held that long pins virtual-thread carriers
+        // and stalls every synchronized method on this client. CAS also makes
+        // shutdown idempotent — a second caller returns immediately.
+        if (!this.clientShutdown.compareAndSet(false, true)) {
+            return;
+        }
         // Drain sticky bucket saves FIRST, while the offload executor is fully
         // alive — shutting the executor down before the flush would discard
         // trailing saves and leave the flush waiting on futures nobody completes.
@@ -614,17 +623,49 @@ public class GrowthBookClient {
         if (this.remoteEvalReady.get()) {
             return true;
         }
-        synchronized (this) {
+        // One-time-init future instead of synchronized(this): the initialization
+        // performs blocking HTTP (SSE invalidation setup), and a monitor held
+        // across network I/O pins virtual-thread carriers and blocks every other
+        // synchronized member. Exactly one caller initializes; concurrent callers
+        // wait on the future. A failed attempt resets so the next call retries
+        // (preserving the previous retry-on-every-call semantics).
+        while (true) {
             if (this.remoteEvalReady.get()) {
                 return true;
             }
-            RemoteEvalOptionsValidator.validate(this.options);
-            getRemoteEvalService();
-            getRemoteEvalCache();
-            initializeRemoteEvalSseInvalidationIfNeeded();
-            this.globalContext.compareAndSet(null, buildGlobalContext(Collections.emptyMap(), new JsonObject()));
-            this.remoteEvalReady.set(true);
-            return true;
+            CompletableFuture<Boolean> inflight = this.remoteEvalInit.get();
+            if (inflight == null) {
+                CompletableFuture<Boolean> created = new CompletableFuture<>();
+                if (!this.remoteEvalInit.compareAndSet(null, created)) {
+                    continue;
+                }
+                try {
+                    RemoteEvalOptionsValidator.validate(this.options);
+                    getRemoteEvalService();
+                    getRemoteEvalCache();
+                    initializeRemoteEvalSseInvalidationIfNeeded();
+                    this.globalContext.compareAndSet(null, buildGlobalContext(Collections.emptyMap(), new JsonObject()));
+                    this.remoteEvalReady.set(true);
+                    created.complete(true);
+                    return true;
+                } catch (RuntimeException e) {
+                    this.remoteEvalInit.compareAndSet(created, null);
+                    created.completeExceptionally(e);
+                    throw e;
+                }
+            }
+            try {
+                return inflight.get();
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                throw new RuntimeException("Interrupted while waiting for remote eval initialization", e);
+            } catch (ExecutionException e) {
+                Throwable cause = e.getCause() == null ? e : e.getCause();
+                if (cause instanceof RuntimeException) {
+                    throw (RuntimeException) cause;
+                }
+                throw new RuntimeException(cause);
+            }
         }
     }
 
@@ -959,25 +1000,46 @@ public class GrowthBookClient {
         return getRemoteEvalCache().get(cacheKey, requestBody);
     }
 
-    private synchronized RemoteEvalService getRemoteEvalService() {
-        if (this.remoteEvalService == null) {
-            this.remoteEvalService = new RemoteEvalService(this.options.getApiHost(), this.options.getClientKey());
+    // Double-checked on the volatile fields with a ReentrantLock slow path:
+    // getRemoteEvalCache() sits on the remote-eval evaluation hot path, and a
+    // synchronized method there contends every eval and pins virtual threads.
+    private RemoteEvalService getRemoteEvalService() {
+        RemoteEvalService service = this.remoteEvalService;
+        if (service != null) {
+            return service;
         }
-        return this.remoteEvalService;
+        this.remoteEvalInitLock.lock();
+        try {
+            if (this.remoteEvalService == null) {
+                this.remoteEvalService = new RemoteEvalService(this.options.getApiHost(), this.options.getClientKey());
+            }
+            return this.remoteEvalService;
+        } finally {
+            this.remoteEvalInitLock.unlock();
+        }
     }
 
-    private synchronized RemoteEvalCache getRemoteEvalCache() {
-        if (this.remoteEvalCache == null) {
-            this.remoteEvalCache = new RemoteEvalCache(
-                    getRemoteEvalService(),
-                    RemoteEvalRequestBuilder.normalizeCacheSize(this.options.getRemoteEvalCacheSize()),
-                    secondsToDuration(this.options.getSwrTtlSeconds() == null
-                            ? SDKConstants.DEFAULT_SWR_TTL_SECONDS
-                            : this.options.getSwrTtlSeconds()),
-                    secondsToDuration(this.options.getRemoteEvalCacheTtlSeconds())
-            );
+    private RemoteEvalCache getRemoteEvalCache() {
+        RemoteEvalCache cache = this.remoteEvalCache;
+        if (cache != null) {
+            return cache;
         }
-        return this.remoteEvalCache;
+        this.remoteEvalInitLock.lock();
+        try {
+            if (this.remoteEvalCache == null) {
+                this.remoteEvalCache = new RemoteEvalCache(
+                        getRemoteEvalService(),
+                        RemoteEvalRequestBuilder.normalizeCacheSize(this.options.getRemoteEvalCacheSize()),
+                        secondsToDuration(this.options.getSwrTtlSeconds() == null
+                                ? SDKConstants.DEFAULT_SWR_TTL_SECONDS
+                                : this.options.getSwrTtlSeconds()),
+                        secondsToDuration(this.options.getRemoteEvalCacheTtlSeconds())
+                );
+            }
+            return this.remoteEvalCache;
+        } finally {
+            this.remoteEvalInitLock.unlock();
+        }
     }
 
     private static Duration secondsToDuration(@Nullable Integer seconds) {
