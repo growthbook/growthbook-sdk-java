@@ -581,7 +581,9 @@ public class GrowthBookClient {
     }
 
     private <ValueType> void fireSubscriptions(Experiment<ValueType> experiment, ExperimentResult<ValueType> result) {
-        String key = experiment.getKey();
+        // ConcurrentHashMap rejects null keys (the previous HashMap tolerated them);
+        // a key-less experiment still dedupes, under one shared sentinel entry.
+        String key = experiment.getKey() != null ? experiment.getKey() : "";
         // If assigned variation has changed, fire subscriptions. The change check and
         // the publish must be one atomic step or two concurrent run() calls can both
         // observe the stale value and double-fire. Callbacks run outside compute():
