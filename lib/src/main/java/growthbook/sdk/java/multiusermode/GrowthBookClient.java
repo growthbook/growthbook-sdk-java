@@ -32,6 +32,7 @@ import growthbook.sdk.java.remoteeval.RemoteEvalRequestBuilder;
 import growthbook.sdk.java.remoteeval.RemoteEvalResponse;
 import growthbook.sdk.java.remoteeval.RemoteEvalService;
 import growthbook.sdk.java.repository.FeatureRefreshStrategy;
+import growthbook.sdk.java.repository.FeatureSnapshot;
 import growthbook.sdk.java.repository.GBFeaturesRepository;
 import growthbook.sdk.java.repository.RefreshMode;
 import growthbook.sdk.java.sandbox.CacheManagerFactory;
@@ -641,9 +642,12 @@ public class GrowthBookClient {
     }
 
     private GlobalContext buildGlobalContext(GBFeaturesRepository sourceRepository) {
+        // Read the payload as ONE snapshot: two separate getter calls could pair
+        // new features with old saved groups if a refresh lands in between.
+        FeatureSnapshot featureSnapshot = sourceRepository.getFeatureSnapshot();
         return GlobalContext.builder()
-                .features(sourceRepository.getParsedFeatures())
-                .savedGroups(sourceRepository.getParsedSavedGroups())
+                .features(featureSnapshot.getParsedFeatures())
+                .savedGroups(featureSnapshot.getParsedSavedGroups())
                 .enabled(this.options.getEnabled())
                 .qaMode(this.options.getIsQaMode())
                 .forcedFeatureValues(this.options.getGlobalForcedFeatureValues())

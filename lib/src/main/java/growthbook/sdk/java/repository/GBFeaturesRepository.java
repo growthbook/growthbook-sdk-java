@@ -51,7 +51,6 @@ import java.io.IOException;
 import java.net.HttpURLConnection;
 import java.time.Duration;
 import java.time.Instant;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
@@ -208,13 +207,33 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
     private EventSource sseEventSource = null;
 
     /**
+     * The current features payload — raw JSON and parsed forms captured together
+     * from one successful refresh and swapped atomically, so readers can never
+     * observe features from one payload paired with saved groups from another.
+     */
+    private final AtomicReference<FeatureSnapshot> snapshot = new AtomicReference<>(FeatureSnapshot.EMPTY);
+
+    /**
+     * The current features payload as one immutable snapshot. Prefer this over the
+     * individual getters when consuming more than one part of the payload.
+     *
+     * @return the snapshot from the most recent successful refresh
+     */
+    public FeatureSnapshot getFeatureSnapshot() {
+        return this.snapshot.get();
+    }
+
+    /**
      * Allows you to get the saved groups JSON from the provided {@link GBFeaturesRepository#getFeaturesEndpoint()}.
      * You must call {@link GBFeaturesRepository#initialize()} before calling this method
      * or your saved groups would not have loaded.
+     *
+     * @return saved groups JSON string
      */
-    @Getter
     @Nullable
-    private volatile String savedGroupsJson = EMPTY_JSON_OBJECT_STRING;
+    public String getSavedGroupsJson() {
+        return this.snapshot.get().getSavedGroupsJson();
+    }
 
     /**
      * Allows you to get the features JSON from the provided {@link GBFeaturesRepository#getFeaturesEndpoint()}.
@@ -223,19 +242,23 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
      *
      * @return feature data JSON in a type of String. Handle refresh strategy
      */
-    @Getter
-    private volatile String featuresJson = EMPTY_JSON_OBJECT_STRING;
+    public String getFeaturesJson() {
+        return this.snapshot.get().getFeaturesJson();
+    }
 
     /**
      * Keys are unique identifiers for the features and the values are Feature objects.
      * Feature definitions - To be pulled from API / Cache
+     *
+     * @return parsed feature definitions
      */
-    //@Getter
-    @Getter
-    private volatile Map<String, Feature<?>> parsedFeatures = new HashMap<>();
+    public Map<String, Feature<?>> getParsedFeatures() {
+        return this.snapshot.get().getParsedFeatures();
+    }
 
-    @Getter
-    private volatile JsonObject parsedSavedGroups = new JsonObject();
+    public JsonObject getParsedSavedGroups() {
+        return this.snapshot.get().getParsedSavedGroups();
+    }
 
     public void setCacheManager(GbCacheManager cacheManager) {
         if (!isCacheDisabled) {
@@ -699,7 +722,7 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
 
                             @Override
                             public void onFeaturesUpdated() {
-                                onRefreshSuccess(featuresJson);
+                                onRefreshSuccess(getFeaturesJson());
                                 recordRefreshSuccess(false);
                             }
                         }
@@ -1018,18 +1041,21 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
                 refreshedFeatures = featuresJsonElement.toString().trim();
             }
 
-            this.featuresJson = refreshedFeatures;
-            this.savedGroupsJson = refreshedSavedGroups;
-
-            Map<String, Feature<?>> newParsed = TransformationUtil.transformFeatures(this.featuresJson);
-            JsonObject newSaved = TransformationUtil.transformSavedGroups(this.savedGroupsJson);
-            this.parsedFeatures = newParsed;
-            this.parsedSavedGroups = newSaved == null ? new JsonObject() : newSaved;
+            Map<String, Feature<?>> newParsed = TransformationUtil.transformFeatures(refreshedFeatures);
+            JsonObject newSaved = TransformationUtil.transformSavedGroups(refreshedSavedGroups);
+            // One atomic swap: readers never see this payload's features paired
+            // with a previous payload's saved groups (or vice versa).
+            this.snapshot.set(new FeatureSnapshot(
+                    refreshedFeatures,
+                    refreshedSavedGroups,
+                    newParsed,
+                    newSaved == null ? new JsonObject() : newSaved
+            ));
             this.hasFeatureData.set(true);
 
             if (!isFromCache) {
                 this.lastSuccessfulFetchAtMillis.set(System.currentTimeMillis());
-                this.onRefreshSuccess(this.featuresJson);
+                this.onRefreshSuccess(refreshedFeatures);
             }
             // bump TTL only after successful processing
             this.refreshExpiresAt();
@@ -1061,7 +1087,7 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
     }
 
     public int getActiveFeatureCount() {
-        return this.parsedFeatures == null ? 0 : this.parsedFeatures.size();
+        return this.snapshot.get().getParsedFeatures().size();
     }
 
     /**
@@ -1076,7 +1102,7 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
             if (response.code() == HttpURLConnection.HTTP_NOT_MODIFIED) {
                 log.info("Features not modified (304). Using existing data.");
                 this.refreshExpiresAt();
-                this.onRefreshSuccess(this.featuresJson);
+                this.onRefreshSuccess(getFeaturesJson());
                 recordRefreshSuccess(false);
                 return;
             }
