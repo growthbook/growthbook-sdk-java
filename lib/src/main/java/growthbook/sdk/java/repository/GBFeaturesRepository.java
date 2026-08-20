@@ -83,6 +83,11 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
         thread.setDaemon(true);
         return thread;
     };
+    private static final ThreadFactory POLL_THREAD_FACTORY = runnable -> {
+        Thread thread = new Thread(runnable, "growthbook-feature-poll");
+        thread.setDaemon(true);
+        return thread;
+    };
 
     /**
      * Thread-safe LRU cache with max 100 entries to prevent unbounded growth
@@ -583,8 +588,9 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
 
     private void schedulePolling() {
         if (pollScheduler != null || this.refreshStrategy == FeatureRefreshStrategy.SERVER_SENT_EVENTS) return;
-        // create single threaded executor
-        pollScheduler = Executors.newSingleThreadScheduledExecutor();
+        // Named daemon thread: a non-daemon poller would keep the JVM alive
+        // when the application exits without calling shutdown().
+        pollScheduler = Executors.newSingleThreadScheduledExecutor(POLL_THREAD_FACTORY);
         pollScheduler.scheduleWithFixedDelay(this::pollOnceSafe, this.swrTtlSeconds, this.swrTtlSeconds, TimeUnit.SECONDS);
     }
 
