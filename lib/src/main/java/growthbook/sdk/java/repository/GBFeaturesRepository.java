@@ -54,6 +54,8 @@ import java.time.Instant;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -84,6 +86,11 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
     };
     private static final ThreadFactory POLL_THREAD_FACTORY = runnable -> {
         Thread thread = new Thread(runnable, "growthbook-feature-poll");
+        thread.setDaemon(true);
+        return thread;
+    };
+    private static final ThreadFactory FETCH_RETRY_THREAD_FACTORY = runnable -> {
+        Thread thread = new Thread(runnable, "growthbook-fetch-retry");
         thread.setDaemon(true);
         return thread;
     };
@@ -205,6 +212,19 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
 
     @Nullable
     private EventSource sseEventSource = null;
+
+    /** In-flight enqueue()-based feature fetch, retained so shutdown() can cancel it. */
+    @Nullable
+    private volatile Call inflightAsyncFetchCall;
+
+    /** Result futures of async fetches not yet completed — failed at shutdown so nothing ever hangs. */
+    private final java.util.Set<CompletableFuture<Void>> pendingAsyncFetches = ConcurrentHashMap.newKeySet();
+
+    /** Daemon timer for async fetch retry backoff (lazy; no Thread.sleep on any pool thread). */
+    @Nullable
+    private volatile ScheduledExecutorService asyncFetchRetryScheduler;
+    private final java.util.concurrent.locks.ReentrantLock asyncFetchRetrySchedulerLock =
+            new java.util.concurrent.locks.ReentrantLock();
 
     /**
      * The current features payload — raw JSON and parsed forms captured together
@@ -638,6 +658,140 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
         initialize(false);
     }
 
+    /**
+     * Non-blocking initialization for the stale-while-revalidate and SSE
+     * strategies: the initial feature fetch goes through OkHttp's async
+     * {@code enqueue()} and retry backoff is scheduled on a daemon timer — no
+     * caller thread is parked through network round-trips or retry delays.
+     * Completion may happen on an OkHttp dispatcher or retry-scheduler thread;
+     * callers must hop to their own executor before doing significant work.
+     *
+     * @param retryOnFailure passed through to the SSE reconnect logic
+     * @return a future completing when features are loaded (possibly from the
+     *         cache fallback) and background refresh is running, or completing
+     *         exceptionally when the fetch fails without a usable fallback
+     */
+    public CompletableFuture<Void> initializeAsync(Boolean retryOnFailure) {
+        if (this.initialized) {
+            return CompletableFuture.completedFuture(null);
+        }
+        if (this.refreshStrategy == FeatureRefreshStrategy.REMOTE_EVAL_STRATEGY) {
+            // Remote eval keeps its blocking initialization; callers offload it.
+            CompletableFuture<Void> unsupported = new CompletableFuture<>();
+            unsupported.completeExceptionally(new IllegalStateException(
+                    "initializeAsync does not support the remote-eval strategy; use initialize() on an executor"));
+            return unsupported;
+        }
+        return fetchFeaturesAsync().thenRun(() -> {
+            if (this.refreshStrategy == FeatureRefreshStrategy.SERVER_SENT_EVENTS) {
+                initializeSSE(retryOnFailure);
+            } else {
+                schedulePolling();
+            }
+            this.initialized = true;
+        });
+    }
+
+    /**
+     * Fetch features via OkHttp {@code enqueue()} with scheduled (never slept)
+     * retry backoff, honoring the same retry policy, cache-freshness skip, and
+     * cache-fallback failure handling as the blocking path.
+     */
+    CompletableFuture<Void> fetchFeaturesAsync() {
+        CompletableFuture<Void> result = new CompletableFuture<>();
+        if (shouldSkipRefresh(RefreshMode.DEFAULT)) {
+            log.debug("Skipping feature refresh because cached features are newer than the background fetch interval.");
+            result.complete(null);
+            return result;
+        }
+        pendingAsyncFetches.add(result);
+        result.whenComplete((v, e) -> pendingAsyncFetches.remove(result));
+        attemptAsyncFetch(result, 1);
+        return result;
+    }
+
+    private void attemptAsyncFetch(CompletableFuture<Void> result, int attempt) {
+        if (this.shuttingDown.get()) {
+            result.completeExceptionally(new IllegalStateException("repository is shut down"));
+            return;
+        }
+        Request request;
+        try {
+            request = buildFeatureFetchRequest(RefreshMode.DEFAULT);
+        } catch (RuntimeException e) {
+            result.completeExceptionally(e);
+            return;
+        }
+        Call call = this.okHttpClient.newCall(request);
+        this.inflightAsyncFetchCall = call;
+        call.enqueue(new Callback() {
+            @Override
+            public void onResponse(@NotNull Call completedCall, @NotNull Response response) {
+                GBFeaturesRepository.this.inflightAsyncFetchCall = null;
+                try (Response toClose = response) {
+                    String sseSupportHeader = toClose.header(HttpHeaders.X_SSE_SUPPORT.getHeader());
+                    GBFeaturesRepository.this.sseAllowed = Objects.equals(sseSupportHeader, ENABLED);
+                    onSuccess(toClose);
+                    result.complete(null);
+                } catch (FeatureFetchException e) {
+                    failOrScheduleRetry(result, attempt, e);
+                } catch (RuntimeException e) {
+                    result.completeExceptionally(e);
+                }
+            }
+
+            @Override
+            public void onFailure(@NotNull Call failedCall, @NotNull IOException e) {
+                GBFeaturesRepository.this.inflightAsyncFetchCall = null;
+                if (failedCall.isCanceled()) {
+                    result.completeExceptionally(new IllegalStateException("feature fetch cancelled", e));
+                    return;
+                }
+                failOrScheduleRetry(result, attempt, new RetryableFeatureFetchException(
+                        FeatureFetchException.FeatureFetchErrorCode.NO_RESPONSE_ERROR,
+                        e.getMessage(),
+                        e
+                ));
+            }
+        });
+    }
+
+    private void failOrScheduleRetry(CompletableFuture<Void> result, int attempt, FeatureFetchException failure) {
+        int maxAttempts = this.retryPolicy.getMaxAttempts();
+        if (failure instanceof RetryableFeatureFetchException && attempt < maxAttempts && !this.shuttingDown.get()) {
+            int nextAttempt = attempt + 1;
+            long delayMillis = this.retryPolicy.getDelayMillisBeforeAttempt(nextAttempt);
+            log.warn("Feature fetch failed. Retry attempt {}/{} in {}ms.", nextAttempt, maxAttempts, delayMillis);
+            asyncFetchRetryScheduler().schedule(
+                    () -> attemptAsyncFetch(result, nextAttempt), delayMillis, TimeUnit.MILLISECONDS);
+            return;
+        }
+        try {
+            handleFetchFailure(failure); // may satisfy from the cache fallback
+            result.complete(null);
+        } catch (FeatureFetchException e) {
+            result.completeExceptionally(e);
+        } catch (RuntimeException e) {
+            result.completeExceptionally(e);
+        }
+    }
+
+    private ScheduledExecutorService asyncFetchRetryScheduler() {
+        ScheduledExecutorService scheduler = this.asyncFetchRetryScheduler;
+        if (scheduler != null) {
+            return scheduler;
+        }
+        this.asyncFetchRetrySchedulerLock.lock();
+        try {
+            if (this.asyncFetchRetryScheduler == null) {
+                this.asyncFetchRetryScheduler = Executors.newSingleThreadScheduledExecutor(FETCH_RETRY_THREAD_FACTORY);
+            }
+            return this.asyncFetchRetryScheduler;
+        } finally {
+            this.asyncFetchRetrySchedulerLock.unlock();
+        }
+    }
+
     @Override
     public void initialize(Boolean retryOnFailure) throws FeatureFetchException {
         if (this.initialized) return;
@@ -873,7 +1027,7 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
         }
     }
 
-    private void fetchFeaturesOnce(RefreshMode refreshMode) throws FeatureFetchException {
+    private Request buildFeatureFetchRequest(RefreshMode refreshMode) {
         if (this.featuresEndpoint == null) {
             throw new IllegalArgumentException("features endpoint cannot be null");
         }
@@ -892,7 +1046,11 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
                 requestBuilder.header(HttpHeaders.CACHE_CONTROL.getHeader(), "max-age=" + this.swrTtlSeconds);
             }
         }
-        Request request = requestBuilder.build();
+        return requestBuilder.build();
+    }
+
+    private void fetchFeaturesOnce(RefreshMode refreshMode) throws FeatureFetchException {
+        Request request = buildFeatureFetchRequest(refreshMode);
 
         try (Response response = this.okHttpClient.newCall(request).execute()) {
             String sseSupportHeader = response.header(HttpHeaders.X_SSE_SUPPORT.getHeader());
@@ -1211,6 +1369,21 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
     public void shutdown() {
         this.shuttingDown.set(true);
         this.sseConnected.set(false);
+        // Cancel any in-flight async fetch and pending retries so an
+        // initializeAsync() future can never hang past shutdown.
+        Call asyncFetchCall = this.inflightAsyncFetchCall;
+        if (asyncFetchCall != null) {
+            asyncFetchCall.cancel();
+            this.inflightAsyncFetchCall = null;
+        }
+        ScheduledExecutorService retryScheduler = this.asyncFetchRetryScheduler;
+        if (retryScheduler != null) {
+            retryScheduler.shutdownNow();
+            this.asyncFetchRetryScheduler = null;
+        }
+        for (CompletableFuture<Void> pending : pendingAsyncFetches) {
+            pending.completeExceptionally(new IllegalStateException("repository is shut down"));
+        }
         this.featureRefreshScheduler.shutdown();
         // stop polling
         if (this.pollScheduler != null) {
