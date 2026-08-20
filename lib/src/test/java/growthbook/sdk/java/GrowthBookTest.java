@@ -19,6 +19,7 @@ import com.google.gson.annotations.SerializedName;
 import com.google.gson.reflect.TypeToken;
 import growthbook.sdk.java.callback.ExperimentRunCallback;
 import growthbook.sdk.java.callback.FeatureUsageCallback;
+import growthbook.sdk.java.callback.TrackingCallback;
 import growthbook.sdk.java.evaluators.ConditionEvaluator;
 import growthbook.sdk.java.evaluators.ExperimentEvaluator;
 import growthbook.sdk.java.evaluators.FeatureEvaluator;
@@ -344,6 +345,72 @@ class GrowthBookTest {
         subject.run(mockExperiment1);
 
         verify(mockCallback, times(2)).onRun(any(), any());
+    }
+
+    // Regression test for the tracking-callback de-duplication bug: the tracking callback
+    // must fire only once per unique (hashAttribute, hashValue, experimentKey, variationId)
+    // assignment, even when the same experiment is evaluated many times on the long-lived
+    // GrowthBook instance. Previously isExperimentTracked() always returned false, so onTrack
+    // re-fired on every evaluation.
+    @Test
+    @DisplayName("Tracking callback fires only once per unique experiment assignment across repeated runs")
+    void run_firesTrackingCallbackOncePerAssignment() {
+        TrackingCallback trackingCallback = mock(TrackingCallback.class);
+
+        ArrayList<Integer> variations = new ArrayList<>();
+        variations.add(0);
+        variations.add(1);
+
+        GBContext context = GBContext.builder()
+                .attributesJson("{\"id\":\"1\"}")
+                .enabled(true)
+                .trackingCallback(trackingCallback)
+                .build();
+        GrowthBook subject = new GrowthBook(context);
+
+        Experiment<Integer> experiment = Experiment.<Integer>builder()
+                .key("my-test")
+                .variations(variations)
+                .build();
+
+        subject.run(experiment);
+        subject.run(experiment);
+        subject.run(experiment);
+
+        verify(trackingCallback, times(1)).onTrack(any(), any());
+    }
+
+    @Test
+    @DisplayName("Tracking callback fires once for each distinct experiment assignment")
+    void run_firesTrackingCallbackPerDistinctAssignment() {
+        TrackingCallback trackingCallback = mock(TrackingCallback.class);
+
+        ArrayList<Integer> variations = new ArrayList<>();
+        variations.add(0);
+        variations.add(1);
+
+        GBContext context = GBContext.builder()
+                .attributesJson("{\"id\":\"1\"}")
+                .enabled(true)
+                .trackingCallback(trackingCallback)
+                .build();
+        GrowthBook subject = new GrowthBook(context);
+
+        Experiment<Integer> experiment1 = Experiment.<Integer>builder()
+                .key("my-test")
+                .variations(variations)
+                .build();
+        Experiment<Integer> experiment2 = Experiment.<Integer>builder()
+                .key("my-test-2")
+                .variations(variations)
+                .build();
+
+        subject.run(experiment1);
+        subject.run(experiment2);
+        subject.run(experiment1);
+        subject.run(experiment2);
+
+        verify(trackingCallback, times(2)).onTrack(any(), any());
     }
 
     @Test
