@@ -18,6 +18,7 @@ import org.mockito.MockedStatic;
 
 import java.util.Collections;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLong;
 
 import static growthbook.sdk.java.multiusermode.GrowthBookClientTestFixtures.createDefaultOptions;
 import static growthbook.sdk.java.multiusermode.GrowthBookClientTestFixtures.createMockBuilder;
@@ -183,7 +184,7 @@ class GrowthBookClientDiagnosticsTest {
         mockRepository = createMockRepository();
         long nowMillis = System.currentTimeMillis();
         when(mockRepository.getLastSuccessfulFetchAtMillis()).thenReturn(nowMillis - TimeUnit.MINUTES.toMillis(5));
-        when(mockRepository.getExpiresAt()).thenReturn(TimeUnit.MILLISECONDS.toSeconds(nowMillis - TimeUnit.SECONDS.toMillis(1)));
+        when(mockRepository.getExpiresAt()).thenReturn(new AtomicLong(TimeUnit.MILLISECONDS.toSeconds(nowMillis - TimeUnit.SECONDS.toMillis(1))));
         mockBuilder = createMockBuilder(mockRepository);
 
         try (MockedStatic<GBFeaturesRepository> mockedStatic = mockStatic(GBFeaturesRepository.class)) {
@@ -211,7 +212,7 @@ class GrowthBookClientDiagnosticsTest {
         when(mockRepository.getLastSuccessfulFetchAtMillis()).thenReturn(0L);
         when(mockRepository.getLastRefreshLoadedFromCache()).thenReturn(true);
         when(mockRepository.getCacheLastUpdatedMillis()).thenReturn(cacheUpdatedMillis);
-        when(mockRepository.getExpiresAt()).thenReturn(TimeUnit.MILLISECONDS.toSeconds(nowMillis + TimeUnit.MINUTES.toMillis(5)));
+        when(mockRepository.getExpiresAt()).thenReturn(new AtomicLong(TimeUnit.MILLISECONDS.toSeconds(nowMillis + TimeUnit.MINUTES.toMillis(5))));
         mockBuilder = createMockBuilder(mockRepository);
 
         try (MockedStatic<GBFeaturesRepository> mockedStatic = mockStatic(GBFeaturesRepository.class)) {

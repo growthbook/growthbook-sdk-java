@@ -20,6 +20,7 @@ import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Objects;
+import java.util.concurrent.atomic.AtomicReference;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
@@ -152,7 +153,7 @@ class GBFeaturesRepositoryTest {
         // set sseHttpClient through  reflection
         Field field = GBFeaturesRepository.class.getDeclaredField("sseHttpClient");
         field.setAccessible(true);
-        field.set(subject, clientWithCache);
+        field.set(subject, new AtomicReference<>(clientWithCache));
 
         subject.shutdown();
 
@@ -179,7 +180,7 @@ class GBFeaturesRepositoryTest {
         // set sseHttpClient through  reflection
         Field field = GBFeaturesRepository.class.getDeclaredField("sseHttpClient");
         field.setAccessible(true);
-        field.set(subject, mockHttpClient);
+        field.set(subject, new AtomicReference<>(mockHttpClient));
 
         // shutdown shouldn't throw exception — IOException omitted
         assertDoesNotThrow(subject::shutdown);

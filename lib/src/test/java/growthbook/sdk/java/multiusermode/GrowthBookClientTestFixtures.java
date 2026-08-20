@@ -9,6 +9,7 @@ import growthbook.sdk.java.repository.GBFeaturesRepository;
 
 import java.util.HashMap;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLong;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
@@ -39,7 +40,7 @@ final class GrowthBookClientTestFixtures {
         when(repository.hasFeatureData()).thenReturn(true);
         when(repository.getActiveFeatureCount()).thenReturn(features.size());
         when(repository.getLastSuccessfulFetchAtMillis()).thenReturn(nowMillis - TimeUnit.SECONDS.toMillis(1));
-        when(repository.getExpiresAt()).thenReturn(TimeUnit.MILLISECONDS.toSeconds(nowMillis + TimeUnit.SECONDS.toMillis(60)));
+        when(repository.getExpiresAt()).thenReturn(new AtomicLong(TimeUnit.MILLISECONDS.toSeconds(nowMillis + TimeUnit.SECONDS.toMillis(60))));
         when(repository.isCacheDisabled()).thenReturn(false);
         when(repository.getCacheLastUpdatedMillis()).thenReturn(nowMillis - 500L);
         when(repository.getRefreshSuccessCount()).thenReturn(1L);

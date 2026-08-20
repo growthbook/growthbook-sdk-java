@@ -112,6 +112,28 @@ class FileCachingManagerImplTest {
     }
 
     @Test
+    void shouldRoundTripNonAsciiContentAsUtf8() {
+        String fileName = "utf8.json";
+        // Mix of Cyrillic, CJK and an emoji to ensure encoding is UTF-8 on both write and read.
+        String content = "{\"msg\":\"Привіт, 世界 🚀\"}";
+
+        fileCachingManagerImpl.saveContent(fileName, content);
+
+        assertEquals(content, fileCachingManagerImpl.loadCache(fileName));
+    }
+
+    @Test
+    void shouldNotLeaveTempFilesAfterSave() {
+        fileCachingManagerImpl.saveContent("clean.txt", "payload");
+
+        File[] files = tempDir.listFiles();
+        assertNotNull(files);
+        // Exactly the destination file, no leftover *.tmp from the write-to-temp + atomic move.
+        assertEquals(1, files.length);
+        assertFalse(files[0].getName().endsWith(".tmp"));
+    }
+
+    @Test
     void shouldReturnEmptyStringForEmptyFile() {
         String fileName = "empty.txt";
         fileCachingManagerImpl.saveContent(fileName, "");

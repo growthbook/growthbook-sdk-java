@@ -220,7 +220,7 @@ public final class GrowthBookClientDiagnosticsProvider implements DiagnosticsPro
         if (repository == null || repository.getExpiresAt() == null) {
             return null;
         }
-        return repository.getExpiresAt() * 1000L;
+        return repository.getExpiresAt().get() * 1000L;
     }
 
     private long swrTtlMillis(GBFeaturesRepository repository) {
