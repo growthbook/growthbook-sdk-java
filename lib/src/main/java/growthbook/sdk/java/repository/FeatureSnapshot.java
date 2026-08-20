@@ -38,6 +38,24 @@ public final class FeatureSnapshot {
         this.parsedSavedGroups = parsedSavedGroups;
     }
 
+    /**
+     * Builds a snapshot from pre-parsed parts. Intended for tests and callers
+     * constructing synthetic payloads; the repository builds its own snapshots
+     * from fetched responses.
+     *
+     * @param featuresJson      raw features JSON
+     * @param savedGroupsJson   raw saved groups JSON
+     * @param parsedFeatures    parsed feature definitions
+     * @param parsedSavedGroups parsed saved groups
+     * @return an immutable snapshot of the supplied parts
+     */
+    public static FeatureSnapshot of(String featuresJson,
+                                     String savedGroupsJson,
+                                     Map<String, Feature<?>> parsedFeatures,
+                                     JsonObject parsedSavedGroups) {
+        return new FeatureSnapshot(featuresJson, savedGroupsJson, parsedFeatures, parsedSavedGroups);
+    }
+
     public String getFeaturesJson() {
         return featuresJson;
     }

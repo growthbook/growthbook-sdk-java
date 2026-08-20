@@ -1,5 +1,6 @@
 package growthbook.sdk.java.multiusermode;
 
+import com.google.gson.JsonObject;
 import com.sun.net.httpserver.HttpServer;
 import growthbook.sdk.java.callback.ExperimentRunCallback;
 import growthbook.sdk.java.callback.FeatureRefreshCallback;
@@ -16,6 +17,7 @@ import growthbook.sdk.java.multiusermode.configurations.Options;
 import growthbook.sdk.java.multiusermode.configurations.UserContext;
 import growthbook.sdk.java.multiusermode.util.TransformationUtil;
 import growthbook.sdk.java.repository.FeatureRefreshStrategy;
+import growthbook.sdk.java.repository.FeatureSnapshot;
 import growthbook.sdk.java.repository.GBFeaturesRepository;
 import growthbook.sdk.java.repository.RefreshMode;
 import growthbook.sdk.java.testhelpers.TestCasesJsonHelper;
@@ -438,6 +440,7 @@ class GrowthBookClientTest {
 
         Map<String, Feature<?>> newFeatures = new HashMap<>();
         when(mockRepository.getParsedFeatures()).thenReturn(newFeatures);
+        when(mockRepository.getFeatureSnapshot()).thenReturn(FeatureSnapshot.of("{}", "{}", newFeatures, new JsonObject()));
 
         try (MockedStatic<GBFeaturesRepository> mockedStatic = mockStatic(GBFeaturesRepository.class)) {
             mockedStatic.when(GBFeaturesRepository::builder).thenReturn(mockBuilder);
@@ -476,6 +479,7 @@ class GrowthBookClientTest {
 
         Map<String, Feature<?>> parsedFeatures = TransformationUtil.transformFeatures(demoFeaturesJson);
         when(mockRepository.getParsedFeatures()).thenReturn(parsedFeatures);
+        when(mockRepository.getFeatureSnapshot()).thenReturn(FeatureSnapshot.of("{}", "{}", parsedFeatures, new JsonObject()));
 
         try (MockedStatic<GBFeaturesRepository> mockedStatic = mockStatic(GBFeaturesRepository.class)) {
             mockedStatic.when(GBFeaturesRepository::builder).thenReturn(mockBuilder);
@@ -516,6 +520,7 @@ class GrowthBookClientTest {
 
         Map<String, Feature<?>> parsedFeatures = TransformationUtil.transformFeatures(demoFeaturesJson);
         when(mockRepository.getParsedFeatures()).thenReturn(parsedFeatures);
+        when(mockRepository.getFeatureSnapshot()).thenReturn(FeatureSnapshot.of("{}", "{}", parsedFeatures, new JsonObject()));
 
         try (MockedStatic<GBFeaturesRepository> mockedStatic = mockStatic(GBFeaturesRepository.class)) {
             mockedStatic.when(GBFeaturesRepository::builder).thenReturn(mockBuilder);

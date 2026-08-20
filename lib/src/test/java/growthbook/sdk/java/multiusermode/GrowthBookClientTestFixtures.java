@@ -5,6 +5,7 @@ import growthbook.sdk.java.callback.FeatureRefreshCallback;
 import growthbook.sdk.java.model.Feature;
 import growthbook.sdk.java.multiusermode.configurations.Options;
 import growthbook.sdk.java.repository.FeatureRefreshStrategy;
+import growthbook.sdk.java.repository.FeatureSnapshot;
 import growthbook.sdk.java.repository.GBFeaturesRepository;
 
 import java.util.HashMap;
@@ -34,6 +35,7 @@ final class GrowthBookClientTestFixtures {
         when(repository.getFeaturesJson()).thenReturn("{}");
         when(repository.getSavedGroupsJson()).thenReturn("{}");
         when(repository.getParsedFeatures()).thenReturn(features);
+        when(repository.getFeatureSnapshot()).thenReturn(FeatureSnapshot.of("{}", "{}", features, new JsonObject()));
         when(repository.getParsedSavedGroups()).thenReturn(new JsonObject());
         when(repository.getRefreshStrategy()).thenReturn(FeatureRefreshStrategy.STALE_WHILE_REVALIDATE);
         when(repository.hasFeatureData()).thenReturn(true);
