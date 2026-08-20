@@ -327,7 +327,9 @@ public class Options {
     }
 
     public void setInMemoryStickyBucketService() {
-        this.setStickyBucketService(new InMemoryStickyBucketServiceImpl(new HashMap<>()));
+        // Thread-safe backing map: this Options instance configures the multi-user
+        // GrowthBookClient, which evaluates (and therefore saves assignments) concurrently.
+        this.setStickyBucketService(new InMemoryStickyBucketServiceImpl());
     }
 
     public void setGlobalAttributes(@Nullable String attributesJson) {
