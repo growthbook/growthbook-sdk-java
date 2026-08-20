@@ -10,7 +10,6 @@ import growthbook.sdk.java.model.Feature;
 import growthbook.sdk.java.model.FeatureResult;
 import growthbook.sdk.java.model.FeatureResultSource;
 import growthbook.sdk.java.model.FeatureRule;
-import growthbook.sdk.java.model.Filter;
 import growthbook.sdk.java.multiusermode.configurations.EvaluationContext;
 import growthbook.sdk.java.multiusermode.usage.FeatureUsageCallbackWithUser;
 import growthbook.sdk.java.plugin.PluginRegistry;
@@ -22,364 +21,414 @@ import java.util.*;
 
 /**
  * <b>INTERNAL</b>: Implementation of feature evaluation.
- * Takes Context and Feature Key.
- * Returns Calculated Feature Result against that key
  */
 @Slf4j
 public class FeatureEvaluator implements IFeatureEvaluator {
+
     private static final Object NO_FORCED_FEATURE_VALUE = new Object();
 
-    private final GrowthBookJsonUtils jsonUtils = GrowthBookJsonUtils.getInstance();
     private final ConditionEvaluator conditionEvaluator = new ConditionEvaluator();
+    private final GrowthBookJsonUtils jsonUtils = GrowthBookJsonUtils.getInstance();
     private final ExperimentEvaluator experimentEvaluator = new ExperimentEvaluator();
 
-    // Takes Context and Feature Key
-    // Returns Calculated Feature Result against that key
+    /**
+     * Evaluates a batch of features against a single, shared {@link EvaluationContext}.
+     * The context (and the {@code GlobalContext} it references) is reused for every key
+     * instead of being rebuilt per feature, and the per-evaluation stack is reset between
+     * features so evaluation state does not leak. A feature whose evaluation throws is
+     * recorded as {@link FeatureResultSource#UNKNOWN_FEATURE} rather than aborting the batch.
+     */
     @Override
-    public <ValueType> FeatureResult<ValueType> evaluateFeature(
+    public <T> Map<String, FeatureResult<T>> evaluateFeatures(
+            List<String> featureKeys,
+            EvaluationContext context,
+            Class<T> valueTypeClass
+    ) {
+        Map<String, FeatureResult<T>> results = new HashMap<>();
+        if (featureKeys == null || featureKeys.isEmpty()) {
+            return results;
+        }
+        for (String key : featureKeys) {
+            try {
+                results.put(key, evaluateFeature(key, context, valueTypeClass));
+            } catch (RuntimeException e) {
+                log.error("Error evaluating feature '{}' in batch", key, e);
+                results.put(key, FeatureResult.<T>builder()
+                        .value(null)
+                        .source(FeatureResultSource.UNKNOWN_FEATURE)
+                        .build());
+            } finally {
+                context.setStack(new EvaluationContext.StackContext());
+            }
+        }
+        return results;
+    }
+
+    @Override
+    public <T> FeatureResult<T> evaluateFeature(
             String key,
             EvaluationContext context,
-            Class<ValueType> valueTypeClass
+            Class<T> valueTypeClass
     ) throws ClassCastException {
-        FeatureResult<ValueType> unknownFeatureResult = FeatureResult
-                .<ValueType>builder()
+        FeatureResult<T> unknownFeatureResult = FeatureResult
+                .<T>builder()
                 .value(null)
                 .source(FeatureResultSource.UNKNOWN_FEATURE)
                 .build();
 
         try {
             if (context.getStack().getEvaluatedFeatures().contains(key)) {
-                // block that handles recursion
-                log.info(
-                        "evaluateFeature: circular dependency detected: {} -> {}. { from: {}, to: {} }",
-                        context.getStack().getId(), key,
-                        context.getStack().getId(), key
-                );
-
-                FeatureResult<ValueType> featureResultWhenCircularDependencyDetected = FeatureResult
-                        .<ValueType>builder()
-                        .value(null)
-                        .source(FeatureResultSource.CYCLIC_PREREQUISITE)
-                        .build();
-                dispatchFeatureUsage(context, key, featureResultWhenCircularDependencyDetected);
-
-                leaveCircularLoop(context);
-                return featureResultWhenCircularDependencyDetected;
+                return handleCircularDependency(key, context);
             }
 
             FeatureResult<?> memoizedResult = context.getStack().getMemoizedResults().get(key);
             if (memoizedResult != null) {
-                return (FeatureResult<ValueType>) memoizedResult;
+                return (FeatureResult<T>) memoizedResult;
             }
-
-            // Add the current feature being evaluated to the stack
             addFeatureToEvalStack(key, context);
 
-            // Global override
-            Object forcedFeatureValue = getForcedFeatureValue(key, context);
-            if (forcedFeatureValue != NO_FORCED_FEATURE_VALUE) {
-                ValueType unwrapForceFeatureValue = (ValueType) GrowthBookJsonUtils.unwrap(forcedFeatureValue);
-                log.info("Forced feature override with key: {} and value {}", key, forcedFeatureValue);
-
-                FeatureResult<ValueType> overrideResult = FeatureResult
-                        .<ValueType>builder()
-                        .value(unwrapForceFeatureValue)
-                        .source(FeatureResultSource.OVERRIDE)
-                        .build();
-                dispatchFeatureUsage(context, key, overrideResult);
-                return cacheResult(key, overrideResult, context);
+            FeatureResult<T> override = resolveForcedOverride(key, context);
+            if (override != null) {
+                return cacheResult(key, override, context);
             }
 
-            // Check for feature values forced by URL
-            if (context.getOptions().getAllowUrlOverrides()) {
-                ValueType forcedValue = evaluateForcedFeatureValueFromUrl(key, context.getOptions().getUrl(), valueTypeClass);
-                if (forcedValue != null) {
-                    FeatureResult<ValueType> urlFeatureResult = FeatureResult
-                            .<ValueType>builder()
-                            .value(forcedValue)
-                            .source(FeatureResultSource.URL_OVERRIDE)
-                            .build();
-
-                    dispatchFeatureUsage(context, key, urlFeatureResult);
-
-                    return cacheResult(key, urlFeatureResult, context);
-                }
+            FeatureResult<T> urlOverride = resolveUrlOverride(key, context, valueTypeClass);
+            if (urlOverride != null) {
+                return cacheResult(key, urlOverride, context);
             }
 
-            // Unknown key, return empty feature
             Map<String, Feature<?>> features = context.getGlobal().getFeatures();
             if (features == null || features.isEmpty() || !features.containsKey(key)) {
                 dispatchFeatureUsage(context, key, unknownFeatureResult);
-
                 return cacheResult(key, unknownFeatureResult, context);
             }
 
-            Feature<ValueType> feature = (Feature<ValueType>) features.get(key);
-            FeatureResult<ValueType> defaultValueFeature = FeatureResult
-                    .<ValueType>builder()
-                    .value(null)
-                    .source(FeatureResultSource.DEFAULT_VALUE)
-                    .build();
-
+            Feature<T> feature = (Feature<T>) features.get(key);
             if (feature == null) {
-                dispatchFeatureUsage(context, key, defaultValueFeature);
-                return cacheResult(key, defaultValueFeature, context);
-            }
-
-            // If empty rule set, use the default value
-            if (feature.getRules() == null || feature.getRules().isEmpty()) {
-                ValueType value = (ValueType) GrowthBookJsonUtils.unwrap(feature.getDefaultValue());
-                FeatureResult<ValueType> defaultValueFeatureForRules = FeatureResult
-                        .<ValueType>builder()
+                FeatureResult<T> nullFeatureResult = FeatureResult
+                        .<T>builder()
+                        .value(null)
                         .source(FeatureResultSource.DEFAULT_VALUE)
-                        .value(value)
                         .build();
-                dispatchFeatureUsage(context, key, defaultValueFeatureForRules);
-                return cacheResult(key, defaultValueFeatureForRules, context);
+                dispatchFeatureUsage(context, key, nullFeatureResult);
+                return cacheResult(key, nullFeatureResult, context);
             }
 
-            // Loop through the feature rules (if any)
-            List<FeatureRule<ValueType>> featureRules = feature.getRules();
-            final Set<String> evaluatedFeatures = new HashSet<>(context.getStack().getEvaluatedFeatures());
-
-            outer:
-            for (FeatureRule<ValueType> rule : featureRules) {
-                // If there are prerequisite flag(s), evaluate them
-                if (rule.getParentConditions() != null) {
-                    for (ParentCondition parentCondition : rule.getParentConditions()) {
-                        context.getStack().setEvaluatedFeatures(new HashSet<>(evaluatedFeatures));
-                        //enterCircularLoop(key, context);
-                        FeatureResult<ValueType> parentResult = evaluateFeature(
-                                parentCondition.getId(),
-                                context,
-                                valueTypeClass);
-
-                        // break out for cyclic prerequisites
-                        if (FeatureResultSource.CYCLIC_PREREQUISITE.equals(parentResult.getSource())) {
-                            FeatureResult<ValueType> featureResultWhenCircularDependencyDetected =
-                                    FeatureResult
-                                            .<ValueType>builder()
-                                            .value(null)
-                                            .source(FeatureResultSource.CYCLIC_PREREQUISITE)
-                                            .build();
-
-                            dispatchFeatureUsage(context, key, featureResultWhenCircularDependencyDetected);
-                            return cacheResult(key, featureResultWhenCircularDependencyDetected, context);
-                        }
-
-                        Map<String, Object> evalObj = new HashMap<>();
-                        if (parentResult.getValue() != null) {
-                            evalObj.put("value", parentResult.getValue());
-                        }
-                        JsonObject parentAttributesJson = GrowthBookJsonUtils.getInstance().gson.toJsonTree(evalObj).getAsJsonObject();
-
-                        boolean evalCondition = conditionEvaluator.evaluateCondition(
-                                parentAttributesJson,
-                                parentCondition.getCondition(),
-                                context.getGlobal().getSavedGroups()
-                        );
-
-                        // blocking prerequisite eval failed: feature evaluation fails
-                        if (!evalCondition) {
-                            // blocking prerequisite eval failed: feature evaluation fails
-                            if (Boolean.TRUE.equals(parentCondition.getGate())) {
-                                log.info("Feature blocked by prerequisite");
-
-                                FeatureResult<ValueType> featureResultWhenBlockedByPrerequisite =
-                                        FeatureResult
-                                                .<ValueType>builder()
-                                                .value(null)
-                                                .source(FeatureResultSource.PREREQUISITE)
-                                                .build();
-
-                                dispatchFeatureUsage(context, key, featureResultWhenBlockedByPrerequisite);
-                                return cacheResult(key, featureResultWhenBlockedByPrerequisite, context);
-                            }
-                            // non-blocking prerequisite eval failed: break out
-                            // of parentConditions loop, jump to the next rule
-                            continue outer;
-                        }
-                    }
-                }
-
-                // If there are filters for who is included (e.g. namespaces)
-                List<Filter> filters = rule.getFilters();
-                if (GrowthBookUtils.isFilteredOut(filters, context.getUser().getAttributes())) {
-
-                    // Skip rule because of filters
-                    continue;
-                }
-
-                // Feature value is being forced
-                if (rule.getForce() != null && rule.getForce().isPresent()) {
-
-                    // If the rule has a condition, and it evaluates to false, skip this rule and continue to the next one
-                    if (rule.getCondition() != null) {
-                        if (!conditionEvaluator.evaluateCondition(context.getUser().getAttributes(),
-                                rule.getCondition(), context.getGlobal().getSavedGroups())) {
-
-                            // Skip rule because of condition
-                            continue;
-                        }
-                    }
-
-                    boolean gate1 = context.getOptions().getStickyBucketService() != null;
-                    boolean gate2 = !Boolean.TRUE.equals(rule.getDisableStickyBucketing());
-                    boolean shouldFallbackAttributeBePassed = gate1 && gate2;
-
-                    // Pass fallback attribute if sticky bucketing is enabled.
-                    String fallback = shouldFallbackAttributeBePassed ? rule.getFallbackAttribute() : null;
-
-                    String ruleKey = rule.getHashAttribute();
-                    if (ruleKey == null) {
-                        ruleKey = "id";
-                    }
-
-                    String seed = rule.getSeed();
-                    if (seed == null) {
-                        seed = key;
-                    }
-
-                    // If this is a percentage rollout, skip if not included
-                    if (
-                            !GrowthBookUtils.isIncludedInRollout(
-                                    context.getUser().getAttributes(),
-                                    seed,
-                                    ruleKey,
-                                    fallback,
-                                    rule.getRange(),
-                                    rule.getCoverage(),
-                                    rule.getHashVersion()
-                            )
-                    ) {
-
-                        // Skip rule because user not included in rollout
-                        continue;
-                    }
-
-                    // Fire tracking callbacks (and plugin exposure events) for remotely evaluated
-                    // experiments, de-duplicated per assignment so repeated cached evaluations
-                    // don't re-fire exposures.
-                    experimentEvaluator.fireRemoteEvaluationTracks(rule.getTracks(), context);
-
-                    ValueType value = (ValueType) GrowthBookJsonUtils.unwrap(rule.getForce().getValue());
-
-                    // Apply the force rule
-                    FeatureResult<ValueType> forcedRuleFeatureValue = FeatureResult
-                            .<ValueType>builder()
-                            .value(value) // TODO: Check this. - This is not right
-                            .source(FeatureResultSource.FORCE)
-                            .ruleId(rule.getId())
-                            .build();
-
-                    dispatchFeatureUsage(context, key, forcedRuleFeatureValue);
-
-                    return cacheResult(key, forcedRuleFeatureValue, context);
-                } else {
-
-                    ArrayList<ValueType> variations = rule.getVariations();
-                    if (variations != null) {
-
-                        // Experiment rule
-                        String experimentKey = rule.getKey();
-                        if (experimentKey == null) {
-                            experimentKey = key;
-                        }
-
-                        // For experiment rules, run an experiment
-                        Experiment<ValueType> experiment = Experiment
-                                .<ValueType>builder()
-                                .key(experimentKey)
-                                .variations(variations)
-                                .coverage(rule.getCoverage())
-                                .weights(rule.getWeights())
-                                .hashAttribute(rule.getHashAttribute())
-                                .fallbackAttribute(rule.getFallbackAttribute())
-                                .disableStickyBucketing(rule.getDisableStickyBucketing())
-                                .bucketVersion(rule.getBucketVersion())
-                                .minBucketVersion(rule.getMinBucketVersion())
-                                .namespace(rule.getNamespace())
-                                .meta(rule.getMeta())
-                                .ranges(rule.getRanges())
-                                .name(rule.getName())
-                                .phase(rule.getPhase())
-                                .seed(rule.getSeed())
-                                .hashVersion(rule.getHashVersion())
-                                .filters(rule.getFilters())
-                                .conditionJson(rule.getCondition())
-                                .customFields(rule.getCustomFields())
-                                .build();
-
-                        // Only return a value if the user is part of the experiment
-                        ExperimentResult<ValueType> result = experimentEvaluator.evaluateExperiment(experiment, context, key);
-                        if (result.getInExperiment() && (result.getPassThrough() == null || !result.getPassThrough())) {
-                            ValueType value = (ValueType) GrowthBookJsonUtils.unwrap(result.getValue());
-
-                            FeatureResult<ValueType> experimentFeatureResult = FeatureResult
-                                    .<ValueType>builder()
-                                    .value(value)
-                                    .ruleId(rule.getId())
-                                    .source(FeatureResultSource.EXPERIMENT)
-                                    .experiment(experiment)
-                                    .experimentResult(result)
-                                    .build();
-
-                            dispatchFeatureUsage(context, key, experimentFeatureResult);
-                            return cacheResult(key, experimentFeatureResult, context);
-                        }
-                    } else {
-                        continue;
-                    }
-                }
+            if (feature.getRules() == null || feature.getRules().isEmpty()) {
+                return cacheResult(key, defaultValueResult(feature, key, context), context);
             }
 
-            // endregion Rules
+            FeatureResult<T> ruleResult = evaluateRules(feature, key, context, valueTypeClass);
+            if (ruleResult != null) {
+                return cacheResult(key, ruleResult, context);
+            }
 
-            ValueType value = (ValueType) GrowthBookJsonUtils.unwrap(feature.getDefaultValue());
-
-            FeatureResult<ValueType> defaultValueFeatureResult = FeatureResult
-                    .<ValueType>builder()
-                    .source(FeatureResultSource.DEFAULT_VALUE)
-                    .value(value)
-                    .build();
-
-            dispatchFeatureUsage(context, key, defaultValueFeatureResult);
-
-            // Return (value = defaultValue or null, source = defaultValue)
-            return cacheResult(key, defaultValueFeatureResult, context);
+            return cacheResult(key, defaultValueResult(feature, key, context), context);
         } catch (Exception e) {
             log.error(e.getMessage(), e);
-
-            // If the key doesn't exist in context.features, return immediately
-            // (value = null, source = unknownFeature).
             return cacheResult(key, unknownFeatureResult, context);
         }
     }
 
-    private @Nullable <ValueType> ValueType evaluateForcedFeatureValueFromUrl(String key, @Nullable String urlString, Class<ValueType> valueTypeClass) {
+    private <T> FeatureResult<T> handleCircularDependency(String key, EvaluationContext context) {
+        log.info(
+                "evaluateFeature: circular dependency detected: {} -> {}. { from: {}, to: {} }",
+                context.getStack().getId(), key,
+                context.getStack().getId(), key
+        );
+        FeatureResult<T> cyclicResult = FeatureResult
+                .<T>builder()
+                .value(null)
+                .source(FeatureResultSource.CYCLIC_PREREQUISITE)
+                .build();
+        dispatchFeatureUsage(context, key, cyclicResult);
+        leaveCircularLoop(context);
+        return cyclicResult;
+    }
+
+    @Nullable
+    private <T> FeatureResult<T> resolveForcedOverride(String key, EvaluationContext context) {
+        Object forcedFeatureValue = getForcedFeatureValue(key, context);
+        if (forcedFeatureValue == NO_FORCED_FEATURE_VALUE) {
+            return null;
+        }
+        T value = (T) GrowthBookJsonUtils.unwrap(forcedFeatureValue);
+        log.info("Forced feature override with key: {} and value {}", key, forcedFeatureValue);
+        FeatureResult<T> overrideResult = FeatureResult
+                .<T>builder()
+                .value(value)
+                .source(FeatureResultSource.OVERRIDE)
+                .build();
+        dispatchFeatureUsage(context, key, overrideResult);
+        return overrideResult;
+    }
+
+    @Nullable
+    private <T> FeatureResult<T> resolveUrlOverride(String key, EvaluationContext context, Class<T> valueTypeClass) {
+        if (Boolean.FALSE.equals(context.getOptions().getAllowUrlOverrides())) {
+            return null;
+        }
+        T forcedValue = evaluateForcedFeatureValueFromUrl(key, context.getOptions().getUrl(), valueTypeClass);
+        if (forcedValue == null) {
+            return null;
+        }
+        FeatureResult<T> urlFeatureResult = FeatureResult
+                .<T>builder()
+                .value(forcedValue)
+                .source(FeatureResultSource.URL_OVERRIDE)
+                .build();
+        dispatchFeatureUsage(context, key, urlFeatureResult);
+        return urlFeatureResult;
+    }
+
+    /**
+     * Walks the feature's rules in order. Returns the first terminal result a rule produces,
+     * or {@code null} if no rule applied (the caller then falls back to the default value).
+     */
+    @Nullable
+    private <T> FeatureResult<T> evaluateRules(Feature<T> feature, String key, EvaluationContext context, Class<T> valueTypeClass) {
+        Set<String> evaluatedFeatures = new HashSet<>(context.getStack().getEvaluatedFeatures());
+        for (FeatureRule<T> rule : feature.getRules()) {
+            FeatureResult<T> result = evaluateRule(rule, key, context, valueTypeClass, evaluatedFeatures);
+            if (result != null) {
+                return result;
+            }
+        }
+        return null;
+    }
+
+    /**
+     * Evaluates a single rule. Returns the terminal result the rule produces, or {@code null}
+     * when the rule does not apply and evaluation should continue with the next rule.
+     */
+    @Nullable
+    private <T> FeatureResult<T> evaluateRule(
+            FeatureRule<T> rule,
+            String key,
+            EvaluationContext context,
+            Class<T> valueTypeClass,
+            Set<String> evaluatedFeatures
+    ) {
+        PrerequisiteOutcome<T> prerequisites = evaluatePrerequisites(rule, key, context, valueTypeClass, evaluatedFeatures);
+        if (prerequisites.terminalResult != null) {
+            return prerequisites.terminalResult;
+        }
+        if (prerequisites.skipRule) {
+            return null;
+        }
+        if (Boolean.TRUE.equals(GrowthBookUtils.isFilteredOut(rule.getFilters(), context.getUser().getAttributes()))) {
+            return null;
+        }
+        if (isForcedRule(rule)) {
+            return evaluateForcedRule(rule, key, context);
+        }
+        return evaluateExperimentRule(rule, key, context);
+    }
+
+    private <T> PrerequisiteOutcome<T> evaluatePrerequisites(
+            FeatureRule<T> rule,
+            String key,
+            EvaluationContext context,
+            Class<T> valueTypeClass,
+            Set<String> evaluatedFeatures
+    ) {
+        if (rule.getParentConditions() == null) {
+            return PrerequisiteOutcome.pass();
+        }
+
+        for (ParentCondition parentCondition : rule.getParentConditions()) {
+            context.getStack().setEvaluatedFeatures(new HashSet<>(evaluatedFeatures));
+            FeatureResult<T> parentResult = evaluateFeature(parentCondition.getId(), context, valueTypeClass);
+
+            if (FeatureResultSource.CYCLIC_PREREQUISITE.equals(parentResult.getSource())) {
+                FeatureResult<T> cyclicResult = FeatureResult
+                        .<T>builder()
+                        .value(null)
+                        .source(FeatureResultSource.CYCLIC_PREREQUISITE)
+                        .build();
+                dispatchFeatureUsage(context, key, cyclicResult);
+                return PrerequisiteOutcome.terminal(cyclicResult);
+            }
+
+            Map<String, Object> evalObj = new HashMap<>();
+            if (parentResult.getValue() != null) {
+                evalObj.put("value", parentResult.getValue());
+            }
+            JsonObject parentAttributesJson = GrowthBookJsonUtils.getInstance().gson.toJsonTree(evalObj).getAsJsonObject();
+
+            boolean evalCondition = conditionEvaluator.evaluateCondition(
+                    parentAttributesJson,
+                    parentCondition.getCondition(),
+                    context.getGlobal().getSavedGroups()
+            );
+
+            if (!evalCondition) {
+                if (Boolean.TRUE.equals(parentCondition.getGate())) {
+                    log.info("Feature blocked by prerequisite");
+                    FeatureResult<T> blockedResult = FeatureResult
+                            .<T>builder()
+                            .value(null)
+                            .source(FeatureResultSource.PREREQUISITE)
+                            .build();
+                    dispatchFeatureUsage(context, key, blockedResult);
+                    return PrerequisiteOutcome.terminal(blockedResult);
+                }
+                return PrerequisiteOutcome.skip();
+            }
+        }
+        return PrerequisiteOutcome.pass();
+    }
+
+    private <T> boolean isForcedRule(FeatureRule<T> rule) {
+        return rule.getForce() != null && rule.getForce().isPresent();
+    }
+
+    /**
+     * Evaluates a force rule. Returns the forced result, or {@code null} when the rule is
+     * skipped (its condition didn't match or the user isn't in the rollout). Remote-eval
+     * tracking callbacks are fired via {@link ExperimentEvaluator#fireRemoteEvaluationTracks}
+     * (de-duplicated per assignment) before the forced value is returned.
+     */
+    @Nullable
+    private <T> FeatureResult<T> evaluateForcedRule(FeatureRule<T> rule, String key, EvaluationContext context) {
+        if (rule.getCondition() != null
+                && !conditionEvaluator.evaluateCondition(context.getUser().getAttributes(),
+                rule.getCondition(), context.getGlobal().getSavedGroups())) {
+            return null;
+        }
+
+        boolean stickyBucketingEnabled = context.getOptions().getStickyBucketService() != null
+                && !Boolean.TRUE.equals(rule.getDisableStickyBucketing());
+        String fallback = stickyBucketingEnabled ? rule.getFallbackAttribute() : null;
+
+        String ruleKey = rule.getHashAttribute() != null ? rule.getHashAttribute() : "id";
+        String seed = rule.getSeed() != null ? rule.getSeed() : key;
+
+        if (Boolean.FALSE.equals(GrowthBookUtils.isIncludedInRollout(
+                context.getUser().getAttributes(),
+                seed,
+                ruleKey,
+                fallback,
+                rule.getRange(),
+                rule.getCoverage(),
+                rule.getHashVersion()
+        ))) {
+            return null;
+        }
+
+        experimentEvaluator.fireRemoteEvaluationTracks(rule.getTracks(), context);
+
+        T value = (T) GrowthBookJsonUtils.unwrap(rule.getForce().getValue());
+        FeatureResult<T> forcedRuleFeatureValue = FeatureResult.<T>builder()
+                .value(value)
+                .source(FeatureResultSource.FORCE)
+                .ruleId(rule.getId())
+                .build();
+        dispatchFeatureUsage(context, key, forcedRuleFeatureValue);
+        return forcedRuleFeatureValue;
+    }
+
+    /**
+     * Evaluates an experiment rule. Returns the experiment result when the user is bucketed
+     * in (and not passed through), or {@code null} when the rule doesn't apply.
+     */
+    @Nullable
+    private <T> FeatureResult<T> evaluateExperimentRule(FeatureRule<T> rule, String key, EvaluationContext context) {
+        ArrayList<T> variations = rule.getVariations();
+        if (variations == null) {
+            return null;
+        }
+
+        String experimentKey = rule.getKey() != null ? rule.getKey() : key;
+        Experiment<T> experiment = Experiment
+                .<T>builder()
+                .key(experimentKey)
+                .variations(variations)
+                .coverage(rule.getCoverage())
+                .weights(rule.getWeights())
+                .hashAttribute(rule.getHashAttribute())
+                .fallbackAttribute(rule.getFallbackAttribute())
+                .disableStickyBucketing(rule.getDisableStickyBucketing())
+                .bucketVersion(rule.getBucketVersion())
+                .minBucketVersion(rule.getMinBucketVersion())
+                .namespace(rule.getNamespace())
+                .meta(rule.getMeta())
+                .ranges(rule.getRanges())
+                .name(rule.getName())
+                .phase(rule.getPhase())
+                .seed(rule.getSeed())
+                .hashVersion(rule.getHashVersion())
+                .filters(rule.getFilters())
+                .conditionJson(rule.getCondition())
+                .customFields(rule.getCustomFields())
+                .build();
+
+        ExperimentResult<T> result = experimentEvaluator.evaluateExperiment(experiment, context, key);
+        boolean inExperiment = result.getInExperiment()
+                && (result.getPassThrough() == null || !result.getPassThrough());
+        if (!inExperiment) {
+            return null;
+        }
+
+        T value = (T) GrowthBookJsonUtils.unwrap(result.getValue());
+        FeatureResult<T> experimentFeatureResult = FeatureResult
+                .<T>builder()
+                .value(value)
+                .ruleId(rule.getId())
+                .source(FeatureResultSource.EXPERIMENT)
+                .experiment(experiment)
+                .experimentResult(result)
+                .build();
+        dispatchFeatureUsage(context, key, experimentFeatureResult);
+        return experimentFeatureResult;
+    }
+
+    private <T> FeatureResult<T> defaultValueResult(Feature<T> feature, String key, EvaluationContext context) {
+        T value = (T) GrowthBookJsonUtils.unwrap(feature.getDefaultValue());
+        FeatureResult<T> defaultValueFeatureResult = FeatureResult
+                .<T>builder()
+                .source(FeatureResultSource.DEFAULT_VALUE)
+                .value(value)
+                .build();
+        dispatchFeatureUsage(context, key, defaultValueFeatureResult);
+        return defaultValueFeatureResult;
+    }
+
+    private <T> void dispatchFeatureUsage(EvaluationContext context, String key, FeatureResult<T> result) {
+        FeatureUsageCallbackWithUser featureUsageCallbackWithUser = context.getOptions().getFeatureUsageCallbackWithUser();
+        if (featureUsageCallbackWithUser != null) {
+            featureUsageCallbackWithUser.onFeatureUsage(key, result, context.getUser());
+        }
+        PluginRegistry registry = context.getPluginRegistry();
+        if (registry != null) {
+            registry.fireFeatureEvaluated(key, result);
+        }
+    }
+
+    private @Nullable <T> T evaluateForcedFeatureValueFromUrl(String key, @Nullable String urlString, Class<T> valueTypeClass) {
         if (urlString == null) return null;
 
         try {
             URL url = new URL(urlString);
 
             if (valueTypeClass.equals(Boolean.class)) {
-                return (ValueType) GrowthBookUtils.getForcedBooleanValueFromUrl(key, url);
+                return (T) GrowthBookUtils.getForcedBooleanValueFromUrl(key, url);
             }
 
             if (valueTypeClass.equals(String.class)) {
-                return (ValueType) GrowthBookUtils.getForcedStringValueFromUrl(key, url);
+                return (T) GrowthBookUtils.getForcedStringValueFromUrl(key, url);
             }
 
             if (valueTypeClass.equals(Integer.class)) {
-                return (ValueType) GrowthBookUtils.getForcedIntegerValueFromUrl(key, url);
+                return (T) GrowthBookUtils.getForcedIntegerValueFromUrl(key, url);
             }
 
             if (valueTypeClass.equals(Float.class)) {
-                return (ValueType) GrowthBookUtils.getForcedFloatValueFromUrl(key, url);
+                return (T) GrowthBookUtils.getForcedFloatValueFromUrl(key, url);
             }
 
             if (valueTypeClass.equals(Double.class)) {
-                return (ValueType) GrowthBookUtils.getForcedDoubleValueFromUrl(key, url);
+                return (T) GrowthBookUtils.getForcedDoubleValueFromUrl(key, url);
             }
 
             return GrowthBookUtils.getForcedSerializableValueFromUrl(key, url, valueTypeClass, jsonUtils.gson);
@@ -400,22 +449,7 @@ public class FeatureEvaluator implements IFeatureEvaluator {
         context.getStack().getEvaluatedFeatures().add(featureKey);
     }
 
-    private <ValueType> void dispatchFeatureUsage(
-            EvaluationContext context,
-            String key,
-            FeatureResult<ValueType> result
-    ) {
-        FeatureUsageCallbackWithUser cb = context.getOptions().getFeatureUsageCallbackWithUser();
-        if (cb != null) {
-            cb.onFeatureUsage(key, result, context.getUser());
-        }
-        PluginRegistry registry = context.getPluginRegistry();
-        if (registry != null) {
-            registry.fireFeatureEvaluated(key, result);
-        }
-    }
-
-    private <ValueType> FeatureResult<ValueType> cacheResult(String key, FeatureResult<ValueType> result, EvaluationContext context) {
+    private <T> FeatureResult<T> cacheResult(String key, FeatureResult<T> result, EvaluationContext context) {
         context.getStack().getMemoizedResults().putIfAbsent(key, result);
         return result;
     }
@@ -436,5 +470,34 @@ public class FeatureEvaluator implements IFeatureEvaluator {
         }
 
         return NO_FORCED_FEATURE_VALUE;
+    }
+
+    /**
+     * Outcome of evaluating a rule's prerequisites: either produce a terminal result, skip
+     * this rule (non-blocking prerequisite failed), or pass (proceed with the rule).
+     */
+    private static final class PrerequisiteOutcome<T> {
+
+        private final boolean skipRule;
+
+        @Nullable
+        private final FeatureResult<T> terminalResult;
+
+        private PrerequisiteOutcome(@Nullable FeatureResult<T> terminalResult, boolean skipRule) {
+            this.terminalResult = terminalResult;
+            this.skipRule = skipRule;
+        }
+
+        static <T> PrerequisiteOutcome<T> pass() {
+            return new PrerequisiteOutcome<>(null, false);
+        }
+
+        static <T> PrerequisiteOutcome<T> skip() {
+            return new PrerequisiteOutcome<>(null, true);
+        }
+
+        static <T> PrerequisiteOutcome<T> terminal(FeatureResult<T> result) {
+            return new PrerequisiteOutcome<>(result, false);
+        }
     }
 }

@@ -340,6 +340,26 @@ public class GrowthBookClient {
         return featureEvaluator.evaluateFeature(key, getEvalContext(userContext), valueTypeClass);
     }
 
+    /**
+     * Evaluates a batch of features for the same user using a single shared
+     * {@link EvaluationContext}. Attribute merging, global-context references and any
+     * sticky-bucket preload happen once for the whole batch instead of once per feature,
+     * so memory stays O(size(context)) rather than O(features × size(context)).
+     *
+     * @param featureKeys    the feature keys to evaluate
+     * @param valueTypeClass the expected value type (typically {@code Object.class} for mixed types)
+     * @param userContext    the user context, processed once
+     * @param <ValueType>    the result value type
+     * @return a map from feature key to its {@link FeatureResult}
+     */
+    public <ValueType> Map<String, FeatureResult<ValueType>> evalFeatures(
+            List<String> featureKeys,
+            Class<ValueType> valueTypeClass,
+            UserContext userContext
+    ) {
+        return featureEvaluator.evaluateFeatures(featureKeys, getEvalContext(userContext), valueTypeClass);
+    }
+
     public Boolean isOn(String featureKey, UserContext userContext) {
         return this.featureEvaluator.evaluateFeature(featureKey, getEvalContext(userContext), Object.class).isOn();
     }

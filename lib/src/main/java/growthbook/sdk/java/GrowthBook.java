@@ -273,6 +273,23 @@ public class GrowthBook implements IGrowthBook {
     }
 
     /**
+     * Evaluates a batch of features reusing a single {@link EvaluationContext}, so shared
+     * setup (attribute state, global context references) is not repeated per feature.
+     *
+     * @param featureKeys    the feature keys to evaluate
+     * @param valueTypeClass the expected value type (typically {@code Object.class} for mixed types)
+     * @param <ValueType>    the result value type
+     * @return a map from feature key to its {@link FeatureResult}
+     */
+    @Override
+    public <ValueType> Map<String, FeatureResult<ValueType>> evalFeatures(
+            List<String> featureKeys,
+            Class<ValueType> valueTypeClass
+    ) {
+        return featureEvaluator.evaluateFeatures(featureKeys, getEvaluationContext(), valueTypeClass);
+    }
+
+    /**
      * Update the user's attributes
      *
      * @param attributesJsonString user attributes JSON
