@@ -94,6 +94,8 @@ public class GrowthBookClient {
     /** The pool this client created for itself (and must shut down); null when the caller supplied one. */
     @Nullable
     private final ExecutorService ownedAsyncExecutor;
+    /** Where the client's async work runs: the caller-supplied executor or the owned pool. */
+    private final Executor asyncExecutor;
 
     private static final AtomicLong ASYNC_THREAD_COUNTER = new AtomicLong();
 
@@ -112,23 +114,25 @@ public class GrowthBookClient {
         this.experimentEvaluatorEvaluator = new ExperimentEvaluator();
         this.diagnosticsProvider = new GrowthBookClientDiagnosticsProvider(this.options, clientStateView());
 
+        // Eager construction is free: a ThreadPoolExecutor spawns no threads until
+        // its first submit, and an idle-timeout pool holds zero threads when quiet.
+        if (this.options.getAsyncExecutor() != null) {
+            this.ownedAsyncExecutor = null;
+            this.asyncExecutor = this.options.getAsyncExecutor();
+        } else {
+            this.ownedAsyncExecutor = newOwnedAsyncExecutor();
+            this.asyncExecutor = this.ownedAsyncExecutor;
+        }
+
         if (this.options.isStickyBucketingConfigured()) {
-            Executor executor = this.options.getAsyncExecutor();
-            if (executor == null) {
-                this.ownedAsyncExecutor = newOwnedAsyncExecutor();
-                executor = this.ownedAsyncExecutor;
-            } else {
-                this.ownedAsyncExecutor = null;
-            }
             AsyncStickyBucketService asyncService = this.options.getAsyncStickyBucketService() != null
                     ? this.options.getAsyncStickyBucketService()
-                    : new SyncOffloadStickyBucketAdapter(this.options.getStickyBucketService(), executor);
+                    : new SyncOffloadStickyBucketAdapter(this.options.getStickyBucketService(), this.asyncExecutor);
             this.stickyBucketManager = new StickyBucketManager(
                     asyncService,
                     this.options.getStickyBucketCacheTtlSeconds(),
                     this.options.getStickyBucketCacheSize());
         } else {
-            this.ownedAsyncExecutor = null;
             this.stickyBucketManager = null;
         }
 
@@ -256,6 +260,67 @@ public class GrowthBookClient {
             log.error("Failed to initialize growthbook instance", e);
             return false;
         }
+    }
+
+    /**
+     * Async twin of {@link #initialize()}: the initial feature fetch uses
+     * OkHttp's async {@code enqueue()} and retry backoff is scheduled, not
+     * slept — no thread (caller or pool) is parked through network round trips
+     * or retry delays. Mirrors {@code initialize()}'s no-throw contract: the
+     * future completes with {@code false} on failure, never exceptionally.
+     *
+     * <p>Remote-eval mode keeps its blocking initialization internally and is
+     * offloaded wholesale to the client's executor.
+     *
+     * @return future completing with whether the client is ready
+     */
+    public CompletableFuture<Boolean> initializeAsync() {
+        try {
+            OptionsValidator.validate(this.options);
+        } catch (InvalidOptionsException e) {
+            log.error("Failed to initialize growthbook instance", e);
+            return CompletableFuture.completedFuture(false);
+        }
+
+        if (this.options.isRemoteEvalEnabled()) {
+            return CompletableFuture.supplyAsync(this::initialize, this.asyncExecutor);
+        }
+
+        GBFeaturesRepository repositoryToInitialize;
+        try {
+            repositoryToInitialize = prepareRepositoryForInitialization();
+        } catch (RuntimeException e) {
+            recordInitializationFailure(e);
+            log.error("Failed to initialize growthbook instance", e);
+            return CompletableFuture.completedFuture(false);
+        }
+        if (repositoryToInitialize == null) {
+            GBFeaturesRepository repositorySnapshot = this.repository.get();
+            return CompletableFuture.completedFuture(
+                    repositorySnapshot != null && repositorySnapshot.getInitialized());
+        }
+
+        return repositoryToInitialize.initializeAsync(false)
+                // Hop off the OkHttp dispatcher / retry-scheduler thread before
+                // context building and any user continuations.
+                .thenApplyAsync(ignored -> {
+                    replaceGlobalContextFrom(repositoryToInitialize);
+                    boolean isReady = this.repository.get() == repositoryToInitialize
+                            && repositoryToInitialize.getInitialized();
+                    if (isReady) {
+                        this.lastInitializationError.set(null);
+                        this.lastInitializationErrorAtMillis.set(0);
+                        log.info("GrowthBookClient initialized repository and registered feature refresh callbacks.");
+                    }
+                    return isReady;
+                }, this.asyncExecutor)
+                .exceptionally(e -> {
+                    Throwable cause = e.getCause() == null ? e : e.getCause();
+                    recordInitializationFailure(cause);
+                    clearFailedInitialization(repositoryToInitialize);
+                    log.error("Failed to initialize growthbook instance", cause);
+                    return false;
+                });
     }
 
     private void recordInitializationFailure(Throwable error) {
@@ -409,6 +474,146 @@ public class GrowthBookClient {
                                                             Class<ValueType> valueTypeClass,
                                                             UserContext userContext) {
         return featureEvaluator.evaluateFeature(key, getEvalContext(userContext), valueTypeClass);
+    }
+
+    // ------------------------------------------------------------------------
+    // Asynchronous evaluation API.
+    //
+    // Feature evaluation itself is synchronous and CPU-only (matching the
+    // JavaScript SDK); what these methods make non-blocking is the I/O at the
+    // edges — the sticky bucket read before evaluation and, for remote eval,
+    // the HTTP round trip. With no sticky bucket service configured the
+    // returned futures are already complete.
+    //
+    // Contract: returned futures are caller-owned. cancel() detaches the
+    // caller's stage only — it never aborts the underlying store or network
+    // operation and never affects other callers coalesced onto the same fetch.
+    // Completion runs on the client's executor (Options.asyncExecutor, or the
+    // client-owned pool), never on a store client's I/O thread. The remaining
+    // convenience overloads of the sync API compose from these, e.g.
+    // getFeatureAsync(key, user).thenApply(FeatureResult::getValue).
+    // Reactor wrap: Mono.defer(() -> Mono.fromFuture(client.evalFeatureAsync(...))).
+    // ------------------------------------------------------------------------
+
+    /**
+     * Async twin of {@link #evalFeature(String, Class, UserContext)}: evaluates
+     * without blocking the calling thread on sticky bucket or remote-eval I/O.
+     *
+     * @param key            feature key
+     * @param valueTypeClass value type token
+     * @param userContext    user context
+     * @param <ValueType>    feature value type
+     * @return future completing with the feature result; completes
+     *         exceptionally when a configured sticky bucket store fails
+     */
+    public <ValueType> CompletableFuture<FeatureResult<ValueType>> evalFeatureAsync(String key,
+                                                                                    Class<ValueType> valueTypeClass,
+                                                                                    UserContext userContext) {
+        return getEvalContextAsync(userContext)
+                .thenApply(evalContext -> featureEvaluator.evaluateFeature(key, evalContext, valueTypeClass));
+    }
+
+    /**
+     * Async twin of {@link #isOn(String, UserContext)}.
+     *
+     * @param featureKey  feature key
+     * @param userContext user context
+     * @return future completing with whether the feature is on
+     */
+    public CompletableFuture<Boolean> isOnAsync(String featureKey, UserContext userContext) {
+        return getEvalContextAsync(userContext)
+                .thenApply(evalContext -> featureEvaluator.evaluateFeature(featureKey, evalContext, Object.class).isOn());
+    }
+
+    /**
+     * Async twin of {@link #isOff(String, UserContext)}.
+     *
+     * @param featureKey  feature key
+     * @param userContext user context
+     * @return future completing with whether the feature is off
+     */
+    public CompletableFuture<Boolean> isOffAsync(String featureKey, UserContext userContext) {
+        return getEvalContextAsync(userContext)
+                .thenApply(evalContext -> featureEvaluator.evaluateFeature(featureKey, evalContext, Object.class).isOff());
+    }
+
+    /**
+     * Async twin of {@link #getFeatureValue(String, Object, Class, UserContext)}:
+     * same deserialization and default-value semantics.
+     *
+     * @param featureKey              feature key
+     * @param defaultValue            value when the feature is missing or evaluation fails
+     * @param gsonDeserializableClass value type token
+     * @param userContext             user context
+     * @param <ValueType>             feature value type
+     * @return future completing with the deserialized value or the default
+     */
+    public <ValueType> CompletableFuture<ValueType> getFeatureValueAsync(String featureKey,
+                                                                         ValueType defaultValue,
+                                                                         Class<ValueType> gsonDeserializableClass,
+                                                                         UserContext userContext) {
+        return getEvalContextAsync(userContext).thenApply(evalContext -> {
+            try {
+                Object maybeValue = featureEvaluator
+                        .evaluateFeature(featureKey, evalContext, gsonDeserializableClass).getValue();
+                if (maybeValue == null) {
+                    return defaultValue;
+                }
+                String stringValue = GrowthBookJsonUtils.getInstance().gson.toJson(maybeValue);
+                return GrowthBookJsonUtils.getInstance().gson.fromJson(stringValue, gsonDeserializableClass);
+            } catch (Exception e) {
+                log.error(e.getMessage(), e);
+                return defaultValue;
+            }
+        });
+    }
+
+    /**
+     * Async twin of {@link #getFeature(FeatureKey, UserContext)}.
+     *
+     * @param featureKey  typed feature key
+     * @param userContext user context
+     * @param <T>         feature value type carried by the key
+     * @return future completing with the feature result
+     */
+    public <T> CompletableFuture<FeatureResult<T>> getFeatureAsync(FeatureKey<T> featureKey, UserContext userContext) {
+        Objects.requireNonNull(featureKey, "featureKey");
+        return evalFeatureAsync(featureKey.getKey(), featureKey.getValueType(), userContext);
+    }
+
+    /**
+     * Async twin of {@link #getFeatureValue(FeatureKey, Object, UserContext)}.
+     *
+     * @param featureKey   typed feature key
+     * @param defaultValue value when the feature is missing or evaluation fails
+     * @param userContext  user context
+     * @param <T>          feature value type carried by the key
+     * @return future completing with the deserialized value or the default
+     */
+    public <T> CompletableFuture<T> getFeatureValueAsync(FeatureKey<T> featureKey,
+                                                         T defaultValue,
+                                                         UserContext userContext) {
+        Objects.requireNonNull(featureKey, "featureKey");
+        return getFeatureValueAsync(featureKey.getKey(), defaultValue, featureKey.getValueType(), userContext);
+    }
+
+    /**
+     * Async twin of {@link #run(Experiment, UserContext)} — evaluates the inline
+     * experiment and fires subscriptions, without blocking on sticky bucket I/O.
+     *
+     * @param experiment  inline experiment
+     * @param userContext user context
+     * @param <ValueType> variation value type
+     * @return future completing with the experiment result
+     */
+    public <ValueType> CompletableFuture<ExperimentResult<ValueType>> runAsync(Experiment<ValueType> experiment,
+                                                                               UserContext userContext) {
+        return getEvalContextAsync(userContext).thenApply(evalContext -> {
+            ExperimentResult<ValueType> result =
+                    experimentEvaluatorEvaluator.evaluateExperiment(experiment, evalContext, null);
+            fireSubscriptions(experiment, result);
+            return result;
+        });
     }
 
     public Boolean isOn(String featureKey, UserContext userContext) {
@@ -785,8 +990,12 @@ public class GrowthBookClient {
         if (this.options.isRemoteEvalEnabled()) {
             return getRemoteEvalContext(updatedUserContext);
         }
+        return buildLocalEvalContext(updatedUserContext);
+    }
+
+    private EvaluationContext buildLocalEvalContext(UserContext mergedUserContext) {
         EvaluationContext evaluationContext = withPluginRegistry(
-                new EvaluationContext(getLocalGlobalContext(), updatedUserContext, new EvaluationContext.StackContext(), this.options));
+                new EvaluationContext(getLocalGlobalContext(), mergedUserContext, new EvaluationContext.StackContext(), this.options));
         if (this.stickyBucketManager != null) {
             // Fire-and-forget persistence (JS/Python parity): evaluation never waits
             // on the store; the manager merges, serializes per key, and tracks the
@@ -794,6 +1003,28 @@ public class GrowthBookClient {
             evaluationContext.setStickyBucketDocWriter(this.stickyBucketManager::recordAndSave);
         }
         return evaluationContext;
+    }
+
+    private CompletableFuture<EvaluationContext> getEvalContextAsync(UserContext userContext) {
+        UserContext merged = toUserContextWithMergedAttributesOnly(userContext);
+        if (this.options.isRemoteEvalEnabled()) {
+            // Remote eval performs blocking HTTP on a cache miss: offload wholesale.
+            return CompletableFuture.supplyAsync(() -> getRemoteEvalContext(merged), this.asyncExecutor);
+        }
+        if (this.stickyBucketManager == null || merged.getStickyBucketAssignmentDocs() != null) {
+            return CompletableFuture.completedFuture(buildLocalEvalContext(merged));
+        }
+        Map<String, String> attributes = stickyIdentifierAttributesFor(merged.getAttributes());
+        // Exactly ONE executor hop, at the foreign-completion boundary: the sticky
+        // store's completion thread (a Lettuce/Netty event loop, an OkHttp
+        // dispatcher) must never run evaluation, the user's tracking callback, or
+        // caller continuations. The hop also serves as the defensive copy of the
+        // shared coalesced future — a caller's cancel() cannot reach it.
+        return this.stickyBucketManager.fetchAssignments(attributes)
+                .thenApplyAsync(docs -> {
+                    merged.setStickyBucketAssignmentDocs(docs);
+                    return buildLocalEvalContext(merged);
+                }, this.asyncExecutor);
     }
 
     /**
