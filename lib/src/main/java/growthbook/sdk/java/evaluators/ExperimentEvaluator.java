@@ -20,6 +20,7 @@ import growthbook.sdk.java.model.VariationMeta;
 import growthbook.sdk.java.multiusermode.configurations.EvaluationContext;
 import growthbook.sdk.java.multiusermode.usage.TrackingCallbackWithUser;
 import growthbook.sdk.java.plugin.PluginRegistry;
+import growthbook.sdk.java.stickyBucketing.StickyBucketDocWriter;
 import lombok.extern.slf4j.Slf4j;
 
 import javax.annotation.Nullable;
@@ -299,8 +300,12 @@ public class ExperimentEvaluator implements IExperimentEvaluator {
                         docModel.getStickyAssignmentsDocument()
                 );
 
-                // save doc
-                if (context.getOptions().getStickyBucketService() != null) {
+                // save doc: through the owning client's writer seam when set
+                // (fire-and-forget persistence), else the legacy direct call.
+                StickyBucketDocWriter docWriter = context.getStickyBucketDocWriter();
+                if (docWriter != null) {
+                    docWriter.write(docModel.getStickyAssignmentsDocument());
+                } else if (context.getOptions().getStickyBucketService() != null) {
                     context.getOptions().getStickyBucketService().saveAssignments(docModel.getStickyAssignmentsDocument());
                 }
             }
@@ -460,7 +465,7 @@ public class ExperimentEvaluator implements IExperimentEvaluator {
 
     private <ValueType> boolean isStickyBucketingEnabledForExperiment(EvaluationContext context,
                                                                       Experiment<ValueType> experiment) {
-        return context.getOptions().getStickyBucketService() != null
+        return context.getOptions().isStickyBucketingConfigured()
                 && !Boolean.TRUE.equals(experiment.getDisableStickyBucketing());
     }
 

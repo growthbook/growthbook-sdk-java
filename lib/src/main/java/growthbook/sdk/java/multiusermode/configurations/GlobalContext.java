@@ -6,12 +6,16 @@ import growthbook.sdk.java.model.Feature;
 import growthbook.sdk.java.util.ForcedVariationsUtils;
 import lombok.Builder;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.Getter;
+import lombok.Setter;
+import lombok.ToString;
 import lombok.extern.slf4j.Slf4j;
 
 import javax.annotation.Nullable;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 @Data
 @Slf4j
@@ -70,4 +74,18 @@ public class GlobalContext {
     @Getter
     @Nullable
     private Map<String, Object> forcedFeatureValues;
+
+    /**
+     * Lazily derived sticky-bucket identifier attributes for this feature
+     * snapshot (hashAttribute/fallbackAttribute across experiment rules).
+     * Memoized here because a new GlobalContext is built on every feature
+     * refresh, so invalidation is free. A cache, not state — excluded from
+     * equals/hashCode/toString.
+     */
+    @Getter
+    @Setter
+    @Nullable
+    @EqualsAndHashCode.Exclude
+    @ToString.Exclude
+    private volatile Set<String> derivedStickyIdentifierAttributes;
 }

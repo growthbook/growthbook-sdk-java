@@ -74,8 +74,15 @@ public final class OptionsValidator {
         checkBackgroundFetchInterval(options.getBackgroundFetchInterval(), violations);
         checkRemoteEvalCacheTtl(options.getRemoteEvalCacheTtlSeconds(), violations);
         checkCacheConfiguration(options, violations);
+        checkStickyBucketConfiguration(options, violations);
         violations.addAll(RemoteEvalOptionsValidator.remoteEvalViolations(options));
         return Collections.unmodifiableList(violations);
+    }
+
+    private static void checkStickyBucketConfiguration(Options options, List<String> violations) {
+        if (options.getStickyBucketService() != null && options.getAsyncStickyBucketService() != null) {
+            violations.add("configure either stickyBucketService or asyncStickyBucketService, not both");
+        }
     }
 
     private static void checkApiHost(@Nullable String apiHost, List<String> violations) {
