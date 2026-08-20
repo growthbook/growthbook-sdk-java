@@ -29,6 +29,15 @@ plugins {
 sourceCompatibility = JavaVersion.VERSION_1_8
 targetCompatibility = JavaVersion.VERSION_1_8
 
+// Fail the build when a post-Java-8 API sneaks in, regardless of the JDK that
+// compiles it: sourceCompatibility alone checks language level, not API usage.
+// Guarded because JDK 8's javac has no --release flag (CI still builds on 8).
+tasks.withType(JavaCompile).configureEach {
+    if (JavaVersion.current().isJava9Compatible()) {
+        options.release = 8
+    }
+}
+
 group = 'com.github.growthbook'
 version = findProperty('version') ?: 'main-SNAPSHOT'
 
