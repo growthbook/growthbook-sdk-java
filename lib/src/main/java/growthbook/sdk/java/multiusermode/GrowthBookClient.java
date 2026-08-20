@@ -228,7 +228,7 @@ public class GrowthBookClient {
 
     private void initializeFeaturesRepository(GBFeaturesRepository repositorySnapshot) {
         try {
-            repositorySnapshot.initialize();
+            repositorySnapshot.initialize(this.options.isSseReconnectOnFailure());
         } catch (FeatureFetchException e) {
             throw new GrowthBookClientInitializationException(
                     "Failed to initialize features repository", e);

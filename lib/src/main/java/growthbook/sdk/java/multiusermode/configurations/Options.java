@@ -86,6 +86,7 @@ public class Options {
                 null,
                 null,
                 null,
+                null,
                 null
         );
     }
@@ -118,6 +119,7 @@ public class Options {
                    @Nullable Integer remoteEvalCacheTtlSeconds,
                    @Nullable Duration backgroundFetchInterval,
                    @Nullable FeatureFetchRetryPolicy retryPolicy,
+                   @Nullable Boolean sseReconnectOnFailure,
                    @Nullable List<GrowthBookPlugin> plugins
     ) {
         this.enabled = enabled == null || enabled;
@@ -147,6 +149,7 @@ public class Options {
         this.remoteEvalCacheTtlSeconds = remoteEvalCacheTtlSeconds;
         this.backgroundFetchInterval = backgroundFetchInterval;
         this.retryPolicy = retryPolicy;
+        this.sseReconnectOnFailure = sseReconnectOnFailure;
         this.plugins = plugins;
     }
 
@@ -315,6 +318,17 @@ public class Options {
      */
     @Nullable
     private FeatureFetchRetryPolicy retryPolicy;
+
+    /**
+     * Whether the multi-user client reconnects the SSE stream after an abnormal failure or a
+     * server close. Reconnect attempts are bounded by {@link #retryPolicy}. Defaults to {@code true}.
+     */
+    @Nullable
+    private Boolean sseReconnectOnFailure;
+
+    public boolean isSseReconnectOnFailure() {
+        return sseReconnectOnFailure == null || sseReconnectOnFailure;
+    }
 
     @Nullable
     public String getCacheDirectory() {
