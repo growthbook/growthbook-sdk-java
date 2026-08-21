@@ -2,6 +2,7 @@ package growthbook.sdk.java.multiusermode.configurations;
 
 import com.google.gson.JsonObject;
 import growthbook.sdk.java.util.ForcedVariationsUtils;
+import growthbook.sdk.java.util.GrowthBookJsonUtils;
 import growthbook.sdk.java.model.StickyAssignmentsDocument;
 import growthbook.sdk.java.multiusermode.util.TransformationUtil;
 import lombok.Setter;
@@ -124,6 +125,26 @@ public class UserContext {
 
         public UserContextBuilder attributes(JsonObject attributes) {
             this.attributes = attributes;
+            return this;
+        }
+
+        /**
+         * Set attributes from a plain {@link Map}, converting it into the internal
+         * {@link JsonObject} using the SDK's shared Gson instance. This lets calling
+         * code pass attributes without touching the Gson/JSON layer, e.g.
+         * <pre>{@code
+         * UserContext.builder()
+         *     .attributes(Map.of("userId", userId, "country", country))
+         *     .build();
+         * }</pre>
+         *
+         * @param attributes attributes as key-value pairs, or {@code null} for none
+         * @return this builder
+         */
+        public UserContextBuilder attributes(Map<String, ?> attributes) {
+            this.attributes = attributes == null
+                    ? new JsonObject()
+                    : GrowthBookJsonUtils.getInstance().gson.toJsonTree(attributes).getAsJsonObject();
             return this;
         }
 
