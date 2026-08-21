@@ -1,0 +1,10 @@
+// Root build: no code here, only repo-level utility tasks.
+
+// One-time developer setup: points git at the committed hooks in .githooks/
+// (commit-msg enforces Conventional Commits for release-please; pre-commit
+// protects release-please-owned files). Run: ./gradlew installGitHooks
+tasks.register('installGitHooks', Exec) {
+    description = 'Point git core.hooksPath at the committed .githooks directory'
+    group = 'git hooks'
+    commandLine 'git', 'config', 'core.hooksPath', '.githooks'
+}

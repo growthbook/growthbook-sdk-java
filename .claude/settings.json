@@ -1,0 +1,50 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(./gradlew test)",
+      "Bash(./gradlew test *)",
+      "Bash(./gradlew build)",
+      "Bash(./gradlew build *)",
+      "Bash(./gradlew compileJava)",
+      "Bash(./gradlew compileJava *)",
+      "Bash(./gradlew jacocoTestReport)",
+      "Bash(./gradlew :lib:test)",
+      "Bash(./gradlew :lib:test *)",
+      "Bash(./gradlew :lib:compileJava)",
+      "Bash(./gradlew :lib:compileJava *)",
+      "Bash(./gradlew :growthbook-codegen:test)",
+      "Bash(./gradlew :growthbook-codegen:test *)",
+      "Bash(./gradlew :growthbook-cache-redis:test)",
+      "Bash(./gradlew :growthbook-cache-redis:test *)",
+      "Bash(./gradlew :growthbook-cache-redis:integrationTest)",
+      "Bash(./gradlew :growthbook-cache-jcache:test)",
+      "Bash(./gradlew :growthbook-cache-caffeine:test)",
+      "Bash(/usr/libexec/java_home)",
+      "Bash(/usr/libexec/java_home *)"
+    ],
+    "deny": [
+      "Bash(rm -rf *)",
+      "Bash(git push --force *)",
+      "Bash(git push --force)",
+      "Bash(git push -f *)",
+      "Bash(git push -f)",
+      "Bash(git reset --hard *)",
+      "Bash(git reset --hard)",
+      "Bash(git clean -f*)",
+      "Bash(./gradlew publish*)"
+    ]
+  },
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Edit|Write|MultiEdit|NotebookEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "FP=$(jq -r '.tool_input.file_path // empty'); case \"$FP\" in *CHANGELOG.md|*versions.txt|*growthbook/sdk/java/Version.java|*gradle.properties|*growth-book-playground/*|*sdk-playground/*) echo \"Blocked: $FP is owned by release-please or is an out-of-build playground (see .claude/rules/git-conventions.md and project-overview.md).\" >&2; exit 2 ;; esac"
+          }
+        ]
+      }
+    ]
+  }
+}
