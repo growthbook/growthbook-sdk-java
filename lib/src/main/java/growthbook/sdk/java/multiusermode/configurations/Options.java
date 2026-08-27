@@ -27,15 +27,12 @@ import java.time.Duration;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.Executor;
 
 @Data
 @Slf4j
 public class Options {
 
-    /**
-     * Backward-compatible constructor retained for integrations created before
-     * background refresh intervals and retry policies were introduced.
-     */
     public Options(@Nullable Boolean enabled,
                    Boolean isQaMode,
                    @Nullable Boolean isCacheDisabled,
@@ -50,14 +47,13 @@ public class Options {
                    @Nullable FeatureUsageCallbackWithUser featureUsageCallbackWithUser,
                    @Nullable FeatureRefreshStrategy refreshStrategy,
                    @Nullable Integer swrTtlSeconds,
-                   @Nullable FeatureRefreshCallback featureRefreshCallback,
+                   @Deprecated @Nullable FeatureRefreshCallback featureRefreshCallback,
                    @Nullable JsonObject globalAttributes,
                    @Nullable Map<String, Object> globalForcedFeatureValues,
                    @Nullable Map<String, Integer> globalForcedVariationsMap,
                    @Nullable GbCacheManager cacheManager,
                    @Nullable CacheMode cacheMode,
-                   @Nullable String cacheDirectory
-    ) {
+                   @Nullable String cacheDirectory) {
         this(
                 enabled,
                 isQaMode,
@@ -86,6 +82,7 @@ public class Options {
                 null,
                 null,
                 null,
+                null,
                 null
         );
     }
@@ -105,7 +102,7 @@ public class Options {
                    @Nullable FeatureUsageCallbackWithUser featureUsageCallbackWithUser,
                    @Nullable FeatureRefreshStrategy refreshStrategy,
                    @Nullable Integer swrTtlSeconds,
-                   @Nullable FeatureRefreshCallback featureRefreshCallback,
+                   @Deprecated @Nullable FeatureRefreshCallback featureRefreshCallback,
                    @Nullable JsonObject globalAttributes,
                    @Nullable Map<String, Object> globalForcedFeatureValues,
                    @Nullable Map<String, ?> globalForcedVariationsMap,
@@ -118,6 +115,7 @@ public class Options {
                    @Nullable Integer remoteEvalCacheTtlSeconds,
                    @Nullable Duration backgroundFetchInterval,
                    @Nullable FeatureFetchRetryPolicy retryPolicy,
+                   @Nullable Executor featureRefreshListenerExecutor,
                    @Nullable List<GrowthBookPlugin> plugins
     ) {
         this.enabled = enabled == null || enabled;
@@ -147,6 +145,7 @@ public class Options {
         this.remoteEvalCacheTtlSeconds = remoteEvalCacheTtlSeconds;
         this.backgroundFetchInterval = backgroundFetchInterval;
         this.retryPolicy = retryPolicy;
+        this.featureRefreshListenerExecutor = featureRefreshListenerExecutor;
         this.plugins = plugins;
     }
 
@@ -266,17 +265,30 @@ public class Options {
         return this.refreshStrategy;
     }
 
+    /**
+     * Legacy feature refresh callback.
+     *
+     * @deprecated Use {@code GrowthBookClient.addFeatureRefreshListener(...)} or
+     * {@code GrowthBookClient.subscribeFeatureRefreshListener(...)} after constructing the client.
+     */
+    @Deprecated
     @Nullable
     private FeatureRefreshCallback featureRefreshCallback;
 
     @Nullable
     private GbCacheManager cacheManager;
 
-    // New cache configuration
     private CacheMode cacheMode;
 
     @Nullable
     private String cacheDirectory;
+
+    /**
+     * Optional executor for client-level feature refresh listeners. When not supplied, the client
+     * dispatches listener callbacks on a dedicated daemon thread it owns and shuts down.
+     */
+    @Nullable
+    private Executor featureRefreshListenerExecutor;
 
     /**
      * Plugins registered with the GrowthBook client. See
@@ -288,6 +300,18 @@ public class Options {
      */
     @Nullable
     private List<GrowthBookPlugin> plugins;
+
+    /**
+     * Optional minimum interval between non-forced background feature refreshes.
+     */
+    @Nullable
+    private Duration backgroundFetchInterval;
+
+    /**
+     * Optional bounded retry policy. Repositories use the default policy when null.
+     */
+    @Nullable
+    private FeatureFetchRetryPolicy retryPolicy;
 
     private Boolean remoteEval;
 
@@ -303,23 +327,8 @@ public class Options {
     private Integer remoteEvalCacheTtlSeconds;
 
     public CacheMode getCacheMode() { return cacheMode == null ? CacheMode.AUTO : cacheMode; }
-
-    /**
-     * Optional minimum interval between non-forced background feature refreshes.
-     */
     @Nullable
-    private Duration backgroundFetchInterval;
-
-    /**
-     * Optional bounded retry policy. Repositories use the default policy when null.
-     */
-    @Nullable
-    private FeatureFetchRetryPolicy retryPolicy;
-
-    @Nullable
-    public String getCacheDirectory() {
-        return cacheDirectory;
-    }
+    public String getCacheDirectory() { return cacheDirectory; }
 
     @Nullable
     public StickyBucketService getStickyBucketService() {

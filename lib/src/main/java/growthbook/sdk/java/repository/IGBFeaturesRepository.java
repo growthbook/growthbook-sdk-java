@@ -2,6 +2,7 @@ package growthbook.sdk.java.repository;
 
 import growthbook.sdk.java.exception.FeatureFetchException;
 import growthbook.sdk.java.callback.FeatureRefreshCallback;
+import growthbook.sdk.java.listener.FeatureRefreshListener;
 
 import javax.annotation.Nullable;
 
@@ -18,11 +19,30 @@ public interface IGBFeaturesRepository {
      */
     String getFeaturesJson();
 
+    /**
+     * Registers a legacy feature refresh callback.
+     *
+     * @param callback callback to register
+     * @deprecated Use {@link #addFeatureRefreshListener(FeatureRefreshListener)}.
+     */
+    @Deprecated
     void onFeaturesRefresh(FeatureRefreshCallback callback);
 
+    default void addFeatureRefreshListener(FeatureRefreshListener listener) {
+        // Optional for repository implementations that do not refresh features.
+    }
+
+    default void removeFeatureRefreshListener(FeatureRefreshListener listener) {
+        // Optional for repository implementations that do not refresh features.
+    }
+
     /**
-     * Clears the feature refresh callbacks
+     * Clears legacy feature refresh callbacks.
+     *
+     * @deprecated Use listener-specific unsubscription with
+     * {@link #removeFeatureRefreshListener(FeatureRefreshListener)} where available.
      */
+    @Deprecated
     void clearCallbacks();
 
     /**

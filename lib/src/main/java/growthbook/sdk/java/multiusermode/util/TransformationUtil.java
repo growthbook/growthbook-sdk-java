@@ -8,15 +8,16 @@ import com.google.gson.JsonSyntaxException;
 import growthbook.sdk.java.model.Feature;
 import growthbook.sdk.java.util.DecryptionUtils;
 import growthbook.sdk.java.util.GrowthBookJsonUtils;
+import lombok.experimental.UtilityClass;
 import lombok.extern.slf4j.Slf4j;
 
 import javax.annotation.Nullable;
 import java.lang.reflect.Type;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.Map;
 
 @Slf4j
+@UtilityClass
 public class TransformationUtil {
     private static final Gson GSON = GrowthBookJsonUtils.getInstance().gson;
 
