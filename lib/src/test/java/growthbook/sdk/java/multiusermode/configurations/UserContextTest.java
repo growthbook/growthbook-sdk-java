@@ -20,7 +20,7 @@ class UserContextTest {
         attributes.put("age", 42);
 
         UserContext context = UserContext.builder()
-                .attributes(attributes)
+                .attributesMap(attributes)
                 .build();
 
         JsonObject result = context.getAttributes();
@@ -35,7 +35,7 @@ class UserContextTest {
         Map<String, ?> attributes = null;
 
         UserContext context = UserContext.builder()
-                .attributes(attributes)
+                .attributesMap(attributes)
                 .build();
 
         assertEquals(0, context.getAttributes().size());
@@ -49,12 +49,35 @@ class UserContextTest {
         attributes.put("country", "US");
 
         UserContext context = UserContext.builder()
-                .attributes(attributes)
+                .attributesMap(attributes)
                 .build();
 
         JsonObject result = context.getAttributes();
         assertEquals("user-123", result.get("userId").getAsString());
         assertEquals("US", result.get("country").getAsString());
+    }
+
+    @Test
+    void attributes_nullLiteral_remainsUnambiguousAndCompiles() {
+        // A separate attributesMap(...) method (rather than an attributes(Map) overload)
+        // keeps the existing attributes(null) call site compiling and unambiguous.
+        UserContext context = UserContext.builder()
+                .attributes(null)
+                .build();
+
+        assertEquals(0, context.getAttributes().size());
+    }
+
+    @Test
+    void attributes_nullMap_thenAttributesJson_isApplied() {
+        // A null map must leave attributes unset so a subsequent attributesJson(...) applies,
+        // mirroring attributes((JsonObject) null).
+        UserContext context = UserContext.builder()
+                .attributesMap(null)
+                .attributesJson("{\"x\":1}")
+                .build();
+
+        assertEquals(1, context.getAttributes().get("x").getAsInt());
     }
 
     @Test

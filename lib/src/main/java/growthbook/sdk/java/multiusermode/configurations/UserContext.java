@@ -134,16 +134,27 @@ public class UserContext {
          * code pass attributes without touching the Gson/JSON layer, e.g.
          * <pre>{@code
          * UserContext.builder()
-         *     .attributes(Map.of("userId", userId, "country", country))
+         *     .attributesMap(Map.of("userId", userId, "country", country))
          *     .build();
          * }</pre>
+         *
+         * <p>This is a separate method from {@link #attributes(JsonObject)} rather than an
+         * overload so that existing {@code attributes(null)} calls remain unambiguous.
+         *
+         * <p>Values should be JSON-compatible: primitives, {@link String}, {@link java.util.List},
+         * nested {@link Map}, or {@code null}. Other types are serialized via Gson reflection,
+         * which is lossy for types such as {@link java.util.Date} and may fail for
+         * {@code java.time} types (e.g. {@link java.time.Instant}) on newer JDKs; convert those
+         * to a JSON-compatible value (e.g. an ISO-8601 string) before passing them in.
          *
          * @param attributes attributes as key-value pairs, or {@code null} for none
          * @return this builder
          */
-        public UserContextBuilder attributes(Map<String, ?> attributes) {
+        public UserContextBuilder attributesMap(@Nullable Map<String, ?> attributes) {
+            // Mirror attributes((JsonObject) null): leave attributes unset so a later
+            // attributesJson(...) still applies and build() defaults to an empty object.
             this.attributes = attributes == null
-                    ? new JsonObject()
+                    ? null
                     : GrowthBookJsonUtils.getInstance().gson.toJsonTree(attributes).getAsJsonObject();
             return this;
         }
