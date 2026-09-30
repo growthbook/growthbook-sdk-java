@@ -7,6 +7,7 @@ import static growthbook.sdk.java.constants.SDKConstants.Endpoints.STREAMING_END
 
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import com.google.gson.JsonSyntaxException;
 import growthbook.sdk.java.callback.FeatureRefreshCallback;
 import growthbook.sdk.java.constants.SDKConstants;
 import growthbook.sdk.java.exception.FeatureFetchException;
@@ -904,6 +905,7 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
         } catch (RuntimeException cacheException) {
             log.warn("Failed to read the feature cache timestamp.", cacheException);
             return null;
+
         }
     }
 
@@ -953,15 +955,18 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
      */
     private void onResponseJson(String responseJsonString, boolean isFromCache) throws FeatureFetchException {
         try {
-            if (!isFromCache) {
-                saveToCacheQuietly(responseJsonString);
-            }
-
             JsonObject jsonObject = parseResponse(responseJsonString);
 
             RefreshedPayload payload = this.decryptionKey != null
                     ? extractEncryptedPayload(jsonObject)
                     : extractUnencryptedPayload(jsonObject);
+
+            // Cache only a response we successfully parsed and extracted, so a bad body
+            // (empty, "null", malformed, or missing features) can't overwrite a good
+            // cached payload that the startup fallback relies on.
+            if (!isFromCache) {
+                saveToCacheQuietly(responseJsonString);
+            }
 
             applyPayload(payload, isFromCache);
         } catch (DecryptionUtils.DecryptionException e) {
@@ -990,13 +995,20 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
     }
 
     /**
-     * Parse the response body into a {@link JsonObject}. Gson returns {@code null} for an
-     * empty body or the literal {@code "null"}, so guard against it and surface the SDK's
-     * declared {@link FeatureFetchException} instead of an unchecked NullPointerException.
+     * Parse the response body into a {@link JsonObject}, surfacing the SDK's declared
+     * {@link FeatureFetchException} instead of an unchecked exception when the body is not
+     * a JSON object. Gson returns {@code null} for an empty or whitespace-only body, and
+     * throws {@link JsonSyntaxException} for the literal {@code "null"}, a JSON array, an
+     * HTML error page, or truncated/malformed JSON.
      */
     private JsonObject parseResponse(String responseJsonString) throws FeatureFetchException {
-        JsonObject jsonObject = GrowthBookJsonUtils.getInstance()
-                .gson.fromJson(responseJsonString, JsonObject.class);
+        JsonObject jsonObject;
+        try {
+            jsonObject = GrowthBookJsonUtils.getInstance()
+                    .gson.fromJson(responseJsonString, JsonObject.class);
+        } catch (JsonSyntaxException e) {
+            throw configurationError("features response is not a JSON object: " + e.getMessage());
+        }
 
         if (jsonObject == null) {
             throw configurationError("empty or invalid features response");
@@ -1013,18 +1025,26 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
         JsonElement encryptedFeaturesJsonElement = jsonObject.get(FeatureResponseKey.ENCRYPTED_FEATURES_KEY.getKey());
         JsonElement encryptedSavedGroupsJsonElement = jsonObject.get(FeatureResponseKey.ENCRYPTED_SAVED_GROUPS_KEY.getKey());
 
-        if (encryptedFeaturesJsonElement == null) {
+        // A missing, null, or non-string encryptedFeatures value means the endpoint isn't
+        // encrypted as configured. Guard before getAsString(), which would otherwise throw
+        // an unchecked UnsupportedOperationException on a JsonNull.
+        if (!isJsonString(encryptedFeaturesJsonElement)) {
             throw configurationError("encryptionKey provided but endpoint not encrypted");
         }
 
         String refreshedSavedGroups = "";
-        if (encryptedSavedGroupsJsonElement != null) {
+        if (isJsonString(encryptedSavedGroupsJsonElement)) {
             refreshedSavedGroups = DecryptionUtils
                     .decrypt(encryptedSavedGroupsJsonElement.getAsString(), this.decryptionKey).trim();
         }
 
         String refreshedFeatures = DecryptionUtils
                 .decrypt(encryptedFeaturesJsonElement.getAsString(), this.decryptionKey).trim();
+
+        // The decrypted payload must itself be a features JSON object.
+        if (!isJsonObjectString(refreshedFeatures)) {
+            throw configurationError("decrypted features payload is not a JSON object");
+        }
 
         return new RefreshedPayload(refreshedFeatures, refreshedSavedGroups);
     }
@@ -1036,11 +1056,14 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
         JsonElement featuresJsonElement = jsonObject.get(FeatureResponseKey.FEATURE_KEY.getKey());
         JsonElement savedGroupsJsonElement = jsonObject.get(FeatureResponseKey.SAVED_GROUP_KEY.getKey());
 
-        if (featuresJsonElement == null) {
+        // A missing key, an explicit JSON null (e.g. {"features":null}), or any non-object
+        // value all mean there are no usable features. Treat them alike so a null-features
+        // response isn't silently counted as a successful refresh that wipes all flags.
+        if (featuresJsonElement == null || !featuresJsonElement.isJsonObject()) {
             throw configurationError("No features found");
         }
 
-        String refreshedSavedGroups = savedGroupsJsonElement != null
+        String refreshedSavedGroups = (savedGroupsJsonElement != null && savedGroupsJsonElement.isJsonObject())
                 ? savedGroupsJsonElement.toString().trim()
                 : "";
 
@@ -1065,6 +1088,28 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
         }
         // bump TTL only after successful processing
         this.refreshExpiresAt();
+    }
+
+    /**
+     * @return {@code true} if the element is present and a JSON string primitive.
+     */
+    private static boolean isJsonString(@Nullable JsonElement element) {
+        return element != null && element.isJsonPrimitive() && element.getAsJsonPrimitive().isString();
+    }
+
+    /**
+     * @return {@code true} if the given text parses to a JSON object.
+     */
+    private boolean isJsonObjectString(@Nullable String json) {
+        if (json == null) {
+            return false;
+        }
+        try {
+            JsonElement parsed = GrowthBookJsonUtils.getInstance().gson.fromJson(json, JsonElement.class);
+            return parsed != null && parsed.isJsonObject();
+        } catch (JsonSyntaxException e) {
+            return false;
+        }
     }
 
     /**
