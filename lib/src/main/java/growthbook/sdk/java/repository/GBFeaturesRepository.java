@@ -7,6 +7,7 @@ import static growthbook.sdk.java.constants.SDKConstants.Endpoints.STREAMING_END
 
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import com.google.gson.JsonSyntaxException;
 import growthbook.sdk.java.callback.FeatureRefreshCallback;
 import growthbook.sdk.java.constants.SDKConstants;
 import growthbook.sdk.java.exception.FeatureFetchException;
@@ -904,6 +905,7 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
         } catch (RuntimeException cacheException) {
             log.warn("Failed to read the feature cache timestamp.", cacheException);
             return null;
+
         }
     }
 
@@ -953,80 +955,20 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
      */
     private void onResponseJson(String responseJsonString, boolean isFromCache) throws FeatureFetchException {
         try {
-            if (!isFromCache && !isCacheDisabled && cacheManager != null) {
-                try {
-                    cacheManager.saveContent(FILE_NAME, responseJsonString);
-                } catch (RuntimeException ignored) {
-                }
-            }
+            JsonObject jsonObject = parseResponse(responseJsonString);
 
-            JsonObject jsonObject = GrowthBookJsonUtils.getInstance()
-                    .gson.fromJson(responseJsonString, JsonObject.class);
+            RefreshedPayload payload = this.decryptionKey != null
+                    ? extractEncryptedPayload(jsonObject)
+                    : extractUnencryptedPayload(jsonObject);
 
-            // Features will be refreshed as either an encrypted or un-encrypted JSON string
-            String refreshedFeatures;
-            String refreshedSavedGroups = "";
-
-            if (this.decryptionKey != null) {
-                // Use encrypted features at responseBody.encryptedFeatures
-                JsonElement encryptedFeaturesJsonElement = jsonObject.get(FeatureResponseKey.ENCRYPTED_FEATURES_KEY.getKey());
-                JsonElement encryptedSavedGroupsJsonElement = jsonObject.get(FeatureResponseKey.ENCRYPTED_SAVED_GROUPS_KEY.getKey());
-                if (encryptedFeaturesJsonElement == null) {
-                    log.error(
-                            "FeatureFetchException: CONFIGURATION_ERROR feature fetch error code: "
-                                    + "encryptionKey provided but endpoint not encrypted");
-                    throw new FeatureFetchException(
-                            FeatureFetchException.FeatureFetchErrorCode.CONFIGURATION_ERROR,
-                            "encryptionKey provided but endpoint not encrypted"
-                    );
-                }
-
-                String encryptedFeaturesJson = encryptedFeaturesJsonElement.getAsString();
-                String encryptedSavedGroupsJson;
-                if (encryptedSavedGroupsJsonElement != null) {
-                    encryptedSavedGroupsJson = encryptedSavedGroupsJsonElement.getAsString();
-                    refreshedSavedGroups = DecryptionUtils.decrypt(encryptedSavedGroupsJson, this.decryptionKey).trim();
-                }
-
-                refreshedFeatures = DecryptionUtils.decrypt(encryptedFeaturesJson, this.decryptionKey).trim();
-            } else {
-                // Use unencrypted features at responseBody.features
-                JsonElement featuresJsonElement = jsonObject.get(FeatureResponseKey.FEATURE_KEY.getKey());
-                JsonElement savedGroupsJsonElement = jsonObject.get(FeatureResponseKey.SAVED_GROUP_KEY.getKey());
-
-                if (featuresJsonElement == null) {
-                    log.error(
-                            "FeatureFetchException: CONFIGURATION_ERROR feature fetch error code: "
-                                    + "No features found");
-
-                    throw new FeatureFetchException(
-                            FeatureFetchException.FeatureFetchErrorCode.CONFIGURATION_ERROR,
-                            "No features found"
-                    );
-                }
-
-                if (savedGroupsJsonElement != null) {
-                    refreshedSavedGroups = savedGroupsJsonElement.toString().trim();
-                }
-
-                refreshedFeatures = featuresJsonElement.toString().trim();
-            }
-
-            this.featuresJson = refreshedFeatures;
-            this.savedGroupsJson = refreshedSavedGroups;
-
-            Map<String, Feature<?>> newParsed = TransformationUtil.transformFeatures(this.featuresJson);
-            JsonObject newSaved = TransformationUtil.transformSavedGroups(this.savedGroupsJson);
-            this.parsedFeatures = newParsed;
-            this.parsedSavedGroups = newSaved == null ? new JsonObject() : newSaved;
-            this.hasFeatureData.set(true);
-
+            // Cache only a response we successfully parsed and extracted, so a bad body
+            // (empty, "null", malformed, or missing features) can't overwrite a good
+            // cached payload that the startup fallback relies on.
             if (!isFromCache) {
-                this.lastSuccessfulFetchAtMillis.set(System.currentTimeMillis());
-                this.onRefreshSuccess(this.featuresJson);
+                saveToCacheQuietly(responseJsonString);
             }
-            // bump TTL only after successful processing
-            this.refreshExpiresAt();
+
+            applyPayload(payload, isFromCache);
         } catch (DecryptionUtils.DecryptionException e) {
             log.error("FeatureFetchException: UNKNOWN feature fetch error code {}",
                     e.getMessage(), e);
@@ -1035,6 +977,162 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
                     FeatureFetchException.FeatureFetchErrorCode.UNKNOWN,
                     e.getMessage()
             );
+        }
+    }
+
+    /**
+     * Persist the raw response to the cache, swallowing any cache errors so they never
+     * disrupt feature processing. No-op when caching is disabled or unconfigured.
+     */
+    private void saveToCacheQuietly(String responseJsonString) {
+        if (isCacheDisabled || cacheManager == null) {
+            return;
+        }
+        try {
+            cacheManager.saveContent(FILE_NAME, responseJsonString);
+        } catch (RuntimeException ignored) {
+        }
+    }
+
+    /**
+     * Parse the response body into a {@link JsonObject}, surfacing the SDK's declared
+     * {@link FeatureFetchException} instead of an unchecked exception when the body is not
+     * a JSON object. Gson returns {@code null} for an empty or whitespace-only body, and
+     * throws {@link JsonSyntaxException} for the literal {@code "null"}, a JSON array, an
+     * HTML error page, or truncated/malformed JSON.
+     */
+    private JsonObject parseResponse(String responseJsonString) throws FeatureFetchException {
+        JsonObject jsonObject;
+        try {
+            jsonObject = GrowthBookJsonUtils.getInstance()
+                    .gson.fromJson(responseJsonString, JsonObject.class);
+        } catch (JsonSyntaxException e) {
+            throw configurationError("features response is not a JSON object: " + e.getMessage());
+        }
+
+        if (jsonObject == null) {
+            throw configurationError("empty or invalid features response");
+        }
+
+        return jsonObject;
+    }
+
+    /**
+     * Extract and decrypt the encrypted features/saved-groups payload.
+     */
+    private RefreshedPayload extractEncryptedPayload(JsonObject jsonObject) throws FeatureFetchException,
+            DecryptionUtils.DecryptionException {
+        JsonElement encryptedFeaturesJsonElement = jsonObject.get(FeatureResponseKey.ENCRYPTED_FEATURES_KEY.getKey());
+        JsonElement encryptedSavedGroupsJsonElement = jsonObject.get(FeatureResponseKey.ENCRYPTED_SAVED_GROUPS_KEY.getKey());
+
+        // A missing, null, or non-string encryptedFeatures value means the endpoint isn't
+        // encrypted as configured. Guard before getAsString(), which would otherwise throw
+        // an unchecked UnsupportedOperationException on a JsonNull.
+        if (!isJsonString(encryptedFeaturesJsonElement)) {
+            throw configurationError("encryptionKey provided but endpoint not encrypted");
+        }
+
+        String refreshedSavedGroups = "";
+        if (isJsonString(encryptedSavedGroupsJsonElement)) {
+            refreshedSavedGroups = DecryptionUtils
+                    .decrypt(encryptedSavedGroupsJsonElement.getAsString(), this.decryptionKey).trim();
+        }
+
+        String refreshedFeatures = DecryptionUtils
+                .decrypt(encryptedFeaturesJsonElement.getAsString(), this.decryptionKey).trim();
+
+        // The decrypted payload must itself be a features JSON object.
+        if (!isJsonObjectString(refreshedFeatures)) {
+            throw configurationError("decrypted features payload is not a JSON object");
+        }
+
+        return new RefreshedPayload(refreshedFeatures, refreshedSavedGroups);
+    }
+
+    /**
+     * Extract the unencrypted features/saved-groups payload.
+     */
+    private RefreshedPayload extractUnencryptedPayload(JsonObject jsonObject) throws FeatureFetchException {
+        JsonElement featuresJsonElement = jsonObject.get(FeatureResponseKey.FEATURE_KEY.getKey());
+        JsonElement savedGroupsJsonElement = jsonObject.get(FeatureResponseKey.SAVED_GROUP_KEY.getKey());
+
+        // A missing key, an explicit JSON null (e.g. {"features":null}), or any non-object
+        // value all mean there are no usable features. Treat them alike so a null-features
+        // response isn't silently counted as a successful refresh that wipes all flags.
+        if (featuresJsonElement == null || !featuresJsonElement.isJsonObject()) {
+            throw configurationError("No features found");
+        }
+
+        String refreshedSavedGroups = (savedGroupsJsonElement != null && savedGroupsJsonElement.isJsonObject())
+                ? savedGroupsJsonElement.toString().trim()
+                : "";
+
+        return new RefreshedPayload(featuresJsonElement.toString().trim(), refreshedSavedGroups);
+    }
+
+    /**
+     * Store the refreshed payload, transform it, and notify refresh listeners.
+     */
+    private void applyPayload(RefreshedPayload payload, boolean isFromCache) {
+        this.featuresJson = payload.features;
+        this.savedGroupsJson = payload.savedGroups;
+
+        this.parsedFeatures = TransformationUtil.transformFeatures(this.featuresJson);
+        JsonObject newSaved = TransformationUtil.transformSavedGroups(this.savedGroupsJson);
+        this.parsedSavedGroups = newSaved == null ? new JsonObject() : newSaved;
+        this.hasFeatureData.set(true);
+
+        if (!isFromCache) {
+            this.lastSuccessfulFetchAtMillis.set(System.currentTimeMillis());
+            this.onRefreshSuccess(this.featuresJson);
+        }
+        // bump TTL only after successful processing
+        this.refreshExpiresAt();
+    }
+
+    /**
+     * @return {@code true} if the element is present and a JSON string primitive.
+     */
+    private static boolean isJsonString(@Nullable JsonElement element) {
+        return element != null && element.isJsonPrimitive() && element.getAsJsonPrimitive().isString();
+    }
+
+    /**
+     * @return {@code true} if the given text parses to a JSON object.
+     */
+    private boolean isJsonObjectString(@Nullable String json) {
+        if (json == null) {
+            return false;
+        }
+        try {
+            JsonElement parsed = GrowthBookJsonUtils.getInstance().gson.fromJson(json, JsonElement.class);
+            return parsed != null && parsed.isJsonObject();
+        } catch (JsonSyntaxException e) {
+            return false;
+        }
+    }
+
+    /**
+     * Build a logged {@link FeatureFetchException} with the CONFIGURATION_ERROR code.
+     */
+    private FeatureFetchException configurationError(String message) {
+        log.error("FeatureFetchException: CONFIGURATION_ERROR feature fetch error code: {}", message);
+        return new FeatureFetchException(
+                FeatureFetchException.FeatureFetchErrorCode.CONFIGURATION_ERROR,
+                message
+        );
+    }
+
+    /**
+     * Immutable holder for the features and saved-groups JSON extracted from a response.
+     */
+    private static final class RefreshedPayload {
+        private final String features;
+        private final String savedGroups;
+
+        private RefreshedPayload(String features, String savedGroups) {
+            this.features = features;
+            this.savedGroups = savedGroups;
         }
     }
 
