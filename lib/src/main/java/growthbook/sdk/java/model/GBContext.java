@@ -7,6 +7,7 @@ import growthbook.sdk.java.callback.TrackingCallback;
 import growthbook.sdk.java.multiusermode.util.TransformationUtil;
 import growthbook.sdk.java.plugin.GrowthBookPlugin;
 import growthbook.sdk.java.remoteeval.RemoteEvalRequestBuilder;
+import growthbook.sdk.java.repository.FeatureSnapshot;
 import growthbook.sdk.java.stickyBucketing.StickyBucketService;
 import growthbook.sdk.java.util.ForcedVariationsUtils;
 import lombok.Builder;
@@ -340,6 +341,32 @@ public class GBContext {
      * The builder class to help create a context. You can use {@link #builder()} or the {@link GBContext} constructor
      */
     public static class GBContextBuilder {
+        /**
+         * Sets the features and saved groups from one repository payload, such as
+         * {@code GBFeaturesRepository#getFeatureSnapshot()}, so the two always match.
+         * Same as calling {@code features(...)} and {@code savedGroups(...)}.
+         *
+         * @param snapshot the payload to evaluate against
+         * @return this builder
+         */
+        public GBContextBuilder featureSnapshot(FeatureSnapshot snapshot) {
+            this.features = snapshot.getParsedFeatures();
+            this.savedGroups = snapshot.getParsedSavedGroups();
+            return this;
+        }
+
+        /**
+         * Sets the saved groups from the {@code savedGroups} JSON of the SDK payload, such as
+         * {@code GBFeaturesRepository#getSavedGroupsJson()}. Invalid JSON results in no saved groups.
+         * Needed when the SDK Connection passes saved groups by reference.
+         *
+         * @param savedGroupsJson decrypted saved groups as a JSON object string
+         * @return this builder
+         */
+        public GBContextBuilder savedGroupsJson(@Nullable String savedGroupsJson) {
+            this.savedGroups = TransformationUtil.transformSavedGroups(savedGroupsJson);
+            return this;
+        }
     } // This stub is required for JavaDoc and is filled by Lombuk
 
     /**
