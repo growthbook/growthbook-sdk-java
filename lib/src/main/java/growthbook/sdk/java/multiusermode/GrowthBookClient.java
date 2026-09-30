@@ -228,7 +228,7 @@ public class GrowthBookClient {
 
     private void initializeFeaturesRepository(GBFeaturesRepository repositorySnapshot) {
         try {
-            repositorySnapshot.initialize();
+            repositorySnapshot.initialize(this.options.isSseReconnectOnFailure());
         } catch (FeatureFetchException e) {
             throw new GrowthBookClientInitializationException(
                     "Failed to initialize features repository", e);
@@ -552,6 +552,7 @@ public class GrowthBookClient {
                 .clientKey(this.options.getClientKey())
                 .refreshStrategy(FeatureRefreshStrategy.SERVER_SENT_EVENTS)
                 .isCacheDisabled(true)
+                .retryPolicy(this.options.getRetryPolicy())
                 .build();
         sseRepository.onFeaturesRefresh(new FeatureRefreshCallback() {
             @Override
@@ -570,7 +571,7 @@ public class GrowthBookClient {
         }
 
         try {
-            sseRepository.initialize();
+            sseRepository.initialize(this.options.isSseReconnectOnFailure());
         } catch (FeatureFetchException e) {
             log.warn("Remote evaluation SSE invalidation could not be initialized", e);
         }
