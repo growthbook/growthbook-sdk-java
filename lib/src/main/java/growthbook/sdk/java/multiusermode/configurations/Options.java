@@ -91,6 +91,72 @@ public class Options {
         );
     }
 
+    /**
+     * Backward-compatible constructor matching the 0.11.0 positional signature, before
+     * {@link #sseReconnectOnFailure} was introduced.
+     */
+    public Options(@Nullable Boolean enabled,
+                   Boolean isQaMode,
+                   @Nullable Boolean isCacheDisabled,
+                   Boolean allowUrlOverrides,
+                   @Nullable String url,
+                   @Nullable String apiHost,
+                   @Nullable String clientKey,
+                   @Nullable String decryptionKey,
+                   @Nullable List<String> stickyBucketIdentifierAttributes,
+                   @Nullable StickyBucketService stickyBucketService,
+                   @Nullable TrackingCallbackWithUser trackingCallBackWithUser,
+                   @Nullable FeatureUsageCallbackWithUser featureUsageCallbackWithUser,
+                   @Nullable FeatureRefreshStrategy refreshStrategy,
+                   @Nullable Integer swrTtlSeconds,
+                   @Nullable FeatureRefreshCallback featureRefreshCallback,
+                   @Nullable JsonObject globalAttributes,
+                   @Nullable Map<String, Object> globalForcedFeatureValues,
+                   @Nullable Map<String, ?> globalForcedVariationsMap,
+                   @Nullable GbCacheManager cacheManager,
+                   @Nullable CacheMode cacheMode,
+                   @Nullable String cacheDirectory,
+                   @Nullable Boolean remoteEval,
+                   @Nullable List<String> cacheKeyAttributes,
+                   @Nullable Integer remoteEvalCacheSize,
+                   @Nullable Integer remoteEvalCacheTtlSeconds,
+                   @Nullable Duration backgroundFetchInterval,
+                   @Nullable FeatureFetchRetryPolicy retryPolicy,
+                   @Nullable List<GrowthBookPlugin> plugins
+    ) {
+        this(
+                enabled,
+                isQaMode,
+                isCacheDisabled,
+                allowUrlOverrides,
+                url,
+                apiHost,
+                clientKey,
+                decryptionKey,
+                stickyBucketIdentifierAttributes,
+                stickyBucketService,
+                trackingCallBackWithUser,
+                featureUsageCallbackWithUser,
+                refreshStrategy,
+                swrTtlSeconds,
+                featureRefreshCallback,
+                globalAttributes,
+                globalForcedFeatureValues,
+                globalForcedVariationsMap,
+                cacheManager,
+                cacheMode,
+                cacheDirectory,
+                remoteEval,
+                cacheKeyAttributes,
+                remoteEvalCacheSize,
+                remoteEvalCacheTtlSeconds,
+                backgroundFetchInterval,
+                retryPolicy,
+                null,
+                plugins
+        );
+    }
+
     @Builder
     public Options(@Nullable Boolean enabled,
                    Boolean isQaMode,
