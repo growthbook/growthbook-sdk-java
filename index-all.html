@@ -671,6 +671,8 @@ loadScripts(document, 'script');</script>
 </dd>
 <dt><a href="growthbook/sdk/java/diagnostics/provider/helper/DiagnosticsSecretMasker.html#empty()" class="member-name-link">empty()</a> - Static method in class growthbook.sdk.java.diagnostics.provider.helper.<a href="growthbook/sdk/java/diagnostics/provider/helper/DiagnosticsSecretMasker.html" title="class in growthbook.sdk.java.diagnostics.provider.helper">DiagnosticsSecretMasker</a></dt>
 <dd>&nbsp;</dd>
+<dt><a href="growthbook/sdk/java/repository/FeatureSnapshot.html#EMPTY" class="member-name-link">EMPTY</a> - Static variable in class growthbook.sdk.java.repository.<a href="growthbook/sdk/java/repository/FeatureSnapshot.html" title="class in growthbook.sdk.java.repository">FeatureSnapshot</a></dt>
+<dd>&nbsp;</dd>
 <dt><a href="growthbook/sdk/java/repository/GBFeaturesRepository.html#EMPTY_JSON_OBJECT_STRING" class="member-name-link">EMPTY_JSON_OBJECT_STRING</a> - Static variable in class growthbook.sdk.java.repository.<a href="growthbook/sdk/java/repository/GBFeaturesRepository.html" title="class in growthbook.sdk.java.repository">GBFeaturesRepository</a></dt>
 <dd>&nbsp;</dd>
 <dt><a href="growthbook/sdk/java/repository/NativeJavaGbFeatureRepository.html#EMPTY_JSON_OBJECT_STRING" class="member-name-link">EMPTY_JSON_OBJECT_STRING</a> - Static variable in class growthbook.sdk.java.repository.<a href="growthbook/sdk/java/repository/NativeJavaGbFeatureRepository.html" title="class in growthbook.sdk.java.repository">NativeJavaGbFeatureRepository</a></dt>
@@ -1117,6 +1119,11 @@ loadScripts(document, 'script');</script>
 </dd>
 <dt><a href="growthbook/sdk/java/model/GBContext.GBContextBuilder.html#featuresJson(java.lang.String)" class="member-name-link">featuresJson(String)</a> - Method in class growthbook.sdk.java.model.<a href="growthbook/sdk/java/model/GBContext.GBContextBuilder.html" title="class in growthbook.sdk.java.model">GBContext.GBContextBuilder</a></dt>
 <dd>&nbsp;</dd>
+<dt><a href="growthbook/sdk/java/repository/FeatureSnapshot.html" class="type-name-link" title="class in growthbook.sdk.java.repository">FeatureSnapshot</a> - Class in <a href="growthbook/sdk/java/repository/package-summary.html">growthbook.sdk.java.repository</a></dt>
+<dd>
+<div class="block">Immutable view of one successfully processed features payload: the raw JSON
+ strings and their parsed forms, captured together.</div>
+</dd>
 <dt><a href="growthbook/sdk/java/diagnostics/model/enums/FeatureState.html" class="type-name-link" title="enum class in growthbook.sdk.java.diagnostics.model.enums">FeatureState</a> - Enum Class in <a href="growthbook/sdk/java/diagnostics/model/enums/package-summary.html">growthbook.sdk.java.diagnostics.model.enums</a></dt>
 <dd>
 <div class="block">Derived feature data state.</div>
@@ -1718,6 +1725,8 @@ loadScripts(document, 'script');</script>
 <dd>
 <div class="block">Endpoint for GET request</div>
 </dd>
+<dt><a href="growthbook/sdk/java/repository/FeatureSnapshot.html#getFeaturesJson()" class="member-name-link">getFeaturesJson()</a> - Method in class growthbook.sdk.java.repository.<a href="growthbook/sdk/java/repository/FeatureSnapshot.html" title="class in growthbook.sdk.java.repository">FeatureSnapshot</a></dt>
+<dd>&nbsp;</dd>
 <dt><a href="growthbook/sdk/java/repository/GBFeaturesRepository.html#getFeaturesJson()" class="member-name-link">getFeaturesJson()</a> - Method in class growthbook.sdk.java.repository.<a href="growthbook/sdk/java/repository/GBFeaturesRepository.html" title="class in growthbook.sdk.java.repository">GBFeaturesRepository</a></dt>
 <dd>
 <div class="block">Allows you to get the features JSON from the provided <a href="growthbook/sdk/java/repository/GBFeaturesRepository.html#getFeaturesEndpoint()"><code>GBFeaturesRepository.getFeaturesEndpoint()</code></a>.</div>
@@ -1736,6 +1745,10 @@ loadScripts(document, 'script');</script>
 </dd>
 <dt><a href="growthbook/sdk/java/repository/NativeJavaGbFeatureRepository.html#getFeaturesMap()" class="member-name-link">getFeaturesMap()</a> - Method in class growthbook.sdk.java.repository.<a href="growthbook/sdk/java/repository/NativeJavaGbFeatureRepository.html" title="class in growthbook.sdk.java.repository">NativeJavaGbFeatureRepository</a></dt>
 <dd>&nbsp;</dd>
+<dt><a href="growthbook/sdk/java/repository/GBFeaturesRepository.html#getFeatureSnapshot()" class="member-name-link">getFeatureSnapshot()</a> - Method in class growthbook.sdk.java.repository.<a href="growthbook/sdk/java/repository/GBFeaturesRepository.html" title="class in growthbook.sdk.java.repository">GBFeaturesRepository</a></dt>
+<dd>
+<div class="block">The current features payload as one immutable snapshot.</div>
+</dd>
 <dt><a href="growthbook/sdk/java/model/GBContext.html#getFeatureUsageCallback()" class="member-name-link">getFeatureUsageCallback()</a> - Method in class growthbook.sdk.java.model.<a href="growthbook/sdk/java/model/GBContext.html" title="class in growthbook.sdk.java.model">GBContext</a></dt>
 <dd>
 <div class="block">A function that takes <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link"><code>String</code></a> and <a href="growthbook/sdk/java/model/FeatureResult.html" title="class in growthbook.sdk.java.model"><code>FeatureResult</code></a> as arguments.</div>
@@ -2167,11 +2180,15 @@ loadScripts(document, 'script');</script>
 <div class="block">Each item defines a prerequisite where a `condition` must evaluate against
  a parent feature's value (identified by `id`).</div>
 </dd>
+<dt><a href="growthbook/sdk/java/repository/FeatureSnapshot.html#getParsedFeatures()" class="member-name-link">getParsedFeatures()</a> - Method in class growthbook.sdk.java.repository.<a href="growthbook/sdk/java/repository/FeatureSnapshot.html" title="class in growthbook.sdk.java.repository">FeatureSnapshot</a></dt>
+<dd>&nbsp;</dd>
 <dt><a href="growthbook/sdk/java/repository/GBFeaturesRepository.html#getParsedFeatures()" class="member-name-link">getParsedFeatures()</a> - Method in class growthbook.sdk.java.repository.<a href="growthbook/sdk/java/repository/GBFeaturesRepository.html" title="class in growthbook.sdk.java.repository">GBFeaturesRepository</a></dt>
 <dd>
 <div class="block">Keys are unique identifiers for the features and the values are Feature objects.</div>
 </dd>
 <dt><a href="growthbook/sdk/java/repository/LocalGbFeatureRepository.html#getParsedFeatures()" class="member-name-link">getParsedFeatures()</a> - Method in class growthbook.sdk.java.repository.<a href="growthbook/sdk/java/repository/LocalGbFeatureRepository.html" title="class in growthbook.sdk.java.repository">LocalGbFeatureRepository</a></dt>
+<dd>&nbsp;</dd>
+<dt><a href="growthbook/sdk/java/repository/FeatureSnapshot.html#getParsedSavedGroups()" class="member-name-link">getParsedSavedGroups()</a> - Method in class growthbook.sdk.java.repository.<a href="growthbook/sdk/java/repository/FeatureSnapshot.html" title="class in growthbook.sdk.java.repository">FeatureSnapshot</a></dt>
 <dd>&nbsp;</dd>
 <dt><a href="growthbook/sdk/java/repository/GBFeaturesRepository.html#getParsedSavedGroups()" class="member-name-link">getParsedSavedGroups()</a> - Method in class growthbook.sdk.java.repository.<a href="growthbook/sdk/java/repository/GBFeaturesRepository.html" title="class in growthbook.sdk.java.repository">GBFeaturesRepository</a></dt>
 <dd>&nbsp;</dd>
@@ -2364,6 +2381,8 @@ loadScripts(document, 'script');</script>
 <dt><a href="growthbook/sdk/java/multiusermode/configurations/GlobalContext.html#getSavedGroups()" class="member-name-link">getSavedGroups()</a> - Method in class growthbook.sdk.java.multiusermode.configurations.<a href="growthbook/sdk/java/multiusermode/configurations/GlobalContext.html" title="class in growthbook.sdk.java.multiusermode.configurations">GlobalContext</a></dt>
 <dd>&nbsp;</dd>
 <dt><a href="growthbook/sdk/java/remoteeval/RemoteEvalResponse.html#getSavedGroups()" class="member-name-link">getSavedGroups()</a> - Method in class growthbook.sdk.java.remoteeval.<a href="growthbook/sdk/java/remoteeval/RemoteEvalResponse.html" title="class in growthbook.sdk.java.remoteeval">RemoteEvalResponse</a></dt>
+<dd>&nbsp;</dd>
+<dt><a href="growthbook/sdk/java/repository/FeatureSnapshot.html#getSavedGroupsJson()" class="member-name-link">getSavedGroupsJson()</a> - Method in class growthbook.sdk.java.repository.<a href="growthbook/sdk/java/repository/FeatureSnapshot.html" title="class in growthbook.sdk.java.repository">FeatureSnapshot</a></dt>
 <dd>&nbsp;</dd>
 <dt><a href="growthbook/sdk/java/repository/GBFeaturesRepository.html#getSavedGroupsJson()" class="member-name-link">getSavedGroupsJson()</a> - Method in class growthbook.sdk.java.repository.<a href="growthbook/sdk/java/repository/GBFeaturesRepository.html" title="class in growthbook.sdk.java.repository">GBFeaturesRepository</a></dt>
 <dd>
@@ -2992,6 +3011,11 @@ loadScripts(document, 'script');</script>
 <dd>
 <div class="block">For simple bucket persistence using the in memory's storage(Map) (can be polyfilled for other environments)</div>
 </dd>
+<dt><a href="growthbook/sdk/java/stickyBucketing/InMemoryStickyBucketServiceImpl.html#%3Cinit%3E()" class="member-name-link">InMemoryStickyBucketServiceImpl()</a> - Constructor for class growthbook.sdk.java.stickyBucketing.<a href="growthbook/sdk/java/stickyBucketing/InMemoryStickyBucketServiceImpl.html" title="class in growthbook.sdk.java.stickyBucketing">InMemoryStickyBucketServiceImpl</a></dt>
+<dd>
+<div class="block">Constructs a new <code>InMemoryStickyBucketServiceImpl</code> backed by a thread-safe map,
+ suitable for use with <code>GrowthBookClient</code> where evaluations run concurrently.</div>
+</dd>
 <dt><a href="growthbook/sdk/java/stickyBucketing/InMemoryStickyBucketServiceImpl.html#%3Cinit%3E(java.util.Map)" class="member-name-link">InMemoryStickyBucketServiceImpl(Map&lt;String, StickyAssignmentsDocument&gt;)</a> - Constructor for class growthbook.sdk.java.stickyBucketing.<a href="growthbook/sdk/java/stickyBucketing/InMemoryStickyBucketServiceImpl.html" title="class in growthbook.sdk.java.stickyBucketing">InMemoryStickyBucketServiceImpl</a></dt>
 <dd>
 <div class="block">Constructs a new <code>InMemoryStickyBucketServiceImpl</code> with the specified local storage.</div>
@@ -3496,6 +3520,10 @@ loadScripts(document, 'script');</script>
 <dt><a href="growthbook/sdk/java/model/TypedKey.html#of(java.lang.String,java.lang.Class)" class="member-name-link">of(String, Class&lt;T&gt;)</a> - Static method in class growthbook.sdk.java.model.<a href="growthbook/sdk/java/model/TypedKey.html" title="class in growthbook.sdk.java.model">TypedKey</a></dt>
 <dd>
 <div class="block">Creates a typed key for an arbitrary Gson-deserializable value type.</div>
+</dd>
+<dt><a href="growthbook/sdk/java/repository/FeatureSnapshot.html#of(java.lang.String,java.lang.String,java.util.Map,com.google.gson.JsonObject)" class="member-name-link">of(String, String, Map&lt;String, Feature&lt;?&gt;&gt;, JsonObject)</a> - Static method in class growthbook.sdk.java.repository.<a href="growthbook/sdk/java/repository/FeatureSnapshot.html" title="class in growthbook.sdk.java.repository">FeatureSnapshot</a></dt>
+<dd>
+<div class="block">Builds a snapshot from pre-parsed parts.</div>
 </dd>
 <dt><a href="growthbook/sdk/java/model/TypedKey.html#ofBoolean(java.lang.String)" class="member-name-link">ofBoolean(String)</a> - Static method in class growthbook.sdk.java.model.<a href="growthbook/sdk/java/model/TypedKey.html" title="class in growthbook.sdk.java.model">TypedKey</a></dt>
 <dd>

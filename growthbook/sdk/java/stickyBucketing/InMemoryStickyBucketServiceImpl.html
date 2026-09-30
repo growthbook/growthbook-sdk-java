@@ -95,8 +95,13 @@ implements <a href="StickyBucketService.html" title="interface in growthbook.sdk
 <div class="summary-table two-column-summary">
 <div class="table-header col-first">Constructor</div>
 <div class="table-header col-last">Description</div>
-<div class="col-constructor-name even-row-color"><code><a href="#%3Cinit%3E(java.util.Map)" class="member-name-link">InMemoryStickyBucketServiceImpl</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/Map.html" title="class or interface in java.util" class="external-link">Map</a>&lt;<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>,<wbr><a href="../model/StickyAssignmentsDocument.html" title="class in growthbook.sdk.java.model">StickyAssignmentsDocument</a>&gt;&nbsp;localStorage)</code></div>
+<div class="col-constructor-name even-row-color"><code><a href="#%3Cinit%3E()" class="member-name-link">InMemoryStickyBucketServiceImpl</a>()</code></div>
 <div class="col-last even-row-color">
+<div class="block">Constructs a new <code>InMemoryStickyBucketServiceImpl</code> backed by a thread-safe map,
+ suitable for use with <code>GrowthBookClient</code> where evaluations run concurrently.</div>
+</div>
+<div class="col-constructor-name odd-row-color"><code><a href="#%3Cinit%3E(java.util.Map)" class="member-name-link">InMemoryStickyBucketServiceImpl</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/Map.html" title="class or interface in java.util" class="external-link">Map</a>&lt;<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>,<wbr><a href="../model/StickyAssignmentsDocument.html" title="class in growthbook.sdk.java.model">StickyAssignmentsDocument</a>&gt;&nbsp;localStorage)</code></div>
+<div class="col-last odd-row-color">
 <div class="block">Constructs a new <code>InMemoryStickyBucketServiceImpl</code> with the specified local storage.</div>
 </div>
 </div>
@@ -147,13 +152,23 @@ implements <a href="StickyBucketService.html" title="interface in growthbook.sdk
 <h2>Constructor Details</h2>
 <ul class="member-list">
 <li>
+<section class="detail" id="&lt;init&gt;()">
+<h3>InMemoryStickyBucketServiceImpl</h3>
+<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="element-name">InMemoryStickyBucketServiceImpl</span>()</div>
+<div class="block">Constructs a new <code>InMemoryStickyBucketServiceImpl</code> backed by a thread-safe map,
+ suitable for use with <code>GrowthBookClient</code> where evaluations run concurrently.</div>
+</section>
+</li>
+<li>
 <section class="detail" id="&lt;init&gt;(java.util.Map)">
 <h3>InMemoryStickyBucketServiceImpl</h3>
 <div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="element-name">InMemoryStickyBucketServiceImpl</span><wbr><span class="parameters">(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/Map.html" title="class or interface in java.util" class="external-link">Map</a>&lt;<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>,<wbr><a href="../model/StickyAssignmentsDocument.html" title="class in growthbook.sdk.java.model">StickyAssignmentsDocument</a>&gt;&nbsp;localStorage)</span></div>
 <div class="block">Constructs a new <code>InMemoryStickyBucketServiceImpl</code> with the specified local storage.</div>
 <dl class="notes">
 <dt>Parameters:</dt>
-<dd><code>localStorage</code> - a map to store sticky assignments documents in memory.</dd>
+<dd><code>localStorage</code> - a map to store sticky assignments documents in memory. Pass a
+                     thread-safe map (e.g. <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/concurrent/ConcurrentHashMap.html" title="class or interface in java.util.concurrent" class="external-link"><code>ConcurrentHashMap</code></a>) when the service is
+                     shared by a <code>GrowthBookClient</code> evaluating on multiple threads.</dd>
 </dl>
 </section>
 </li>

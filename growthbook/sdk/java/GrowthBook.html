@@ -80,7 +80,14 @@ loadScripts(document, 'script');</script>
 <span class="extends-implements">extends <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html" title="class or interface in java.lang" class="external-link">Object</a></span></div>
 <div class="block">GrowthBook SDK class.
  Build a context with <a href="model/GBContext.html#builder()"><code>GBContext.builder()</code></a> or the <a href="model/GBContext.html" title="class in growthbook.sdk.java.model"><code>GBContext</code></a> constructor
- and pass it as an argument to the class constructor.</div>
+ and pass it as an argument to the class constructor.
+
+ <p><b>Threading:</b> this class is single-threaded by design — one instance serves one
+ user, typically created per request and discarded after it (matching the JavaScript
+ SDK's per-user <code>GrowthBook</code> class). Instances share one mutable evaluation
+ context internally and must not be used from multiple threads concurrently. For a
+ long-lived instance shared across requests and threads, use
+ <a href="multiusermode/GrowthBookClient.html" title="class in growthbook.sdk.java.multiusermode"><code>GrowthBookClient</code></a> instead.</div>
 </section>
 <section class="summary">
 <ul class="summary-list">

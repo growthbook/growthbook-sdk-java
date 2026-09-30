@@ -283,119 +283,124 @@ implements <a href="IGBFeaturesRepository.html" title="interface in growthbook.s
 <div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">Allows you to get the features JSON from the provided <a href="#getFeaturesEndpoint()"><code>getFeaturesEndpoint()</code></a>.</div>
 </div>
-<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Boolean.html" title="class or interface in java.lang" class="external-link">Boolean</a></code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#getInitialized()" class="member-name-link">getInitialized</a>()</code></div>
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="FeatureSnapshot.html" title="class in growthbook.sdk.java.repository">FeatureSnapshot</a></code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#getFeatureSnapshot()" class="member-name-link">getFeatureSnapshot</a>()</code></div>
 <div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="block">The current features payload as one immutable snapshot.</div>
+</div>
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Boolean.html" title="class or interface in java.lang" class="external-link">Boolean</a></code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#getInitialized()" class="member-name-link">getInitialized</a>()</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">Flag to know whether GBFeatureRepository is initialized</div>
 </div>
-<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Throwable.html" title="class or interface in java.lang" class="external-link">Throwable</a></code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#getLastRefreshError()" class="member-name-link">getLastRefreshError</a>()</code></div>
-<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Throwable.html" title="class or interface in java.lang" class="external-link">Throwable</a></code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#getLastRefreshError()" class="member-name-link">getLastRefreshError</a>()</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">Returns the most recent feature refresh error, if any.</div>
 </div>
-<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>long</code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#getLastRefreshErrorAtMillis()" class="member-name-link">getLastRefreshErrorAtMillis</a>()</code></div>
-<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>long</code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#getLastRefreshErrorAtMillis()" class="member-name-link">getLastRefreshErrorAtMillis</a>()</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">Returns the epoch-millis timestamp of the most recent feature refresh error.</div>
 </div>
-<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>long</code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#getLastRefreshFailureAtMillis()" class="member-name-link">getLastRefreshFailureAtMillis</a>()</code></div>
-<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">&nbsp;</div>
-<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Boolean.html" title="class or interface in java.lang" class="external-link">Boolean</a></code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#getLastRefreshLoadedFromCache()" class="member-name-link">getLastRefreshLoadedFromCache</a>()</code></div>
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>long</code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#getLastRefreshFailureAtMillis()" class="member-name-link">getLastRefreshFailureAtMillis</a>()</code></div>
 <div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">&nbsp;</div>
-<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>long</code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#getLastSuccessfulFetchAtMillis()" class="member-name-link">getLastSuccessfulFetchAtMillis</a>()</code></div>
-<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">&nbsp;</div>
-<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/Map.html" title="class or interface in java.util" class="external-link">Map</a>&lt;<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>,<wbr><a href="../model/Feature.html" title="class in growthbook.sdk.java.model">Feature</a>&lt;?&gt;&gt;</code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#getParsedFeatures()" class="member-name-link">getParsedFeatures</a>()</code></div>
-<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
-<div class="block">Keys are unique identifiers for the features and the values are Feature objects.</div>
-</div>
-<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>com.google.gson.JsonObject</code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#getParsedSavedGroups()" class="member-name-link">getParsedSavedGroups</a>()</code></div>
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Boolean.html" title="class or interface in java.lang" class="external-link">Boolean</a></code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#getLastRefreshLoadedFromCache()" class="member-name-link">getLastRefreshLoadedFromCache</a>()</code></div>
 <div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">&nbsp;</div>
 <div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>long</code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#getRefreshConsecutiveFailureCount()" class="member-name-link">getRefreshConsecutiveFailureCount</a>()</code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#getLastSuccessfulFetchAtMillis()" class="member-name-link">getLastSuccessfulFetchAtMillis</a>()</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">&nbsp;</div>
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/Map.html" title="class or interface in java.util" class="external-link">Map</a>&lt;<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>,<wbr><a href="../model/Feature.html" title="class in growthbook.sdk.java.model">Feature</a>&lt;?&gt;&gt;</code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#getParsedFeatures()" class="member-name-link">getParsedFeatures</a>()</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="block">Keys are unique identifiers for the features and the values are Feature objects.</div>
+</div>
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>com.google.gson.JsonObject</code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#getParsedSavedGroups()" class="member-name-link">getParsedSavedGroups</a>()</code></div>
 <div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">&nbsp;</div>
 <div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>long</code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#getRefreshFailureCount()" class="member-name-link">getRefreshFailureCount</a>()</code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#getRefreshConsecutiveFailureCount()" class="member-name-link">getRefreshConsecutiveFailureCount</a>()</code></div>
 <div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">&nbsp;</div>
-<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="FeatureRefreshStrategy.html" title="enum class in growthbook.sdk.java.repository">FeatureRefreshStrategy</a></code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#getRefreshStrategy()" class="member-name-link">getRefreshStrategy</a>()</code></div>
-<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>long</code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#getRefreshFailureCount()" class="member-name-link">getRefreshFailureCount</a>()</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">&nbsp;</div>
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="FeatureRefreshStrategy.html" title="enum class in growthbook.sdk.java.repository">FeatureRefreshStrategy</a></code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#getRefreshStrategy()" class="member-name-link">getRefreshStrategy</a>()</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">Strategy for building url</div>
 </div>
-<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>long</code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#getRefreshSuccessCount()" class="member-name-link">getRefreshSuccessCount</a>()</code></div>
-<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">&nbsp;</div>
-<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a></code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#getRemoteEvalEndPoint()" class="member-name-link">getRemoteEvalEndPoint</a>()</code></div>
-<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>long</code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#getRefreshSuccessCount()" class="member-name-link">getRefreshSuccessCount</a>()</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">&nbsp;</div>
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a></code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#getRemoteEvalEndPoint()" class="member-name-link">getRemoteEvalEndPoint</a>()</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">Endpoint for POST request</div>
 </div>
-<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="../model/RequestBodyForRemoteEval.html" title="class in growthbook.sdk.java.model">RequestBodyForRemoteEval</a></code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#getRequestBodyForRemoteEval()" class="member-name-link">getRequestBodyForRemoteEval</a>()</code></div>
-<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="../model/RequestBodyForRemoteEval.html" title="class in growthbook.sdk.java.model">RequestBodyForRemoteEval</a></code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#getRequestBodyForRemoteEval()" class="member-name-link">getRequestBodyForRemoteEval</a>()</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">Request body for that be sent with POST request for remote eval feature</div>
 </div>
-<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="../retry/FeatureFetchRetryPolicy.html" title="class in growthbook.sdk.java.retry">FeatureFetchRetryPolicy</a></code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#getRetryPolicy()" class="member-name-link">getRetryPolicy</a>()</code></div>
-<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="../retry/FeatureFetchRetryPolicy.html" title="class in growthbook.sdk.java.retry">FeatureFetchRetryPolicy</a></code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#getRetryPolicy()" class="member-name-link">getRetryPolicy</a>()</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">Bounded retry policy for feature fetch requests.</div>
 </div>
-<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a></code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#getSavedGroupsJson()" class="member-name-link">getSavedGroupsJson</a>()</code></div>
-<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a></code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#getSavedGroupsJson()" class="member-name-link">getSavedGroupsJson</a>()</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">Allows you to get the saved groups JSON from the provided <a href="#getFeaturesEndpoint()"><code>getFeaturesEndpoint()</code></a>.</div>
 </div>
-<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>int</code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#getSseRetryAttempts()" class="member-name-link">getSseRetryAttempts</a>()</code></div>
-<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">&nbsp;</div>
-<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Integer.html" title="class or interface in java.lang" class="external-link">Integer</a></code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#getSwrTtlSeconds()" class="member-name-link">getSwrTtlSeconds</a>()</code></div>
-<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>int</code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#getSseRetryAttempts()" class="member-name-link">getSseRetryAttempts</a>()</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">&nbsp;</div>
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Integer.html" title="class or interface in java.lang" class="external-link">Integer</a></code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#getSwrTtlSeconds()" class="member-name-link">getSwrTtlSeconds</a>()</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">The standard cache TTL to use (60 seconds)</div>
 </div>
-<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>boolean</code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#hasFeatureData()" class="member-name-link">hasFeatureData</a>()</code></div>
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>boolean</code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#hasFeatureData()" class="member-name-link">hasFeatureData</a>()</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">&nbsp;</div>
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>void</code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#initialize()" class="member-name-link">initialize</a>()</code></div>
 <div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">&nbsp;</div>
 <div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>void</code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#initialize()" class="member-name-link">initialize</a>()</code></div>
-<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">&nbsp;</div>
-<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>void</code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#initialize(java.lang.Boolean)" class="member-name-link">initialize</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Boolean.html" title="class or interface in java.lang" class="external-link">Boolean</a>&nbsp;retryOnFailure)</code></div>
-<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">&nbsp;</div>
-<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>boolean</code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#isCacheDisabled()" class="member-name-link">isCacheDisabled</a>()</code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#initialize(java.lang.Boolean)" class="member-name-link">initialize</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Boolean.html" title="class or interface in java.lang" class="external-link">Boolean</a>&nbsp;retryOnFailure)</code></div>
 <div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">&nbsp;</div>
 <div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>boolean</code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#isSseAllowed()" class="member-name-link">isSseAllowed</a>()</code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#isCacheDisabled()" class="member-name-link">isCacheDisabled</a>()</code></div>
 <div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">&nbsp;</div>
 <div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>boolean</code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#isSseConnected()" class="member-name-link">isSseConnected</a>()</code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#isSseAllowed()" class="member-name-link">isSseAllowed</a>()</code></div>
 <div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">&nbsp;</div>
-<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>void</code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#onFeaturesRefresh(growthbook.sdk.java.callback.FeatureRefreshCallback)" class="member-name-link">onFeaturesRefresh</a><wbr>(<a href="../callback/FeatureRefreshCallback.html" title="interface in growthbook.sdk.java.callback">FeatureRefreshCallback</a>&nbsp;callback)</code></div>
-<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>boolean</code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#isSseConnected()" class="member-name-link">isSseConnected</a>()</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">&nbsp;</div>
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>void</code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#onFeaturesRefresh(growthbook.sdk.java.callback.FeatureRefreshCallback)" class="member-name-link">onFeaturesRefresh</a><wbr>(<a href="../callback/FeatureRefreshCallback.html" title="interface in growthbook.sdk.java.callback">FeatureRefreshCallback</a>&nbsp;callback)</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">Subscribe to feature refresh events
  This callback is called when the features are successfully refreshed or there is an error when refreshing.</div>
 </div>
-<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>void</code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#refreshFeatures()" class="member-name-link">refreshFeatures</a>()</code></div>
-<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">&nbsp;</div>
 <div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>void</code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#refreshFeatures(growthbook.sdk.java.repository.RefreshMode)" class="member-name-link">refreshFeatures</a><wbr>(<a href="RefreshMode.html" title="enum class in growthbook.sdk.java.repository">RefreshMode</a>&nbsp;refreshMode)</code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#refreshFeatures()" class="member-name-link">refreshFeatures</a>()</code></div>
 <div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">&nbsp;</div>
 <div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>void</code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#requestFeatureRefresh(growthbook.sdk.java.repository.RefreshMode)" class="member-name-link">requestFeatureRefresh</a><wbr>(<a href="RefreshMode.html" title="enum class in growthbook.sdk.java.repository">RefreshMode</a>&nbsp;refreshMode)</code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#refreshFeatures(growthbook.sdk.java.repository.RefreshMode)" class="member-name-link">refreshFeatures</a><wbr>(<a href="RefreshMode.html" title="enum class in growthbook.sdk.java.repository">RefreshMode</a>&nbsp;refreshMode)</code></div>
 <div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">&nbsp;</div>
 <div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>void</code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#setCacheManager(growthbook.sdk.java.sandbox.GbCacheManager)" class="member-name-link">setCacheManager</a><wbr>(<a href="../sandbox/GbCacheManager.html" title="interface in growthbook.sdk.java.sandbox">GbCacheManager</a>&nbsp;cacheManager)</code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#requestFeatureRefresh(growthbook.sdk.java.repository.RefreshMode)" class="member-name-link">requestFeatureRefresh</a><wbr>(<a href="RefreshMode.html" title="enum class in growthbook.sdk.java.repository">RefreshMode</a>&nbsp;refreshMode)</code></div>
 <div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">&nbsp;</div>
 <div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>void</code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#shutdown()" class="member-name-link">shutdown</a>()</code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#setCacheManager(growthbook.sdk.java.sandbox.GbCacheManager)" class="member-name-link">setCacheManager</a><wbr>(<a href="../sandbox/GbCacheManager.html" title="interface in growthbook.sdk.java.sandbox">GbCacheManager</a>&nbsp;cacheManager)</code></div>
 <div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">&nbsp;</div>
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>void</code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#shutdown()" class="member-name-link">shutdown</a>()</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">&nbsp;</div>
 </div>
 </div>
 </div>
@@ -635,6 +640,65 @@ implements <a href="IGBFeaturesRepository.html" title="interface in growthbook.s
 <section class="method-details" id="method-detail">
 <h2>Method Details</h2>
 <ul class="member-list">
+<li>
+<section class="detail" id="getFeatureSnapshot()">
+<h3>getFeatureSnapshot</h3>
+<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="FeatureSnapshot.html" title="class in growthbook.sdk.java.repository">FeatureSnapshot</a></span>&nbsp;<span class="element-name">getFeatureSnapshot</span>()</div>
+<div class="block">The current features payload as one immutable snapshot. Prefer this over the
+ individual getters when consuming more than one part of the payload.</div>
+<dl class="notes">
+<dt>Returns:</dt>
+<dd>the snapshot from the most recent successful refresh</dd>
+</dl>
+</section>
+</li>
+<li>
+<section class="detail" id="getSavedGroupsJson()">
+<h3>getSavedGroupsJson</h3>
+<div class="member-signature"><span class="annotations">@Nullable
+</span><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a></span>&nbsp;<span class="element-name">getSavedGroupsJson</span>()</div>
+<div class="block">Allows you to get the saved groups JSON from the provided <a href="#getFeaturesEndpoint()"><code>getFeaturesEndpoint()</code></a>.
+ You must call <a href="#initialize()"><code>initialize()</code></a> before calling this method
+ or your saved groups would not have loaded.</div>
+<dl class="notes">
+<dt>Returns:</dt>
+<dd>saved groups JSON string</dd>
+</dl>
+</section>
+</li>
+<li>
+<section class="detail" id="getFeaturesJson()">
+<h3>getFeaturesJson</h3>
+<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a></span>&nbsp;<span class="element-name">getFeaturesJson</span>()</div>
+<div class="block">Allows you to get the features JSON from the provided <a href="#getFeaturesEndpoint()"><code>getFeaturesEndpoint()</code></a>.
+ You must call <a href="#initialize()"><code>initialize()</code></a> before calling this method
+ or your features would not have loaded.</div>
+<dl class="notes">
+<dt>Specified by:</dt>
+<dd><code><a href="IGBFeaturesRepository.html#getFeaturesJson()">getFeaturesJson</a></code>&nbsp;in interface&nbsp;<code><a href="IGBFeaturesRepository.html" title="interface in growthbook.sdk.java.repository">IGBFeaturesRepository</a></code></dd>
+<dt>Returns:</dt>
+<dd>feature data JSON in a type of String. Handle refresh strategy</dd>
+</dl>
+</section>
+</li>
+<li>
+<section class="detail" id="getParsedFeatures()">
+<h3>getParsedFeatures</h3>
+<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/Map.html" title="class or interface in java.util" class="external-link">Map</a>&lt;<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>,<wbr><a href="../model/Feature.html" title="class in growthbook.sdk.java.model">Feature</a>&lt;?&gt;&gt;</span>&nbsp;<span class="element-name">getParsedFeatures</span>()</div>
+<div class="block">Keys are unique identifiers for the features and the values are Feature objects.
+ Feature definitions - To be pulled from API / Cache</div>
+<dl class="notes">
+<dt>Returns:</dt>
+<dd>parsed feature definitions</dd>
+</dl>
+</section>
+</li>
+<li>
+<section class="detail" id="getParsedSavedGroups()">
+<h3>getParsedSavedGroups</h3>
+<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type">com.google.gson.JsonObject</span>&nbsp;<span class="element-name">getParsedSavedGroups</span>()</div>
+</section>
+</li>
 <li>
 <section class="detail" id="setCacheManager(growthbook.sdk.java.sandbox.GbCacheManager)">
 <h3>setCacheManager</h3>
@@ -962,45 +1026,6 @@ implements <a href="IGBFeaturesRepository.html" title="interface in growthbook.s
 <h3>getInitialized</h3>
 <div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Boolean.html" title="class or interface in java.lang" class="external-link">Boolean</a></span>&nbsp;<span class="element-name">getInitialized</span>()</div>
 <div class="block">Flag to know whether GBFeatureRepository is initialized</div>
-</section>
-</li>
-<li>
-<section class="detail" id="getSavedGroupsJson()">
-<h3>getSavedGroupsJson</h3>
-<div class="member-signature"><span class="annotations">@Nullable
-</span><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a></span>&nbsp;<span class="element-name">getSavedGroupsJson</span>()</div>
-<div class="block">Allows you to get the saved groups JSON from the provided <a href="#getFeaturesEndpoint()"><code>getFeaturesEndpoint()</code></a>.
- You must call <a href="#initialize()"><code>initialize()</code></a> before calling this method
- or your saved groups would not have loaded.</div>
-</section>
-</li>
-<li>
-<section class="detail" id="getFeaturesJson()">
-<h3>getFeaturesJson</h3>
-<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a></span>&nbsp;<span class="element-name">getFeaturesJson</span>()</div>
-<div class="block">Allows you to get the features JSON from the provided <a href="#getFeaturesEndpoint()"><code>getFeaturesEndpoint()</code></a>.
- You must call <a href="#initialize()"><code>initialize()</code></a> before calling this method
- or your features would not have loaded.</div>
-<dl class="notes">
-<dt>Specified by:</dt>
-<dd><code><a href="IGBFeaturesRepository.html#getFeaturesJson()">getFeaturesJson</a></code>&nbsp;in interface&nbsp;<code><a href="IGBFeaturesRepository.html" title="interface in growthbook.sdk.java.repository">IGBFeaturesRepository</a></code></dd>
-<dt>Returns:</dt>
-<dd>feature data JSON in a type of String. Handle refresh strategy</dd>
-</dl>
-</section>
-</li>
-<li>
-<section class="detail" id="getParsedFeatures()">
-<h3>getParsedFeatures</h3>
-<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/Map.html" title="class or interface in java.util" class="external-link">Map</a>&lt;<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>,<wbr><a href="../model/Feature.html" title="class in growthbook.sdk.java.model">Feature</a>&lt;?&gt;&gt;</span>&nbsp;<span class="element-name">getParsedFeatures</span>()</div>
-<div class="block">Keys are unique identifiers for the features and the values are Feature objects.
- Feature definitions - To be pulled from API / Cache</div>
-</section>
-</li>
-<li>
-<section class="detail" id="getParsedSavedGroups()">
-<h3>getParsedSavedGroups</h3>
-<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type">com.google.gson.JsonObject</span>&nbsp;<span class="element-name">getParsedSavedGroups</span>()</div>
 </section>
 </li>
 <li>
