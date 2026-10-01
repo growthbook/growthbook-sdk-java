@@ -1,6 +1,6 @@
 #!/bin/sh
 # Blocks commits that hand-edit release-please-owned files
-# (see .claude/rules/git-conventions.md). Conscious bypass: git commit --no-verify.
+# (see AGENTS.md). Conscious bypass: git commit --no-verify.
 
 # A merge brings these files in from the base branch; that is not a hand-edit.
 # Mirrors the Merge exemption in commit-msg.

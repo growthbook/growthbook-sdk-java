@@ -1,6 +1,6 @@
 name: Conventional Commits
 
-# Server-side enforcement of the rules in .claude/rules/git-conventions.md:
+# Server-side enforcement of the rules in AGENTS.md:
 # release-please derives versions and the changelog from commit messages,
 # so a malformed type or a hand-edited release file breaks the release.
 # Local .githooks cover the same rules but are bypassable (--no-verify).

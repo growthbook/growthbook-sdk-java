@@ -1,6 +1,6 @@
 #!/bin/sh
 # Enforces Conventional Commits: release-please derives versions and the
-# changelog from these messages (see .claude/rules/git-conventions.md).
+# changelog from these messages (see AGENTS.md).
 
 msg_file="$1"
 first_line=$(head -n1 "$msg_file")
@@ -18,5 +18,5 @@ echo "  $first_line" >&2
 echo "" >&2
 echo "Expected: type(scope)?: summary" >&2
 echo "Types: feat fix refactor perf docs test build ci chore style revert" >&2
-echo "release-please derives releases from commit types (.claude/rules/git-conventions.md)." >&2
+echo "release-please derives releases from commit types (AGENTS.md)." >&2
 exit 1
