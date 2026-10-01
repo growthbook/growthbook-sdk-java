@@ -21,7 +21,7 @@ plugins {
     // Apply the java-library plugin for API and implementation separation.
     id 'java-library'
     id 'maven-publish'
-    id 'net.researchgate.release' version '3.0.2'
+    id 'net.researchgate.release' version '3.1.0'
     id 'jacoco'
     id "io.freefair.lombok" version "8.6"
 }
@@ -55,25 +55,25 @@ dependencies {
     testImplementation 'com.github.tomakehurst:wiremock-jre8:2.35.0'
 
     implementation 'org.apache.commons:commons-math3:3.6.1'
-    implementation 'com.google.guava:guava:33.3.1-jre'
+    implementation 'com.google.guava:guava:33.7.1-jre'
 
     // https://mvnrepository.com/artifact/com.google.code.gson/gson
-    implementation 'com.google.code.gson:gson:2.12.1'
+    implementation 'com.google.code.gson:gson:2.14.0'
 
 
     // https://square.github.io/okhttp
-    implementation 'com.squareup.okhttp3:okhttp:5.4.0'
+    implementation 'com.squareup.okhttp3:okhttp:5.5.0'
     // https://mvnrepository.com/artifact/com.squareup.okhttp3/okhttp-sse
-    implementation 'com.squareup.okhttp3:okhttp-sse:5.4.0'
+    implementation 'com.squareup.okhttp3:okhttp-sse:5.5.0'
 
     // Adds getter, setter and builder boilerplate
     // https://projectlombok.org/
     // https://mvnrepository.com/artifact/org.projectlombok/lombok
-    compileOnly 'org.projectlombok:lombok:1.18.32'
-    annotationProcessor 'org.projectlombok:lombok:1.18.32'
+    compileOnly 'org.projectlombok:lombok:1.18.48'
+    annotationProcessor 'org.projectlombok:lombok:1.18.48'
 
     // logging
-    implementation 'org.slf4j:slf4j-api:2.0.7'
+    implementation 'org.slf4j:slf4j-api:2.0.20'
 }
 
 jar {
