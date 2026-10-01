@@ -51,14 +51,16 @@ jobs:
           base="${{ github.event.pull_request.base.sha }}"
           head="${{ github.event.pull_request.head.sha }}"
           fail=0
+          # Three dots: diff from the merge base, so files the base branch gained
+          # after the fork (release-please commits) are not reported as PR changes.
           for f in CHANGELOG.md versions.txt lib/src/main/java/growthbook/sdk/java/Version.java; do
-            if git diff --name-only "$base..$head" | grep -qx "$f"; then
+            if git diff --name-only "$base...$head" | grep -qx "$f"; then
               echo "::error file=$f::$f is owned by release-please and must not be hand-edited"
               fail=1
             fi
           done
-          if git diff --name-only "$base..$head" | grep -qx "gradle.properties"; then
-            if git diff -U0 "$base..$head" -- gradle.properties | grep -Eq '^[+-]version='; then
+          if git diff --name-only "$base...$head" | grep -qx "gradle.properties"; then
+            if git diff -U0 "$base...$head" -- gradle.properties | grep -Eq '^[+-]version='; then
               echo "::error file=gradle.properties::the version= line is owned by release-please"
               fail=1
             fi
