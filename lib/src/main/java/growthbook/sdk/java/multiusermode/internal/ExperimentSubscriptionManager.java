@@ -40,7 +40,9 @@ public final class ExperimentSubscriptionManager {
      * @param <T> experiment value type
      */
     public <T> void publishIfChanged(Experiment<T> experiment, ExperimentResult<T> result) {
-        String key = experiment.getKey();
+        // ConcurrentHashMap rejects null keys; a key-less experiment still dedupes,
+        // under one shared sentinel entry.
+        String key = experiment.getKey() != null ? experiment.getKey() : "";
         AssignedExperiment nextAssignment = new AssignedExperiment(
                 experiment.getKey(),
                 result.getInExperiment(),

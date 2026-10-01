@@ -217,7 +217,7 @@ public final class RemoteEvalCoordinator {
         this.invalidationRepository = repository;
 
         try {
-            repository.initialize(true);
+            repository.initialize(this.options.isSseReconnectOnFailure());
         } catch (FeatureFetchException e) {
             log.warn("Remote evaluation SSE invalidation could not be initialized", e);
         }

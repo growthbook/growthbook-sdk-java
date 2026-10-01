@@ -4,6 +4,7 @@ import growthbook.sdk.java.multiusermode.configurations.EvaluationContext;
 import growthbook.sdk.java.multiusermode.configurations.GlobalContext;
 import growthbook.sdk.java.multiusermode.configurations.Options;
 import growthbook.sdk.java.multiusermode.configurations.UserContext;
+import growthbook.sdk.java.repository.FeatureSnapshot;
 import growthbook.sdk.java.repository.GBFeaturesRepository;
 import growthbook.sdk.java.util.UserContextUtils;
 
@@ -72,9 +73,12 @@ public final class GlobalContextManager {
     }
 
     private GlobalContext createGlobalContext(GBFeaturesRepository repository) {
+        // Read the payload as ONE snapshot: two separate getter calls could pair
+        // new features with old saved groups if a refresh lands in between.
+        FeatureSnapshot featureSnapshot = repository.getFeatureSnapshot();
         return GlobalContext.builder()
-                .features(repository.getParsedFeatures())
-                .savedGroups(repository.getParsedSavedGroups())
+                .features(featureSnapshot.getParsedFeatures())
+                .savedGroups(featureSnapshot.getParsedSavedGroups())
                 .enabled(this.options.getEnabled())
                 .qaMode(this.options.getIsQaMode())
                 .forcedFeatureValues(this.options.getGlobalForcedFeatureValues())

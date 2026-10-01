@@ -17,6 +17,7 @@ import growthbook.sdk.java.model.TypedKey;
 import growthbook.sdk.java.multiusermode.configurations.Options;
 import growthbook.sdk.java.multiusermode.configurations.UserContext;
 import growthbook.sdk.java.repository.FeatureRefreshStrategy;
+import growthbook.sdk.java.repository.FeatureSnapshot;
 import growthbook.sdk.java.repository.GBFeaturesRepository;
 import growthbook.sdk.java.stickyBucketing.StickyBucketService;
 import growthbook.sdk.java.testhelpers.TestCasesJsonHelper;
@@ -43,6 +44,7 @@ import static growthbook.sdk.java.multiusermode.GrowthBookClientTestFixtures.cre
 import static growthbook.sdk.java.multiusermode.GrowthBookClientTestFixtures.createMockRepository;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.Mockito.*;
 
 
@@ -69,9 +71,33 @@ class GrowthBookClientTest {
             GrowthBookClient client = new GrowthBookClient(options);
             assertTrue(client.initialize());
 
-            verify(mockRepository).initialize();
+            verify(mockRepository).initialize(true);
             verify(mockRepository).onFeaturesRefresh(mockCallback);
             verify(mockRepository).addFeatureRefreshListener(any());
+        }
+    }
+
+    @Test
+    void initialize_sseReconnectDisabled_passesReconnectFlagFalseToRepository() throws FeatureFetchException {
+        mockRepository = createMockRepository();
+        mockBuilder = createMockBuilder(mockRepository);
+
+        try (MockedStatic<GBFeaturesRepository> mockedStatic = mockStatic(GBFeaturesRepository.class)) {
+            mockedStatic.when(GBFeaturesRepository::builder).thenReturn(mockBuilder);
+
+            Options options = Options.builder()
+                    .apiHost("https://custom.growthbook.io")
+                    .clientKey("custom_key")
+                    .decryptionKey("test_key")
+                    .refreshStrategy(FeatureRefreshStrategy.STALE_WHILE_REVALIDATE)
+                    .sseReconnectOnFailure(false)
+                    .build();
+
+            GrowthBookClient client = new GrowthBookClient(options);
+            assertTrue(client.initialize());
+
+            verify(mockRepository).initialize(false);
+            verify(mockRepository, never()).initialize(true);
         }
     }
 
@@ -186,7 +212,7 @@ class GrowthBookClientTest {
             verify(mockRepository).addFeatureRefreshListener(repositoryListenerCaptor.capture());
 
             FeatureRefreshEvent repositoryEvent = successEvent();
-            when(mockRepository.getParsedFeatures()).thenThrow(new IllegalStateException("feature state unavailable"));
+            when(mockRepository.getFeatureSnapshot()).thenThrow(new IllegalStateException("feature state unavailable"));
             repositoryListenerCaptor.getValue().onRefresh(repositoryEvent);
 
             verify(listener).onRefresh(repositoryEvent);
@@ -226,7 +252,7 @@ class GrowthBookClientTest {
 
             // Listener is always notified, but the global context is not rebuilt when nothing changed.
             verify(listener).onRefresh(unchangedEvent);
-            verify(mockRepository, never()).getParsedFeatures();
+            verify(mockRepository, never()).getFeatureSnapshot();
         }
     }
 
@@ -346,7 +372,7 @@ class GrowthBookClientTest {
         mockRepository = mock(GBFeaturesRepository.class);
         when(mockRepository.getInitialized()).thenReturn(false);
         doThrow(new FeatureFetchException(FeatureFetchException
-                .FeatureFetchErrorCode.NO_RESPONSE_ERROR)).when(mockRepository).initialize();
+                .FeatureFetchErrorCode.NO_RESPONSE_ERROR)).when(mockRepository).initialize(anyBoolean());
 
         // create the mock builder instance
         mockBuilder = createMockBuilder(mockRepository);
@@ -363,11 +389,8 @@ class GrowthBookClientTest {
             boolean result = client.initialize();
             assertFalse(result);
 
-            /*// 6. Verify initialize was called and threw exception
-            verify(mockRepository).initialize();
-
-            // 7. Verify no callbacks were registered due to failure
-            verify(mockRepository, never()).onFeaturesRefresh(any());*/
+            // 6. Verify initialize was called and threw exception
+            verify(mockRepository).initialize(anyBoolean());
         }
     }
 
@@ -376,7 +399,7 @@ class GrowthBookClientTest {
         GBFeaturesRepository failedRepository = mock(GBFeaturesRepository.class);
         when(failedRepository.getInitialized()).thenReturn(false);
         doThrow(new FeatureFetchException(FeatureFetchException.FeatureFetchErrorCode.NO_RESPONSE_ERROR))
-                .when(failedRepository).initialize();
+                .when(failedRepository).initialize(anyBoolean());
 
         GBFeaturesRepository successfulRepository = createMockRepository();
         GBFeaturesRepository.GBFeaturesRepositoryBuilder failedBuilder = createMockBuilder(failedRepository);
@@ -390,9 +413,9 @@ class GrowthBookClientTest {
             assertFalse(client.initialize());
             assertTrue(client.initialize());
 
-            verify(failedRepository).initialize();
+            verify(failedRepository).initialize(anyBoolean());
             verify(failedRepository).shutdown();
-            verify(successfulRepository).initialize();
+            verify(successfulRepository).initialize(anyBoolean());
         }
     }
 
@@ -426,8 +449,8 @@ class GrowthBookClientTest {
             assertTrue(firstClient.initialize());
             assertTrue(secondClient.initialize());
 
-            verify(firstRepository).initialize();
-            verify(secondRepository).initialize();
+            verify(firstRepository).initialize(anyBoolean());
+            verify(secondRepository).initialize(anyBoolean());
 
             firstClient.shutdown();
             verify(firstRepository).shutdown();
@@ -444,7 +467,7 @@ class GrowthBookClientTest {
         doAnswer(invocation -> {
             clientHolder[0].shutdown();
             return null;
-        }).when(mockRepository).initialize();
+        }).when(mockRepository).initialize(anyBoolean());
 
         try (MockedStatic<GBFeaturesRepository> mockedStatic = mockStatic(GBFeaturesRepository.class)) {
             mockedStatic.when(GBFeaturesRepository::builder).thenReturn(mockBuilder);
@@ -454,7 +477,7 @@ class GrowthBookClientTest {
 
             assertFalse(client.initialize());
 
-            verify(mockRepository).initialize();
+            verify(mockRepository).initialize(anyBoolean());
             verify(mockRepository).shutdown();
         }
     }
@@ -480,7 +503,7 @@ class GrowthBookClientTest {
 
             verify(mockRepository, never()).onFeaturesRefresh(any());
             verify(mockRepository, never()).addFeatureRefreshListener(any());
-            verify(mockRepository, never()).initialize();
+            verify(mockRepository, never()).initialize(anyBoolean());
             verify(mockRepository).shutdown();
         }
     }
@@ -669,6 +692,7 @@ class GrowthBookClientTest {
         when(repository.getFeaturesJson()).thenReturn("{}");
         when(repository.getSavedGroupsJson()).thenReturn("{}");
         when(repository.getParsedFeatures()).thenReturn(features);
+        when(repository.getFeatureSnapshot()).thenReturn(FeatureSnapshot.of("{}", "{}", features, new JsonObject()));
         when(repository.getParsedSavedGroups()).thenReturn(new JsonObject());
         when(repository.getRefreshStrategy()).thenReturn(FeatureRefreshStrategy.STALE_WHILE_REVALIDATE);
         return repository;

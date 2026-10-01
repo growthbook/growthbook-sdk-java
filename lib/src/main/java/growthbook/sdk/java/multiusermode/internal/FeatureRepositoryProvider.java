@@ -217,7 +217,7 @@ public final class FeatureRepositoryProvider {
 
     private void initializeRepository(GBFeaturesRepository repository) {
         try {
-            repository.initialize();
+            repository.initialize(this.options.isSseReconnectOnFailure());
         } catch (FeatureFetchException e) {
             throw new GrowthBookInitializationException(e);
         }
