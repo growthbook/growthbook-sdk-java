@@ -13,6 +13,7 @@ import growthbook.sdk.java.model.FeatureRule;
 import growthbook.sdk.java.model.Filter;
 import growthbook.sdk.java.multiusermode.configurations.EvaluationContext;
 import growthbook.sdk.java.multiusermode.usage.FeatureUsageCallbackWithUser;
+import growthbook.sdk.java.plugin.PluginRegistry;
 import lombok.extern.slf4j.Slf4j;
 import javax.annotation.Nullable;
 import java.net.MalformedURLException;
@@ -40,10 +41,6 @@ public class FeatureEvaluator implements IFeatureEvaluator {
             EvaluationContext context,
             Class<ValueType> valueTypeClass
     ) throws ClassCastException {
-        // This callback serves for listening for feature usage events
-        FeatureUsageCallbackWithUser featureUsageCallbackWithUser = context.getOptions()
-                .getFeatureUsageCallbackWithUser();
-
         FeatureResult<ValueType> unknownFeatureResult = FeatureResult
                 .<ValueType>builder()
                 .value(null)
@@ -64,9 +61,7 @@ public class FeatureEvaluator implements IFeatureEvaluator {
                         .value(null)
                         .source(FeatureResultSource.CYCLIC_PREREQUISITE)
                         .build();
-                if (featureUsageCallbackWithUser != null) {
-                    featureUsageCallbackWithUser.onFeatureUsage(key, featureResultWhenCircularDependencyDetected, context.getUser());
-                }
+                dispatchFeatureUsage(context, key, featureResultWhenCircularDependencyDetected);
 
                 leaveCircularLoop(context);
                 return featureResultWhenCircularDependencyDetected;
@@ -91,6 +86,7 @@ public class FeatureEvaluator implements IFeatureEvaluator {
                         .value(unwrapForceFeatureValue)
                         .source(FeatureResultSource.OVERRIDE)
                         .build();
+                dispatchFeatureUsage(context, key, overrideResult);
                 return cacheResult(key, overrideResult, context);
             }
 
@@ -104,9 +100,7 @@ public class FeatureEvaluator implements IFeatureEvaluator {
                             .source(FeatureResultSource.URL_OVERRIDE)
                             .build();
 
-                    if (featureUsageCallbackWithUser != null) {
-                        featureUsageCallbackWithUser.onFeatureUsage(key, urlFeatureResult, context.getUser());
-                    }
+                    dispatchFeatureUsage(context, key, urlFeatureResult);
 
                     return cacheResult(key, urlFeatureResult, context);
                 }
@@ -115,14 +109,11 @@ public class FeatureEvaluator implements IFeatureEvaluator {
             // Unknown key, return empty feature
             Map<String, Feature<?>> features = context.getGlobal().getFeatures();
             if (features == null || features.isEmpty() || !features.containsKey(key)) {
-                if (featureUsageCallbackWithUser != null) {
-                    featureUsageCallbackWithUser.onFeatureUsage(key, unknownFeatureResult, context.getUser());
-                }
+                dispatchFeatureUsage(context, key, unknownFeatureResult);
 
                 return cacheResult(key, unknownFeatureResult, context);
             }
 
-            // The key exists
             Feature<ValueType> feature = (Feature<ValueType>) features.get(key);
             FeatureResult<ValueType> defaultValueFeature = FeatureResult
                     .<ValueType>builder()
@@ -131,10 +122,7 @@ public class FeatureEvaluator implements IFeatureEvaluator {
                     .build();
 
             if (feature == null) {
-                // When key exists but there is no value, should be default value with null value
-                if (featureUsageCallbackWithUser != null) {
-                    featureUsageCallbackWithUser.onFeatureUsage(key, defaultValueFeature, context.getUser());
-                }
+                dispatchFeatureUsage(context, key, defaultValueFeature);
                 return cacheResult(key, defaultValueFeature, context);
             }
 
@@ -146,9 +134,7 @@ public class FeatureEvaluator implements IFeatureEvaluator {
                         .source(FeatureResultSource.DEFAULT_VALUE)
                         .value(value)
                         .build();
-                if (featureUsageCallbackWithUser != null) {
-                    featureUsageCallbackWithUser.onFeatureUsage(key, defaultValueFeatureForRules, context.getUser());
-                }
+                dispatchFeatureUsage(context, key, defaultValueFeatureForRules);
                 return cacheResult(key, defaultValueFeatureForRules, context);
             }
 
@@ -177,11 +163,7 @@ public class FeatureEvaluator implements IFeatureEvaluator {
                                             .source(FeatureResultSource.CYCLIC_PREREQUISITE)
                                             .build();
 
-                            if (featureUsageCallbackWithUser != null) {
-                                featureUsageCallbackWithUser.onFeatureUsage(key,
-                                        featureResultWhenCircularDependencyDetected,
-                                        context.getUser());
-                            }
+                            dispatchFeatureUsage(context, key, featureResultWhenCircularDependencyDetected);
                             return cacheResult(key, featureResultWhenCircularDependencyDetected, context);
                         }
 
@@ -210,11 +192,7 @@ public class FeatureEvaluator implements IFeatureEvaluator {
                                                 .source(FeatureResultSource.PREREQUISITE)
                                                 .build();
 
-                                if (featureUsageCallbackWithUser != null) {
-                                    featureUsageCallbackWithUser.onFeatureUsage(key,
-                                            featureResultWhenBlockedByPrerequisite,
-                                            context.getUser());
-                                }
+                                dispatchFeatureUsage(context, key, featureResultWhenBlockedByPrerequisite);
                                 return cacheResult(key, featureResultWhenBlockedByPrerequisite, context);
                             }
                             // non-blocking prerequisite eval failed: break out
@@ -279,8 +257,9 @@ public class FeatureEvaluator implements IFeatureEvaluator {
                         continue;
                     }
 
-                    // Fire tracking callbacks for remotely evaluated experiments, de-duplicated per
-                    // assignment so repeated cached evaluations don't re-fire exposures.
+                    // Fire tracking callbacks (and plugin exposure events) for remotely evaluated
+                    // experiments, de-duplicated per assignment so repeated cached evaluations
+                    // don't re-fire exposures.
                     experimentEvaluator.fireRemoteEvaluationTracks(rule.getTracks(), context);
 
                     ValueType value = (ValueType) GrowthBookJsonUtils.unwrap(rule.getForce().getValue());
@@ -293,9 +272,7 @@ public class FeatureEvaluator implements IFeatureEvaluator {
                             .ruleId(rule.getId())
                             .build();
 
-                    if (featureUsageCallbackWithUser != null) {
-                        featureUsageCallbackWithUser.onFeatureUsage(key, forcedRuleFeatureValue, context.getUser());
-                    }
+                    dispatchFeatureUsage(context, key, forcedRuleFeatureValue);
 
                     return cacheResult(key, forcedRuleFeatureValue, context);
                 } else {
@@ -347,9 +324,7 @@ public class FeatureEvaluator implements IFeatureEvaluator {
                                     .experimentResult(result)
                                     .build();
 
-                            if (featureUsageCallbackWithUser != null) {
-                                featureUsageCallbackWithUser.onFeatureUsage(key, experimentFeatureResult, context.getUser());
-                            }
+                            dispatchFeatureUsage(context, key, experimentFeatureResult);
                             return cacheResult(key, experimentFeatureResult, context);
                         }
                     } else {
@@ -368,9 +343,7 @@ public class FeatureEvaluator implements IFeatureEvaluator {
                     .value(value)
                     .build();
 
-            if (featureUsageCallbackWithUser != null) {
-                featureUsageCallbackWithUser.onFeatureUsage(key, defaultValueFeatureResult, context.getUser());
-            }
+            dispatchFeatureUsage(context, key, defaultValueFeatureResult);
 
             // Return (value = defaultValue or null, source = defaultValue)
             return cacheResult(key, defaultValueFeatureResult, context);
@@ -425,6 +398,21 @@ public class FeatureEvaluator implements IFeatureEvaluator {
     private void addFeatureToEvalStack(String featureKey, EvaluationContext context) {
         context.getStack().setId(featureKey);
         context.getStack().getEvaluatedFeatures().add(featureKey);
+    }
+
+    private <ValueType> void dispatchFeatureUsage(
+            EvaluationContext context,
+            String key,
+            FeatureResult<ValueType> result
+    ) {
+        FeatureUsageCallbackWithUser cb = context.getOptions().getFeatureUsageCallbackWithUser();
+        if (cb != null) {
+            cb.onFeatureUsage(key, result, context.getUser());
+        }
+        PluginRegistry registry = context.getPluginRegistry();
+        if (registry != null) {
+            registry.fireFeatureEvaluated(key, result);
+        }
     }
 
     private <ValueType> FeatureResult<ValueType> cacheResult(String key, FeatureResult<ValueType> result, EvaluationContext context) {

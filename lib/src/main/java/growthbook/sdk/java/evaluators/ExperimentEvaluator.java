@@ -19,6 +19,7 @@ import growthbook.sdk.java.model.TrackData;
 import growthbook.sdk.java.model.VariationMeta;
 import growthbook.sdk.java.multiusermode.configurations.EvaluationContext;
 import growthbook.sdk.java.multiusermode.usage.TrackingCallbackWithUser;
+import growthbook.sdk.java.plugin.PluginRegistry;
 import lombok.extern.slf4j.Slf4j;
 
 import javax.annotation.Nullable;
@@ -305,17 +306,11 @@ public class ExperimentEvaluator implements IExperimentEvaluator {
             }
         }
 
-        // Fire context.trackingClosure if set and the combination of hashAttribute,
-        // hashValue, experiment.key, and variationId has not been tracked before
-        if (!isExperimentTracked(experiment, result)) {
-            TrackingCallbackWithUser trackingCallBackWithUser = context.getOptions().getTrackingCallBackWithUser();
-
-            if (trackingCallBackWithUser != null) {
-                trackingCallBackWithUser.onTrack(experiment, result, context.getUser());
-            }
+        // Fire once per unique (hashAttribute, hashValue, experiment.key, variationId).
+        if (!alreadyTracked(experiment, result)) {
+            dispatchExperimentViewed(context, experiment, result);
         }
 
-        // Return (in experiment, assigned variation)
         return result;
     }
 
@@ -390,18 +385,6 @@ public class ExperimentEvaluator implements IExperimentEvaluator {
                 .build();
     }
 
-    //  Track experiments to trigger callbacks.
-    private <ValueType> boolean isExperimentTracked(Experiment<ValueType> experiment, ExperimentResult<ValueType> result) {
-        String key = trackingKey(experiment, result);
-
-        // Add the experiment to the tracker if it doesn't exist.
-        if (!experimentTracker.isExperimentTracked(key)) {
-            experimentTracker.trackExperiment(key);
-        }
-
-        return false;
-    }
-
     /**
      * Fires tracking callbacks for experiments that were evaluated remotely (a feature rule's
      * {@code tracks}). De-duplicates per {@code (hashAttribute, hashValue, experimentKey, variationId)}
@@ -415,8 +398,8 @@ public class ExperimentEvaluator implements IExperimentEvaluator {
         if (tracks == null) {
             return;
         }
-        TrackingCallbackWithUser trackingCallBackWithUser = context.getOptions().getTrackingCallBackWithUser();
-        if (trackingCallBackWithUser == null) {
+        if (context.getOptions().getTrackingCallBackWithUser() == null
+                && context.getPluginRegistry() == null) {
             return;
         }
 
@@ -433,10 +416,30 @@ public class ExperimentEvaluator implements IExperimentEvaluator {
                 continue;
             }
             try {
-                trackingCallBackWithUser.onTrack(track.getExperiment(), track.getResult(), context.getUser());
+                dispatchExperimentViewed(context, track.getExperiment(), track.getResult());
             } catch (RuntimeException e) {
                 log.warn("Tracking callback failed for remote evaluation payload.", e);
             }
+        }
+    }
+
+    /**
+     * Fires the user tracking callback and any registered plugins for a single exposure.
+     * Plugin failures are isolated by {@link PluginRegistry}; a throwing user callback
+     * propagates to the caller.
+     */
+    private <ValueType> void dispatchExperimentViewed(
+            EvaluationContext context,
+            Experiment<ValueType> experiment,
+            ExperimentResult<ValueType> result
+    ) {
+        TrackingCallbackWithUser callback = context.getOptions().getTrackingCallBackWithUser();
+        if (callback != null) {
+            callback.onTrack(experiment, result, context.getUser());
+        }
+        PluginRegistry pluginRegistry = context.getPluginRegistry();
+        if (pluginRegistry != null) {
+            pluginRegistry.fireExperimentViewed(experiment, result);
         }
     }
 

@@ -24,6 +24,7 @@ import growthbook.sdk.java.multiusermode.configurations.GlobalContext;
 import growthbook.sdk.java.multiusermode.configurations.Options;
 import growthbook.sdk.java.multiusermode.configurations.OptionsValidator;
 import growthbook.sdk.java.multiusermode.configurations.UserContext;
+import growthbook.sdk.java.plugin.PluginRegistry;
 import growthbook.sdk.java.remoteeval.RemoteEvalCache;
 import growthbook.sdk.java.remoteeval.RemoteEvalCacheKey;
 import growthbook.sdk.java.remoteeval.RemoteEvalOptionsValidator;
@@ -31,6 +32,7 @@ import growthbook.sdk.java.remoteeval.RemoteEvalRequestBuilder;
 import growthbook.sdk.java.remoteeval.RemoteEvalResponse;
 import growthbook.sdk.java.remoteeval.RemoteEvalService;
 import growthbook.sdk.java.repository.FeatureRefreshStrategy;
+import growthbook.sdk.java.repository.FeatureSnapshot;
 import growthbook.sdk.java.repository.GBFeaturesRepository;
 import growthbook.sdk.java.repository.RefreshMode;
 import growthbook.sdk.java.sandbox.CacheManagerFactory;
@@ -42,12 +44,13 @@ import lombok.extern.slf4j.Slf4j;
 
 import javax.annotation.Nullable;
 import java.time.Duration;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
@@ -56,7 +59,7 @@ import java.util.concurrent.atomic.AtomicReference;
 public class GrowthBookClient {
 
     private final Options options;
-    private List<ExperimentRunCallback> callbacks;
+    private final List<ExperimentRunCallback> callbacks;
     private final FeatureEvaluator featureEvaluator;
     private final Map<String, AssignedExperiment> assigned;
     private final ExperimentEvaluator experimentEvaluatorEvaluator;
@@ -69,6 +72,7 @@ public class GrowthBookClient {
     private final AtomicReference<Throwable> lastInitializationError = new AtomicReference<>();
     private final AtomicLong lastInitializationErrorAtMillis = new AtomicLong(0);
     private final DiagnosticsProvider diagnosticsProvider;
+    private final PluginRegistry pluginRegistry;
 
     public GrowthBookClient() {
         this(Options.builder().build());
@@ -77,11 +81,16 @@ public class GrowthBookClient {
     public GrowthBookClient(Options opts) {
         this.options = opts == null ? Options.builder().build() : opts;
 
-        this.assigned = new HashMap<>();
-        this.callbacks = new ArrayList<>();
+        // Shared across request threads: run()/subscribe() mutate these on a client
+        // that is documented as one-instance-for-all-requests.
+        this.assigned = new ConcurrentHashMap<>();
+        this.callbacks = new CopyOnWriteArrayList<>();
         this.featureEvaluator = new FeatureEvaluator();
         this.experimentEvaluatorEvaluator = new ExperimentEvaluator();
         this.diagnosticsProvider = new GrowthBookClientDiagnosticsProvider(this.options, clientStateView());
+
+        this.pluginRegistry = new PluginRegistry(this.options.getPlugins());
+        this.pluginRegistry.initAll();
     }
 
     private GrowthBookClientDiagnosticsProvider.ClientState clientStateView() {
@@ -223,7 +232,7 @@ public class GrowthBookClient {
 
     private void initializeFeaturesRepository(GBFeaturesRepository repositorySnapshot) {
         try {
-            repositorySnapshot.initialize();
+            repositorySnapshot.initialize(this.options.isSseReconnectOnFailure());
         } catch (FeatureFetchException e) {
             throw new GrowthBookClientInitializationException(
                     "Failed to initialize features repository", e);
@@ -514,6 +523,9 @@ public class GrowthBookClient {
         if (this.remoteEvalService != null) {
             this.remoteEvalService.close();
         }
+        // Flush registered plugins (including the built-in tracking plugin) so
+        // any buffered events are sent before the client is discarded.
+        this.pluginRegistry.closeAll();
     }
 
     private boolean ensureRemoteEvalReady() {
@@ -544,6 +556,7 @@ public class GrowthBookClient {
                 .clientKey(this.options.getClientKey())
                 .refreshStrategy(FeatureRefreshStrategy.SERVER_SENT_EVENTS)
                 .isCacheDisabled(true)
+                .retryPolicy(this.options.getRetryPolicy())
                 .build();
         sseRepository.onFeaturesRefresh(new FeatureRefreshCallback() {
             @Override
@@ -562,26 +575,36 @@ public class GrowthBookClient {
         }
 
         try {
-            sseRepository.initialize();
+            sseRepository.initialize(this.options.isSseReconnectOnFailure());
         } catch (FeatureFetchException e) {
             log.warn("Remote evaluation SSE invalidation could not be initialized", e);
         }
     }
 
     private <ValueType> void fireSubscriptions(Experiment<ValueType> experiment, ExperimentResult<ValueType> result) {
-        String key = experiment.getKey();
-        // If assigned variation has changed, fire subscriptions
-        AssignedExperiment prev = this.assigned.get(key);
-        if (prev == null
-                || !Objects.equals(prev.getInExperiment(), result.getInExperiment())
-                || !Objects.equals(prev.getVariationId(), result.getVariationId())) {
-            AssignedExperiment current = new AssignedExperiment(
-                    experiment.getKey(),
-                    result.getInExperiment(),
-                    result.getVariationId()
-            );
-            this.assigned.put(key, current);
+        // ConcurrentHashMap rejects null keys (the previous HashMap tolerated them);
+        // a key-less experiment still dedupes, under one shared sentinel entry.
+        String key = experiment.getKey() != null ? experiment.getKey() : "";
+        // If assigned variation has changed, fire subscriptions. The change check and
+        // the publish must be one atomic step or two concurrent run() calls can both
+        // observe the stale value and double-fire. Callbacks run outside compute():
+        // user code must never execute inside a ConcurrentHashMap bin lock.
+        boolean[] changed = {false};
+        this.assigned.compute(key, (k, prev) -> {
+            if (prev == null
+                    || !Objects.equals(prev.getInExperiment(), result.getInExperiment())
+                    || !Objects.equals(prev.getVariationId(), result.getVariationId())) {
+                changed[0] = true;
+                return new AssignedExperiment(
+                        experiment.getKey(),
+                        result.getInExperiment(),
+                        result.getVariationId()
+                );
+            }
+            return prev;
+        });
 
+        if (changed[0]) {
             for (ExperimentRunCallback cb : this.callbacks) {
                 try {
                     cb.onRun(experiment, result);
@@ -622,9 +645,12 @@ public class GrowthBookClient {
     }
 
     private GlobalContext buildGlobalContext(GBFeaturesRepository sourceRepository) {
+        // Read the payload as ONE snapshot: two separate getter calls could pair
+        // new features with old saved groups if a refresh lands in between.
+        FeatureSnapshot featureSnapshot = sourceRepository.getFeatureSnapshot();
         return GlobalContext.builder()
-                .features(sourceRepository.getParsedFeatures())
-                .savedGroups(sourceRepository.getParsedSavedGroups())
+                .features(featureSnapshot.getParsedFeatures())
+                .savedGroups(featureSnapshot.getParsedSavedGroups())
                 .enabled(this.options.getEnabled())
                 .qaMode(this.options.getIsQaMode())
                 .forcedFeatureValues(this.options.getGlobalForcedFeatureValues())
@@ -637,18 +663,24 @@ public class GrowthBookClient {
         if (this.options.isRemoteEvalEnabled()) {
             return getRemoteEvalContext(updatedUserContext);
         }
-        return new EvaluationContext(getLocalGlobalContext(), updatedUserContext, new EvaluationContext.StackContext(), this.options);
+        return withPluginRegistry(new EvaluationContext(getLocalGlobalContext(), updatedUserContext, new EvaluationContext.StackContext(), this.options));
     }
 
     private EvaluationContext getRemoteEvalContext(UserContext userContext) {
         try {
             RemoteEvalResponse response = getRemoteEvalResponse(userContext);
             GlobalContext remoteGlobalContext = buildGlobalContext(response.getFeatures(), response.getSavedGroups());
-            return new EvaluationContext(remoteGlobalContext, userContext, new EvaluationContext.StackContext(), this.options);
+            return withPluginRegistry(new EvaluationContext(remoteGlobalContext, userContext, new EvaluationContext.StackContext(), this.options));
         } catch (FeatureFetchException e) {
             log.warn("Remote evaluation request failed. Falling back to local feature context.", e);
-            return new EvaluationContext(getLocalGlobalContext(), userContext, new EvaluationContext.StackContext(), this.options);
+            return withPluginRegistry(new EvaluationContext(getLocalGlobalContext(), userContext, new EvaluationContext.StackContext(), this.options));
         }
+    }
+
+    /** Attaches this client's own plugin registry so events never route through another client's plugins. */
+    private EvaluationContext withPluginRegistry(EvaluationContext context) {
+        context.setPluginRegistry(this.pluginRegistry);
+        return context;
     }
 
     private UserContext toUserContextWithMergedAttributes(UserContext userContext) {
