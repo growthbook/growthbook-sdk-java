@@ -543,8 +543,11 @@ public class GrowthBookClient {
 
     /**
      * Stops repository background work and releases repository resources.
+     *
+     * <p>Synchronized so concurrent shutdown calls cannot interleave teardown of the repository,
+     * the remote-eval coordinator, the listener executor, and the plugin registry.
      */
-    public void shutdown() {
+    public synchronized void shutdown() {
         this.clientShutdown.set(true);
         featureRepositoryProvider.shutdown();
         this.remoteEvalCoordinator.shutdown();

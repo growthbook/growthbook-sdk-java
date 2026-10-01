@@ -38,6 +38,8 @@ public final class GrowthBookClientRepositoryFactory {
                 .isCacheDisabled(options.getIsCacheDisabled() || options.getCacheMode() == CacheMode.NONE)
                 .cacheManager(cacheManager)
                 .requestBodyForRemoteEval(configurePayloadForRemoteEval(options))
+                .backgroundFetchInterval(options.getBackgroundFetchInterval())
+                .retryPolicy(options.getRetryPolicy())
                 .build();
     }
 

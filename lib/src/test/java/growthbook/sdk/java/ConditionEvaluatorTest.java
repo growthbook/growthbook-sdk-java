@@ -148,9 +148,29 @@ class ConditionEvaluatorTest {
         JsonElement attributes = GrowthBookJsonUtils.getInstance().gson
                 .fromJson("{ \"name\": \"sarah\", \"job\": { \"title\": \"developer\" } }", JsonElement.class);
 
-        assertEquals("sarah", ((JsonElement) Objects.requireNonNull(evaluator.getPath(attributes, "name"))).getAsString());
-        assertEquals("developer", ((JsonElement) Objects.requireNonNull(evaluator.getPath(attributes, "job.title"))).getAsString());
+        assertEquals("sarah", Objects.requireNonNull(evaluator.getPath(attributes, "name")).getAsString());
+        assertEquals("developer", Objects.requireNonNull(evaluator.getPath(attributes, "job.title")).getAsString());
         assertNull(evaluator.getPath(attributes, "job.company"));
+    }
+
+    @Test
+    @DisplayName("Numeric comparisons keep double precision, matching the JS reference SDK")
+    void test_numericComparison_usesDoublePrecision() {
+        // The JS SDK compares with native `<`/`>` on IEEE-754 doubles (packages/sdk-js/src/mongrule.ts).
+        // Narrowing to float first collapses values that differ only beyond 2^24, so 16777217 and
+        // 16777216 would compare equal and every operator below would return the wrong answer.
+        ConditionEvaluator evaluator = new ConditionEvaluator();
+        JsonObject attributes = GrowthBookJsonUtils.getInstance().gson
+                .fromJson("{\"count\":16777217}", JsonObject.class);
+
+        assertTrue(evaluator.evaluateCondition(attributes, condition("{\"count\":{\"$gt\":16777216}}"), null));
+        assertFalse(evaluator.evaluateCondition(attributes, condition("{\"count\":{\"$lte\":16777216}}"), null));
+        assertFalse(evaluator.evaluateCondition(attributes, condition("{\"count\":{\"$eq\":16777216}}"), null));
+        assertTrue(evaluator.evaluateCondition(attributes, condition("{\"count\":{\"$ne\":16777216}}"), null));
+    }
+
+    private JsonObject condition(String json) {
+        return GrowthBookJsonUtils.getInstance().gson.fromJson(json, JsonObject.class);
     }
 
     private boolean unexpectedExceptionOccurred(String stacktrace) {

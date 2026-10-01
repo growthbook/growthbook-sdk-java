@@ -434,6 +434,139 @@ class GrowthBookClientTest {
     }
 
     @Test
+    void setGlobalAttributes_validJson_parsesJsonObject() {
+        Options options = Options.builder().build();
+        GrowthBookClient client = new GrowthBookClient(options);
+
+        client.setGlobalAttributes("{\"id\":\"user-1\",\"plan\":\"pro\"}");
+
+        assertNotNull(options.getGlobalAttributes());
+        assertEquals("user-1", options.getGlobalAttributes().get("id").getAsString());
+        assertEquals("pro", options.getGlobalAttributes().get("plan").getAsString());
+    }
+
+    @Test
+    void setGlobalAttributes_validJson_storesAttributesJson() {
+        Options options = Options.builder().build();
+        GrowthBookClient client = new GrowthBookClient(options);
+
+        client.setGlobalAttributes("{\"id\":\"user-1\"}");
+
+        assertEquals("{\"id\":\"user-1\"}", options.getAttributesJson());
+    }
+
+    @Test
+    void setGlobalAttributes_null_setsEmptyJsonObject() {
+        Options options = Options.builder().build();
+        GrowthBookClient client = new GrowthBookClient(options);
+
+        client.setGlobalAttributes(null);
+
+        assertNull(options.getAttributesJson());
+        assertNotNull(options.getGlobalAttributes());
+        assertEquals(0, options.getGlobalAttributes().size());
+    }
+
+    @Test
+    void setGlobalAttributes_calledTwice_overwritesPreviousValue() {
+        Options options = Options.builder().build();
+        GrowthBookClient client = new GrowthBookClient(options);
+
+        client.setGlobalAttributes("{\"id\":\"first\"}");
+        client.setGlobalAttributes("{\"id\":\"second\"}");
+
+        assertEquals("{\"id\":\"second\"}", options.getAttributesJson());
+        assertEquals("second", options.getGlobalAttributes().get("id").getAsString());
+    }
+
+    @Test
+    void setGlobalForceFeatures_validMap_storesMapOnOptions() {
+        Options options = Options.builder().build();
+        GrowthBookClient client = new GrowthBookClient(options);
+
+        Map<String, Object> forcedFeatures = new HashMap<>();
+        forcedFeatures.put("dark-mode", true);
+        forcedFeatures.put("max-items", 10);
+
+        client.setGlobalForceFeatures(forcedFeatures);
+
+        assertEquals(forcedFeatures, options.getGlobalForcedFeatureValues());
+    }
+
+    @Test
+    void setGlobalForceFeatures_null_clearsMap() {
+        Options options = Options.builder()
+                .globalForcedFeatureValues(new HashMap<>())
+                .build();
+        GrowthBookClient client = new GrowthBookClient(options);
+
+        client.setGlobalForceFeatures(null);
+
+        assertNull(options.getGlobalForcedFeatureValues());
+    }
+
+    @Test
+    void setGlobalForceFeatures_calledTwice_overwritesPreviousMap() {
+        Options options = Options.builder().build();
+        GrowthBookClient client = new GrowthBookClient(options);
+
+        Map<String, Object> first = new HashMap<>();
+        first.put("feature-a", true);
+        client.setGlobalForceFeatures(first);
+
+        Map<String, Object> second = new HashMap<>();
+        second.put("feature-b", false);
+        client.setGlobalForceFeatures(second);
+
+        assertFalse(options.getGlobalForcedFeatureValues().containsKey("feature-a"));
+        assertTrue(options.getGlobalForcedFeatureValues().containsKey("feature-b"));
+    }
+
+    @Test
+    void setGlobalForceVariations_validMap_storesMapOnOptions() {
+        Options options = Options.builder().build();
+        GrowthBookClient client = new GrowthBookClient(options);
+
+        Map<String, Integer> forcedVariations = new HashMap<>();
+        forcedVariations.put("experiment-1", 1);
+        forcedVariations.put("experiment-2", 0);
+
+        client.setGlobalForceVariations(forcedVariations);
+
+        assertEquals(forcedVariations, options.getGlobalForcedVariationsMap());
+    }
+
+    @Test
+    void setGlobalForceVariations_null_clearsMap() {
+        Options options = Options.builder()
+                .globalForcedVariationsMap(new HashMap<>())
+                .build();
+        GrowthBookClient client = new GrowthBookClient(options);
+
+        client.setGlobalForceVariations(null);
+
+        assertNotNull(options.getGlobalForcedVariationsMap());
+        assertTrue(options.getGlobalForcedVariationsMap().isEmpty());
+    }
+
+    @Test
+    void setGlobalForceVariations_calledTwice_overwritesPreviousMap() {
+        Options options = Options.builder().build();
+        GrowthBookClient client = new GrowthBookClient(options);
+
+        Map<String, Integer> first = new HashMap<>();
+        first.put("exp-a", 1);
+        client.setGlobalForceVariations(first);
+
+        Map<String, Integer> second = new HashMap<>();
+        second.put("exp-b", 0);
+        client.setGlobalForceVariations(second);
+
+        assertFalse(options.getGlobalForcedVariationsMap().containsKey("exp-a"));
+        assertTrue(options.getGlobalForcedVariationsMap().containsKey("exp-b"));
+    }
+
+    @Test
     void test_clientsUseIndependentRepositories() throws FeatureFetchException {
         GBFeaturesRepository firstRepository = createMockRepository();
         GBFeaturesRepository secondRepository = createMockRepository();

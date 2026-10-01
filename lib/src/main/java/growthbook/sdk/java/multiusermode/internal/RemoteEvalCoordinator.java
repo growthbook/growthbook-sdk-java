@@ -44,17 +44,20 @@ public final class RemoteEvalCoordinator {
     private final AtomicBoolean shutdown = new AtomicBoolean(false);
     private final AtomicBoolean ready = new AtomicBoolean(false);
 
+    // volatile: these are lazily created under this instance's monitor but read without it from
+    // request threads, and nulled by shutdown() on another thread. The client is documented as
+    // one instance shared across all requests, so every read needs safe publication.
     @Nullable
-    private RemoteEvalService remoteEvalService;
+    private volatile RemoteEvalService remoteEvalService;
 
     @Nullable
-    private RemoteEvalCache remoteEvalCache;
+    private volatile RemoteEvalCache remoteEvalCache;
 
     @Nullable
-    private GBFeaturesRepository invalidationRepository;
+    private volatile GBFeaturesRepository invalidationRepository;
 
     @Nullable
-    private GlobalContext fallbackContext;
+    private volatile GlobalContext fallbackContext;
 
     /**
      * Creates a coordinator bound to the client options instance.
@@ -160,25 +163,34 @@ public final class RemoteEvalCoordinator {
      * Drops all cached remote responses; the next evaluation refetches per user context.
      */
     public void invalidateCache() {
-        if (this.remoteEvalCache != null) {
-            this.remoteEvalCache.invalidateAll();
+        // Snapshot: shutdown() can null the field between a check and a dereference.
+        RemoteEvalCache cache = this.remoteEvalCache;
+        if (cache != null) {
+            cache.invalidateAll();
         }
     }
 
     /**
      * Releases the service, cache, and SSE invalidation resources owned by this coordinator.
+     *
+     * <p>Synchronized on the same monitor as {@link #getService()}, {@link #getCache()}, and
+     * {@link #ensureReady()} so teardown cannot interleave with lazy creation. In-flight callers
+     * already holding a reference are unaffected: {@code RemoteEvalCache.get} reports a closed
+     * cache as a {@link FeatureFetchException}, which callers handle as a fallback.
      */
-    public void shutdown() {
+    public synchronized void shutdown() {
         this.shutdown.set(true);
         this.ready.set(false);
         shutdownInvalidationRepository();
-        if (this.remoteEvalCache != null) {
-            this.remoteEvalCache.shutdown();
+        RemoteEvalCache cache = this.remoteEvalCache;
+        if (cache != null) {
             this.remoteEvalCache = null;
+            cache.shutdown();
         }
-        if (this.remoteEvalService != null) {
-            this.remoteEvalService.close();
+        RemoteEvalService service = this.remoteEvalService;
+        if (service != null) {
             this.remoteEvalService = null;
+            service.close();
         }
     }
 
@@ -231,11 +243,12 @@ public final class RemoteEvalCoordinator {
     }
 
     private void shutdownInvalidationRepository() {
-        if (this.invalidationRepository == null) {
+        GBFeaturesRepository repository = this.invalidationRepository;
+        if (repository == null) {
             return;
         }
-        this.invalidationRepository.shutdown();
         this.invalidationRepository = null;
+        repository.shutdown();
     }
 
     private EvaluationContext fallbackEvaluationContext(UserContext userContext) {
@@ -292,10 +305,14 @@ public final class RemoteEvalCoordinator {
     }
 
     private GlobalContext fallbackContext() {
-        if (this.fallbackContext == null) {
-            this.fallbackContext = buildGlobalContext(Collections.emptyMap(), new JsonObject());
+        // Snapshot rather than re-reading the field: refresh() replaces it from another thread,
+        // so a second read could return a different (or, before first write, null) context.
+        GlobalContext context = this.fallbackContext;
+        if (context == null) {
+            context = buildGlobalContext(Collections.emptyMap(), new JsonObject());
+            this.fallbackContext = context;
         }
-        return this.fallbackContext;
+        return context;
     }
 
     private GlobalContext buildGlobalContext(Map<String, Feature<?>> features, JsonObject savedGroups) {

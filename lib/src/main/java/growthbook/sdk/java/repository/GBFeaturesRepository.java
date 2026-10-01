@@ -601,6 +601,24 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
         this.refreshCallbacks.addIfAbsent(callback);
     }
 
+    /**
+     * Registers a listener notified after every refresh attempt, successful or failed.
+     *
+     * <p><b>Threading:</b> repository-level listeners run <em>synchronously on the thread that
+     * performed the refresh</em> — the polling scheduler, the SSE event thread, or whichever thread
+     * called {@link #refreshFeatures()}. A slow listener therefore delays the next refresh, and a
+     * listener that blocks stalls feature updates entirely. Keep the callback short, or hand the
+     * event off to your own executor.
+     *
+     * <p>Listeners registered through
+     * {@code GrowthBookClient.addFeatureRefreshListener(FeatureRefreshListener)} do not have this
+     * constraint: the client dispatches them on a dedicated daemon thread (or on the executor
+     * supplied via {@code Options.featureRefreshListenerExecutor}).
+     *
+     * <p>A listener that throws is logged and skipped; the remaining listeners still run.
+     *
+     * @param listener listener to register; {@code null} is ignored
+     */
     public void addFeatureRefreshListener(FeatureRefreshListener listener) {
         if (listener != null) {
             this.featureRefreshNotifier.add(listener);

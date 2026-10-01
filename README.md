@@ -149,6 +149,16 @@ GrowthBook growthBook = new GrowthBook(context);
 growthBook.isOn("featureKey");
 ```
 
+> **Threading note.** Listeners registered directly on a repository
+> (`featuresRepository.addFeatureRefreshListener(...)`) run **synchronously on the refresh thread** —
+> the polling scheduler, the SSE event thread, or the caller of a manual refresh. A slow listener
+> delays the next refresh, and a blocking one stalls feature updates. Keep the callback short or
+> hand the event off to your own executor.
+>
+> This does not apply to `GrowthBookClient.addFeatureRefreshListener(...)` /
+> `subscribeFeatureRefreshListener(...)`: the client dispatches those off the refresh thread, on a
+> dedicated daemon thread or on the executor you pass via `Options.featureRefreshListenerExecutor`.
+
 ## Usage
 ## Caching & Refresh Strategy
 

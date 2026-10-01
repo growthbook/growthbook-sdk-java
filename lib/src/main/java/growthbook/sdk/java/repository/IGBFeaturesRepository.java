@@ -28,6 +28,17 @@ public interface IGBFeaturesRepository {
     @Deprecated
     void onFeaturesRefresh(FeatureRefreshCallback callback);
 
+    /**
+     * Registers a listener notified after every refresh attempt.
+     *
+     * <p><b>Threading:</b> implementations dispatch repository-level listeners synchronously on the
+     * refresh thread (polling scheduler, SSE event thread, or the caller of a manual refresh), so a
+     * slow listener delays feature updates. Use
+     * {@code GrowthBookClient.addFeatureRefreshListener(FeatureRefreshListener)} instead when you
+     * need callbacks dispatched off the refresh thread.
+     *
+     * @param listener listener to register; {@code null} is ignored
+     */
     default void addFeatureRefreshListener(FeatureRefreshListener listener) {
         // Optional for repository implementations that do not refresh features.
     }

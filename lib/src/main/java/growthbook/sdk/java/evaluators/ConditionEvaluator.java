@@ -17,7 +17,14 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
- * <b>INTERNAL</b>: Implementation of condition evaluation
+ * <b>INTERNAL</b>: Implementation of condition evaluation.
+ *
+ * <p>Public only so the evaluators package can share it; it is not part of the supported API and
+ * its signatures may change without a major version bump. Two of them changed here: {@link #getPath}
+ * now returns {@link JsonElement} instead of {@code Object}, and {@link #isOperatorObject} returns
+ * {@code boolean} instead of {@code Boolean}. Evaluation results are unaffected — only the declared
+ * types are narrower — but the change is not binary compatible for anything that linked against the
+ * old descriptors.
  */
 @Slf4j
 public class ConditionEvaluator implements IConditionEvaluator {
@@ -55,6 +62,9 @@ public class ConditionEvaluator implements IConditionEvaluator {
     }
 
     /**
+     * Returns {@code boolean}; this previously returned a boxed {@code Boolean}. The values returned
+     * are unchanged, including {@code true} for an empty object.
+     *
      * @param object The object to evaluate
      * @return true if the object is empty or every key is an operator (starts with {@code $})
      */
@@ -68,6 +78,10 @@ public class ConditionEvaluator implements IConditionEvaluator {
 
     /**
      * Resolves a dot-separated path against the attributes.
+     *
+     * <p>Declared as {@link JsonElement}; this previously returned {@code Object}, although every
+     * value it could ever return was already a {@code JsonElement} or {@code null}. Callers that
+     * cast the old result can drop the cast.
      *
      * @param attributes User attributes
      * @param path       String path, e.g. {@code path.to.something}
@@ -199,6 +213,13 @@ public class ConditionEvaluator implements IConditionEvaluator {
 
     /**
      * {@code $gt}/{@code $gte}/{@code $lt}/{@code $lte}: numeric or lexical comparison.
+     *
+     * <p>Numbers are compared as {@code double}, deliberately: the reference JavaScript SDK applies
+     * native {@code <}/{@code >} to IEEE-754 doubles, so anything narrower diverges from the
+     * cross-SDK contract. An earlier version narrowed both operands to {@code float} first, which
+     * made values differing only beyond 2^24 compare equal — for example {@code 16777217 $gt
+     * 16777216} returned {@code false}. Do not reintroduce narrowing here; {@code arePrimitivesEqual}
+     * compares doubles on the {@code $eq}/{@code $ne} path for the same reason.
      */
     private boolean evalComparison(Operator operator, @Nullable JsonElement actual, JsonElement expected, DataType attributeDataType) {
         if (actual == null || DataType.NULL.equals(attributeDataType)) {
