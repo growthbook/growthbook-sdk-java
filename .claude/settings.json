@@ -41,7 +41,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "FP=$(jq -r '.tool_input.file_path // empty'); case \"$FP\" in *CHANGELOG.md|*versions.txt|*growthbook/sdk/java/Version.java|*gradle.properties|*growth-book-playground/*|*sdk-playground/*) echo \"Blocked: $FP is owned by release-please or is an out-of-build playground (see .claude/rules/git-conventions.md and project-overview.md).\" >&2; exit 2 ;; esac"
+            "command": "command -v jq >/dev/null 2>&1 || { echo \"Blocked: jq is required by the release-please guard hook; install jq (brew install jq).\" >&2; exit 2; }; FP=$(jq -r '.tool_input.file_path // empty'); case \"$FP\" in *CHANGELOG.md|*versions.txt|*growthbook/sdk/java/Version.java|*gradle.properties|*growth-book-playground/*|*sdk-playground/*) echo \"Blocked: $FP is owned by release-please or is an out-of-build playground (see .claude/rules/git-conventions.md and project-overview.md).\" >&2; exit 2 ;; esac"
           }
         ]
       }

@@ -29,6 +29,15 @@ plugins {
 sourceCompatibility = JavaVersion.VERSION_1_8
 targetCompatibility = JavaVersion.VERSION_1_8
 
+// Compiles against the real Java 8 API, so Java 9+ methods fail here instead of at
+// runtime on a consumer's Java 8 JVM (source/targetCompatibility alone cannot catch them).
+// javac 8 has no --release flag; there the compatibility settings above are already exact.
+tasks.withType(JavaCompile).configureEach {
+    if (JavaVersion.current().isJava9Compatible()) {
+        options.release = 8
+    }
+}
+
 group = 'com.github.growthbook'
 version = 'main-SNAPSHOT'
 

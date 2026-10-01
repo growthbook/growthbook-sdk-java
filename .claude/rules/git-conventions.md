@@ -44,3 +44,11 @@ Committed hooks enforce the rules above locally; activate once with `./gradlew i
   only the `version=` line is protected).
 
 `git commit --no-verify` bypasses them — use it only when you can explain why.
+
+## Agent Edit Guard (.claude/settings.json)
+
+A `PreToolUse` hook stops agents from editing the files above and the out-of-build playgrounds.
+It is deliberately coarser than `pre-commit`: **the whole `gradle.properties` is blocked**, not
+just the `version=` line, because the hook only sees the target path. Changing another property
+(e.g. `group`) is a human edit — make it yourself, or run the agent with the hook disabled.
+The hook requires `jq` and fails closed when it is missing.

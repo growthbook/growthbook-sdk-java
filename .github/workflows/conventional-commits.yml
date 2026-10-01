@@ -24,7 +24,11 @@ jobs:
           echo "$TITLE" | grep -Eq '^(feat|fix|refactor|perf|docs|test|build|ci|chore|style|revert)(\([a-zA-Z0-9._/-]+\))?!?: .+' \
             || { echo "::error::PR title must follow Conventional Commits: type(scope)?: summary"; exit 1; }
 
-      - name: Validate commit messages
+      # The repo merges PRs with squash + COMMIT_OR_PR_TITLE: only a single-commit PR
+      # puts its commit subject on main, so only then does the subject drive release-please.
+      # Multi-commit PRs are covered by the PR title check above.
+      - name: Validate commit messages (single-commit PRs only)
+        if: ${{ github.event.pull_request.commits == 1 }}
         run: |
           base="${{ github.event.pull_request.base.sha }}"
           head="${{ github.event.pull_request.head.sha }}"
