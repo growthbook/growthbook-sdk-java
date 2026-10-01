@@ -45,6 +45,13 @@ import growthbook.sdk.java.stickyBucketing.StickyBucketService;
  * GrowthBook SDK class.
  * Build a context with {@link GBContext#builder()} or the {@link GBContext} constructor
  * and pass it as an argument to the class constructor.
+ *
+ * <p><b>Threading:</b> this class is single-threaded by design — one instance serves one
+ * user, typically created per request and discarded after it (matching the JavaScript
+ * SDK's per-user {@code GrowthBook} class). Instances share one mutable evaluation
+ * context internally and must not be used from multiple threads concurrently. For a
+ * long-lived instance shared across requests and threads, use
+ * {@link growthbook.sdk.java.multiusermode.GrowthBookClient} instead.
  */
 @Slf4j
 public class GrowthBook implements IGrowthBook {

@@ -5,6 +5,7 @@ import growthbook.sdk.java.callback.FeatureRefreshCallback;
 import growthbook.sdk.java.model.Feature;
 import growthbook.sdk.java.multiusermode.configurations.Options;
 import growthbook.sdk.java.repository.FeatureRefreshStrategy;
+import growthbook.sdk.java.repository.FeatureSnapshot;
 import growthbook.sdk.java.repository.GBFeaturesRepository;
 
 import java.util.HashMap;
@@ -35,12 +36,13 @@ final class GrowthBookClientTestFixtures {
         when(repository.getFeaturesJson()).thenReturn("{}");
         when(repository.getSavedGroupsJson()).thenReturn("{}");
         when(repository.getParsedFeatures()).thenReturn(features);
+        when(repository.getFeatureSnapshot()).thenReturn(FeatureSnapshot.of("{}", "{}", features, new JsonObject()));
         when(repository.getParsedSavedGroups()).thenReturn(new JsonObject());
         when(repository.getRefreshStrategy()).thenReturn(FeatureRefreshStrategy.STALE_WHILE_REVALIDATE);
         when(repository.hasFeatureData()).thenReturn(true);
         when(repository.getActiveFeatureCount()).thenReturn(features.size());
         when(repository.getLastSuccessfulFetchAtMillis()).thenReturn(nowMillis - TimeUnit.SECONDS.toMillis(1));
-        when(repository.getExpiresAt()).thenReturn(new AtomicLong(TimeUnit.MILLISECONDS.toSeconds(nowMillis + TimeUnit.SECONDS.toMillis(60))));
+        when(repository.getExpiresAt()).thenReturn(TimeUnit.MILLISECONDS.toSeconds(nowMillis + TimeUnit.SECONDS.toMillis(60)));
         when(repository.isCacheDisabled()).thenReturn(false);
         when(repository.getCacheLastUpdatedMillis()).thenReturn(nowMillis - 500L);
         when(repository.getRefreshSuccessCount()).thenReturn(1L);

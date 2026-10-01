@@ -899,8 +899,9 @@ public class GrowthBookUtils {
                                                      Experiment<ValueType> experiment,
                                                      ExperimentResult<ValueType> result
     ) {
-        String key = experiment.getKey();
-        if (key == null) return;
+        // ConcurrentHashMap rejects null keys (the previous HashMap tolerated them); a key-less
+        // experiment still dedupes, under one shared sentinel entry, so its callbacks keep firing.
+        String key = experiment.getKey() != null ? experiment.getKey() : "";
 
         AssignedExperiment current = new AssignedExperiment(
                 experiment.getKey(),

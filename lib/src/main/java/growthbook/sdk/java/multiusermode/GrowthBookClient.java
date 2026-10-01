@@ -32,6 +32,7 @@ import growthbook.sdk.java.remoteeval.RemoteEvalRequestBuilder;
 import growthbook.sdk.java.remoteeval.RemoteEvalResponse;
 import growthbook.sdk.java.remoteeval.RemoteEvalService;
 import growthbook.sdk.java.repository.FeatureRefreshStrategy;
+import growthbook.sdk.java.repository.FeatureSnapshot;
 import growthbook.sdk.java.repository.GBFeaturesRepository;
 import growthbook.sdk.java.repository.RefreshMode;
 import growthbook.sdk.java.sandbox.CacheManagerFactory;
@@ -44,7 +45,6 @@ import lombok.extern.slf4j.Slf4j;
 
 import javax.annotation.Nullable;
 import java.time.Duration;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -59,7 +59,7 @@ import java.util.concurrent.atomic.AtomicReference;
 public class GrowthBookClient {
 
     private final Options options;
-    private List<ExperimentRunCallback> callbacks;
+    private final List<ExperimentRunCallback> callbacks;
     private final FeatureEvaluator featureEvaluator;
     private final Map<String, AssignedExperiment> assigned;
     private final ExperimentEvaluator experimentEvaluatorEvaluator;
@@ -81,6 +81,8 @@ public class GrowthBookClient {
     public GrowthBookClient(Options opts) {
         this.options = opts == null ? Options.builder().build() : opts;
 
+        // Shared across request threads: run()/subscribe() mutate these on a client
+        // that is documented as one-instance-for-all-requests.
         this.assigned = new ConcurrentHashMap<>();
         this.callbacks = new CopyOnWriteArrayList<>();
         this.featureEvaluator = new FeatureEvaluator();
@@ -230,7 +232,7 @@ public class GrowthBookClient {
 
     private void initializeFeaturesRepository(GBFeaturesRepository repositorySnapshot) {
         try {
-            repositorySnapshot.initialize();
+            repositorySnapshot.initialize(this.options.isSseReconnectOnFailure());
         } catch (FeatureFetchException e) {
             throw new GrowthBookClientInitializationException(
                     "Failed to initialize features repository", e);
@@ -554,6 +556,7 @@ public class GrowthBookClient {
                 .clientKey(this.options.getClientKey())
                 .refreshStrategy(FeatureRefreshStrategy.SERVER_SENT_EVENTS)
                 .isCacheDisabled(true)
+                .retryPolicy(this.options.getRetryPolicy())
                 .build();
         sseRepository.onFeaturesRefresh(new FeatureRefreshCallback() {
             @Override
@@ -572,12 +575,18 @@ public class GrowthBookClient {
         }
 
         try {
-            sseRepository.initialize();
+            sseRepository.initialize(this.options.isSseReconnectOnFailure());
         } catch (FeatureFetchException e) {
             log.warn("Remote evaluation SSE invalidation could not be initialized", e);
         }
     }
 
+        // ConcurrentHashMap rejects null keys (the previous HashMap tolerated them);
+        // a key-less experiment still dedupes, under one shared sentinel entry.
+        // If assigned variation has changed, fire subscriptions. The change check and
+        // the publish must be one atomic step or two concurrent run() calls can both
+        // observe the stale value and double-fire. Callbacks run outside compute():
+        // user code must never execute inside a ConcurrentHashMap bin lock.
     private FeatureRefreshCallback refreshGlobalContext() {
         return new FeatureRefreshCallback() {
             @Override
@@ -608,9 +617,12 @@ public class GrowthBookClient {
     }
 
     private GlobalContext buildGlobalContext(GBFeaturesRepository sourceRepository) {
+        // Read the payload as ONE snapshot: two separate getter calls could pair
+        // new features with old saved groups if a refresh lands in between.
+        FeatureSnapshot featureSnapshot = sourceRepository.getFeatureSnapshot();
         return GlobalContext.builder()
-                .features(sourceRepository.getParsedFeatures())
-                .savedGroups(sourceRepository.getParsedSavedGroups())
+                .features(featureSnapshot.getParsedFeatures())
+                .savedGroups(featureSnapshot.getParsedSavedGroups())
                 .enabled(this.options.getEnabled())
                 .qaMode(this.options.getIsQaMode())
                 .forcedFeatureValues(this.options.getGlobalForcedFeatureValues())

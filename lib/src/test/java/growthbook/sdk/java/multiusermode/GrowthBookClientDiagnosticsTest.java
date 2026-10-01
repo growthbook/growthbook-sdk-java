@@ -28,6 +28,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockStatic;
@@ -184,7 +185,7 @@ class GrowthBookClientDiagnosticsTest {
         mockRepository = createMockRepository();
         long nowMillis = System.currentTimeMillis();
         when(mockRepository.getLastSuccessfulFetchAtMillis()).thenReturn(nowMillis - TimeUnit.MINUTES.toMillis(5));
-        when(mockRepository.getExpiresAt()).thenReturn(new AtomicLong(TimeUnit.MILLISECONDS.toSeconds(nowMillis - TimeUnit.SECONDS.toMillis(1))));
+        when(mockRepository.getExpiresAt()).thenReturn(TimeUnit.MILLISECONDS.toSeconds(nowMillis - TimeUnit.SECONDS.toMillis(1)));
         mockBuilder = createMockBuilder(mockRepository);
 
         try (MockedStatic<GBFeaturesRepository> mockedStatic = mockStatic(GBFeaturesRepository.class)) {
@@ -212,7 +213,7 @@ class GrowthBookClientDiagnosticsTest {
         when(mockRepository.getLastSuccessfulFetchAtMillis()).thenReturn(0L);
         when(mockRepository.getLastRefreshLoadedFromCache()).thenReturn(true);
         when(mockRepository.getCacheLastUpdatedMillis()).thenReturn(cacheUpdatedMillis);
-        when(mockRepository.getExpiresAt()).thenReturn(new AtomicLong(TimeUnit.MILLISECONDS.toSeconds(nowMillis + TimeUnit.MINUTES.toMillis(5))));
+        when(mockRepository.getExpiresAt()).thenReturn(TimeUnit.MILLISECONDS.toSeconds(nowMillis + TimeUnit.MINUTES.toMillis(5)));
         mockBuilder = createMockBuilder(mockRepository);
 
         try (MockedStatic<GBFeaturesRepository> mockedStatic = mockStatic(GBFeaturesRepository.class)) {
@@ -324,7 +325,7 @@ class GrowthBookClientDiagnosticsTest {
         String unsafeErrorMessage = "network unavailable for "
                 + "https://user:pass@custom.growthbook.io/api/features/custom_key?token=secret using test_key";
         doThrow(new FeatureFetchException(FeatureFetchException.FeatureFetchErrorCode.NO_RESPONSE_ERROR, unsafeErrorMessage))
-                .when(mockRepository).initialize();
+                .when(mockRepository).initialize(anyBoolean());
         mockBuilder = createMockBuilder(mockRepository);
 
         try (MockedStatic<GBFeaturesRepository> mockedStatic = mockStatic(GBFeaturesRepository.class)) {
