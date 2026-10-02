@@ -206,7 +206,12 @@ public class GBContext {
 
     /**
      * Helper class for differentiate whether specific experiment was evaluated before or not. Internal usage
+     *
+     * @deprecated Unused. Tracking de-duplication is handled by
+     * {@link growthbook.sdk.java.multiusermode.ExperimentTracker}. Setting this field has no effect
+     * and it will be removed in a future major release.
      */
+    @Deprecated
     private ExperimentHelper experimentHelper = new ExperimentHelper();
 
     /**
