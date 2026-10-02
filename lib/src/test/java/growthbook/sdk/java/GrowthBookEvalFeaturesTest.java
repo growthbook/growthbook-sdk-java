@@ -1,10 +1,12 @@
 package growthbook.sdk.java;
 
+import growthbook.sdk.java.callback.FeatureUsageCallback;
 import growthbook.sdk.java.model.FeatureResult;
 import growthbook.sdk.java.model.FeatureResultSource;
 import growthbook.sdk.java.model.GBContext;
 import org.junit.jupiter.api.Test;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -77,5 +79,64 @@ class GrowthBookEvalFeaturesTest {
 
         assertTrue(subject.evalFeatures(Collections.emptyList(), Object.class).isEmpty());
         assertTrue(subject.evalFeatures(null, Object.class).isEmpty());
+    }
+
+    @Test
+    void evalFeatures_preservesInputOrder_andEvaluatesEachKeyOnce() {
+        List<String> usage = new ArrayList<>();
+        GBContext context = GBContext.builder()
+                .featuresJson(FEATURES_JSON)
+                .attributesJson("{\"id\":\"user-1\",\"employee\":true}")
+                // onFeatureUsage is a generic method, so this cannot be a lambda.
+                .featureUsageCallback(new FeatureUsageCallback() {
+                    @Override
+                    public <ValueType> void onFeatureUsage(String featureKey, FeatureResult<ValueType> result) {
+                        usage.add(featureKey);
+                    }
+                })
+                .build();
+        GrowthBook subject = new GrowthBook(context);
+
+        List<String> keys = Arrays.asList("f_num", "f_bool", "missing", "f_str", "f_bool");
+        List<String> expectedOrder = Arrays.asList("f_num", "f_bool", "missing", "f_str");
+
+        Map<String, FeatureResult<Object>> batch = subject.evalFeatures(keys, Object.class);
+
+        assertEquals(expectedOrder, new ArrayList<>(batch.keySet()));
+        // A duplicate key is evaluated once, so its usage callback fires once.
+        assertEquals(1, Collections.frequency(usage, "f_bool"));
+    }
+
+    @Test
+    void evalFeatures_urlOverridesDisabledByDefault_doNotApply() {
+        GBContext context = GBContext.builder()
+                .featuresJson(FEATURES_JSON)
+                .attributesJson("{\"id\":\"user-1\",\"employee\":true}")
+                .url("https://example.com/?gb~f_str=fromurl")
+                .build();
+        GrowthBook subject = new GrowthBook(context);
+
+        Map<String, FeatureResult<String>> batch = subject.evalFeatures(
+                Collections.singletonList("f_str"), String.class);
+
+        assertEquals(FeatureResultSource.DEFAULT_VALUE, batch.get("f_str").getSource());
+        assertEquals("hello", batch.get("f_str").getValue());
+    }
+
+    @Test
+    void evalFeatures_urlOverridesEnabled_apply() {
+        GBContext context = GBContext.builder()
+                .featuresJson(FEATURES_JSON)
+                .attributesJson("{\"id\":\"user-1\",\"employee\":true}")
+                .url("https://example.com/?gb~f_str=fromurl")
+                .allowUrlOverrides(true)
+                .build();
+        GrowthBook subject = new GrowthBook(context);
+
+        Map<String, FeatureResult<String>> batch = subject.evalFeatures(
+                Collections.singletonList("f_str"), String.class);
+
+        assertEquals(FeatureResultSource.URL_OVERRIDE, batch.get("f_str").getSource());
+        assertEquals("fromurl", batch.get("f_str").getValue());
     }
 }

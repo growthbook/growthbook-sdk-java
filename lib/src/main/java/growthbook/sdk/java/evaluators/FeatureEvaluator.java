@@ -37,6 +37,9 @@ public class FeatureEvaluator implements IFeatureEvaluator {
      * instead of being rebuilt per feature, and the per-evaluation stack is reset between
      * features so evaluation state does not leak. A feature whose evaluation throws is
      * recorded as {@link FeatureResultSource#UNKNOWN_FEATURE} rather than aborting the batch.
+     * <p>
+     * Each distinct key is evaluated exactly once (so feature-usage callbacks fire once per
+     * key) and the returned map preserves the order of {@code featureKeys}.
      */
     @Override
     public <T> Map<String, FeatureResult<T>> evaluateFeatures(
@@ -44,11 +47,14 @@ public class FeatureEvaluator implements IFeatureEvaluator {
             EvaluationContext context,
             Class<T> valueTypeClass
     ) {
-        Map<String, FeatureResult<T>> results = new HashMap<>();
+        Map<String, FeatureResult<T>> results = new LinkedHashMap<>();
         if (featureKeys == null || featureKeys.isEmpty()) {
             return results;
         }
         for (String key : featureKeys) {
+            if (results.containsKey(key)) {
+                continue;
+            }
             try {
                 results.put(key, evaluateFeature(key, context, valueTypeClass));
             } catch (RuntimeException e) {
@@ -163,9 +169,14 @@ public class FeatureEvaluator implements IFeatureEvaluator {
         return overrideResult;
     }
 
+    /**
+     * URL overrides are opt-in: they apply only when the flag is explicitly {@code true}.
+     * A {@code null} flag (reachable through {@code Options#setAllowUrlOverrides(null)}) is
+     * treated as disabled, matching the documented default.
+     */
     @Nullable
     private <T> FeatureResult<T> resolveUrlOverride(String key, EvaluationContext context, Class<T> valueTypeClass) {
-        if (Boolean.FALSE.equals(context.getOptions().getAllowUrlOverrides())) {
+        if (!Boolean.TRUE.equals(context.getOptions().getAllowUrlOverrides())) {
             return null;
         }
         T forcedValue = evaluateForcedFeatureValueFromUrl(key, context.getOptions().getUrl(), valueTypeClass);
