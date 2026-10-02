@@ -17,6 +17,11 @@ import org.junit.jupiter.api.io.TempDir;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+
+import static org.junit.jupiter.api.Assumptions.assumeFalse;
 
 class FileCachingManagerImplTest {
     private FileCachingManagerImpl fileCachingManagerImpl;
@@ -187,6 +192,49 @@ class FileCachingManagerImplTest {
         manager.saveContent("x.txt", "hello");
 
         assertEquals("hello", manager.loadCache("x.txt"));
+    }
+
+    @Test
+    void shouldReadLegacyCacheWrittenWithThePlatformDefaultCharset() throws IOException {
+        // Caches written by earlier SDK versions used FileWriter, i.e. the platform default
+        // charset. Such a file must stay readable instead of being discarded as a cache miss.
+        assumeFalse(StandardCharsets.UTF_8.equals(Charset.defaultCharset()),
+                "platform default charset is UTF-8, so there is no legacy encoding to exercise");
+
+        String fileName = "legacy.txt";
+        String content = "{\"name\":\"Ярослав\"}";
+        Files.write(new File(tempDir, fileName).toPath(), content.getBytes(Charset.defaultCharset()));
+
+        assertEquals(content, fileCachingManagerImpl.loadCache(fileName));
+    }
+
+    @Test
+    void shouldTreatUndecodableCacheAsAMissRatherThanFailing() throws IOException {
+        // Bytes that decode under neither UTF-8 nor the platform charset must not abort startup:
+        // a cache miss lets the repository fetch instead.
+        String fileName = "corrupt.txt";
+        Files.write(new File(tempDir, fileName).toPath(), new byte[]{(byte) 0xC3, (byte) 0x28, (byte) 0xA9});
+
+        String loaded = fileCachingManagerImpl.loadCache(fileName);
+
+        if (StandardCharsets.UTF_8.equals(Charset.defaultCharset())) {
+            assertNull(loaded);
+        } else {
+            // A single-byte legacy charset decodes anything, so the fallback read succeeds.
+            assertNotNull(loaded);
+        }
+    }
+
+    @Test
+    void shouldRewriteALegacyCacheAsUtf8OnTheNextSave() throws IOException {
+        String fileName = "rewrite.txt";
+        String content = "{\"name\":\"Ярослав\"}";
+
+        fileCachingManagerImpl.saveContent(fileName, content);
+
+        byte[] written = Files.readAllBytes(new File(tempDir, fileName).toPath());
+        assertEquals(content, new String(written, StandardCharsets.UTF_8));
+        assertEquals(content, fileCachingManagerImpl.loadCache(fileName));
     }
 
     @Test

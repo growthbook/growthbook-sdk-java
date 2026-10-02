@@ -2,9 +2,11 @@ package growthbook.sdk.java.stickyBucketing;
 
 import growthbook.sdk.java.model.StickyAssignmentsDocument;
 
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 
 /**
  * For simple bucket persistence using the in memory's storage(Map) (can be polyfilled for other environments)
@@ -23,14 +25,23 @@ public class InMemoryStickyBucketServiceImpl implements StickyBucketService {
     /**
      * Constructs a new {@code InMemoryStickyBucketServiceImpl} with the specified local storage.
      *
-     * @param localStorage a map to store sticky assignments documents in memory. Pass a
-     *                     thread-safe map (e.g. {@link ConcurrentHashMap}) when the service is
-     *                     shared by a {@code GrowthBookClient} evaluating on multiple threads.
+     * @param localStorage a map to store sticky assignments documents in memory. The map is used
+     *                     as the backing storage, so assignments saved by this service are visible
+     *                     to the caller. A map that is not already thread-safe is wrapped in a
+     *                     synchronized view; pass a {@link ConcurrentHashMap} directly when the
+     *                     service is shared by a {@code GrowthBookClient} evaluating on multiple
+     *                     threads, and synchronize on the wrapper when iterating it yourself.
      */
     public InMemoryStickyBucketServiceImpl(Map<String, StickyAssignmentsDocument> localStorage) {
-        this.localStorage = localStorage == null
-                ? new ConcurrentHashMap<>()
-                : new ConcurrentHashMap<>(localStorage);
+        if (localStorage == null) {
+            this.localStorage = new ConcurrentHashMap<>();
+        } else if (localStorage instanceof ConcurrentMap) {
+            this.localStorage = localStorage;
+        } else {
+            // Wrap rather than copy: the caller's map is the documented backing storage, so writes
+            // have to reach it. Copying would silently strand callers that observe or persist it.
+            this.localStorage = Collections.synchronizedMap(localStorage);
+        }
     }
 
     /**

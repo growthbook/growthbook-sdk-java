@@ -894,14 +894,25 @@ public class GrowthBookUtils {
         return merged;
     }
 
+    /** Dedup-map entry for an experiment with no key. */
+    private static final String NULL_EXPERIMENT_KEY = "null-key";
+
+    /**
+     * Prefix applied to every real experiment key. A prefixed key always starts with {@code "key:"},
+     * so it can never equal {@link #NULL_EXPERIMENT_KEY} whatever the experiment key is.
+     */
+    private static final String KEYED_EXPERIMENT_PREFIX = "key:";
+
     public static <ValueType> void fireSubscriptions(Map<String, AssignedExperiment> assigned,
                                                      List<ExperimentRunCallback> callbacks,
                                                      Experiment<ValueType> experiment,
                                                      ExperimentResult<ValueType> result
     ) {
-        // ConcurrentHashMap rejects null keys (the previous HashMap tolerated them); a key-less
-        // experiment still dedupes, under one shared sentinel entry, so its callbacks keep firing.
-        String key = experiment.getKey() != null ? experiment.getKey() : "";
+        // ConcurrentHashMap rejects null keys (the previous HashMap tolerated them), so a key-less
+        // experiment needs a stand-in. Mapping it to "" would merge it with an experiment whose key
+        // really is "", suppressing one of their callbacks; the prefixes keep the two namespaces
+        // disjoint for any key value. This map is internal dedup state and is never exposed.
+        String key = experiment.getKey() == null ? NULL_EXPERIMENT_KEY : KEYED_EXPERIMENT_PREFIX + experiment.getKey();
 
         AssignedExperiment current = new AssignedExperiment(
                 experiment.getKey(),

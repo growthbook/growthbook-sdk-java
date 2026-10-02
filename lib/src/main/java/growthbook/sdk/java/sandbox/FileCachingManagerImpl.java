@@ -7,7 +7,10 @@ import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.IOException;
+import java.nio.charset.CharacterCodingException;
+import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.AtomicMoveNotSupportedException;
 import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
@@ -61,8 +64,7 @@ public class FileCachingManagerImpl implements GbCacheManager {
                     writer.write(content);
                 }
 
-                Files.move(tmp, cacheDir.toPath().resolve(fileName),
-                        StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING);
+                moveIntoPlace(tmp, cacheDir.toPath().resolve(fileName), fileName);
                 // Move consumed the temp file; nothing to clean up.
                 tmp = null;
 
@@ -85,6 +87,22 @@ public class FileCachingManagerImpl implements GbCacheManager {
     }
 
     /**
+     * Replaces {@code destination} with {@code source}, atomically when the filesystem supports it.
+     * Some filesystems (certain network shares and container mounts) reject {@code ATOMIC_MOVE};
+     * failing the whole save there would silently disable caching, because repository callers
+     * suppress cache exceptions. A plain replace is used instead: the window in which a reader can
+     * observe a partially written file is small, and losing the cache entirely is worse.
+     */
+    private void moveIntoPlace(Path source, Path destination, String fileName) throws IOException {
+        try {
+            Files.move(source, destination, StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING);
+        } catch (AtomicMoveNotSupportedException e) {
+            log.debug("Atomic move is not supported for cache file {}; falling back to a non-atomic replace", fileName);
+            Files.move(source, destination, StandardCopyOption.REPLACE_EXISTING);
+        }
+    }
+
+    /**
      * Method that fetches data from cache by file name
      *
      * @param fileName The name of the file in the cache directory.
@@ -98,15 +116,13 @@ public class FileCachingManagerImpl implements GbCacheManager {
                 return null;
             }
 
-            try (BufferedReader reader = Files.newBufferedReader(file.toPath(), StandardCharsets.UTF_8)) {
-                StringBuilder builder = new StringBuilder();
-                String line;
-
-                while ((line = reader.readLine()) != null) {
-                    builder.append(line);
-                }
-
-                return builder.toString().trim();
+            try {
+                return read(file.toPath(), StandardCharsets.UTF_8);
+            } catch (CharacterCodingException e) {
+                // Caches written by earlier SDK versions used the platform default charset, so a
+                // file holding non-ASCII text may not decode as UTF-8. Retry with that charset
+                // instead of discarding an otherwise usable cache; the next save rewrites it as UTF-8.
+                return loadLegacyEncodedCache(file, fileName, e);
             } catch (NoSuchFileException e) {
                 log.error("Error was occur because of file isn't exist, error message was - {}", e.getMessage());
                 throw new FeatureCacheException("Feature cache file disappeared while reading: " + fileName, e);
@@ -115,6 +131,44 @@ public class FileCachingManagerImpl implements GbCacheManager {
 
                 throw new FeatureCacheException("Failed to read feature cache file: " + fileName, e);
             }
+        }
+    }
+
+    /**
+     * Second read attempt for a cache file that is not valid UTF-8. Returns {@code null} (a cache
+     * miss) when the content cannot be decoded at all, so startup falls back to fetching rather
+     * than failing outright.
+     */
+    private String loadLegacyEncodedCache(File file, String fileName, CharacterCodingException utf8Failure) {
+        Charset fallback = Charset.defaultCharset();
+        if (StandardCharsets.UTF_8.equals(fallback)) {
+            log.warn("Cache file {} is not valid UTF-8 and the platform default charset is UTF-8; "
+                    + "treating it as a cache miss", fileName, utf8Failure);
+            return null;
+        }
+
+        try {
+            String content = read(file.toPath(), fallback);
+            log.warn("Cache file {} was not valid UTF-8; read it using the platform default charset ({}). "
+                    + "It will be rewritten as UTF-8 on the next save.", fileName, fallback);
+            return content;
+        } catch (IOException e) {
+            log.warn("Cache file {} could not be decoded as UTF-8 or {}; treating it as a cache miss",
+                    fileName, fallback, e);
+            return null;
+        }
+    }
+
+    private String read(Path path, Charset charset) throws IOException {
+        try (BufferedReader reader = Files.newBufferedReader(path, charset)) {
+            StringBuilder builder = new StringBuilder();
+            String line;
+
+            while ((line = reader.readLine()) != null) {
+                builder.append(line);
+            }
+
+            return builder.toString().trim();
         }
     }
 

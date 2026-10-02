@@ -273,6 +273,47 @@ class GrowthBookTest {
     }
 
     @Test
+    void run_keylessAndEmptyKeyExperimentsEachFireTheirOwnCallback() {
+        // The dedup map cannot use null keys, but a key-less experiment must not share an entry
+        // with one whose key really is "": the second run would otherwise be treated as a repeat
+        // and its subscription callback suppressed.
+        GrowthBook subject = new GrowthBook();
+        ExperimentRunCallback mockCallback = mock(ExperimentRunCallback.class);
+        Experiment<String> keyless = Experiment.<String>builder().build();
+        Experiment<String> emptyKey = Experiment.<String>builder().key("").build();
+
+        subject.subscribe(mockCallback);
+        ExperimentResult<String> keylessResult = subject.run(keyless);
+        ExperimentResult<String> emptyKeyResult = subject.run(emptyKey);
+
+        verify(mockCallback).onRun(keyless, keylessResult);
+        verify(mockCallback).onRun(emptyKey, emptyKeyResult);
+        verify(mockCallback, times(2)).onRun(any(), any());
+    }
+
+    @Test
+    void run_keylessExperimentStillDedupesAcrossRepeatedRuns() {
+        GrowthBook subject = new GrowthBook();
+        ExperimentRunCallback mockCallback = mock(ExperimentRunCallback.class);
+        Experiment<String> keyless = Experiment.<String>builder().build();
+
+        subject.subscribe(mockCallback);
+        subject.run(keyless);
+        subject.run(keyless);
+        subject.run(keyless);
+
+        verify(mockCallback, times(1)).onRun(any(), any());
+    }
+
+    @Test
+    void evaluationContextField_remainsPubliclyReadable() {
+        // Guards the published API: narrowing this field would break compilation for callers.
+        GrowthBook subject = new GrowthBook();
+
+        assertSame(subject.getRootEvaluationContext(), subject.evaluationContext);
+    }
+
+    @Test
     void run_executesExperimentResultCallbacksTwiceWhenRunInvokeMultipleTimes() {
         ExperimentEvaluator experimentEvaluator = mock(ExperimentEvaluator.class);
         GrowthBook subject = new GrowthBook(

@@ -1387,15 +1387,18 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
                 }
             }
             log.info("SseHttpClient shutdown");
-        }
 
-        GbCacheManager gbCacheManager = this.cacheManager.getAndSet(null);
-        if (gbCacheManager != null) {
-            try {
-                gbCacheManager.clearCache();
-            } catch (Exception ignored) {
+            // Only an SSE repository discards its cache on shutdown. A polling repository keeps
+            // the cache on disk so the next process can fall back to it when the initial fetch
+            // fails — clearing it unconditionally would destroy that offline fallback.
+            GbCacheManager gbCacheManager = this.cacheManager.getAndSet(null);
+            if (gbCacheManager != null) {
+                try {
+                    gbCacheManager.clearCache();
+                } catch (Exception ignored) {
+                }
+                log.info("CacheManager shutdown");
             }
-            log.info("CacheManager shutdown");
         }
     }
 

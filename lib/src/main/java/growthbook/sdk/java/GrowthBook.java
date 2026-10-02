@@ -68,7 +68,16 @@ public class GrowthBook implements IGrowthBook {
     private volatile List<ExperimentRunCallback> callbacks;
     @Getter @Setter private volatile JsonObject attributeOverrides;
 
-    private volatile EvaluationContext evaluationContext = null;
+    /**
+     * <b>INTERNAL:</b> the shared (root) evaluation context. Public only for backwards
+     * compatibility — it was part of the published API before this field became
+     * {@code volatile}, so narrowing it now would break compilation for existing callers.
+     * Treat it as read-only; per-evaluation contexts are derived from it internally.
+     *
+     * @deprecated internal state that will be made private in a future major release.
+     */
+    @Deprecated
+    public volatile EvaluationContext evaluationContext = null;
     private final Map<String, AssignedExperiment> assigned;
     private final PluginRegistry pluginRegistry;
     private RemoteEvalService remoteEvalService;
