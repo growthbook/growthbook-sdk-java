@@ -18,6 +18,7 @@ import org.mockito.MockedStatic;
 
 import java.util.Collections;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLong;
 
 import static growthbook.sdk.java.multiusermode.GrowthBookClientTestFixtures.createDefaultOptions;
 import static growthbook.sdk.java.multiusermode.GrowthBookClientTestFixtures.createMockBuilder;

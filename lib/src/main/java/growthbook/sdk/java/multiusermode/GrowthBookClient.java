@@ -40,6 +40,7 @@ import growthbook.sdk.java.sandbox.CacheMode;
 import growthbook.sdk.java.sandbox.GbCacheManager;
 import growthbook.sdk.java.model.StickyAssignmentsDocument;
 import growthbook.sdk.java.util.GrowthBookJsonUtils;
+import growthbook.sdk.java.util.GrowthBookUtils;
 import lombok.extern.slf4j.Slf4j;
 
 import javax.annotation.Nullable;
@@ -48,7 +49,6 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -500,7 +500,7 @@ public class GrowthBookClient {
         ExperimentResult<ValueType> result = experimentEvaluatorEvaluator
                 .evaluateExperiment(experiment, getEvalContext(userContext), null);
 
-        fireSubscriptions(experiment, result);
+        GrowthBookUtils.fireSubscriptions(this.assigned, this.callbacks, experiment, result);
 
         return result;
     }
@@ -581,40 +581,12 @@ public class GrowthBookClient {
         }
     }
 
-    private <ValueType> void fireSubscriptions(Experiment<ValueType> experiment, ExperimentResult<ValueType> result) {
         // ConcurrentHashMap rejects null keys (the previous HashMap tolerated them);
         // a key-less experiment still dedupes, under one shared sentinel entry.
-        String key = experiment.getKey() != null ? experiment.getKey() : "";
         // If assigned variation has changed, fire subscriptions. The change check and
         // the publish must be one atomic step or two concurrent run() calls can both
         // observe the stale value and double-fire. Callbacks run outside compute():
         // user code must never execute inside a ConcurrentHashMap bin lock.
-        boolean[] changed = {false};
-        this.assigned.compute(key, (k, prev) -> {
-            if (prev == null
-                    || !Objects.equals(prev.getInExperiment(), result.getInExperiment())
-                    || !Objects.equals(prev.getVariationId(), result.getVariationId())) {
-                changed[0] = true;
-                return new AssignedExperiment(
-                        experiment.getKey(),
-                        result.getInExperiment(),
-                        result.getVariationId()
-                );
-            }
-            return prev;
-        });
-
-        if (changed[0]) {
-            for (ExperimentRunCallback cb : this.callbacks) {
-                try {
-                    cb.onRun(experiment, result);
-                } catch (Exception e) {
-                    log.error(e.getMessage());
-                }
-            }
-        }
-    }
-
     private FeatureRefreshCallback refreshGlobalContext() {
         return new FeatureRefreshCallback() {
             @Override

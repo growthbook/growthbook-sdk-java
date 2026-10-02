@@ -13,6 +13,13 @@ tasks.withType(JavaCompile).configureEach {
     if (JavaVersion.current().isJava9Compatible()) {
         options.release = 8
     }
+    // Sources are UTF-8; without this javac uses the platform charset and the Windows CI
+    // job decodes non-ASCII literals differently from the Linux one.
+    options.encoding = 'UTF-8'
+}
+
+tasks.withType(Javadoc).configureEach {
+    options.encoding = 'UTF-8'
 }
 
 repositories {

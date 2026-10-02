@@ -136,4 +136,52 @@ class InMemoryStickyBucketServiceImplTest {
 
         assertTrue(result.isEmpty());
     }
+
+    @Test
+    void saveAssignments_writesThroughToTheSuppliedStorage() {
+        // The supplied map is the documented backing storage: callers that observe or persist it
+        // must see assignments saved through the service.
+        Map<String, StickyAssignmentsDocument> backingStorage = new HashMap<>();
+        InMemoryStickyBucketServiceImpl subject = new InMemoryStickyBucketServiceImpl(backingStorage);
+
+        StickyAssignmentsDocument doc = new StickyAssignmentsDocument("id", "user-1", new HashMap<>());
+        subject.saveAssignments(doc);
+
+        assertEquals(1, backingStorage.size());
+        assertSame(doc, backingStorage.get("id||user-1"));
+    }
+
+    @Test
+    void getAssignments_seesEntriesAddedToTheSuppliedStorageAfterConstruction() {
+        Map<String, StickyAssignmentsDocument> backingStorage = new HashMap<>();
+        InMemoryStickyBucketServiceImpl subject = new InMemoryStickyBucketServiceImpl(backingStorage);
+
+        StickyAssignmentsDocument doc = new StickyAssignmentsDocument("id", "user-2", new HashMap<>());
+        backingStorage.put("id||user-2", doc);
+
+        assertSame(doc, subject.getAssignments("id", "user-2"));
+    }
+
+    @Test
+    void constructor_usesAConcurrentMapAsIsWithoutCopying() {
+        ConcurrentHashMap<String, StickyAssignmentsDocument> backingStorage = new ConcurrentHashMap<>();
+        InMemoryStickyBucketServiceImpl subject = new InMemoryStickyBucketServiceImpl(backingStorage);
+
+        StickyAssignmentsDocument doc = new StickyAssignmentsDocument("id", "user-3", new HashMap<>());
+        subject.saveAssignments(doc);
+
+        assertSame(doc, backingStorage.get("id||user-3"));
+    }
+
+    @Test
+    void constructor_nullStorage_fallsBackToAnEmptyThreadSafeMap() {
+        InMemoryStickyBucketServiceImpl subject = new InMemoryStickyBucketServiceImpl(null);
+
+        assertNull(subject.getAssignments("id", "user-4"));
+
+        StickyAssignmentsDocument doc = new StickyAssignmentsDocument("id", "user-4", new HashMap<>());
+        subject.saveAssignments(doc);
+
+        assertSame(doc, subject.getAssignments("id", "user-4"));
+    }
 }
