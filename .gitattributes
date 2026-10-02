@@ -7,3 +7,6 @@
 # These are Windows script files and should use crlf
 *.bat           text eol=crlf
 
+# Unedited copy of the upstream JS SDK cases.json, collapsed in GitHub diffs.
+# -text keeps its bytes unchanged on checkout, so its sha256 matches source.json.
+/lib/src/test/resources/cases/cases.json linguist-generated=true -text
