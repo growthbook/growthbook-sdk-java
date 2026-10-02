@@ -208,6 +208,29 @@ class ConditionEvaluatorTest {
         assertFalse(evaluator.evaluateCondition(parse("{}"), parse("{\"a\":\"123\"}"), null));
     }
 
+    @Test
+    @DisplayName("comparison operators treat -0.0 and 0.0 as equal, like the JS SDK")
+    void test_comparisonTreatsNegativeZeroAsZero() {
+        // Double.compare orders -0.0 below 0.0, so it made `-0.0 $gte 0` false. Native comparison
+        // on doubles keeps the precision that matters here while matching the other SDKs.
+        ConditionEvaluator evaluator = new ConditionEvaluator();
+
+        assertTrue(evaluator.evaluateCondition(parse("{\"a\":-0.0}"), parse("{\"a\":{\"$gte\":0}}"), null));
+        assertTrue(evaluator.evaluateCondition(parse("{\"a\":-0.0}"), parse("{\"a\":{\"$lte\":0}}"), null));
+        assertFalse(evaluator.evaluateCondition(parse("{\"a\":-0.0}"), parse("{\"a\":{\"$gt\":0}}"), null));
+        assertFalse(evaluator.evaluateCondition(parse("{\"a\":-0.0}"), parse("{\"a\":{\"$lt\":0}}"), null));
+    }
+
+    @Test
+    @DisplayName("comparison operators keep double precision beyond 2^24")
+    void test_comparisonKeepsDoublePrecision() {
+        // Guards the compareDoubles helper from being narrowed back to float.
+        ConditionEvaluator evaluator = new ConditionEvaluator();
+
+        assertTrue(evaluator.evaluateCondition(
+                parse("{\"a\":16777217}"), parse("{\"a\":{\"$gt\":16777216}}"), null));
+    }
+
     private static JsonObject parse(String json) {
         return GrowthBookJsonUtils.getInstance().gson.fromJson(json, JsonObject.class);
     }

@@ -238,18 +238,35 @@ public class ConditionEvaluator implements IConditionEvaluator {
             if (expected.isJsonPrimitive() && !expected.getAsJsonPrimitive().isNumber()) {
                 return false;
             }
-            return matchesSign(operator, Double.compare(0.0, expected.getAsDouble()));
+            return matchesSign(operator, compareDoubles(0.0, expected.getAsDouble()));
         }
         if (operator == Operator.LT && actual.getAsString().toLowerCase().matches("\\d+")) {
             return Double.parseDouble(actual.getAsString()) < expected.getAsDouble();
         }
         if (actual.getAsJsonPrimitive().isNumber()) {
-            return matchesSign(operator, Double.compare(actual.getAsNumber().doubleValue(), expected.getAsNumber().doubleValue()));
+            return matchesSign(operator, compareDoubles(actual.getAsNumber().doubleValue(), expected.getAsNumber().doubleValue()));
         }
         if (actual.getAsJsonPrimitive().isString()) {
             return matchesSign(operator, actual.getAsString().compareTo(expected.getAsString()));
         }
         return false;
+    }
+
+    /**
+     * Orders two doubles the way the reference JavaScript SDK's {@code <}/{@code >} do.
+     *
+     * <p>{@link Double#compare} imposes a total order in which {@code -0.0} sorts below {@code 0.0},
+     * so {@code -0.0 $gte 0} would be false. Native comparison treats them as equal, which is what
+     * the other SDKs — and this one before the switch to doubles — report.
+     */
+    private static int compareDoubles(double left, double right) {
+        if (left < right) {
+            return -1;
+        }
+        if (left > right) {
+            return 1;
+        }
+        return 0;
     }
 
     /**
