@@ -883,9 +883,18 @@ loadScripts(document, 'script');</script>
 <dt><a href="growthbook/sdk/java/evaluators/ExperimentEvaluator.html#%3Cinit%3E()" class="member-name-link">ExperimentEvaluator()</a> - Constructor for class growthbook.sdk.java.evaluators.<a href="growthbook/sdk/java/evaluators/ExperimentEvaluator.html" title="class in growthbook.sdk.java.evaluators">ExperimentEvaluator</a></dt>
 <dd>&nbsp;</dd>
 <dt><a href="growthbook/sdk/java/util/ExperimentHelper.html" class="type-name-link" title="class in growthbook.sdk.java.util">ExperimentHelper</a> - Class in <a href="growthbook/sdk/java/util/package-summary.html">growthbook.sdk.java.util</a></dt>
-<dd>&nbsp;</dd>
+<dd>
+<div class="deprecation-block"><span class="deprecated-label">Deprecated.</span>
+<div class="deprecation-comment">No longer used by the SDK. Tracking de-duplication is handled by
+ <a href="growthbook/sdk/java/multiusermode/ExperimentTracker.html" title="class in growthbook.sdk.java.multiusermode"><code>ExperimentTracker</code></a>, which is shared by local and
+ remote evaluation. This class is kept only for binary compatibility and will be removed in a
+ future major release.</div>
+</div>
+</dd>
 <dt><a href="growthbook/sdk/java/util/ExperimentHelper.html#%3Cinit%3E()" class="member-name-link">ExperimentHelper()</a> - Constructor for class growthbook.sdk.java.util.<a href="growthbook/sdk/java/util/ExperimentHelper.html" title="class in growthbook.sdk.java.util">ExperimentHelper</a></dt>
-<dd>&nbsp;</dd>
+<dd>
+<div class="deprecation-block"><span class="deprecated-label">Deprecated.</span></div>
+&nbsp;</dd>
 <dt><a href="growthbook/sdk/java/model/FeatureResult.FeatureResultBuilder.html#experimentResult(growthbook.sdk.java.model.ExperimentResult)" class="member-name-link">experimentResult(ExperimentResult&lt;ValueType&gt;)</a> - Method in class growthbook.sdk.java.model.<a href="growthbook/sdk/java/model/FeatureResult.FeatureResultBuilder.html" title="class in growthbook.sdk.java.model">FeatureResult.FeatureResultBuilder</a></dt>
 <dd>
 <div class="block">When source is "experiment", this will be an ExperimentResult object</div>
@@ -1653,7 +1662,11 @@ loadScripts(document, 'script');</script>
 <dd>&nbsp;</dd>
 <dt><a href="growthbook/sdk/java/model/GBContext.html#getExperimentHelper()" class="member-name-link">getExperimentHelper()</a> - Method in class growthbook.sdk.java.model.<a href="growthbook/sdk/java/model/GBContext.html" title="class in growthbook.sdk.java.model">GBContext</a></dt>
 <dd>
-<div class="block">Helper class for differentiate whether specific experiment was evaluated before or not.</div>
+<div class="deprecation-block"><span class="deprecated-label">Deprecated.</span>
+<div class="deprecation-comment">Unused. Tracking de-duplication is handled by
+ <a href="growthbook/sdk/java/multiusermode/ExperimentTracker.html" title="class in growthbook.sdk.java.multiusermode"><code>ExperimentTracker</code></a>. Setting this field has no effect
+ and it will be removed in a future major release.</div>
+</div>
 </dd>
 <dt><a href="growthbook/sdk/java/model/AssignedExperiment.html#getExperimentKey()" class="member-name-link">getExperimentKey()</a> - Method in class growthbook.sdk.java.model.<a href="growthbook/sdk/java/model/AssignedExperiment.html" title="class in growthbook.sdk.java.model">AssignedExperiment</a></dt>
 <dd>&nbsp;</dd>
@@ -3225,7 +3238,9 @@ loadScripts(document, 'script');</script>
 <div class="block">Actionable issues detected in the current snapshot.</div>
 </dd>
 <dt><a href="growthbook/sdk/java/util/ExperimentHelper.html#isTracked(growthbook.sdk.java.model.Experiment,growthbook.sdk.java.model.ExperimentResult)" class="member-name-link">isTracked(Experiment&lt;ValueType&gt;, ExperimentResult&lt;ValueType&gt;)</a> - Method in class growthbook.sdk.java.util.<a href="growthbook/sdk/java/util/ExperimentHelper.html" title="class in growthbook.sdk.java.util">ExperimentHelper</a></dt>
-<dd>&nbsp;</dd>
+<dd>
+<div class="deprecation-block"><span class="deprecated-label">Deprecated.</span></div>
+&nbsp;</dd>
 <dt><a href="growthbook/sdk/java/diagnostics/model/FeatureKeyDiagnostics.html#isTruncated()" class="member-name-link">isTruncated()</a> - Method in class growthbook.sdk.java.diagnostics.model.<a href="growthbook/sdk/java/diagnostics/model/FeatureKeyDiagnostics.html" title="class in growthbook.sdk.java.diagnostics.model">FeatureKeyDiagnostics</a></dt>
 <dd>
 <div class="block">Whether the key list was truncated to fit the sample limit.</div>
@@ -4180,7 +4195,11 @@ loadScripts(document, 'script');</script>
 </dd>
 <dt><a href="growthbook/sdk/java/model/GBContext.html#setExperimentHelper(growthbook.sdk.java.util.ExperimentHelper)" class="member-name-link">setExperimentHelper(ExperimentHelper)</a> - Method in class growthbook.sdk.java.model.<a href="growthbook/sdk/java/model/GBContext.html" title="class in growthbook.sdk.java.model">GBContext</a></dt>
 <dd>
-<div class="block">Helper class for differentiate whether specific experiment was evaluated before or not.</div>
+<div class="deprecation-block"><span class="deprecated-label">Deprecated.</span>
+<div class="deprecation-comment">Unused. Tracking de-duplication is handled by
+ <a href="growthbook/sdk/java/multiusermode/ExperimentTracker.html" title="class in growthbook.sdk.java.multiusermode"><code>ExperimentTracker</code></a>. Setting this field has no effect
+ and it will be removed in a future major release.</div>
+</div>
 </dd>
 <dt><a href="growthbook/sdk/java/model/AssignedExperiment.html#setExperimentKey(java.lang.String)" class="member-name-link">setExperimentKey(String)</a> - Method in class growthbook.sdk.java.model.<a href="growthbook/sdk/java/model/AssignedExperiment.html" title="class in growthbook.sdk.java.model">AssignedExperiment</a></dt>
 <dd>&nbsp;</dd>
