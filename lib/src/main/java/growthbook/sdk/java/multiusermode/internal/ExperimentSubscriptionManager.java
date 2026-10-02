@@ -14,6 +14,9 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
+ * <b>INTERNAL</b>: not part of the supported API. Public only because {@code GrowthBookClient} lives in
+ * the parent package — treat its signatures as free to change without a major version bump.
+ *
  * Internal manager for experiment run subscriptions.
  * It tracks the last emitted assignment per experiment and only notifies subscribers on assignment changes.
  */

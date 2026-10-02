@@ -105,6 +105,48 @@ class LocalGbFeatureRepositoryTest {
         assertNotNull(event.getError());
     }
 
+    @Test
+    void initialize_emptyFile_publishesFailureEventAndThrowsFeatureFetchException() throws Exception {
+        // Gson returns null for an empty file; dereferencing it threw a NullPointerException, which
+        // is not an IOException and so escaped past the handler that publishes the failure event.
+        assertInvalidFeatureFileIsReportedAsFailure("empty-listener-test-features.json", "");
+    }
+
+    @Test
+    void initialize_jsonNullFile_publishesFailureEventAndThrowsFeatureFetchException() throws Exception {
+        assertInvalidFeatureFileIsReportedAsFailure("null-listener-test-features.json", "null");
+    }
+
+    @Test
+    void initialize_malformedJsonFile_publishesFailureEventAndThrowsFeatureFetchException() throws Exception {
+        // Malformed JSON throws Gson's unchecked JsonSyntaxException, which bypassed the handler too.
+        assertInvalidFeatureFileIsReportedAsFailure("malformed-listener-test-features.json", "{\"feature\":");
+    }
+
+    private void assertInvalidFeatureFileIsReportedAsFailure(String fileName, String content) throws Exception {
+        Path localFeaturesPath = writeLocalResource(fileName, content);
+        try {
+            LocalGbFeatureRepository subject = new LocalGbFeatureRepository(fileName);
+            FeatureRefreshListener listener = mock(FeatureRefreshListener.class);
+            subject.addFeatureRefreshListener(listener);
+
+            assertThrows(FeatureFetchException.class, subject::initialize);
+
+            ArgumentCaptor<FeatureRefreshEvent> eventCaptor = ArgumentCaptor.forClass(FeatureRefreshEvent.class);
+            verify(listener).onRefresh(eventCaptor.capture());
+            FeatureRefreshEvent event = eventCaptor.getValue();
+            assertFalse(event.isSuccessful());
+            assertFalse(event.isFeaturesChanged());
+            assertEquals(FeatureRefreshSource.INITIALIZATION, event.getSource());
+            assertNotNull(event.getError());
+
+            // The previous payload must survive a failed load.
+            assertEquals("{}", subject.getFeaturesJson());
+        } finally {
+            Files.deleteIfExists(localFeaturesPath);
+        }
+    }
+
     private Path writeLocalResource(String fileName, String content) throws Exception {
         Path resourcesDirectory = Paths.get("src", "main", "resources");
         Files.createDirectories(resourcesDirectory);

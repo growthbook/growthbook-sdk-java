@@ -19,12 +19,12 @@ import java.util.regex.Pattern;
 /**
  * <b>INTERNAL</b>: Implementation of condition evaluation.
  *
- * <p>Public only so the evaluators package can share it; it is not part of the supported API and
- * its signatures may change without a major version bump. Two of them changed here: {@link #getPath}
- * now returns {@link JsonElement} instead of {@code Object}, and {@link #isOperatorObject} returns
- * {@code boolean} instead of {@code Boolean}. Evaluation results are unaffected — only the declared
- * types are narrower — but the change is not binary compatible for anything that linked against the
- * old descriptors.
+ * <p>Public only so the evaluators package can share it; it is not part of the supported API.
+ * Even so, {@link #getPath} and {@link #isOperatorObject} keep the exact return types published
+ * in 0.11.0: a return type is part of the JVM method descriptor, so narrowing one is a
+ * {@link NoSuchMethodError} for anything linked against that release, which no compiler warns
+ * about. Internally use {@link #resolvePath} and {@link #isOperatorObjectInternal}, which carry
+ * the precise types.
  */
 @Slf4j
 public class ConditionEvaluator implements IConditionEvaluator {
@@ -58,17 +58,23 @@ public class ConditionEvaluator implements IConditionEvaluator {
         Condition operator = Condition.fromValue(key);
         return operator != null
                 ? operator.apply(attributes, value, savedGroups, this)
-                : evalConditionValue(value, getPath(attributes, key), savedGroups);
+                : evalConditionValue(value, resolvePath(attributes, key), savedGroups);
     }
 
     /**
-     * Returns {@code boolean}; this previously returned a boxed {@code Boolean}. The values returned
-     * are unchanged, including {@code true} for an empty object.
+     * Returns a boxed {@code Boolean} to keep the signature published in 0.11.0: a return type is
+     * part of the JVM method descriptor, so narrowing it to {@code boolean} is a
+     * {@link NoSuchMethodError} for callers compiled against that release. The value is never
+     * null; prefer {@link #isOperatorObjectInternal} inside this class.
      *
      * @param object The object to evaluate
      * @return true if the object is empty or every key is an operator (starts with {@code $})
      */
-    public boolean isOperatorObject(JsonElement object) {
+    public Boolean isOperatorObject(JsonElement object) {
+        return isOperatorObjectInternal(object);
+    }
+
+    private boolean isOperatorObjectInternal(JsonElement object) {
         if (!object.isJsonObject()) {
             return false;
         }
@@ -79,16 +85,22 @@ public class ConditionEvaluator implements IConditionEvaluator {
     /**
      * Resolves a dot-separated path against the attributes.
      *
-     * <p>Declared as {@link JsonElement}; this previously returned {@code Object}, although every
-     * value it could ever return was already a {@code JsonElement} or {@code null}. Callers that
-     * cast the old result can drop the cast.
+     * <p>Declared as {@code Object} to keep the signature published in 0.11.0, for the same
+     * binary-compatibility reason as {@link #isOperatorObject}. Every value it can return is a
+     * {@link JsonElement} or {@code null}; use {@link #resolvePath} inside this class to get that
+     * type without a cast.
      *
      * @param attributes User attributes
      * @param path       String path, e.g. {@code path.to.something}
      * @return the value at that path, or {@code null} if the path doesn't exist
      */
     @Nullable
-    public JsonElement getPath(JsonElement attributes, String path) {
+    public Object getPath(JsonElement attributes, String path) {
+        return resolvePath(attributes, path);
+    }
+
+    @Nullable
+    private JsonElement resolvePath(JsonElement attributes, String path) {
         if (Objects.equals(path, "")) {
             return null;
         }
@@ -294,13 +306,40 @@ public class ConditionEvaluator implements IConditionEvaluator {
         switch (dataType) {
             case STRING:
                 return a.getAsString().equals(b.getAsString());
-            case NUMBER:
-                return Double.compare(a.getAsDouble(), b.getAsDouble()) == 0;
+            case NUMBER: {
+                Double left = asDoubleOrNull(a);
+                Double right = asDoubleOrNull(b);
+                return left != null && right != null && Double.compare(left, right) == 0;
+            }
             case BOOLEAN:
                 return a.getAsBoolean() == b.getAsBoolean();
             default:
                 log.info("Unsupported data type {}", dataType);
                 return false;
+        }
+    }
+
+    /**
+     * Numeric value of a primitive, or {@code null} when it does not represent a number.
+     *
+     * <p>The data type comes from the <em>attribute</em>, so a numeric attribute can still be
+     * compared against a non-numeric condition value. Reading that value as a double directly
+     * throws {@link NumberFormatException}, which escapes to the catch in
+     * {@link #evaluateCondition}: that turns the <em>whole</em> condition false, so a wrapping
+     * {@code $not}/{@code $elemMatch}/{@code $all} never sees this operator's result. Returning
+     * {@code null} keeps the mismatch a plain "not equal" instead.
+     *
+     * <p>Numeric strings are still parsed, so {@code 1 $eq "1"} stays true as before.
+     */
+    @Nullable
+    private static Double asDoubleOrNull(JsonPrimitive primitive) {
+        if (primitive.isNumber()) {
+            return primitive.getAsDouble();
+        }
+        try {
+            return Double.valueOf(primitive.getAsString());
+        } catch (NumberFormatException e) {
+            return null;
         }
     }
 
@@ -342,7 +381,7 @@ public class ConditionEvaluator implements IConditionEvaluator {
 
             case OBJECT:
                 JsonObject conditionValueObject = conditionValue.getAsJsonObject();
-                if (isOperatorObject(conditionValueObject)) {
+                if (isOperatorObjectInternal(conditionValueObject)) {
                     return conditionValueObject.entrySet().stream()
                             .allMatch(entry -> evalOperatorCondition(entry.getKey(), attributeValue, entry.getValue(), savedGroups));
                 }
@@ -371,7 +410,7 @@ public class ConditionEvaluator implements IConditionEvaluator {
         if (!actual.isJsonArray()) {
             return false;
         }
-        boolean isOperator = isOperatorObject(expected);
+        boolean isOperator = isOperatorObjectInternal(expected);
         for (JsonElement element : actual.getAsJsonArray()) {
             boolean matched = isOperator
                     ? evalConditionValue(expected, element, savedGroups)

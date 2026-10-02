@@ -968,18 +968,22 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
         boolean hadFeatureData = this.hasFeatureData.get();
         Throwable eventError = failure.getCause() == null ? failure : failure.getCause();
         recordRefreshError(failure);
+        // Whether the cached payload actually changed the held snapshot, which is not the same
+        // question as whether a payload was loaded: a cache holding the same definitions as the
+        // starting snapshot loads successfully while changing nothing.
+        AtomicBoolean cachedFeaturesChanged = new AtomicBoolean(false);
         FeatureFetchFailureHandler.handle(
                 failure,
                 this::onRefreshFailed,
                 this.hasFeatureData::get,
-                this::loadCachedFeaturesIfAvailable
+                () -> loadCachedFeaturesIfAvailable(cachedFeaturesChanged)
         );
         boolean loadedFromCache = !hadFeatureData && this.hasFeatureData.get();
         recordRefreshFailure(loadedFromCache);
         this.featureRefreshNotifier.notifyFailure(
                 eventError,
                 source,
-                loadedFromCache,
+                loadedFromCache && cachedFeaturesChanged.get(),
                 loadedFromCache,
                 FeatureRefreshNotifier.elapsedMillis(startedAtNanos)
         );
@@ -1001,6 +1005,19 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
     }
 
     private boolean loadCachedFeaturesIfAvailable() {
+        return loadCachedFeaturesIfAvailable(new AtomicBoolean());
+    }
+
+    /**
+     * Loads the cached payload when one is available.
+     *
+     * @param featuresChangedOut set to whether the cached payload differs from the snapshot already
+     *                           held. {@code onResponseJson} computes this, and discarding it would
+     *                           force callers to infer "changed" from "loaded" — which is wrong for
+     *                           a cache whose definitions match the current snapshot.
+     * @return whether feature data is available after the attempt
+     */
+    private boolean loadCachedFeaturesIfAvailable(AtomicBoolean featuresChangedOut) {
         if (this.isCacheDisabled || this.cacheManager == null) {
             return false;
         }
@@ -1010,7 +1027,7 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
             if (cachedData == null || cachedData.trim().isEmpty()) {
                 return false;
             }
-            onResponseJson(cachedData, true);
+            featuresChangedOut.set(onResponseJson(cachedData, true));
             return this.hasFeatureData.get();
         } catch (Exception cacheException) {
             log.warn("Failed to load cached features.", cacheException);

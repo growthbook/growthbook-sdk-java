@@ -1,5 +1,6 @@
 package growthbook.sdk.java.multiusermode.internal;
 
+import com.google.gson.JsonObject;
 import growthbook.sdk.java.multiusermode.configurations.EvaluationContext;
 import growthbook.sdk.java.multiusermode.configurations.GlobalContext;
 import growthbook.sdk.java.multiusermode.configurations.Options;
@@ -8,9 +9,13 @@ import growthbook.sdk.java.repository.FeatureSnapshot;
 import growthbook.sdk.java.repository.GBFeaturesRepository;
 import growthbook.sdk.java.util.UserContextUtils;
 
+import java.util.Collections;
 import java.util.concurrent.atomic.AtomicReference;
 
 /**
+ * <b>INTERNAL</b>: not part of the supported API. Public only because {@code GrowthBookClient} lives in
+ * the parent package — treat its signatures as free to change without a major version bump.
+ *
  * Internal coordinator for the client-level {@link GlobalContext}.
  * Keeps feature state updates and evaluation context creation outside the public facade.
  */
@@ -54,11 +59,37 @@ public final class GlobalContextManager {
     public EvaluationContext createEvaluationContext(UserContext userContext) {
         UserContext updatedUserContext = UserContextUtils.mergeAttributesAndPreloadSticky(this.options, userContext);
         return new EvaluationContext(
-                this.globalContext.get(),
+                currentGlobalContext(),
                 updatedUserContext,
                 new EvaluationContext.StackContext(),
                 this.options
         );
+    }
+
+    /**
+     * The managed context, or an empty one built from {@link Options} when the client has not
+     * initialized yet or initialization failed.
+     *
+     * <p>Handing the evaluators a {@code null} global context makes every feature resolve to
+     * {@code unknownFeature} — ignoring globally forced values, which do not need feature data —
+     * and makes an experiment with a condition throw when it reads saved groups. The fallback is
+     * built per call rather than cached so that options changed before initialization, such as
+     * {@code setGlobalForceFeatures}, are picked up.
+     */
+    private GlobalContext currentGlobalContext() {
+        GlobalContext current = this.globalContext.get();
+        return current != null ? current : emptyGlobalContext();
+    }
+
+    private GlobalContext emptyGlobalContext() {
+        return GlobalContext.builder()
+                .features(Collections.emptyMap())
+                .savedGroups(new JsonObject())
+                .enabled(this.options.getEnabled())
+                .qaMode(this.options.getIsQaMode())
+                .forcedFeatureValues(this.options.getGlobalForcedFeatureValues())
+                .forcedVariations(this.options.getGlobalForcedVariationsMap())
+                .build();
     }
 
     /**

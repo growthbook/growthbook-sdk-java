@@ -695,6 +695,49 @@ class GBFeaturesRepositoryTest {
     }
 
 
+    @Test
+    void test_getFeaturesFromCache_reportsNoChangeWhenCachedPayloadMatchesCurrentSnapshot()
+            throws FeatureFetchException, IOException {
+        // "loaded from cache" and "features changed" are different questions. A cache holding the
+        // same definitions as the snapshot already held loads fine while changing nothing, and
+        // listeners that only act on changed definitions should not be woken for it.
+        OkHttpClient mockHttpClient = mock(OkHttpClient.class);
+        FileCachingManagerImpl mockCacheManager = mock(FileCachingManagerImpl.class);
+        // Parses to the same features/savedGroups as FeatureSnapshot.EMPTY, which the repository
+        // starts with.
+        String cachedData = "{\"status\":200,\"features\":{},\"savedGroups\":{}}";
+        GBFeaturesRepository subject = new GBFeaturesRepository(
+                "http://localhost:80",
+                "abc-123",
+                null,
+                null,
+                null,
+                mockHttpClient,
+                false,
+                null,
+                null,
+                null,
+                NO_DELAY_RETRY_POLICY
+        );
+
+        Call mockCall = mock(Call.class);
+        when(mockHttpClient.newCall(any(Request.class))).thenReturn(mockCall);
+        when(mockCall.execute()).thenThrow(new IOException("Http error"));
+        when(mockCacheManager.loadCache(anyString())).thenReturn(cachedData);
+
+        subject.setCacheManager(mockCacheManager);
+        FeatureRefreshListener listener = mock(FeatureRefreshListener.class);
+        subject.addFeatureRefreshListener(listener);
+        subject.initialize();
+
+        ArgumentCaptor<FeatureRefreshEvent> eventCaptor = ArgumentCaptor.forClass(FeatureRefreshEvent.class);
+        verify(listener).onRefresh(eventCaptor.capture());
+        FeatureRefreshEvent event = eventCaptor.getValue();
+        assertFalse(event.isSuccessful());
+        assertTrue(event.isLoadedFromCache());
+        assertFalse(event.isFeaturesChanged());
+    }
+
     /**
      * Create a mock instance of {@link OkHttpClient}
      *

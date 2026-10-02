@@ -15,6 +15,9 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
+ * <b>INTERNAL</b>: not part of the supported API. Public only because the multiusermode internals call it
+ * from another package — treat its signatures as free to change without a major version bump.
+ *
  * Builds the per-request {@link UserContext} shared by the local and remote evaluation paths:
  * overlays user attributes on the client's global attributes and, when a
  * {@link StickyBucketService} is configured, preloads the user's sticky-bucket assignment

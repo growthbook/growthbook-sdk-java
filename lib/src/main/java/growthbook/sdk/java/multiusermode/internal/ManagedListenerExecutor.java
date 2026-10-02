@@ -8,6 +8,9 @@ import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
+ * <b>INTERNAL</b>: not part of the supported API. Public only because {@code GrowthBookClient} lives in
+ * the parent package — treat its signatures as free to change without a major version bump.
+ *
  * Resolves the executor that dispatches client-level feature refresh listener callbacks.
  *
  * <p>A caller-supplied executor is used as-is and its lifecycle is left to the caller. When none is

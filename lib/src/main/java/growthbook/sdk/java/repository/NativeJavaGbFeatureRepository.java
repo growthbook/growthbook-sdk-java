@@ -900,6 +900,9 @@ public class NativeJavaGbFeatureRepository implements IGBFeaturesRepository {
             }
         } catch (IOException e) {
             log.error("Exception occur with message: {}", e.getMessage(), e);
+            // Both channels, like the non-2xx branch above: the listener channel is additional to
+            // the legacy FeatureRefreshCallback, not a replacement for it.
+            onRefreshFailed(e);
             featureRefreshNotifier.notifyFailure(e, source, false, false, FeatureRefreshNotifier.elapsedMillis(startedAtNanos));
             throw new FeatureFetchException(FeatureFetchException.FeatureFetchErrorCode.NO_RESPONSE_ERROR, e.getMessage());
         } finally {

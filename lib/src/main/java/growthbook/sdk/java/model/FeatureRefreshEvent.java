@@ -12,6 +12,16 @@ import lombok.ToString;
  * Metadata-only event delivered to {@link FeatureRefreshListener}s after a feature refresh attempt.
  * A cache fallback after an upstream failure is unsuccessful with {@code loadedFromCache} set to true.
  *
+ * <p><b>Counting refreshes:</b> an event is published per refresh <em>attempt</em>, not per change,
+ * so metrics that should track definition updates must filter on {@link #isFeaturesChanged()}.
+ * This matters most on {@link FeatureRefreshSource#SSE}: a server event that carries no payload is
+ * published as successful with {@code featuresChanged == false}. Named keep-alives
+ * ({@code heartbeat}, {@code keepalive}, {@code ping}) are filtered out before reaching listeners,
+ * but a payload-less event under any other name is indistinguishable from a genuine
+ * "definitions changed, refetch" signal, so it is delivered rather than dropped — the remote-eval
+ * cache invalidation depends on receiving it. GrowthBook Cloud emits such events roughly every
+ * 30 seconds, so counting raw events there overstates the refresh rate.
+ *
  * <p>This is an immutable value carrier; identity equality is used. It intentionally does not define
  * field-based {@code equals}/{@code hashCode}, since the {@code error} and {@code timestamp} fields
  * make two refresh attempts effectively never equal.

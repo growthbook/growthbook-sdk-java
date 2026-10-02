@@ -12,6 +12,9 @@ import java.util.function.IntSupplier;
 import java.util.function.Supplier;
 
 /**
+ * <b>INTERNAL</b>: not part of the supported API. Public only because the repository implementations live
+ * in the parent package — treat its signatures as free to change without a major version bump.
+ *
  * Internal dispatcher for repository-level feature refresh events.
  * Builds metadata-only refresh events and isolates listener failures from repository refresh flow.
  */

@@ -28,6 +28,9 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
+ * <b>INTERNAL</b>: not part of the supported API. Public only because {@code GrowthBookClient} lives in
+ * the parent package — treat its signatures as free to change without a major version bump.
+ *
  * Keeps remote-evaluation fetching, caching, SSE-based cache invalidation, and per-user
  * evaluation context creation outside of the public facade.
  *

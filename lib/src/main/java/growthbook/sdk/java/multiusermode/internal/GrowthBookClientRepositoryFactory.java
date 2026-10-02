@@ -16,7 +16,7 @@ import java.util.stream.Collectors;
  * Internal factory for repositories used by {@code GrowthBookClient}.
  * Keeps repository construction and option mapping out of the public client facade.
  */
-public final class GrowthBookClientRepositoryFactory {
+final class GrowthBookClientRepositoryFactory {
 
     /**
      * Creates a repository from client options.

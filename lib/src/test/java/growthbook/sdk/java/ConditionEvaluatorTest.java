@@ -123,6 +123,96 @@ class ConditionEvaluatorTest {
     }
 
     @Test
+    @DisplayName("$eq with a non-numeric value against a numeric attribute is false, not an error")
+    void test_equalOperatorWithMismatchedTypes() {
+        // Reading the condition value as a double used to throw NumberFormatException, which
+        // escaped to evaluateCondition's catch and made the whole condition false — so a wrapping
+        // $not could never invert it. test-cases.json has no $eq type-mismatch case to catch this.
+        ConditionEvaluator evaluator = new ConditionEvaluator();
+        JsonObject numericAttribute = parse("{\"a\":1}");
+
+        assertFalse(evaluator.evaluateCondition(numericAttribute, parse("{\"a\":{\"$eq\":\"abc\"}}"), null));
+        assertTrue(evaluator.evaluateCondition(numericAttribute, parse("{\"a\":{\"$not\":{\"$eq\":\"abc\"}}}"), null));
+
+        JsonObject numericArray = parse("{\"a\":[1,2]}");
+        assertFalse(evaluator.evaluateCondition(numericArray, parse("{\"a\":{\"$elemMatch\":{\"$eq\":\"abc\"}}}"), null));
+        assertTrue(evaluator.evaluateCondition(
+                numericArray, parse("{\"a\":{\"$not\":{\"$elemMatch\":{\"$eq\":\"abc\"}}}}"), null));
+    }
+
+    @Test
+    @DisplayName("$eq keeps comparing numeric strings by value")
+    void test_equalOperatorStillParsesNumericStrings() {
+        // Guards the fix above from being tightened into a strict type check, which would change
+        // which users match targeting rules.
+        ConditionEvaluator evaluator = new ConditionEvaluator();
+
+        assertTrue(evaluator.evaluateCondition(parse("{\"a\":1}"), parse("{\"a\":{\"$eq\":\"1\"}}"), null));
+        assertTrue(evaluator.evaluateCondition(parse("{\"a\":\"1\"}"), parse("{\"a\":{\"$eq\":1}}"), null));
+        assertTrue(evaluator.evaluateCondition(parse("{\"a\":1}"), parse("{\"a\":{\"$eq\":1}}"), null));
+        assertFalse(evaluator.evaluateCondition(parse("{\"a\":1}"), parse("{\"a\":{\"$eq\":2}}"), null));
+    }
+
+    @Test
+    @DisplayName("$eq compares numbers beyond float precision exactly")
+    void test_equalOperatorKeepsDoublePrecision() {
+        ConditionEvaluator evaluator = new ConditionEvaluator();
+
+        assertFalse(evaluator.evaluateCondition(
+                parse("{\"a\":16777217}"), parse("{\"a\":{\"$eq\":16777216}}"), null));
+        assertTrue(evaluator.evaluateCondition(
+                parse("{\"a\":16777217}"), parse("{\"a\":{\"$eq\":16777217}}"), null));
+    }
+
+    @Test
+    @DisplayName("public ConditionEvaluator signatures stay binary compatible with 0.11.0")
+    void test_publicSignaturesAreBinaryCompatible() throws Exception {
+        // A return type is part of the JVM method descriptor, so narrowing one here is a
+        // NoSuchMethodError for callers compiled against 0.11.0 — and it compiles cleanly, so
+        // nothing else catches it. Reflection reads the descriptors the JVM actually links against.
+        assertEquals(Boolean.class,
+                ConditionEvaluator.class.getMethod("isOperatorObject", JsonElement.class).getReturnType());
+        assertEquals(Object.class,
+                ConditionEvaluator.class.getMethod("getPath", JsonElement.class, String.class).getReturnType());
+    }
+
+    @Test
+    @DisplayName("object and array conditions match structurally, ignoring key order")
+    void test_objectEqualityIgnoresKeyOrder() {
+        // Changed from comparing serialized JSON (key-order sensitive) to JsonElement.equals.
+        // Note this diverges from the JS SDK, which compares JSON.stringify output; pinned here so
+        // the divergence is a recorded decision rather than an accident of refactoring.
+        ConditionEvaluator evaluator = new ConditionEvaluator();
+
+        assertTrue(evaluator.evaluateCondition(
+                parse("{\"a\":{\"x\":1,\"y\":2}}"), parse("{\"a\":{\"y\":2,\"x\":1}}"), null));
+        assertFalse(evaluator.evaluateCondition(
+                parse("{\"a\":{\"x\":1}}"), parse("{\"a\":{\"x\":2}}"), null));
+        assertTrue(evaluator.evaluateCondition(
+                parse("{\"a\":[1,2]}"), parse("{\"a\":[1,2]}"), null));
+        // Arrays stay order sensitive — only object keys are unordered.
+        assertFalse(evaluator.evaluateCondition(
+                parse("{\"a\":[1,2]}"), parse("{\"a\":[2,1]}"), null));
+    }
+
+    @Test
+    @DisplayName("implicit equality coerces to string, matching the JS SDK")
+    void test_implicitEqualityCoercesToString() {
+        // The JS SDK compares `value + "" === condition` for string conditions, so a numeric or
+        // boolean attribute matches its string form. The previous type-strict comparison diverged.
+        ConditionEvaluator evaluator = new ConditionEvaluator();
+
+        assertTrue(evaluator.evaluateCondition(parse("{\"a\":123}"), parse("{\"a\":\"123\"}"), null));
+        assertTrue(evaluator.evaluateCondition(parse("{\"a\":true}"), parse("{\"a\":\"true\"}"), null));
+        assertFalse(evaluator.evaluateCondition(parse("{\"a\":12}"), parse("{\"a\":\"123\"}"), null));
+        assertFalse(evaluator.evaluateCondition(parse("{}"), parse("{\"a\":\"123\"}"), null));
+    }
+
+    private static JsonObject parse(String json) {
+        return GrowthBookJsonUtils.getInstance().gson.fromJson(json, JsonObject.class);
+    }
+
+    @Test
     @DisplayName("$ne treats missing/null attributes as not equal to a value, but equal to null")
     void test_notEqualOperatorForMissingOrNullAttributes() {
         ConditionEvaluator evaluator = new ConditionEvaluator();
@@ -148,8 +238,12 @@ class ConditionEvaluatorTest {
         JsonElement attributes = GrowthBookJsonUtils.getInstance().gson
                 .fromJson("{ \"name\": \"sarah\", \"job\": { \"title\": \"developer\" } }", JsonElement.class);
 
-        assertEquals("sarah", Objects.requireNonNull(evaluator.getPath(attributes, "name")).getAsString());
-        assertEquals("developer", Objects.requireNonNull(evaluator.getPath(attributes, "job.title")).getAsString());
+        // getPath is declared as Object for binary compatibility with 0.11.0; the cast documents
+        // that every value it returns is a JsonElement.
+        assertEquals("sarah",
+                ((JsonElement) Objects.requireNonNull(evaluator.getPath(attributes, "name"))).getAsString());
+        assertEquals("developer",
+                ((JsonElement) Objects.requireNonNull(evaluator.getPath(attributes, "job.title"))).getAsString());
         assertNull(evaluator.getPath(attributes, "job.company"));
     }
 

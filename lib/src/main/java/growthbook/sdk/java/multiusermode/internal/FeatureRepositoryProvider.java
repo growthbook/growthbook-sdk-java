@@ -14,6 +14,9 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 
 /**
+ * <b>INTERNAL</b>: not part of the supported API. Public only because {@code GrowthBookClient} lives in
+ * the parent package — treat its signatures as free to change without a major version bump.
+ *
  * Provides the feature repository owned by {@code GrowthBookClient}.
  *
  * <p>This class hides lazy repository creation, initialization reuse, failed-initialization retry,

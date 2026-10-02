@@ -284,6 +284,28 @@ class NativeJavaGbFeatureRepositoryMainBehaviorTest {
     }
 
     @Test
+    void fetchForRemoteEval_whenNetworkError_callsLegacyOnErrorCallback() {
+        // The listener channel added by this PR is additional to the legacy FeatureRefreshCallback,
+        // not a replacement: the IOException branch lost its onRefreshFailed call while the
+        // neighbouring non-2xx branch kept it, so onError silently stopped firing on network errors.
+        wireMock.stubFor(post(urlPathMatching("/api/eval/.*"))
+                .willReturn(aResponse().withFault(Fault.CONNECTION_RESET_BY_PEER)));
+
+        NativeJavaGbFeatureRepository repo = NativeJavaGbFeatureRepository.builder()
+                .apiHost("http://localhost:" + wireMock.port())
+                .clientKey(CLIENT_KEY)
+                .isCacheDisabled(true)
+                .build();
+
+        FeatureRefreshCallback callback = mock(FeatureRefreshCallback.class);
+        repo.onFeaturesRefresh(callback);
+
+        assertThrows(FeatureFetchException.class, () -> repo.fetchForRemoteEval(null));
+
+        verify(callback, times(1)).onError(any(Throwable.class));
+    }
+
+    @Test
     void clearCallbacks_whenCalled_removesAllCallbacks() {
         FeatureRefreshCallback refreshListener = mock(FeatureRefreshCallback.class);
         repository.onFeaturesRefresh(refreshListener);

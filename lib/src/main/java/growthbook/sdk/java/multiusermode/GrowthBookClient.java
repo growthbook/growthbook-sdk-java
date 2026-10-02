@@ -247,6 +247,10 @@ public class GrowthBookClient {
     /**
      * Refreshes feature definitions using the provided refresh mode.
      *
+     * <p>Blocks until the refresh completes, so an evaluation made right after this call sees the
+     * refreshed definitions. Use {@link GBFeaturesRepository#requestFeatureRefresh(RefreshMode)}
+     * directly when a fire-and-forget refresh is wanted instead.
+     *
      * <p>In remote-eval mode this invalidates the remote-eval response cache. The next evaluation
      * fetches a fresh remote response for that user context.
      *
@@ -264,7 +268,11 @@ public class GrowthBookClient {
             return;
         }
 
-        repositorySnapshot.requestFeatureRefresh(refreshMode == null ? RefreshMode.DEFAULT : refreshMode);
+        try {
+            repositorySnapshot.refreshFeatures(refreshMode == null ? RefreshMode.DEFAULT : refreshMode);
+        } catch (FeatureFetchException e) {
+            log.error("Refreshing features wasn't successful. Message is: {}", e.getMessage(), e);
+        }
     }
 
     /**
@@ -537,6 +545,12 @@ public class GrowthBookClient {
     /**
      * Adds a listener that is notified after a feature refresh succeeds or fails.
      *
+     * <p>Listeners never run on the thread that performed the refresh: they are dispatched on
+     * {@link Options#getFeatureRefreshListenerExecutor()}, or on a dedicated daemon thread when
+     * none is configured. A listener may therefore block without stalling polling or SSE updates.
+     * If that executor rejects the task the event is dropped with a warning rather than run
+     * inline, so configuring a rejecting executor gives back-pressure, not blocking.
+     *
      * @param listener listener to add
      */
     public void addFeatureRefreshListener(FeatureRefreshListener listener) {
@@ -545,6 +559,8 @@ public class GrowthBookClient {
 
     /**
      * Adds a listener and returns an idempotent handle that removes it.
+     *
+     * <p>Dispatch and threading are as described on {@link #addFeatureRefreshListener}.
      *
      * @param listener listener to add
      * @return subscription handle

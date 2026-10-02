@@ -9,6 +9,9 @@ import javax.annotation.Nullable;
 import java.util.concurrent.Executor;
 
 /**
+ * <b>INTERNAL</b>: not part of the supported API. Public only because {@code GrowthBookClient} lives in
+ * the parent package — treat its signatures as free to change without a major version bump.
+ *
  * Internal listener registry for client-level feature refresh events.
  * Handles duplicate registration, optional executor dispatch, and listener failure isolation.
  */

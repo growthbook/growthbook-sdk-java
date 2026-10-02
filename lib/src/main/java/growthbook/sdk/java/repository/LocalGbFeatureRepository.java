@@ -3,6 +3,7 @@ package growthbook.sdk.java.repository;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonObject;
+import com.google.gson.JsonSyntaxException;
 import growthbook.sdk.java.callback.FeatureRefreshCallback;
 import growthbook.sdk.java.exception.FeatureFetchException;
 import growthbook.sdk.java.listener.FeatureRefreshListener;
@@ -50,6 +51,13 @@ public class LocalGbFeatureRepository implements IGBFeaturesRepository {
 
         try (FileReader reader = new FileReader(fullPath)) {
             JsonObject featuresJsonObject = gson.fromJson(reader, JsonObject.class);
+            if (featuresJsonObject == null) {
+                // Gson returns null for an empty file and for a bare `null` literal. Dereferencing
+                // it would throw a NullPointerException, which is not an IOException and so would
+                // escape past the handler below: the caller would see an NPE instead of a
+                // FeatureFetchException, and listeners would never learn the refresh failed.
+                throw new JsonSyntaxException("Feature file is empty or contains a JSON null: " + fullPath);
+            }
             String refreshedFeatures = featuresJsonObject.toString();
             boolean featuresChanged = !Objects.equals(this.featuresJson, refreshedFeatures);
             this.featuresJson = refreshedFeatures;
@@ -61,7 +69,9 @@ public class LocalGbFeatureRepository implements IGBFeaturesRepository {
                     false,
                     FeatureRefreshNotifier.elapsedMillis(startedAtNanos)
             );
-        } catch (IOException e) {
+        } catch (IOException | RuntimeException e) {
+            // RuntimeException covers Gson's unchecked JsonSyntaxException on malformed JSON, which
+            // otherwise bypasses this handler entirely and skips the failure event.
             log.error("LocalGbFeatureRepository cannot load features from {}, Exception was: {}",
                     fullPath,
                     e.getMessage(),
