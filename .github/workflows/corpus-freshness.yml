@@ -10,13 +10,13 @@ on:
   pull_request:
     paths:
       - 'lib/src/test/resources/cases/**'
-      - 'scripts/check_corpus_freshness.py'
+      - 'scripts/*corpus_freshness.py'
       - '.github/workflows/corpus-freshness.yml'
   push:
     branches: [main]
     paths:
       - 'lib/src/test/resources/cases/**'
-      - 'scripts/check_corpus_freshness.py'
+      - 'scripts/*corpus_freshness.py'
       - '.github/workflows/corpus-freshness.yml'
   schedule:
     - cron: '17 6 * * 1'
@@ -31,6 +31,9 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.13'
+
+      - name: Test the freshness checker
+        run: python3 -m unittest discover -s scripts -p 'test_*.py'
 
       - name: Check cases.json matches the pinned upstream commit
         if: github.event_name == 'pull_request' || github.event_name == 'push'
