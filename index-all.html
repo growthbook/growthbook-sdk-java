@@ -1142,6 +1142,11 @@ loadScripts(document, 'script');</script>
 </dd>
 <dt><a href="growthbook/sdk/java/model/GBContext.GBContextBuilder.html#featuresJson(java.lang.String)" class="member-name-link">featuresJson(String)</a> - Method in class growthbook.sdk.java.model.<a href="growthbook/sdk/java/model/GBContext.GBContextBuilder.html" title="class in growthbook.sdk.java.model">GBContext.GBContextBuilder</a></dt>
 <dd>&nbsp;</dd>
+<dt><a href="growthbook/sdk/java/model/GBContext.GBContextBuilder.html#featureSnapshot(growthbook.sdk.java.repository.FeatureSnapshot)" class="member-name-link">featureSnapshot(FeatureSnapshot)</a> - Method in class growthbook.sdk.java.model.<a href="growthbook/sdk/java/model/GBContext.GBContextBuilder.html" title="class in growthbook.sdk.java.model">GBContext.GBContextBuilder</a></dt>
+<dd>
+<div class="block">Sets the features and saved groups from one repository payload, such as
+ <code>GBFeaturesRepository#getFeatureSnapshot()</code>, so the two always match.</div>
+</dd>
 <dt><a href="growthbook/sdk/java/repository/FeatureSnapshot.html" class="type-name-link" title="class in growthbook.sdk.java.repository">FeatureSnapshot</a> - Class in <a href="growthbook/sdk/java/repository/package-summary.html">growthbook.sdk.java.repository</a></dt>
 <dd>
 <div class="block">Immutable view of one successfully processed features payload: the raw JSON
@@ -4029,6 +4034,11 @@ loadScripts(document, 'script');</script>
 <dd>&nbsp;</dd>
 <dt><a href="growthbook/sdk/java/multiusermode/configurations/GlobalContext.GlobalContextBuilder.html#savedGroups(com.google.gson.JsonObject)" class="member-name-link">savedGroups(JsonObject)</a> - Method in class growthbook.sdk.java.multiusermode.configurations.<a href="growthbook/sdk/java/multiusermode/configurations/GlobalContext.GlobalContextBuilder.html" title="class in growthbook.sdk.java.multiusermode.configurations">GlobalContext.GlobalContextBuilder</a></dt>
 <dd>&nbsp;</dd>
+<dt><a href="growthbook/sdk/java/model/GBContext.GBContextBuilder.html#savedGroupsJson(java.lang.String)" class="member-name-link">savedGroupsJson(String)</a> - Method in class growthbook.sdk.java.model.<a href="growthbook/sdk/java/model/GBContext.GBContextBuilder.html" title="class in growthbook.sdk.java.model">GBContext.GBContextBuilder</a></dt>
+<dd>
+<div class="block">Sets the saved groups from the <code>savedGroups</code> JSON of the SDK payload, such as
+ <code>GBFeaturesRepository#getSavedGroupsJson()</code>.</div>
+</dd>
 <dt><a href="growthbook/sdk/java/diagnostics/model/Diagnostics.DiagnosticsBuilder.html#sdk(growthbook.sdk.java.diagnostics.model.SdkDiagnostics)" class="member-name-link">sdk(SdkDiagnostics)</a> - Method in class growthbook.sdk.java.diagnostics.model.<a href="growthbook/sdk/java/diagnostics/model/Diagnostics.DiagnosticsBuilder.html" title="class in growthbook.sdk.java.diagnostics.model">Diagnostics.DiagnosticsBuilder</a></dt>
 <dd>
 <div class="block">SDK build metadata.</div>
