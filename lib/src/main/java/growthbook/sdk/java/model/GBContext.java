@@ -1,6 +1,7 @@
 package growthbook.sdk.java.model;
 
 import com.google.gson.JsonObject;
+import growthbook.sdk.java.util.ExperimentHelper;
 import growthbook.sdk.java.callback.FeatureUsageCallback;
 import growthbook.sdk.java.callback.TrackingCallback;
 import growthbook.sdk.java.multiusermode.util.TransformationUtil;
@@ -202,6 +203,16 @@ public class GBContext {
      */
     @Nullable
     private String attributesJson;
+
+    /**
+     * Helper class for differentiate whether specific experiment was evaluated before or not. Internal usage
+     *
+     * @deprecated Unused. Tracking de-duplication is handled by
+     * {@link growthbook.sdk.java.multiusermode.ExperimentTracker}. Setting this field has no effect
+     * and it will be removed in a future major release.
+     */
+    @Deprecated
+    private ExperimentHelper experimentHelper = new ExperimentHelper();
 
     /**
      * Once you define your Saved Groups, you can easily reference them from any Feature rule or Experiment.

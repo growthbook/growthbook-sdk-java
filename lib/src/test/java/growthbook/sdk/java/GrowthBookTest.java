@@ -347,11 +347,7 @@ class GrowthBookTest {
         verify(mockCallback, times(2)).onRun(any(), any());
     }
 
-    // Regression test for the tracking-callback de-duplication bug: the tracking callback
-    // must fire only once per unique (hashAttribute, hashValue, experimentKey, variationId)
-    // assignment, even when the same experiment is evaluated many times on the long-lived
-    // GrowthBook instance. Previously isExperimentTracked() always returned false, so onTrack
-    // re-fired on every evaluation.
+    // De-duplication key is (hashAttribute, hashValue, experimentKey, variationId).
     @Test
     @DisplayName("Tracking callback fires only once per unique experiment assignment across repeated runs")
     void run_firesTrackingCallbackOncePerAssignment() {
