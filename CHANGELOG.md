@@ -1,5 +1,21 @@
 # Changelog
 
+## [0.11.1](https://github.com/growthbook/growthbook-sdk-java/compare/0.11.0...0.11.1) (2026-10-02)
+
+
+### Features
+
+* add Map-based attributes overload to UserContextBuilder ([#233](https://github.com/growthbook/growthbook-sdk-java/issues/233)) ([7d5d881](https://github.com/growthbook/growthbook-sdk-java/commit/7d5d8818c0de76cf2836ae9e7b53eeee5060c675))
+* Implement evalFeatures() for optimized batch evaluation ([#185](https://github.com/growthbook/growthbook-sdk-java/issues/185)) ([fc8c081](https://github.com/growthbook/growthbook-sdk-java/commit/fc8c0814fccbadf1a93b7ed72610ee33ffd8f682))
+* support saved group references (v1) in GBContext ([#245](https://github.com/growthbook/growthbook-sdk-java/issues/245)) ([6f62492](https://github.com/growthbook/growthbook-sdk-java/commit/6f62492c5f9e5fbafe56609b63070f254a86cafe))
+
+
+### Bug Fixes
+
+* concurrency groundwork for the multi-user client and features repository ([#234](https://github.com/growthbook/growthbook-sdk-java/issues/234)) ([0c3631e](https://github.com/growthbook/growthbook-sdk-java/commit/0c3631eddfa948c3fc97b9f89ce82857eb270f9e))
+* enable SSE reconnect in multi-user client ([#228](https://github.com/growthbook/growthbook-sdk-java/issues/228)) ([f52f193](https://github.com/growthbook/growthbook-sdk-java/commit/f52f1938125d314696d4b09c5a5a2632192175dd))
+* guard against null Gson parse result in onResponseJson ([#241](https://github.com/growthbook/growthbook-sdk-java/issues/241)) ([d2fa0e3](https://github.com/growthbook/growthbook-sdk-java/commit/d2fa0e30146971f5d7cbfd0ea36ab4585fac3902))
+
 ## [0.11.0](https://github.com/growthbook/growthbook-sdk-java/compare/v0.10.10...0.11.0) (2026-08-04)
 
 
