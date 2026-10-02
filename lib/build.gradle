@@ -96,7 +96,7 @@ publishing {
     publications {
         mavenJava(MavenPublication) {
             from components.java
-            
+
             pom {
                 name = 'GrowthBook SDK Java'
                 description = 'The Java SDK for GrowthBook (JVM, Android)'
@@ -122,7 +122,7 @@ publishing {
             }
         }
     }
-    
+
     repositories {
         maven {
             name = "GitHubPackages"
