@@ -822,6 +822,16 @@ loadScripts(document, 'script');</script>
 </dd>
 <dt><a href="growthbook/sdk/java/multiusermode/GrowthBookClient.html#evalFeature(java.lang.String,java.lang.Class,growthbook.sdk.java.multiusermode.configurations.UserContext)" class="member-name-link">evalFeature(String, Class&lt;ValueType&gt;, UserContext)</a> - Method in class growthbook.sdk.java.multiusermode.<a href="growthbook/sdk/java/multiusermode/GrowthBookClient.html" title="class in growthbook.sdk.java.multiusermode">GrowthBookClient</a></dt>
 <dd>&nbsp;</dd>
+<dt><a href="growthbook/sdk/java/GrowthBook.html#evalFeatures(java.util.List,java.lang.Class)" class="member-name-link">evalFeatures(List&lt;String&gt;, Class&lt;ValueType&gt;)</a> - Method in class growthbook.sdk.java.<a href="growthbook/sdk/java/GrowthBook.html" title="class in growthbook.sdk.java">GrowthBook</a></dt>
+<dd>
+<div class="block">Evaluates a batch of features reusing a single <a href="growthbook/sdk/java/multiusermode/configurations/EvaluationContext.html" title="class in growthbook.sdk.java.multiusermode.configurations"><code>EvaluationContext</code></a>, so shared
+ setup (attribute state, global context references) is not repeated per feature.</div>
+</dd>
+<dt><a href="growthbook/sdk/java/multiusermode/GrowthBookClient.html#evalFeatures(java.util.List,java.lang.Class,growthbook.sdk.java.multiusermode.configurations.UserContext)" class="member-name-link">evalFeatures(List&lt;String&gt;, Class&lt;ValueType&gt;, UserContext)</a> - Method in class growthbook.sdk.java.multiusermode.<a href="growthbook/sdk/java/multiusermode/GrowthBookClient.html" title="class in growthbook.sdk.java.multiusermode">GrowthBookClient</a></dt>
+<dd>
+<div class="block">Evaluates a batch of features for the same user using a single shared
+ <a href="growthbook/sdk/java/multiusermode/configurations/EvaluationContext.html" title="class in growthbook.sdk.java.multiusermode.configurations"><code>EvaluationContext</code></a>.</div>
+</dd>
 <dt><a href="growthbook/sdk/java/evaluators/ConditionEvaluator.html#evaluateCondition(com.google.gson.JsonObject,com.google.gson.JsonObject,com.google.gson.JsonObject)" class="member-name-link">evaluateCondition(JsonObject, JsonObject, JsonObject)</a> - Method in class growthbook.sdk.java.evaluators.<a href="growthbook/sdk/java/evaluators/ConditionEvaluator.html" title="class in growthbook.sdk.java.evaluators">ConditionEvaluator</a></dt>
 <dd>
 <div class="block">Evaluate a condition for a set of user attributes based on the provided condition.</div>
@@ -834,8 +844,12 @@ loadScripts(document, 'script');</script>
 <dd>
 <div class="block">Takes Context, Experiment and returns Experiment Result</div>
 </dd>
-<dt><a href="growthbook/sdk/java/evaluators/FeatureEvaluator.html#evaluateFeature(java.lang.String,growthbook.sdk.java.multiusermode.configurations.EvaluationContext,java.lang.Class)" class="member-name-link">evaluateFeature(String, EvaluationContext, Class&lt;ValueType&gt;)</a> - Method in class growthbook.sdk.java.evaluators.<a href="growthbook/sdk/java/evaluators/FeatureEvaluator.html" title="class in growthbook.sdk.java.evaluators">FeatureEvaluator</a></dt>
+<dt><a href="growthbook/sdk/java/evaluators/FeatureEvaluator.html#evaluateFeature(java.lang.String,growthbook.sdk.java.multiusermode.configurations.EvaluationContext,java.lang.Class)" class="member-name-link">evaluateFeature(String, EvaluationContext, Class&lt;T&gt;)</a> - Method in class growthbook.sdk.java.evaluators.<a href="growthbook/sdk/java/evaluators/FeatureEvaluator.html" title="class in growthbook.sdk.java.evaluators">FeatureEvaluator</a></dt>
 <dd>&nbsp;</dd>
+<dt><a href="growthbook/sdk/java/evaluators/FeatureEvaluator.html#evaluateFeatures(java.util.List,growthbook.sdk.java.multiusermode.configurations.EvaluationContext,java.lang.Class)" class="member-name-link">evaluateFeatures(List&lt;String&gt;, EvaluationContext, Class&lt;T&gt;)</a> - Method in class growthbook.sdk.java.evaluators.<a href="growthbook/sdk/java/evaluators/FeatureEvaluator.html" title="class in growthbook.sdk.java.evaluators">FeatureEvaluator</a></dt>
+<dd>
+<div class="block">Evaluates a batch of features against a single, shared <a href="growthbook/sdk/java/multiusermode/configurations/EvaluationContext.html" title="class in growthbook.sdk.java.multiusermode.configurations"><code>EvaluationContext</code></a>.</div>
+</dd>
 <dt><a href="growthbook/sdk/java/GrowthBook.html#evaluationContext" class="member-name-link">evaluationContext</a> - Variable in class growthbook.sdk.java.<a href="growthbook/sdk/java/GrowthBook.html" title="class in growthbook.sdk.java">GrowthBook</a></dt>
 <dd>&nbsp;</dd>
 <dt><a href="growthbook/sdk/java/multiusermode/configurations/EvaluationContext.html" class="type-name-link" title="class in growthbook.sdk.java.multiusermode.configurations">EvaluationContext</a> - Class in <a href="growthbook/sdk/java/multiusermode/configurations/package-summary.html">growthbook.sdk.java.multiusermode.configurations</a></dt>

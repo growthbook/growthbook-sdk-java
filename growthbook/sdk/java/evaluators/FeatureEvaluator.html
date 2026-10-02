@@ -78,9 +78,7 @@ loadScripts(document, 'script');</script>
 <hr>
 <div class="type-signature"><span class="modifiers">public class </span><span class="element-name type-name-label">FeatureEvaluator</span>
 <span class="extends-implements">extends <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html" title="class or interface in java.lang" class="external-link">Object</a></span></div>
-<div class="block"><b>INTERNAL</b>: Implementation of feature evaluation.
- Takes Context and Feature Key.
- Returns Calculated Feature Result against that key</div>
+<div class="block"><b>INTERNAL</b>: Implementation of feature evaluation.</div>
 </section>
 <section class="summary">
 <ul class="summary-list">
@@ -108,11 +106,18 @@ loadScripts(document, 'script');</script>
 <div class="table-header col-first">Modifier and Type</div>
 <div class="table-header col-second">Method</div>
 <div class="table-header col-last">Description</div>
-<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>&lt;ValueType&gt;<br><a href="../model/FeatureResult.html" title="class in growthbook.sdk.java.model">FeatureResult</a>&lt;ValueType&gt;</code></div>
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>&lt;T&gt;&nbsp;<a href="../model/FeatureResult.html" title="class in growthbook.sdk.java.model">FeatureResult</a>&lt;T&gt;</code></div>
 <div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#evaluateFeature(java.lang.String,growthbook.sdk.java.multiusermode.configurations.EvaluationContext,java.lang.Class)" class="member-name-link">evaluateFeature</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;key,
  <a href="../multiusermode/configurations/EvaluationContext.html" title="class in growthbook.sdk.java.multiusermode.configurations">EvaluationContext</a>&nbsp;context,
- <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Class.html" title="class or interface in java.lang" class="external-link">Class</a>&lt;ValueType&gt;&nbsp;valueTypeClass)</code></div>
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Class.html" title="class or interface in java.lang" class="external-link">Class</a>&lt;T&gt;&nbsp;valueTypeClass)</code></div>
 <div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">&nbsp;</div>
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>&lt;T&gt;&nbsp;<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/Map.html" title="class or interface in java.util" class="external-link">Map</a>&lt;<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>,<wbr><a href="../model/FeatureResult.html" title="class in growthbook.sdk.java.model">FeatureResult</a>&lt;T&gt;&gt;</code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#evaluateFeatures(java.util.List,growthbook.sdk.java.multiusermode.configurations.EvaluationContext,java.lang.Class)" class="member-name-link">evaluateFeatures</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/List.html" title="class or interface in java.util" class="external-link">List</a>&lt;<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&gt;&nbsp;featureKeys,
+ <a href="../multiusermode/configurations/EvaluationContext.html" title="class in growthbook.sdk.java.multiusermode.configurations">EvaluationContext</a>&nbsp;context,
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Class.html" title="class or interface in java.lang" class="external-link">Class</a>&lt;T&gt;&nbsp;valueTypeClass)</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="block">Evaluates a batch of features against a single, shared <a href="../multiusermode/configurations/EvaluationContext.html" title="class in growthbook.sdk.java.multiusermode.configurations"><code>EvaluationContext</code></a>.</div>
+</div>
 </div>
 </div>
 </div>
@@ -145,12 +150,28 @@ loadScripts(document, 'script');</script>
 <h2>Method Details</h2>
 <ul class="member-list">
 <li>
+<section class="detail" id="evaluateFeatures(java.util.List,growthbook.sdk.java.multiusermode.configurations.EvaluationContext,java.lang.Class)">
+<h3>evaluateFeatures</h3>
+<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="type-parameters">&lt;T&gt;</span>&nbsp;<span class="return-type"><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/Map.html" title="class or interface in java.util" class="external-link">Map</a>&lt;<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>,<wbr><a href="../model/FeatureResult.html" title="class in growthbook.sdk.java.model">FeatureResult</a>&lt;T&gt;&gt;</span>&nbsp;<span class="element-name">evaluateFeatures</span><wbr><span class="parameters">(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/List.html" title="class or interface in java.util" class="external-link">List</a>&lt;<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&gt;&nbsp;featureKeys,
+ <a href="../multiusermode/configurations/EvaluationContext.html" title="class in growthbook.sdk.java.multiusermode.configurations">EvaluationContext</a>&nbsp;context,
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Class.html" title="class or interface in java.lang" class="external-link">Class</a>&lt;T&gt;&nbsp;valueTypeClass)</span></div>
+<div class="block">Evaluates a batch of features against a single, shared <a href="../multiusermode/configurations/EvaluationContext.html" title="class in growthbook.sdk.java.multiusermode.configurations"><code>EvaluationContext</code></a>.
+ The context (and the <code>GlobalContext</code> it references) is reused for every key
+ instead of being rebuilt per feature, and the per-evaluation stack is reset between
+ features so evaluation state does not leak. A feature whose evaluation throws is
+ recorded as <a href="../model/FeatureResultSource.html#UNKNOWN_FEATURE"><code>FeatureResultSource.UNKNOWN_FEATURE</code></a> rather than aborting the batch.
+ <p>
+ Each distinct key is evaluated exactly once (so feature-usage callbacks fire once per
+ key) and the returned map preserves the order of <code>featureKeys</code>.</div>
+</section>
+</li>
+<li>
 <section class="detail" id="evaluateFeature(java.lang.String,growthbook.sdk.java.multiusermode.configurations.EvaluationContext,java.lang.Class)">
 <h3>evaluateFeature</h3>
-<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="type-parameters">&lt;ValueType&gt;</span>&nbsp;<span class="return-type"><a href="../model/FeatureResult.html" title="class in growthbook.sdk.java.model">FeatureResult</a>&lt;ValueType&gt;</span>&nbsp;<span class="element-name">evaluateFeature</span><wbr><span class="parameters">(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;key,
+<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="type-parameters">&lt;T&gt;</span>&nbsp;<span class="return-type"><a href="../model/FeatureResult.html" title="class in growthbook.sdk.java.model">FeatureResult</a>&lt;T&gt;</span>&nbsp;<span class="element-name">evaluateFeature</span><wbr><span class="parameters">(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;key,
  <a href="../multiusermode/configurations/EvaluationContext.html" title="class in growthbook.sdk.java.multiusermode.configurations">EvaluationContext</a>&nbsp;context,
- <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Class.html" title="class or interface in java.lang" class="external-link">Class</a>&lt;ValueType&gt;&nbsp;valueTypeClass)</span>
-                                                     throws <span class="exceptions"><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/ClassCastException.html" title="class or interface in java.lang" class="external-link">ClassCastException</a></span></div>
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Class.html" title="class or interface in java.lang" class="external-link">Class</a>&lt;T&gt;&nbsp;valueTypeClass)</span>
+                                     throws <span class="exceptions"><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/ClassCastException.html" title="class or interface in java.lang" class="external-link">ClassCastException</a></span></div>
 <dl class="notes">
 <dt>Throws:</dt>
 <dd><code><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/ClassCastException.html" title="class or interface in java.lang" class="external-link">ClassCastException</a></code></dd>
