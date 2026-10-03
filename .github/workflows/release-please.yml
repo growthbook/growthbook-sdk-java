@@ -26,7 +26,7 @@ jobs:
       # The following steps only run if a new release was created
       - name: Checkout code
         if: ${{ steps.release.outputs.release_created }}
-        uses: actions/checkout@v3
+        uses: actions/checkout@v7
         with:
           fetch-depth: 0
 
