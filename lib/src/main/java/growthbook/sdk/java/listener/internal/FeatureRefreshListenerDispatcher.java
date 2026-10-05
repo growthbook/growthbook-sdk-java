@@ -51,6 +51,13 @@ public final class FeatureRefreshListenerDispatcher {
      * unsubscribe at all, while removing on the first close would silently cut off the other one.
      * Closing a handle more than once is a no-op.
      *
+     * <p>The count increment and the listener registration run inside {@code compute} so they share
+     * the per-key bin lock with {@link #releaseSubscription}. That is what keeps the two concurrent —
+     * a subscribe racing the final close of the same listener cannot land between the close's count
+     * drop and its listener removal and end up registered in the count map but missing from the
+     * dispatch list. A plain {@code computeIfAbsent} would not do: its present-key fast path skips the
+     * lock, so the registration could slip through that window and silently receive no events.
+     *
      * @param listener listener to register
      * @return subscription handle
      */
@@ -60,8 +67,12 @@ public final class FeatureRefreshListenerDispatcher {
             };
         }
 
-        subscriptionCounts.computeIfAbsent(listener, key -> new AtomicInteger()).incrementAndGet();
-        listeners.addIfAbsent(listener);
+        subscriptionCounts.compute(listener, (key, count) -> {
+            AtomicInteger current = count == null ? new AtomicInteger() : count;
+            current.incrementAndGet();
+            listeners.addIfAbsent(listener);
+            return current;
+        });
 
         AtomicBoolean closed = new AtomicBoolean();
         return () -> {
@@ -72,23 +83,21 @@ public final class FeatureRefreshListenerDispatcher {
     }
 
     /**
-     * Drops one subscription, removing the listener once none are left. The count is mutated inside
-     * {@code compute} so a concurrent {@link #subscribe} cannot slip between the decrement and the
-     * removal and lose its registration.
+     * Drops one subscription, removing the listener once none are left. The count decrement and the
+     * listener removal both run inside {@code compute}, so they are atomic for this listener key: a
+     * concurrent {@link #subscribe} — which also uses {@code compute} — serializes on the same bin
+     * lock and either keeps the count above zero (no removal) or re-registers only after the removal
+     * has completed. Removing the listener outside {@code compute} left a window where a subscriber
+     * that had already registered the listener saw it removed again, silently losing events.
      */
     private void releaseSubscription(FeatureRefreshListener listener) {
-        boolean[] lastSubscription = {false};
         subscriptionCounts.compute(listener, (key, count) -> {
             if (count == null || count.decrementAndGet() <= 0) {
-                lastSubscription[0] = true;
+                listeners.remove(listener);
                 return null;
             }
             return count;
         });
-
-        if (lastSubscription[0]) {
-            listeners.remove(listener);
-        }
     }
 
     /**

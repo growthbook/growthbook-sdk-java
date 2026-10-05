@@ -6,11 +6,18 @@ import growthbook.sdk.java.model.FeatureRefreshEvent;
 import growthbook.sdk.java.model.FeatureRefreshSource;
 import growthbook.sdk.java.repository.FeatureRefreshStrategy;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
 
+import java.util.concurrent.CyclicBarrier;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executor;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import java.util.concurrent.RejectedExecutionException;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
@@ -105,6 +112,45 @@ class FeatureRefreshListenerRegistryTest {
 
         registry.publish(sampleEvent());
         verify(listener, never()).onRefresh(any());
+    }
+
+    @Test
+    @Timeout(30)
+    void closingTheLastSubscriptionWhileAnotherSubscribesKeepsTheNewHandleLive() throws Exception {
+        // Race: the last close() and a fresh subscribe() for the same listener run at once. The close
+        // used to remove the listener outside the counted region, so it could drop a listener that the
+        // new subscription had already re-registered — leaving the new handle open but silently
+        // starved of events. Each round has one open subscription left after the dust settles, so the
+        // listener must receive that round's publish; a single miss means the race reappeared.
+        ExecutorService pool = Executors.newFixedThreadPool(2);
+        CyclicBarrier barrier = new CyclicBarrier(2);
+        try {
+            for (int round = 0; round < 5000; round++) {
+                AtomicInteger fires = new AtomicInteger();
+                FeatureRefreshListener listener = event -> fires.incrementAndGet();
+                FeatureRefreshListenerRegistry registry = new FeatureRefreshListenerRegistry((Executor) null);
+
+                FeatureRefreshSubscription first = registry.subscribe(listener);
+
+                Future<FeatureRefreshSubscription> survivor = pool.submit(() -> {
+                    barrier.await();
+                    return registry.subscribe(listener);
+                });
+                Future<?> closer = pool.submit(() -> {
+                    barrier.await();
+                    first.close();
+                    return null;
+                });
+                FeatureRefreshSubscription second = survivor.get();
+                closer.get();
+
+                registry.publish(sampleEvent());
+                assertEquals(1, fires.get(), "surviving subscription missed an event on round " + round);
+                second.close();
+            }
+        } finally {
+            pool.shutdownNow();
+        }
     }
 
     @Test
