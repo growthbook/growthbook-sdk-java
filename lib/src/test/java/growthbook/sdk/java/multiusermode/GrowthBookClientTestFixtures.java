@@ -10,7 +10,6 @@ import growthbook.sdk.java.repository.GBFeaturesRepository;
 
 import java.util.HashMap;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicLong;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;

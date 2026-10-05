@@ -581,12 +581,6 @@ public class GrowthBookClient {
         }
     }
 
-        // ConcurrentHashMap rejects null keys (the previous HashMap tolerated them);
-        // a key-less experiment still dedupes, under one shared sentinel entry.
-        // If assigned variation has changed, fire subscriptions. The change check and
-        // the publish must be one atomic step or two concurrent run() calls can both
-        // observe the stale value and double-fire. Callbacks run outside compute():
-        // user code must never execute inside a ConcurrentHashMap bin lock.
     private FeatureRefreshCallback refreshGlobalContext() {
         return new FeatureRefreshCallback() {
             @Override

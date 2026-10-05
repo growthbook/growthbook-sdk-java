@@ -5,7 +5,20 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
 import growthbook.sdk.java.callback.ExperimentRunCallback;
-import growthbook.sdk.java.model.*;
+import growthbook.sdk.java.model.AssignedExperiment;
+import growthbook.sdk.java.model.BucketRange;
+import growthbook.sdk.java.model.Experiment;
+import growthbook.sdk.java.model.ExperimentResult;
+import growthbook.sdk.java.model.Feature;
+import growthbook.sdk.java.model.FeatureRule;
+import growthbook.sdk.java.model.Filter;
+import growthbook.sdk.java.model.GBContext;
+import growthbook.sdk.java.model.GeneratedStickyBucketAssignmentDocModel;
+import growthbook.sdk.java.model.HashAttributeAndHashValue;
+import growthbook.sdk.java.model.Namespace;
+import growthbook.sdk.java.model.StickyAssignmentsDocument;
+import growthbook.sdk.java.model.StickyBucketVariation;
+import growthbook.sdk.java.model.VariationMeta;
 import growthbook.sdk.java.multiusermode.configurations.EvaluationContext;
 import growthbook.sdk.java.multiusermode.util.TransformationUtil;
 import growthbook.sdk.java.stickyBucketing.StickyBucketService;
@@ -908,10 +921,11 @@ public class GrowthBookUtils {
                                                      Experiment<ValueType> experiment,
                                                      ExperimentResult<ValueType> result
     ) {
-        // ConcurrentHashMap rejects null keys (the previous HashMap tolerated them), so a key-less
-        // experiment needs a stand-in. Mapping it to "" would merge it with an experiment whose key
-        // really is "", suppressing one of their callbacks; the prefixes keep the two namespaces
-        // disjoint for any key value. This map is internal dedup state and is never exposed.
+        // A key-less experiment needs a non-null stand-in: this dedup map may be a ConcurrentHashMap
+        // (GrowthBookClient) which rejects null keys, even though GrowthBook's plain HashMap tolerates
+        // them. Mapping it to "" would merge it with an experiment whose key really is "", suppressing
+        // one of their callbacks; the prefix keeps the two namespaces disjoint for any key value.
+        // This map is internal dedup state and is never exposed.
         String key = experiment.getKey() == null ? NULL_EXPERIMENT_KEY : KEYED_EXPERIMENT_PREFIX + experiment.getKey();
 
         AssignedExperiment current = new AssignedExperiment(

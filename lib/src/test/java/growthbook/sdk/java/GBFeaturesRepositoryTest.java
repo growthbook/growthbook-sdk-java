@@ -615,8 +615,8 @@ class GBFeaturesRepositoryTest {
 
     @Test
     void shutdown_withPollingStrategy_keepsTheDurableCache() {
-        // A polling repository never opens an SSE client, so it must leave the cache on disk:
-        // the next process relies on it when the initial fetch fails.
+        // A polling repository never opens an SSE client, so shutting it down must leave the
+        // durable cache on disk: the next process relies on it when the initial fetch fails.
         GbCacheManager cacheManager = mock(GbCacheManager.class);
         GBFeaturesRepository subject = GBFeaturesRepository.builder()
                 .apiHost("http://localhost")
@@ -624,11 +624,6 @@ class GBFeaturesRepositoryTest {
                 .refreshStrategy(FeatureRefreshStrategy.STALE_WHILE_REVALIDATE)
                 .cacheManager(cacheManager)
                 .build();
-
-        try {
-            subject.initialize();
-        } catch (Exception ignored) {
-        }
 
         subject.shutdown();
 

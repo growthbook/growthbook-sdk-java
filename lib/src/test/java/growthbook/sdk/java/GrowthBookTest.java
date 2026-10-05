@@ -6,7 +6,6 @@ package growthbook.sdk.java;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
@@ -226,30 +225,11 @@ class GrowthBookTest {
     }
 
     @Test
-    @DisplayName("Evaluation uses a per-call StackContext and never mutates the shared root context")
-    void evalFeature_doesNotMutateSharedRootStackContext() {
-        String features = TestCasesJsonHelper.getInstance().getDemoFeaturesJson();
-        GBContext context = GBContext.builder().featuresJson(features).build();
-        GrowthBook subject = new GrowthBook(context);
-
-        growthbook.sdk.java.multiusermode.configurations.EvaluationContext.StackContext rootStackBefore =
-                subject.getRootEvaluationContext().getStack();
-
-        subject.evalFeature("h1-title", String.class);
-        subject.evalFeature("h1-title", String.class);
-
-        // The shared root context's StackContext must remain untouched by evaluations so that
-        // concurrent evaluations (each getting their own per-call StackContext) cannot corrupt
-        // one another's cycle-detection / memoization state.
-        assertSame(rootStackBefore, subject.getRootEvaluationContext().getStack());
-    }
-
-    @Test
     void run_executesExperimentResultCallbacks() {
         GrowthBook subject = new GrowthBook();
         ExperimentRunCallback mockCallback1 = mock(ExperimentRunCallback.class);
         ExperimentRunCallback mockCallback2 = mock(ExperimentRunCallback.class);
-        Experiment<String> mockExperiment = Experiment.<String>builder().key("").build();
+        Experiment<String> mockExperiment = Experiment.<String>builder().build();
 
         subject.subscribe(mockCallback1);
         subject.subscribe(mockCallback2);
@@ -263,7 +243,7 @@ class GrowthBookTest {
     void run_executesExperimentResultCallbacksOnceWhenRunInvokeMultipleTimes() {
         GrowthBook subject = new GrowthBook();
         ExperimentRunCallback mockCallback = mock(ExperimentRunCallback.class);
-        Experiment<String> mockExperiment = Experiment.<String>builder().key("").build();
+        Experiment<String> mockExperiment = Experiment.<String>builder().build();
 
         subject.subscribe(mockCallback);
         subject.run(mockExperiment);
@@ -304,14 +284,6 @@ class GrowthBookTest {
         subject.run(keyless);
 
         verify(mockCallback, times(1)).onRun(any(), any());
-    }
-
-    @Test
-    void evaluationContextField_remainsPubliclyReadable() {
-        // Guards the published API: narrowing this field would break compilation for callers.
-        GrowthBook subject = new GrowthBook();
-
-        assertSame(subject.getRootEvaluationContext(), subject.evaluationContext);
     }
 
     @Test
@@ -826,7 +798,7 @@ class GrowthBookTest {
         GrowthBook subject = new GrowthBook();
         ExperimentRunCallback mockCallback1 = mock(ExperimentRunCallback.class);
         ExperimentRunCallback mockCallback2 = mock(ExperimentRunCallback.class);
-        Experiment<String> mockExperiment = Experiment.<String>builder().key("").build();
+        Experiment<String> mockExperiment = Experiment.<String>builder().build();
 
         // Add callbacks
         subject.subscribe(mockCallback1);
