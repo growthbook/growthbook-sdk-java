@@ -5,7 +5,9 @@ import growthbook.sdk.java.util.ExperimentHelper;
 import growthbook.sdk.java.callback.FeatureUsageCallback;
 import growthbook.sdk.java.callback.TrackingCallback;
 import growthbook.sdk.java.multiusermode.util.TransformationUtil;
+import growthbook.sdk.java.plugin.GrowthBookPlugin;
 import growthbook.sdk.java.remoteeval.RemoteEvalRequestBuilder;
+import growthbook.sdk.java.repository.FeatureSnapshot;
 import growthbook.sdk.java.stickyBucketing.StickyBucketService;
 import growthbook.sdk.java.util.ForcedVariationsUtils;
 import lombok.Builder;
@@ -76,7 +78,8 @@ public class GBContext {
             @Nullable Boolean remoteEval,
             @Nullable List<String> cacheKeyAttributes,
             @Nullable Integer remoteEvalCacheSize,
-            @Nullable Integer remoteEvalCacheTtlSeconds
+            @Nullable Integer remoteEvalCacheTtlSeconds,
+            @Nullable List<GrowthBookPlugin> plugins
     ) {
         this.encryptionKey = encryptionKey;
         this.attributesJson = attributesJson == null ? "{}" : attributesJson;
@@ -106,6 +109,7 @@ public class GBContext {
         this.cacheKeyAttributes = cacheKeyAttributes;
         this.remoteEvalCacheSize = RemoteEvalRequestBuilder.normalizeCacheSize(remoteEvalCacheSize);
         this.remoteEvalCacheTtlSeconds = remoteEvalCacheTtlSeconds;
+        this.plugins = plugins;
     }
 
     public GBContext(
@@ -143,6 +147,7 @@ public class GBContext {
                 stickyBucketAssignmentDocs,
                 stickyBucketIdentifierAttributes,
                 savedGroups,
+                null,
                 null,
                 null,
                 null,
@@ -202,7 +207,12 @@ public class GBContext {
 
     /**
      * Helper class for differentiate whether specific experiment was evaluated before or not. Internal usage
+     *
+     * @deprecated Unused. Tracking de-duplication is handled by
+     * {@link growthbook.sdk.java.multiusermode.ExperimentTracker}. Setting this field has no effect
+     * and it will be removed in a future major release.
      */
+    @Deprecated
     private ExperimentHelper experimentHelper = new ExperimentHelper();
 
     /**
@@ -320,9 +330,43 @@ public class GBContext {
     }
 
     /**
+     * Plugins registered with the GrowthBook instance. See
+     * {@link GrowthBookPlugin} and
+     * {@link growthbook.sdk.java.plugin.tracking.GrowthBookTrackingPlugin}.
+     */
+    @Nullable
+    private List<GrowthBookPlugin> plugins;
+
+    /**
      * The builder class to help create a context. You can use {@link #builder()} or the {@link GBContext} constructor
      */
     public static class GBContextBuilder {
+        /**
+         * Sets the features and saved groups from one repository payload, such as
+         * {@code GBFeaturesRepository#getFeatureSnapshot()}, so the two always match.
+         * Same as calling {@code features(...)} and {@code savedGroups(...)}.
+         *
+         * @param snapshot the payload to evaluate against
+         * @return this builder
+         */
+        public GBContextBuilder featureSnapshot(FeatureSnapshot snapshot) {
+            this.features = snapshot.getParsedFeatures();
+            this.savedGroups = snapshot.getParsedSavedGroups();
+            return this;
+        }
+
+        /**
+         * Sets the saved groups from the {@code savedGroups} JSON of the SDK payload, such as
+         * {@code GBFeaturesRepository#getSavedGroupsJson()}. Invalid JSON results in no saved groups.
+         * Needed when the SDK Connection passes saved groups by reference.
+         *
+         * @param savedGroupsJson decrypted saved groups as a JSON object string
+         * @return this builder
+         */
+        public GBContextBuilder savedGroupsJson(@Nullable String savedGroupsJson) {
+            this.savedGroups = TransformationUtil.transformSavedGroups(savedGroupsJson);
+            return this;
+        }
     } // This stub is required for JavaDoc and is filled by Lombuk
 
     /**

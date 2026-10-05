@@ -29,8 +29,17 @@ plugins {
 sourceCompatibility = JavaVersion.VERSION_1_8
 targetCompatibility = JavaVersion.VERSION_1_8
 
+// Fail the build when a post-Java-8 API sneaks in, regardless of the JDK that
+// compiles it: sourceCompatibility alone checks language level, not API usage.
+// Guarded because JDK 8's javac has no --release flag (CI still builds on 8).
+tasks.withType(JavaCompile).configureEach {
+    if (JavaVersion.current().isJava9Compatible()) {
+        options.release = 8
+    }
+}
+
 group = 'com.github.growthbook'
-version = 'main-SNAPSHOT'
+version = findProperty('version') ?: 'main-SNAPSHOT'
 
 repositories {
     // Use Maven Central for resolving dependencies.
@@ -53,9 +62,9 @@ dependencies {
 
 
     // https://square.github.io/okhttp
-    implementation 'com.squareup.okhttp3:okhttp:4.11.0'
+    implementation 'com.squareup.okhttp3:okhttp:5.4.0'
     // https://mvnrepository.com/artifact/com.squareup.okhttp3/okhttp-sse
-    implementation 'com.squareup.okhttp3:okhttp-sse:4.11.0'
+    implementation 'com.squareup.okhttp3:okhttp-sse:5.4.0'
 
     // Adds getter, setter and builder boilerplate
     // https://projectlombok.org/
@@ -67,11 +76,20 @@ dependencies {
     implementation 'org.slf4j:slf4j-api:2.0.7'
 }
 
+jar {
+    manifest {
+        attributes(
+                'Implementation-Title': 'growthbook-java-sdk',
+                'Implementation-Version': project.version
+        )
+    }
+}
+
 publishing {
     publications {
         mavenJava(MavenPublication) {
             from components.java
-            
+
             pom {
                 name = 'GrowthBook SDK Java'
                 description = 'The Java SDK for GrowthBook (JVM, Android)'
@@ -97,7 +115,7 @@ publishing {
             }
         }
     }
-    
+
     repositories {
         maven {
             name = "GitHubPackages"
@@ -146,6 +164,15 @@ tasks.register('runPerfHarness', JavaExec) {
     if (project.hasProperty('perfJfrFile')) {
         jvmArgs "-XX:StartFlightRecording=filename=${project.property('perfJfrFile')},settings=profile,dumponexit=true"
     }
+}
+
+tasks.register('runTrackingPluginSmoke', JavaExec) {
+    group = 'verification'
+    description = 'Runs a local end-to-end smoke test for the GrowthBook tracking plugin.'
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = 'growthbook.sdk.java.plugin.tracking.TrackingPluginSmokeHarness'
+    systemProperty 'trackingSmokeMode', project.findProperty('trackingSmokeMode') ?: 'both'
 }
 
 // More configuration options, including enforcing code coverage available here:

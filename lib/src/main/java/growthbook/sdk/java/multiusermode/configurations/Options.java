@@ -8,6 +8,8 @@ import growthbook.sdk.java.model.FeatureResult;
 import growthbook.sdk.java.multiusermode.usage.FeatureUsageCallbackWithUser;
 import growthbook.sdk.java.multiusermode.usage.TrackingCallbackWithUser;
 import growthbook.sdk.java.multiusermode.util.TransformationUtil;
+import growthbook.sdk.java.plugin.GrowthBookPlugin;
+import growthbook.sdk.java.plugin.PluginRegistry;
 import growthbook.sdk.java.remoteeval.RemoteEvalRequestBuilder;
 import growthbook.sdk.java.repository.FeatureRefreshStrategy;
 import growthbook.sdk.java.retry.FeatureFetchRetryPolicy;
@@ -83,7 +85,75 @@ public class Options {
                 null,
                 null,
                 null,
+                null,
+                null,
                 null
+        );
+    }
+
+    /**
+     * Backward-compatible constructor matching the 0.11.0 positional signature, before
+     * {@link #sseReconnectOnFailure} was introduced.
+     */
+    public Options(@Nullable Boolean enabled,
+                   Boolean isQaMode,
+                   @Nullable Boolean isCacheDisabled,
+                   Boolean allowUrlOverrides,
+                   @Nullable String url,
+                   @Nullable String apiHost,
+                   @Nullable String clientKey,
+                   @Nullable String decryptionKey,
+                   @Nullable List<String> stickyBucketIdentifierAttributes,
+                   @Nullable StickyBucketService stickyBucketService,
+                   @Nullable TrackingCallbackWithUser trackingCallBackWithUser,
+                   @Nullable FeatureUsageCallbackWithUser featureUsageCallbackWithUser,
+                   @Nullable FeatureRefreshStrategy refreshStrategy,
+                   @Nullable Integer swrTtlSeconds,
+                   @Nullable FeatureRefreshCallback featureRefreshCallback,
+                   @Nullable JsonObject globalAttributes,
+                   @Nullable Map<String, Object> globalForcedFeatureValues,
+                   @Nullable Map<String, ?> globalForcedVariationsMap,
+                   @Nullable GbCacheManager cacheManager,
+                   @Nullable CacheMode cacheMode,
+                   @Nullable String cacheDirectory,
+                   @Nullable Boolean remoteEval,
+                   @Nullable List<String> cacheKeyAttributes,
+                   @Nullable Integer remoteEvalCacheSize,
+                   @Nullable Integer remoteEvalCacheTtlSeconds,
+                   @Nullable Duration backgroundFetchInterval,
+                   @Nullable FeatureFetchRetryPolicy retryPolicy,
+                   @Nullable List<GrowthBookPlugin> plugins
+    ) {
+        this(
+                enabled,
+                isQaMode,
+                isCacheDisabled,
+                allowUrlOverrides,
+                url,
+                apiHost,
+                clientKey,
+                decryptionKey,
+                stickyBucketIdentifierAttributes,
+                stickyBucketService,
+                trackingCallBackWithUser,
+                featureUsageCallbackWithUser,
+                refreshStrategy,
+                swrTtlSeconds,
+                featureRefreshCallback,
+                globalAttributes,
+                globalForcedFeatureValues,
+                globalForcedVariationsMap,
+                cacheManager,
+                cacheMode,
+                cacheDirectory,
+                remoteEval,
+                cacheKeyAttributes,
+                remoteEvalCacheSize,
+                remoteEvalCacheTtlSeconds,
+                backgroundFetchInterval,
+                retryPolicy,
+                null,
+                plugins
         );
     }
 
@@ -114,7 +184,9 @@ public class Options {
                    @Nullable Integer remoteEvalCacheSize,
                    @Nullable Integer remoteEvalCacheTtlSeconds,
                    @Nullable Duration backgroundFetchInterval,
-                   @Nullable FeatureFetchRetryPolicy retryPolicy
+                   @Nullable FeatureFetchRetryPolicy retryPolicy,
+                   @Nullable Boolean sseReconnectOnFailure,
+                   @Nullable List<GrowthBookPlugin> plugins
     ) {
         this.enabled = enabled == null || enabled;
         this.isQaMode = isQaMode != null && isQaMode;
@@ -143,6 +215,8 @@ public class Options {
         this.remoteEvalCacheTtlSeconds = remoteEvalCacheTtlSeconds;
         this.backgroundFetchInterval = backgroundFetchInterval;
         this.retryPolicy = retryPolicy;
+        this.sseReconnectOnFailure = sseReconnectOnFailure;
+        this.plugins = plugins;
     }
 
     /**
@@ -273,6 +347,17 @@ public class Options {
     @Nullable
     private String cacheDirectory;
 
+    /**
+     * Plugins registered with the GrowthBook client. See
+     * {@link GrowthBookPlugin} and
+     * {@link growthbook.sdk.java.plugin.tracking.GrowthBookTrackingPlugin}.
+     * The owning client builds a per-instance {@link PluginRegistry} from this
+     * list; the registry itself is carried on {@code EvaluationContext}, not
+     * here, so reusing one {@code Options} across clients stays isolated.
+     */
+    @Nullable
+    private List<GrowthBookPlugin> plugins;
+
     private Boolean remoteEval;
 
     @Nullable
@@ -300,6 +385,17 @@ public class Options {
     @Nullable
     private FeatureFetchRetryPolicy retryPolicy;
 
+    /**
+     * Whether the multi-user client reconnects the SSE stream after an abnormal failure or a
+     * server close. Reconnect attempts are bounded by {@link #retryPolicy}. Defaults to {@code true}.
+     */
+    @Nullable
+    private Boolean sseReconnectOnFailure;
+
+    public boolean isSseReconnectOnFailure() {
+        return sseReconnectOnFailure == null || sseReconnectOnFailure;
+    }
+
     @Nullable
     public String getCacheDirectory() {
         return cacheDirectory;
@@ -311,7 +407,9 @@ public class Options {
     }
 
     public void setInMemoryStickyBucketService() {
-        this.setStickyBucketService(new InMemoryStickyBucketServiceImpl(new HashMap<>()));
+        // Thread-safe backing map: this Options instance configures the multi-user
+        // GrowthBookClient, which evaluates (and therefore saves assignments) concurrently.
+        this.setStickyBucketService(new InMemoryStickyBucketServiceImpl());
     }
 
     public void setGlobalAttributes(@Nullable String attributesJson) {

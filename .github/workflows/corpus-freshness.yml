@@ -1,0 +1,44 @@
+# Checks lib/src/test/resources/cases/cases.json against the JS SDK's cases.json.
+#
+#   - pull_request / push: confirms cases.json is an unedited copy of the commit in
+#     source.json. Unrelated PRs cannot go red when upstream main moves.
+#   - schedule / workflow_dispatch: compares against upstream main to find new or
+#     changed upstream cases.
+name: Corpus Freshness
+
+on:
+  pull_request:
+    paths:
+      - 'lib/src/test/resources/cases/**'
+      - 'scripts/*corpus_freshness.py'
+      - '.github/workflows/corpus-freshness.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'lib/src/test/resources/cases/**'
+      - 'scripts/*corpus_freshness.py'
+      - '.github/workflows/corpus-freshness.yml'
+  schedule:
+    - cron: '17 6 * * 1'
+  workflow_dispatch:
+
+jobs:
+  corpus-freshness:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - name: Test the freshness checker
+        run: python3 -m unittest discover -s scripts -p 'test_*.py'
+
+      - name: Check cases.json matches the pinned upstream commit
+        if: github.event_name == 'pull_request' || github.event_name == 'push'
+        run: python3 scripts/check_corpus_freshness.py --pinned
+
+      - name: Compare cases.json with upstream main
+        if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+        run: python3 scripts/check_corpus_freshness.py
