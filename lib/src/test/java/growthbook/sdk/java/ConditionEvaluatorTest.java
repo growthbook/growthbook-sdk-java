@@ -231,6 +231,22 @@ class ConditionEvaluatorTest {
                 parse("{\"a\":16777217}"), parse("{\"a\":{\"$gt\":16777216}}"), null));
     }
 
+    @Test
+    @DisplayName("a NaN numeric attribute never matches a numeric bound, like the JS SDK")
+    void test_comparisonWithNaNAttributeNeverMatches() {
+        // JSON has no NaN literal, so a NaN attribute can only be supplied programmatically. In the
+        // reference JS SDK every <, >, <=, >= against NaN is false; compareDoubles alone would report
+        // NaN as equal to a finite number and let $gte/$lte match.
+        ConditionEvaluator evaluator = new ConditionEvaluator();
+        JsonObject nanAttribute = new JsonObject();
+        nanAttribute.addProperty("a", Double.NaN);
+
+        assertFalse(evaluator.evaluateCondition(nanAttribute, parse("{\"a\":{\"$gte\":0}}"), null));
+        assertFalse(evaluator.evaluateCondition(nanAttribute, parse("{\"a\":{\"$lte\":0}}"), null));
+        assertFalse(evaluator.evaluateCondition(nanAttribute, parse("{\"a\":{\"$gt\":0}}"), null));
+        assertFalse(evaluator.evaluateCondition(nanAttribute, parse("{\"a\":{\"$lt\":0}}"), null));
+    }
+
     private static JsonObject parse(String json) {
         return GrowthBookJsonUtils.getInstance().gson.fromJson(json, JsonObject.class);
     }

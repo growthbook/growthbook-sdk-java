@@ -238,13 +238,13 @@ public class ConditionEvaluator implements IConditionEvaluator {
             if (expected.isJsonPrimitive() && !expected.getAsJsonPrimitive().isNumber()) {
                 return false;
             }
-            return matchesSign(operator, compareDoubles(0.0, expected.getAsDouble()));
+            return compareNumbers(operator, 0.0, expected.getAsDouble());
         }
         if (operator == Operator.LT && actual.getAsString().toLowerCase().matches("\\d+")) {
             return Double.parseDouble(actual.getAsString()) < expected.getAsDouble();
         }
         if (actual.getAsJsonPrimitive().isNumber()) {
-            return matchesSign(operator, compareDoubles(actual.getAsNumber().doubleValue(), expected.getAsNumber().doubleValue()));
+            return compareNumbers(operator, actual.getAsNumber().doubleValue(), expected.getAsNumber().doubleValue());
         }
         if (actual.getAsJsonPrimitive().isString()) {
             return matchesSign(operator, actual.getAsString().compareTo(expected.getAsString()));
@@ -267,6 +267,21 @@ public class ConditionEvaluator implements IConditionEvaluator {
             return 1;
         }
         return 0;
+    }
+
+    /**
+     * Applies a {@code $gt}/{@code $gte}/{@code $lt}/{@code $lte} operator to two doubles.
+     *
+     * <p>A {@code NaN} operand makes every comparison false, matching the reference JavaScript SDK
+     * where {@code <}/{@code >}/{@code <=}/{@code >=} against {@code NaN} are all false. Without this
+     * guard {@link #compareDoubles} reports {@code NaN} as equal to any finite number — neither
+     * {@code <} nor {@code >} holds — so {@code $gte}/{@code $lte} would wrongly match.
+     */
+    private static boolean compareNumbers(Operator operator, double left, double right) {
+        if (Double.isNaN(left) || Double.isNaN(right)) {
+            return false;
+        }
+        return matchesSign(operator, compareDoubles(left, right));
     }
 
     /**
