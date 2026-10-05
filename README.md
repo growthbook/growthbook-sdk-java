@@ -137,10 +137,10 @@ try {
     e.printStackTrace();
 }
 
-// Initialize the GrowthBook SDK with the GBContext and features
+// Initialize the GrowthBook SDK with the GBContext, features and saved groups
 GBContext context = GBContext
     .builder()
-    .featuresJson(featuresRepository.getFeaturesJson())
+    .featureSnapshot(featuresRepository.getFeatureSnapshot())
     .attributesJson(userAttributesJson)
     .build();
 
@@ -158,6 +158,17 @@ growthBook.isOn("featureKey");
 > This does not apply to `GrowthBookClient.addFeatureRefreshListener(...)` /
 > `subscribeFeatureRefreshListener(...)`: the client dispatches those off the refresh thread, on a
 > dedicated daemon thread or on the executor you pass via `Options.featureRefreshListenerExecutor`.
+
+`GBContext` needs both the features and the saved groups from the payload. Without the saved
+groups, rules that reference them by ID match nobody (or, for exclusions, everybody).
+
+| Source | Builder call |
+| --- | --- |
+| `GBFeaturesRepository` | `.featureSnapshot(repo.getFeatureSnapshot())` |
+| `NativeJavaGbFeatureRepository` | `.featuresJson(repo.getFeaturesJson()).savedGroupsJson(repo.getSavedGroupsJson())` |
+| Your own fetch | `.featuresJson(...)` and `.savedGroupsJson(...)` from the response's `features` and `savedGroups` |
+
+`GrowthBookClient` handles this itself. After a refresh, build a new `GBContext` from the repository.
 
 ## Usage
 ## Caching & Refresh Strategy
