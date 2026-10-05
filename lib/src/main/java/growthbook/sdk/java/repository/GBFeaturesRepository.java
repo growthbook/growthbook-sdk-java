@@ -49,6 +49,9 @@ import org.jetbrains.annotations.NotNull;
 import javax.annotation.Nullable;
 import java.io.IOException;
 import java.net.HttpURLConnection;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -76,6 +79,7 @@ import java.util.concurrent.atomic.AtomicReference;
 public class GBFeaturesRepository implements IGBFeaturesRepository {
     private static final String ENABLED = "enabled";
     private static final String FILE_NAME = "FEATURE_CACHE.json";
+    private static final String CACHE_KEY_PREFIX = "FEATURE_CACHE_";
     public static final String FILE_PATH_FOR_CACHE = "src/main/resources";
     public static final String EMPTY_JSON_OBJECT_STRING = "{}";
     private static final ThreadFactory SSE_RETRY_THREAD_FACTORY = runnable -> {
@@ -94,6 +98,8 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
      */
     @Getter
     private final String featuresEndpoint;
+
+    private final String cacheKey;
 
     /**
      * Endpoint for SSE request
@@ -439,6 +445,7 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
         this.featuresEndpoint = apiHost + FEATURES_ENDPOINT_PATH + clientKey;
         this.eventsEndpoint = apiHost + STREAMING_ENDPOINT_PATH + clientKey;
         this.remoteEvalEndPoint = RemoteEvalEndpoints.evalEndpoint(apiHost, clientKey);
+        this.cacheKey = buildCacheKey(this.featuresEndpoint);
 
         this.encryptionKey = decryptionKey;
         this.decryptionKey = decryptionKey;
@@ -451,7 +458,6 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
         this.requestBodyForRemoteEval = requestBodyForRemoteEval != null ? requestBodyForRemoteEval : new RequestBodyForRemoteEval();
         this.refreshExpiresAt();
 
-        // Use provided OkHttpClient or create a new one
         if (okHttpClient == null) {
             this.okHttpClient = this.initializeHttpClient();
         } else if (okHttpClient.retryOnConnectionFailure()) {
@@ -465,6 +471,21 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
         }
         if (!this.isCacheDisabled) {
             this.cacheManager = cacheManager != null ? cacheManager : createCacheManager();
+        }
+    }
+
+    private static String buildCacheKey(String featuresEndpoint) {
+        try {
+            MessageDigest digest = MessageDigest.getInstance("SHA-256");
+            byte[] hash = digest.digest(featuresEndpoint.getBytes(StandardCharsets.UTF_8));
+            StringBuilder hex = new StringBuilder(16);
+            for (int i = 0; i < 8; i++) {
+                hex.append(Character.forDigit((hash[i] >> 4) & 0xF, 16));
+                hex.append(Character.forDigit(hash[i] & 0xF, 16));
+            }
+            return CACHE_KEY_PREFIX + hex + ".json";
+        } catch (NoSuchAlgorithmException e) {
+            return FILE_NAME;
         }
     }
 
@@ -900,7 +921,7 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
         }
 
         try {
-            return this.cacheManager.getLastUpdatedMillis(FILE_NAME);
+            return this.cacheManager.getLastUpdatedMillis(this.cacheKey);
         } catch (RuntimeException cacheException) {
             log.warn("Failed to read the feature cache timestamp.", cacheException);
             return null;
@@ -913,7 +934,7 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
         }
 
         try {
-            String cachedData = this.cacheManager.loadCache(FILE_NAME);
+            String cachedData = this.cacheManager.loadCache(this.cacheKey);
             if (cachedData == null || cachedData.trim().isEmpty()) {
                 return false;
             }
@@ -955,7 +976,7 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
         try {
             if (!isFromCache && !isCacheDisabled && cacheManager != null) {
                 try {
-                    cacheManager.saveContent(FILE_NAME, responseJsonString);
+                    cacheManager.saveContent(this.cacheKey, responseJsonString);
                 } catch (RuntimeException ignored) {
                 }
             }
@@ -1256,7 +1277,7 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
 
 
     private String getCachedFeatures() throws FeatureFetchException {
-        String cachedData = cacheManager.loadCache(FILE_NAME);
+        String cachedData = cacheManager.loadCache(this.cacheKey);
         if (cachedData == null) {
             log.error("FeatureFetchException: No Features from Cache");
             throw new FeatureFetchException(FeatureFetchException.FeatureFetchErrorCode.NO_RESPONSE_ERROR);

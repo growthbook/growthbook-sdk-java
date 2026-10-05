@@ -189,6 +189,20 @@ class GBFeaturesRepositoryTest {
     }
 
     @Test
+    void shutdown_doesNotClearSharedCacheStore() {
+        GbCacheManager cacheManager = mock(GbCacheManager.class);
+        GBFeaturesRepository subject = GBFeaturesRepository.builder()
+                .apiHost("http://localhost")
+                .clientKey("sdk-123")
+                .cacheManager(cacheManager)
+                .build();
+
+        subject.shutdown();
+
+        verify(cacheManager, never()).clearCache();
+    }
+
+    @Test
     void initialize_withUnencryptedResponse_setsFeaturesJson() throws FeatureFetchException, IOException {
         String fakeResponseJson = "{\"status\":200,\"features\":{\"banner_text\":{\"defaultValue\":\"Welcome to Acme Donuts!\",\"rules\":[{\"condition\":{\"country\":\"france\"},\"force\":\"Bienvenue au Beignets Acme !\"},{\"condition\":{\"country\":\"spain\"},\"force\":\"¡Bienvenidos y bienvenidas a Donas Acme!\"}]},\"dark_mode\":{\"defaultValue\":false,\"rules\":[{\"condition\":{\"loggedIn\":true},\"force\":true,\"coverage\":0.5,\"hashAttribute\":\"id\"}]},\"donut_price\":{\"defaultValue\":2.5,\"rules\":[{\"condition\":{\"employee\":true},\"force\":0}]},\"meal_overrides_gluten_free\":{\"defaultValue\":{\"meal_type\":\"standard\",\"dessert\":\"Strawberry Cheesecake\"},\"rules\":[{\"condition\":{\"dietaryRestrictions\":{\"$elemMatch\":{\"$eq\":\"gluten_free\"}}},\"force\":{\"meal_type\":\"gf\",\"dessert\":\"French Vanilla Ice Cream\"}}]}},\"dateUpdated\":\"2023-01-11T00:26:01.745Z\"}";
         OkHttpClient mockOkHttpClient = mockHttpClient(fakeResponseJson);

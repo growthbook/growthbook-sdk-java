@@ -214,6 +214,7 @@ class LettuceGbCacheManagerTest {
         assertThrows(NullPointerException.class, () -> options.connection(null));
         assertThrows(IllegalArgumentException.class, () -> options.keyPrefix(" "));
         assertThrows(IllegalArgumentException.class, () -> options.ttl(Duration.ZERO));
+        assertThrows(IllegalArgumentException.class, () -> options.ttl(Duration.ofNanos(500)));
         assertThrows(NullPointerException.class, () -> options.clock(null));
         assertThrows(NullPointerException.class, options::build);
     }

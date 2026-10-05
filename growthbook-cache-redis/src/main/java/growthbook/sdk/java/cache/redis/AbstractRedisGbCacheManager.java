@@ -75,10 +75,22 @@ public abstract class AbstractRedisGbCacheManager implements GbCacheManager {
     @Override
     public void clearCache() {
         try {
-            deleteByPrefix(keyPrefix + "*");
+            deleteByPrefix(escapeGlob(keyPrefix) + "*");
         } catch (RuntimeException e) {
             throw new FeatureCacheException("Failed to clear GrowthBook feature cache", e);
         }
+    }
+
+    static String escapeGlob(String literal) {
+        StringBuilder escaped = new StringBuilder(literal.length());
+        for (int i = 0; i < literal.length(); i++) {
+            char c = literal.charAt(i);
+            if (c == '\\' || c == '*' || c == '?' || c == '[' || c == ']') {
+                escaped.append('\\');
+            }
+            escaped.append(c);
+        }
+        return escaped.toString();
     }
 
     /**

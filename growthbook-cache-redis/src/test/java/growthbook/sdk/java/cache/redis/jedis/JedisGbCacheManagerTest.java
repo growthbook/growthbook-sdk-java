@@ -7,6 +7,7 @@ import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import redis.clients.jedis.Jedis;
 import redis.clients.jedis.JedisPool;
+import redis.clients.jedis.Transaction;
 import redis.clients.jedis.exceptions.JedisException;
 import redis.clients.jedis.params.ScanParams;
 import redis.clients.jedis.resps.ScanResult;
@@ -71,9 +72,11 @@ class JedisGbCacheManagerTest {
     }
 
     @Test
-    @DisplayName("Verify: saveContent applies a TTL (in milliseconds) when configured")
+    @DisplayName("Verify: saveContent applies a TTL (in milliseconds) atomically via MULTI/EXEC")
     void saveContentAppliesTtlWhenConfigured() {
         // Given
+        Transaction transaction = mock(Transaction.class);
+        when(jedis.multi()).thenReturn(transaction);
         JedisGbCacheManager cache = JedisGbCacheManager.builder()
                 .jedisPool(pool)
                 .ttl(Duration.ofSeconds(30))
@@ -82,14 +85,19 @@ class JedisGbCacheManagerTest {
         // When
         cache.saveContent("k", "v");
 
-        // Then
-        verify(jedis).pexpire(PREFIX + "k", 30_000L);
+        // Then: HSET and PEXPIRE are queued in one transaction so a failed expiry can't persist
+        verify(transaction).hset(eq(PREFIX + "k"), any());
+        verify(transaction).pexpire(PREFIX + "k", 30_000L);
+        verify(transaction).exec();
+        verify(jedis, never()).hset(anyString(), any());
     }
 
     @Test
     @DisplayName("Verify: a sub-second TTL is honoured with millisecond precision, not truncated to 0")
     void saveContentHonoursSubSecondTtl() {
         // Given
+        Transaction transaction = mock(Transaction.class);
+        when(jedis.multi()).thenReturn(transaction);
         JedisGbCacheManager cache = JedisGbCacheManager.builder()
                 .jedisPool(pool)
                 .ttl(Duration.ofMillis(500))
@@ -99,8 +107,8 @@ class JedisGbCacheManagerTest {
         cache.saveContent("k", "v");
 
         // Then: PEXPIRE with 500ms, never EXPIRE 0 (which would immediately delete the entry)
-        verify(jedis).pexpire(PREFIX + "k", 500L);
-        verify(jedis, never()).expire(anyString(), anyLong());
+        verify(transaction).pexpire(PREFIX + "k", 500L);
+        verify(transaction, never()).expire(anyString(), anyLong());
     }
 
     @Test
@@ -207,6 +215,7 @@ class JedisGbCacheManagerTest {
         assertThrows(NullPointerException.class, () -> options.jedisPool(null));
         assertThrows(IllegalArgumentException.class, () -> options.keyPrefix(" "));
         assertThrows(IllegalArgumentException.class, () -> options.ttl(Duration.ZERO));
+        assertThrows(IllegalArgumentException.class, () -> options.ttl(Duration.ofNanos(500)));
         assertThrows(NullPointerException.class, () -> options.clock(null));
         assertThrows(NullPointerException.class, options::build);
     }

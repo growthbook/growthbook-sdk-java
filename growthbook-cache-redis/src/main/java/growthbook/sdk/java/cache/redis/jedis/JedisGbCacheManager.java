@@ -4,6 +4,7 @@ import growthbook.sdk.java.cache.redis.AbstractRedisGbCacheManager;
 import growthbook.sdk.java.sandbox.GbCacheManager;
 import redis.clients.jedis.Jedis;
 import redis.clients.jedis.JedisPool;
+import redis.clients.jedis.Transaction;
 import redis.clients.jedis.params.ScanParams;
 import redis.clients.jedis.resps.ScanResult;
 
@@ -45,9 +46,13 @@ public final class JedisGbCacheManager extends AbstractRedisGbCacheManager {
     @Override
     protected void writeHash(String redisKey, Map<String, String> hash, Long ttlMillis) {
         try (Jedis jedis = jedisPool.getResource()) {
-            jedis.hset(redisKey, hash);
-            if (ttlMillis != null) {
-                jedis.pexpire(redisKey, ttlMillis);
+            if (ttlMillis == null) {
+                jedis.hset(redisKey, hash);
+            } else {
+                Transaction transaction = jedis.multi();
+                transaction.hset(redisKey, hash);
+                transaction.pexpire(redisKey, ttlMillis);
+                transaction.exec();
             }
         }
     }

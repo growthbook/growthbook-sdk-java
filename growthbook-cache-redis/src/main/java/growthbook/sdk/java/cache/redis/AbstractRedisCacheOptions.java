@@ -70,8 +70,13 @@ public abstract class AbstractRedisCacheOptions {
          * do not expire.
          */
         public B ttl(Duration ttl) {
-            if (ttl != null && (ttl.isZero() || ttl.isNegative())) {
-                throw new IllegalArgumentException("ttl must be greater than 0");
+            if (ttl != null) {
+                if (ttl.isZero() || ttl.isNegative()) {
+                    throw new IllegalArgumentException("ttl must be greater than 0");
+                }
+                if (ttl.toMillis() < 1) {
+                    throw new IllegalArgumentException("ttl must be at least 1 millisecond");
+                }
             }
             this.ttl = ttl;
             return self();

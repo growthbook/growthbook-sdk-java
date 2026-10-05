@@ -46,9 +46,13 @@ public final class LettuceGbCacheManager extends AbstractRedisGbCacheManager {
 
     @Override
     protected void writeHash(String redisKey, Map<String, String> hash, Long ttlMillis) {
-        commands.hset(redisKey, hash);
-        if (ttlMillis != null) {
+        if (ttlMillis == null) {
+            commands.hset(redisKey, hash);
+        } else {
+            commands.multi();
+            commands.hset(redisKey, hash);
             commands.pexpire(redisKey, ttlMillis);
+            commands.exec();
         }
     }
 

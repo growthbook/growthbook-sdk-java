@@ -32,7 +32,7 @@ dependencies {
     compileOnly 'io.lettuce:lettuce-core:6.2.6.RELEASE'
 
     testImplementation 'org.junit.jupiter:junit-jupiter:5.8.2'
-    testImplementation 'org.mockito:mockito-core:4.8.0'
+    testImplementation 'org.mockito:mockito-inline:4.8.0'
     testImplementation 'redis.clients:jedis:4.4.6'
     testImplementation 'io.lettuce:lettuce-core:6.2.6.RELEASE'
 
