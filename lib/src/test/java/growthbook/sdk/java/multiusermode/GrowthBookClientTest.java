@@ -319,7 +319,7 @@ class GrowthBookClientTest {
 
         client.setGlobalAttributes(null);
 
-        assertNull(options.getAttributesJson());
+        assertEquals("{}", options.getAttributesJson());
         assertNotNull(options.getGlobalAttributes());
         assertEquals(0, options.getGlobalAttributes().size());
     }

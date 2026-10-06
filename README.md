@@ -87,6 +87,30 @@ gb.isOn("featureKey", UserContext.builder()
 );
 ```
 
+#### Global attributes: replace vs merge
+
+`GrowthBookClient` exposes two ways to change the attributes shared across evaluations:
+
+- `setGlobalAttributes(json)` — **replace** semantics. All previous attributes are discarded; only
+  the keys in the supplied JSON remain.
+- `updateGlobalAttributes(json)` — **merge** semantics (parity with the TS SDK's
+  `updateAttributes()`). New keys are added, existing keys are overwritten, and other keys are
+  preserved. A key whose value is JSON `null` is removed. A `null` or malformed JSON string is a
+  no-op. Only the top level is merged (shallow); nested objects are replaced wholesale.
+
+```java
+gb.setGlobalAttributes("{\"id\":\"1\"}");            // { "id": "1" }
+gb.updateGlobalAttributes("{\"plan\":\"pro\"}");     // { "id": "1", "plan": "pro" }  <- "id" preserved
+gb.updateGlobalAttributes("{\"plan\":null}");        // { "id": "1" }                 <- "plan" removed
+
+// A JsonObject overload is also available:
+gb.updateGlobalAttributes(myJsonObject);
+```
+
+Both methods invalidate the remote-eval response cache, so the next evaluation reflects the change.
+Attribute mutations are thread-safe: concurrent evaluations always observe a fully-built snapshot,
+never a partially merged one.
+
 ### Manually create separate instance of GBContext, Repository and Growthbook classes
 
 ```java
