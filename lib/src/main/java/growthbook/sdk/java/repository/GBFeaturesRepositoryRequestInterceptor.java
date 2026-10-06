@@ -12,12 +12,16 @@ import java.io.IOException;
  * Appends User-Agent info to the request headers.
  */
 public class GBFeaturesRepositoryRequestInterceptor implements Interceptor {
+
+    public static final String USER_AGENT_HEADER = "User-Agent";
+    public static final String USER_AGENT_VALUE = "growthbook-sdk-java/" + Version.SDK_VERSION;
+
     @NotNull
     @Override
     public Response intercept(@NotNull Interceptor.Chain chain) throws IOException {
         Request modifiedRequest = chain.request()
             .newBuilder()
-            .header("User-Agent", "growthbook-sdk-java/" + Version.SDK_VERSION)
+            .header(USER_AGENT_HEADER, USER_AGENT_VALUE)
             .build();
 
         return chain.proceed(modifiedRequest);

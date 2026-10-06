@@ -53,6 +53,8 @@ import java.net.HttpURLConnection;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Collections;
+import java.util.LinkedHashMap;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
@@ -102,10 +104,23 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
     private final String featuresEndpoint;
 
     /**
-     * Endpoint for SSE request
+     * Endpoint for SSE request. Built from {@code streamingHost} when supplied,
+     * otherwise from {@code apiHost}.
      */
     @Getter
     private final String eventsEndpoint;
+
+    /**
+     * Custom headers added to every request against the API host (features GET and
+     * remote-eval POST). Values may contain secrets and must never be logged.
+     */
+    private final Map<String, String> apiHostRequestHeaders;
+
+    /**
+     * Custom headers added to the SSE streaming request. Values may contain secrets
+     * and must never be logged.
+     */
+    private final Map<String, String> streamingHostRequestHeaders;
 
     /**
      * Strategy for building url
@@ -378,7 +393,6 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
         );
     }
 
-    @Builder
     public GBFeaturesRepository(
             @Nullable String apiHost,
             String clientKey,
@@ -393,6 +407,52 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
             @Nullable Duration backgroundFetchInterval,
             @Nullable FeatureFetchRetryPolicy retryPolicy
     ) {
+        this(
+                apiHost,
+                clientKey,
+                encryptionKey,
+                refreshStrategy,
+                swrTtlSeconds,
+                okHttpClient,
+                decryptionKey,
+                isCacheDisabled,
+                requestBodyForRemoteEval,
+                cacheManager,
+                backgroundFetchInterval,
+                retryPolicy,
+                null,
+                null,
+                null
+        );
+    }
+
+    /**
+     * Builder constructor supporting custom request headers and a dedicated streaming host.
+     *
+     * @param apiHostRequestHeaders       custom headers added to every API host request
+     *                                    (features GET and remote-eval POST); reserved SDK headers are ignored
+     * @param streamingHost               dedicated host for SSE streaming; falls back to {@code apiHost} when null
+     * @param streamingHostRequestHeaders custom headers added to the SSE streaming request;
+     *                                    reserved SDK headers are ignored
+     */
+    @Builder
+    public GBFeaturesRepository(
+            @Nullable String apiHost,
+            String clientKey,
+            @Deprecated @Nullable String encryptionKey,
+            @Nullable FeatureRefreshStrategy refreshStrategy,
+            @Nullable Integer swrTtlSeconds,
+            @Nullable OkHttpClient okHttpClient,
+            @Nullable String decryptionKey,
+            @Nullable Boolean isCacheDisabled,
+            @Nullable RequestBodyForRemoteEval requestBodyForRemoteEval,
+            @Nullable GbCacheManager cacheManager,
+            @Nullable Duration backgroundFetchInterval,
+            @Nullable FeatureFetchRetryPolicy retryPolicy,
+            @Nullable Map<String, String> apiHostRequestHeaders,
+            @Nullable String streamingHost,
+            @Nullable Map<String, String> streamingHostRequestHeaders
+    ) {
         this(apiHost, clientKey, (decryptionKey != null) ? decryptionKey : encryptionKey,
                 refreshStrategy,
                 swrTtlSeconds,
@@ -401,7 +461,10 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
                 (requestBodyForRemoteEval != null) ? requestBodyForRemoteEval : new RequestBodyForRemoteEval(),
                 cacheManager,
                 backgroundFetchInterval,
-                retryPolicy
+                retryPolicy,
+                apiHostRequestHeaders,
+                streamingHost,
+                streamingHostRequestHeaders
         );
     }
 
@@ -455,6 +518,40 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
             @Nullable Duration backgroundFetchInterval,
             @Nullable FeatureFetchRetryPolicy retryPolicy
     ) {
+        this(
+                apiHost,
+                clientKey,
+                decryptionKey,
+                refreshStrategy,
+                swrTtlSeconds,
+                okHttpClient,
+                isCacheDisabled,
+                requestBodyForRemoteEval,
+                cacheManager,
+                backgroundFetchInterval,
+                retryPolicy,
+                null,
+                null,
+                null
+        );
+    }
+
+    public GBFeaturesRepository(
+            @Nullable String apiHost,
+            String clientKey,
+            @Nullable String decryptionKey,
+            @Nullable FeatureRefreshStrategy refreshStrategy,
+            @Nullable Integer swrTtlSeconds,
+            @Nullable OkHttpClient okHttpClient,
+            @Nullable Boolean isCacheDisabled,
+            @Nullable RequestBodyForRemoteEval requestBodyForRemoteEval,
+            @Nullable GbCacheManager cacheManager,
+            @Nullable Duration backgroundFetchInterval,
+            @Nullable FeatureFetchRetryPolicy retryPolicy,
+            @Nullable Map<String, String> apiHostRequestHeaders,
+            @Nullable String streamingHost,
+            @Nullable Map<String, String> streamingHostRequestHeaders
+    ) {
         this.isCacheDisabled = isCacheDisabled != null && isCacheDisabled; // cache enable by default
         if (clientKey == null) throw new IllegalArgumentException("clientKey cannot be null");
         if (backgroundFetchInterval != null && backgroundFetchInterval.isNegative()) {
@@ -469,8 +566,13 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
 
         // Build the endpoints from the apiHost and clientKey
         this.featuresEndpoint = apiHost + FEATURES_ENDPOINT_PATH + clientKey;
-        this.eventsEndpoint = apiHost + STREAMING_ENDPOINT_PATH + clientKey;
+        String streamingHostOrApiHost = (streamingHost == null || streamingHost.trim().isEmpty())
+                ? apiHost
+                : streamingHost.trim();
+        this.eventsEndpoint = streamingHostOrApiHost + STREAMING_ENDPOINT_PATH + clientKey;
         this.remoteEvalEndPoint = RemoteEvalEndpoints.evalEndpoint(apiHost, clientKey);
+        this.apiHostRequestHeaders = sanitizeCustomHeaders("apiHostRequestHeaders", apiHostRequestHeaders);
+        this.streamingHostRequestHeaders = sanitizeCustomHeaders("streamingHostRequestHeaders", streamingHostRequestHeaders);
 
         this.encryptionKey = decryptionKey;
         this.decryptionKey = decryptionKey;
@@ -692,8 +794,11 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
                     .build();
         }
 
-        this.sseRequest = new Request.Builder()
-                .url(this.eventsEndpoint)
+        Request.Builder sseRequestBuilder = new Request.Builder()
+                .url(this.eventsEndpoint);
+        applyCustomHeaders(sseRequestBuilder, this.streamingHostRequestHeaders);
+        applySdkUserAgent(sseRequestBuilder);
+        this.sseRequest = sseRequestBuilder
                 .header(HttpHeaders.ACCEPT.getHeader(), HttpHeaders.APPLICATION_JSON.getHeader())
                 .addHeader(HttpHeaders.ACCEPT.getHeader(), HttpHeaders.SSE_HEADER.getHeader())
                 .build();
@@ -808,6 +913,54 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
     }
 
     /**
+     * Drops entries the SDK cannot honor: blank names, null values, and reserved
+     * SDK-managed header names ({@link SDKConstants#RESERVED_REQUEST_HEADERS}).
+     * Only header names are ever logged — values may contain secrets.
+     */
+    private static Map<String, String> sanitizeCustomHeaders(
+            String optionName,
+            @Nullable Map<String, String> headers
+    ) {
+        if (headers == null || headers.isEmpty()) {
+            return Collections.emptyMap();
+        }
+
+        Map<String, String> sanitized = new LinkedHashMap<>();
+        for (Map.Entry<String, String> entry : headers.entrySet()) {
+            String name = entry.getKey();
+            if (name == null || name.trim().isEmpty() || entry.getValue() == null) {
+                log.warn("Ignoring {} entry with a null or blank header name or a null value.", optionName);
+            } else if (SDKConstants.RESERVED_REQUEST_HEADERS.contains(name.toLowerCase(Locale.ROOT))) {
+                log.warn("Ignoring reserved header '{}' in {}; it is managed by the SDK.", name, optionName);
+            } else {
+                sanitized.put(name, entry.getValue());
+            }
+        }
+        return Collections.unmodifiableMap(sanitized);
+    }
+
+    /**
+     * Applies custom headers to a request. Called before SDK-managed headers are set,
+     * so the SDK values always take priority.
+     */
+    private static void applyCustomHeaders(Request.Builder requestBuilder, Map<String, String> headers) {
+        for (Map.Entry<String, String> entry : headers.entrySet()) {
+            requestBuilder.header(entry.getKey(), entry.getValue());
+        }
+    }
+
+    /**
+     * Sets the SDK User-Agent directly on the request, so it is guaranteed even when a
+     * user-supplied {@link OkHttpClient} lacks {@link GBFeaturesRepositoryRequestInterceptor}.
+     */
+    private static void applySdkUserAgent(Request.Builder requestBuilder) {
+        requestBuilder.header(
+                GBFeaturesRepositoryRequestInterceptor.USER_AGENT_HEADER,
+                GBFeaturesRepositoryRequestInterceptor.USER_AGENT_VALUE
+        );
+    }
+
+    /**
      * @return A new {@link OkHttpClient} with an interceptor {@link GBFeaturesRepositoryRequestInterceptor}
      */
     private OkHttpClient initializeHttpClient() {
@@ -882,6 +1035,8 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
 
         Request.Builder requestBuilder = new Request.Builder()
                 .url(this.featuresEndpoint);
+        applyCustomHeaders(requestBuilder, this.apiHostRequestHeaders);
+        applySdkUserAgent(requestBuilder);
 
         if (this.featuresEndpoint.matches(FEATURES_ENDPOINT_PATTERN)) {
             if (refreshMode == RefreshMode.FORCE) {
@@ -1364,10 +1519,12 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
                 jsonBody,
                 MediaType.parse("application/json")
         );
-        Request request = new Request.Builder()
+        Request.Builder remoteEvalRequestBuilder = new Request.Builder()
                 .url(this.remoteEvalEndPoint)
-                .post(requestBody)
-                .build();
+                .post(requestBody);
+        applyCustomHeaders(remoteEvalRequestBuilder, this.apiHostRequestHeaders);
+        applySdkUserAgent(remoteEvalRequestBuilder);
+        Request request = remoteEvalRequestBuilder.build();
 
         try (Response response = this.okHttpClient.newCall(request).execute()) {
             if (response.isSuccessful() && response.code() == 200) {

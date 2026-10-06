@@ -1,5 +1,6 @@
 package growthbook.sdk.java.multiusermode.configurations;
 
+import growthbook.sdk.java.constants.SDKConstants;
 import growthbook.sdk.java.exception.InvalidOptionsException;
 import growthbook.sdk.java.remoteeval.RemoteEvalOptionsValidator;
 import growthbook.sdk.java.sandbox.CacheMode;
@@ -11,6 +12,8 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Locale;
+import java.util.Map;
 
 /**
  * Validates {@link Options} once, at client start-up, so misconfigurations are reported up front with
@@ -22,6 +25,10 @@ import java.util.List;
  * <p>Checks performed:
  * <ul>
  *     <li>{@code apiHost} is present and a syntactically valid {@code http(s)} URL.</li>
+ *     <li>{@code streamingHost}, when set, is a syntactically valid {@code http(s)} URL.</li>
+ *     <li>{@code apiHostRequestHeaders} and {@code streamingHostRequestHeaders} contain no blank
+ *     names, no null values, and none of the SDK-managed (reserved) headers
+ *     {@code User-Agent}, {@code If-None-Match}, {@code Cache-Control}.</li>
  *     <li>{@code clientKey} is present.</li>
  *     <li>{@code swrTtlSeconds} (refresh interval) is positive when set.</li>
  *     <li>{@code backgroundFetchInterval} is non-negative when set.</li>
@@ -69,6 +76,9 @@ public final class OptionsValidator {
 
         List<String> violations = new ArrayList<>();
         checkApiHost(options.getApiHost(), violations);
+        checkStreamingHost(options.getStreamingHost(), violations);
+        checkRequestHeaders("apiHostRequestHeaders", options.getApiHostRequestHeaders(), violations);
+        checkRequestHeaders("streamingHostRequestHeaders", options.getStreamingHostRequestHeaders(), violations);
         checkClientKey(options.getClientKey(), violations);
         checkRefreshInterval(options.getSwrTtlSeconds(), violations);
         checkBackgroundFetchInterval(options.getBackgroundFetchInterval(), violations);
@@ -83,28 +93,64 @@ public final class OptionsValidator {
             violations.add("apiHost is required");
             return;
         }
+        checkHostUrl("apiHost", apiHost, violations);
+    }
 
-        String raw = apiHost.trim();
+    private static void checkStreamingHost(@Nullable String streamingHost, List<String> violations) {
+        if (streamingHost == null) {
+            return;
+        }
+        if (StringUtils.isBlank(streamingHost)) {
+            violations.add("streamingHost must not be blank when set");
+            return;
+        }
+        checkHostUrl("streamingHost", streamingHost, violations);
+    }
+
+    private static void checkHostUrl(String optionName, String host, List<String> violations) {
+        String raw = host.trim();
         boolean hasScheme = raw.contains(SCHEME_SEPARATOR);
 
         URI uri;
         try {
             uri = URI.create(hasScheme ? raw : HTTPS + SCHEME_SEPARATOR + raw);
         } catch (IllegalArgumentException e) {
-            violations.add("apiHost is not a valid URL: " + apiHost);
+            violations.add(optionName + " is not a valid URL: " + host);
             return;
         }
 
         if (hasScheme) {
             String scheme = uri.getScheme();
             if (scheme == null || (!scheme.equalsIgnoreCase(HTTP) && !scheme.equalsIgnoreCase(HTTPS))) {
-                violations.add("apiHost must use http or https scheme: " + apiHost);
+                violations.add(optionName + " must use http or https scheme: " + host);
                 return;
             }
         }
 
         if (StringUtils.isBlank(uri.getHost())) {
-            violations.add("apiHost is not a valid URL: " + apiHost);
+            violations.add(optionName + " is not a valid URL: " + host);
+        }
+    }
+
+    private static void checkRequestHeaders(
+            String optionName,
+            @Nullable Map<String, String> headers,
+            List<String> violations
+    ) {
+        if (headers == null || headers.isEmpty()) {
+            return;
+        }
+
+        for (Map.Entry<String, String> entry : headers.entrySet()) {
+            String name = entry.getKey();
+            if (StringUtils.isBlank(name)) {
+                violations.add(optionName + " must not contain a null or blank header name");
+            } else if (entry.getValue() == null) {
+                violations.add(optionName + " must not contain a null value for header '" + name + "'");
+            } else if (SDKConstants.RESERVED_REQUEST_HEADERS.contains(name.toLowerCase(Locale.ROOT))) {
+                violations.add(optionName + " must not contain the reserved header '" + name
+                        + "'; User-Agent, If-None-Match and Cache-Control are managed by the SDK");
+            }
         }
     }
 

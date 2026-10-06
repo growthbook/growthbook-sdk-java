@@ -227,6 +227,9 @@ public class GrowthBookClient {
                 .backgroundFetchInterval(this.options.getBackgroundFetchInterval())
                 .retryPolicy(this.options.getRetryPolicy())
                 .requestBodyForRemoteEval(configurePayloadForRemoteEval(this.options))
+                .apiHostRequestHeaders(this.options.getApiHostRequestHeaders())
+                .streamingHost(this.options.getStreamingHost())
+                .streamingHostRequestHeaders(this.options.getStreamingHostRequestHeaders())
                 .build();
     }
 
@@ -577,6 +580,9 @@ public class GrowthBookClient {
                 .refreshStrategy(FeatureRefreshStrategy.SERVER_SENT_EVENTS)
                 .isCacheDisabled(true)
                 .retryPolicy(this.options.getRetryPolicy())
+                .apiHostRequestHeaders(this.options.getApiHostRequestHeaders())
+                .streamingHost(this.options.getStreamingHost())
+                .streamingHostRequestHeaders(this.options.getStreamingHostRequestHeaders())
                 .build();
         sseRepository.onFeaturesRefresh(new FeatureRefreshCallback() {
             @Override
@@ -764,7 +770,11 @@ public class GrowthBookClient {
 
     private synchronized RemoteEvalService getRemoteEvalService() {
         if (this.remoteEvalService == null) {
-            this.remoteEvalService = new RemoteEvalService(this.options.getApiHost(), this.options.getClientKey());
+            this.remoteEvalService = new RemoteEvalService(
+                    this.options.getApiHost(),
+                    this.options.getClientKey(),
+                    this.options.getApiHostRequestHeaders()
+            );
         }
         return this.remoteEvalService;
     }

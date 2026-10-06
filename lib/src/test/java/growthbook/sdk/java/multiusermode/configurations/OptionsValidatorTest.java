@@ -10,9 +10,13 @@ import org.mockito.Mockito;
 
 import java.time.Duration;
 
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -79,6 +83,118 @@ class OptionsValidatorTest {
     void rejectsMalformedApiHost() {
         assertThrows(IllegalArgumentException.class,
                 () -> OptionsValidator.validate(validOptions().apiHost("https://").build()));
+    }
+
+    @Test
+    @DisplayName("Verify: accepts a valid streamingHost")
+    void acceptsValidStreamingHost() {
+        assertDoesNotThrow(() -> OptionsValidator.validate(
+                validOptions().streamingHost("https://beacon.growthbook.io").build()));
+    }
+
+    @Test
+    @DisplayName("Verify: accepts a null streamingHost")
+    void acceptsNullStreamingHost() {
+        assertDoesNotThrow(() -> OptionsValidator.validate(
+                validOptions().streamingHost(null).build()));
+    }
+
+    @Test
+    @DisplayName("Verify: rejects a blank streamingHost")
+    void rejectsBlankStreamingHost() {
+        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
+                () -> OptionsValidator.validate(validOptions().streamingHost("   ").build()));
+        assertTrue(ex.getMessage().contains("streamingHost"));
+    }
+
+    @Test
+    @DisplayName("Verify: rejects a streamingHost with a non-http(s) scheme")
+    void rejectsNonHttpStreamingHostScheme() {
+        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
+                () -> OptionsValidator.validate(
+                        validOptions().streamingHost("ftp://beacon.growthbook.io").build()));
+        assertTrue(ex.getMessage().contains("streamingHost must use http or https"));
+    }
+
+    @Test
+    @DisplayName("Verify: rejects a malformed streamingHost with no host")
+    void rejectsMalformedStreamingHost() {
+        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
+                () -> OptionsValidator.validate(validOptions().streamingHost("https://").build()));
+        assertTrue(ex.getMessage().contains("streamingHost"));
+    }
+
+    @Test
+    @DisplayName("Verify: accepts custom, non-reserved request headers")
+    void acceptsCustomRequestHeaders() {
+        assertDoesNotThrow(() -> OptionsValidator.validate(validOptions()
+                .apiHostRequestHeaders(Collections.singletonMap("Authorization", "Bearer token"))
+                .streamingHostRequestHeaders(Collections.singletonMap("X-Custom", "value"))
+                .build()));
+    }
+
+    @Test
+    @DisplayName("Verify: rejects reserved headers in apiHostRequestHeaders (case-insensitive)")
+    void rejectsReservedApiHostRequestHeaders() {
+        Map<String, String> headers = new HashMap<>();
+        headers.put("user-agent", "custom/1.0");
+        headers.put("If-None-Match", "\"etag\"");
+        headers.put("CACHE-CONTROL", "no-store");
+
+        InvalidOptionsException ex = assertThrows(InvalidOptionsException.class,
+                () -> OptionsValidator.validate(
+                        validOptions().apiHostRequestHeaders(headers).build()));
+        assertEquals(3, ex.getViolations().size(), ex.getViolations().toString());
+        assertTrue(ex.getMessage().contains("reserved header"));
+    }
+
+    @Test
+    @DisplayName("Verify: rejects reserved headers in streamingHostRequestHeaders")
+    void rejectsReservedStreamingHostRequestHeaders() {
+        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
+                () -> OptionsValidator.validate(validOptions()
+                        .streamingHostRequestHeaders(Collections.singletonMap("User-Agent", "custom/1.0"))
+                        .build()));
+        assertTrue(ex.getMessage().contains("streamingHostRequestHeaders"));
+        assertTrue(ex.getMessage().contains("reserved header"));
+    }
+
+    @Test
+    @DisplayName("Verify: rejects blank header names and null header values")
+    void rejectsBlankHeaderNamesAndNullValues() {
+        Map<String, String> headers = new HashMap<>();
+        headers.put("  ", "value");
+        headers.put("X-Token", null);
+
+        InvalidOptionsException ex = assertThrows(InvalidOptionsException.class,
+                () -> OptionsValidator.validate(
+                        validOptions().apiHostRequestHeaders(headers).build()));
+        assertEquals(2, ex.getViolations().size(), ex.getViolations().toString());
+    }
+
+    @Test
+    @DisplayName("Verify: header violation messages never contain header values")
+    void headerViolationMessagesOmitValues() {
+        Map<String, String> headers = new HashMap<>();
+        headers.put("Cache-Control", "super-secret-value");
+
+        InvalidOptionsException ex = assertThrows(InvalidOptionsException.class,
+                () -> OptionsValidator.validate(
+                        validOptions().apiHostRequestHeaders(headers).build()));
+        assertFalse(ex.getMessage().contains("super-secret-value"), ex.getMessage());
+    }
+
+    @Test
+    @DisplayName("Verify: Options.toString never exposes header values")
+    void optionsToStringOmitsHeaderValues() {
+        Options options = validOptions()
+                .apiHostRequestHeaders(Collections.singletonMap("Authorization", "Bearer secret-token"))
+                .streamingHostRequestHeaders(Collections.singletonMap("X-Key", "streaming-secret"))
+                .build();
+
+        String rendered = options.toString();
+        assertFalse(rendered.contains("secret-token"), rendered);
+        assertFalse(rendered.contains("streaming-secret"), rendered);
     }
 
     @Test
