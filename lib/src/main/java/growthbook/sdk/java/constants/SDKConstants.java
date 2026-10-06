@@ -17,11 +17,12 @@ public class SDKConstants {
     /**
      * Header names (lowercase) managed by the SDK itself. User-supplied header maps
      * ({@code apiHostRequestHeaders}, {@code streamingHostRequestHeaders}) must not
-     * override them: {@code User-Agent} identifies the SDK, {@code If-None-Match}
-     * and {@code Cache-Control} drive ETag/TTL-based cache revalidation.
+     * override them: {@code User-Agent} identifies the SDK, {@code Accept} carries the
+     * SSE content negotiation ({@code text/event-stream}) on the streaming request, and
+     * {@code If-None-Match} and {@code Cache-Control} drive ETag/TTL-based cache revalidation.
      */
     public static final Set<String> RESERVED_REQUEST_HEADERS = Collections.unmodifiableSet(
-            new HashSet<>(Arrays.asList("user-agent", "if-none-match", "cache-control")));
+            new HashSet<>(Arrays.asList("user-agent", "accept", "if-none-match", "cache-control")));
 
     @UtilityClass
     public class Endpoints {

@@ -26,9 +26,10 @@ import java.util.Map;
  * <ul>
  *     <li>{@code apiHost} is present and a syntactically valid {@code http(s)} URL.</li>
  *     <li>{@code streamingHost}, when set, is a syntactically valid {@code http(s)} URL.</li>
- *     <li>{@code apiHostRequestHeaders} and {@code streamingHostRequestHeaders} contain no blank
- *     names, no null values, and none of the SDK-managed (reserved) headers
- *     {@code User-Agent}, {@code If-None-Match}, {@code Cache-Control}.</li>
+ *     <li>{@code apiHostRequestHeaders} and {@code streamingHostRequestHeaders} contain only
+ *     syntactically valid HTTP header names and values, no blank names, no null values, and none
+ *     of the SDK-managed (reserved) headers {@code User-Agent}, {@code Accept},
+ *     {@code If-None-Match}, {@code Cache-Control}.</li>
  *     <li>{@code clientKey} is present.</li>
  *     <li>{@code swrTtlSeconds} (refresh interval) is positive when set.</li>
  *     <li>{@code backgroundFetchInterval} is non-negative when set.</li>
@@ -143,15 +144,51 @@ public final class OptionsValidator {
 
         for (Map.Entry<String, String> entry : headers.entrySet()) {
             String name = entry.getKey();
+            String value = entry.getValue();
             if (StringUtils.isBlank(name)) {
                 violations.add(optionName + " must not contain a null or blank header name");
-            } else if (entry.getValue() == null) {
-                violations.add(optionName + " must not contain a null value for header '" + name + "'");
             } else if (SDKConstants.RESERVED_REQUEST_HEADERS.contains(name.toLowerCase(Locale.ROOT))) {
                 violations.add(optionName + " must not contain the reserved header '" + name
-                        + "'; User-Agent, If-None-Match and Cache-Control are managed by the SDK");
+                        + "'; User-Agent, Accept, If-None-Match and Cache-Control are managed by the SDK");
+            } else if (!isValidHeaderName(name)) {
+                violations.add(optionName + " contains an invalid HTTP header name '" + name + "'");
+            } else if (value == null) {
+                violations.add(optionName + " must not contain a null value for header '" + name + "'");
+            } else if (!isValidHeaderValue(value)) {
+                // The value may hold a secret, so it is never echoed in the message.
+                violations.add(optionName + " contains an invalid value for header '" + name + "'");
             }
         }
+    }
+
+    /**
+     * @return {@code true} if every character is allowed in an HTTP header name (printable ASCII,
+     *         excluding spaces and control characters), matching what OkHttp accepts when the
+     *         request is built. Rejecting here reports the problem at start-up instead of as an
+     *         unchecked exception on the first request.
+     */
+    private static boolean isValidHeaderName(String name) {
+        for (int i = 0; i < name.length(); i++) {
+            char c = name.charAt(i);
+            if (c <= '\u0020' || c >= '\u007f') {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    /**
+     * @return {@code true} if every character is allowed in an HTTP header value (a horizontal tab
+     *         or printable ASCII), matching what OkHttp accepts when the request is built.
+     */
+    private static boolean isValidHeaderValue(String value) {
+        for (int i = 0; i < value.length(); i++) {
+            char c = value.charAt(i);
+            if (c != '\t' && (c <= '\u001f' || c >= '\u007f')) {
+                return false;
+            }
+        }
+        return true;
     }
 
     private static void checkClientKey(@Nullable String clientKey, List<String> violations) {

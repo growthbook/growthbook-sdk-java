@@ -160,6 +160,38 @@ class OptionsValidatorTest {
     }
 
     @Test
+    @DisplayName("Verify: rejects a header name with invalid HTTP syntax")
+    void rejectsInvalidHeaderName() {
+        InvalidOptionsException ex = assertThrows(InvalidOptionsException.class,
+                () -> OptionsValidator.validate(validOptions()
+                        .apiHostRequestHeaders(Collections.singletonMap("X Gateway Key", "value"))
+                        .build()));
+        assertTrue(ex.getMessage().contains("invalid HTTP header name"), ex.getMessage());
+        assertTrue(ex.getMessage().contains("X Gateway Key"), ex.getMessage());
+    }
+
+    @Test
+    @DisplayName("Verify: rejects a header value with invalid HTTP syntax without echoing the value")
+    void rejectsInvalidHeaderValueWithoutEchoingIt() {
+        InvalidOptionsException ex = assertThrows(InvalidOptionsException.class,
+                () -> OptionsValidator.validate(validOptions()
+                        .apiHostRequestHeaders(Collections.singletonMap("X-Token", "secret\u0007value"))
+                        .build()));
+        assertTrue(ex.getMessage().contains("invalid value for header 'X-Token'"), ex.getMessage());
+        assertFalse(ex.getMessage().contains("secret"), ex.getMessage());
+    }
+
+    @Test
+    @DisplayName("Verify: rejects a reserved Accept header")
+    void rejectsReservedAcceptHeader() {
+        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
+                () -> OptionsValidator.validate(validOptions()
+                        .streamingHostRequestHeaders(Collections.singletonMap("Accept", "application/json"))
+                        .build()));
+        assertTrue(ex.getMessage().contains("reserved header"), ex.getMessage());
+    }
+
+    @Test
     @DisplayName("Verify: rejects blank header names and null header values")
     void rejectsBlankHeaderNamesAndNullValues() {
         Map<String, String> headers = new HashMap<>();

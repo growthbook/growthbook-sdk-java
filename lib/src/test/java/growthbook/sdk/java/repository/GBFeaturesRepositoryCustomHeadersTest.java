@@ -16,6 +16,7 @@ import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -84,6 +85,32 @@ class GBFeaturesRepositoryCustomHeadersTest {
 
         Request request = captureRequest(mockHttpClient);
         assertTrue(request.header("User-Agent").startsWith("growthbook-sdk-java/"), request.header("User-Agent"));
+        assertEquals("Bearer proxy-token", request.header("Authorization"));
+    }
+
+    @Test
+    @DisplayName("Verify: a reserved Accept header is dropped from apiHostRequestHeaders")
+    void reservedAcceptHeaderIsDropped() throws Exception {
+        OkHttpClient mockHttpClient = mock(OkHttpClient.class);
+        stubFeaturesResponse(mockHttpClient);
+
+        Map<String, String> headers = new LinkedHashMap<>();
+        headers.put("Accept", "text/plain");
+        headers.put("Authorization", "Bearer proxy-token");
+
+        GBFeaturesRepository subject = GBFeaturesRepository.builder()
+                .apiHost("http://localhost")
+                .clientKey("sdk-abc123")
+                .refreshStrategy(FeatureRefreshStrategy.STALE_WHILE_REVALIDATE)
+                .isCacheDisabled(true)
+                .okHttpClient(mockHttpClient)
+                .apiHostRequestHeaders(headers)
+                .build();
+
+        subject.fetchFeatures();
+
+        Request request = captureRequest(mockHttpClient);
+        assertNull(request.header("Accept"));
         assertEquals("Bearer proxy-token", request.header("Authorization"));
     }
 

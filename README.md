@@ -276,9 +276,9 @@ Notes:
 
 - `streamingHost` must be a valid `http(s)` URL; it only affects the SSE streaming connection
   (`FeatureRefreshStrategy.SERVER_SENT_EVENTS`). Feature fetches and remote evaluation always use `apiHost`.
-- The headers `User-Agent`, `If-None-Match` and `Cache-Control` are managed by the SDK and rejected at
-  startup with an `InvalidOptionsException` if present in either map. ETag-based cache revalidation keeps
-  working as before.
+- The headers `User-Agent`, `Accept`, `If-None-Match` and `Cache-Control` are managed by the SDK and
+  rejected at startup with an `InvalidOptionsException` if present in either map. Header names and values
+  must also be valid HTTP syntax. ETag-based cache revalidation keeps working as before.
 - Header values may contain secrets: keep them in environment variables or a secrets manager. The SDK never
   writes header values to logs or diagnostics output.
 

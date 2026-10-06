@@ -331,7 +331,7 @@ public class Options {
      * gateway or proxy that requires authentication headers.
      *
      * <p>Values may contain secrets and are never logged by the SDK. The SDK-managed
-     * headers {@code User-Agent}, {@code If-None-Match} and {@code Cache-Control}
+     * headers {@code User-Agent}, {@code Accept}, {@code If-None-Match} and {@code Cache-Control}
      * are reserved and rejected at startup by {@link OptionsValidator}.
      */
     @Nullable
