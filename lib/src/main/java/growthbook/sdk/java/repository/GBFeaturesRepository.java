@@ -568,7 +568,7 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
         this.featuresEndpoint = apiHost + FEATURES_ENDPOINT_PATH + clientKey;
         String streamingHostOrApiHost = (streamingHost == null || streamingHost.trim().isEmpty())
                 ? apiHost
-                : streamingHost.trim();
+                : normalizeStreamingHost(streamingHost);
         this.eventsEndpoint = streamingHostOrApiHost + STREAMING_ENDPOINT_PATH + clientKey;
         this.remoteEvalEndPoint = RemoteEvalEndpoints.evalEndpoint(apiHost, clientKey);
         this.apiHostRequestHeaders = sanitizeCustomHeaders("apiHostRequestHeaders", apiHostRequestHeaders);
@@ -910,6 +910,23 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
             }
             createEventSourceListenerAndStartListening(retryOnFailure);
         }, delayMillis, TimeUnit.MILLISECONDS);
+    }
+
+    /**
+     * Normalizes a caller-supplied {@code streamingHost} into a value OkHttp can build a request
+     * from: a scheme-less host (which {@code OptionsValidator} accepts by assuming {@code https})
+     * gets an {@code https://} prefix, and trailing slashes are stripped so the streaming path is
+     * not doubled (e.g. {@code host//sub/...}).
+     */
+    private static String normalizeStreamingHost(String streamingHost) {
+        String normalized = streamingHost.trim();
+        if (!normalized.contains("://")) {
+            normalized = "https://" + normalized;
+        }
+        while (normalized.endsWith("/")) {
+            normalized = normalized.substring(0, normalized.length() - 1);
+        }
+        return normalized;
     }
 
     /**

@@ -100,6 +100,30 @@ class GBFeaturesRepositoryCustomHeadersTest {
     }
 
     @Test
+    @DisplayName("Verify: a scheme-less streamingHost is normalized with https:// for the SSE endpoint")
+    void schemelessStreamingHostIsNormalized() {
+        GBFeaturesRepository subject = GBFeaturesRepository.builder()
+                .apiHost("https://api.example.com")
+                .clientKey("sdk-abc123")
+                .streamingHost("beacon.growthbook.io")
+                .build();
+
+        assertEquals("https://beacon.growthbook.io/sub/sdk-abc123", subject.getEventsEndpoint());
+    }
+
+    @Test
+    @DisplayName("Verify: a trailing slash on streamingHost does not double the streaming path")
+    void trailingSlashStreamingHostIsNormalized() {
+        GBFeaturesRepository subject = GBFeaturesRepository.builder()
+                .apiHost("https://api.example.com")
+                .clientKey("sdk-abc123")
+                .streamingHost("https://beacon.growthbook.io/")
+                .build();
+
+        assertEquals("https://beacon.growthbook.io/sub/sdk-abc123", subject.getEventsEndpoint());
+    }
+
+    @Test
     @DisplayName("Verify: the SSE endpoint falls back to apiHost when streamingHost is unset")
     void eventsEndpointFallsBackToApiHost() {
         GBFeaturesRepository subject = GBFeaturesRepository.builder()
