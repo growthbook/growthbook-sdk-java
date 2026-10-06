@@ -10,13 +10,16 @@ import growthbook.sdk.java.util.GrowthBookJsonUtils;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.InetSocketAddress;
 import java.nio.charset.StandardCharsets;
+import java.util.Collections;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -91,6 +94,7 @@ class GrowthBookClientGlobalAttributesTest {
                     .apiHost(server.apiHost())
                     .clientKey(CLIENT_KEY)
                     .remoteEval(true)
+                    .cacheKeyAttributes(Collections.singletonList("id"))
                     .build());
             assertTrue(client.initialize());
             try {
@@ -106,6 +110,10 @@ class GrowthBookClientGlobalAttributesTest {
                 client.updateGlobalAttributes("{\"plan\":\"pro\"}");
                 client.isOn("remote-feature", user);
                 assertEquals(2, server.evalCount());
+
+                String body = server.lastRequestBody();
+                assertTrue(body.contains("\"id\"") && body.contains("\"1\""), body);
+                assertTrue(body.contains("\"plan\"") && body.contains("\"pro\""), body);
             } finally {
                 client.shutdown();
             }
@@ -137,6 +145,7 @@ class GrowthBookClientGlobalAttributesTest {
 
         private final HttpServer server;
         private final AtomicInteger evalCount = new AtomicInteger();
+        private final AtomicReference<String> lastBody = new AtomicReference<>("");
 
         EvalServer() throws IOException {
             this.server = HttpServer.create(new InetSocketAddress("127.0.0.1", 0), 0);
@@ -152,9 +161,13 @@ class GrowthBookClientGlobalAttributesTest {
             return this.evalCount.get();
         }
 
+        String lastRequestBody() {
+            return this.lastBody.get();
+        }
+
         private void handleEval(HttpExchange exchange) throws IOException {
             evalCount.incrementAndGet();
-            drain(exchange);
+            this.lastBody.set(readBody(exchange));
             byte[] body = FEATURES.getBytes(StandardCharsets.UTF_8);
             exchange.getResponseHeaders().add("Content-Type", "application/json");
             exchange.sendResponseHeaders(HttpURLConnection.HTTP_OK, body.length);
@@ -164,11 +177,15 @@ class GrowthBookClientGlobalAttributesTest {
             exchange.close();
         }
 
-        private void drain(HttpExchange exchange) throws IOException {
+        private String readBody(HttpExchange exchange) throws IOException {
             try (InputStream is = exchange.getRequestBody()) {
-                byte[] buffer = new byte[1024];
-                while (is.read(buffer) != -1) {
+                ByteArrayOutputStream buffer = new ByteArrayOutputStream();
+                byte[] chunk = new byte[1024];
+                int read;
+                while ((read = is.read(chunk)) != -1) {
+                    buffer.write(chunk, 0, read);
                 }
+                return new String(buffer.toByteArray(), StandardCharsets.UTF_8);
             }
         }
 

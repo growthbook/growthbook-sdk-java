@@ -145,8 +145,6 @@ class OptionsGlobalAttributesTest {
 
         for (int t = 0; t < threads; t++) {
             final int id = t;
-            // Each thread owns a distinct key, so a lost update (non-atomic read-modify-write)
-            // would drop another thread's key and the final all-keys-present assertion would fail.
             final String ownKey = "plan-" + id;
             pool.submit(() -> {
                 try {
@@ -161,7 +159,7 @@ class OptionsGlobalAttributesTest {
                             assertNotNull(snapshot);
                             assertEquals("1", snapshot.get("id").getAsString());
                             if (i > 0) {
-                                assertTrue(snapshot.has(ownKey), "own key disappeared: " + ownKey);
+                                assertTrue(snapshot.has(ownKey), ownKey);
                             }
                         }
                     }
@@ -181,7 +179,7 @@ class OptionsGlobalAttributesTest {
         JsonObject finalState = options.getGlobalAttributes();
         assertEquals("1", finalState.get("id").getAsString());
         for (int t = 0; t < threads; t++) {
-            assertTrue(finalState.has("plan-" + t), "lost merged key: plan-" + t);
+            assertTrue(finalState.has("plan-" + t), "plan-" + t);
         }
     }
 }

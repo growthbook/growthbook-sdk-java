@@ -437,6 +437,19 @@ public class Options {
     }
 
     /**
+     * Sets the raw global attributes JSON string.
+     *
+     * @param attributesJson JSON object string of global attributes, or {@code null} to clear
+     * @deprecated retained for binary/source compatibility with the Lombok-generated setter this
+     * method replaced; it now writes through the thread-safe attribute store. Prefer
+     * {@link #setGlobalAttributes(String)} (replace) or {@link #updateGlobalAttributes(String)} (merge).
+     */
+    @Deprecated
+    public void setAttributesJson(@Nullable String attributesJson) {
+        setGlobalAttributes(attributesJson);
+    }
+
+    /**
      * Returns a fresh, caller-owned copy of the global attributes. A new object is parsed on every
      * call, so callers may read or mutate the result without affecting other threads or the SDK's
      * internal state. Never returns {@code null} (an empty object is returned when unset).
@@ -480,9 +493,11 @@ public class Options {
      * unchanged. Only the top level is merged (shallow); nested objects are replaced wholesale.
      *
      * @param attributesJson JSON object string of attributes to merge in
+     * @return {@code true} if a merge was applied, {@code false} if the input was a no-op
+     *         ({@code null}, malformed, or empty)
      */
-    public void updateGlobalAttributes(@Nullable String attributesJson) {
-        updateGlobalAttributes(TransformationUtil.transformAttributes(attributesJson));
+    public boolean updateGlobalAttributes(@Nullable String attributesJson) {
+        return updateGlobalAttributes(TransformationUtil.transformAttributes(attributesJson));
     }
 
     /**
@@ -492,10 +507,11 @@ public class Options {
      * <p>A {@code null} or empty argument is a no-op.
      *
      * @param attributes attributes to merge into the current global attributes
+     * @return {@code true} if a merge was applied, {@code false} if the argument was {@code null} or empty
      */
-    public void updateGlobalAttributes(@Nullable JsonObject attributes) {
+    public boolean updateGlobalAttributes(@Nullable JsonObject attributes) {
         if (attributes == null || attributes.isEmpty()) {
-            return;
+            return false;
         }
         this.attributesJson.updateAndGet(currentJson -> {
             JsonObject merged = TransformationUtil.transformAttributes(currentJson);
@@ -509,6 +525,7 @@ public class Options {
             }
             return merged.toString();
         });
+        return true;
     }
 
     public boolean isRemoteEvalEnabled() {

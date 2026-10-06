@@ -284,8 +284,9 @@ public class GrowthBookClient {
      * @param attributes JSON string of attributes to merge into the current global attributes
      */
     public void updateGlobalAttributes(String attributes) {
-        this.options.updateGlobalAttributes(attributes);
-        clearRemoteEvalCache();
+        if (this.options.updateGlobalAttributes(attributes)) {
+            clearRemoteEvalCache();
+        }
     }
 
     /**
@@ -294,8 +295,9 @@ public class GrowthBookClient {
      * @param attributes attributes to merge into the current global attributes
      */
     public void updateGlobalAttributes(JsonObject attributes) {
-        this.options.updateGlobalAttributes(attributes);
-        clearRemoteEvalCache();
+        if (this.options.updateGlobalAttributes(attributes)) {
+            clearRemoteEvalCache();
+        }
     }
 
     public void setGlobalForceFeatures(Map<String, Object> forceFeatures) {
@@ -746,7 +748,6 @@ public class GrowthBookClient {
 
     private UserContext toUserContextWithMergedAttributes(UserContext userContext) {
         UserContext currentUserContext = userContext == null ? UserContext.builder().build() : userContext;
-        // getGlobalAttributes() already returns a fresh, caller-owned copy, so it is safe to mutate here.
         JsonObject merged = this.options.getGlobalAttributes();
         JsonObject userAttrs = currentUserContext.getAttributes();
         if (userAttrs != null) {
