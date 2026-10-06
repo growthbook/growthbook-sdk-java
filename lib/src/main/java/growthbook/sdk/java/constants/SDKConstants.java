@@ -15,14 +15,23 @@ public class SDKConstants {
     public static final int DEFAULT_SWR_TTL_SECONDS = 60;
 
     /**
-     * Header names (lowercase) managed by the SDK itself. User-supplied header maps
-     * ({@code apiHostRequestHeaders}, {@code streamingHostRequestHeaders}) must not
-     * override them: {@code User-Agent} identifies the SDK, {@code Accept} carries the
-     * SSE content negotiation ({@code text/event-stream}) on the streaming request, and
-     * {@code If-None-Match} and {@code Cache-Control} drive ETag/TTL-based cache revalidation.
+     * Header names (lowercase) the SDK manages on <b>API-host</b> requests (features GET and
+     * remote-eval POST), so {@code apiHostRequestHeaders} must not override them: {@code User-Agent}
+     * identifies the SDK, and {@code If-None-Match} and {@code Cache-Control} drive ETag/TTL-based
+     * cache revalidation.
      */
     public static final Set<String> RESERVED_REQUEST_HEADERS = Collections.unmodifiableSet(
-            new HashSet<>(Arrays.asList("user-agent", "accept", "if-none-match", "cache-control")));
+            new HashSet<>(Arrays.asList("user-agent", "if-none-match", "cache-control")));
+
+    /**
+     * Header names (lowercase) the SDK manages on the <b>SSE streaming</b> request, so
+     * {@code streamingHostRequestHeaders} must not override them: {@code User-Agent} identifies the
+     * SDK and {@code Accept} carries the SSE content negotiation ({@code text/event-stream}).
+     * {@code Accept} is reserved only here — it is allowed on {@code apiHostRequestHeaders}, where
+     * the SDK does not set it.
+     */
+    public static final Set<String> RESERVED_STREAMING_REQUEST_HEADERS = Collections.unmodifiableSet(
+            new HashSet<>(Arrays.asList("user-agent", "accept")));
 
     @UtilityClass
     public class Endpoints {

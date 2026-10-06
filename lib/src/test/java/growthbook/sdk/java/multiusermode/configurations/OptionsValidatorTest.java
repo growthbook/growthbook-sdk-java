@@ -182,13 +182,21 @@ class OptionsValidatorTest {
     }
 
     @Test
-    @DisplayName("Verify: rejects a reserved Accept header")
-    void rejectsReservedAcceptHeader() {
+    @DisplayName("Verify: rejects a reserved Accept header on streamingHostRequestHeaders")
+    void rejectsReservedAcceptHeaderOnStreaming() {
         IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
                 () -> OptionsValidator.validate(validOptions()
                         .streamingHostRequestHeaders(Collections.singletonMap("Accept", "application/json"))
                         .build()));
         assertTrue(ex.getMessage().contains("reserved header"), ex.getMessage());
+    }
+
+    @Test
+    @DisplayName("Verify: allows an Accept header on apiHostRequestHeaders")
+    void allowsAcceptHeaderOnApiHost() {
+        assertDoesNotThrow(() -> OptionsValidator.validate(validOptions()
+                .apiHostRequestHeaders(Collections.singletonMap("Accept", "application/vnd.gateway+json"))
+                .build()));
     }
 
     @Test

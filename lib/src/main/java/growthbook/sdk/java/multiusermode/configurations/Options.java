@@ -331,8 +331,8 @@ public class Options {
      * gateway or proxy that requires authentication headers.
      *
      * <p>Values may contain secrets and are never logged by the SDK. The SDK-managed
-     * headers {@code User-Agent}, {@code Accept}, {@code If-None-Match} and {@code Cache-Control}
-     * are reserved and rejected at startup by {@link OptionsValidator}.
+     * headers {@code User-Agent}, {@code If-None-Match} and {@code Cache-Control} are reserved on
+     * this path and rejected at startup by {@link OptionsValidator}. {@code Accept} is allowed here.
      */
     @Nullable
     @ToString.Exclude
@@ -347,8 +347,9 @@ public class Options {
     private String streamingHost;
 
     /**
-     * Custom HTTP headers added to the SSE streaming request. Follows the same
-     * rules as {@link #apiHostRequestHeaders}.
+     * Custom HTTP headers added to the SSE streaming request. Follows the same rules as
+     * {@link #apiHostRequestHeaders}, except that {@code Accept} is also reserved here: the SDK sets
+     * it to {@code text/event-stream} for the streaming connection.
      */
     @Nullable
     @ToString.Exclude

@@ -14,6 +14,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * Validates {@link Options} once, at client start-up, so misconfigurations are reported up front with
@@ -27,9 +28,9 @@ import java.util.Map;
  *     <li>{@code apiHost} is present and a syntactically valid {@code http(s)} URL.</li>
  *     <li>{@code streamingHost}, when set, is a syntactically valid {@code http(s)} URL.</li>
  *     <li>{@code apiHostRequestHeaders} and {@code streamingHostRequestHeaders} contain only
- *     syntactically valid HTTP header names and values, no blank names, no null values, and none
- *     of the SDK-managed (reserved) headers {@code User-Agent}, {@code Accept},
- *     {@code If-None-Match}, {@code Cache-Control}.</li>
+ *     syntactically valid HTTP header names and values, no blank names, no null values, and none of
+ *     the SDK-managed (reserved) headers: {@code User-Agent}, {@code If-None-Match} and
+ *     {@code Cache-Control} on the API host, plus {@code Accept} on the streaming request.</li>
  *     <li>{@code clientKey} is present.</li>
  *     <li>{@code swrTtlSeconds} (refresh interval) is positive when set.</li>
  *     <li>{@code backgroundFetchInterval} is non-negative when set.</li>
@@ -78,8 +79,10 @@ public final class OptionsValidator {
         List<String> violations = new ArrayList<>();
         checkApiHost(options.getApiHost(), violations);
         checkStreamingHost(options.getStreamingHost(), violations);
-        checkRequestHeaders("apiHostRequestHeaders", options.getApiHostRequestHeaders(), violations);
-        checkRequestHeaders("streamingHostRequestHeaders", options.getStreamingHostRequestHeaders(), violations);
+        checkRequestHeaders("apiHostRequestHeaders", options.getApiHostRequestHeaders(),
+                SDKConstants.RESERVED_REQUEST_HEADERS, violations);
+        checkRequestHeaders("streamingHostRequestHeaders", options.getStreamingHostRequestHeaders(),
+                SDKConstants.RESERVED_STREAMING_REQUEST_HEADERS, violations);
         checkClientKey(options.getClientKey(), violations);
         checkRefreshInterval(options.getSwrTtlSeconds(), violations);
         checkBackgroundFetchInterval(options.getBackgroundFetchInterval(), violations);
@@ -136,6 +139,7 @@ public final class OptionsValidator {
     private static void checkRequestHeaders(
             String optionName,
             @Nullable Map<String, String> headers,
+            Set<String> reservedHeaders,
             List<String> violations
     ) {
         if (headers == null || headers.isEmpty()) {
@@ -147,9 +151,9 @@ public final class OptionsValidator {
             String value = entry.getValue();
             if (StringUtils.isBlank(name)) {
                 violations.add(optionName + " must not contain a null or blank header name");
-            } else if (SDKConstants.RESERVED_REQUEST_HEADERS.contains(name.toLowerCase(Locale.ROOT))) {
+            } else if (reservedHeaders.contains(name.toLowerCase(Locale.ROOT))) {
                 violations.add(optionName + " must not contain the reserved header '" + name
-                        + "'; User-Agent, Accept, If-None-Match and Cache-Control are managed by the SDK");
+                        + "'; it is managed by the SDK");
             } else if (!isValidHeaderName(name)) {
                 violations.add(optionName + " contains an invalid HTTP header name '" + name + "'");
             } else if (value == null) {

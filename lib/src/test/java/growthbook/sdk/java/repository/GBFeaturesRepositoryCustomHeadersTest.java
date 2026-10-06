@@ -16,7 +16,6 @@ import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -89,13 +88,13 @@ class GBFeaturesRepositoryCustomHeadersTest {
     }
 
     @Test
-    @DisplayName("Verify: a reserved Accept header is dropped from apiHostRequestHeaders")
-    void reservedAcceptHeaderIsDropped() throws Exception {
+    @DisplayName("Verify: a custom Accept header is allowed on apiHostRequestHeaders and sent on the features GET")
+    void customAcceptHeaderIsSentOnFeaturesGet() throws Exception {
         OkHttpClient mockHttpClient = mock(OkHttpClient.class);
         stubFeaturesResponse(mockHttpClient);
 
         Map<String, String> headers = new LinkedHashMap<>();
-        headers.put("Accept", "text/plain");
+        headers.put("Accept", "application/vnd.gateway+json");
         headers.put("Authorization", "Bearer proxy-token");
 
         GBFeaturesRepository subject = GBFeaturesRepository.builder()
@@ -110,7 +109,7 @@ class GBFeaturesRepositoryCustomHeadersTest {
         subject.fetchFeatures();
 
         Request request = captureRequest(mockHttpClient);
-        assertNull(request.header("Accept"));
+        assertEquals("application/vnd.gateway+json", request.header("Accept"));
         assertEquals("Bearer proxy-token", request.header("Authorization"));
     }
 

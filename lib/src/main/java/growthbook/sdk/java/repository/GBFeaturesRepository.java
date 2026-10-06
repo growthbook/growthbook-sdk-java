@@ -58,6 +58,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -571,8 +572,10 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
                 : normalizeStreamingHost(streamingHost);
         this.eventsEndpoint = streamingHostOrApiHost + STREAMING_ENDPOINT_PATH + clientKey;
         this.remoteEvalEndPoint = RemoteEvalEndpoints.evalEndpoint(apiHost, clientKey);
-        this.apiHostRequestHeaders = sanitizeCustomHeaders("apiHostRequestHeaders", apiHostRequestHeaders);
-        this.streamingHostRequestHeaders = sanitizeCustomHeaders("streamingHostRequestHeaders", streamingHostRequestHeaders);
+        this.apiHostRequestHeaders = sanitizeCustomHeaders(
+                "apiHostRequestHeaders", apiHostRequestHeaders, SDKConstants.RESERVED_REQUEST_HEADERS);
+        this.streamingHostRequestHeaders = sanitizeCustomHeaders(
+                "streamingHostRequestHeaders", streamingHostRequestHeaders, SDKConstants.RESERVED_STREAMING_REQUEST_HEADERS);
 
         this.encryptionKey = decryptionKey;
         this.decryptionKey = decryptionKey;
@@ -930,13 +933,14 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
     }
 
     /**
-     * Drops entries the SDK cannot honor: blank names, null values, and reserved
-     * SDK-managed header names ({@link SDKConstants#RESERVED_REQUEST_HEADERS}).
+     * Drops entries the SDK cannot honor: blank names, null values, and the reserved
+     * SDK-managed header names for this request path ({@code reservedHeaders}).
      * Only header names are ever logged — values may contain secrets.
      */
     private static Map<String, String> sanitizeCustomHeaders(
             String optionName,
-            @Nullable Map<String, String> headers
+            @Nullable Map<String, String> headers,
+            Set<String> reservedHeaders
     ) {
         if (headers == null || headers.isEmpty()) {
             return Collections.emptyMap();
@@ -947,7 +951,7 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
             String name = entry.getKey();
             if (name == null || name.trim().isEmpty() || entry.getValue() == null) {
                 log.warn("Ignoring {} entry with a null or blank header name or a null value.", optionName);
-            } else if (SDKConstants.RESERVED_REQUEST_HEADERS.contains(name.toLowerCase(Locale.ROOT))) {
+            } else if (reservedHeaders.contains(name.toLowerCase(Locale.ROOT))) {
                 log.warn("Ignoring reserved header '{}' in {}; it is managed by the SDK.", name, optionName);
             } else {
                 sanitized.put(name, entry.getValue());
