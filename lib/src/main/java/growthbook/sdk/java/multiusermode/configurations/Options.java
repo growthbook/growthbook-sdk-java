@@ -27,15 +27,12 @@ import javax.annotation.Nullable;
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.Executor;
 
 @Data
 @Slf4j
 public class Options {
 
-    /**
-     * Backward-compatible constructor retained for integrations created before
-     * background refresh intervals and retry policies were introduced.
-     */
     public Options(@Nullable Boolean enabled,
                    Boolean isQaMode,
                    @Nullable Boolean isCacheDisabled,
@@ -50,14 +47,13 @@ public class Options {
                    @Nullable FeatureUsageCallbackWithUser featureUsageCallbackWithUser,
                    @Nullable FeatureRefreshStrategy refreshStrategy,
                    @Nullable Integer swrTtlSeconds,
-                   @Nullable FeatureRefreshCallback featureRefreshCallback,
+                   @Deprecated @Nullable FeatureRefreshCallback featureRefreshCallback,
                    @Nullable JsonObject globalAttributes,
                    @Nullable Map<String, Object> globalForcedFeatureValues,
                    @Nullable Map<String, Integer> globalForcedVariationsMap,
                    @Nullable GbCacheManager cacheManager,
                    @Nullable CacheMode cacheMode,
-                   @Nullable String cacheDirectory
-    ) {
+                   @Nullable String cacheDirectory) {
         this(
                 enabled,
                 isQaMode,
@@ -87,13 +83,14 @@ public class Options {
                 null,
                 null,
                 null,
+                null,
                 null
         );
     }
 
     /**
      * Backward-compatible constructor matching the 0.11.0 positional signature, before
-     * {@link #sseReconnectOnFailure} was introduced.
+     * {@link #featureRefreshListenerExecutor} and {@link #sseReconnectOnFailure} were introduced.
      */
     public Options(@Nullable Boolean enabled,
                    Boolean isQaMode,
@@ -153,14 +150,18 @@ public class Options {
                 backgroundFetchInterval,
                 retryPolicy,
                 null,
+                null,
                 plugins
         );
     }
 
     /**
-     * Backward-compatible constructor matching the positional signature before custom request
-     * headers and a dedicated streaming host ({@link #apiHostRequestHeaders}, {@link #streamingHost},
-     * {@link #streamingHostRequestHeaders}) were introduced.
+     * Backward-compatible constructor matching the positional signature on {@code main} before
+     * {@link #featureRefreshListenerExecutor} was introduced.
+     *
+     * <p>That signature was added after the 0.11.0 release and never shipped, so this overload
+     * exists only so the branch does not narrow {@code main}'s surface for callers built against
+     * an unreleased snapshot. The released signatures are the 23- and 30-argument ones above.
      */
     public Options(@Nullable Boolean enabled,
                    Boolean isQaMode,
@@ -176,7 +177,7 @@ public class Options {
                    @Nullable FeatureUsageCallbackWithUser featureUsageCallbackWithUser,
                    @Nullable FeatureRefreshStrategy refreshStrategy,
                    @Nullable Integer swrTtlSeconds,
-                   @Nullable FeatureRefreshCallback featureRefreshCallback,
+                   @Deprecated @Nullable FeatureRefreshCallback featureRefreshCallback,
                    @Nullable JsonObject globalAttributes,
                    @Nullable Map<String, Object> globalForcedFeatureValues,
                    @Nullable Map<String, ?> globalForcedVariationsMap,
@@ -220,6 +221,77 @@ public class Options {
                 remoteEvalCacheTtlSeconds,
                 backgroundFetchInterval,
                 retryPolicy,
+                null,
+                sseReconnectOnFailure,
+                plugins
+        );
+    }
+
+    /**
+     * Backward-compatible constructor matching the positional signature before custom request
+     * headers and a dedicated streaming host ({@link #apiHostRequestHeaders}, {@link #streamingHost},
+     * {@link #streamingHostRequestHeaders}) were introduced.
+     */
+    public Options(@Nullable Boolean enabled,
+                   Boolean isQaMode,
+                   @Nullable Boolean isCacheDisabled,
+                   Boolean allowUrlOverrides,
+                   @Nullable String url,
+                   @Nullable String apiHost,
+                   @Nullable String clientKey,
+                   @Nullable String decryptionKey,
+                   @Nullable List<String> stickyBucketIdentifierAttributes,
+                   @Nullable StickyBucketService stickyBucketService,
+                   @Nullable TrackingCallbackWithUser trackingCallBackWithUser,
+                   @Nullable FeatureUsageCallbackWithUser featureUsageCallbackWithUser,
+                   @Nullable FeatureRefreshStrategy refreshStrategy,
+                   @Nullable Integer swrTtlSeconds,
+                   @Deprecated @Nullable FeatureRefreshCallback featureRefreshCallback,
+                   @Nullable JsonObject globalAttributes,
+                   @Nullable Map<String, Object> globalForcedFeatureValues,
+                   @Nullable Map<String, ?> globalForcedVariationsMap,
+                   @Nullable GbCacheManager cacheManager,
+                   @Nullable CacheMode cacheMode,
+                   @Nullable String cacheDirectory,
+                   @Nullable Boolean remoteEval,
+                   @Nullable List<String> cacheKeyAttributes,
+                   @Nullable Integer remoteEvalCacheSize,
+                   @Nullable Integer remoteEvalCacheTtlSeconds,
+                   @Nullable Duration backgroundFetchInterval,
+                   @Nullable FeatureFetchRetryPolicy retryPolicy,
+                   @Nullable Executor featureRefreshListenerExecutor,
+                   @Nullable Boolean sseReconnectOnFailure,
+                   @Nullable List<GrowthBookPlugin> plugins
+    ) {
+        this(
+                enabled,
+                isQaMode,
+                isCacheDisabled,
+                allowUrlOverrides,
+                url,
+                apiHost,
+                clientKey,
+                decryptionKey,
+                stickyBucketIdentifierAttributes,
+                stickyBucketService,
+                trackingCallBackWithUser,
+                featureUsageCallbackWithUser,
+                refreshStrategy,
+                swrTtlSeconds,
+                featureRefreshCallback,
+                globalAttributes,
+                globalForcedFeatureValues,
+                globalForcedVariationsMap,
+                cacheManager,
+                cacheMode,
+                cacheDirectory,
+                remoteEval,
+                cacheKeyAttributes,
+                remoteEvalCacheSize,
+                remoteEvalCacheTtlSeconds,
+                backgroundFetchInterval,
+                retryPolicy,
+                featureRefreshListenerExecutor,
                 sseReconnectOnFailure,
                 plugins,
                 null,
@@ -256,6 +328,7 @@ public class Options {
                    @Nullable Integer remoteEvalCacheTtlSeconds,
                    @Nullable Duration backgroundFetchInterval,
                    @Nullable FeatureFetchRetryPolicy retryPolicy,
+                   @Nullable Executor featureRefreshListenerExecutor,
                    @Nullable Boolean sseReconnectOnFailure,
                    @Nullable List<GrowthBookPlugin> plugins,
                    @Nullable Map<String, String> apiHostRequestHeaders,
@@ -289,6 +362,7 @@ public class Options {
         this.remoteEvalCacheTtlSeconds = remoteEvalCacheTtlSeconds;
         this.backgroundFetchInterval = backgroundFetchInterval;
         this.retryPolicy = retryPolicy;
+        this.featureRefreshListenerExecutor = featureRefreshListenerExecutor;
         this.sseReconnectOnFailure = sseReconnectOnFailure;
         this.plugins = plugins;
         this.apiHostRequestHeaders = apiHostRequestHeaders;
@@ -433,17 +507,30 @@ public class Options {
         return this.refreshStrategy;
     }
 
+    /**
+     * Legacy feature refresh callback.
+     *
+     * @deprecated Use {@code GrowthBookClient.addFeatureRefreshListener(...)} or
+     * {@code GrowthBookClient.subscribeFeatureRefreshListener(...)} after constructing the client.
+     */
+    @Deprecated
     @Nullable
     private FeatureRefreshCallback featureRefreshCallback;
 
     @Nullable
     private GbCacheManager cacheManager;
 
-    // New cache configuration
     private CacheMode cacheMode;
 
     @Nullable
     private String cacheDirectory;
+
+    /**
+     * Optional executor for client-level feature refresh listeners. When not supplied, the client
+     * dispatches listener callbacks on a dedicated daemon thread it owns and shuts down.
+     */
+    @Nullable
+    private Executor featureRefreshListenerExecutor;
 
     /**
      * Plugins registered with the GrowthBook client. See
@@ -455,6 +542,18 @@ public class Options {
      */
     @Nullable
     private List<GrowthBookPlugin> plugins;
+
+    /**
+     * Optional minimum interval between non-forced background feature refreshes.
+     */
+    @Nullable
+    private Duration backgroundFetchInterval;
+
+    /**
+     * Optional bounded retry policy. Repositories use the default policy when null.
+     */
+    @Nullable
+    private FeatureFetchRetryPolicy retryPolicy;
 
     private Boolean remoteEval;
 
@@ -470,18 +569,7 @@ public class Options {
     private Integer remoteEvalCacheTtlSeconds;
 
     public CacheMode getCacheMode() { return cacheMode == null ? CacheMode.AUTO : cacheMode; }
-
-    /**
-     * Optional minimum interval between non-forced background feature refreshes.
-     */
-    @Nullable
-    private Duration backgroundFetchInterval;
-
-    /**
-     * Optional bounded retry policy. Repositories use the default policy when null.
-     */
-    @Nullable
-    private FeatureFetchRetryPolicy retryPolicy;
+    public String getCacheDirectory() { return cacheDirectory; }
 
     /**
      * Whether the multi-user client reconnects the SSE stream after an abnormal failure or a
@@ -492,11 +580,6 @@ public class Options {
 
     public boolean isSseReconnectOnFailure() {
         return sseReconnectOnFailure == null || sseReconnectOnFailure;
-    }
-
-    @Nullable
-    public String getCacheDirectory() {
-        return cacheDirectory;
     }
 
     @Nullable
