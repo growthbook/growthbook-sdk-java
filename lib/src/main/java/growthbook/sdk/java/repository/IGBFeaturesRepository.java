@@ -2,6 +2,7 @@ package growthbook.sdk.java.repository;
 
 import growthbook.sdk.java.exception.FeatureFetchException;
 import growthbook.sdk.java.callback.FeatureRefreshCallback;
+import growthbook.sdk.java.listener.FeatureRefreshListener;
 
 import javax.annotation.Nullable;
 
@@ -18,11 +19,41 @@ public interface IGBFeaturesRepository {
      */
     String getFeaturesJson();
 
+    /**
+     * Registers a legacy feature refresh callback.
+     *
+     * @param callback callback to register
+     * @deprecated Use {@link #addFeatureRefreshListener(FeatureRefreshListener)}.
+     */
+    @Deprecated
     void onFeaturesRefresh(FeatureRefreshCallback callback);
 
     /**
-     * Clears the feature refresh callbacks
+     * Registers a listener notified after every refresh attempt.
+     *
+     * <p><b>Threading:</b> implementations dispatch repository-level listeners synchronously on the
+     * refresh thread (polling scheduler, SSE event thread, or the caller of a manual refresh), so a
+     * slow listener delays feature updates. Use
+     * {@code GrowthBookClient.addFeatureRefreshListener(FeatureRefreshListener)} instead when you
+     * need callbacks dispatched off the refresh thread.
+     *
+     * @param listener listener to register; {@code null} is ignored
      */
+    default void addFeatureRefreshListener(FeatureRefreshListener listener) {
+        // Optional for repository implementations that do not refresh features.
+    }
+
+    default void removeFeatureRefreshListener(FeatureRefreshListener listener) {
+        // Optional for repository implementations that do not refresh features.
+    }
+
+    /**
+     * Clears legacy feature refresh callbacks.
+     *
+     * @deprecated Use listener-specific unsubscription with
+     * {@link #removeFeatureRefreshListener(FeatureRefreshListener)} where available.
+     */
+    @Deprecated
     void clearCallbacks();
 
     /**
