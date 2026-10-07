@@ -84,8 +84,11 @@ loadScripts(document, 'script');</script>
 <div class="block">A callback to be executed with an <a href="../model/ExperimentResult.html" title="class in growthbook.sdk.java.model"><code>ExperimentResult</code></a> whenever an experiment is run.</div>
 </div>
 <div class="col-first odd-row-color class-summary class-summary-tab1"><a href="FeatureRefreshCallback.html" title="interface in growthbook.sdk.java.callback">FeatureRefreshCallback</a></div>
-<div class="col-last odd-row-color class-summary class-summary-tab1">
-<div class="block">See <a href="../repository/GBFeaturesRepository.html#onFeaturesRefresh(growthbook.sdk.java.callback.FeatureRefreshCallback)"><code>GBFeaturesRepository.onFeaturesRefresh(FeatureRefreshCallback)</code></a></div>
+<div class="col-last odd-row-color class-summary class-summary-tab1">Deprecated.
+<div class="deprecation-comment">Use <a href="../listener/FeatureRefreshListener.html" title="interface in growthbook.sdk.java.listener"><code>FeatureRefreshListener</code></a> with
+ <a href="../multiusermode/GrowthBookClient.html#addFeatureRefreshListener(growthbook.sdk.java.listener.FeatureRefreshListener)"><code>GrowthBookClient.addFeatureRefreshListener(FeatureRefreshListener)</code></a>,
+ <a href="../multiusermode/GrowthBookClient.html#subscribeFeatureRefreshListener(growthbook.sdk.java.listener.FeatureRefreshListener)"><code>GrowthBookClient.subscribeFeatureRefreshListener(FeatureRefreshListener)</code></a>, or
+ <a href="../repository/GBFeaturesRepository.html#addFeatureRefreshListener(growthbook.sdk.java.listener.FeatureRefreshListener)"><code>GBFeaturesRepository.addFeatureRefreshListener(FeatureRefreshListener)</code></a>.</div>
 </div>
 <div class="col-first even-row-color class-summary class-summary-tab1"><a href="FeatureUsageCallback.html" title="interface in growthbook.sdk.java.callback">FeatureUsageCallback</a></div>
 <div class="col-last even-row-color class-summary class-summary-tab1">

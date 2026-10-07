@@ -104,40 +104,53 @@ implements <a href="IGBFeaturesRepository.html" title="interface in growthbook.s
 <section class="method-summary" id="method-summary">
 <h2>Method Summary</h2>
 <div id="method-summary-table">
-<div class="table-tabs" role="tablist" aria-orientation="horizontal"><button id="method-summary-table-tab0" role="tab" aria-selected="true" aria-controls="method-summary-table.tabpanel" tabindex="0" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table', 3)" class="active-table-tab">All Methods</button><button id="method-summary-table-tab2" role="tab" aria-selected="false" aria-controls="method-summary-table.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table-tab2', 3)" class="table-tab">Instance Methods</button><button id="method-summary-table-tab4" role="tab" aria-selected="false" aria-controls="method-summary-table.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table-tab4', 3)" class="table-tab">Concrete Methods</button></div>
+<div class="table-tabs" role="tablist" aria-orientation="horizontal"><button id="method-summary-table-tab0" role="tab" aria-selected="true" aria-controls="method-summary-table.tabpanel" tabindex="0" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table', 3)" class="active-table-tab">All Methods</button><button id="method-summary-table-tab2" role="tab" aria-selected="false" aria-controls="method-summary-table.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table-tab2', 3)" class="table-tab">Instance Methods</button><button id="method-summary-table-tab4" role="tab" aria-selected="false" aria-controls="method-summary-table.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table-tab4', 3)" class="table-tab">Concrete Methods</button><button id="method-summary-table-tab6" role="tab" aria-selected="false" aria-controls="method-summary-table.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table-tab6', 3)" class="table-tab">Deprecated Methods</button></div>
 <div id="method-summary-table.tabpanel" role="tabpanel" aria-labelledby="method-summary-table-tab0">
 <div class="summary-table three-column-summary">
 <div class="table-header col-first">Modifier and Type</div>
 <div class="table-header col-second">Method</div>
 <div class="table-header col-last">Description</div>
 <div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>void</code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#clearCallbacks()" class="member-name-link">clearCallbacks</a>()</code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#addFeatureRefreshListener(growthbook.sdk.java.listener.FeatureRefreshListener)" class="member-name-link">addFeatureRefreshListener</a><wbr>(<a href="../listener/FeatureRefreshListener.html" title="interface in growthbook.sdk.java.listener">FeatureRefreshListener</a>&nbsp;listener)</code></div>
 <div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
-<div class="block">Can be ignored for this implementation</div>
+<div class="block">Registers a listener notified after every refresh attempt.</div>
 </div>
-<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a></code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#getFeaturesJson()" class="member-name-link">getFeaturesJson</a>()</code></div>
-<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4 method-summary-table-tab6"><code>void</code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4 method-summary-table-tab6"><code><a href="#clearCallbacks()" class="member-name-link">clearCallbacks</a>()</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4 method-summary-table-tab6">
+<div class="block"><span class="deprecated-label">Deprecated.</span>
+<div class="deprecation-comment">Use listener-specific unsubscription with
+ <a href="#removeFeatureRefreshListener(growthbook.sdk.java.listener.FeatureRefreshListener)"><code>removeFeatureRefreshListener(FeatureRefreshListener)</code></a> where available.</div>
+</div>
+</div>
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a></code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#getFeaturesJson()" class="member-name-link">getFeaturesJson</a>()</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">Method for getting the featuresJson in format of String from user json file</div>
 </div>
-<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/Map.html" title="class or interface in java.util" class="external-link">Map</a>&lt;<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>,<wbr><a href="../model/Feature.html" title="class in growthbook.sdk.java.model">Feature</a>&lt;?&gt;&gt;</code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#getParsedFeatures()" class="member-name-link">getParsedFeatures</a>()</code></div>
-<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">&nbsp;</div>
-<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>void</code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#initialize()" class="member-name-link">initialize</a>()</code></div>
-<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/Map.html" title="class or interface in java.util" class="external-link">Map</a>&lt;<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>,<wbr><a href="../model/Feature.html" title="class in growthbook.sdk.java.model">Feature</a>&lt;?&gt;&gt;</code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#getParsedFeatures()" class="member-name-link">getParsedFeatures</a>()</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">&nbsp;</div>
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>void</code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#initialize()" class="member-name-link">initialize</a>()</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">Method for initializing <a href="LocalGbFeatureRepository.html" title="class in growthbook.sdk.java.repository"><code>LocalGbFeatureRepository</code></a> by fetching features from user's json file</div>
 </div>
-<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>void</code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#initialize(java.lang.Boolean)" class="member-name-link">initialize</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Boolean.html" title="class or interface in java.lang" class="external-link">Boolean</a>&nbsp;retryOnFailure)</code></div>
-<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
-<div class="block">Can be ignored for this implementation</div>
-</div>
 <div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>void</code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#onFeaturesRefresh(growthbook.sdk.java.callback.FeatureRefreshCallback)" class="member-name-link">onFeaturesRefresh</a><wbr>(<a href="../callback/FeatureRefreshCallback.html" title="interface in growthbook.sdk.java.callback">FeatureRefreshCallback</a>&nbsp;callback)</code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#initialize(java.lang.Boolean)" class="member-name-link">initialize</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Boolean.html" title="class or interface in java.lang" class="external-link">Boolean</a>&nbsp;retryOnFailure)</code></div>
 <div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">Can be ignored for this implementation</div>
 </div>
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4 method-summary-table-tab6"><code>void</code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4 method-summary-table-tab6"><code><a href="#onFeaturesRefresh(growthbook.sdk.java.callback.FeatureRefreshCallback)" class="member-name-link">onFeaturesRefresh</a><wbr>(<a href="../callback/FeatureRefreshCallback.html" title="interface in growthbook.sdk.java.callback">FeatureRefreshCallback</a>&nbsp;callback)</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4 method-summary-table-tab6">
+<div class="block"><span class="deprecated-label">Deprecated.</span>
+<div class="deprecation-comment">Use <a href="#addFeatureRefreshListener(growthbook.sdk.java.listener.FeatureRefreshListener)"><code>addFeatureRefreshListener(FeatureRefreshListener)</code></a>.</div>
+</div>
+</div>
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>void</code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#removeFeatureRefreshListener(growthbook.sdk.java.listener.FeatureRefreshListener)" class="member-name-link">removeFeatureRefreshListener</a><wbr>(<a href="../listener/FeatureRefreshListener.html" title="interface in growthbook.sdk.java.listener">FeatureRefreshListener</a>&nbsp;listener)</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">&nbsp;</div>
 </div>
 </div>
 </div>
@@ -219,18 +232,59 @@ implements <a href="IGBFeaturesRepository.html" title="interface in growthbook.s
 <li>
 <section class="detail" id="onFeaturesRefresh(growthbook.sdk.java.callback.FeatureRefreshCallback)">
 <h3>onFeaturesRefresh</h3>
-<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type">void</span>&nbsp;<span class="element-name">onFeaturesRefresh</span><wbr><span class="parameters">(<a href="../callback/FeatureRefreshCallback.html" title="interface in growthbook.sdk.java.callback">FeatureRefreshCallback</a>&nbsp;callback)</span></div>
+<div class="member-signature"><span class="annotations"><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Deprecated.html" title="class or interface in java.lang" class="external-link">@Deprecated</a>
+</span><span class="modifiers">public</span>&nbsp;<span class="return-type">void</span>&nbsp;<span class="element-name">onFeaturesRefresh</span><wbr><span class="parameters">(<a href="../callback/FeatureRefreshCallback.html" title="interface in growthbook.sdk.java.callback">FeatureRefreshCallback</a>&nbsp;callback)</span></div>
+<div class="deprecation-block"><span class="deprecated-label">Deprecated.</span>
+<div class="deprecation-comment">Use <a href="#addFeatureRefreshListener(growthbook.sdk.java.listener.FeatureRefreshListener)"><code>addFeatureRefreshListener(FeatureRefreshListener)</code></a>.</div>
+</div>
 <div class="block">Can be ignored for this implementation</div>
 <dl class="notes">
 <dt>Specified by:</dt>
 <dd><code><a href="IGBFeaturesRepository.html#onFeaturesRefresh(growthbook.sdk.java.callback.FeatureRefreshCallback)">onFeaturesRefresh</a></code>&nbsp;in interface&nbsp;<code><a href="IGBFeaturesRepository.html" title="interface in growthbook.sdk.java.repository">IGBFeaturesRepository</a></code></dd>
+<dt>Parameters:</dt>
+<dd><code>callback</code> - callback to register</dd>
+</dl>
+</section>
+</li>
+<li>
+<section class="detail" id="addFeatureRefreshListener(growthbook.sdk.java.listener.FeatureRefreshListener)">
+<h3>addFeatureRefreshListener</h3>
+<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type">void</span>&nbsp;<span class="element-name">addFeatureRefreshListener</span><wbr><span class="parameters">(<a href="../listener/FeatureRefreshListener.html" title="interface in growthbook.sdk.java.listener">FeatureRefreshListener</a>&nbsp;listener)</span></div>
+<div class="block"><span class="descfrm-type-label">Description copied from interface:&nbsp;<code><a href="IGBFeaturesRepository.html#addFeatureRefreshListener(growthbook.sdk.java.listener.FeatureRefreshListener)">IGBFeaturesRepository</a></code></span></div>
+<div class="block">Registers a listener notified after every refresh attempt.
+
+ <p><b>Threading:</b> implementations dispatch repository-level listeners synchronously on the
+ refresh thread (polling scheduler, SSE event thread, or the caller of a manual refresh), so a
+ slow listener delays feature updates. Use
+ <code>GrowthBookClient.addFeatureRefreshListener(FeatureRefreshListener)</code> instead when you
+ need callbacks dispatched off the refresh thread.</div>
+<dl class="notes">
+<dt>Specified by:</dt>
+<dd><code><a href="IGBFeaturesRepository.html#addFeatureRefreshListener(growthbook.sdk.java.listener.FeatureRefreshListener)">addFeatureRefreshListener</a></code>&nbsp;in interface&nbsp;<code><a href="IGBFeaturesRepository.html" title="interface in growthbook.sdk.java.repository">IGBFeaturesRepository</a></code></dd>
+<dt>Parameters:</dt>
+<dd><code>listener</code> - listener to register; <code>null</code> is ignored</dd>
+</dl>
+</section>
+</li>
+<li>
+<section class="detail" id="removeFeatureRefreshListener(growthbook.sdk.java.listener.FeatureRefreshListener)">
+<h3>removeFeatureRefreshListener</h3>
+<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type">void</span>&nbsp;<span class="element-name">removeFeatureRefreshListener</span><wbr><span class="parameters">(<a href="../listener/FeatureRefreshListener.html" title="interface in growthbook.sdk.java.listener">FeatureRefreshListener</a>&nbsp;listener)</span></div>
+<dl class="notes">
+<dt>Specified by:</dt>
+<dd><code><a href="IGBFeaturesRepository.html#removeFeatureRefreshListener(growthbook.sdk.java.listener.FeatureRefreshListener)">removeFeatureRefreshListener</a></code>&nbsp;in interface&nbsp;<code><a href="IGBFeaturesRepository.html" title="interface in growthbook.sdk.java.repository">IGBFeaturesRepository</a></code></dd>
 </dl>
 </section>
 </li>
 <li>
 <section class="detail" id="clearCallbacks()">
 <h3>clearCallbacks</h3>
-<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type">void</span>&nbsp;<span class="element-name">clearCallbacks</span>()</div>
+<div class="member-signature"><span class="annotations"><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Deprecated.html" title="class or interface in java.lang" class="external-link">@Deprecated</a>
+</span><span class="modifiers">public</span>&nbsp;<span class="return-type">void</span>&nbsp;<span class="element-name">clearCallbacks</span>()</div>
+<div class="deprecation-block"><span class="deprecated-label">Deprecated.</span>
+<div class="deprecation-comment">Use listener-specific unsubscription with
+ <a href="#removeFeatureRefreshListener(growthbook.sdk.java.listener.FeatureRefreshListener)"><code>removeFeatureRefreshListener(FeatureRefreshListener)</code></a> where available.</div>
+</div>
 <div class="block">Can be ignored for this implementation</div>
 <dl class="notes">
 <dt>Specified by:</dt>

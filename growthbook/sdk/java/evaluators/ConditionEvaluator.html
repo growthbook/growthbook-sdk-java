@@ -75,10 +75,22 @@ loadScripts(document, 'script');</script>
 <div class="inheritance">growthbook.sdk.java.evaluators.ConditionEvaluator</div>
 </div>
 <section class="class-description" id="class-description">
+<dl class="notes">
+<dt>All Implemented Interfaces:</dt>
+<dd><code><a href="IConditionEvaluator.html" title="interface in growthbook.sdk.java.evaluators">IConditionEvaluator</a></code></dd>
+</dl>
 <hr>
 <div class="type-signature"><span class="modifiers">public class </span><span class="element-name type-name-label">ConditionEvaluator</span>
-<span class="extends-implements">extends <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html" title="class or interface in java.lang" class="external-link">Object</a></span></div>
-<div class="block"><b>INTERNAL</b>: Implementation of condition evaluation</div>
+<span class="extends-implements">extends <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html" title="class or interface in java.lang" class="external-link">Object</a>
+implements <a href="IConditionEvaluator.html" title="interface in growthbook.sdk.java.evaluators">IConditionEvaluator</a></span></div>
+<div class="block"><b>INTERNAL</b>: Implementation of condition evaluation.
+
+ <p>Public only so the evaluators package can share it; it is not part of the supported API.
+ Even so, <a href="#getPath(com.google.gson.JsonElement,java.lang.String)"><code>getPath(com.google.gson.JsonElement, java.lang.String)</code></a> and <a href="#isOperatorObject(com.google.gson.JsonElement)"><code>isOperatorObject(com.google.gson.JsonElement)</code></a> keep the exact return types published
+ in 0.11.0: a return type is part of the JVM method descriptor, so narrowing one is a
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/NoSuchMethodError.html" title="class or interface in java.lang" class="external-link"><code>NoSuchMethodError</code></a> for anything linked against that release, which no compiler warns
+ about. Internally use <code>resolvePath(com.google.gson.JsonElement, java.lang.String)</code> and <code>isOperatorObjectInternal(com.google.gson.JsonElement)</code>, which carry
+ the precise types.</div>
 </section>
 <section class="summary">
 <ul class="summary-list">
@@ -117,12 +129,14 @@ loadScripts(document, 'script');</script>
 <div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#getPath(com.google.gson.JsonElement,java.lang.String)" class="member-name-link">getPath</a><wbr>(com.google.gson.JsonElement&nbsp;attributes,
  <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;path)</code></div>
 <div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
-<div class="block">Given attributes and a dot-separated path string,</div>
+<div class="block">Resolves a dot-separated path against the attributes.</div>
 </div>
 <div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Boolean.html" title="class or interface in java.lang" class="external-link">Boolean</a></code></div>
 <div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#isOperatorObject(com.google.gson.JsonElement)" class="member-name-link">isOperatorObject</a><wbr>(com.google.gson.JsonElement&nbsp;object)</code></div>
 <div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
-<div class="block">This accepts a parsed JSON object as input and returns true if every key in the object starts with $.</div>
+<div class="block">Returns a boxed <code>Boolean</code> to keep the signature published in 0.11.0: a return type is
+ part of the JVM method descriptor, so narrowing it to <code>boolean</code> is a
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/NoSuchMethodError.html" title="class or interface in java.lang" class="external-link"><code>NoSuchMethodError</code></a> for callers compiled against that release.</div>
 </div>
 </div>
 </div>
@@ -166,6 +180,8 @@ loadScripts(document, 'script');</script>
  The condition syntax closely resembles MongoDB's syntax.
  This is defined in the Feature's targeting conditions' Advanced settings.</div>
 <dl class="notes">
+<dt>Specified by:</dt>
+<dd><code><a href="IConditionEvaluator.html#evaluateCondition(com.google.gson.JsonObject,com.google.gson.JsonObject,com.google.gson.JsonObject)">evaluateCondition</a></code>&nbsp;in interface&nbsp;<code><a href="IConditionEvaluator.html" title="interface in growthbook.sdk.java.evaluators">IConditionEvaluator</a></code></dd>
 <dt>Parameters:</dt>
 <dd><code>attributes</code> - A JsonObject of the user attributes to evaluate</dd>
 <dd><code>conditionJson</code> - A JsonObject of the condition</dd>
@@ -178,12 +194,15 @@ loadScripts(document, 'script');</script>
 <section class="detail" id="isOperatorObject(com.google.gson.JsonElement)">
 <h3>isOperatorObject</h3>
 <div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Boolean.html" title="class or interface in java.lang" class="external-link">Boolean</a></span>&nbsp;<span class="element-name">isOperatorObject</span><wbr><span class="parameters">(com.google.gson.JsonElement&nbsp;object)</span></div>
-<div class="block">This accepts a parsed JSON object as input and returns true if every key in the object starts with $.</div>
+<div class="block">Returns a boxed <code>Boolean</code> to keep the signature published in 0.11.0: a return type is
+ part of the JVM method descriptor, so narrowing it to <code>boolean</code> is a
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/NoSuchMethodError.html" title="class or interface in java.lang" class="external-link"><code>NoSuchMethodError</code></a> for callers compiled against that release. The value is never
+ null; prefer <code>isOperatorObjectInternal(com.google.gson.JsonElement)</code> inside this class.</div>
 <dl class="notes">
 <dt>Parameters:</dt>
 <dd><code>object</code> - The object to evaluate</dd>
 <dt>Returns:</dt>
-<dd>if all keys start with $</dd>
+<dd>true if the object is empty or every key is an operator (starts with <code>$</code>)</dd>
 </dl>
 </section>
 </li>
@@ -193,13 +212,18 @@ loadScripts(document, 'script');</script>
 <div class="member-signature"><span class="annotations">@Nullable
 </span><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html" title="class or interface in java.lang" class="external-link">Object</a></span>&nbsp;<span class="element-name">getPath</span><wbr><span class="parameters">(com.google.gson.JsonElement&nbsp;attributes,
  <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;path)</span></div>
-<div class="block">Given attributes and a dot-separated path string,</div>
+<div class="block">Resolves a dot-separated path against the attributes.
+
+ <p>Declared as <code>Object</code> to keep the signature published in 0.11.0, for the same
+ binary-compatibility reason as <a href="#isOperatorObject(com.google.gson.JsonElement)"><code>isOperatorObject(com.google.gson.JsonElement)</code></a>. Every value it can return is a
+ <code>JsonElement</code> or <code>null</code>; use <code>resolvePath(com.google.gson.JsonElement, java.lang.String)</code> inside this class to get that
+ type without a cast.</div>
 <dl class="notes">
 <dt>Parameters:</dt>
 <dd><code>attributes</code> - User attributes</dd>
-<dd><code>path</code> - String path, e.g. path.to.something</dd>
+<dd><code>path</code> - String path, e.g. <code>path.to.something</code></dd>
 <dt>Returns:</dt>
-<dd>the value at that path (or null if the path doesn't exist)</dd>
+<dd>the value at that path, or <code>null</code> if the path doesn't exist</dd>
 </dl>
 </section>
 </li>

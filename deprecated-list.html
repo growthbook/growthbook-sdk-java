@@ -51,11 +51,30 @@ loadScripts(document, 'script');</script>
 <h1 title="Deprecated API" class="title">Deprecated API</h1>
 <h2 title="Contents">Contents</h2>
 <ul>
+<li><a href="#interface">Interfaces</a></li>
 <li><a href="#class">Classes</a></li>
 <li><a href="#method">Methods</a></li>
 <li><a href="#constructor">Constructors</a></li>
 </ul>
 </div>
+<ul class="block-list">
+<li>
+<div id="interface">
+<div class="caption"><span>Deprecated Interfaces</span></div>
+<div class="summary-table two-column-summary">
+<div class="table-header col-first">Interface</div>
+<div class="table-header col-last">Description</div>
+<div class="col-summary-item-name even-row-color"><a href="growthbook/sdk/java/callback/FeatureRefreshCallback.html" title="interface in growthbook.sdk.java.callback">growthbook.sdk.java.callback.FeatureRefreshCallback</a></div>
+<div class="col-last even-row-color">
+<div class="deprecation-comment">Use <a href="growthbook/sdk/java/listener/FeatureRefreshListener.html" title="interface in growthbook.sdk.java.listener"><code>FeatureRefreshListener</code></a> with
+ <a href="growthbook/sdk/java/multiusermode/GrowthBookClient.html#addFeatureRefreshListener(growthbook.sdk.java.listener.FeatureRefreshListener)"><code>GrowthBookClient.addFeatureRefreshListener(FeatureRefreshListener)</code></a>,
+ <a href="growthbook/sdk/java/multiusermode/GrowthBookClient.html#subscribeFeatureRefreshListener(growthbook.sdk.java.listener.FeatureRefreshListener)"><code>GrowthBookClient.subscribeFeatureRefreshListener(FeatureRefreshListener)</code></a>, or
+ <a href="growthbook/sdk/java/repository/GBFeaturesRepository.html#addFeatureRefreshListener(growthbook.sdk.java.listener.FeatureRefreshListener)"><code>GBFeaturesRepository.addFeatureRefreshListener(FeatureRefreshListener)</code></a>.</div>
+</div>
+</div>
+</div>
+</li>
+</ul>
 <ul class="block-list">
 <li>
 <div id="class">
@@ -83,6 +102,14 @@ loadScripts(document, 'script');</script>
 <div class="summary-table two-column-summary">
 <div class="table-header col-first">Method</div>
 <div class="table-header col-last">Description</div>
+<div class="col-summary-item-name even-row-color"><a href="growthbook/sdk/java/callback/FeatureRefreshCallback.html#onError(java.lang.Throwable)">growthbook.sdk.java.callback.FeatureRefreshCallback.onError<wbr>(Throwable)</a></div>
+<div class="col-last even-row-color">
+<div class="deprecation-comment">Use <a href="growthbook/sdk/java/listener/FeatureRefreshListener.html#onRefresh(growthbook.sdk.java.model.FeatureRefreshEvent)"><code>FeatureRefreshListener.onRefresh(FeatureRefreshEvent)</code></a>.</div>
+</div>
+<div class="col-summary-item-name odd-row-color"><a href="growthbook/sdk/java/callback/FeatureRefreshCallback.html#onRefresh(java.lang.String)">growthbook.sdk.java.callback.FeatureRefreshCallback.onRefresh<wbr>(String)</a></div>
+<div class="col-last odd-row-color">
+<div class="deprecation-comment">Use <a href="growthbook/sdk/java/listener/FeatureRefreshListener.html#onRefresh(growthbook.sdk.java.model.FeatureRefreshEvent)"><code>FeatureRefreshListener.onRefresh(FeatureRefreshEvent)</code></a>.</div>
+</div>
 <div class="col-summary-item-name even-row-color"><a href="growthbook/sdk/java/model/Experiment.ExperimentBuilder.html#namespace(growthbook.sdk.java.model.Namespace)">growthbook.sdk.java.model.Experiment.ExperimentBuilder.namespace<wbr>(Namespace)</a></div>
 <div class="col-last even-row-color"></div>
 <div class="col-summary-item-name odd-row-color"><a href="growthbook/sdk/java/model/Experiment.html#getNamespace()">growthbook.sdk.java.model.Experiment.getNamespace()</a></div>
@@ -107,12 +134,62 @@ loadScripts(document, 'script');</script>
  <a href="growthbook/sdk/java/multiusermode/ExperimentTracker.html" title="class in growthbook.sdk.java.multiusermode"><code>ExperimentTracker</code></a>. Setting this field has no effect
  and it will be removed in a future major release.</div>
 </div>
-<div class="col-summary-item-name even-row-color"><a href="growthbook/sdk/java/multiusermode/GrowthBookClient.html#refreshFeature()">growthbook.sdk.java.multiusermode.GrowthBookClient.refreshFeature()</a></div>
-<div class="col-last even-row-color"></div>
+<div class="col-summary-item-name even-row-color"><a href="growthbook/sdk/java/multiusermode/configurations/Options.html#getFeatureRefreshCallback()">growthbook.sdk.java.multiusermode.configurations.Options.getFeatureRefreshCallback()</a></div>
+<div class="col-last even-row-color">
+<div class="deprecation-comment">Use <code>GrowthBookClient.addFeatureRefreshListener(...)</code> or
+ <code>GrowthBookClient.subscribeFeatureRefreshListener(...)</code> after constructing the client.</div>
+</div>
+<div class="col-summary-item-name odd-row-color"><a href="growthbook/sdk/java/multiusermode/configurations/Options.OptionsBuilder.html#featureRefreshCallback(growthbook.sdk.java.callback.FeatureRefreshCallback)">growthbook.sdk.java.multiusermode.configurations.Options.OptionsBuilder.featureRefreshCallback<wbr>(FeatureRefreshCallback)</a></div>
+<div class="col-last odd-row-color"></div>
+<div class="col-summary-item-name even-row-color"><a href="growthbook/sdk/java/multiusermode/configurations/Options.html#setFeatureRefreshCallback(growthbook.sdk.java.callback.FeatureRefreshCallback)">growthbook.sdk.java.multiusermode.configurations.Options.setFeatureRefreshCallback<wbr>(FeatureRefreshCallback)</a></div>
+<div class="col-last even-row-color">
+<div class="deprecation-comment">Use <code>GrowthBookClient.addFeatureRefreshListener(...)</code> or
+ <code>GrowthBookClient.subscribeFeatureRefreshListener(...)</code> after constructing the client.</div>
+</div>
+<div class="col-summary-item-name odd-row-color"><a href="growthbook/sdk/java/multiusermode/GrowthBookClient.html#refreshFeature()">growthbook.sdk.java.multiusermode.GrowthBookClient.refreshFeature()</a></div>
+<div class="col-last odd-row-color">
+<div class="deprecation-comment">Use <a href="growthbook/sdk/java/multiusermode/GrowthBookClient.html#refreshFeatures()"><code>GrowthBookClient.refreshFeatures()</code></a> or <a href="growthbook/sdk/java/multiusermode/GrowthBookClient.html#refreshFeatures(growthbook.sdk.java.repository.RefreshMode)"><code>GrowthBookClient.refreshFeatures(RefreshMode)</code></a>.</div>
+</div>
+<div class="col-summary-item-name even-row-color"><a href="growthbook/sdk/java/repository/GBFeaturesRepository.html#clearCallbacks()">growthbook.sdk.java.repository.GBFeaturesRepository.clearCallbacks()</a></div>
+<div class="col-last even-row-color">
+<div class="deprecation-comment">Use listener-specific unsubscription with
+ <a href="growthbook/sdk/java/repository/GBFeaturesRepository.html#removeFeatureRefreshListener(growthbook.sdk.java.listener.FeatureRefreshListener)"><code>GBFeaturesRepository.removeFeatureRefreshListener(FeatureRefreshListener)</code></a> where available.</div>
+</div>
 <div class="col-summary-item-name odd-row-color"><a href="growthbook/sdk/java/repository/GBFeaturesRepository.GBFeaturesRepositoryBuilder.html#encryptionKey(java.lang.String)">growthbook.sdk.java.repository.GBFeaturesRepository.GBFeaturesRepositoryBuilder.encryptionKey<wbr>(String)</a></div>
 <div class="col-last odd-row-color"></div>
 <div class="col-summary-item-name even-row-color"><a href="growthbook/sdk/java/repository/GBFeaturesRepository.html#getEncryptionKey()">growthbook.sdk.java.repository.GBFeaturesRepository.getEncryptionKey()</a></div>
 <div class="col-last even-row-color"></div>
+<div class="col-summary-item-name odd-row-color"><a href="growthbook/sdk/java/repository/GBFeaturesRepository.html#onFeaturesRefresh(growthbook.sdk.java.callback.FeatureRefreshCallback)">growthbook.sdk.java.repository.GBFeaturesRepository.onFeaturesRefresh<wbr>(FeatureRefreshCallback)</a></div>
+<div class="col-last odd-row-color">
+<div class="deprecation-comment">Use <a href="growthbook/sdk/java/repository/GBFeaturesRepository.html#addFeatureRefreshListener(growthbook.sdk.java.listener.FeatureRefreshListener)"><code>GBFeaturesRepository.addFeatureRefreshListener(FeatureRefreshListener)</code></a>.</div>
+</div>
+<div class="col-summary-item-name even-row-color"><a href="growthbook/sdk/java/repository/IGBFeaturesRepository.html#clearCallbacks()">growthbook.sdk.java.repository.IGBFeaturesRepository.clearCallbacks()</a></div>
+<div class="col-last even-row-color">
+<div class="deprecation-comment">Use listener-specific unsubscription with
+ <a href="growthbook/sdk/java/repository/IGBFeaturesRepository.html#removeFeatureRefreshListener(growthbook.sdk.java.listener.FeatureRefreshListener)"><code>IGBFeaturesRepository.removeFeatureRefreshListener(FeatureRefreshListener)</code></a> where available.</div>
+</div>
+<div class="col-summary-item-name odd-row-color"><a href="growthbook/sdk/java/repository/IGBFeaturesRepository.html#onFeaturesRefresh(growthbook.sdk.java.callback.FeatureRefreshCallback)">growthbook.sdk.java.repository.IGBFeaturesRepository.onFeaturesRefresh<wbr>(FeatureRefreshCallback)</a></div>
+<div class="col-last odd-row-color">
+<div class="deprecation-comment">Use <a href="growthbook/sdk/java/repository/IGBFeaturesRepository.html#addFeatureRefreshListener(growthbook.sdk.java.listener.FeatureRefreshListener)"><code>IGBFeaturesRepository.addFeatureRefreshListener(FeatureRefreshListener)</code></a>.</div>
+</div>
+<div class="col-summary-item-name even-row-color"><a href="growthbook/sdk/java/repository/LocalGbFeatureRepository.html#clearCallbacks()">growthbook.sdk.java.repository.LocalGbFeatureRepository.clearCallbacks()</a></div>
+<div class="col-last even-row-color">
+<div class="deprecation-comment">Use listener-specific unsubscription with
+ <a href="growthbook/sdk/java/repository/LocalGbFeatureRepository.html#removeFeatureRefreshListener(growthbook.sdk.java.listener.FeatureRefreshListener)"><code>LocalGbFeatureRepository.removeFeatureRefreshListener(FeatureRefreshListener)</code></a> where available.</div>
+</div>
+<div class="col-summary-item-name odd-row-color"><a href="growthbook/sdk/java/repository/LocalGbFeatureRepository.html#onFeaturesRefresh(growthbook.sdk.java.callback.FeatureRefreshCallback)">growthbook.sdk.java.repository.LocalGbFeatureRepository.onFeaturesRefresh<wbr>(FeatureRefreshCallback)</a></div>
+<div class="col-last odd-row-color">
+<div class="deprecation-comment">Use <a href="growthbook/sdk/java/repository/LocalGbFeatureRepository.html#addFeatureRefreshListener(growthbook.sdk.java.listener.FeatureRefreshListener)"><code>LocalGbFeatureRepository.addFeatureRefreshListener(FeatureRefreshListener)</code></a>.</div>
+</div>
+<div class="col-summary-item-name even-row-color"><a href="growthbook/sdk/java/repository/NativeJavaGbFeatureRepository.html#clearCallbacks()">growthbook.sdk.java.repository.NativeJavaGbFeatureRepository.clearCallbacks()</a></div>
+<div class="col-last even-row-color">
+<div class="deprecation-comment">Use listener-specific unsubscription with
+ <a href="growthbook/sdk/java/repository/NativeJavaGbFeatureRepository.html#removeFeatureRefreshListener(growthbook.sdk.java.listener.FeatureRefreshListener)"><code>NativeJavaGbFeatureRepository.removeFeatureRefreshListener(FeatureRefreshListener)</code></a> where available.</div>
+</div>
+<div class="col-summary-item-name odd-row-color"><a href="growthbook/sdk/java/repository/NativeJavaGbFeatureRepository.html#onFeaturesRefresh(growthbook.sdk.java.callback.FeatureRefreshCallback)">growthbook.sdk.java.repository.NativeJavaGbFeatureRepository.onFeaturesRefresh<wbr>(FeatureRefreshCallback)</a></div>
+<div class="col-last odd-row-color">
+<div class="deprecation-comment">Use <a href="growthbook/sdk/java/repository/NativeJavaGbFeatureRepository.html#addFeatureRefreshListener(growthbook.sdk.java.listener.FeatureRefreshListener)"><code>NativeJavaGbFeatureRepository.addFeatureRefreshListener(FeatureRefreshListener)</code></a>.</div>
+</div>
 </div>
 </div>
 </li>
