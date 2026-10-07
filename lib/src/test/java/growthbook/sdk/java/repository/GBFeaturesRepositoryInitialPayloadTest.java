@@ -27,6 +27,8 @@ import org.mockito.ArgumentCaptor;
 import java.io.IOException;
 import java.time.Duration;
 import java.util.List;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Bootstrapping the repository from an inline payload (offline cold start), mirroring the TS
@@ -63,8 +65,8 @@ class GBFeaturesRepositoryInitialPayloadTest {
     }
 
     @Test
-    @DisplayName("Live server wins: the first successful refresh replaces the seeded payload")
-    void liveServer_overridesInitialPayload() throws FeatureFetchException, IOException {
+    @DisplayName("Live server wins: the first (background) refresh replaces the seeded payload")
+    void liveServer_overridesInitialPayload() throws Exception {
         String serverResponse = "{\"status\":200,\"features\":{\"my-flag\":{\"defaultValue\":false}}}";
 
         GBFeaturesRepository subject = GBFeaturesRepository.builder()
@@ -75,8 +77,16 @@ class GBFeaturesRepositoryInitialPayloadTest {
                 .initialPayload(PAYLOAD_FLAG_ON)
                 .build();
 
+        CountDownLatch refreshed = new CountDownLatch(1);
+        subject.addFeatureRefreshListener(event -> {
+            if (event.getSource() == FeatureRefreshSource.INITIALIZATION && event.isSuccessful()) {
+                refreshed.countDown();
+            }
+        });
+
         subject.initialize();
 
+        assertTrue(refreshed.await(5, TimeUnit.SECONDS), "background refresh did not complete");
         assertEquals("{\"my-flag\":{\"defaultValue\":false}}", subject.getFeaturesJson());
 
         subject.shutdown();
@@ -146,7 +156,7 @@ class GBFeaturesRepositoryInitialPayloadTest {
     @Test
     @DisplayName("Seed is reported with INITIAL_PAYLOAD source and loadedFromCache=true, and the "
             + "offline fetch failure is still visible in metrics while evaluation keeps working")
-    void seedAndOfflineFailure_areReportedToListeners() throws FeatureFetchException {
+    void seedAndOfflineFailure_areReportedToListeners() throws Exception {
         FeatureRefreshListener listener = mock(FeatureRefreshListener.class);
         GBFeaturesRepository subject = GBFeaturesRepository.builder()
                 .apiHost("http://localhost:80")
@@ -157,8 +167,16 @@ class GBFeaturesRepositoryInitialPayloadTest {
                 .initialPayload(PAYLOAD_FLAG_ON)
                 .build();
         subject.addFeatureRefreshListener(listener);
+        // The post-seed refresh now runs in the background; await the reported failure deterministically.
+        CountDownLatch failureLatch = new CountDownLatch(1);
+        subject.addFeatureRefreshListener(event -> {
+            if (!event.isSuccessful()) {
+                failureLatch.countDown();
+            }
+        });
 
         subject.initialize();
+        assertTrue(failureLatch.await(5, TimeUnit.SECONDS), "offline fetch failure was not reported");
 
         ArgumentCaptor<FeatureRefreshEvent> captor = ArgumentCaptor.forClass(FeatureRefreshEvent.class);
         verify(listener, org.mockito.Mockito.atLeast(2)).onRefresh(captor.capture());

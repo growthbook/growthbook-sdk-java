@@ -204,8 +204,21 @@ The same builder parameter is available on the repository directly:
 GBFeaturesRepository repository = GBFeaturesRepository.builder()
         .apiHost("https://cdn.growthbook.io")
         .clientKey("sdk-abc123")
-        .decryptionKey("<key>")        // optional; required if the payload uses encryptedFeatures
         .initialPayload(bootstrap)
+        .build();
+repository.initialize();
+```
+
+For an **encrypted** bootstrap, set a `decryptionKey` and pass a payload that uses `encryptedFeatures`
+(the same shape the encrypted features endpoint returns) — a non-null key always selects the encrypted
+path, so it must not be combined with a plaintext payload:
+
+```java
+GBFeaturesRepository repository = GBFeaturesRepository.builder()
+        .apiHost("https://cdn.growthbook.io")
+        .clientKey("sdk-abc123")
+        .decryptionKey("<key>")
+        .initialPayload("{\"encryptedFeatures\":\"<iv.ciphertext>\"}")
         .build();
 repository.initialize();
 ```

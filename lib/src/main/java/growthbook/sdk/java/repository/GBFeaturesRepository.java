@@ -724,6 +724,25 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
         pollScheduler.scheduleWithFixedDelay(this::pollOnceSafe, this.swrTtlSeconds, this.swrTtlSeconds, TimeUnit.SECONDS);
     }
 
+    /**
+     * Runs the first post-seed refresh off the caller's thread so a seeded {@code initialize()} returns
+     * immediately (instant cold start). Uses {@link RefreshMode#FORCE} so the seed's in-memory data does
+     * not suppress the refresh; a failure is swallowed, leaving the seed in place.
+     */
+    private void scheduleImmediateBackgroundRefresh() {
+        ScheduledExecutorService scheduler = this.pollScheduler;
+        if (scheduler == null) {
+            return;
+        }
+        scheduler.schedule(() -> {
+            try {
+                refreshFeatures(RefreshMode.FORCE, FeatureRefreshSource.INITIALIZATION);
+            } catch (Exception e) {
+                log.debug("Background initial refresh after seeding failed; continuing to serve the seeded payload.", e);
+            }
+        }, 0, TimeUnit.MILLISECONDS);
+    }
+
     private void pollOnceSafe() {
         if (!polling.compareAndSet(false, true)) return;
 
@@ -750,14 +769,26 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
         if (this.initialized) return;
 
         seedInitialPayload();
+        boolean seeded = this.initialPayload != null;
         switch (this.refreshStrategy) {
             case STALE_WHILE_REVALIDATE:
-                refreshFeatures(RefreshMode.DEFAULT, FeatureRefreshSource.INITIALIZATION);
-                schedulePolling();
+                if (seeded) {
+                    // Instant cold start: the seed already serves evaluations, so run the first refresh
+                    // in the background instead of blocking initialize() on a possibly slow/unreachable
+                    // network call. FORCE so the seed cannot borrow cache freshness and suppress it.
+                    schedulePolling();
+                    scheduleImmediateBackgroundRefresh();
+                } else {
+                    refreshFeatures(RefreshMode.DEFAULT, FeatureRefreshSource.INITIALIZATION);
+                    schedulePolling();
+                }
                 break;
 
             case SERVER_SENT_EVENTS:
-                refreshFeatures(RefreshMode.DEFAULT, FeatureRefreshSource.INITIALIZATION);
+                // FORCE when seeded so the initial fetch is not skipped by the seed's freshness.
+                refreshFeatures(
+                        seeded ? RefreshMode.FORCE : RefreshMode.DEFAULT,
+                        FeatureRefreshSource.INITIALIZATION);
                 initializeSSE(retryOnFailure);
                 break;
 
