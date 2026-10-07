@@ -1,0 +1,12 @@
+{
+  "evalCondition": [
+    ["$notRegex - pass", {"userAgent": {"$notRegex": "(Mobile|Tablet)"}}, {"userAgent": "Chrome Desktop Browser"}, true],
+    ["$notRegex - fail", {"userAgent": {"$notRegex": "(Mobile|Tablet)"}}, {"userAgent": "Android Mobile Browser"}, false],
+    ["$notRegexi - pass", {"userAgent": {"$notRegexi": "(mobile|tablet)"}}, {"userAgent": "Chrome Desktop Browser"}, true],
+    ["$notRegexi - fail", {"userAgent": {"$notRegexi": "(mobile|tablet)"}}, {"userAgent": "Android Mobile Browser"}, false]
+  ],
+  "feature": [
+    ["Prerequisite condition uses $inGroup, evaluate dependent flag", {"attributes": {"id": "123", "country": "USA"}, "features": {"parentFlag": {"defaultValue": "silver", "rules": [{"condition": {"country": "USA"}, "force": "green"}]}, "childFlag": {"defaultValue": "default", "rules": [{"parentConditions": [{"id": "parentFlag", "condition": {"value": {"$inGroup": "colors"}}, "gate": true}]}, {"force": "success"}]}}, "savedGroups": {"colors": ["green", "blue"]}}, "childFlag", {"value": "success", "on": true, "off": false, "source": "force", "ruleId": ""}],
+    ["Prerequisite condition uses $notInGroup, block dependent flag", {"attributes": {"id": "123", "country": "USA"}, "features": {"parentFlag": {"defaultValue": "silver", "rules": [{"condition": {"country": "USA"}, "force": "green"}]}, "childFlag": {"defaultValue": "default", "rules": [{"parentConditions": [{"id": "parentFlag", "condition": {"value": {"$notInGroup": "colors"}}, "gate": true}]}, {"force": "success"}]}}, "savedGroups": {"colors": ["green", "blue"]}}, "childFlag", {"value": null, "on": false, "off": true, "source": "prerequisite", "ruleId": ""}]
+  ]
+}

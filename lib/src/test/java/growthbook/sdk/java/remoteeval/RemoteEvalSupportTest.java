@@ -184,6 +184,20 @@ class RemoteEvalSupportTest {
     }
 
     @Test
+    @DisplayName("preloadRemoteEval(null) warms the default response without throwing")
+    void growthBookClient_preloadRemoteEvalWithNullContextWarmsDefaultResponse() throws Exception {
+        // Regression: preloadRemoteEval(null) must warm the default/global response rather than
+        // throwing NPE. Callers previously relied on null being treated as an empty user context.
+        try (RemoteEvalTestServer server = new RemoteEvalTestServer(featureResponse(true))) {
+            GrowthBookClient client = new GrowthBookClient(remoteEvalOptions(server));
+            assertTrue(client.initialize());
+
+            assertTrue(client.preloadRemoteEval(null));
+            assertEquals(1, server.callCount());
+        }
+    }
+
+    @Test
     @DisplayName("refreshFeature clears the remote eval cache")
     void growthBookClient_refreshFeatureClearsRemoteEvalCache() throws Exception {
         try (RemoteEvalTestServer server = new RemoteEvalTestServer(featureResponse(true))) {
