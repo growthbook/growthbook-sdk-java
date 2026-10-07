@@ -1,8 +1,11 @@
 package growthbook.sdk.java.multiusermode.configurations;
 
+import com.google.gson.JsonElement;
+import com.google.gson.JsonSyntaxException;
 import growthbook.sdk.java.exception.InvalidOptionsException;
 import growthbook.sdk.java.remoteeval.RemoteEvalOptionsValidator;
 import growthbook.sdk.java.sandbox.CacheMode;
+import growthbook.sdk.java.util.GrowthBookJsonUtils;
 import growthbook.sdk.java.util.StringUtils;
 
 import javax.annotation.Nullable;
@@ -74,6 +77,7 @@ public final class OptionsValidator {
         checkBackgroundFetchInterval(options.getBackgroundFetchInterval(), violations);
         checkRemoteEvalCacheTtl(options.getRemoteEvalCacheTtlSeconds(), violations);
         checkCacheConfiguration(options, violations);
+        checkInitialPayload(options.getInitialPayload(), violations);
         violations.addAll(RemoteEvalOptionsValidator.remoteEvalViolations(options));
         return Collections.unmodifiableList(violations);
     }
@@ -146,6 +150,20 @@ public final class OptionsValidator {
 
         if (cacheMode == CacheMode.CUSTOM && !cacheManagerSupplied) {
             violations.add("CacheMode.CUSTOM requires a cacheManager to be supplied");
+        }
+    }
+
+    private static void checkInitialPayload(@Nullable String initialPayload, List<String> violations) {
+        if (StringUtils.isBlank(initialPayload)) {
+            return;
+        }
+        try {
+            JsonElement parsed = GrowthBookJsonUtils.getInstance().gson.fromJson(initialPayload, JsonElement.class);
+            if (parsed == null || !parsed.isJsonObject()) {
+                violations.add("initialPayload must be a JSON object");
+            }
+        } catch (JsonSyntaxException e) {
+            violations.add("initialPayload is not valid JSON: " + e.getMessage());
         }
     }
 }

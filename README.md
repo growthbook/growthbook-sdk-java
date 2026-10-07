@@ -170,6 +170,59 @@ groups, rules that reference them by ID match nobody (or, for exclusions, everyb
 
 `GrowthBookClient` handles this itself. After a refresh, build a new `GBContext` from the repository.
 
+## Bootstrapping from a local payload
+
+By default `initialize()` blocks on the first network fetch, and if the API is unreachable with no
+local cache the SDK starts with no features. You can instead seed the SDK from a ready JSON payload —
+the same shape the features endpoint returns (`{"features": {...}, "savedGroups": {...}}`, or
+`encryptedFeatures` when a decryption key is set). This gives an **instant, offline-capable cold start**
+from a snapshot you bundle into your artifact or read from your own store, and makes tests deterministic
+without a mock server.
+
+The payload is only a *bridge*: the SDK seeds state from it first, then runs the normal network refresh
+for your configured strategy. The **first successful refresh replaces the payload** with live server data.
+
+```java
+String bootstrap = "{\"features\":{\"my-flag\":{\"defaultValue\":true}},\"savedGroups\":{}}";
+
+Options options = Options.builder()
+        .apiHost("https://cdn.growthbook.io")
+        .clientKey("sdk-abc123")
+        .initialPayload(bootstrap)   // seed before the first network call
+        .build();
+
+GrowthBookClient gb = new GrowthBookClient(options);
+
+// Returns true even if the API is unreachable: evaluations work from the seeded snapshot.
+gb.initialize();
+gb.isOn("my-flag", UserContext.builder().build()); // true, from the payload
+```
+
+The same builder parameter is available on the repository directly:
+
+```java
+GBFeaturesRepository repository = GBFeaturesRepository.builder()
+        .apiHost("https://cdn.growthbook.io")
+        .clientKey("sdk-abc123")
+        .decryptionKey("<key>")        // optional; required if the payload uses encryptedFeatures
+        .initialPayload(bootstrap)
+        .build();
+repository.initialize();
+```
+
+Semantics:
+
+- **Offline:** with a seeded payload and an unreachable API, `initialize()` returns `true` and
+  evaluations work from the snapshot. The fetch failure is still reported to listeners/metrics
+  (`onRefresh` with `isSuccessful() == false`); it does not abort startup because feature data is available.
+- **Reporting:** seeding is published as a distinct `FeatureRefreshEvent` with source
+  `FeatureRefreshSource.INITIAL_PAYLOAD` and `isLoadedFromCache() == true`, so it is never mistaken for a
+  successful network refresh. The seed does not write to the file cache and does not advance the
+  last-successful-fetch timestamp.
+- **Validation:** a malformed payload fails fast — `GrowthBookClient` rejects it during `initialize()`
+  (via options validation) and the repository builder throws `IllegalArgumentException`. A decryption
+  failure surfaces as a clear startup error rather than a silent fallback.
+
 ## Usage
 ## Caching & Refresh Strategy
 

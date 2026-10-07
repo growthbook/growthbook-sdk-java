@@ -131,6 +131,17 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
     private final String decryptionKey;
 
     /**
+     * Optional inline bootstrap payload, in the same shape as the features endpoint response
+     * ({@code {"features": {...}, "savedGroups": {...}}}, or {@code encryptedFeatures} when a
+     * {@link #decryptionKey} is set). When present, the repository seeds its state from this payload
+     * before the first network refresh, enabling an instant offline cold start. The payload is only a
+     * bridge: the first successful network refresh replaces it.
+     */
+    @Nullable
+    @Getter
+    private final String initialPayload;
+
+    /**
      * The standard cache TTL to use (60 seconds)
      */
     @Getter
@@ -389,7 +400,6 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
         );
     }
 
-    @Builder
     public GBFeaturesRepository(
             @Nullable String apiHost,
             String clientKey,
@@ -404,6 +414,32 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
             @Nullable Duration backgroundFetchInterval,
             @Nullable FeatureFetchRetryPolicy retryPolicy
     ) {
+        this(apiHost, clientKey, encryptionKey, refreshStrategy, swrTtlSeconds, okHttpClient, decryptionKey,
+                isCacheDisabled, requestBodyForRemoteEval, cacheManager, backgroundFetchInterval, retryPolicy, null);
+    }
+
+    /**
+     * Builder constructor supporting an inline bootstrap payload.
+     *
+     * @param initialPayload optional inline feature payload used to bootstrap the repository at cold
+     *                       start before the first network fetch
+     */
+    @Builder
+    public GBFeaturesRepository(
+            @Nullable String apiHost,
+            String clientKey,
+            @Deprecated @Nullable String encryptionKey,
+            @Nullable FeatureRefreshStrategy refreshStrategy,
+            @Nullable Integer swrTtlSeconds,
+            @Nullable OkHttpClient okHttpClient,
+            @Nullable String decryptionKey,
+            @Nullable Boolean isCacheDisabled,
+            @Nullable RequestBodyForRemoteEval requestBodyForRemoteEval,
+            @Nullable GbCacheManager cacheManager,
+            @Nullable Duration backgroundFetchInterval,
+            @Nullable FeatureFetchRetryPolicy retryPolicy,
+            @Nullable String initialPayload
+    ) {
         this(apiHost, clientKey, (decryptionKey != null) ? decryptionKey : encryptionKey,
                 refreshStrategy,
                 swrTtlSeconds,
@@ -412,7 +448,8 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
                 (requestBodyForRemoteEval != null) ? requestBodyForRemoteEval : new RequestBodyForRemoteEval(),
                 cacheManager,
                 backgroundFetchInterval,
-                retryPolicy
+                retryPolicy,
+                initialPayload
         );
     }
 
@@ -449,6 +486,7 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
                 requestBodyForRemoteEval,
                 cacheManager,
                 null,
+                null,
                 null
         );
     }
@@ -465,6 +503,24 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
             @Nullable GbCacheManager cacheManager,
             @Nullable Duration backgroundFetchInterval,
             @Nullable FeatureFetchRetryPolicy retryPolicy
+    ) {
+        this(apiHost, clientKey, decryptionKey, refreshStrategy, swrTtlSeconds, okHttpClient,
+                isCacheDisabled, requestBodyForRemoteEval, cacheManager, backgroundFetchInterval, retryPolicy, null);
+    }
+
+    public GBFeaturesRepository(
+            @Nullable String apiHost,
+            String clientKey,
+            @Nullable String decryptionKey,
+            @Nullable FeatureRefreshStrategy refreshStrategy,
+            @Nullable Integer swrTtlSeconds,
+            @Nullable OkHttpClient okHttpClient,
+            @Nullable Boolean isCacheDisabled,
+            @Nullable RequestBodyForRemoteEval requestBodyForRemoteEval,
+            @Nullable GbCacheManager cacheManager,
+            @Nullable Duration backgroundFetchInterval,
+            @Nullable FeatureFetchRetryPolicy retryPolicy,
+            @Nullable String initialPayload
     ) {
         this.isCacheDisabled = isCacheDisabled != null && isCacheDisabled; // cache enable by default
         if (clientKey == null) throw new IllegalArgumentException("clientKey cannot be null");
@@ -485,6 +541,7 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
 
         this.encryptionKey = decryptionKey;
         this.decryptionKey = decryptionKey;
+        this.initialPayload = validateInitialPayload(initialPayload);
 
         this.swrTtlSeconds = swrTtlSeconds == null ? SDKConstants.DEFAULT_SWR_TTL_SECONDS : swrTtlSeconds;
         this.backgroundFetchInterval = backgroundFetchInterval;
@@ -692,6 +749,7 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
     public void initialize(Boolean retryOnFailure) throws FeatureFetchException {
         if (this.initialized) return;
 
+        seedInitialPayload();
         switch (this.refreshStrategy) {
             case STALE_WHILE_REVALIDATE:
                 refreshFeatures(RefreshMode.DEFAULT, FeatureRefreshSource.INITIALIZATION);
@@ -1054,6 +1112,55 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
         this.refreshConsecutiveFailures.incrementAndGet();
         this.lastRefreshFailureAtMillis.set(System.currentTimeMillis());
         this.lastRefreshLoadedFromCache.set(loadedFromCache);
+    }
+
+    /**
+     * Validates the inline bootstrap payload at construction time so a malformed payload fails fast
+     * instead of surfacing later as an opaque fetch failure. Only structural JSON validity is checked
+     * here; key presence and decryption are enforced when the payload is seeded in {@link #initialize()}.
+     *
+     * @param payload the raw inline payload, may be {@code null} or blank
+     * @return the payload unchanged, or {@code null} when blank
+     * @throws IllegalArgumentException when the payload is not a valid JSON object
+     */
+    @Nullable
+    private static String validateInitialPayload(@Nullable String payload) {
+        if (payload == null || payload.trim().isEmpty()) {
+            return null;
+        }
+        try {
+            JsonElement parsed = GrowthBookJsonUtils.getInstance().gson.fromJson(payload, JsonElement.class);
+            if (parsed == null || !parsed.isJsonObject()) {
+                throw new IllegalArgumentException("initialPayload must be a JSON object");
+            }
+        } catch (JsonSyntaxException e) {
+            throw new IllegalArgumentException("initialPayload is not valid JSON: " + e.getMessage(), e);
+        }
+        return payload;
+    }
+
+    /**
+     * Seeds repository state from the inline bootstrap payload, if one was supplied. Reuses the
+     * cache-load path ({@code isFromCache=true}) so the seed does not write to the file cache and does
+     * not advance {@code lastSuccessfulFetchAtMillis} — the payload is a bridge, not a network fetch.
+     * The seed is reported to listeners/metrics with {@link FeatureRefreshSource#INITIAL_PAYLOAD} and
+     * {@code loadedFromCache=true} so it is never mistaken for a successful network refresh.
+     *
+     * @throws FeatureFetchException when the payload is missing required keys or cannot be decrypted;
+     *         seeding fails fast rather than silently falling through to the network.
+     */
+    private void seedInitialPayload() throws FeatureFetchException {
+        if (this.initialPayload == null) {
+            return;
+        }
+        long startedAtNanos = System.nanoTime();
+        boolean featuresChanged = onResponseJson(this.initialPayload, true);
+        this.featureRefreshNotifier.notifySuccess(
+                FeatureRefreshSource.INITIAL_PAYLOAD,
+                featuresChanged,
+                true,
+                FeatureRefreshNotifier.elapsedMillis(startedAtNanos)
+        );
     }
 
     /**
