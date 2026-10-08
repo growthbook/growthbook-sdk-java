@@ -26,6 +26,7 @@ import growthbook.sdk.java.multiusermode.internal.FeatureRepositoryProvider;
 import growthbook.sdk.java.multiusermode.internal.GlobalContextManager;
 import growthbook.sdk.java.multiusermode.internal.ManagedListenerExecutor;
 import growthbook.sdk.java.multiusermode.internal.RemoteEvalCoordinator;
+import growthbook.sdk.java.multiusermode.usage.EventLoggerDispatch;
 import growthbook.sdk.java.plugin.PluginRegistry;
 import growthbook.sdk.java.repository.GBFeaturesRepository;
 import growthbook.sdk.java.repository.RefreshMode;
@@ -317,7 +318,45 @@ public class GrowthBookClient {
     public <T> FeatureResult<T> evalFeature(String key,
                                             Class<T> valueTypeClass,
                                             UserContext userContext) {
-        return featureEvaluator.evaluateFeature(key, getEvalContext(userContext), valueTypeClass);
+        return evalFeature(key, valueTypeClass, userContext, null);
+    }
+
+    /**
+     * Returns a per-request scoped view bound to one user, whose evaluations buffer experiment
+     * exposures for a single {@link UserScopedGrowthBook#fireDeferredTrackingCalls()} flush at the
+     * end of the request. Direct {@code GrowthBookClient} evaluations remain immediate.
+     *
+     * @param userContext the user to bind; {@code null} yields an empty context
+     * @return a new, non-thread-safe scoped view
+     */
+    public UserScopedGrowthBook forUser(UserContext userContext) {
+        return new UserScopedGrowthBook(
+                this, userContext == null ? UserContext.builder().build() : userContext);
+    }
+
+    /**
+     * Emits an application-defined event to the configured
+     * {@link growthbook.sdk.java.multiusermode.usage.EventLogger}. Fires immediately and is a no-op
+     * when no event logger is configured. A throwing logger is logged and swallowed.
+     *
+     * @param eventName   the event name
+     * @param properties  event properties; {@code null} is treated as empty
+     * @param userContext the user the event is for
+     */
+    public void logEvent(String eventName, Map<String, Object> properties, UserContext userContext) {
+        EvaluationContext ec = getEvalContext(userContext == null ? UserContext.builder().build() : userContext);
+        EventLoggerDispatch.logEvent(this.options, eventName, properties, ec.getUser());
+    }
+
+    <T> FeatureResult<T> evalFeature(String key,
+                                     Class<T> valueTypeClass,
+                                     UserContext userContext,
+                                     @Nullable DeferredTrackingBuffer buffer) {
+        return featureEvaluator.evaluateFeature(key, getEvalContext(userContext, buffer), valueTypeClass);
+    }
+
+    void flushDeferredTracking(DeferredTrackingBuffer buffer) {
+        buffer.flush(this.options);
     }
 
     /**
@@ -348,7 +387,11 @@ public class GrowthBookClient {
      * @return true when the feature is on
      */
     public Boolean isOn(String featureKey, UserContext userContext) {
-        return this.featureEvaluator.evaluateFeature(featureKey, getEvalContext(userContext), Object.class).isOn();
+        return isOn(featureKey, userContext, null);
+    }
+
+    Boolean isOn(String featureKey, UserContext userContext, @Nullable DeferredTrackingBuffer buffer) {
+        return this.featureEvaluator.evaluateFeature(featureKey, getEvalContext(userContext, buffer), Object.class).isOn();
     }
 
     /**
@@ -359,7 +402,11 @@ public class GrowthBookClient {
      * @return true when the feature is off
      */
     public Boolean isOff(String featureKey, UserContext userContext) {
-        return this.featureEvaluator.evaluateFeature(featureKey, getEvalContext(userContext), Object.class).isOff();
+        return isOff(featureKey, userContext, null);
+    }
+
+    Boolean isOff(String featureKey, UserContext userContext, @Nullable DeferredTrackingBuffer buffer) {
+        return this.featureEvaluator.evaluateFeature(featureKey, getEvalContext(userContext, buffer), Object.class).isOff();
     }
 
     /**
@@ -375,9 +422,16 @@ public class GrowthBookClient {
     public <T> T getFeatureValue(String featureKey, T defaultValue,
                                  Class<T> gsonDeserializableClass,
                                  UserContext userContext) {
+        return getFeatureValue(featureKey, defaultValue, gsonDeserializableClass, userContext, null);
+    }
+
+    <T> T getFeatureValue(String featureKey, T defaultValue,
+                          Class<T> gsonDeserializableClass,
+                          UserContext userContext,
+                          @Nullable DeferredTrackingBuffer buffer) {
         try {
             Object evaluatedValue = this.featureEvaluator
-                    .evaluateFeature(featureKey, getEvalContext(userContext), gsonDeserializableClass).getValue();
+                    .evaluateFeature(featureKey, getEvalContext(userContext, buffer), gsonDeserializableClass).getValue();
 
             if (evaluatedValue == null) {
                 return defaultValue;
@@ -525,8 +579,12 @@ public class GrowthBookClient {
      * @return experiment evaluation result
      */
     public <T> ExperimentResult<T> run(Experiment<T> experiment, UserContext userContext) {
+        return run(experiment, userContext, null);
+    }
+
+    <T> ExperimentResult<T> run(Experiment<T> experiment, UserContext userContext, @Nullable DeferredTrackingBuffer buffer) {
         ExperimentResult<T> result = experimentEvaluator
-                .evaluateExperiment(experiment, getEvalContext(userContext), null);
+                .evaluateExperiment(experiment, getEvalContext(userContext, buffer), null);
 
         experimentSubscriptions.publishIfChanged(experiment, result);
 
@@ -620,6 +678,12 @@ public class GrowthBookClient {
             return withPluginRegistry(this.remoteEvalCoordinator.createEvaluationContext(safeUserContext));
         }
         return withPluginRegistry(this.globalContextManager.createEvaluationContext(safeUserContext));
+    }
+
+    private EvaluationContext getEvalContext(UserContext userContext, @Nullable DeferredTrackingBuffer buffer) {
+        EvaluationContext evaluationContext = getEvalContext(userContext);
+        evaluationContext.setDeferredTracking(buffer);
+        return evaluationContext;
     }
 
     /** Attaches this client's own plugin registry so events never route through another client's plugins. */

@@ -7,6 +7,8 @@ import lombok.experimental.UtilityClass;
  */
 @UtilityClass
 public class SDKConstants {
+
+    public static final String EMPTY_STRING = "";
     public static final int DEFAULT_SWR_TTL_SECONDS = 60;
 
     @UtilityClass

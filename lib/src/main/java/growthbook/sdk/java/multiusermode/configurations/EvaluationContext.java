@@ -1,6 +1,7 @@
 package growthbook.sdk.java.multiusermode.configurations;
 
 import growthbook.sdk.java.model.FeatureResult;
+import growthbook.sdk.java.multiusermode.DeferredTrackingBuffer;
 import growthbook.sdk.java.plugin.PluginRegistry;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
@@ -28,11 +29,24 @@ public class EvaluationContext {
     @Nullable
     private PluginRegistry pluginRegistry;
 
+    /**
+     * When non-null, experiment exposures are buffered here instead of firing immediately, so a
+     * per-request scope can flush tracking once at the end. Null on the immediate path.
+     */
+    @Nullable
+    private DeferredTrackingBuffer deferredTracking;
+
     public EvaluationContext(GlobalContext global, UserContext user, StackContext stack, Options options) {
+        this(global, user, stack, options, null);
+    }
+
+    public EvaluationContext(GlobalContext global, UserContext user, StackContext stack, Options options,
+                             @Nullable DeferredTrackingBuffer deferredTracking) {
         this.global = global;
         this.user = user;
         this.stack = stack;
         this.options = options;
+        this.deferredTracking = deferredTracking;
     }
 
     @Data

@@ -11,6 +11,7 @@ import growthbook.sdk.java.model.FeatureResult;
 import growthbook.sdk.java.model.FeatureResultSource;
 import growthbook.sdk.java.model.FeatureRule;
 import growthbook.sdk.java.multiusermode.configurations.EvaluationContext;
+import growthbook.sdk.java.multiusermode.usage.EventLoggerDispatch;
 import growthbook.sdk.java.multiusermode.usage.FeatureUsageCallbackWithUser;
 import growthbook.sdk.java.plugin.PluginRegistry;
 import lombok.extern.slf4j.Slf4j;
@@ -414,6 +415,7 @@ public class FeatureEvaluator implements IFeatureEvaluator {
         if (registry != null) {
             registry.fireFeatureEvaluated(key, result);
         }
+        EventLoggerDispatch.fireFeatureEvaluated(context.getOptions(), key, result, context.getUser());
     }
 
     private @Nullable <T> T evaluateForcedFeatureValueFromUrl(String key, @Nullable String urlString, Class<T> valueTypeClass) {

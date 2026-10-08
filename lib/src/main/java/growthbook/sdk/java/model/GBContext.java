@@ -4,6 +4,7 @@ import com.google.gson.JsonObject;
 import growthbook.sdk.java.util.ExperimentHelper;
 import growthbook.sdk.java.callback.FeatureUsageCallback;
 import growthbook.sdk.java.callback.TrackingCallback;
+import growthbook.sdk.java.multiusermode.usage.EventLogger;
 import growthbook.sdk.java.multiusermode.util.TransformationUtil;
 import growthbook.sdk.java.plugin.GrowthBookPlugin;
 import growthbook.sdk.java.remoteeval.RemoteEvalRequestBuilder;
@@ -17,6 +18,7 @@ import javax.annotation.Nullable;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.Executor;
 
 /**
  * Context object passed into the GrowthBook constructor.
@@ -79,7 +81,10 @@ public class GBContext {
             @Nullable List<String> cacheKeyAttributes,
             @Nullable Integer remoteEvalCacheSize,
             @Nullable Integer remoteEvalCacheTtlSeconds,
-            @Nullable List<GrowthBookPlugin> plugins
+            @Nullable List<GrowthBookPlugin> plugins,
+            @Nullable EventLogger eventLogger,
+            @Nullable Boolean deferTrackingCalls,
+            @Nullable Executor eventLoggerExecutor
     ) {
         this.encryptionKey = encryptionKey;
         this.attributesJson = attributesJson == null ? "{}" : attributesJson;
@@ -110,6 +115,9 @@ public class GBContext {
         this.remoteEvalCacheSize = RemoteEvalRequestBuilder.normalizeCacheSize(remoteEvalCacheSize);
         this.remoteEvalCacheTtlSeconds = remoteEvalCacheTtlSeconds;
         this.plugins = plugins;
+        this.eventLogger = eventLogger;
+        this.deferTrackingCalls = deferTrackingCalls != null && deferTrackingCalls;
+        this.eventLoggerExecutor = eventLoggerExecutor;
     }
 
     public GBContext(
@@ -147,6 +155,9 @@ public class GBContext {
                 stickyBucketAssignmentDocs,
                 stickyBucketIdentifierAttributes,
                 savedGroups,
+                null,
+                null,
+                null,
                 null,
                 null,
                 null,
@@ -198,6 +209,28 @@ public class GBContext {
      */
     @Nullable
     private FeatureUsageCallback featureUsageCallback;
+
+    /**
+     * Structured event sink invoked during evaluation ({@code "Experiment Viewed"} and
+     * {@code "Feature Evaluated"}) and by {@link growthbook.sdk.java.GrowthBook#logEvent}. Fires in
+     * addition to {@link #trackingCallback} and {@link #featureUsageCallback}.
+     */
+    @Nullable
+    private EventLogger eventLogger;
+
+    /**
+     * When {@code true}, experiment exposures are buffered instead of fired during evaluation; the
+     * caller flushes them with {@link growthbook.sdk.java.GrowthBook#fireDeferredTrackingCalls()}.
+     * Defaults to {@code false} (exposures fire immediately).
+     */
+    private Boolean deferTrackingCalls;
+
+    /**
+     * Optional executor used to dispatch {@link EventLogger} events off the evaluation thread. When
+     * {@code null} (default), events fire synchronously on the calling thread.
+     */
+    @Nullable
+    private Executor eventLoggerExecutor;
 
     /**
      * String format of user attributes that are used to assign variations
