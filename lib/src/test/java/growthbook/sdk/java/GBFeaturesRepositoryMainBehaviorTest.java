@@ -20,6 +20,7 @@ import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Objects;
+import java.util.concurrent.atomic.AtomicReference;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
@@ -152,7 +153,7 @@ class GBFeaturesRepositoryMainBehaviorTest {
         // set sseHttpClient through  reflection
         Field field = GBFeaturesRepository.class.getDeclaredField("sseHttpClient");
         field.setAccessible(true);
-        field.set(subject, clientWithCache);
+        field.set(subject, new AtomicReference<>(clientWithCache));
 
         subject.shutdown();
 
@@ -179,13 +180,30 @@ class GBFeaturesRepositoryMainBehaviorTest {
         // set sseHttpClient through  reflection
         Field field = GBFeaturesRepository.class.getDeclaredField("sseHttpClient");
         field.setAccessible(true);
-        field.set(subject, mockHttpClient);
+        field.set(subject, new AtomicReference<>(mockHttpClient));
 
         // shutdown shouldn't throw exception — IOException omitted
         assertDoesNotThrow(subject::shutdown);
 
         // check if close() was invoked
         verify(mockCache).close();
+    }
+
+    @Test
+    void shutdown_withPollingStrategy_keepsTheDurableCache() {
+        // A polling repository never opens an SSE client, so shutting it down must leave the
+        // durable cache on disk: the next process relies on it when the initial fetch fails.
+        GbCacheManager cacheManager = mock(GbCacheManager.class);
+        GBFeaturesRepository subject = GBFeaturesRepository.builder()
+                .apiHost("http://localhost")
+                .clientKey("sdk-123")
+                .refreshStrategy(FeatureRefreshStrategy.STALE_WHILE_REVALIDATE)
+                .cacheManager(cacheManager)
+                .build();
+
+        subject.shutdown();
+
+        verify(cacheManager, never()).clearCache();
     }
 
     @Test

@@ -18,6 +18,7 @@ import growthbook.sdk.java.model.HttpHeaders;
 import growthbook.sdk.java.model.TypedKey;
 import growthbook.sdk.java.multiusermode.configurations.Options;
 import growthbook.sdk.java.multiusermode.configurations.UserContext;
+import growthbook.sdk.java.multiusermode.util.TransformationUtil;
 import growthbook.sdk.java.repository.FeatureRefreshStrategy;
 import growthbook.sdk.java.repository.FeatureSnapshot;
 import growthbook.sdk.java.repository.GBFeaturesRepository;
@@ -799,6 +800,52 @@ class GrowthBookClientTest {
             verify(mockRepository, never()).addFeatureRefreshListener(any());
             verify(mockRepository, never()).initialize(anyBoolean());
             verify(mockRepository).shutdown();
+        }
+    }
+
+    @Test
+    void run_sameResultMultipleTimes_firesCallbackOnce() {
+        GrowthBookClient subject = new GrowthBookClient();
+        ExperimentRunCallback mockCallback = mock(ExperimentRunCallback.class);
+        Experiment<String> mockExperiment = Experiment.<String>builder().key("my-experiment").build();
+
+        subject.subscribe(mockCallback);
+        subject.run(mockExperiment, UserContext.builder().build());
+        subject.run(mockExperiment, UserContext.builder().build());
+        subject.run(mockExperiment, UserContext.builder().build());
+
+        verify(mockCallback, times(1)).onRun(any(), any());
+    }
+
+    @Test
+    void isOn_enabledFeature_returnsTrueAndIsOffReturnsFalse() {
+        String featureKey = "price";
+        String attributes = "{ \"user\": \"standard\" }";
+        String demoFeaturesJson = TestCasesJsonHelper.getInstance().getDemoFeaturesJson();
+
+        mockRepository = createMockRepository();
+        mockBuilder = createMockBuilder(mockRepository);
+
+        Map<String, Feature<?>> parsedFeatures = TransformationUtil.transformFeatures(demoFeaturesJson);
+        when(mockRepository.getParsedFeatures()).thenReturn(parsedFeatures);
+        when(mockRepository.getFeatureSnapshot()).thenReturn(FeatureSnapshot.of("{}", "{}", parsedFeatures, new JsonObject()));
+
+        try (MockedStatic<GBFeaturesRepository> mockedStatic = mockStatic(GBFeaturesRepository.class)) {
+            mockedStatic.when(GBFeaturesRepository::builder).thenReturn(mockBuilder);
+
+            GrowthBookClient client = new GrowthBookClient(createDefaultOptions(null));
+            client.initialize();
+
+            UserContext userContext = UserContext.builder().attributesJson(attributes).build();
+
+            FeatureResult<Float> floatFeatureResult = client.evalFeature(featureKey, Float.class, userContext);
+
+            Boolean on = client.isOn(featureKey, userContext);
+            Boolean off = client.isOff(featureKey, userContext);
+
+            assertTrue(on);
+            assertFalse(off);
+            assertTrue(floatFeatureResult.isOn());
         }
     }
 

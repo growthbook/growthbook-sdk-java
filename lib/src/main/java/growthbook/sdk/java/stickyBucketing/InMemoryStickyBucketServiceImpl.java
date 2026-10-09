@@ -5,6 +5,7 @@ import growthbook.sdk.java.model.StickyAssignmentsDocument;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 
 /**
  * For simple bucket persistence using the in memory's storage(Map) (can be polyfilled for other environments)
@@ -23,12 +24,16 @@ public class InMemoryStickyBucketServiceImpl implements StickyBucketService {
     /**
      * Constructs a new {@code InMemoryStickyBucketServiceImpl} with the specified local storage.
      *
-     * @param localStorage a map to store sticky assignments documents in memory. Pass a
-     *                     thread-safe map (e.g. {@link ConcurrentHashMap}) when the service is
-     *                     shared by a {@code GrowthBookClient} evaluating on multiple threads.
+     * @param localStorage a map to store sticky assignments documents in memory. The map is used
+     *                     directly as the backing storage, so assignments saved by this service are
+     *                     visible to the caller and vice versa. A plain map (e.g. {@link HashMap})
+     *                     is only safe when the service is used from a single thread; pass a
+     *                     thread-safe {@link ConcurrentMap} (e.g. {@link ConcurrentHashMap}) when the
+     *                     service is shared by a {@code GrowthBookClient} evaluating on multiple
+     *                     threads. A {@code null} map falls back to an empty {@link ConcurrentHashMap}.
      */
     public InMemoryStickyBucketServiceImpl(Map<String, StickyAssignmentsDocument> localStorage) {
-        this.localStorage = localStorage;
+        this.localStorage = localStorage == null ? new ConcurrentHashMap<>() : localStorage;
     }
 
     /**
