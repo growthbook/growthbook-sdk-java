@@ -120,6 +120,70 @@ public class GBContext {
         this.eventLoggerExecutor = eventLoggerExecutor;
     }
 
+    /**
+     * Backward-compatible constructor preserving the pre-event-logger 23-argument signature. Delegates
+     * to the full constructor with no event logger, immediate (non-deferred) tracking, and no event
+     * logger executor.
+     *
+     * @deprecated prefer {@link GBContext#builder()}; this overload exists only to keep callers compiled
+     * against the earlier signature working.
+     */
+    @Deprecated
+    public GBContext(
+            @Nullable String attributesJson,
+            @Nullable JsonObject attributes,
+            @Nullable String featuresJson,
+            @Nullable Map<String, Feature<?>> features,
+            @Nullable String encryptionKey,
+            @Nullable Boolean enabled,
+            Boolean isQaMode,
+            @Nullable String url,
+            Boolean allowUrlOverrides,
+            @Nullable Map<String, ?> forcedVariationsMap,
+            @Nullable TrackingCallback trackingCallback,
+            @Nullable FeatureUsageCallback featureUsageCallback,
+            @Nullable StickyBucketService stickyBucketService,
+            @Nullable Map<String, StickyAssignmentsDocument> stickyBucketAssignmentDocs,
+            @Nullable List<String> stickyBucketIdentifierAttributes,
+            @Nullable JsonObject savedGroups,
+            @Nullable String apiHost,
+            @Nullable String clientKey,
+            @Nullable Boolean remoteEval,
+            @Nullable List<String> cacheKeyAttributes,
+            @Nullable Integer remoteEvalCacheSize,
+            @Nullable Integer remoteEvalCacheTtlSeconds,
+            @Nullable List<GrowthBookPlugin> plugins
+    ) {
+        this(
+                attributesJson,
+                attributes,
+                featuresJson,
+                features,
+                encryptionKey,
+                enabled,
+                isQaMode,
+                url,
+                allowUrlOverrides,
+                forcedVariationsMap,
+                trackingCallback,
+                featureUsageCallback,
+                stickyBucketService,
+                stickyBucketAssignmentDocs,
+                stickyBucketIdentifierAttributes,
+                savedGroups,
+                apiHost,
+                clientKey,
+                remoteEval,
+                cacheKeyAttributes,
+                remoteEvalCacheSize,
+                remoteEvalCacheTtlSeconds,
+                plugins,
+                null,
+                null,
+                null
+        );
+    }
+
     public GBContext(
             @Nullable String attributesJson,
             @Nullable JsonObject attributes,
