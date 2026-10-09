@@ -47,6 +47,7 @@ import org.mockito.ArgumentCaptor;
 import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.Field;
+import java.util.concurrent.atomic.AtomicReference;
 import java.nio.file.Files;
 import java.time.Duration;
 import java.util.ArrayList;
@@ -176,10 +177,12 @@ class GBFeaturesRepositoryTest {
                 .cache(cache)
                 .build();
 
-        // set sseHttpClient through  reflection
+        // set sseHttpClient through reflection (the field is a final AtomicReference)
         Field field = GBFeaturesRepository.class.getDeclaredField("sseHttpClient");
         field.setAccessible(true);
-        field.set(subject, clientWithCache);
+        @SuppressWarnings("unchecked")
+        AtomicReference<OkHttpClient> sseHttpClientRef = (AtomicReference<OkHttpClient>) field.get(subject);
+        sseHttpClientRef.set(clientWithCache);
 
         subject.shutdown();
 
@@ -203,10 +206,12 @@ class GBFeaturesRepositoryTest {
         when(mockHttpClient.dispatcher()).thenReturn(new Dispatcher());
         when(mockHttpClient.connectionPool()).thenReturn(new ConnectionPool());
 
-        // set sseHttpClient through  reflection
+        // set sseHttpClient through reflection (the field is a final AtomicReference)
         Field field = GBFeaturesRepository.class.getDeclaredField("sseHttpClient");
         field.setAccessible(true);
-        field.set(subject, mockHttpClient);
+        @SuppressWarnings("unchecked")
+        AtomicReference<OkHttpClient> sseHttpClientRef = (AtomicReference<OkHttpClient>) field.get(subject);
+        sseHttpClientRef.set(mockHttpClient);
 
         // shutdown shouldn't throw exception — IOException omitted
         assertDoesNotThrow(subject::shutdown);
