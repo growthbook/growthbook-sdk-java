@@ -62,7 +62,7 @@ public class ExperimentEvaluator implements IExperimentEvaluator {
         }
 
         // Query string overrides
-        Integer override = GrowthBookUtils.getQueryStringOverride(experiment.getKey(), context.getOptions().getUrl(), experimentVariations.size());
+        Integer override = GrowthBookUtils.getQueryStringOverride(experiment.getKey(), context.resolveUrl(), experimentVariations.size());
         if (override != null) {
             return getExperimentResult(context, experiment, override, false, featureId, null, null);
         }
@@ -398,7 +398,7 @@ public class ExperimentEvaluator implements IExperimentEvaluator {
         if (tracks == null) {
             return;
         }
-        if (context.getOptions().getTrackingCallBackWithUser() == null
+        if (resolveTrackingCallback(context) == null
                 && context.getPluginRegistry() == null) {
             return;
         }
@@ -433,7 +433,7 @@ public class ExperimentEvaluator implements IExperimentEvaluator {
             Experiment<ValueType> experiment,
             ExperimentResult<ValueType> result
     ) {
-        TrackingCallbackWithUser callback = context.getOptions().getTrackingCallBackWithUser();
+        TrackingCallbackWithUser callback = resolveTrackingCallback(context);
         if (callback != null) {
             callback.onTrack(experiment, result, context.getUser());
         }
@@ -441,6 +441,21 @@ public class ExperimentEvaluator implements IExperimentEvaluator {
         if (pluginRegistry != null) {
             pluginRegistry.fireExperimentViewed(experiment, result);
         }
+    }
+
+    /**
+     * Resolves the tracking callback for an evaluation, preferring a per-user callback
+     * (set through a user-scoped instance) over the client-level one.
+     *
+     * @param context the evaluation context
+     * @return the per-user callback when present, otherwise the client-level callback, or {@code null}
+     */
+    @Nullable
+    private TrackingCallbackWithUser resolveTrackingCallback(EvaluationContext context) {
+        TrackingCallbackWithUser userCallback = context.getUser() != null
+                ? context.getUser().getTrackingCallback()
+                : null;
+        return userCallback != null ? userCallback : context.getOptions().getTrackingCallBackWithUser();
     }
 
     private <ValueType> boolean alreadyTracked(Experiment<ValueType> experiment, ExperimentResult<ValueType> result) {
