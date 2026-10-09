@@ -12,11 +12,9 @@ import org.junit.jupiter.api.Timeout;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -31,22 +29,19 @@ class GlobalContextManagerTest {
 
     @Test
     @Timeout(30)
-    @DisplayName("Verify: a seeded initialize racing a live refresh converges to the live snapshot")
+    @DisplayName("Verify: a concurrent refresh cannot interleave while initialize holds the publish lock, and the live snapshot wins")
     void initializeDoesNotClobberConcurrentRefresh() throws Exception {
-        // Given a repository where the first (initialize) snapshot read is held open until the
-        // refresh has published the live snapshot — the exact losing interleave the lock must prevent.
+        // Gate the first (initialize) snapshot read so initialize parks inside publishSnapshot while
+        // still holding the publish lock; the refresh's read returns the live snapshot.
         AtomicInteger snapshotReads = new AtomicInteger(0);
-        CountDownLatch initializeEnteredRead = new CountDownLatch(1);
-        CountDownLatch refreshPublished = new CountDownLatch(1);
+        CountDownLatch initInsidePublish = new CountDownLatch(1);
+        CountDownLatch releaseInit = new CountDownLatch(1);
 
         GBFeaturesRepository repository = mock(GBFeaturesRepository.class);
         when(repository.getFeatureSnapshot()).thenAnswer(invocation -> {
             if (snapshotReads.incrementAndGet() == 1) {
-                initializeEnteredRead.countDown();
-                // Let the refresh fully publish the live snapshot before initialize finishes its own
-                // publish. Under the fix the refresh is blocked on the publish lock and never arrives,
-                // so this times out and initialize completes first — the refresh then wins.
-                refreshPublished.await(2, TimeUnit.SECONDS);
+                initInsidePublish.countDown();
+                releaseInit.await();
                 return SEED;
             }
             return LIVE;
@@ -54,41 +49,34 @@ class GlobalContextManagerTest {
 
         GlobalContextManager manager = new GlobalContextManager(Options.builder().build());
 
-        CountDownLatch start = new CountDownLatch(1);
-        CountDownLatch done = new CountDownLatch(2);
-        Thread initializer = new Thread(() -> {
-            await(start);
-            manager.initialize(repository);
-            done.countDown();
-        });
-        Thread refresher = new Thread(() -> {
-            await(start);
-            await(initializeEnteredRead);
-            manager.refresh(repository);
-            refreshPublished.countDown();
-            done.countDown();
-        });
+        Thread initializer = new Thread(() -> manager.initialize(repository), "initializer");
+        Thread refresher = new Thread(() -> manager.refresh(repository), "refresher");
         initializer.setDaemon(true);
         refresher.setDaemon(true);
+
+        // initialize enters publishSnapshot, reads the seed, and parks while still holding the lock.
         initializer.start();
+        initInsidePublish.await();
+
+        // refresh cannot acquire the publish lock while initialize holds it: it blocks on the monitor
+        // and never reaches its own snapshot read. Spin only until that state is observable; @Timeout
+        // is the sole guard against a hang if the lock were missing.
         refresher.start();
+        while (refresher.getState() != Thread.State.BLOCKED && refresher.isAlive()) {
+            Thread.yield();
+        }
+        assertEquals(Thread.State.BLOCKED, refresher.getState(),
+                "refresh entered publishSnapshot while initialize held the lock");
+        assertEquals(1, snapshotReads.get(),
+                "refresh read a snapshot while initialize held the lock");
 
-        // When both publish paths run against the same repository.
-        start.countDown();
-        assertTrue(done.await(10, TimeUnit.SECONDS), "publishers did not finish");
+        // Release initialize; the refresh then runs and the newer (live) snapshot must win.
+        releaseInit.countDown();
+        initializer.join();
+        refresher.join();
 
-        // Then the live snapshot wins; initialize never leaves the context on the stale seed.
         assertEquals(LIVE.getParsedFeatures().size(), manager.featureCount(),
                 "initialize() clobbered the concurrently refreshed snapshot");
-    }
-
-    private static void await(CountDownLatch latch) {
-        try {
-            latch.await();
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            throw new IllegalStateException(e);
-        }
     }
 
     private static FeatureSnapshot snapshotWith(int featureCount) {
