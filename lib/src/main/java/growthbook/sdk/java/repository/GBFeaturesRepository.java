@@ -62,6 +62,7 @@ import java.util.Collections;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -120,7 +121,7 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
      * Strategy for building url
      */
     @Getter
-    private FeatureRefreshStrategy refreshStrategy;
+    private volatile FeatureRefreshStrategy refreshStrategy;
 
     /**
      * @deprecated Use decryptionKey instead.
@@ -177,10 +178,23 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
     private final AtomicBoolean hasFeatureData = new AtomicBoolean(false);
 
     /**
-     * Seconds after that cache is expired
+     * Seconds after that cache is expired.
+     *
+     * <p>Kept private and read through {@link #getExpiresAt()}: a Lombok getter here would expose
+     * the {@code AtomicLong} itself and change the public return type, which is a compatibility
+     * break the atomic was never meant to cause.
      */
-    @Getter
-    private volatile Long expiresAt;
+    private final AtomicLong expiresAt = new AtomicLong(0);
+
+    /**
+     * @return the epoch second at which the cached payload expires, or {@code null} before the
+     * first successful refresh has set it
+     */
+    @Nullable
+    public Long getExpiresAt() {
+        long value = this.expiresAt.get();
+        return value == 0 ? null : value;
+    }
 
     /**
      * Http request client for send GET request
@@ -190,8 +204,7 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
     /**
      * Http request client for establish SSE connection
      */
-    @Nullable
-    private OkHttpClient sseHttpClient;
+    private final AtomicReference<OkHttpClient> sseHttpClient = new AtomicReference<>(null);
 
     /**
      * Legacy callbacks for getting updates when features are refreshed.
@@ -211,19 +224,17 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
     /**
      * Flag to know whether GBFeatureRepository is initialized
      */
-    @Getter
-    private volatile Boolean initialized = false;
+    private AtomicBoolean initialized = new AtomicBoolean(false);
 
     /**
      * Flag to know whether sse connection is allowed
      */
-    private volatile Boolean sseAllowed = false;
+    private AtomicBoolean sseAllowed = new AtomicBoolean(false);
 
     @Nullable
-    private Request sseRequest = null;
+    private volatile Request sseRequest = null;
 
-    @Nullable
-    private EventSource sseEventSource = null;
+    private final AtomicReference<EventSource> sseEventSource = new AtomicReference<>(null);
 
     /**
      * The current features payload — raw JSON and parsed forms captured together
@@ -279,19 +290,10 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
         return this.snapshot.get().getParsedSavedGroups();
     }
 
-    public void setCacheManager(GbCacheManager cacheManager) {
-        if (!isCacheDisabled) {
-            this.cacheManager = cacheManager;
-        } else {
-            log.warn("Cache is disabled. Please enable it and set the CacheManager");
-        }
-    }
-
     /**
      * CachingManger allows to cache features data to file
      */
-    @Getter
-    private volatile GbCacheManager cacheManager;
+    private final AtomicReference<GbCacheManager> cacheManager = new AtomicReference<>(null);
 
     /**
      * Flag that enable CachingManager
@@ -311,6 +313,12 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
     @Getter
     private final String remoteEvalEndPoint;
 
+    // Getter for deprecated encryptionKey
+    @Deprecated
+    @Nullable
+    public String getEncryptionKey() {
+        return encryptionKey;
+    }
 
     /**
      * Create a new GBFeaturesRepository
@@ -513,7 +521,7 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
             this.okHttpClient = okHttpClient;
         }
         if (!this.isCacheDisabled) {
-            this.cacheManager = cacheManager != null ? cacheManager : createCacheManager();
+            this.cacheManager.set(cacheManager != null ? cacheManager : createCacheManager());
         }
     }
 
@@ -532,11 +540,12 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
         }
     }
 
-    // Getter for deprecated encryptionKey
-    @Deprecated
-    @Nullable
-    public String getEncryptionKey() {
-        return encryptionKey;
+    public void setCacheManager(GbCacheManager cacheManager) {
+        if (!isCacheDisabled) {
+            this.cacheManager.set(cacheManager);
+        } else {
+            log.warn("Cache is disabled. Please enable it and set the CacheManager");
+        }
     }
 
     public long getLastSuccessfulFetchAtMillis() {
@@ -568,7 +577,7 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
     }
 
     public boolean isSseAllowed() {
-        return Boolean.TRUE.equals(this.sseAllowed);
+        return this.sseAllowed.get();
     }
 
     public boolean isSseConnected() {
@@ -672,20 +681,28 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
     }
 
     // Scheduled polling (non-SSE) drives refresh for STALE_WHILE_REVALIDATE strategy
-    private ScheduledExecutorService pollScheduler;
+    private final AtomicReference<ScheduledExecutorService> pollScheduler = new AtomicReference<>(null);
     private final AtomicBoolean polling = new AtomicBoolean(false);
-    private ScheduledExecutorService sseRetryScheduler;
+    private volatile ScheduledExecutorService sseRetryScheduler;
     private final AtomicBoolean sseReconnectScheduled = new AtomicBoolean(false);
     private final AtomicBoolean sseConnected = new AtomicBoolean(false);
     private final AtomicInteger sseRetryAttempts = new AtomicInteger(0);
     private final AtomicBoolean shuttingDown = new AtomicBoolean(false);
+    private final Object initLock = new Object();
 
     private void schedulePolling() {
-        if (pollScheduler != null || this.refreshStrategy == FeatureRefreshStrategy.SERVER_SENT_EVENTS) return;
-        // Named daemon thread: a non-daemon poller would keep the JVM alive
-        // when the application exits without calling shutdown().
-        pollScheduler = Executors.newSingleThreadScheduledExecutor(POLL_THREAD_FACTORY);
-        pollScheduler.scheduleWithFixedDelay(this::pollOnceSafe, this.swrTtlSeconds, this.swrTtlSeconds, TimeUnit.SECONDS);
+        if (this.refreshStrategy == FeatureRefreshStrategy.SERVER_SENT_EVENTS) {
+            return;
+        }
+
+        // Named daemon thread: a non-daemon poller would keep the JVM alive when the
+        // application exits without calling shutdown().
+        ScheduledExecutorService newScheduler = Executors.newSingleThreadScheduledExecutor(POLL_THREAD_FACTORY);
+        if (!pollScheduler.compareAndSet(null, newScheduler)) {
+            newScheduler.shutdown();
+            return;
+        }
+        newScheduler.scheduleWithFixedDelay(this::pollOnceSafe, this.swrTtlSeconds, this.swrTtlSeconds, TimeUnit.SECONDS);
     }
 
     private void pollOnceSafe() {
@@ -711,29 +728,51 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
 
     @Override
     public void initialize(Boolean retryOnFailure) throws FeatureFetchException {
-        if (this.initialized) return;
+        if (this.initialized.get()) return;
 
-        switch (this.refreshStrategy) {
-            case STALE_WHILE_REVALIDATE:
-                refreshFeatures(RefreshMode.DEFAULT, FeatureRefreshSource.INITIALIZATION);
-                schedulePolling();
-                break;
+        // Serialize initialization and only mark the repository initialized AFTER the first
+        // successful fetch completes, so getInitialized() never reports "ready" while features are
+        // still being loaded. On failure the flag stays false and a later call can retry.
+        synchronized (this.initLock) {
+            if (this.initialized.get()) return;
 
-            case SERVER_SENT_EVENTS:
-                refreshFeatures(RefreshMode.DEFAULT, FeatureRefreshSource.INITIALIZATION);
-                initializeSSE(retryOnFailure);
-                break;
+            switch (this.refreshStrategy) {
+                case STALE_WHILE_REVALIDATE:
+                    refreshFeatures(RefreshMode.DEFAULT, FeatureRefreshSource.INITIALIZATION);
+                    schedulePolling();
+                    break;
 
-            case REMOTE_EVAL_STRATEGY:
-                fetchForRemoteEval(this.requestBodyForRemoteEval, FeatureRefreshSource.REMOTE_EVALUATION);
-                break;
+                case SERVER_SENT_EVENTS:
+                    refreshFeatures(RefreshMode.DEFAULT, FeatureRefreshSource.INITIALIZATION);
+                    initializeSSE(retryOnFailure);
+                    break;
+
+                case REMOTE_EVAL_STRATEGY:
+                    fetchForRemoteEval(this.requestBodyForRemoteEval, FeatureRefreshSource.REMOTE_EVALUATION);
+                    break;
+            }
+
+            this.initialized.set(true);
         }
+    }
 
-        this.initialized = true;
+    /**
+     * @return whether the repository has been initialized
+     */
+    public Boolean getInitialized() {
+        return this.initialized.get();
+    }
+
+    /**
+     * @return the cache manager, or {@code null} when caching is disabled
+     */
+    @Nullable
+    public GbCacheManager getCacheManager() {
+        return this.cacheManager.get();
     }
 
     private void initializeSSE(Boolean retryOnFailure) {
-        if (!this.sseAllowed) {
+        if (!this.sseAllowed.get()) {
             log.info("\nFalling back to stale-while-revalidate refresh strategy. 'X-Sse-Support: enabled' not present on resource returned at {}", this.featuresEndpoint);
             this.refreshStrategy = FeatureRefreshStrategy.STALE_WHILE_REVALIDATE;
         }
@@ -748,17 +787,22 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
      */
     private void createEventSourceListenerAndStartListening(Boolean retryOnFailure) {
         this.sseConnected.set(false);
-        this.sseEventSource = null;
+        this.sseEventSource.set(null);
         this.sseRequest = null;
 
-        if (this.sseHttpClient == null) {
-            this.sseHttpClient = new OkHttpClient.Builder()
+        if (this.sseHttpClient.get() == null) {
+
+            OkHttpClient newHttpClient = new OkHttpClient.Builder()
                     .addInterceptor(new GBFeaturesRepositoryRequestInterceptor())
                     .retryOnConnectionFailure(false)
                     .connectTimeout(0, TimeUnit.SECONDS)
                     .readTimeout(0, TimeUnit.SECONDS)
                     .writeTimeout(0, TimeUnit.SECONDS)
                     .build();
+
+            if (!this.sseHttpClient.compareAndSet(null, newHttpClient)) {
+                newHttpClient.dispatcher().executorService().shutdown();
+            }
         }
 
         this.sseRequest = new Request.Builder()
@@ -807,11 +851,11 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
                     }
                 };
 
-        this.sseEventSource = EventSources
-                .createFactory(this.sseHttpClient)
-                .newEventSource(sseRequest, gbEventSourceListener);
+        this.sseEventSource.set(EventSources
+                .createFactory(this.sseHttpClient.get())
+                .newEventSource(sseRequest, gbEventSourceListener));
 
-        this.sseHttpClient.newCall(sseRequest).enqueue(new Callback() {
+        this.sseHttpClient.get().newCall(sseRequest).enqueue(new Callback() {
             @Override
             public void onFailure(@NotNull Call call, @NotNull IOException e) {
                 log.error("SSE connection failed: {}", e.getMessage(), e);
@@ -880,12 +924,12 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
     }
 
     private void refreshExpiresAt() {
-        this.expiresAt = Instant.now().getEpochSecond() + this.swrTtlSeconds;
+        this.expiresAt.set(Instant.now().getEpochSecond() + this.swrTtlSeconds);
     }
 
     private Boolean isCacheExpired() {
         long now = Instant.now().getEpochSecond();
-        return now >= this.expiresAt;
+        return now >= this.expiresAt.get();
     }
 
     private boolean shouldSkipRefresh(RefreshMode refreshMode) {
@@ -968,7 +1012,7 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
 
         try (Response response = this.okHttpClient.newCall(request).execute()) {
             String sseSupportHeader = response.header(HttpHeaders.X_SSE_SUPPORT.getHeader());
-            this.sseAllowed = Objects.equals(sseSupportHeader, ENABLED);
+            this.sseAllowed.set(Objects.equals(sseSupportHeader, ENABLED));
 
             this.onSuccess(response, source, startedAtNanos);
         } catch (IOException e) {
@@ -1012,12 +1056,13 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
 
     @Nullable
     private Long readCacheLastUpdatedMillis() {
-        if (this.isCacheDisabled || this.cacheManager == null) {
+        GbCacheManager manager = this.cacheManager.get();
+        if (this.isCacheDisabled || manager == null) {
             return null;
         }
 
         try {
-            return this.cacheManager.getLastUpdatedMillis(this.cacheKey);
+            return manager.getLastUpdatedMillis(this.cacheKey);
         } catch (RuntimeException cacheException) {
             log.warn("Failed to read the feature cache timestamp.", cacheException);
             return null;
@@ -1039,12 +1084,13 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
      * @return whether feature data is available after the attempt
      */
     private boolean loadCachedFeaturesIfAvailable(AtomicBoolean featuresChangedOut) {
-        if (this.isCacheDisabled || this.cacheManager == null) {
+        GbCacheManager manager = this.cacheManager.get();
+        if (this.isCacheDisabled || manager == null) {
             return false;
         }
 
         try {
-            String cachedData = this.cacheManager.loadCache(this.cacheKey);
+            String cachedData = manager.loadCache(this.cacheKey);
             if (cachedData == null || cachedData.trim().isEmpty()) {
                 return false;
             }
@@ -1152,11 +1198,11 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
      * disrupt feature processing. No-op when caching is disabled or unconfigured.
      */
     private void saveToCacheQuietly(String responseJsonString) {
-        if (isCacheDisabled || cacheManager == null) {
+        if (isCacheDisabled || cacheManager.get() == null) {
             return;
         }
         try {
-            cacheManager.saveContent(this.cacheKey, responseJsonString);
+            cacheManager.get().saveContent(this.cacheKey, responseJsonString);
         } catch (RuntimeException ignored) {
         }
     }
@@ -1481,40 +1527,49 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
         this.featureRefreshNotifier.clear();
         this.featureRefreshScheduler.shutdown();
         // stop polling
-        if (this.pollScheduler != null) {
-            this.pollScheduler.shutdownNow();
-            this.pollScheduler = null;
+        ScheduledExecutorService executorService = this.pollScheduler.getAndSet(null);
+
+        if (executorService != null) {
+            executorService.shutdown();
             log.info("Polling scheduler shut down");
         }
-        if (this.sseRetryScheduler != null) {
-            this.sseRetryScheduler.shutdownNow();
-            this.sseRetryScheduler = null;
-            log.info("SSE retry scheduler shut down");
+        // Synchronize on the same monitor as scheduleSseReconnect() so a reconnect that passed the
+        // shuttingDown check cannot create a new scheduler after we have torn it down (which would
+        // leak an executor). shuttingDown is set above, so once we hold the lock no new scheduler
+        // will be created.
+        synchronized (this) {
+            if (this.sseRetryScheduler != null) {
+                this.sseRetryScheduler.shutdownNow();
+                this.sseRetryScheduler = null;
+                log.info("SSE retry scheduler shut down");
+            }
         }
-        if (this.sseEventSource != null) {
-            this.sseEventSource.cancel();
-            this.sseEventSource = null;
+
+        EventSource eventSource = this.sseEventSource.getAndSet(null);
+        if (eventSource != null) {
+            eventSource.cancel();
             log.info("SseEventSource cancel");
         }
-        if (this.sseHttpClient != null) {
-            this.sseHttpClient.dispatcher().cancelAll();
-            this.sseHttpClient.connectionPool().evictAll();
-            if (this.sseHttpClient.cache() != null) {
+
+        OkHttpClient nullSseHttpClient = this.sseHttpClient.getAndSet(null);
+        if (nullSseHttpClient != null) {
+            nullSseHttpClient.dispatcher().cancelAll();
+            nullSseHttpClient.connectionPool().evictAll();
+            if (nullSseHttpClient.cache() != null) {
                 try {
-                    this.sseHttpClient.cache().close();
+                    nullSseHttpClient.cache().close();
                 } catch (IOException e) {
                     log.error(e.getMessage(), e);
                 }
             }
-            this.sseHttpClient = null;
             log.info("SseHttpClient shutdown");
         }
         // Release the cache manager reference without clearing the underlying store:
         // persisted features are meant to survive restarts, and with shared stores
         // (e.g. a Redis-backed GbCacheManager) clearing here would wipe the cache for
         // every other SDK instance using the same namespace.
-        if (this.cacheManager != null) {
-            this.cacheManager = null;
+        GbCacheManager releasedCacheManager = this.cacheManager.getAndSet(null);
+        if (releasedCacheManager != null) {
             log.info("CacheManager released");
         }
     }
@@ -1578,7 +1633,12 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
 
 
     private String getCachedFeatures() throws FeatureFetchException {
-        String cachedData = cacheManager.loadCache(this.cacheKey);
+        GbCacheManager gbCacheManager = this.cacheManager.get();
+
+        if (gbCacheManager == null) {
+            throw new FeatureFetchException(FeatureFetchException.FeatureFetchErrorCode.NO_RESPONSE_ERROR);
+        }
+        String cachedData = gbCacheManager.loadCache(this.cacheKey);
         if (cachedData == null) {
             log.error("FeatureFetchException: No Features from Cache");
             throw new FeatureFetchException(FeatureFetchException.FeatureFetchErrorCode.NO_RESPONSE_ERROR);
