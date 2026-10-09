@@ -730,17 +730,52 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
      * not suppress the refresh; a failure is swallowed, leaving the seed in place.
      */
     private void scheduleImmediateBackgroundRefresh() {
-        ScheduledExecutorService scheduler = this.pollScheduler;
-        if (scheduler == null) {
-            return;
-        }
-        scheduler.schedule(() -> {
+        backgroundScheduler().schedule(() -> {
             try {
                 refreshFeatures(RefreshMode.FORCE, FeatureRefreshSource.INITIALIZATION);
             } catch (Exception e) {
                 log.debug("Background initial refresh after seeding failed; continuing to serve the seeded payload.", e);
             }
         }, 0, TimeUnit.MILLISECONDS);
+    }
+
+    /**
+     * Runs the seeded SSE cold start off the caller's thread: the {@link RefreshMode#FORCE} fetch
+     * establishes SSE support and current features before the stream is opened, exactly as the
+     * blocking path does, but without stalling {@code initialize()} on the network. The seed serves
+     * meanwhile; a failed fetch is swallowed and leaves the seed in place until the stream delivers.
+     */
+    private void scheduleInitialSseStartup(Boolean retryOnFailure) {
+        backgroundScheduler().schedule(() -> {
+            if (this.shuttingDown.get()) {
+                return;
+            }
+            try {
+                refreshFeatures(RefreshMode.FORCE, FeatureRefreshSource.INITIALIZATION);
+            } catch (Exception e) {
+                log.debug("Background initial SSE refresh after seeding failed; continuing to serve the seeded payload.", e);
+            }
+            if (!this.shuttingDown.get()) {
+                initializeSSE(retryOnFailure);
+                // Lost a race with shutdown(): tear down the stream this task just opened.
+                if (this.shuttingDown.get() && this.sseEventSource != null) {
+                    this.sseEventSource.cancel();
+                }
+            }
+        }, 0, TimeUnit.MILLISECONDS);
+    }
+
+    /**
+     * Lazily creates the single-threaded scheduler used for off-caller-thread startup work (the
+     * seeded background refresh and SSE startup) and for stale-while-revalidate polling. Only called
+     * from the {@code initialize()} path, so creation is single-threaded; {@link #shutdown()} tears
+     * it down.
+     */
+    private ScheduledExecutorService backgroundScheduler() {
+        if (this.pollScheduler == null) {
+            this.pollScheduler = Executors.newSingleThreadScheduledExecutor(POLL_THREAD_FACTORY);
+        }
+        return this.pollScheduler;
     }
 
     private void pollOnceSafe() {
@@ -785,11 +820,15 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
                 break;
 
             case SERVER_SENT_EVENTS:
-                // FORCE when seeded so the initial fetch is not skipped by the seed's freshness.
-                refreshFeatures(
-                        seeded ? RefreshMode.FORCE : RefreshMode.DEFAULT,
-                        FeatureRefreshSource.INITIALIZATION);
-                initializeSSE(retryOnFailure);
+                if (seeded) {
+                    // Instant cold start: the seed already serves evaluations, so establish SSE support
+                    // and open the stream off the caller's thread instead of blocking initialize() on a
+                    // possibly slow/unreachable fetch.
+                    scheduleInitialSseStartup(retryOnFailure);
+                } else {
+                    refreshFeatures(RefreshMode.DEFAULT, FeatureRefreshSource.INITIALIZATION);
+                    initializeSSE(retryOnFailure);
+                }
                 break;
 
             case REMOTE_EVAL_STRATEGY:
@@ -1159,13 +1198,9 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
         if (payload == null || payload.trim().isEmpty()) {
             return null;
         }
-        try {
-            JsonElement parsed = GrowthBookJsonUtils.getInstance().gson.fromJson(payload, JsonElement.class);
-            if (parsed == null || !parsed.isJsonObject()) {
-                throw new IllegalArgumentException("initialPayload must be a JSON object");
-            }
-        } catch (JsonSyntaxException e) {
-            throw new IllegalArgumentException("initialPayload is not valid JSON: " + e.getMessage(), e);
+        String violation = GrowthBookJsonUtils.jsonObjectViolation(payload, "initialPayload");
+        if (violation != null) {
+            throw new IllegalArgumentException(violation);
         }
         return payload;
     }

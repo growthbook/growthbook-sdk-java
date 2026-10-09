@@ -1,7 +1,5 @@
 package growthbook.sdk.java.multiusermode.configurations;
 
-import com.google.gson.JsonElement;
-import com.google.gson.JsonSyntaxException;
 import growthbook.sdk.java.exception.InvalidOptionsException;
 import growthbook.sdk.java.remoteeval.RemoteEvalOptionsValidator;
 import growthbook.sdk.java.sandbox.CacheMode;
@@ -154,16 +152,9 @@ public final class OptionsValidator {
     }
 
     private static void checkInitialPayload(@Nullable String initialPayload, List<String> violations) {
-        if (StringUtils.isBlank(initialPayload)) {
-            return;
-        }
-        try {
-            JsonElement parsed = GrowthBookJsonUtils.getInstance().gson.fromJson(initialPayload, JsonElement.class);
-            if (parsed == null || !parsed.isJsonObject()) {
-                violations.add("initialPayload must be a JSON object");
-            }
-        } catch (JsonSyntaxException e) {
-            violations.add("initialPayload is not valid JSON: " + e.getMessage());
+        String violation = GrowthBookJsonUtils.jsonObjectViolation(initialPayload, "initialPayload");
+        if (violation != null) {
+            violations.add(violation);
         }
     }
 }
