@@ -147,19 +147,21 @@ class GBFeaturesRepositoryTest {
     }
 
     @Test
-    void shutdown_withSseStrategy_completesWithoutException() {
+    void shutdown_withSseStrategy_completesWithoutException() throws Exception {
         GBFeaturesRepository subject = GBFeaturesRepository.builder()
                 .apiHost("http://localhost")
                 .clientKey("sdk-123")
                 .refreshStrategy(FeatureRefreshStrategy.SERVER_SENT_EVENTS)
                 .build();
 
-        try {
-            subject.initialize();
-        } catch (Exception ignored) {}
+        OkHttpClient sseClient = new OkHttpClient.Builder().build();
+        Field field = GBFeaturesRepository.class.getDeclaredField("sseHttpClient");
+        field.setAccessible(true);
+        @SuppressWarnings("unchecked")
+        AtomicReference<OkHttpClient> sseHttpClientRef = (AtomicReference<OkHttpClient>) field.get(subject);
+        sseHttpClientRef.set(sseClient);
 
-        // shutdown should not throw
-        subject.shutdown();
+        assertDoesNotThrow(subject::shutdown);
     }
 
     @Test
@@ -170,14 +172,12 @@ class GBFeaturesRepositoryTest {
                 .refreshStrategy(FeatureRefreshStrategy.SERVER_SENT_EVENTS)
                 .build();
 
-        // Create file for okhttp cache
         File cacheDir = Files.createTempDirectory("okhttp-cache").toFile();
         Cache cache = new Cache(cacheDir, 1024 * 1024);
         OkHttpClient clientWithCache = new OkHttpClient.Builder()
                 .cache(cache)
                 .build();
 
-        // set sseHttpClient through reflection (the field is a final AtomicReference)
         Field field = GBFeaturesRepository.class.getDeclaredField("sseHttpClient");
         field.setAccessible(true);
         @SuppressWarnings("unchecked")
@@ -206,17 +206,14 @@ class GBFeaturesRepositoryTest {
         when(mockHttpClient.dispatcher()).thenReturn(new Dispatcher());
         when(mockHttpClient.connectionPool()).thenReturn(new ConnectionPool());
 
-        // set sseHttpClient through reflection (the field is a final AtomicReference)
         Field field = GBFeaturesRepository.class.getDeclaredField("sseHttpClient");
         field.setAccessible(true);
         @SuppressWarnings("unchecked")
         AtomicReference<OkHttpClient> sseHttpClientRef = (AtomicReference<OkHttpClient>) field.get(subject);
         sseHttpClientRef.set(mockHttpClient);
 
-        // shutdown shouldn't throw exception — IOException omitted
         assertDoesNotThrow(subject::shutdown);
 
-        // check if close() was invoked
         verify(mockCache).close();
     }
 
