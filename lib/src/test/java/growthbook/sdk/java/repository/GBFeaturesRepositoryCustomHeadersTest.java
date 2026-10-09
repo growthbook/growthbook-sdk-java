@@ -1,6 +1,7 @@
 package growthbook.sdk.java.repository;
 
 import growthbook.sdk.java.exception.FeatureFetchException;
+import growthbook.sdk.java.model.RequestBodyForRemoteEval;
 import okhttp3.Call;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
@@ -11,6 +12,8 @@ import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
 import java.io.IOException;
+import java.lang.reflect.Field;
+import java.lang.reflect.Method;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
@@ -160,6 +163,72 @@ class GBFeaturesRepositoryCustomHeadersTest {
         assertEquals("https://api.example.com/sub/sdk-abc123", subject.getEventsEndpoint());
     }
 
+    @Test
+    @DisplayName("Verify: streamingHostRequestHeaders and the SDK User-Agent are sent on the SSE request")
+    void sseRequestCarriesStreamingHeaders() throws Exception {
+        OkHttpClient mockSseHttpClient = mock(OkHttpClient.class);
+        when(mockSseHttpClient.newCall(any(Request.class))).thenReturn(mock(Call.class));
+
+        Map<String, String> headers = new LinkedHashMap<>();
+        headers.put("Authorization", "Bearer stream-token");
+        headers.put("X-Gateway-Key", "gateway-value");
+
+        GBFeaturesRepository subject = GBFeaturesRepository.builder()
+                .apiHost("http://localhost")
+                .clientKey("sdk-abc123")
+                .streamingHost("http://localhost")
+                .streamingHostRequestHeaders(headers)
+                .refreshStrategy(FeatureRefreshStrategy.SERVER_SENT_EVENTS)
+                .build();
+
+        Field sseClientField = GBFeaturesRepository.class.getDeclaredField("sseHttpClient");
+        sseClientField.setAccessible(true);
+        sseClientField.set(subject, mockSseHttpClient);
+
+        Method connect = GBFeaturesRepository.class
+                .getDeclaredMethod("createEventSourceListenerAndStartListening", Boolean.class);
+        connect.setAccessible(true);
+        connect.invoke(subject, false);
+
+        Field sseRequestField = GBFeaturesRepository.class.getDeclaredField("sseRequest");
+        sseRequestField.setAccessible(true);
+        Request sseRequest = (Request) sseRequestField.get(subject);
+
+        assertNotNull(sseRequest);
+        assertEquals("Bearer stream-token", sseRequest.header("Authorization"));
+        assertEquals("gateway-value", sseRequest.header("X-Gateway-Key"));
+        assertNotNull(sseRequest.header("User-Agent"));
+        assertTrue(sseRequest.header("User-Agent").startsWith("growthbook-sdk-java/"), sseRequest.header("User-Agent"));
+    }
+
+    @Test
+    @DisplayName("Verify: custom apiHostRequestHeaders and the SDK User-Agent are sent on the remote-evaluation POST")
+    void remoteEvalPostCarriesCustomHeaders() throws Exception {
+        OkHttpClient mockHttpClient = mock(OkHttpClient.class);
+        stubFeaturesResponse(mockHttpClient);
+
+        Map<String, String> headers = new LinkedHashMap<>();
+        headers.put("Authorization", "Bearer proxy-token");
+        headers.put("X-Gateway-Key", "gateway-value");
+
+        GBFeaturesRepository subject = GBFeaturesRepository.builder()
+                .apiHost("http://localhost")
+                .clientKey("sdk-abc123")
+                .isCacheDisabled(true)
+                .okHttpClient(mockHttpClient)
+                .apiHostRequestHeaders(headers)
+                .build();
+
+        subject.fetchForRemoteEval(new RequestBodyForRemoteEval());
+
+        Request request = captureRequest(mockHttpClient);
+        assertEquals("POST", request.method());
+        assertEquals("Bearer proxy-token", request.header("Authorization"));
+        assertEquals("gateway-value", request.header("X-Gateway-Key"));
+        assertNotNull(request.header("User-Agent"));
+        assertTrue(request.header("User-Agent").startsWith("growthbook-sdk-java/"), request.header("User-Agent"));
+    }
+
     private static void stubFeaturesResponse(OkHttpClient mockHttpClient) throws IOException {
         Call mockCall = mock(Call.class);
         Response mockResponse = mock(Response.class);
@@ -167,6 +236,7 @@ class GBFeaturesRepositoryCustomHeadersTest {
 
         when(mockHttpClient.newCall(any(Request.class))).thenReturn(mockCall);
         when(mockCall.execute()).thenReturn(mockResponse);
+        when(mockResponse.isSuccessful()).thenReturn(true);
         when(mockResponse.code()).thenReturn(200);
         when(mockResponse.header(anyString())).thenReturn(null);
         when(mockResponse.body()).thenReturn(mockResponseBody);
