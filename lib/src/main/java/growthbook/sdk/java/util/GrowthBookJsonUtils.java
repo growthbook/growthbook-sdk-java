@@ -4,6 +4,7 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonPrimitive;
+import com.google.gson.JsonSyntaxException;
 import com.google.gson.ToNumberPolicy;
 import growthbook.sdk.java.model.BucketRange;
 import growthbook.sdk.java.model.DataType;
@@ -66,6 +67,30 @@ public class GrowthBookJsonUtils {
     }
 
     // endregion Initialization
+
+    /**
+     * Checks that a non-blank payload is a structurally valid JSON object.
+     *
+     * @param payload   the raw text; {@code null} or blank is treated as "no payload" and accepted
+     * @param fieldName name used to build the violation message
+     * @return {@code null} when the payload is blank or a valid JSON object, otherwise a
+     *         human-readable reason it is invalid
+     */
+    @Nullable
+    public static String jsonObjectViolation(@Nullable String payload, String fieldName) {
+        if (payload == null || payload.trim().isEmpty()) {
+            return null;
+        }
+        try {
+            JsonElement parsed = getInstance().gson.fromJson(payload, JsonElement.class);
+            if (parsed == null || !parsed.isJsonObject()) {
+                return fieldName + " must be a JSON object";
+            }
+        } catch (JsonSyntaxException e) {
+            return fieldName + " is not valid JSON: " + e.getMessage();
+        }
+        return null;
+    }
 
 
     /**
