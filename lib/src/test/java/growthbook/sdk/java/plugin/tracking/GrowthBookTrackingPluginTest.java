@@ -68,8 +68,15 @@ class GrowthBookTrackingPluginTest {
         return FeatureResult.<String>builder().source(source).build();
     }
 
+    private static JsonObject attributes() {
+        JsonObject attributes = new JsonObject();
+        attributes.addProperty("id", "user-123");
+        attributes.addProperty("country", "US");
+        return attributes;
+    }
+
     @Test
-    void flushesWhenBatchSizeReached() throws Exception {
+    void flushesToTrackEndpointWithClientKeyQuery() throws Exception {
         server.enqueue(200);
 
         GrowthBookTrackingPlugin plugin = GrowthBookTrackingPlugin.of(configBuilder()
@@ -84,51 +91,82 @@ class GrowthBookTrackingPluginTest {
         RecordedRequest req = server.takeRequest(5, TimeUnit.SECONDS);
         assertNotNull(req, "should have flushed on batch size threshold");
         assertEquals("POST", req.getMethod());
-        assertEquals("/events", req.getPath());
+        assertEquals("/track", req.getPath());
+        assertEquals("client_key=sdk-test", req.getQuery());
         assertTrue(req.getHeader("User-Agent").startsWith("growthbook-java-sdk/"));
         assertEquals("application/json; charset=utf-8", req.getHeader("Content-Type"));
 
-        JsonObject body = JsonParser.parseString(req.bodyUtf8()).getAsJsonObject();
-        assertEquals("sdk-test", body.get("client_key").getAsString());
-        JsonArray events = body.getAsJsonArray("events");
+        JsonArray events = events(req);
         assertEquals(2, events.size());
-        assertEquals("experiment_viewed", events.get(0).getAsJsonObject().get("event_type").getAsString());
-        assertEquals("exp1", events.get(0).getAsJsonObject().get("experiment_id").getAsString());
+        JsonObject first = events.get(0).getAsJsonObject();
+        assertEquals("Experiment Viewed", first.get("event_name").getAsString());
+        assertEquals("exp1", first.getAsJsonObject("properties").get("experimentId").getAsString());
 
         plugin.close();
     }
 
     @Test
-    void experimentEventMatchesGoWireContract() throws Exception {
+    void experimentEventMatchesTrackWireContract() throws Exception {
         server.enqueue(200);
 
         GrowthBookTrackingPlugin plugin = GrowthBookTrackingPlugin.of(configBuilder().batchSize(1).build());
         plugin.init();
-        plugin.onExperimentViewed(experiment("exp1"), experimentResult(3));
+        plugin.onExperimentViewed(experiment("exp1"), experimentResult(3), attributes());
 
         RecordedRequest req = server.takeRequest(5, TimeUnit.SECONDS);
         assertNotNull(req);
         JsonObject event = firstEvent(req);
 
-        assertEquals("experiment_viewed", event.get("event_type").getAsString());
+        assertEquals("Experiment Viewed", event.get("event_name").getAsString());
         assertEquals("java", event.get("sdk_language").getAsString());
-        assertTrue(event.get("timestamp").getAsLong() > 0, "timestamp should be epoch millis");
-        assertEquals("exp1", event.get("experiment_id").getAsString());
-        assertEquals(3, event.get("variation_id").getAsInt());
-        assertEquals("v-3", event.get("variation_value").getAsString());
-        assertEquals(true, event.get("in_experiment").getAsBoolean());
-        assertEquals(true, event.get("hash_used").getAsBoolean());
-        assertEquals("id", event.get("hash_attribute").getAsString());
-        assertEquals("u-3", event.get("hash_value").getAsString());
-        // Go's contract does not include a user attribute map.
-        assertFalse(event.has("attributes"), "events must not carry user attributes");
-        assertFalse(event.has("experiment_key"), "field is experiment_id, not experiment_key");
+        assertFalse(event.get("sdk_version").getAsString().isEmpty());
+
+        JsonObject properties = event.getAsJsonObject("properties");
+        assertEquals("exp1", properties.get("experimentId").getAsString());
+        assertEquals("3", properties.get("variationId").getAsString());
+        assertEquals("id", properties.get("hashAttribute").getAsString());
+        assertEquals("u-3", properties.get("hashValue").getAsString());
+
+        JsonObject attributes = event.getAsJsonObject("attributes");
+        assertEquals("user-123", attributes.get("id").getAsString());
+        assertEquals("US", attributes.get("country").getAsString());
 
         plugin.close();
     }
 
     @Test
-    void featureEventMatchesGoWireContract() throws Exception {
+    void featureEventMatchesTrackWireContract() throws Exception {
+        server.enqueue(200);
+
+        GrowthBookTrackingPlugin plugin = GrowthBookTrackingPlugin.of(configBuilder().batchSize(1).build());
+        plugin.init();
+        FeatureResult<String> result = FeatureResult.<String>builder()
+                .source(FeatureResultSource.EXPERIMENT)
+                .value("x")
+                .ruleId("rule-7")
+                .experimentResult(experimentResult(2))
+                .build();
+        plugin.onFeatureEvaluated("flag1", result, attributes());
+
+        RecordedRequest req = server.takeRequest(5, TimeUnit.SECONDS);
+        assertNotNull(req);
+        JsonObject event = firstEvent(req);
+
+        assertEquals("Feature Evaluated", event.get("event_name").getAsString());
+        JsonObject properties = event.getAsJsonObject("properties");
+        assertEquals("flag1", properties.get("feature").getAsString());
+        assertEquals("x", properties.get("value").getAsString());
+        assertEquals("experiment", properties.get("source").getAsString());
+        assertEquals("rule-7", properties.get("ruleId").getAsString());
+        assertEquals("2", properties.get("variationId").getAsString());
+
+        assertEquals("user-123", event.getAsJsonObject("attributes").get("id").getAsString());
+
+        plugin.close();
+    }
+
+    @Test
+    void featureEventWithoutExperimentOmitsVariationId() throws Exception {
         server.enqueue(200);
 
         GrowthBookTrackingPlugin plugin = GrowthBookTrackingPlugin.of(configBuilder().batchSize(1).build());
@@ -138,16 +176,26 @@ class GrowthBookTrackingPluginTest {
 
         RecordedRequest req = server.takeRequest(5, TimeUnit.SECONDS);
         assertNotNull(req);
-        JsonObject event = firstEvent(req);
+        JsonObject properties = firstEvent(req).getAsJsonObject("properties");
+        assertEquals("flag1", properties.get("feature").getAsString());
+        assertFalse(properties.has("variationId"),
+                "a non-experiment feature evaluation must not carry a variationId");
 
-        assertEquals("feature_evaluated", event.get("event_type").getAsString());
-        assertEquals("flag1", event.get("feature_key").getAsString());
-        assertEquals("x", event.get("feature_value").getAsString());
-        assertEquals("defaultValue", event.get("source").getAsString());
-        assertTrue(event.has("on"));
-        assertTrue(event.has("off"));
-        assertFalse(event.has("attributes"), "events must not carry user attributes");
-        assertFalse(event.has("feature_source"), "field is source, not feature_source");
+        plugin.close();
+    }
+
+    @Test
+    void omitsAttributesWhenNoneProvided() throws Exception {
+        server.enqueue(200);
+
+        GrowthBookTrackingPlugin plugin = GrowthBookTrackingPlugin.of(configBuilder().batchSize(1).build());
+        plugin.init();
+        plugin.onExperimentViewed(experiment("exp1"), experimentResult(0));
+
+        RecordedRequest req = server.takeRequest(5, TimeUnit.SECONDS);
+        assertNotNull(req);
+        JsonObject event = firstEvent(req);
+        assertFalse(event.has("attributes"), "attributes must be omitted when none are provided");
 
         plugin.close();
     }
@@ -166,11 +214,11 @@ class GrowthBookTrackingPluginTest {
 
         RecordedRequest req = server.takeRequest(3, TimeUnit.SECONDS);
         assertNotNull(req, "timer-based flush should fire within 3s");
-        JsonObject body = JsonParser.parseString(req.bodyUtf8()).getAsJsonObject();
-        JsonArray events = body.getAsJsonArray("events");
+        JsonArray events = events(req);
         assertEquals(1, events.size());
-        assertEquals("feature_evaluated", events.get(0).getAsJsonObject().get("event_type").getAsString());
-        assertEquals("flag1", events.get(0).getAsJsonObject().get("feature_key").getAsString());
+        JsonObject event = events.get(0).getAsJsonObject();
+        assertEquals("Feature Evaluated", event.get("event_name").getAsString());
+        assertEquals("flag1", event.getAsJsonObject("properties").get("feature").getAsString());
 
         plugin.close();
     }
@@ -190,8 +238,7 @@ class GrowthBookTrackingPluginTest {
 
         RecordedRequest req = server.takeRequest(5, TimeUnit.SECONDS);
         assertNotNull(req, "close() should flush the final batch synchronously");
-        JsonObject body = JsonParser.parseString(req.bodyUtf8()).getAsJsonObject();
-        assertEquals(1, body.getAsJsonArray("events").size());
+        assertEquals(1, events(req).size());
     }
 
     @Test
@@ -331,6 +378,30 @@ class GrowthBookTrackingPluginTest {
     }
 
     @Test
+    void forwardsUserAttributesFromEvaluation() throws Exception {
+        server.enqueue(200);
+
+        GrowthBookTrackingPlugin plugin = GrowthBookTrackingPlugin.of(configBuilder().batchSize(1).build());
+        GrowthBook gb = new GrowthBook(GBContext.builder()
+                .featuresJson("{\"flag\":{\"defaultValue\":true}}")
+                .attributesJson("{\"id\":\"user-7\",\"country\":\"US\"}")
+                .plugins(Collections.singletonList(plugin))
+                .build());
+
+        gb.evalFeature("flag", Boolean.class);
+
+        RecordedRequest req = server.takeRequest(5, TimeUnit.SECONDS);
+        assertNotNull(req, "evaluation should deliver a feature event");
+        JsonObject event = firstEvent(req);
+        JsonObject attributes = event.getAsJsonObject("attributes");
+        assertNotNull(attributes, "the evaluated user's attributes must reach the event");
+        assertEquals("user-7", attributes.get("id").getAsString());
+        assertEquals("US", attributes.get("country").getAsString());
+
+        gb.destroy();
+    }
+
+    @Test
     void closeIsIdempotent() throws Exception {
         GrowthBookTrackingPlugin plugin = GrowthBookTrackingPlugin.of(configBuilder().build());
         plugin.init();
@@ -421,11 +492,11 @@ class GrowthBookTrackingPluginTest {
         plugin.close();
     }
 
+    private static JsonArray events(RecordedRequest req) {
+        return JsonParser.parseString(req.bodyUtf8()).getAsJsonArray();
+    }
+
     private static JsonObject firstEvent(RecordedRequest req) {
-        return JsonParser.parseString(req.bodyUtf8())
-                .getAsJsonObject()
-                .getAsJsonArray("events")
-                .get(0)
-                .getAsJsonObject();
+        return events(req).get(0).getAsJsonObject();
     }
 }

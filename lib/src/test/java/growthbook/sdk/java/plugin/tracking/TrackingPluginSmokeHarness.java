@@ -37,12 +37,12 @@ public final class TrackingPluginSmokeHarness {
         String mode = System.getProperty("trackingSmokeMode", "both");
         try (RecordingHttpServer server = new RecordingHttpServer()) {
             if ("single".equals(mode) || "both".equals(mode)) {
-                JsonObject body = runSingleUserScenario(server);
-                printScenario("single", body);
+                JsonArray events = runSingleUserScenario(server);
+                printScenario("single", events);
             }
             if ("multi".equals(mode) || "both".equals(mode)) {
-                JsonObject body = runMultiUserScenario(server);
-                printScenario("multi", body);
+                JsonArray events = runMultiUserScenario(server);
+                printScenario("multi", events);
             }
             if (!"single".equals(mode) && !"multi".equals(mode) && !"both".equals(mode)) {
                 throw new IllegalArgumentException("trackingSmokeMode must be single, multi, or both");
@@ -50,7 +50,7 @@ public final class TrackingPluginSmokeHarness {
         }
     }
 
-    private static JsonObject runSingleUserScenario(RecordingHttpServer server) throws Exception {
+    private static JsonArray runSingleUserScenario(RecordingHttpServer server) throws Exception {
         server.enqueue(200);
         GrowthBookTrackingPlugin plugin = GrowthBookTrackingPlugin.of(config(server));
 
@@ -68,13 +68,12 @@ public final class TrackingPluginSmokeHarness {
                 .build());
         growthBook.destroy();
 
-        JsonObject body = readBody(server);
-        requireEventField(body, 0, "feature_key", "flag");
-        requireHeaderShape(body);
-        return body;
+        JsonArray events = readEvents(server);
+        requireEventProperty(events, 0, "feature", "flag");
+        return events;
     }
 
-    private static JsonObject runMultiUserScenario(RecordingHttpServer server) throws Exception {
+    private static JsonArray runMultiUserScenario(RecordingHttpServer server) throws Exception {
         server.enqueue(200);
         GrowthBookTrackingPlugin plugin = GrowthBookTrackingPlugin.of(config(server));
 
@@ -91,11 +90,10 @@ public final class TrackingPluginSmokeHarness {
                 UserContext.builder().attributesJson("{\"id\":\"multi-smoke-2\"}").build());
         client.shutdown();
 
-        JsonObject body = readBody(server);
-        requireEventField(body, 0, "feature_key", "flag");
-        requireEventField(body, 1, "feature_key", "flag");
-        requireHeaderShape(body);
-        return body;
+        JsonArray events = readEvents(server);
+        requireEventProperty(events, 0, "feature", "flag");
+        requireEventProperty(events, 1, "feature", "flag");
+        return events;
     }
 
     private static TrackingPluginConfig config(RecordingHttpServer server) {
@@ -107,7 +105,7 @@ public final class TrackingPluginSmokeHarness {
                 .build();
     }
 
-    private static JsonObject readBody(RecordingHttpServer server) throws Exception {
+    private static JsonArray readEvents(RecordingHttpServer server) throws Exception {
         RecordedRequest request = server.takeRequest(5, TimeUnit.SECONDS);
         if (request == null) {
             throw new IllegalStateException("Expected tracking plugin POST request");
@@ -115,36 +113,31 @@ public final class TrackingPluginSmokeHarness {
         if (!"POST".equals(request.getMethod())) {
             throw new IllegalStateException("Expected POST, got " + request.getMethod());
         }
-        if (!"/events".equals(request.getPath())) {
-            throw new IllegalStateException("Expected /events, got " + request.getPath());
+        if (!"/track".equals(request.getPath())) {
+            throw new IllegalStateException("Expected /track, got " + request.getPath());
+        }
+        if (!"client_key=sdk-smoke".equals(request.getQuery())) {
+            throw new IllegalStateException("Unexpected query: " + request.getQuery());
         }
         String userAgent = request.getHeader("User-Agent");
         if (userAgent == null || userAgent.endsWith("/unknown")) {
             throw new IllegalStateException("Unexpected User-Agent: " + userAgent);
         }
-        return JsonParser.parseString(request.bodyUtf8()).getAsJsonObject();
-    }
-
-    private static void requireHeaderShape(JsonObject body) {
-        if (!"sdk-smoke".equals(body.get("client_key").getAsString())) {
-            throw new IllegalStateException("Unexpected client_key: " + body.get("client_key"));
-        }
-        JsonArray events = body.getAsJsonArray("events");
-        if (events == null || events.size() == 0) {
+        JsonArray events = JsonParser.parseString(request.bodyUtf8()).getAsJsonArray();
+        if (events.size() == 0) {
             throw new IllegalStateException("Expected at least one event");
         }
+        return events;
     }
 
-    private static void requireEventField(JsonObject body, int eventIndex, String field, String expected) {
-        JsonObject event = body.getAsJsonArray("events")
-                .get(eventIndex)
-                .getAsJsonObject();
-        if (!event.has(field)) {
-            throw new IllegalStateException("Event " + eventIndex + " missing field " + field);
+    private static void requireEventProperty(JsonArray events, int eventIndex, String field, String expected) {
+        JsonObject properties = events.get(eventIndex).getAsJsonObject().getAsJsonObject("properties");
+        if (properties == null || !properties.has(field)) {
+            throw new IllegalStateException("Event " + eventIndex + " missing property " + field);
         }
-        String actual = event.get(field).getAsString();
+        String actual = properties.get(field).getAsString();
         if (!expected.equals(actual)) {
-            throw new IllegalStateException("Expected events[" + eventIndex + "]." + field + "=" + expected + ", got " + actual);
+            throw new IllegalStateException("Expected events[" + eventIndex + "].properties." + field + "=" + expected + ", got " + actual);
         }
     }
 
@@ -159,8 +152,8 @@ public final class TrackingPluginSmokeHarness {
         ((java.util.concurrent.atomic.AtomicReference<GlobalContext>) globalContextField.get(client)).set(globalContext);
     }
 
-    private static void printScenario(String scenario, JsonObject body) {
+    private static void printScenario(String scenario, JsonArray events) {
         System.out.println("=== tracking plugin smoke: " + scenario + " ===");
-        System.out.println(body);
+        System.out.println(events);
     }
 }
