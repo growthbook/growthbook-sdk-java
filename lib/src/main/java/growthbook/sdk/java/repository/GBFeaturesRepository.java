@@ -1062,12 +1062,42 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
         }
 
         try {
-            return manager.getLastUpdatedMillis(this.cacheKey);
+            return loadCacheTimestamp(manager);
         } catch (RuntimeException cacheException) {
             log.warn("Failed to read the feature cache timestamp.", cacheException);
             return null;
 
         }
+    }
+
+    /**
+     * Reads the cached payload for this repository's per-endpoint {@link #cacheKey}, falling back to
+     * the legacy shared {@link #FILE_NAME} key. Entries written before per-endpoint cache keys were
+     * introduced live under {@code FILE_NAME}; without this fallback they would look missing after an
+     * upgrade, so a failed first fetch could not serve the still-valid cached features. The per-endpoint
+     * key is tried first, so tenant isolation holds and the fallback only applies until the first
+     * successful fetch repopulates the new key.
+     */
+    @Nullable
+    private String loadCachedPayload(GbCacheManager manager) {
+        String data = manager.loadCache(this.cacheKey);
+        if (data == null && !FILE_NAME.equals(this.cacheKey)) {
+            data = manager.loadCache(FILE_NAME);
+        }
+        return data;
+    }
+
+    /**
+     * Reads the cache timestamp for this repository's per-endpoint {@link #cacheKey}, falling back to
+     * the legacy {@link #FILE_NAME} key. See {@link #loadCachedPayload(GbCacheManager)}.
+     */
+    @Nullable
+    private Long loadCacheTimestamp(GbCacheManager manager) {
+        Long timestamp = manager.getLastUpdatedMillis(this.cacheKey);
+        if (timestamp == null && !FILE_NAME.equals(this.cacheKey)) {
+            timestamp = manager.getLastUpdatedMillis(FILE_NAME);
+        }
+        return timestamp;
     }
 
     private boolean loadCachedFeaturesIfAvailable() {
@@ -1090,7 +1120,7 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
         }
 
         try {
-            String cachedData = manager.loadCache(this.cacheKey);
+            String cachedData = loadCachedPayload(manager);
             if (cachedData == null || cachedData.trim().isEmpty()) {
                 return false;
             }
@@ -1638,7 +1668,7 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
         if (gbCacheManager == null) {
             throw new FeatureFetchException(FeatureFetchException.FeatureFetchErrorCode.NO_RESPONSE_ERROR);
         }
-        String cachedData = gbCacheManager.loadCache(this.cacheKey);
+        String cachedData = loadCachedPayload(gbCacheManager);
         if (cachedData == null) {
             log.error("FeatureFetchException: No Features from Cache");
             throw new FeatureFetchException(FeatureFetchException.FeatureFetchErrorCode.NO_RESPONSE_ERROR);
