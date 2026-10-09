@@ -52,7 +52,7 @@ class LettuceGbCacheManagerTest {
     }
 
     @Test
-    @DisplayName("Verify: saveContent writes a hash with data and updatedAt; no TTL by default")
+    @DisplayName("Verify: saveContent writes the hash and clears any stale expiry when no TTL is configured")
     void saveContentWritesHashWithTimestamp() {
         // Given
         LettuceGbCacheManager cache = LettuceGbCacheManager.builder()
@@ -70,6 +70,7 @@ class LettuceGbCacheManagerTest {
         Map<String, String> hash = hashCaptor.getValue();
         assertEquals("{\"features\":{}}", hash.get("data"));
         assertEquals("1234", hash.get("updatedAt"));
+        verify(commands).persist(PREFIX + "FEATURE_CACHE.json");
         verify(commands, never()).pexpire(anyString(), anyLong());
     }
 

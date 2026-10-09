@@ -46,14 +46,14 @@ public final class JedisGbCacheManager extends AbstractRedisGbCacheManager {
     @Override
     protected void writeHash(String redisKey, Map<String, String> hash, Long ttlMillis) {
         try (Jedis jedis = jedisPool.getResource()) {
+            Transaction transaction = jedis.multi();
+            transaction.hset(redisKey, hash);
             if (ttlMillis == null) {
-                jedis.hset(redisKey, hash);
+                transaction.persist(redisKey);
             } else {
-                Transaction transaction = jedis.multi();
-                transaction.hset(redisKey, hash);
                 transaction.pexpire(redisKey, ttlMillis);
-                transaction.exec();
             }
+            transaction.exec();
         }
     }
 

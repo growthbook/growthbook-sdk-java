@@ -50,9 +50,11 @@ class JedisGbCacheManagerTest {
     }
 
     @Test
-    @DisplayName("Verify: saveContent writes a hash with data and updatedAt; no TTL by default")
+    @DisplayName("Verify: saveContent writes the hash and clears any stale expiry when no TTL is configured")
     void saveContentWritesHashWithTimestamp() {
         // Given
+        Transaction transaction = mock(Transaction.class);
+        when(jedis.multi()).thenReturn(transaction);
         JedisGbCacheManager cache = JedisGbCacheManager.builder()
                 .jedisPool(pool)
                 .clock(fixedClock())
@@ -64,11 +66,13 @@ class JedisGbCacheManagerTest {
         // Then
         @SuppressWarnings("unchecked")
         ArgumentCaptor<Map<String, String>> hashCaptor = ArgumentCaptor.forClass(Map.class);
-        verify(jedis).hset(eq(PREFIX + "FEATURE_CACHE.json"), hashCaptor.capture());
+        verify(transaction).hset(eq(PREFIX + "FEATURE_CACHE.json"), hashCaptor.capture());
         Map<String, String> hash = hashCaptor.getValue();
         assertEquals("{\"features\":{}}", hash.get("data"));
         assertEquals("1234", hash.get("updatedAt"));
-        verify(jedis, never()).pexpire(anyString(), anyLong());
+        verify(transaction).persist(PREFIX + "FEATURE_CACHE.json");
+        verify(transaction).exec();
+        verify(transaction, never()).pexpire(anyString(), anyLong());
     }
 
     @Test
