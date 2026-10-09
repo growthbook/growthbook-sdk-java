@@ -5,6 +5,7 @@ import io.lettuce.core.KeyScanCursor;
 import io.lettuce.core.RedisException;
 import io.lettuce.core.ScanArgs;
 import io.lettuce.core.ScanCursor;
+import io.lettuce.core.ScriptOutputType;
 import io.lettuce.core.api.StatefulRedisConnection;
 import io.lettuce.core.api.sync.RedisCommands;
 import org.junit.jupiter.api.BeforeEach;
@@ -73,7 +74,7 @@ class LettuceGbCacheManagerTest {
     }
 
     @Test
-    @DisplayName("Verify: saveContent applies a TTL (in milliseconds) when configured")
+    @DisplayName("Verify: saveContent applies a TTL atomically via a script, not a shared-connection transaction")
     void saveContentAppliesTtlWhenConfigured() {
         // Given
         LettuceGbCacheManager cache = LettuceGbCacheManager.builder()
@@ -84,8 +85,14 @@ class LettuceGbCacheManagerTest {
         // When
         cache.saveContent("k", "v");
 
-        // Then
-        verify(commands).pexpire(PREFIX + "k", 30_000L);
+        // Then: a single EVAL sets the hash and TTL (30_000ms) together; no MULTI/EXEC on the shared
+        // connection, so concurrent writes cannot interleave and a failure cannot leave it open.
+        ArgumentCaptor<String> argvCaptor = ArgumentCaptor.forClass(String.class);
+        verify(commands).eval(anyString(), eq(ScriptOutputType.INTEGER), any(String[].class), argvCaptor.capture());
+        assertEquals("30000", argvCaptor.getAllValues().get(0));
+        verify(commands, never()).multi();
+        verify(commands, never()).exec();
+        verify(commands, never()).pexpire(anyString(), anyLong());
     }
 
     @Test
@@ -100,8 +107,10 @@ class LettuceGbCacheManagerTest {
         // When
         cache.saveContent("k", "v");
 
-        // Then: PEXPIRE with 500ms, never EXPIRE 0 (which would immediately delete the entry)
-        verify(commands).pexpire(PREFIX + "k", 500L);
+        // Then: TTL argument is 500ms, never EXPIRE 0 (which would immediately delete the entry)
+        ArgumentCaptor<String> argvCaptor = ArgumentCaptor.forClass(String.class);
+        verify(commands).eval(anyString(), eq(ScriptOutputType.INTEGER), any(String[].class), argvCaptor.capture());
+        assertEquals("500", argvCaptor.getAllValues().get(0));
         verify(commands, never()).expire(anyString(), anyLong());
     }
 
