@@ -16,6 +16,7 @@ import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicReference;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -181,18 +182,14 @@ class GBFeaturesRepositoryCustomHeadersTest {
                 .refreshStrategy(FeatureRefreshStrategy.SERVER_SENT_EVENTS)
                 .build();
 
-        Field sseClientField = GBFeaturesRepository.class.getDeclaredField("sseHttpClient");
-        sseClientField.setAccessible(true);
-        sseClientField.set(subject, mockSseHttpClient);
+        setInternalField(subject, "sseHttpClient", mockSseHttpClient);
 
         Method connect = GBFeaturesRepository.class
                 .getDeclaredMethod("createEventSourceListenerAndStartListening", Boolean.class);
         connect.setAccessible(true);
         connect.invoke(subject, false);
 
-        Field sseRequestField = GBFeaturesRepository.class.getDeclaredField("sseRequest");
-        sseRequestField.setAccessible(true);
-        Request sseRequest = (Request) sseRequestField.get(subject);
+        Request sseRequest = (Request) getInternalField(subject, "sseRequest");
 
         assertNotNull(sseRequest);
         assertEquals("Bearer stream-token", sseRequest.header("Authorization"));
@@ -241,6 +238,27 @@ class GBFeaturesRepositoryCustomHeadersTest {
         when(mockResponse.header(anyString())).thenReturn(null);
         when(mockResponse.body()).thenReturn(mockResponseBody);
         when(mockResponseBody.string()).thenReturn(FEATURES_BODY);
+    }
+
+    // The SSE client/request fields are a plain reference on this branch but an AtomicReference once
+    // main's thread-safe lifecycle changes are merged; handle both so the test survives the merge.
+    @SuppressWarnings("unchecked")
+    private static void setInternalField(Object target, String name, Object value) throws Exception {
+        Field field = GBFeaturesRepository.class.getDeclaredField(name);
+        field.setAccessible(true);
+        Object current = field.get(target);
+        if (current instanceof AtomicReference) {
+            ((AtomicReference<Object>) current).set(value);
+        } else {
+            field.set(target, value);
+        }
+    }
+
+    private static Object getInternalField(Object target, String name) throws Exception {
+        Field field = GBFeaturesRepository.class.getDeclaredField(name);
+        field.setAccessible(true);
+        Object current = field.get(target);
+        return current instanceof AtomicReference ? ((AtomicReference<?>) current).get() : current;
     }
 
     private static Request captureRequest(OkHttpClient mockHttpClient) throws FeatureFetchException {
