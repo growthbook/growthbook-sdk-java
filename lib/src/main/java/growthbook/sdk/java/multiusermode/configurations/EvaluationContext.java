@@ -35,6 +35,22 @@ public class EvaluationContext {
         this.options = options;
     }
 
+    /**
+     * Resolves the URL used for URL-based targeting and query-string overrides, preferring the
+     * per-user {@link UserContext#getUrl()} (e.g. set through a user-scoped instance) over the
+     * shared client-level {@link Options#getUrl()}. Returns {@code null} when neither is set.
+     *
+     * @return the per-user URL when present, otherwise the client-level URL, or {@code null}
+     */
+    @Nullable
+    public String resolveUrl() {
+        String userUrl = this.user != null ? this.user.getUrl() : null;
+        if (userUrl != null) {
+            return userUrl;
+        }
+        return this.options != null ? this.options.getUrl() : null;
+    }
+
     @Data
     public static class StackContext { // FeatureEvalContext
         @Nullable

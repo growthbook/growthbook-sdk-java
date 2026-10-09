@@ -62,7 +62,7 @@ public class ExperimentEvaluator implements IExperimentEvaluator {
         }
 
         // Query string overrides
-        Integer override = GrowthBookUtils.getQueryStringOverride(experiment.getKey(), context.getOptions().getUrl(), experimentVariations.size());
+        Integer override = GrowthBookUtils.getQueryStringOverride(experiment.getKey(), context.resolveUrl(), experimentVariations.size());
         if (override != null) {
             return getExperimentResult(context, experiment, override, false, featureId, null, null);
         }

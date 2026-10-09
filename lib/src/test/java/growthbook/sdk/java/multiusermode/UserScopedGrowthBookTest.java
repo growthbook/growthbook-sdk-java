@@ -1,24 +1,22 @@
 package growthbook.sdk.java.multiusermode;
 
+import com.github.tomakehurst.wiremock.WireMockServer;
+import com.github.tomakehurst.wiremock.core.WireMockConfiguration;
 import com.google.gson.JsonObject;
-import com.sun.net.httpserver.HttpServer;
 import growthbook.sdk.java.callback.ExperimentRunCallback;
 import growthbook.sdk.java.model.Experiment;
 import growthbook.sdk.java.model.ExperimentResult;
 import growthbook.sdk.java.model.FeatureKey;
-import growthbook.sdk.java.model.HttpHeaders;
 import growthbook.sdk.java.model.TypedKey;
 import growthbook.sdk.java.multiusermode.configurations.Options;
 import growthbook.sdk.java.multiusermode.configurations.UserContext;
 import growthbook.sdk.java.multiusermode.usage.TrackingCallbackWithUser;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
-import java.io.OutputStream;
-import java.net.HttpURLConnection;
-import java.net.InetSocketAddress;
-import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -26,6 +24,9 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
+import static com.github.tomakehurst.wiremock.client.WireMock.get;
+import static com.github.tomakehurst.wiremock.client.WireMock.urlPathMatching;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -41,12 +42,28 @@ class UserScopedGrowthBookTest {
                     + "\"count\":{\"defaultValue\":7}"
                     + "}}";
 
+    private WireMockServer wireMock;
+
+    @BeforeEach
+    void startWireMock() {
+        wireMock = new WireMockServer(WireMockConfiguration.options().dynamicPort());
+        wireMock.start();
+        wireMock.stubFor(get(urlPathMatching("/api/features/.*"))
+                .willReturn(aResponse().withStatus(200).withBody(FEATURES)));
+    }
+
+    @AfterEach
+    void stopWireMock() {
+        if (wireMock != null) {
+            wireMock.stop();
+        }
+    }
+
     @Test
     @DisplayName("Verify: a scoped instance evaluates features against its bound user context without an explicit context argument")
     void delegatesFeatureEvaluationToBoundContext() throws IOException {
         // Given
-        HttpServer server = startFeatureServer(HttpURLConnection.HTTP_OK, FEATURES);
-        GrowthBookClient client = initializedClient(server);
+        GrowthBookClient client = initializedClient();
         try {
             UserContext user = UserContext.builder().attributesJson("{\"id\":\"1\"}").build();
             UserScopedGrowthBook scoped = client.createScopedInstance(user);
@@ -58,7 +75,6 @@ class UserScopedGrowthBookTest {
             assertTrue(scoped.evalFeature("flag-on", Boolean.class).isOn());
         } finally {
             client.shutdown();
-            server.stop(0);
         }
     }
 
@@ -66,8 +82,7 @@ class UserScopedGrowthBookTest {
     @DisplayName("Verify: forced feature values on the scoped instance override the evaluated value")
     void forcedFeatureValuesOverrideEvaluatedValue() throws IOException {
         // Given
-        HttpServer server = startFeatureServer(HttpURLConnection.HTTP_OK, FEATURES);
-        GrowthBookClient client = initializedClient(server);
+        GrowthBookClient client = initializedClient();
         try {
             UserScopedGrowthBook scoped = client.createScopedInstance(
                     UserContext.builder().attributesJson("{\"id\":\"1\"}").build());
@@ -82,7 +97,6 @@ class UserScopedGrowthBookTest {
             assertTrue(scoped.isOff("flag-on"));
         } finally {
             client.shutdown();
-            server.stop(0);
         }
     }
 
@@ -90,8 +104,7 @@ class UserScopedGrowthBookTest {
     @DisplayName("Verify: forced variations on the scoped instance select the variation for an inline experiment")
     void forcedVariationsSelectVariationForInlineExperiment() throws IOException {
         // Given
-        HttpServer server = startFeatureServer(HttpURLConnection.HTTP_OK, FEATURES);
-        GrowthBookClient client = initializedClient(server);
+        GrowthBookClient client = initializedClient();
         try {
             UserScopedGrowthBook scoped = client.createScopedInstance(
                     UserContext.builder().attributesJson("{\"id\":\"1\"}").build());
@@ -107,7 +120,6 @@ class UserScopedGrowthBookTest {
             assertEquals(Integer.valueOf(1), result.getVariationId());
         } finally {
             client.shutdown();
-            server.stop(0);
         }
     }
 
@@ -118,8 +130,7 @@ class UserScopedGrowthBookTest {
         CountingTrackingCallback clientCallback = new CountingTrackingCallback();
         CountingTrackingCallback userCallback = new CountingTrackingCallback();
 
-        HttpServer server = startFeatureServer(HttpURLConnection.HTTP_OK, FEATURES);
-        GrowthBookClient client = initializedClient(server, clientCallback);
+        GrowthBookClient client = initializedClient(clientCallback);
         try {
             UserScopedGrowthBook scoped = client.createScopedInstance(
                     UserContext.builder().attributesJson("{\"id\":\"1\"}").build());
@@ -133,7 +144,6 @@ class UserScopedGrowthBookTest {
             assertEquals(0, clientCallback.calls.get());
         } finally {
             client.shutdown();
-            server.stop(0);
         }
     }
 
@@ -143,8 +153,7 @@ class UserScopedGrowthBookTest {
         // Given
         CountingTrackingCallback clientCallback = new CountingTrackingCallback();
 
-        HttpServer server = startFeatureServer(HttpURLConnection.HTTP_OK, FEATURES);
-        GrowthBookClient client = initializedClient(server, clientCallback);
+        GrowthBookClient client = initializedClient(clientCallback);
         try {
             UserScopedGrowthBook scoped = client.createScopedInstance(
                     UserContext.builder().attributesJson("{\"id\":\"1\"}").build());
@@ -156,7 +165,6 @@ class UserScopedGrowthBookTest {
             assertEquals(1, clientCallback.calls.get());
         } finally {
             client.shutdown();
-            server.stop(0);
         }
     }
 
@@ -164,8 +172,7 @@ class UserScopedGrowthBookTest {
     @DisplayName("Verify: updateAttributes merges into the bound context, preserving existing attributes")
     void updateAttributesMergesIntoBoundContext() throws IOException {
         // Given
-        HttpServer server = startFeatureServer(HttpURLConnection.HTTP_OK, FEATURES);
-        GrowthBookClient client = initializedClient(server);
+        GrowthBookClient client = initializedClient();
         try {
             UserScopedGrowthBook scoped = client.createScopedInstance(
                     UserContext.builder().attributesJson("{\"id\":\"1\"}").build());
@@ -181,7 +188,6 @@ class UserScopedGrowthBookTest {
             assertEquals("UA", merged.get("country").getAsString());
         } finally {
             client.shutdown();
-            server.stop(0);
         }
     }
 
@@ -189,8 +195,7 @@ class UserScopedGrowthBookTest {
     @DisplayName("Verify: mutating one scoped instance does not affect another created from the same client")
     void scopedInstancesAreIndependent() throws IOException {
         // Given
-        HttpServer server = startFeatureServer(HttpURLConnection.HTTP_OK, FEATURES);
-        GrowthBookClient client = initializedClient(server);
+        GrowthBookClient client = initializedClient();
         try {
             UserScopedGrowthBook first = client.createScopedInstance(
                     UserContext.builder().attributesJson("{\"id\":\"1\"}").build());
@@ -205,7 +210,6 @@ class UserScopedGrowthBookTest {
             assertTrue(second.isOn("flag-on"));
         } finally {
             client.shutdown();
-            server.stop(0);
         }
     }
 
@@ -213,8 +217,7 @@ class UserScopedGrowthBookTest {
     @DisplayName("Verify: a scoped instance created from a null context binds an empty context and evaluates against defaults")
     void nullContextBindsEmptyContext() throws IOException {
         // Given
-        HttpServer server = startFeatureServer(HttpURLConnection.HTTP_OK, FEATURES);
-        GrowthBookClient client = initializedClient(server);
+        GrowthBookClient client = initializedClient();
         try {
             // When
             UserScopedGrowthBook scoped = client.createScopedInstance(null);
@@ -225,7 +228,6 @@ class UserScopedGrowthBookTest {
             assertFalse(scoped.isOn("missing-flag"));
         } finally {
             client.shutdown();
-            server.stop(0);
         }
     }
 
@@ -233,8 +235,7 @@ class UserScopedGrowthBookTest {
     @DisplayName("Verify: updateAttributes with a null argument is a no-op and keeps the same bound context")
     void updateAttributesWithNullIsNoOp() throws IOException {
         // Given
-        HttpServer server = startFeatureServer(HttpURLConnection.HTTP_OK, FEATURES);
-        GrowthBookClient client = initializedClient(server);
+        GrowthBookClient client = initializedClient();
         try {
             UserScopedGrowthBook scoped = client.createScopedInstance(
                     UserContext.builder().attributesJson("{\"id\":\"1\"}").build());
@@ -248,7 +249,6 @@ class UserScopedGrowthBookTest {
             assertNotNull(before);
         } finally {
             client.shutdown();
-            server.stop(0);
         }
     }
 
@@ -256,8 +256,7 @@ class UserScopedGrowthBookTest {
     @DisplayName("Verify: setting attributes replaces the bound context rather than mutating the supplied one")
     void mutatorsRebuildBoundContext() throws IOException {
         // Given
-        HttpServer server = startFeatureServer(HttpURLConnection.HTTP_OK, FEATURES);
-        GrowthBookClient client = initializedClient(server);
+        GrowthBookClient client = initializedClient();
         try {
             UserScopedGrowthBook scoped = client.createScopedInstance(
                     UserContext.builder().attributesJson("{\"id\":\"1\"}").build());
@@ -272,7 +271,6 @@ class UserScopedGrowthBookTest {
             assertEquals("https://example.test/checkout", after.getUrl());
         } finally {
             client.shutdown();
-            server.stop(0);
         }
     }
 
@@ -280,8 +278,7 @@ class UserScopedGrowthBookTest {
     @DisplayName("Verify: typed feature keys resolve against the bound context through the scoped instance")
     void typedFeatureKeysDelegateToBoundContext() throws IOException {
         // Given
-        HttpServer server = startFeatureServer(HttpURLConnection.HTTP_OK, FEATURES);
-        GrowthBookClient client = initializedClient(server);
+        GrowthBookClient client = initializedClient();
         try {
             UserScopedGrowthBook scoped = client.createScopedInstance(
                     UserContext.builder().attributesJson("{\"id\":\"1\"}").build());
@@ -299,7 +296,6 @@ class UserScopedGrowthBookTest {
             assertFalse(scoped.getBooleanFeature(TypedKey.ofBoolean("missing"), false));
         } finally {
             client.shutdown();
-            server.stop(0);
         }
     }
 
@@ -307,8 +303,7 @@ class UserScopedGrowthBookTest {
     @DisplayName("Verify: setAttributes replaces the bound attributes rather than merging them")
     void setAttributesReplacesBoundAttributes() throws IOException {
         // Given
-        HttpServer server = startFeatureServer(HttpURLConnection.HTTP_OK, FEATURES);
-        GrowthBookClient client = initializedClient(server);
+        GrowthBookClient client = initializedClient();
         try {
             UserScopedGrowthBook scoped = client.createScopedInstance(
                     UserContext.builder().attributesJson("{\"id\":\"1\",\"country\":\"UA\"}").build());
@@ -324,7 +319,6 @@ class UserScopedGrowthBookTest {
             assertFalse(attributes.has("country"));
         } finally {
             client.shutdown();
-            server.stop(0);
         }
     }
 
@@ -332,8 +326,7 @@ class UserScopedGrowthBookTest {
     @DisplayName("Verify: running an experiment through the scoped instance notifies the client's experiment subscribers")
     void runNotifiesClientExperimentSubscribers() throws IOException {
         // Given
-        HttpServer server = startFeatureServer(HttpURLConnection.HTTP_OK, FEATURES);
-        GrowthBookClient client = initializedClient(server);
+        GrowthBookClient client = initializedClient();
         try {
             CountingRunCallback callback = new CountingRunCallback();
             client.subscribe(callback);
@@ -347,7 +340,6 @@ class UserScopedGrowthBookTest {
             assertEquals(1, callback.calls.get());
         } finally {
             client.shutdown();
-            server.stop(0);
         }
     }
 
@@ -358,13 +350,13 @@ class UserScopedGrowthBookTest {
                 .build();
     }
 
-    private static GrowthBookClient initializedClient(HttpServer server) {
-        return initializedClient(server, null);
+    private GrowthBookClient initializedClient() {
+        return initializedClient(null);
     }
 
-    private static GrowthBookClient initializedClient(HttpServer server, TrackingCallbackWithUser trackingCallback) {
+    private GrowthBookClient initializedClient(TrackingCallbackWithUser trackingCallback) {
         Options options = Options.builder()
-                .apiHost(apiHost(server))
+                .apiHost("http://localhost:" + wireMock.port())
                 .clientKey(TEST_CLIENT_KEY)
                 .isCacheDisabled(true)
                 .trackingCallBackWithUser(trackingCallback)
@@ -373,25 +365,6 @@ class UserScopedGrowthBookTest {
         GrowthBookClient client = new GrowthBookClient(options);
         assertTrue(client.initialize());
         return client;
-    }
-
-    private static HttpServer startFeatureServer(int statusCode, String body) throws IOException {
-        HttpServer server = HttpServer.create(new InetSocketAddress("127.0.0.1", 0), 0);
-        server.createContext("/api/features/" + TEST_CLIENT_KEY, exchange -> {
-            byte[] responseBytes = body == null ? new byte[0] : body.getBytes(StandardCharsets.UTF_8);
-            exchange.getResponseHeaders().add(HttpHeaders.X_SSE_SUPPORT.getHeader(), "enabled");
-            exchange.sendResponseHeaders(statusCode, responseBytes.length);
-            try (OutputStream responseBody = exchange.getResponseBody()) {
-                responseBody.write(responseBytes);
-            }
-            exchange.close();
-        });
-        server.start();
-        return server;
-    }
-
-    private static String apiHost(HttpServer server) {
-        return "http://127.0.0.1:" + server.getAddress().getPort();
     }
 
     private static final class CountingTrackingCallback implements TrackingCallbackWithUser {
