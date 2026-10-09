@@ -5,6 +5,7 @@ import growthbook.sdk.java.callback.FeatureRefreshCallback;
 import growthbook.sdk.java.model.Experiment;
 import growthbook.sdk.java.model.ExperimentResult;
 import growthbook.sdk.java.model.FeatureResult;
+import growthbook.sdk.java.multiusermode.usage.EventLogger;
 import growthbook.sdk.java.multiusermode.usage.FeatureUsageCallbackWithUser;
 import growthbook.sdk.java.multiusermode.usage.TrackingCallbackWithUser;
 import growthbook.sdk.java.multiusermode.util.TransformationUtil;
@@ -20,6 +21,7 @@ import growthbook.sdk.java.stickyBucketing.StickyBucketService;
 import growthbook.sdk.java.util.ForcedVariationsUtils;
 import lombok.Builder;
 import lombok.Data;
+import lombok.ToString;
 import lombok.extern.slf4j.Slf4j;
 
 import javax.annotation.Nullable;
@@ -227,7 +229,10 @@ public class Options {
         );
     }
 
-    @Builder
+    /**
+     * Backward-compatible constructor matching the positional signature before
+     * {@link #eventLogger} / {@link #eventLoggerExecutor} were introduced. Delegates with no event logger.
+     */
     public Options(@Nullable Boolean enabled,
                    Boolean isQaMode,
                    @Nullable Boolean isCacheDisabled,
@@ -259,6 +264,76 @@ public class Options {
                    @Nullable Boolean sseReconnectOnFailure,
                    @Nullable List<GrowthBookPlugin> plugins
     ) {
+        this(
+                enabled,
+                isQaMode,
+                isCacheDisabled,
+                allowUrlOverrides,
+                url,
+                apiHost,
+                clientKey,
+                decryptionKey,
+                stickyBucketIdentifierAttributes,
+                stickyBucketService,
+                trackingCallBackWithUser,
+                featureUsageCallbackWithUser,
+                refreshStrategy,
+                swrTtlSeconds,
+                featureRefreshCallback,
+                globalAttributes,
+                globalForcedFeatureValues,
+                globalForcedVariationsMap,
+                cacheManager,
+                cacheMode,
+                cacheDirectory,
+                remoteEval,
+                cacheKeyAttributes,
+                remoteEvalCacheSize,
+                remoteEvalCacheTtlSeconds,
+                backgroundFetchInterval,
+                retryPolicy,
+                featureRefreshListenerExecutor,
+                sseReconnectOnFailure,
+                plugins,
+                null,
+                null
+        );
+    }
+
+    @Builder
+    public Options(@Nullable Boolean enabled,
+                   Boolean isQaMode,
+                   @Nullable Boolean isCacheDisabled,
+                   Boolean allowUrlOverrides,
+                   @Nullable String url,
+                   @Nullable String apiHost,
+                   @Nullable String clientKey,
+                   @Nullable String decryptionKey,
+                   @Nullable List<String> stickyBucketIdentifierAttributes,
+                   @Nullable StickyBucketService stickyBucketService,
+                   @Nullable TrackingCallbackWithUser trackingCallBackWithUser,
+                   @Nullable FeatureUsageCallbackWithUser featureUsageCallbackWithUser,
+                   @Nullable FeatureRefreshStrategy refreshStrategy,
+                   @Nullable Integer swrTtlSeconds,
+                   @Deprecated @Nullable FeatureRefreshCallback featureRefreshCallback,
+                   @Nullable JsonObject globalAttributes,
+                   @Nullable Map<String, Object> globalForcedFeatureValues,
+                   @Nullable Map<String, ?> globalForcedVariationsMap,
+                   @Nullable GbCacheManager cacheManager,
+                   @Nullable CacheMode cacheMode,
+                   @Nullable String cacheDirectory,
+                   @Nullable Boolean remoteEval,
+                   @Nullable List<String> cacheKeyAttributes,
+                   @Nullable Integer remoteEvalCacheSize,
+                   @Nullable Integer remoteEvalCacheTtlSeconds,
+                   @Nullable Duration backgroundFetchInterval,
+                   @Nullable FeatureFetchRetryPolicy retryPolicy,
+                   @Nullable Executor featureRefreshListenerExecutor,
+                   @Nullable Boolean sseReconnectOnFailure,
+                   @Nullable List<GrowthBookPlugin> plugins,
+                   @Nullable EventLogger eventLogger,
+                   @Nullable Executor eventLoggerExecutor
+    ) {
         this.enabled = enabled == null || enabled;
         this.isQaMode = isQaMode != null && isQaMode;
         this.isCacheDisabled = isCacheDisabled != null && isCacheDisabled;
@@ -289,6 +364,8 @@ public class Options {
         this.featureRefreshListenerExecutor = featureRefreshListenerExecutor;
         this.sseReconnectOnFailure = sseReconnectOnFailure;
         this.plugins = plugins;
+        this.eventLogger = eventLogger;
+        this.eventLoggerExecutor = eventLoggerExecutor;
     }
 
     /**
@@ -359,6 +436,24 @@ public class Options {
      */
     @Nullable
     private FeatureUsageCallbackWithUser featureUsageCallbackWithUser;
+
+    /**
+     * Structured event sink invoked during evaluation ({@code "Experiment Viewed"} and
+     * {@code "Feature Evaluated"}) and by explicit {@code logEvent(...)} calls. Fires in addition
+     * to {@link #trackingCallBackWithUser} and {@link #featureUsageCallbackWithUser}, not instead
+     * of them. Excluded from {@code toString()} as it may close over secrets.
+     */
+    @Nullable
+    @ToString.Exclude
+    private EventLogger eventLogger;
+
+    /**
+     * Optional executor used to dispatch {@link EventLogger} events off the evaluation thread. When
+     * {@code null} (default), events fire synchronously on the calling thread. Supply an executor to
+     * isolate the request path from a slow event sink. The tracking callback is not affected.
+     */
+    @Nullable
+    private Executor eventLoggerExecutor;
 
     /**
      * Strategy for building url

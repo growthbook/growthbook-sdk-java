@@ -103,7 +103,7 @@ public class ExperimentResult<ValueType> {
      * @param bucket        The hash value used to assign a variation (float from 0 to 1)
      * @param passThrough   Used for holdout groups
      */
-    @Builder
+    @Builder(toBuilder = true)
     public ExperimentResult(
             @Nullable ValueType value,
             @Nullable Integer variationId,
