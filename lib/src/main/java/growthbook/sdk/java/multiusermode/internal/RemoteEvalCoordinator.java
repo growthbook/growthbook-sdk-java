@@ -227,6 +227,9 @@ public final class RemoteEvalCoordinator {
                 .refreshStrategy(FeatureRefreshStrategy.SERVER_SENT_EVENTS)
                 .isCacheDisabled(true)
                 .retryPolicy(this.options.getRetryPolicy())
+                .apiHostRequestHeaders(this.options.getApiHostRequestHeaders())
+                .streamingHost(this.options.getStreamingHost())
+                .streamingHostRequestHeaders(this.options.getStreamingHostRequestHeaders())
                 .build();
         repository.addFeatureRefreshListener(this::handleInvalidationRefresh);
         this.invalidationRepository = repository;
@@ -286,7 +289,11 @@ public final class RemoteEvalCoordinator {
 
     private synchronized RemoteEvalService getService() {
         if (this.remoteEvalService == null) {
-            this.remoteEvalService = new RemoteEvalService(this.options.getApiHost(), this.options.getClientKey());
+            this.remoteEvalService = new RemoteEvalService(
+                    this.options.getApiHost(),
+                    this.options.getClientKey(),
+                    this.options.getApiHostRequestHeaders()
+            );
         }
         return this.remoteEvalService;
     }

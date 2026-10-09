@@ -283,6 +283,36 @@ Options options = Options.builder()
     .build();
 ```
 
+## Custom Request Headers & Streaming Host
+
+If your GrowthBook instance sits behind a gateway or proxy that requires authentication headers, or you use
+GrowthBook Cloud's dedicated streaming domain, you can configure custom headers and a separate SSE host:
+
+```java
+Options options = Options.builder()
+    .apiHost("https://growthbook-api.internal.example.com")
+    .clientKey("sdk-abc123")
+    // Added to every API request (features fetch and remote evaluation)
+    .apiHostRequestHeaders(Collections.singletonMap("Authorization", "Bearer " + System.getenv("GB_PROXY_TOKEN")))
+    // Dedicated host for SSE streaming; falls back to apiHost when unset
+    .streamingHost("https://beacon.growthbook.io")
+    // Added to the SSE streaming request
+    .streamingHostRequestHeaders(Collections.singletonMap("Authorization", "Bearer " + System.getenv("GB_STREAM_TOKEN")))
+    .build();
+```
+
+Notes:
+
+- `streamingHost` must be a valid `http(s)` URL; it only affects the SSE streaming connection
+  (`FeatureRefreshStrategy.SERVER_SENT_EVENTS`). Feature fetches and remote evaluation always use `apiHost`.
+- `User-Agent`, `If-None-Match` and `Cache-Control` are managed by the SDK on API-host requests; the
+  SSE streaming request additionally manages `Accept` (`text/event-stream`). A reserved header is
+  rejected at startup with an `InvalidOptionsException` if present in the corresponding map, so a custom
+  `Accept` is allowed on `apiHostRequestHeaders` but not on `streamingHostRequestHeaders`. Header names
+  and values must also be valid HTTP syntax. ETag-based cache revalidation keeps working as before.
+- Header values may contain secrets: keep them in environment variables or a secrets manager. The SDK never
+  writes header values to logs or diagnostics output.
+
 ## Remote Evaluation
 
 This mode brings the security benefits of a backend SDK to the front end by evaluating feature flags exclusively on a

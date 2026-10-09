@@ -1,5 +1,6 @@
 package growthbook.sdk.java.multiusermode.configurations;
 
+import growthbook.sdk.java.constants.SDKConstants;
 import growthbook.sdk.java.exception.InvalidOptionsException;
 import growthbook.sdk.java.remoteeval.RemoteEvalOptionsValidator;
 import growthbook.sdk.java.sandbox.CacheMode;
@@ -11,6 +12,9 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Set;
 
 /**
  * Validates {@link Options} once, at client start-up, so misconfigurations are reported up front with
@@ -22,6 +26,11 @@ import java.util.List;
  * <p>Checks performed:
  * <ul>
  *     <li>{@code apiHost} is present and a syntactically valid {@code http(s)} URL.</li>
+ *     <li>{@code streamingHost}, when set, is a syntactically valid {@code http(s)} URL.</li>
+ *     <li>{@code apiHostRequestHeaders} and {@code streamingHostRequestHeaders} contain only
+ *     syntactically valid HTTP header names and values, no blank names, no null values, and none of
+ *     the SDK-managed (reserved) headers: {@code User-Agent}, {@code If-None-Match} and
+ *     {@code Cache-Control} on the API host, plus {@code Accept} on the streaming request.</li>
  *     <li>{@code clientKey} is present.</li>
  *     <li>{@code swrTtlSeconds} (refresh interval) is positive when set.</li>
  *     <li>{@code backgroundFetchInterval} is non-negative when set.</li>
@@ -69,6 +78,11 @@ public final class OptionsValidator {
 
         List<String> violations = new ArrayList<>();
         checkApiHost(options.getApiHost(), violations);
+        checkStreamingHost(options.getStreamingHost(), violations);
+        checkRequestHeaders("apiHostRequestHeaders", options.getApiHostRequestHeaders(),
+                SDKConstants.RESERVED_REQUEST_HEADERS, violations);
+        checkRequestHeaders("streamingHostRequestHeaders", options.getStreamingHostRequestHeaders(),
+                SDKConstants.RESERVED_STREAMING_REQUEST_HEADERS, violations);
         checkClientKey(options.getClientKey(), violations);
         checkRefreshInterval(options.getSwrTtlSeconds(), violations);
         checkBackgroundFetchInterval(options.getBackgroundFetchInterval(), violations);
@@ -83,29 +97,102 @@ public final class OptionsValidator {
             violations.add("apiHost is required");
             return;
         }
+        checkHostUrl("apiHost", apiHost, violations);
+    }
 
-        String raw = apiHost.trim();
+    private static void checkStreamingHost(@Nullable String streamingHost, List<String> violations) {
+        if (streamingHost == null) {
+            return;
+        }
+        if (StringUtils.isBlank(streamingHost)) {
+            violations.add("streamingHost must not be blank when set");
+            return;
+        }
+        checkHostUrl("streamingHost", streamingHost, violations);
+    }
+
+    private static void checkHostUrl(String optionName, String host, List<String> violations) {
+        String raw = host.trim();
         boolean hasScheme = raw.contains(SCHEME_SEPARATOR);
 
         URI uri;
         try {
             uri = URI.create(hasScheme ? raw : HTTPS + SCHEME_SEPARATOR + raw);
         } catch (IllegalArgumentException e) {
-            violations.add("apiHost is not a valid URL: " + apiHost);
+            violations.add(optionName + " is not a valid URL: " + host);
             return;
         }
 
         if (hasScheme) {
             String scheme = uri.getScheme();
             if (scheme == null || (!scheme.equalsIgnoreCase(HTTP) && !scheme.equalsIgnoreCase(HTTPS))) {
-                violations.add("apiHost must use http or https scheme: " + apiHost);
+                violations.add(optionName + " must use http or https scheme: " + host);
                 return;
             }
         }
 
         if (StringUtils.isBlank(uri.getHost())) {
-            violations.add("apiHost is not a valid URL: " + apiHost);
+            violations.add(optionName + " is not a valid URL: " + host);
         }
+    }
+
+    private static void checkRequestHeaders(
+            String optionName,
+            @Nullable Map<String, String> headers,
+            Set<String> reservedHeaders,
+            List<String> violations
+    ) {
+        if (headers == null || headers.isEmpty()) {
+            return;
+        }
+
+        for (Map.Entry<String, String> entry : headers.entrySet()) {
+            String name = entry.getKey();
+            String value = entry.getValue();
+            if (StringUtils.isBlank(name)) {
+                violations.add(optionName + " must not contain a null or blank header name");
+            } else if (reservedHeaders.contains(name.toLowerCase(Locale.ROOT))) {
+                violations.add(optionName + " must not contain the reserved header '" + name
+                        + "'; it is managed by the SDK");
+            } else if (!isValidHeaderName(name)) {
+                violations.add(optionName + " contains an invalid HTTP header name '" + name + "'");
+            } else if (value == null) {
+                violations.add(optionName + " must not contain a null value for header '" + name + "'");
+            } else if (!isValidHeaderValue(value)) {
+                // The value may hold a secret, so it is never echoed in the message.
+                violations.add(optionName + " contains an invalid value for header '" + name + "'");
+            }
+        }
+    }
+
+    /**
+     * @return {@code true} if every character is allowed in an HTTP header name (printable ASCII,
+     *         excluding spaces and control characters), matching what OkHttp accepts when the
+     *         request is built. Rejecting here reports the problem at start-up instead of as an
+     *         unchecked exception on the first request.
+     */
+    private static boolean isValidHeaderName(String name) {
+        for (int i = 0; i < name.length(); i++) {
+            char c = name.charAt(i);
+            if (c <= '\u0020' || c >= '\u007f') {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    /**
+     * @return {@code true} if every character is allowed in an HTTP header value (a horizontal tab
+     *         or printable ASCII), matching what OkHttp accepts when the request is built.
+     */
+    private static boolean isValidHeaderValue(String value) {
+        for (int i = 0; i < value.length(); i++) {
+            char c = value.charAt(i);
+            if (c != '\t' && (c <= '\u001f' || c >= '\u007f')) {
+                return false;
+            }
+        }
+        return true;
     }
 
     private static void checkClientKey(@Nullable String clientKey, List<String> violations) {
