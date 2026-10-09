@@ -7,6 +7,7 @@ import growthbook.sdk.java.model.FeatureResultSource;
 import growthbook.sdk.java.multiusermode.DeferredTrackingCall;
 import growthbook.sdk.java.multiusermode.configurations.Options;
 import growthbook.sdk.java.multiusermode.configurations.UserContext;
+import growthbook.sdk.java.plugin.PluginRegistry;
 import lombok.extern.slf4j.Slf4j;
 
 import javax.annotation.Nullable;
@@ -77,6 +78,20 @@ public final class EventLoggerDispatch {
      */
     public static <T> void fireExperimentViewed(Options options, DeferredTrackingCall<T> call) {
         fireExperimentViewed(options, call.getExperiment(), call.getResult(), call.getUserContext());
+    }
+
+    /**
+     * Fires the exposure sinks for a buffered deferred call, including the registered plugins. Used by
+     * the deferred-flush path so plugins receive the same {@code Experiment Viewed} events as the
+     * immediate path; the plugin registry is guarded internally.
+     */
+    public static <T> void fireExperimentViewed(Options options,
+                                                DeferredTrackingCall<T> call,
+                                                @Nullable PluginRegistry pluginRegistry) {
+        fireExperimentViewed(options, call.getExperiment(), call.getResult(), call.getUserContext());
+        if (pluginRegistry != null) {
+            pluginRegistry.fireExperimentViewed(call.getExperiment(), call.getResult());
+        }
     }
 
     /**

@@ -31,6 +31,7 @@ import growthbook.sdk.java.plugin.PluginRegistry;
 import growthbook.sdk.java.repository.GBFeaturesRepository;
 import growthbook.sdk.java.repository.RefreshMode;
 import growthbook.sdk.java.util.GrowthBookJsonUtils;
+import growthbook.sdk.java.util.UserContextUtils;
 import lombok.extern.slf4j.Slf4j;
 
 import javax.annotation.Nullable;
@@ -344,8 +345,13 @@ public class GrowthBookClient {
      * @param userContext the user the event is for
      */
     public void logEvent(String eventName, Map<String, Object> properties, UserContext userContext) {
-        EvaluationContext ec = getEvalContext(userContext == null ? UserContext.builder().build() : userContext);
-        EventLoggerDispatch.logEvent(this.options, eventName, properties, ec.getUser());
+        // No-op without a logger: skip building an evaluation context, which in remote mode would fetch
+        // feature data on a cache miss and query any configured sticky-bucket service.
+        if (this.options.getEventLogger() == null) {
+            return;
+        }
+        UserContext mergedUser = UserContextUtils.withMergedAttributes(this.options, userContext);
+        EventLoggerDispatch.logEvent(this.options, eventName, properties, mergedUser);
     }
 
     <T> FeatureResult<T> evalFeature(String key,
@@ -356,7 +362,7 @@ public class GrowthBookClient {
     }
 
     void flushDeferredTracking(DeferredTrackingBuffer buffer) {
-        buffer.flush(this.options);
+        buffer.flush(this.options, this.pluginRegistry);
     }
 
     /**

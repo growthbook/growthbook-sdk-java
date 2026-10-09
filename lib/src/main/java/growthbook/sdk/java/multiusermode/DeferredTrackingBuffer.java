@@ -7,6 +7,7 @@ import growthbook.sdk.java.model.ExperimentResult;
 import growthbook.sdk.java.multiusermode.configurations.Options;
 import growthbook.sdk.java.multiusermode.configurations.UserContext;
 import growthbook.sdk.java.multiusermode.usage.EventLoggerDispatch;
+import growthbook.sdk.java.plugin.PluginRegistry;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.ArrayList;
@@ -49,7 +50,10 @@ public final class DeferredTrackingBuffer {
             warnCapacityReached();
             return;
         }
-        calls.computeIfAbsent(key, k -> new DeferredTrackingCall<>(experiment, result, userContext));
+        // Snapshot the exposure now: callers may reuse and mutate the same Experiment/ExperimentResult
+        // (e.g. setKey) between buffering and flush, which would otherwise rewrite the queued event.
+        calls.computeIfAbsent(key, k -> new DeferredTrackingCall<>(
+                experiment.toBuilder().build(), result.toBuilder().build(), userContext));
     }
 
     /**
@@ -82,14 +86,21 @@ public final class DeferredTrackingBuffer {
     }
 
     /**
-     * Dispatches every buffered call through the exposure sinks (tracking callback + event logger),
-     * then clears the buffer.
+     * Dispatches every buffered call through the exposure sinks (tracking callback, event logger, and
+     * plugins), then clears the buffer.
+     *
+     * <p>Drains a snapshot and clears before invoking any sink: a sink may evaluate another
+     * experiment-backed feature through the same scope and buffer a new exposure mid-flush. Iterating
+     * the live map would throw {@link java.util.ConcurrentModificationException} outside the per-call
+     * guard and could clear newly added entries without delivering them; those entries are left for a
+     * later flush instead.
      */
-    public void flush(Options options) {
-        for (DeferredTrackingCall<?> call : calls.values()) {
-            EventLoggerDispatch.fireExperimentViewed(options, call);
-        }
+    public void flush(Options options, PluginRegistry pluginRegistry) {
+        List<DeferredTrackingCall<?>> pendingCalls = new ArrayList<>(calls.values());
         calls.clear();
+        for (DeferredTrackingCall<?> call : pendingCalls) {
+            EventLoggerDispatch.fireExperimentViewed(options, call, pluginRegistry);
+        }
     }
 
     private void warnCapacityReached() {

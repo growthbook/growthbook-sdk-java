@@ -138,7 +138,7 @@ class EventLoggerEvaluationTest {
         assertEquals(1, buffer.getCalls().size());
 
         // When the buffer is flushed
-        buffer.flush(options);
+        buffer.flush(options, null);
 
         // Then the exposure fires exactly once and the buffer is drained
         assertEquals(1, trackCount.get());

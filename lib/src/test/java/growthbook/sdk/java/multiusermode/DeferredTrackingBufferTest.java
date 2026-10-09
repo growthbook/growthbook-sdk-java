@@ -5,6 +5,8 @@ import growthbook.sdk.java.model.ExperimentResult;
 import growthbook.sdk.java.multiusermode.configurations.Options;
 import growthbook.sdk.java.multiusermode.configurations.UserContext;
 import growthbook.sdk.java.multiusermode.usage.TrackingCallbackWithUser;
+import growthbook.sdk.java.plugin.GrowthBookPlugin;
+import growthbook.sdk.java.plugin.PluginRegistry;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -65,7 +67,7 @@ class DeferredTrackingBufferTest {
         buffer.add(experiment("b"), result(1, "id", "u1", "v1"), user);
 
         // When
-        buffer.flush(options);
+        buffer.flush(options, null);
 
         // Then
         assertEquals(2, trackCount.get());
@@ -83,7 +85,7 @@ class DeferredTrackingBufferTest {
         DeferredTrackingBuffer buffer = new DeferredTrackingBuffer();
 
         // When
-        buffer.flush(options);
+        buffer.flush(options, null);
 
         // Then
         assertEquals(0, trackCount.get());
@@ -151,6 +153,74 @@ class DeferredTrackingBufferTest {
 
         // Then
         assertTrue(buffer.getCalls().isEmpty());
+    }
+
+    @Test
+    @DisplayName("Verify: flush delivers each buffered exposure to registered plugins")
+    void flushDeliversToPlugins() {
+        // Given
+        AtomicInteger pluginViews = new AtomicInteger();
+        PluginRegistry pluginRegistry = new PluginRegistry(Collections.singletonList(new GrowthBookPlugin() {
+            @Override
+            public <V> void onExperimentViewed(Experiment<V> experiment, ExperimentResult<V> result) {
+                pluginViews.incrementAndGet();
+            }
+        }));
+        Options options = Options.builder().build();
+        DeferredTrackingBuffer buffer = new DeferredTrackingBuffer();
+        buffer.add(experiment("a"), result(0, "id", "u1", "v0"), user);
+        buffer.add(experiment("b"), result(1, "id", "u1", "v1"), user);
+
+        // When
+        buffer.flush(options, pluginRegistry);
+
+        // Then
+        assertEquals(2, pluginViews.get());
+        assertTrue(buffer.getCalls().isEmpty());
+    }
+
+    @Test
+    @DisplayName("Verify: buffering snapshots the exposure so later mutation of the experiment does not change it")
+    void addSnapshotsExposureAgainstLaterMutation() {
+        // Given
+        DeferredTrackingBuffer buffer = new DeferredTrackingBuffer();
+        Experiment<String> experiment = experiment("original");
+        buffer.add(experiment, result(0, "id", "u1", "v0"), user);
+
+        // When the caller reuses and mutates the experiment after buffering
+        experiment.setKey("mutated");
+
+        // Then the queued exposure keeps the value captured at add time
+        assertEquals("original", buffer.getCalls().get(0).getExperiment().getKey());
+    }
+
+    @Test
+    @DisplayName("Verify: an exposure buffered by a callback during flush does not break the flush and is kept for later")
+    void flushToleratesExposureAddedByCallback() {
+        // Given a tracking callback that buffers a new exposure into the same buffer mid-flush
+        DeferredTrackingBuffer buffer = new DeferredTrackingBuffer();
+        AtomicInteger fired = new AtomicInteger();
+        Options options = Options.builder()
+                .trackingCallBackWithUser(new TrackingCallbackWithUser() {
+                    @Override
+                    public <T> void onTrack(Experiment<T> experiment,
+                                            ExperimentResult<T> result,
+                                            UserContext userContext) {
+                        if (fired.incrementAndGet() == 1) {
+                            buffer.add(experiment("late"), result(9, "id", "u1", "v9"), user);
+                        }
+                    }
+                })
+                .build();
+        buffer.add(experiment("a"), result(0, "id", "u1", "v0"), user);
+
+        // When flushing (must not throw ConcurrentModificationException)
+        buffer.flush(options, null);
+
+        // Then the original exposure fired and the callback-added one remains for a later flush
+        assertEquals(1, fired.get());
+        assertEquals(1, buffer.getCalls().size());
+        assertEquals("late", buffer.getCalls().get(0).getExperiment().getKey());
     }
 
     private Experiment<String> experiment(String key) {

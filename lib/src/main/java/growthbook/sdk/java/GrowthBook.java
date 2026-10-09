@@ -813,7 +813,7 @@ public class GrowthBook implements IGrowthBook {
      * via {@link #subscribe(ExperimentRunCallback)} still fire immediately during {@link #run(Experiment)}.
      */
     public void fireDeferredTrackingCalls() {
-        this.deferredTrackingBuffer.flush(this.evaluationContext.getOptions());
+        this.deferredTrackingBuffer.flush(this.evaluationContext.getOptions(), this.pluginRegistry);
     }
 
     private static <V> TrackData<V> toTrackData(DeferredTrackingCall<V> call) {
