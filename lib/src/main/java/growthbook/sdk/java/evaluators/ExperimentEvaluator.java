@@ -307,8 +307,6 @@ public class ExperimentEvaluator implements IExperimentEvaluator {
             }
         }
 
-        // When a per-request scope is buffering, defer the exposure for a single end-of-request flush;
-        // otherwise fire once per unique (hashAttribute, hashValue, experiment.key, variationId).
         DeferredTrackingBuffer deferredTracking = context.getDeferredTracking();
         if (deferredTracking != null) {
             deferredTracking.add(experiment, result, context.getUser());
