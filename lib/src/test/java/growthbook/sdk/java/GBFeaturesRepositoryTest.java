@@ -1,5 +1,6 @@
 package growthbook.sdk.java;
 
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -28,8 +29,12 @@ import growthbook.sdk.java.repository.FeatureRefreshStrategy;
 import growthbook.sdk.java.retry.FeatureFetchRetryPolicy;
 import growthbook.sdk.java.repository.GBFeaturesRepository;
 import growthbook.sdk.java.sandbox.FileCachingManagerImpl;
+import growthbook.sdk.java.sandbox.GbCacheManager;
+import okhttp3.Cache;
 import okhttp3.Call;
 import okhttp3.Callback;
+import okhttp3.ConnectionPool;
+import okhttp3.Dispatcher;
 import okhttp3.MediaType;
 import okhttp3.OkHttpClient;
 import okhttp3.Protocol;
@@ -39,7 +44,11 @@ import okhttp3.ResponseBody;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
+import java.io.File;
 import java.io.IOException;
+import java.lang.reflect.Field;
+import java.util.concurrent.atomic.AtomicReference;
+import java.nio.file.Files;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -138,7 +147,92 @@ class GBFeaturesRepositoryTest {
     }
 
     @Test
-    void canFetchUnencryptedFeatures_mockedResponse() throws FeatureFetchException, IOException {
+    void shutdown_withSseStrategy_completesWithoutException() throws Exception {
+        GBFeaturesRepository subject = GBFeaturesRepository.builder()
+                .apiHost("http://localhost")
+                .clientKey("sdk-123")
+                .refreshStrategy(FeatureRefreshStrategy.SERVER_SENT_EVENTS)
+                .build();
+
+        OkHttpClient sseClient = new OkHttpClient.Builder().build();
+        Field field = GBFeaturesRepository.class.getDeclaredField("sseHttpClient");
+        field.setAccessible(true);
+        @SuppressWarnings("unchecked")
+        AtomicReference<OkHttpClient> sseHttpClientRef = (AtomicReference<OkHttpClient>) field.get(subject);
+        sseHttpClientRef.set(sseClient);
+
+        assertDoesNotThrow(subject::shutdown);
+    }
+
+    @Test
+    void shutdown_whenCachePresent_closesHttpClientCache() throws Exception {
+        GBFeaturesRepository subject = GBFeaturesRepository.builder()
+                .apiHost("http://localhost")
+                .clientKey("sdk-123")
+                .refreshStrategy(FeatureRefreshStrategy.SERVER_SENT_EVENTS)
+                .build();
+
+        File cacheDir = Files.createTempDirectory("okhttp-cache").toFile();
+        Cache cache = new Cache(cacheDir, 1024 * 1024);
+        OkHttpClient clientWithCache = new OkHttpClient.Builder()
+                .cache(cache)
+                .build();
+
+        Field field = GBFeaturesRepository.class.getDeclaredField("sseHttpClient");
+        field.setAccessible(true);
+        @SuppressWarnings("unchecked")
+        AtomicReference<OkHttpClient> sseHttpClientRef = (AtomicReference<OkHttpClient>) field.get(subject);
+        sseHttpClientRef.set(clientWithCache);
+
+        subject.shutdown();
+
+        assertTrue(cache.isClosed());
+    }
+
+    @Test
+    void shutdown_whenCacheCloseFails_doesNotThrow() throws Exception {
+        GBFeaturesRepository subject = GBFeaturesRepository.builder()
+                .apiHost("http://localhost")
+                .clientKey("sdk-123")
+                .refreshStrategy(FeatureRefreshStrategy.SERVER_SENT_EVENTS)
+                .build();
+
+        Cache mockCache = mock(Cache.class);
+        doThrow(new IOException("cache close failed")).when(mockCache).close();
+
+        OkHttpClient mockHttpClient = mock(OkHttpClient.class);
+
+        when(mockHttpClient.cache()).thenReturn(mockCache);
+        when(mockHttpClient.dispatcher()).thenReturn(new Dispatcher());
+        when(mockHttpClient.connectionPool()).thenReturn(new ConnectionPool());
+
+        Field field = GBFeaturesRepository.class.getDeclaredField("sseHttpClient");
+        field.setAccessible(true);
+        @SuppressWarnings("unchecked")
+        AtomicReference<OkHttpClient> sseHttpClientRef = (AtomicReference<OkHttpClient>) field.get(subject);
+        sseHttpClientRef.set(mockHttpClient);
+
+        assertDoesNotThrow(subject::shutdown);
+
+        verify(mockCache).close();
+    }
+
+    @Test
+    void shutdown_doesNotClearSharedCacheStore() {
+        GbCacheManager cacheManager = mock(GbCacheManager.class);
+        GBFeaturesRepository subject = GBFeaturesRepository.builder()
+                .apiHost("http://localhost")
+                .clientKey("sdk-123")
+                .cacheManager(cacheManager)
+                .build();
+
+        subject.shutdown();
+
+        verify(cacheManager, never()).clearCache();
+    }
+
+    @Test
+    void initialize_withUnencryptedResponse_setsFeaturesJson() throws FeatureFetchException, IOException {
         String fakeResponseJson = "{\"status\":200,\"features\":{\"banner_text\":{\"defaultValue\":\"Welcome to Acme Donuts!\",\"rules\":[{\"condition\":{\"country\":\"france\"},\"force\":\"Bienvenue au Beignets Acme !\"},{\"condition\":{\"country\":\"spain\"},\"force\":\"¡Bienvenidos y bienvenidas a Donas Acme!\"}]},\"dark_mode\":{\"defaultValue\":false,\"rules\":[{\"condition\":{\"loggedIn\":true},\"force\":true,\"coverage\":0.5,\"hashAttribute\":\"id\"}]},\"donut_price\":{\"defaultValue\":2.5,\"rules\":[{\"condition\":{\"employee\":true},\"force\":0}]},\"meal_overrides_gluten_free\":{\"defaultValue\":{\"meal_type\":\"standard\",\"dessert\":\"Strawberry Cheesecake\"},\"rules\":[{\"condition\":{\"dietaryRestrictions\":{\"$elemMatch\":{\"$eq\":\"gluten_free\"}}},\"force\":{\"meal_type\":\"gf\",\"dessert\":\"French Vanilla Ice Cream\"}}]}},\"dateUpdated\":\"2023-01-11T00:26:01.745Z\"}";
         OkHttpClient mockOkHttpClient = mockHttpClient(fakeResponseJson);
 

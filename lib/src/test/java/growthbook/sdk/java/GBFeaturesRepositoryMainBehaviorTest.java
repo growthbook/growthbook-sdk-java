@@ -597,6 +597,39 @@ class GBFeaturesRepositoryMainBehaviorTest {
     }
 
     @Test
+    void fetchFeatures_whenNetworkFails_fallsBackToLegacyCacheKey() throws FeatureFetchException, IOException {
+        // Simulates an upgrade: the only cached entry lives under the legacy shared "FEATURE_CACHE.json"
+        // key, not under the new per-endpoint key. The failed fetch must still fall back to it.
+        OkHttpClient mockHttpClient = mock(OkHttpClient.class);
+        FileCachingManagerImpl mockCacheManager = mock(FileCachingManagerImpl.class);
+        String cachedData = "{\"status\":200,\"features\":{\"banner_text\":{\"defaultValue\":\"Welcome\"}},\"dateUpdated\":\"2023-01-11T00:26:01.745Z\"}";
+        String expectedResult = "{\"banner_text\":{\"defaultValue\":\"Welcome\"}}";
+        GBFeaturesRepository subject = new GBFeaturesRepository(
+                "http://localhost:80",
+                "abc-123",
+                null,
+                null,
+                null,
+                mockHttpClient,
+                false,
+                null,
+                null
+        );
+
+        Call mockCall = mock(Call.class);
+        when(mockHttpClient.newCall(any(Request.class))).thenReturn(mockCall);
+        when(mockCall.execute()).thenThrow(new IOException("Http error"));
+        // Only the legacy key resolves; the per-endpoint key returns null (the default mock answer).
+        when(mockCacheManager.loadCache("FEATURE_CACHE.json")).thenReturn(cachedData);
+
+        subject.setCacheManager(mockCacheManager);
+        subject.initialize();
+
+        assertEquals(expectedResult, subject.getFeaturesJson());
+        verify(mockCacheManager).loadCache("FEATURE_CACHE.json");
+    }
+
+    @Test
     void cacheManager_isNull_whenCacheDisabled() {
         GBFeaturesRepository subject = new GBFeaturesRepository(
                 "",

@@ -53,6 +53,9 @@ import org.jetbrains.annotations.NotNull;
 import javax.annotation.Nullable;
 import java.io.IOException;
 import java.net.HttpURLConnection;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Collections;
@@ -81,6 +84,7 @@ import java.util.concurrent.atomic.AtomicReference;
 public class GBFeaturesRepository implements IGBFeaturesRepository {
     private static final String ENABLED = "enabled";
     private static final String FILE_NAME = "FEATURE_CACHE.json";
+    private static final String CACHE_KEY_PREFIX = "FEATURE_CACHE_";
     public static final String FILE_PATH_FOR_CACHE = "src/main/resources";
     public static final String EMPTY_JSON_OBJECT_STRING = "{}";
     private static final ThreadFactory SSE_RETRY_THREAD_FACTORY = runnable -> {
@@ -104,6 +108,8 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
      */
     @Getter
     private final String featuresEndpoint;
+
+    private final String cacheKey;
 
     /**
      * Endpoint for SSE request
@@ -490,6 +496,7 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
         this.featuresEndpoint = apiHost + FEATURES_ENDPOINT_PATH + clientKey;
         this.eventsEndpoint = apiHost + STREAMING_ENDPOINT_PATH + clientKey;
         this.remoteEvalEndPoint = RemoteEvalEndpoints.evalEndpoint(apiHost, clientKey);
+        this.cacheKey = buildCacheKey(this.featuresEndpoint);
 
         this.encryptionKey = decryptionKey;
         this.decryptionKey = decryptionKey;
@@ -502,7 +509,6 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
         this.requestBodyForRemoteEval = requestBodyForRemoteEval != null ? requestBodyForRemoteEval : new RequestBodyForRemoteEval();
         this.refreshExpiresAt();
 
-        // Use provided OkHttpClient or create a new one
         if (okHttpClient == null) {
             this.okHttpClient = this.initializeHttpClient();
         } else if (okHttpClient.retryOnConnectionFailure()) {
@@ -516,6 +522,21 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
         }
         if (!this.isCacheDisabled) {
             this.cacheManager.set(cacheManager != null ? cacheManager : createCacheManager());
+        }
+    }
+
+    private static String buildCacheKey(String featuresEndpoint) {
+        try {
+            MessageDigest digest = MessageDigest.getInstance("SHA-256");
+            byte[] hash = digest.digest(featuresEndpoint.getBytes(StandardCharsets.UTF_8));
+            StringBuilder hex = new StringBuilder(16);
+            for (int i = 0; i < 8; i++) {
+                hex.append(Character.forDigit((hash[i] >> 4) & 0xF, 16));
+                hex.append(Character.forDigit(hash[i] & 0xF, 16));
+            }
+            return CACHE_KEY_PREFIX + hex + ".json";
+        } catch (NoSuchAlgorithmException e) {
+            return FILE_NAME;
         }
     }
 
@@ -1041,12 +1062,42 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
         }
 
         try {
-            return manager.getLastUpdatedMillis(FILE_NAME);
+            return loadCacheTimestamp(manager);
         } catch (RuntimeException cacheException) {
             log.warn("Failed to read the feature cache timestamp.", cacheException);
             return null;
 
         }
+    }
+
+    /**
+     * Reads the cached payload for this repository's per-endpoint {@link #cacheKey}, falling back to
+     * the legacy shared {@link #FILE_NAME} key. Entries written before per-endpoint cache keys were
+     * introduced live under {@code FILE_NAME}; without this fallback they would look missing after an
+     * upgrade, so a failed first fetch could not serve the still-valid cached features. The per-endpoint
+     * key is tried first, so tenant isolation holds and the fallback only applies until the first
+     * successful fetch repopulates the new key.
+     */
+    @Nullable
+    private String loadCachedPayload(GbCacheManager manager) {
+        String data = manager.loadCache(this.cacheKey);
+        if (data == null && !FILE_NAME.equals(this.cacheKey)) {
+            data = manager.loadCache(FILE_NAME);
+        }
+        return data;
+    }
+
+    /**
+     * Reads the cache timestamp for this repository's per-endpoint {@link #cacheKey}, falling back to
+     * the legacy {@link #FILE_NAME} key. See {@link #loadCachedPayload(GbCacheManager)}.
+     */
+    @Nullable
+    private Long loadCacheTimestamp(GbCacheManager manager) {
+        Long timestamp = manager.getLastUpdatedMillis(this.cacheKey);
+        if (timestamp == null && !FILE_NAME.equals(this.cacheKey)) {
+            timestamp = manager.getLastUpdatedMillis(FILE_NAME);
+        }
+        return timestamp;
     }
 
     private boolean loadCachedFeaturesIfAvailable() {
@@ -1069,7 +1120,7 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
         }
 
         try {
-            String cachedData = manager.loadCache(FILE_NAME);
+            String cachedData = loadCachedPayload(manager);
             if (cachedData == null || cachedData.trim().isEmpty()) {
                 return false;
             }
@@ -1181,7 +1232,7 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
             return;
         }
         try {
-            cacheManager.get().saveContent(FILE_NAME, responseJsonString);
+            cacheManager.get().saveContent(this.cacheKey, responseJsonString);
         } catch (RuntimeException ignored) {
         }
     }
@@ -1542,18 +1593,14 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
                 }
             }
             log.info("SseHttpClient shutdown");
-
-            // Only an SSE repository discards its cache on shutdown. A polling repository keeps
-            // the cache on disk so the next process can fall back to it when the initial fetch
-            // fails — clearing it unconditionally would destroy that offline fallback.
-            GbCacheManager gbCacheManager = this.cacheManager.getAndSet(null);
-            if (gbCacheManager != null) {
-                try {
-                    gbCacheManager.clearCache();
-                } catch (Exception ignored) {
-                }
-                log.info("CacheManager shutdown");
-            }
+        }
+        // Release the cache manager reference without clearing the underlying store:
+        // persisted features are meant to survive restarts, and with shared stores
+        // (e.g. a Redis-backed GbCacheManager) clearing here would wipe the cache for
+        // every other SDK instance using the same namespace.
+        GbCacheManager releasedCacheManager = this.cacheManager.getAndSet(null);
+        if (releasedCacheManager != null) {
+            log.info("CacheManager released");
         }
     }
 
@@ -1621,7 +1668,7 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
         if (gbCacheManager == null) {
             throw new FeatureFetchException(FeatureFetchException.FeatureFetchErrorCode.NO_RESPONSE_ERROR);
         }
-        String cachedData = gbCacheManager.loadCache(FILE_NAME);
+        String cachedData = loadCachedPayload(gbCacheManager);
         if (cachedData == null) {
             log.error("FeatureFetchException: No Features from Cache");
             throw new FeatureFetchException(FeatureFetchException.FeatureFetchErrorCode.NO_RESPONSE_ERROR);
