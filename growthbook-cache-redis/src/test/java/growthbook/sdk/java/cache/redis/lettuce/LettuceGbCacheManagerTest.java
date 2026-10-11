@@ -19,6 +19,7 @@ import java.time.Instant;
 import java.time.ZoneId;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -26,6 +27,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -52,7 +54,7 @@ class LettuceGbCacheManagerTest {
     }
 
     @Test
-    @DisplayName("Verify: saveContent writes the hash and clears any stale expiry when no TTL is configured")
+    @DisplayName("Verify: saveContent sets the hash and clears any stale expiry atomically when no TTL is configured")
     void saveContentWritesHashWithTimestamp() {
         // Given
         LettuceGbCacheManager cache = LettuceGbCacheManager.builder()
@@ -64,14 +66,24 @@ class LettuceGbCacheManagerTest {
         cache.saveContent("FEATURE_CACHE.json", "{\"features\":{}}");
 
         // Then
-        @SuppressWarnings("unchecked")
-        ArgumentCaptor<Map<String, String>> hashCaptor = ArgumentCaptor.forClass(Map.class);
-        verify(commands).hset(eq(PREFIX + "FEATURE_CACHE.json"), hashCaptor.capture());
-        Map<String, String> hash = hashCaptor.getValue();
+        ArgumentCaptor<String> scriptCaptor = ArgumentCaptor.forClass(String.class);
+        ArgumentCaptor<String> argvCaptor = ArgumentCaptor.forClass(String.class);
+        verify(commands).eval(scriptCaptor.capture(), eq(ScriptOutputType.INTEGER), any(String[].class),
+                argvCaptor.capture());
+        assertTrue(scriptCaptor.getValue().contains("PERSIST"));
+        Map<String, String> hash = pairsToMap(argvCaptor.getAllValues());
         assertEquals("{\"features\":{}}", hash.get("data"));
         assertEquals("1234", hash.get("updatedAt"));
-        verify(commands).persist(PREFIX + "FEATURE_CACHE.json");
         verify(commands, never()).pexpire(anyString(), anyLong());
+        verify(commands, never()).persist(anyString());
+    }
+
+    private static Map<String, String> pairsToMap(List<String> pairs) {
+        Map<String, String> map = new HashMap<>();
+        for (int i = 0; i + 1 < pairs.size(); i += 2) {
+            map.put(pairs.get(i), pairs.get(i + 1));
+        }
+        return map;
     }
 
     @Test

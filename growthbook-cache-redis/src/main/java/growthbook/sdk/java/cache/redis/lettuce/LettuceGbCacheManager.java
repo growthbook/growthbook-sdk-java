@@ -33,6 +33,15 @@ public final class LettuceGbCacheManager extends AbstractRedisGbCacheManager {
             "redis.call('HSET', KEYS[1], unpack(ARGV, 2))\n"
                     + "return redis.call('PEXPIRE', KEYS[1], ARGV[1])";
 
+    /**
+     * Companion of {@link #HSET_PEXPIRE_SCRIPT} for the no-TTL path: sets the hash and clears any
+     * stale expiry atomically, so a concurrent timed writer's expiry cannot be removed by a separate
+     * {@code PERSIST}. {@code ARGV} is the hash field/value pairs.
+     */
+    private static final String HSET_PERSIST_SCRIPT =
+            "redis.call('HSET', KEYS[1], unpack(ARGV))\n"
+                    + "return redis.call('PERSIST', KEYS[1])";
+
     private final RedisCommands<String, String> commands;
 
     private LettuceGbCacheManager(LettuceCacheOptions options) {
@@ -58,9 +67,15 @@ public final class LettuceGbCacheManager extends AbstractRedisGbCacheManager {
 
     @Override
     protected void writeHash(String redisKey, Map<String, String> hash, Long ttlMillis) {
+        String[] keys = {redisKey};
         if (ttlMillis == null) {
-            commands.hset(redisKey, hash);
-            commands.persist(redisKey);
+            String[] argv = new String[hash.size() * 2];
+            int i = 0;
+            for (Map.Entry<String, String> entry : hash.entrySet()) {
+                argv[i++] = entry.getKey();
+                argv[i++] = entry.getValue();
+            }
+            commands.eval(HSET_PERSIST_SCRIPT, ScriptOutputType.INTEGER, keys, argv);
             return;
         }
         String[] argv = new String[1 + hash.size() * 2];
@@ -70,7 +85,7 @@ public final class LettuceGbCacheManager extends AbstractRedisGbCacheManager {
             argv[i++] = entry.getKey();
             argv[i++] = entry.getValue();
         }
-        commands.eval(HSET_PEXPIRE_SCRIPT, ScriptOutputType.INTEGER, new String[]{redisKey}, argv);
+        commands.eval(HSET_PEXPIRE_SCRIPT, ScriptOutputType.INTEGER, keys, argv);
     }
 
     @Override
