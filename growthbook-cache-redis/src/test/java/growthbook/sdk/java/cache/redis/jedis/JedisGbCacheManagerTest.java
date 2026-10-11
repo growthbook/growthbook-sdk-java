@@ -166,6 +166,17 @@ class JedisGbCacheManagerTest {
     }
 
     @Test
+    @DisplayName("Verify: a non-numeric timestamp reads as unknown freshness (null)")
+    void malformedTimestampIsUnknown() {
+        // Given
+        when(jedis.hget(PREFIX + "k", "updatedAt")).thenReturn("not-a-number");
+        JedisGbCacheManager cache = JedisGbCacheManager.builder().jedisPool(pool).buildManager();
+
+        // When & Then
+        assertNull(cache.getLastUpdatedMillis("k"));
+    }
+
+    @Test
     @DisplayName("Verify: a missing key is a miss (null content and null timestamp)")
     void returnsNullForMissingEntry() {
         // Given

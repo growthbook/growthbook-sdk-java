@@ -69,9 +69,15 @@ public abstract class AbstractRedisGbCacheManager implements GbCacheManager {
         } catch (RuntimeException e) {
             throw new FeatureCacheException("Failed to load GrowthBook feature cache entry for key: " + key, e);
         }
-        return timestamp == null ? null : RedisCacheEntry.parseTimestamp(timestamp);
+        return RedisCacheEntry.parseTimestampOrNull(timestamp);
     }
 
+    /**
+     * {@inheritDoc}
+     *
+     * <p>Deletes every key under this adapter's {@code keyPrefix}. When several SDK instances share
+     * one adapter (one prefix), this clears all of their entries, not just one repository's.
+     */
     @Override
     public void clearCache() {
         try {

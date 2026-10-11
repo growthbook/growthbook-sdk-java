@@ -159,6 +159,17 @@ class LettuceGbCacheManagerTest {
     }
 
     @Test
+    @DisplayName("Verify: a non-numeric timestamp reads as unknown freshness (null)")
+    void malformedTimestampIsUnknown() {
+        // Given
+        when(commands.hget(PREFIX + "k", "updatedAt")).thenReturn("not-a-number");
+        LettuceGbCacheManager cache = LettuceGbCacheManager.builder().connection(connection).buildManager();
+
+        // When & Then
+        assertNull(cache.getLastUpdatedMillis("k"));
+    }
+
+    @Test
     @DisplayName("Verify: a missing key is a miss (null content and null timestamp)")
     void returnsNullForMissingEntry() {
         // Given

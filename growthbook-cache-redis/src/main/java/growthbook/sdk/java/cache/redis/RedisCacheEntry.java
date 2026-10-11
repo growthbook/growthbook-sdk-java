@@ -56,13 +56,22 @@ final class RedisCacheEntry {
     }
 
     static long parseTimestamp(String value) {
+        Long parsed = parseTimestampOrNull(value);
+        return parsed == null ? 0L : parsed;
+    }
+
+    /**
+     * @return the parsed epoch-millis timestamp, or {@code null} when the value is absent or not a
+     * valid number — i.e. the write time is unknown.
+     */
+    static Long parseTimestampOrNull(String value) {
         if (value == null) {
-            return 0L;
+            return null;
         }
         try {
             return Long.parseLong(value);
         } catch (NumberFormatException e) {
-            return 0L;
+            return null;
         }
     }
 }
