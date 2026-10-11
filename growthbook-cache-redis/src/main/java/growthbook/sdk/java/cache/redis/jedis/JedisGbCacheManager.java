@@ -5,6 +5,8 @@ import growthbook.sdk.java.sandbox.GbCacheManager;
 import redis.clients.jedis.Jedis;
 import redis.clients.jedis.JedisPool;
 import redis.clients.jedis.Transaction;
+import redis.clients.jedis.exceptions.JedisDataException;
+import redis.clients.jedis.exceptions.JedisException;
 import redis.clients.jedis.params.ScanParams;
 import redis.clients.jedis.resps.ScanResult;
 
@@ -53,7 +55,18 @@ public final class JedisGbCacheManager extends AbstractRedisGbCacheManager {
             } else {
                 transaction.pexpire(redisKey, ttlMillis);
             }
-            transaction.exec();
+            throwOnTransactionError(transaction.exec());
+        }
+    }
+
+    private static void throwOnTransactionError(List<Object> results) {
+        if (results == null) {
+            throw new JedisException("Redis transaction was aborted; EXEC returned null");
+        }
+        for (Object result : results) {
+            if (result instanceof JedisDataException) {
+                throw (JedisDataException) result;
+            }
         }
     }
 

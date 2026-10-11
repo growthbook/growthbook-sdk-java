@@ -8,6 +8,7 @@ import org.mockito.ArgumentCaptor;
 import redis.clients.jedis.Jedis;
 import redis.clients.jedis.JedisPool;
 import redis.clients.jedis.Transaction;
+import redis.clients.jedis.exceptions.JedisDataException;
 import redis.clients.jedis.exceptions.JedisException;
 import redis.clients.jedis.params.ScanParams;
 import redis.clients.jedis.resps.ScanResult;
@@ -55,6 +56,7 @@ class JedisGbCacheManagerTest {
         // Given
         Transaction transaction = mock(Transaction.class);
         when(jedis.multi()).thenReturn(transaction);
+        when(transaction.exec()).thenReturn(Collections.emptyList());
         JedisGbCacheManager cache = JedisGbCacheManager.builder()
                 .jedisPool(pool)
                 .clock(fixedClock())
@@ -81,6 +83,7 @@ class JedisGbCacheManagerTest {
         // Given
         Transaction transaction = mock(Transaction.class);
         when(jedis.multi()).thenReturn(transaction);
+        when(transaction.exec()).thenReturn(Collections.emptyList());
         JedisGbCacheManager cache = JedisGbCacheManager.builder()
                 .jedisPool(pool)
                 .ttl(Duration.ofSeconds(30))
@@ -97,11 +100,27 @@ class JedisGbCacheManagerTest {
     }
 
     @Test
+    @DisplayName("Verify: a queued-command error in the transaction is surfaced as FeatureCacheException")
+    void transactionCommandErrorIsSurfaced() {
+        // Given
+        Transaction transaction = mock(Transaction.class);
+        when(jedis.multi()).thenReturn(transaction);
+        when(transaction.exec()).thenReturn(Arrays.asList(
+                "OK",
+                new JedisDataException("WRONGTYPE Operation against a key holding the wrong kind of value")));
+        JedisGbCacheManager cache = JedisGbCacheManager.builder().jedisPool(pool).buildManager();
+
+        // When & Then
+        assertThrows(FeatureCacheException.class, () -> cache.saveContent("k", "v"));
+    }
+
+    @Test
     @DisplayName("Verify: a sub-second TTL is honoured with millisecond precision, not truncated to 0")
     void saveContentHonoursSubSecondTtl() {
         // Given
         Transaction transaction = mock(Transaction.class);
         when(jedis.multi()).thenReturn(transaction);
+        when(transaction.exec()).thenReturn(Collections.emptyList());
         JedisGbCacheManager cache = JedisGbCacheManager.builder()
                 .jedisPool(pool)
                 .ttl(Duration.ofMillis(500))
