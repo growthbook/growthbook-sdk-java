@@ -630,6 +630,21 @@ class GBFeaturesRepositoryMainBehaviorTest {
     }
 
     @Test
+    void freshnessTimestampDoesNotBorrowLegacyCacheKey() {
+        FileCachingManagerImpl mockCacheManager = mock(FileCachingManagerImpl.class);
+        when(mockCacheManager.getLastUpdatedMillis(anyString())).thenReturn(null);
+        when(mockCacheManager.getLastUpdatedMillis("FEATURE_CACHE.json")).thenReturn(123_456L);
+
+        GBFeaturesRepository subject = GBFeaturesRepository.builder()
+                .apiHost("http://localhost")
+                .clientKey("abc-123")
+                .cacheManager(mockCacheManager)
+                .build();
+
+        assertNull(subject.getCacheLastUpdatedMillis());
+    }
+
+    @Test
     void cacheManager_isNull_whenCacheDisabled() {
         GBFeaturesRepository subject = new GBFeaturesRepository(
                 "",

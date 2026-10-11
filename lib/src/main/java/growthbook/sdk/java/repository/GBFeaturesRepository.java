@@ -1062,7 +1062,7 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
         }
 
         try {
-            return loadCacheTimestamp(manager);
+            return manager.getLastUpdatedMillis(this.cacheKey);
         } catch (RuntimeException cacheException) {
             log.warn("Failed to read the feature cache timestamp.", cacheException);
             return null;
@@ -1085,19 +1085,6 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
             data = manager.loadCache(FILE_NAME);
         }
         return data;
-    }
-
-    /**
-     * Reads the cache timestamp for this repository's per-endpoint {@link #cacheKey}, falling back to
-     * the legacy {@link #FILE_NAME} key. See {@link #loadCachedPayload(GbCacheManager)}.
-     */
-    @Nullable
-    private Long loadCacheTimestamp(GbCacheManager manager) {
-        Long timestamp = manager.getLastUpdatedMillis(this.cacheKey);
-        if (timestamp == null && !FILE_NAME.equals(this.cacheKey)) {
-            timestamp = manager.getLastUpdatedMillis(FILE_NAME);
-        }
-        return timestamp;
     }
 
     private boolean loadCachedFeaturesIfAvailable() {
