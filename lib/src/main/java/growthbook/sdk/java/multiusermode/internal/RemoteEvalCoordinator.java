@@ -286,7 +286,8 @@ public final class RemoteEvalCoordinator {
 
     private synchronized RemoteEvalService getService() {
         if (this.remoteEvalService == null) {
-            this.remoteEvalService = new RemoteEvalService(this.options.getApiHost(), this.options.getClientKey());
+            this.remoteEvalService = new RemoteEvalService(this.options.getApiHost(), this.options.getClientKey(),
+                    this.options.getRequestTimeout());
         }
         return this.remoteEvalService;
     }
