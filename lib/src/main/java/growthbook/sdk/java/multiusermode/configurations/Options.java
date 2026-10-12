@@ -535,7 +535,8 @@ public class Options {
      *
      * <p>This bounds a single request, not a whole initialization: with a retry policy of
      * {@code n} attempts, a persistently unreachable endpoint can take up to {@code n ×
-     * requestTimeout} before initialization gives up.
+     * requestTimeout} plus the policy's retry backoff between attempts before initialization
+     * gives up.
      */
     @Nullable
     private Duration requestTimeout;

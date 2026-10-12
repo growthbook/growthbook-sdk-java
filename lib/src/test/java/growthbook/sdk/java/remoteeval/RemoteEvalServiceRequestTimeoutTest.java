@@ -1,58 +1,50 @@
 package growthbook.sdk.java.remoteeval;
 
-import com.github.tomakehurst.wiremock.WireMockServer;
-import com.github.tomakehurst.wiremock.core.WireMockConfiguration;
-import growthbook.sdk.java.exception.FeatureFetchException;
-import growthbook.sdk.java.model.RequestBodyForRemoteEval;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
+import okhttp3.OkHttpClient;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
+import java.lang.reflect.Field;
 import java.time.Duration;
 
-import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
-import static com.github.tomakehurst.wiremock.client.WireMock.post;
-import static com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
 
 /**
- * Verifies that {@link RemoteEvalService} applies a configured {@code requestTimeout} to the client it
- * creates, so a remote-eval call against a stalling endpoint fails fast, and that an invalid timeout
- * is rejected up front.
+ * Verifies that {@code requestTimeout} configures the client {@link RemoteEvalService} creates: the
+ * whole-call timeout ({@code callTimeout}) and connect/read/write are all bounded, the default is
+ * applied when unset, and a negative value is rejected.
  */
 class RemoteEvalServiceRequestTimeoutTest {
 
+    private static final String API_HOST = "https://cdn.growthbook.io";
     private static final String CLIENT_KEY = "sdk-remote-eval-timeout";
-    private static final String EVAL_PATH = RemoteEvalEndpoints.EVAL_PATH_PREFIX + CLIENT_KEY;
 
-    private WireMockServer wireMock;
-
-    @BeforeEach
-    void startServer() {
-        wireMock = new WireMockServer(WireMockConfiguration.options().dynamicPort());
-        wireMock.start();
-        wireMock.stubFor(post(urlPathEqualTo(EVAL_PATH))
-                .willReturn(aResponse()
-                        .withStatus(200)
-                        .withFixedDelay(10_000)
-                        .withBody("{\"features\":{}}")));
-    }
-
-    @AfterEach
-    void stopServer() {
-        wireMock.stop();
+    @Test
+    @DisplayName("Verify: an explicit requestTimeout bounds the whole call and connect/read/write")
+    void explicitTimeoutBoundsCall() throws Exception {
+        RemoteEvalService service = new RemoteEvalService(API_HOST, CLIENT_KEY, Duration.ofMillis(300));
+        try {
+            OkHttpClient client = client(service);
+            assertEquals(300, client.callTimeoutMillis());
+            assertEquals(300, client.connectTimeoutMillis());
+            assertEquals(300, client.readTimeoutMillis());
+            assertEquals(300, client.writeTimeoutMillis());
+        } finally {
+            service.close();
+        }
     }
 
     @Test
-    @DisplayName("Verify: a configured requestTimeout fails a remote-eval fetch fast when the endpoint stalls")
-    void failsFastWhenEndpointStalls() {
-        RemoteEvalService service = new RemoteEvalService(
-                "http://localhost:" + wireMock.port(), CLIENT_KEY, Duration.ofMillis(300));
+    @DisplayName("Verify: an unset requestTimeout applies the 10s default to the remote-eval client")
+    void defaultTimeoutAppliedWhenUnset() throws Exception {
+        RemoteEvalService service = new RemoteEvalService(API_HOST, CLIENT_KEY);
         try {
-            assertTimeoutPreemptively(Duration.ofSeconds(5), () ->
-                    assertThrows(FeatureFetchException.class, () -> service.fetch(new RequestBodyForRemoteEval())));
+            OkHttpClient client = client(service);
+            assertEquals(10_000, client.callTimeoutMillis());
+            assertEquals(10_000, client.connectTimeoutMillis());
+            assertEquals(10_000, client.readTimeoutMillis());
+            assertEquals(10_000, client.writeTimeoutMillis());
         } finally {
             service.close();
         }
@@ -62,6 +54,12 @@ class RemoteEvalServiceRequestTimeoutTest {
     @DisplayName("Verify: a negative requestTimeout is rejected at construction")
     void rejectsNegativeRequestTimeout() {
         assertThrows(IllegalArgumentException.class, () ->
-                new RemoteEvalService("https://cdn.growthbook.io", CLIENT_KEY, Duration.ofMillis(-1)));
+                new RemoteEvalService(API_HOST, CLIENT_KEY, Duration.ofMillis(-1)));
+    }
+
+    private static OkHttpClient client(RemoteEvalService service) throws Exception {
+        Field field = RemoteEvalService.class.getDeclaredField("okHttpClient");
+        field.setAccessible(true);
+        return (OkHttpClient) field.get(service);
     }
 }

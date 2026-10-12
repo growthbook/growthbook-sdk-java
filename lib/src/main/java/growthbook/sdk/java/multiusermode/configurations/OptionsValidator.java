@@ -138,7 +138,7 @@ public final class OptionsValidator {
                     + " (use Duration.ZERO to disable the timeout)");
             return;
         }
-        if (requestTimeout.toMillis() > Integer.MAX_VALUE) {
+        if (requestTimeout.compareTo(Duration.ofMillis(Integer.MAX_VALUE)) > 0) {
             violations.add("requestTimeout must not exceed " + Integer.MAX_VALUE + " ms, but was "
                     + requestTimeout);
         }

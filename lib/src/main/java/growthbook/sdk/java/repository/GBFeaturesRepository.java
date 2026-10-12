@@ -970,11 +970,14 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
     }
 
     /**
-     * Applies the timeout to connect, read, and write. {@link Duration#ZERO} restores OkHttp's
-     * infinite timeout. Not applied to the SSE client, whose read stream is intentionally unbounded.
+     * Applies the timeout to the whole call ({@code callTimeout}) and to connect, read, and write.
+     * The call timeout bounds total elapsed time, so a trickle of response chunks cannot keep a read
+     * alive indefinitely. {@link Duration#ZERO} restores OkHttp's infinite timeout. Not applied to the
+     * SSE client, whose read stream is intentionally unbounded.
      */
     private static void applyRequestTimeout(OkHttpClient.Builder builder, Duration requestTimeout) {
-        builder.connectTimeout(requestTimeout)
+        builder.callTimeout(requestTimeout)
+                .connectTimeout(requestTimeout)
                 .readTimeout(requestTimeout)
                 .writeTimeout(requestTimeout);
     }

@@ -145,6 +145,15 @@ class OptionsValidatorTest {
     }
 
     @Test
+    @DisplayName("Verify: an overflowing requestTimeout is reported as a violation, not thrown as ArithmeticException")
+    void rejectsOverflowingRequestTimeout() {
+        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
+                () -> OptionsValidator.validate(
+                        validOptions().requestTimeout(Duration.ofSeconds(Long.MAX_VALUE)).build()));
+        assertTrue(ex.getMessage().contains("requestTimeout"), ex.getMessage());
+    }
+
+    @Test
     @DisplayName("Verify: rejects a non-positive remoteEvalCacheTtlSeconds")
     void rejectsNonPositiveRemoteEvalCacheTtl() {
         assertThrows(IllegalArgumentException.class,

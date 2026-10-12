@@ -74,6 +74,7 @@ public class RemoteEvalService {
     private static OkHttpClient buildTimedClient(@Nullable Duration requestTimeout) {
         Duration timeout = requestTimeout == null ? SDKConstants.DEFAULT_REQUEST_TIMEOUT : requestTimeout;
         return new OkHttpClient.Builder()
+                .callTimeout(timeout)
                 .connectTimeout(timeout)
                 .readTimeout(timeout)
                 .writeTimeout(timeout)

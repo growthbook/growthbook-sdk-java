@@ -227,6 +227,7 @@ public final class RemoteEvalCoordinator {
                 .refreshStrategy(FeatureRefreshStrategy.SERVER_SENT_EVENTS)
                 .isCacheDisabled(true)
                 .retryPolicy(this.options.getRetryPolicy())
+                .requestTimeout(this.options.getRequestTimeout())
                 .build();
         repository.addFeatureRefreshListener(this::handleInvalidationRefresh);
         this.invalidationRepository = repository;
