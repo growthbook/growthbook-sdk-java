@@ -203,6 +203,9 @@ class JedisGbCacheManagerTest {
         cache.clearCache();
 
         // Then
+        ArgumentCaptor<ScanParams> paramsCaptor = ArgumentCaptor.forClass(ScanParams.class);
+        verify(jedis).scan(eq(ScanParams.SCAN_POINTER_START), paramsCaptor.capture());
+        assertEquals(PREFIX + "*", paramsCaptor.getValue().match());
         verify(jedis).del(PREFIX + "a", PREFIX + "b");
     }
 
@@ -247,7 +250,10 @@ class JedisGbCacheManagerTest {
         // When & Then
         assertThrows(NullPointerException.class, () -> JedisGbCacheManager.create((JedisCacheOptions) null));
         assertThrows(NullPointerException.class, () -> options.jedisPool(null));
+        assertThrows(IllegalArgumentException.class, () -> options.keyPrefix(null));
+        assertThrows(IllegalArgumentException.class, () -> options.keyPrefix(""));
         assertThrows(IllegalArgumentException.class, () -> options.keyPrefix(" "));
+        assertThrows(IllegalArgumentException.class, () -> options.ttl(Duration.ofSeconds(-1)));
         assertThrows(IllegalArgumentException.class, () -> options.ttl(Duration.ZERO));
         assertThrows(IllegalArgumentException.class, () -> options.ttl(Duration.ofNanos(500)));
         assertThrows(NullPointerException.class, () -> options.clock(null));
