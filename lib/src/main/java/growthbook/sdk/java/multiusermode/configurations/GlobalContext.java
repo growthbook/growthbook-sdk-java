@@ -20,12 +20,12 @@ public class GlobalContext {
     public GlobalContext(
             @Nullable Map<String, Feature<?>> features,
             @Nullable JsonObject savedGroups,
-            @Nullable JsonObject contextualBandits,
             @Nullable List<Experiment> experiments,
             @Nullable Boolean enabled,
             @Nullable Boolean qaMode,
             @Nullable Map<String, ?> forcedVariations,
-            @Nullable Map<String, Object> forcedFeatureValues
+            @Nullable Map<String, Object> forcedFeatureValues,
+            @Nullable JsonObject contextualBandits
     ) {
         this.features = features;
         this.savedGroups = savedGroups;

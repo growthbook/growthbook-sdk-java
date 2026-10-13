@@ -389,12 +389,6 @@ public class FeatureEvaluator implements IFeatureEvaluator {
 
         ExperimentResult<T> result = experimentEvaluator.evaluateExperiment(experiment, context, key);
 
-        if (experiment.getContextualBandit() != null
-                && !(Boolean.TRUE.equals(result.getHashUsed())
-                && Boolean.TRUE.equals(result.getInExperiment()))) {
-            experiment.setContextualBandit(null);
-        }
-
         boolean inExperiment = result.getInExperiment()
                 && (result.getPassThrough() == null || !result.getPassThrough());
         if (!inExperiment) {
@@ -536,6 +530,9 @@ public class FeatureEvaluator implements IFeatureEvaluator {
             return;
         }
 
+        ArrayList<T> variations = experiment.getVariations();
+        int variationCount = variations != null ? variations.size() : 0;
+
         ContextualBanditContext leaf = null;
         List<ContextualBanditContext> contexts = definition.getContexts();
         if (contexts != null && !contexts.isEmpty()) {
@@ -546,7 +543,7 @@ public class FeatureEvaluator implements IFeatureEvaluator {
             }
         }
 
-        if (leaf != null) {
+        if (leaf != null && hasWeightsMatchingVariations(leaf.getWeights(), variationCount)) {
             experiment.setWeights(leaf.getWeights());
             experiment.setContextualBandit(ContextualBandit.builder()
                     .leafId(leaf.getLeafId())
@@ -556,8 +553,11 @@ public class FeatureEvaluator implements IFeatureEvaluator {
             return;
         }
 
-        ArrayList<T> variations = experiment.getVariations();
-        int variationCount = variations != null ? variations.size() : 0;
+        if (leaf != null) {
+            log.warn("Contextual bandit leaf {} weights do not match the {} variations, using fallback weights: {}",
+                    leaf.getLeafId(), variationCount, contextualBanditRef);
+        }
+
         ArrayList<Float> fallbackWeights = experiment.getWeights() != null
                 ? experiment.getWeights()
                 : GrowthBookUtils.getEqualWeights(variationCount);
@@ -566,6 +566,10 @@ public class FeatureEvaluator implements IFeatureEvaluator {
                 .variationWeights(fallbackWeights)
                 .banditVersion(definition.getBanditVersion())
                 .build());
+    }
+
+    private static boolean hasWeightsMatchingVariations(@Nullable ArrayList<Float> weights, int variationCount) {
+        return weights != null && weights.size() == variationCount;
     }
 
     @Nullable

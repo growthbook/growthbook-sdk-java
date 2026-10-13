@@ -260,6 +260,18 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
     }
 
     /**
+     * Allows you to get the raw {@code contextualBandits} JSON (decrypted if the endpoint is
+     * encrypted) from the last successful fetch. Pair it with
+     * {@code GBContext.builder().contextualBanditsJson(...)} in the single-context path.
+     *
+     * @return contextual bandits JSON string
+     */
+    @Nullable
+    public String getContextualBanditsJson() {
+        return this.snapshot.get().getContextualBanditsJson();
+    }
+
+    /**
      * Allows you to get the features JSON from the provided {@link GBFeaturesRepository#getFeaturesEndpoint()}.
      * You must call {@link GBFeaturesRepository#initialize()} before calling this method
      * or your features would not have loaded.
@@ -1290,13 +1302,13 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
 
         boolean featuresChanged = !Objects.equals(previous.getFeaturesJson(), payload.features)
                 || !Objects.equals(previous.getSavedGroupsJson(), payload.savedGroups)
-                || !Objects.equals(previous.getParsedContextualBandits(),
-                        newBandits == null ? new JsonObject() : newBandits);
+                || !Objects.equals(previous.getContextualBanditsJson(), payload.contextualBandits);
         // One atomic swap: readers never see this payload's features paired
         // with a previous payload's saved groups (or vice versa).
         this.snapshot.set(new FeatureSnapshot(
                 payload.features,
                 payload.savedGroups,
+                payload.contextualBandits,
                 newParsed == null ? Collections.emptyMap() : newParsed,
                 newSaved == null ? new JsonObject() : newSaved,
                 newBandits == null ? new JsonObject() : newBandits

@@ -19,6 +19,7 @@ public final class FeatureSnapshot {
     public static final FeatureSnapshot EMPTY = new FeatureSnapshot(
             GBFeaturesRepository.EMPTY_JSON_OBJECT_STRING,
             GBFeaturesRepository.EMPTY_JSON_OBJECT_STRING,
+            GBFeaturesRepository.EMPTY_JSON_OBJECT_STRING,
             Collections.emptyMap(),
             new JsonObject(),
             new JsonObject()
@@ -26,17 +27,20 @@ public final class FeatureSnapshot {
 
     private final String featuresJson;
     private final String savedGroupsJson;
+    private final String contextualBanditsJson;
     private final Map<String, Feature<?>> parsedFeatures;
     private final JsonObject parsedSavedGroups;
     private final JsonObject parsedContextualBandits;
 
     FeatureSnapshot(String featuresJson,
                     String savedGroupsJson,
+                    String contextualBanditsJson,
                     Map<String, Feature<?>> parsedFeatures,
                     JsonObject parsedSavedGroups,
                     JsonObject parsedContextualBandits) {
         this.featuresJson = featuresJson;
         this.savedGroupsJson = savedGroupsJson;
+        this.contextualBanditsJson = contextualBanditsJson;
         this.parsedFeatures = parsedFeatures;
         this.parsedSavedGroups = parsedSavedGroups;
         this.parsedContextualBandits = parsedContextualBandits;
@@ -57,7 +61,8 @@ public final class FeatureSnapshot {
                                      String savedGroupsJson,
                                      Map<String, Feature<?>> parsedFeatures,
                                      JsonObject parsedSavedGroups) {
-        return new FeatureSnapshot(featuresJson, savedGroupsJson, parsedFeatures, parsedSavedGroups, new JsonObject());
+        return new FeatureSnapshot(featuresJson, savedGroupsJson, GBFeaturesRepository.EMPTY_JSON_OBJECT_STRING,
+                parsedFeatures, parsedSavedGroups, new JsonObject());
     }
 
     /**
@@ -77,8 +82,8 @@ public final class FeatureSnapshot {
                                      Map<String, Feature<?>> parsedFeatures,
                                      JsonObject parsedSavedGroups,
                                      JsonObject parsedContextualBandits) {
-        return new FeatureSnapshot(featuresJson, savedGroupsJson, parsedFeatures, parsedSavedGroups,
-                parsedContextualBandits);
+        return new FeatureSnapshot(featuresJson, savedGroupsJson, GBFeaturesRepository.EMPTY_JSON_OBJECT_STRING,
+                parsedFeatures, parsedSavedGroups, parsedContextualBandits);
     }
 
     public String getFeaturesJson() {
@@ -87,6 +92,10 @@ public final class FeatureSnapshot {
 
     public String getSavedGroupsJson() {
         return savedGroupsJson;
+    }
+
+    public String getContextualBanditsJson() {
+        return contextualBanditsJson;
     }
 
     public Map<String, Feature<?>> getParsedFeatures() {

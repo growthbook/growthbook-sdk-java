@@ -386,7 +386,8 @@ public class ExperimentEvaluator implements IExperimentEvaluator {
                 .build();
 
         ContextualBandit contextualBandit = experiment.getContextualBandit();
-        if (contextualBandit != null && Boolean.TRUE.equals(hashUsed) && inExperiment) {
+        if (contextualBandit != null && Boolean.TRUE.equals(hashUsed) && inExperiment
+                && !Boolean.TRUE.equals(passThrough)) {
             experimentResult.setLeafId(contextualBandit.getLeafId());
             experimentResult.setVariationWeights(contextualBandit.getVariationWeights());
             experimentResult.setBanditVersion(contextualBandit.getBanditVersion());
