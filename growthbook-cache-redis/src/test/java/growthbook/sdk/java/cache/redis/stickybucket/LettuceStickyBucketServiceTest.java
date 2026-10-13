@@ -5,6 +5,7 @@ import growthbook.sdk.java.model.StickyAssignmentsDocument;
 import growthbook.sdk.java.util.GrowthBookJsonUtils;
 import io.lettuce.core.KeyValue;
 import io.lettuce.core.RedisException;
+import io.lettuce.core.ScriptOutputType;
 import io.lettuce.core.api.StatefulRedisConnection;
 import io.lettuce.core.api.sync.RedisCommands;
 import org.junit.jupiter.api.BeforeEach;
@@ -18,6 +19,8 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
+import static growthbook.sdk.java.cache.redis.stickybucket.AbstractRedisStickyBucketService.COMPARE_AND_SET_SCRIPT;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -25,9 +28,11 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 class LettuceStickyBucketServiceTest {
@@ -103,18 +108,24 @@ class LettuceStickyBucketServiceTest {
     }
 
     @Test
-    @DisplayName("Verify: saveAssignments writes the JSON-encoded document under the user key")
+    @DisplayName("Verify: saveAssignments installs the JSON-encoded document under the user key via an atomic compare-and-set")
     void saveAssignmentsWritesJsonUnderKey() {
         // Given
         StickyAssignmentsDocument doc = document("id", "123", "exp__0", "control");
+        when(commands.get("id||123")).thenReturn(null);
+        when(commands.<Long>eval(eq(COMPARE_AND_SET_SCRIPT), eq(ScriptOutputType.INTEGER), any(String[].class),
+                eq("nx"), eq(""), anyString())).thenReturn(1L);
         LettuceStickyBucketService service = new LettuceStickyBucketService(connection);
 
         // When
         service.saveAssignments(doc);
 
         // Then
+        ArgumentCaptor<String[]> keysCaptor = ArgumentCaptor.forClass(String[].class);
         ArgumentCaptor<String> valueCaptor = ArgumentCaptor.forClass(String.class);
-        verify(commands).set(eq("id||123"), valueCaptor.capture());
+        verify(commands).eval(eq(COMPARE_AND_SET_SCRIPT), eq(ScriptOutputType.INTEGER), keysCaptor.capture(),
+                eq("nx"), eq(""), valueCaptor.capture());
+        assertArrayEquals(new String[]{"id||123"}, keysCaptor.getValue());
         assertEquals(doc, GrowthBookJsonUtils.getInstance().gson
                 .fromJson(valueCaptor.getValue(), StickyAssignmentsDocument.class));
     }
@@ -131,14 +142,16 @@ class LettuceStickyBucketServiceTest {
         service.saveAssignments(new StickyAssignmentsDocument("id", null, new HashMap<>()));
 
         // Then
-        verify(commands, never()).set(anyString(), anyString());
+        verifyNoInteractions(commands);
     }
 
     @Test
     @DisplayName("Verify: saveAssignments surfaces a StickyBucketServiceException when Redis fails")
     void saveAssignmentsThrowsWhenRedisFails() {
         // Given
-        when(commands.set(anyString(), anyString())).thenThrow(new RedisException("boom"));
+        when(commands.get(anyString())).thenReturn(null);
+        when(commands.<Long>eval(anyString(), eq(ScriptOutputType.INTEGER), any(String[].class),
+                anyString(), anyString(), anyString())).thenThrow(new RedisException("boom"));
         LettuceStickyBucketService service = new LettuceStickyBucketService(connection);
         StickyAssignmentsDocument doc = document("id", "123", "exp__0", "control");
 
@@ -204,13 +217,19 @@ class LettuceStickyBucketServiceTest {
         when(commands.get("gb:sticky:id||123")).thenReturn(json(document("id", "123", "exp__0", "control")));
         LettuceStickyBucketService service = new LettuceStickyBucketService(connection, "gb:sticky:");
 
+        when(commands.<Long>eval(eq(COMPARE_AND_SET_SCRIPT), eq(ScriptOutputType.INTEGER), any(String[].class),
+                anyString(), anyString(), anyString())).thenReturn(1L);
+
         // When
         service.getAssignments("id", "123");
         service.saveAssignments(document("id", "123", "exp__0", "control"));
 
         // Then
-        verify(commands).get("gb:sticky:id||123");
-        verify(commands).set(eq("gb:sticky:id||123"), anyString());
+        ArgumentCaptor<String[]> keysCaptor = ArgumentCaptor.forClass(String[].class);
+        verify(commands, atLeastOnce()).get("gb:sticky:id||123");
+        verify(commands).eval(eq(COMPARE_AND_SET_SCRIPT), eq(ScriptOutputType.INTEGER), keysCaptor.capture(),
+                anyString(), anyString(), anyString());
+        assertArrayEquals(new String[]{"gb:sticky:id||123"}, keysCaptor.getValue());
     }
 
     @Test

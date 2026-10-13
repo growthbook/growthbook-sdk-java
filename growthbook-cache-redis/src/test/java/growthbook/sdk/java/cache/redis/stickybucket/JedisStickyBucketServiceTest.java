@@ -17,16 +17,20 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
+import static growthbook.sdk.java.cache.redis.stickybucket.AbstractRedisStickyBucketService.COMPARE_AND_SET_SCRIPT;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 class JedisStickyBucketServiceTest {
@@ -102,10 +106,13 @@ class JedisStickyBucketServiceTest {
     }
 
     @Test
-    @DisplayName("Verify: saveAssignments writes the JSON-encoded document under the user key")
+    @DisplayName("Verify: saveAssignments installs the JSON-encoded document under the user key via an atomic compare-and-set")
     void saveAssignmentsWritesJsonUnderKey() {
         // Given
         StickyAssignmentsDocument doc = document("id", "123", "exp__0", "control");
+        when(jedis.get("id||123")).thenReturn(null);
+        when(jedis.eval(eq(COMPARE_AND_SET_SCRIPT), eq(1), eq("id||123"), eq("nx"), eq(""), anyString()))
+                .thenReturn(1L);
         JedisStickyBucketService service = new JedisStickyBucketService(pool);
 
         // When
@@ -113,7 +120,7 @@ class JedisStickyBucketServiceTest {
 
         // Then
         ArgumentCaptor<String> valueCaptor = ArgumentCaptor.forClass(String.class);
-        verify(jedis).set(eq("id||123"), valueCaptor.capture());
+        verify(jedis).eval(eq(COMPARE_AND_SET_SCRIPT), eq(1), eq("id||123"), eq("nx"), eq(""), valueCaptor.capture());
         assertEquals(doc, GrowthBookJsonUtils.getInstance().gson
                 .fromJson(valueCaptor.getValue(), StickyAssignmentsDocument.class));
     }
@@ -130,14 +137,16 @@ class JedisStickyBucketServiceTest {
         service.saveAssignments(new StickyAssignmentsDocument("id", null, new HashMap<>()));
 
         // Then
-        verify(jedis, never()).set(anyString(), anyString());
+        verifyNoInteractions(jedis);
     }
 
     @Test
     @DisplayName("Verify: saveAssignments surfaces a StickyBucketServiceException when Redis fails")
     void saveAssignmentsThrowsWhenRedisFails() {
         // Given
-        when(jedis.set(anyString(), anyString())).thenThrow(new JedisException("boom"));
+        when(jedis.get(anyString())).thenReturn(null);
+        when(jedis.eval(anyString(), anyInt(), anyString(), anyString(), anyString(), anyString()))
+                .thenThrow(new JedisException("boom"));
         JedisStickyBucketService service = new JedisStickyBucketService(pool);
         StickyAssignmentsDocument doc = document("id", "123", "exp__0", "control");
 
@@ -200,13 +209,16 @@ class JedisStickyBucketServiceTest {
         when(jedis.get("gb:sticky:id||123")).thenReturn(json(document("id", "123", "exp__0", "control")));
         JedisStickyBucketService service = new JedisStickyBucketService(pool, "gb:sticky:");
 
+        when(jedis.eval(eq(COMPARE_AND_SET_SCRIPT), eq(1), eq("gb:sticky:id||123"), anyString(), anyString(), anyString()))
+                .thenReturn(1L);
+
         // When
         service.getAssignments("id", "123");
         service.saveAssignments(document("id", "123", "exp__0", "control"));
 
         // Then
-        verify(jedis).get("gb:sticky:id||123");
-        verify(jedis).set(eq("gb:sticky:id||123"), anyString());
+        verify(jedis, atLeastOnce()).get("gb:sticky:id||123");
+        verify(jedis).eval(eq(COMPARE_AND_SET_SCRIPT), eq(1), eq("gb:sticky:id||123"), anyString(), anyString(), anyString());
     }
 
     @Test

@@ -49,9 +49,14 @@ public final class JedisStickyBucketService extends AbstractRedisStickyBucketSer
     }
 
     @Override
-    protected void write(String redisKey, String json) {
+    protected boolean compareAndSet(String redisKey, String expected, String updated) {
         try (Jedis jedis = jedisPool.getResource()) {
-            jedis.set(redisKey, json);
+            Object result = jedis.eval(
+                    COMPARE_AND_SET_SCRIPT, 1, redisKey,
+                    expected == null ? "nx" : "cas",
+                    expected == null ? "" : expected,
+                    updated);
+            return result instanceof Long && (Long) result == 1L;
         }
     }
 

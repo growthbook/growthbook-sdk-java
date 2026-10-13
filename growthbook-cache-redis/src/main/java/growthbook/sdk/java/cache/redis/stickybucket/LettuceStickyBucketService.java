@@ -1,6 +1,7 @@
 package growthbook.sdk.java.cache.redis.stickybucket;
 
 import io.lettuce.core.KeyValue;
+import io.lettuce.core.ScriptOutputType;
 import io.lettuce.core.api.StatefulRedisConnection;
 import io.lettuce.core.api.sync.RedisCommands;
 
@@ -50,8 +51,13 @@ public final class LettuceStickyBucketService extends AbstractRedisStickyBucketS
     }
 
     @Override
-    protected void write(String redisKey, String json) {
-        commands.set(redisKey, json);
+    protected boolean compareAndSet(String redisKey, String expected, String updated) {
+        Long result = commands.eval(
+                COMPARE_AND_SET_SCRIPT, ScriptOutputType.INTEGER, new String[]{redisKey},
+                expected == null ? "nx" : "cas",
+                expected == null ? "" : expected,
+                updated);
+        return result != null && result == 1L;
     }
 
     @Override

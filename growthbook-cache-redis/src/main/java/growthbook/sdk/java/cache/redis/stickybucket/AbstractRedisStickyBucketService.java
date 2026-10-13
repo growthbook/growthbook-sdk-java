@@ -30,9 +30,15 @@ import java.util.Map;
  * cache surfaces {@code FeatureCacheException}. An absent key is a normal miss ({@code null}), not a
  * failure.
  *
- * <p>Concrete subclasses only translate the three primitives ({@link #read}, {@link #write},
+ * <p>Concrete subclasses only translate the three primitives ({@link #read}, {@link #compareAndSet},
  * {@link #readMany}) to their client's API. Because assignments are independent per key, a service
  * built on a thread-safe client (Jedis pool, Lettuce connection) is safe for concurrent use.
+ *
+ * <p><strong>Concurrent saves.</strong> The SDK builds the document to save by merging new
+ * assignments onto a copy it read at the start of evaluation, so a blind overwrite would let two
+ * concurrent requests erase each other's assignments. {@link #saveAssignments} instead re-reads the
+ * current Redis document, merges onto it (the incoming assignments win on conflict) and installs the
+ * result with an atomic compare-and-set, retrying when a competing writer slips in between.
  */
 public abstract class AbstractRedisStickyBucketService implements StickyBucketService {
 
@@ -41,6 +47,28 @@ public abstract class AbstractRedisStickyBucketService implements StickyBucketSe
 
     /** Default namespace prefix. Empty for wire-compatibility with the TypeScript service. */
     public static final String DEFAULT_KEY_PREFIX = "";
+
+    /**
+     * Compare-and-set over a single key. {@code ARGV[1]} is the mode ({@code nx} to set only when the
+     * key is absent, {@code cas} to set only when the current value equals {@code ARGV[2]}),
+     * {@code ARGV[3]} is the new value. Returns 1 when the write happened, 0 otherwise.
+     */
+    protected static final String COMPARE_AND_SET_SCRIPT =
+            "local current = redis.call('GET', KEYS[1])\n"
+                    + "if ARGV[1] == 'nx' then\n"
+                    + "    if current == false then\n"
+                    + "        redis.call('SET', KEYS[1], ARGV[3])\n"
+                    + "        return 1\n"
+                    + "    end\n"
+                    + "    return 0\n"
+                    + "end\n"
+                    + "if current == ARGV[2] then\n"
+                    + "    redis.call('SET', KEYS[1], ARGV[3])\n"
+                    + "    return 1\n"
+                    + "end\n"
+                    + "return 0";
+
+    private static final int MAX_SAVE_ATTEMPTS = 5;
 
     private final Gson gson = GrowthBookJsonUtils.getInstance().gson;
     private final String keyPrefix;
@@ -62,7 +90,31 @@ public abstract class AbstractRedisStickyBucketService implements StickyBucketSe
         if (document == null || document.getAttributeName() == null || document.getAttributeValue() == null) {
             return;
         }
-        store(redisKey(docKey(document.getAttributeName(), document.getAttributeValue())), gson.toJson(document));
+        if (document.getAssignments() == null) {
+            throw new StickyBucketServiceException(
+                    "Sticky bucket assignments document is missing its assignments map");
+        }
+        String redisKey = redisKey(docKey(document.getAttributeName(), document.getAttributeValue()));
+        for (int attempt = 0; attempt < MAX_SAVE_ATTEMPTS; attempt++) {
+            String currentRaw = fetch(redisKey);
+            String updated = gson.toJson(mergeOnto(currentRaw, document));
+            if (persist(redisKey, currentRaw, updated)) {
+                return;
+            }
+        }
+        throw new StickyBucketServiceException(
+                "Failed to persist sticky bucket assignments to Redis after " + MAX_SAVE_ATTEMPTS
+                        + " concurrent update attempts");
+    }
+
+    private StickyAssignmentsDocument mergeOnto(String currentRaw, StickyAssignmentsDocument incoming) {
+        Map<String, String> merged = new LinkedHashMap<>();
+        StickyAssignmentsDocument current = deserialize(currentRaw);
+        if (current != null && current.getAssignments() != null) {
+            merged.putAll(current.getAssignments());
+        }
+        merged.putAll(incoming.getAssignments());
+        return new StickyAssignmentsDocument(incoming.getAttributeName(), incoming.getAttributeValue(), merged);
     }
 
     @Override
@@ -138,9 +190,9 @@ public abstract class AbstractRedisStickyBucketService implements StickyBucketSe
         }
     }
 
-    private void store(String redisKey, String json) {
+    private boolean persist(String redisKey, String expected, String updated) {
         try {
-            write(redisKey, json);
+            return compareAndSet(redisKey, expected, updated);
         } catch (RuntimeException e) {
             throw new StickyBucketServiceException("Failed to persist sticky bucket assignments to Redis", e);
         }
@@ -150,11 +202,17 @@ public abstract class AbstractRedisStickyBucketService implements StickyBucketSe
         if (raw == null || raw.isEmpty()) {
             return null;
         }
+        StickyAssignmentsDocument document;
         try {
-            return gson.fromJson(raw, StickyAssignmentsDocument.class);
+            document = gson.fromJson(raw, StickyAssignmentsDocument.class);
         } catch (RuntimeException e) {
             throw new StickyBucketServiceException("Malformed sticky bucket assignments payload in Redis", e);
         }
+        if (document != null && document.getAssignments() == null) {
+            throw new StickyBucketServiceException(
+                    "Sticky bucket assignments payload in Redis is missing its assignments map");
+        }
+        return document;
     }
 
     /**
@@ -164,12 +222,17 @@ public abstract class AbstractRedisStickyBucketService implements StickyBucketSe
     protected abstract String read(String redisKey);
 
     /**
-     * Stores the JSON payload for a key, without expiry.
+     * Atomically installs {@code updated} for {@code redisKey}, without expiry, only when the current
+     * stored value still matches {@code expected}. A {@code null} {@code expected} means "write only
+     * if the key is currently absent".
      *
      * @param redisKey the namespaced key
-     * @param json     the JSON-encoded {@link StickyAssignmentsDocument}
+     * @param expected the value previously read, or {@code null} to require an absent key
+     * @param updated  the JSON-encoded {@link StickyAssignmentsDocument} to store
+     * @return {@code true} when the value was written, {@code false} when a competing writer changed
+     * it first (the caller re-reads, re-merges and retries)
      */
-    protected abstract void write(String redisKey, String json);
+    protected abstract boolean compareAndSet(String redisKey, String expected, String updated);
 
     /**
      * @param redisKeys namespaced keys to fetch, in order
