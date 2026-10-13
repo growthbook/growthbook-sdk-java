@@ -52,6 +52,16 @@ public class TransformationUtil {
         }
     }
 
+    /**
+     * Parses the raw {@code contextualBandits} payload into a {@link JsonObject} keyed by bandit ref.
+     * A {@code null} or empty input and malformed JSON both yield an empty {@link JsonObject} (never
+     * an exception), while the JSON literal {@code null} yields {@code null} (Gson's behavior). Callers
+     * must treat a {@code null} return as "no contextual bandits". Stateless and thread-safe.
+     *
+     * @param contextualBanditsJsonString raw contextual bandits JSON, or {@code null}
+     * @return the parsed definitions, an empty object for absent/malformed input, or {@code null} for
+     * a literal JSON {@code null}
+     */
     public static JsonObject transformContextualBandits(String contextualBanditsJsonString) {
         if (contextualBanditsJsonString == null || contextualBanditsJsonString.isEmpty()) {
             return new JsonObject();

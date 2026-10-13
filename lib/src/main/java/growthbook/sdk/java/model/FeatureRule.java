@@ -259,6 +259,62 @@ public class FeatureRule<ValueType> extends SuperTypeToken<ValueType> implements
         );
     }
 
+    public FeatureRule(
+            @Nullable String id,
+            @Nullable String key,
+            @Nullable Float coverage,
+            @Nullable OptionalField<ValueType> force,
+            @Nullable ArrayList<ValueType> variations,
+            @Nullable ArrayList<Float> weights,
+            @Nullable Namespace namespace,
+            String hashAttribute,
+            @Nullable JsonObject condition,
+            @Nullable ArrayList<ParentCondition> parentConditions,
+            @Nullable Integer hashVersion,
+            @Nullable BucketRange range,
+            @Nullable ArrayList<BucketRange> ranges,
+            @Nullable ArrayList<VariationMeta> meta,
+            @Nullable ArrayList<Filter> filters,
+            @Nullable String seed,
+            @Nullable String name,
+            @Nullable String phase,
+            @Nullable String fallbackAttribute,
+            @Nullable Boolean disableStickyBucketing,
+            @Nullable Integer bucketVersion,
+            @Nullable Integer minBucketVersion,
+            @Nullable Map<String, Object> customFields,
+            @Nullable ArrayList<TrackData<ValueType>> tracks
+    ) {
+        this(
+                id,
+                key,
+                coverage,
+                force,
+                variations,
+                weights,
+                namespace,
+                hashAttribute,
+                condition,
+                parentConditions,
+                hashVersion,
+                range,
+                ranges,
+                meta,
+                filters,
+                seed,
+                name,
+                phase,
+                fallbackAttribute,
+                disableStickyBucketing,
+                bucketVersion,
+                minBucketVersion,
+                customFields,
+                tracks,
+                null,
+                null
+        );
+    }
+
     @Override
     public FeatureRule<ValueType> deserialize(JsonElement json, Type typeOfT, JsonDeserializationContext context) {
         JsonObject jsonObject = json.getAsJsonObject();

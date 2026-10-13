@@ -699,7 +699,9 @@ public class NativeJavaGbFeatureRepository implements IGBFeaturesRepository {
                         refreshedSavedGroups = DecryptionUtils.decrypt(encryptedSavedGroupsJson, this.encryptionKey).trim();
                     }
 
-                    if (encryptedContextualBanditsJsonElement != null) {
+                    if (encryptedContextualBanditsJsonElement != null
+                            && encryptedContextualBanditsJsonElement.isJsonPrimitive()
+                            && encryptedContextualBanditsJsonElement.getAsJsonPrimitive().isString()) {
                         String encryptedContextualBanditsJson = encryptedContextualBanditsJsonElement.getAsString();
                         refreshedContextualBandits =
                                 DecryptionUtils.decrypt(encryptedContextualBanditsJson, this.encryptionKey).trim();

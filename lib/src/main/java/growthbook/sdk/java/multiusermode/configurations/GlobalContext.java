@@ -37,6 +37,22 @@ public class GlobalContext {
         this.forcedFeatureValues = forcedFeatureValues;
     }
 
+    /**
+     * Delegating constructor preserving the pre-contextual-bandit positional signature. Passes a
+     * {@code null} (empty) contextual bandit map.
+     */
+    public GlobalContext(
+            @Nullable Map<String, Feature<?>> features,
+            @Nullable JsonObject savedGroups,
+            @Nullable List<Experiment> experiments,
+            @Nullable Boolean enabled,
+            @Nullable Boolean qaMode,
+            @Nullable Map<String, ?> forcedVariations,
+            @Nullable Map<String, Object> forcedFeatureValues
+    ) {
+        this(features, savedGroups, experiments, enabled, qaMode, forcedVariations, forcedFeatureValues, null);
+    }
+
 
     /**
      * Keys are unique identifiers for the features and the values are Feature objects.

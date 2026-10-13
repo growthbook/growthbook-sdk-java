@@ -61,7 +61,7 @@ public final class FeatureSnapshot {
                                      String savedGroupsJson,
                                      Map<String, Feature<?>> parsedFeatures,
                                      JsonObject parsedSavedGroups) {
-        return new FeatureSnapshot(featuresJson, savedGroupsJson, GBFeaturesRepository.EMPTY_JSON_OBJECT_STRING,
+        return new FeatureSnapshot(featuresJson, savedGroupsJson, "",
                 parsedFeatures, parsedSavedGroups, new JsonObject());
     }
 
@@ -82,8 +82,10 @@ public final class FeatureSnapshot {
                                      Map<String, Feature<?>> parsedFeatures,
                                      JsonObject parsedSavedGroups,
                                      JsonObject parsedContextualBandits) {
-        return new FeatureSnapshot(featuresJson, savedGroupsJson, GBFeaturesRepository.EMPTY_JSON_OBJECT_STRING,
-                parsedFeatures, parsedSavedGroups, parsedContextualBandits);
+        return new FeatureSnapshot(featuresJson, savedGroupsJson,
+                parsedContextualBandits == null ? "" : parsedContextualBandits.toString(),
+                parsedFeatures, parsedSavedGroups,
+                parsedContextualBandits == null ? new JsonObject() : parsedContextualBandits);
     }
 
     public String getFeaturesJson() {

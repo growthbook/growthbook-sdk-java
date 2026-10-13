@@ -15,8 +15,9 @@ import java.util.ArrayList;
  * and the weights that were applied to the {@link Experiment}. Attached to the experiment during
  * evaluation and, when the user is bucketed in, copied onto {@link ExperimentResult} for tracking.
  *
- * <p>A {@code leafId} of {@code -1} means no leaf matched (or the definition was missing) and the
- * experiment fell back to its aggregate or equal weights.
+ * <p>A {@code leafId} of {@code -1} means no leaf matched and the experiment fell back to its
+ * aggregate or equal weights. When the definition is missing entirely, no {@code ContextualBandit}
+ * is attached at all (the experiment evaluates as an ordinary one).
  */
 @Data
 @Builder

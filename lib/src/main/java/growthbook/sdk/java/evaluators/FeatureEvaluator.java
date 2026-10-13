@@ -543,8 +543,9 @@ public class FeatureEvaluator implements IFeatureEvaluator {
             }
         }
 
-        if (leaf != null && hasWeightsMatchingVariations(leaf.getWeights(), variationCount)) {
+        if (leaf != null && isUsableWeights(leaf.getWeights(), variationCount)) {
             experiment.setWeights(leaf.getWeights());
+            experiment.setRanges(null);
             experiment.setContextualBandit(ContextualBandit.builder()
                     .leafId(leaf.getLeafId())
                     .variationWeights(leaf.getWeights())
@@ -554,11 +555,11 @@ public class FeatureEvaluator implements IFeatureEvaluator {
         }
 
         if (leaf != null) {
-            log.warn("Contextual bandit leaf {} weights do not match the {} variations, using fallback weights: {}",
+            log.warn("Contextual bandit leaf {} has unusable weights for {} variations, using fallback weights: {}",
                     leaf.getLeafId(), variationCount, contextualBanditRef);
         }
 
-        ArrayList<Float> fallbackWeights = experiment.getWeights() != null
+        ArrayList<Float> fallbackWeights = isUsableWeights(experiment.getWeights(), variationCount)
                 ? experiment.getWeights()
                 : GrowthBookUtils.getEqualWeights(variationCount);
         experiment.setContextualBandit(ContextualBandit.builder()
@@ -568,8 +569,23 @@ public class FeatureEvaluator implements IFeatureEvaluator {
                 .build());
     }
 
-    private static boolean hasWeightsMatchingVariations(@Nullable ArrayList<Float> weights, int variationCount) {
-        return weights != null && weights.size() == variationCount;
+    /**
+     * Mirrors {@link GrowthBookUtils#getBucketRanges} acceptance: weights are usable only when
+     * present, one per variation, free of null entries, and summing to 1 (within rounding).
+     * Otherwise bucketing would silently substitute equal weights, so the leaf must fall back.
+     */
+    private static boolean isUsableWeights(@Nullable ArrayList<Float> weights, int variationCount) {
+        if (weights == null || weights.size() != variationCount) {
+            return false;
+        }
+        float sum = 0f;
+        for (Float weight : weights) {
+            if (weight == null) {
+                return false;
+            }
+            sum += weight;
+        }
+        return sum >= 0.99f && sum <= 1.01f;
     }
 
     @Nullable
