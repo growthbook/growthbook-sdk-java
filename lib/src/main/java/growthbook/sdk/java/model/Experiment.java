@@ -4,6 +4,7 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonSyntaxException;
 import com.google.gson.annotations.SerializedName;
+import growthbook.sdk.java.model.bandit.ContextualBandit;
 import growthbook.sdk.java.util.GrowthBookJsonUtils;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -158,6 +159,13 @@ public class Experiment<ValueType> {
     @Nullable
     Map<String, Object> customFields;
 
+    /**
+     * When this experiment was produced from a contextual bandit rule, the resolved leaf and the
+     * weights applied for the current user. {@code null} for ordinary experiments.
+     */
+    @Nullable
+    ContextualBandit contextualBandit;
+
     public Experiment(
             String key,
             ArrayList<ValueType> variations,
@@ -203,6 +211,7 @@ public class Experiment<ValueType> {
                 disableStickyBucketing,
                 bucketVersion,
                 minBucketVersion,
+                null,
                 null
         );
     }

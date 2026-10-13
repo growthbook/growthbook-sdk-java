@@ -20,6 +20,7 @@ public final class FeatureSnapshot {
             GBFeaturesRepository.EMPTY_JSON_OBJECT_STRING,
             GBFeaturesRepository.EMPTY_JSON_OBJECT_STRING,
             Collections.emptyMap(),
+            new JsonObject(),
             new JsonObject()
     );
 
@@ -27,21 +28,24 @@ public final class FeatureSnapshot {
     private final String savedGroupsJson;
     private final Map<String, Feature<?>> parsedFeatures;
     private final JsonObject parsedSavedGroups;
+    private final JsonObject parsedContextualBandits;
 
     FeatureSnapshot(String featuresJson,
                     String savedGroupsJson,
                     Map<String, Feature<?>> parsedFeatures,
-                    JsonObject parsedSavedGroups) {
+                    JsonObject parsedSavedGroups,
+                    JsonObject parsedContextualBandits) {
         this.featuresJson = featuresJson;
         this.savedGroupsJson = savedGroupsJson;
         this.parsedFeatures = parsedFeatures;
         this.parsedSavedGroups = parsedSavedGroups;
+        this.parsedContextualBandits = parsedContextualBandits;
     }
 
     /**
-     * Builds a snapshot from pre-parsed parts. Intended for tests and callers
-     * constructing synthetic payloads; the repository builds its own snapshots
-     * from fetched responses.
+     * Builds a snapshot from pre-parsed parts, with no contextual bandits. Intended for tests and
+     * callers constructing synthetic payloads; the repository builds its own snapshots from fetched
+     * responses.
      *
      * @param featuresJson      raw features JSON
      * @param savedGroupsJson   raw saved groups JSON
@@ -53,7 +57,28 @@ public final class FeatureSnapshot {
                                      String savedGroupsJson,
                                      Map<String, Feature<?>> parsedFeatures,
                                      JsonObject parsedSavedGroups) {
-        return new FeatureSnapshot(featuresJson, savedGroupsJson, parsedFeatures, parsedSavedGroups);
+        return new FeatureSnapshot(featuresJson, savedGroupsJson, parsedFeatures, parsedSavedGroups, new JsonObject());
+    }
+
+    /**
+     * Builds a snapshot from pre-parsed parts, including contextual bandit definitions. Intended for
+     * tests and callers constructing synthetic payloads; the repository builds its own snapshots from
+     * fetched responses.
+     *
+     * @param featuresJson            raw features JSON
+     * @param savedGroupsJson         raw saved groups JSON
+     * @param parsedFeatures          parsed feature definitions
+     * @param parsedSavedGroups       parsed saved groups
+     * @param parsedContextualBandits parsed contextual bandit definitions
+     * @return an immutable snapshot of the supplied parts
+     */
+    public static FeatureSnapshot of(String featuresJson,
+                                     String savedGroupsJson,
+                                     Map<String, Feature<?>> parsedFeatures,
+                                     JsonObject parsedSavedGroups,
+                                     JsonObject parsedContextualBandits) {
+        return new FeatureSnapshot(featuresJson, savedGroupsJson, parsedFeatures, parsedSavedGroups,
+                parsedContextualBandits);
     }
 
     public String getFeaturesJson() {
@@ -70,5 +95,9 @@ public final class FeatureSnapshot {
 
     public JsonObject getParsedSavedGroups() {
         return parsedSavedGroups;
+    }
+
+    public JsonObject getParsedContextualBandits() {
+        return parsedContextualBandits;
     }
 }

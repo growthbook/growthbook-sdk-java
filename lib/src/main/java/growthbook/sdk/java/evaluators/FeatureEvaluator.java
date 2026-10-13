@@ -1,8 +1,13 @@
 package growthbook.sdk.java.evaluators;
 
+import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import com.google.gson.JsonSyntaxException;
 import growthbook.sdk.java.util.GrowthBookJsonUtils;
 import growthbook.sdk.java.util.GrowthBookUtils;
+import growthbook.sdk.java.model.bandit.ContextualBandit;
+import growthbook.sdk.java.model.bandit.ContextualBanditContext;
+import growthbook.sdk.java.model.bandit.ContextualBanditDefinition;
 import growthbook.sdk.java.model.ParentCondition;
 import growthbook.sdk.java.model.Experiment;
 import growthbook.sdk.java.model.ExperimentResult;
@@ -26,6 +31,8 @@ import java.util.*;
 public class FeatureEvaluator implements IFeatureEvaluator {
 
     private static final Object NO_FORCED_FEATURE_VALUE = new Object();
+
+    private static final int CONTEXTUAL_BANDIT_FALLBACK_LEAF_ID = -1;
 
     private final ConditionEvaluator conditionEvaluator = new ConditionEvaluator();
     private final GrowthBookJsonUtils jsonUtils = GrowthBookJsonUtils.getInstance();
@@ -345,7 +352,9 @@ public class FeatureEvaluator implements IFeatureEvaluator {
      */
     @Nullable
     private <T> FeatureResult<T> evaluateExperimentRule(FeatureRule<T> rule, String key, EvaluationContext context) {
-        ArrayList<T> variations = rule.getVariations();
+        ArrayList<T> variations = rule.getContextualVariations() != null
+                ? rule.getContextualVariations()
+                : rule.getVariations();
         if (variations == null) {
             return null;
         }
@@ -374,7 +383,18 @@ public class FeatureEvaluator implements IFeatureEvaluator {
                 .customFields(rule.getCustomFields())
                 .build();
 
+        if (rule.getContextualBanditRef() != null) {
+            buildContextualBanditExperiment(experiment, rule.getContextualBanditRef(), context);
+        }
+
         ExperimentResult<T> result = experimentEvaluator.evaluateExperiment(experiment, context, key);
+
+        if (experiment.getContextualBandit() != null
+                && !(Boolean.TRUE.equals(result.getHashUsed())
+                && Boolean.TRUE.equals(result.getInExperiment()))) {
+            experiment.setContextualBandit(null);
+        }
+
         boolean inExperiment = result.getInExperiment()
                 && (result.getPassThrough() == null || !result.getPassThrough());
         if (!inExperiment) {
@@ -481,6 +501,91 @@ public class FeatureEvaluator implements IFeatureEvaluator {
         }
 
         return NO_FORCED_FEATURE_VALUE;
+    }
+
+    /**
+     * Applies a contextual bandit definition to an experiment before bucketing: selects the leaf
+     * whose condition matches the user and overrides the experiment's weights with that leaf's
+     * weights, recording the selection on {@link Experiment#getContextualBandit()}.
+     *
+     * <p>If the reference is missing from the payload the experiment is left untouched (aggregate
+     * weights apply). If a definition is present but no leaf matches, a fallback marker
+     * ({@link #CONTEXTUAL_BANDIT_FALLBACK_LEAF_ID}) is recorded and the experiment's existing or
+     * equal weights are used.
+     */
+    private <T> void buildContextualBanditExperiment(
+            Experiment<T> experiment,
+            String contextualBanditRef,
+            EvaluationContext context
+    ) {
+        JsonObject contextualBandits = context.getGlobal().getContextualBandits();
+        JsonElement definitionElement = contextualBandits != null ? contextualBandits.get(contextualBanditRef) : null;
+        if (definitionElement == null || definitionElement.isJsonNull()) {
+            log.debug("Contextual bandit ref not found in payload, using aggregate weights: {}", contextualBanditRef);
+            return;
+        }
+
+        ContextualBanditDefinition definition;
+        try {
+            definition = jsonUtils.gson.fromJson(definitionElement, ContextualBanditDefinition.class);
+        } catch (JsonSyntaxException e) {
+            log.debug("Contextual bandit definition failed to parse, using aggregate weights: {}", contextualBanditRef);
+            return;
+        }
+        if (definition == null) {
+            return;
+        }
+
+        ContextualBanditContext leaf = null;
+        List<ContextualBanditContext> contexts = definition.getContexts();
+        if (contexts != null && !contexts.isEmpty()) {
+            try {
+                leaf = selectContextualBanditLeaf(contexts, context);
+            } catch (RuntimeException e) {
+                log.debug("Contextual bandit leaf selection failed, using fallback weights: {}", contextualBanditRef, e);
+            }
+        }
+
+        if (leaf != null) {
+            experiment.setWeights(leaf.getWeights());
+            experiment.setContextualBandit(ContextualBandit.builder()
+                    .leafId(leaf.getLeafId())
+                    .variationWeights(leaf.getWeights())
+                    .banditVersion(definition.getBanditVersion())
+                    .build());
+            return;
+        }
+
+        ArrayList<T> variations = experiment.getVariations();
+        int variationCount = variations != null ? variations.size() : 0;
+        ArrayList<Float> fallbackWeights = experiment.getWeights() != null
+                ? experiment.getWeights()
+                : GrowthBookUtils.getEqualWeights(variationCount);
+        experiment.setContextualBandit(ContextualBandit.builder()
+                .leafId(CONTEXTUAL_BANDIT_FALLBACK_LEAF_ID)
+                .variationWeights(fallbackWeights)
+                .banditVersion(definition.getBanditVersion())
+                .build());
+    }
+
+    @Nullable
+    private ContextualBanditContext selectContextualBanditLeaf(
+            List<ContextualBanditContext> contexts,
+            EvaluationContext context
+    ) {
+        for (ContextualBanditContext leaf : contexts) {
+            if (leaf == null) {
+                continue;
+            }
+            JsonObject condition = leaf.getCondition() != null ? leaf.getCondition() : new JsonObject();
+            if (Boolean.TRUE.equals(conditionEvaluator.evaluateCondition(
+                    context.getUser().getAttributes(),
+                    condition,
+                    context.getGlobal().getSavedGroups()))) {
+                return leaf;
+            }
+        }
+        return null;
     }
 
     /**

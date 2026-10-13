@@ -160,6 +160,12 @@ public class NativeJavaGbFeatureRepository implements IGBFeaturesRepository {
     private final AtomicReference<String> savedGroupsJson = new AtomicReference<>(EMPTY_JSON_OBJECT_STRING);
 
     /**
+     * Raw {@code contextualBandits} JSON (decrypted if the endpoint is encrypted) from the last
+     * successful fetch. Exposed via {@link NativeJavaGbFeatureRepository#getContextualBanditsJson()}.
+     */
+    private final AtomicReference<String> contextualBanditsJson = new AtomicReference<>(EMPTY_JSON_OBJECT_STRING);
+
+    /**
      * Allows you to get the features JSON from the provided {@link NativeJavaGbFeatureRepository#getFeaturesEndpoint()}.
      * You must call {@link NativeJavaGbFeatureRepository#initialize()} before calling this method
      * or your features would not have loaded.
@@ -289,6 +295,15 @@ public class NativeJavaGbFeatureRepository implements IGBFeaturesRepository {
     @Nullable
     public String getSavedGroupsJson() {
         return savedGroupsJson.get();
+    }
+
+    /**
+     * Get method for contextual bandits json
+     * @return contextual bandits Json in format of String type
+     */
+    @Nullable
+    public String getContextualBanditsJson() {
+        return contextualBanditsJson.get();
     }
 
     /**
@@ -664,10 +679,13 @@ public class NativeJavaGbFeatureRepository implements IGBFeaturesRepository {
 
                 String refreshedFeatures;
                 String refreshedSavedGroups = "";
+                String refreshedContextualBandits = "";
 
                 if (this.encryptionKey != null) {
                     JsonElement encryptedFeaturesJsonElement = jsonObject.get(FeatureResponseKey.ENCRYPTED_FEATURES_KEY.getKey());
                     JsonElement encryptedSavedGroupsJsonElement = jsonObject.get(FeatureResponseKey.ENCRYPTED_SAVED_GROUPS_KEY.getKey());
+                    JsonElement encryptedContextualBanditsJsonElement =
+                            jsonObject.get(FeatureResponseKey.ENCRYPTED_CONTEXTUAL_BANDITS_KEY.getKey());
                     if (encryptedFeaturesJsonElement == null) {
                         log.error("encryptionKey provided but endpoint not encrypted");
 
@@ -681,11 +699,18 @@ public class NativeJavaGbFeatureRepository implements IGBFeaturesRepository {
                         refreshedSavedGroups = DecryptionUtils.decrypt(encryptedSavedGroupsJson, this.encryptionKey).trim();
                     }
 
+                    if (encryptedContextualBanditsJsonElement != null) {
+                        String encryptedContextualBanditsJson = encryptedContextualBanditsJsonElement.getAsString();
+                        refreshedContextualBandits =
+                                DecryptionUtils.decrypt(encryptedContextualBanditsJson, this.encryptionKey).trim();
+                    }
+
                     String encryptedFeaturesJson = encryptedFeaturesJsonElement.getAsString();
                     refreshedFeatures = DecryptionUtils.decrypt(encryptedFeaturesJson, this.encryptionKey).trim();
                 } else {
                     JsonElement featuresJsonElement = jsonObject.get(FeatureResponseKey.FEATURE_KEY.getKey());
                     JsonElement savedGroupJsonElement = jsonObject.get(FeatureResponseKey.SAVED_GROUP_KEY.getKey());
+                    JsonElement contextualBanditsJsonElement = jsonObject.get(FeatureResponseKey.CONTEXTUAL_BANDITS_KEY.getKey());
 
                     if (featuresJsonElement == null) {
                         log.error("No features found");
@@ -699,13 +724,18 @@ public class NativeJavaGbFeatureRepository implements IGBFeaturesRepository {
                     if (savedGroupJsonElement != null) {
                         refreshedSavedGroups = savedGroupJsonElement.toString().trim();
                     }
+                    if (contextualBanditsJsonElement != null) {
+                        refreshedContextualBandits = contextualBanditsJsonElement.toString().trim();
+                    }
                 }
 
                 boolean featuresChanged = !Objects.equals(this.featuresJson.get(), refreshedFeatures)
-                        || !Objects.equals(this.savedGroupsJson.get(), refreshedSavedGroups);
+                        || !Objects.equals(this.savedGroupsJson.get(), refreshedSavedGroups)
+                        || !Objects.equals(this.contextualBanditsJson.get(), refreshedContextualBandits);
 
                 this.featuresJson.set(refreshedFeatures);
                 this.savedGroupsJson.set(refreshedSavedGroups);
+                this.contextualBanditsJson.set(refreshedContextualBandits);
                 this.hasFeatureData.set(true);
                 if (!isFromCache) {
                     this.lastSuccessfulFetchAtMillis.set(System.currentTimeMillis());

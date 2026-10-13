@@ -82,6 +82,14 @@ final class TrackingEvent {
     private final String featureId;
 
     @Nullable
+    @SerializedName("leaf_id")
+    private final Integer leafId;
+
+    @Nullable
+    @SerializedName("bandit_version")
+    private final Integer banditVersion;
+
+    @Nullable
     @SerializedName("feature_key")
     private final String featureKey;
 
@@ -121,6 +129,8 @@ final class TrackingEvent {
                 .hashAttribute(result != null ? result.getHashAttribute() : null)
                 .hashValue(result != null ? result.getHashValue() : null)
                 .featureId(result != null ? emptyToNull(result.getFeatureId()) : null)
+                .leafId(result != null ? result.getLeafId() : null)
+                .banditVersion(result != null ? result.getBanditVersion() : null)
                 .build();
     }
 

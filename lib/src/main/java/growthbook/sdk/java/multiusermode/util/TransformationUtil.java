@@ -52,6 +52,19 @@ public class TransformationUtil {
         }
     }
 
+    public static JsonObject transformContextualBandits(String contextualBanditsJsonString) {
+        if (contextualBanditsJsonString == null || contextualBanditsJsonString.isEmpty()) {
+            return new JsonObject();
+        }
+
+        try {
+            return GSON.fromJson(contextualBanditsJsonString, JsonObject.class);
+        } catch (Exception e) {
+            log.error(e.getMessage(), e);
+            return new JsonObject();
+        }
+    }
+
     public static Map<String, Feature<?>> transformEncryptedFeatures(
             @Nullable String featuresJson,
             @Nullable String encryptionKey

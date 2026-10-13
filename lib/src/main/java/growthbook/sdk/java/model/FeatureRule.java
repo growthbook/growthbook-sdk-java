@@ -188,6 +188,22 @@ public class FeatureRule<ValueType> extends SuperTypeToken<ValueType> implements
     @Nullable
     ArrayList<TrackData<ValueType>> tracks;
 
+    /**
+     * Reference into the payload's {@code contextualBandits} map. When set, this rule is a
+     * contextual bandit: its variations are carried in {@link #contextualVariations} (so SDKs
+     * without bandit support skip it) and its weights are resolved per-user from the referenced
+     * definition.
+     */
+    @Nullable
+    String contextualBanditRef;
+
+    /**
+     * Variations for a contextual bandit rule. Used in place of {@link #variations} when
+     * {@link #contextualBanditRef} is set.
+     */
+    @Nullable
+    ArrayList<ValueType> contextualVariations;
+
     public FeatureRule(
             @Nullable String id,
             @Nullable String key,
@@ -237,7 +253,9 @@ public class FeatureRule<ValueType> extends SuperTypeToken<ValueType> implements
                 bucketVersion,
                 minBucketVersion,
                 null,
-                tracks
+                tracks,
+                null,
+                null
         );
     }
 
@@ -316,6 +334,14 @@ public class FeatureRule<ValueType> extends SuperTypeToken<ValueType> implements
         if (jsonObject.has("tracks")) {
             builder.tracks(context.deserialize(jsonObject.get("tracks"), TypeToken.getParameterized(ArrayList.class, TrackData.class).getType()));
 //            builder.tracks(context.deserialize(jsonObject.get("tracks"), new TypeToken<ArrayList<TrackData<ValueType>>>() {}.getType()));
+        }
+
+        builder.contextualBanditRef(jsonObject.has("contextualBanditRef")
+                ? context.deserialize(jsonObject.get("contextualBanditRef"), String.class) : null);
+
+        if (jsonObject.has("contextualVariations")) {
+            builder.contextualVariations(context.deserialize(jsonObject.get("contextualVariations"),
+                    TypeToken.getParameterized(ArrayList.class, getType()).getType()));
         }
 
         return builder.build();

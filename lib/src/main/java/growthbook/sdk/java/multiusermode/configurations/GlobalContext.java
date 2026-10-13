@@ -20,6 +20,7 @@ public class GlobalContext {
     public GlobalContext(
             @Nullable Map<String, Feature<?>> features,
             @Nullable JsonObject savedGroups,
+            @Nullable JsonObject contextualBandits,
             @Nullable List<Experiment> experiments,
             @Nullable Boolean enabled,
             @Nullable Boolean qaMode,
@@ -28,6 +29,7 @@ public class GlobalContext {
     ) {
         this.features = features;
         this.savedGroups = savedGroups;
+        this.contextualBandits = contextualBandits;
         this.experiments = experiments;
         this.enabled = enabled;
         this.qaMode = qaMode;
@@ -46,6 +48,13 @@ public class GlobalContext {
 
     @Nullable
     private JsonObject savedGroups;
+
+    /**
+     * Contextual bandit definitions from the feature payload, keyed by bandit ref. Read during
+     * evaluation to resolve contextual bandit feature rules. May be {@code null}/empty.
+     */
+    @Nullable
+    private JsonObject contextualBandits;
 
     @Getter
     @Nullable
