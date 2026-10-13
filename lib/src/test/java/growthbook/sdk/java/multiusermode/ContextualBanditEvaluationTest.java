@@ -15,9 +15,11 @@ import java.io.OutputStream;
 import java.net.InetSocketAddress;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.function.Consumer;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -69,6 +71,43 @@ class ContextualBanditEvaluationTest {
                     + "\"contextualBandits\":{\"bandit-1\":{\"banditVersion\":2,\"contexts\":["
                     + "{\"leafId\":0,\"condition\":{\"country\":\"US\"},\"weights\":[1.0,0.0]},"
                     + "{\"leafId\":9,\"condition\":{},\"weights\":[0.0,1.0]}"
+                    + "]}}}";
+
+    private static final String PAYLOAD_WEIGHTS_LENGTH_MISMATCH =
+            "{\"features\":{\"banner\":{\"defaultValue\":\"default\",\"rules\":[{"
+                    + "\"contextualBanditRef\":\"bandit-1\","
+                    + "\"contextualVariations\":[\"control\",\"treatment\"],"
+                    + "\"hashAttribute\":\"id\""
+                    + "}]}},"
+                    + "\"contextualBandits\":{\"bandit-1\":{\"banditVersion\":5,\"contexts\":["
+                    + "{\"leafId\":0,\"condition\":{\"country\":\"US\"},\"weights\":[1.0]}"
+                    + "]}}}";
+
+    private static final String PAYLOAD_MALFORMED_DEFINITION =
+            "{\"features\":{\"banner\":{\"defaultValue\":\"default\",\"rules\":[{"
+                    + "\"contextualBanditRef\":\"bandit-1\","
+                    + "\"contextualVariations\":[\"control\",\"treatment\"],"
+                    + "\"hashAttribute\":\"id\""
+                    + "}]}},"
+                    + "\"contextualBandits\":{\"bandit-1\":{\"banditVersion\":1,\"contexts\":\"not-an-array\"}}}";
+
+    private static final String PAYLOAD_REF_WITHOUT_CONTEXTUAL_VARIATIONS =
+            "{\"features\":{\"banner\":{\"defaultValue\":\"default\",\"rules\":[{"
+                    + "\"contextualBanditRef\":\"bandit-1\","
+                    + "\"variations\":[\"control\",\"treatment\"],"
+                    + "\"hashAttribute\":\"id\""
+                    + "}]}},"
+                    + "\"contextualBandits\":{\"bandit-1\":{\"banditVersion\":4,\"contexts\":["
+                    + "{\"leafId\":0,\"condition\":{\"country\":\"US\"},\"weights\":[1.0,0.0]}"
+                    + "]}}}";
+
+    private static final String PAYLOAD_NO_VARIATIONS =
+            "{\"features\":{\"banner\":{\"defaultValue\":\"default\",\"rules\":[{"
+                    + "\"contextualBanditRef\":\"bandit-1\","
+                    + "\"hashAttribute\":\"id\""
+                    + "}]}},"
+                    + "\"contextualBandits\":{\"bandit-1\":{\"banditVersion\":4,\"contexts\":["
+                    + "{\"leafId\":0,\"condition\":{\"country\":\"US\"},\"weights\":[1.0,0.0]}"
                     + "]}}}";
 
     @Test
@@ -148,7 +187,79 @@ class ContextualBanditEvaluationTest {
         });
     }
 
+    @Test
+    @DisplayName("Verify: a forced (non-hashed) variation yields the forced value but no bandit metadata")
+    void forcedVariationLeavesNoBanditMetadata() throws IOException {
+        withClient(PAYLOAD_WITH_BANDIT,
+                options -> options.setGlobalForcedVariationsMap(Collections.singletonMap("banner", 0)),
+                client -> {
+                    FeatureResult<String> result = client.evalFeature("banner", String.class, userContext("{\"id\":\"u1\",\"country\":\"US\"}"));
+
+                    assertEquals("control", result.getValue());
+                    assertTrue(result.getExperimentResult().getInExperiment());
+                    assertFalse(result.getExperimentResult().getHashUsed());
+                    assertNull(result.getExperimentResult().getLeafId());
+                    assertNull(result.getExperimentResult().getBanditVersion());
+                    assertNull(result.getExperimentResult().getVariationWeights());
+                });
+    }
+
+    @Test
+    @DisplayName("Verify: a leaf whose weights length differs from the variation count falls back to equal weights")
+    void weightsLengthMismatchFallsBackToEqualWeights() throws IOException {
+        withClient(PAYLOAD_WEIGHTS_LENGTH_MISMATCH, client -> {
+            FeatureResult<String> result = client.evalFeature("banner", String.class, userContext("{\"id\":\"u1\",\"country\":\"US\"}"));
+
+            assertTrue(result.getExperimentResult().getInExperiment());
+            assertEquals(Integer.valueOf(-1), result.getExperimentResult().getLeafId());
+            assertEquals(Integer.valueOf(5), result.getExperimentResult().getBanditVersion());
+            assertEquals(Arrays.asList(0.5f, 0.5f), result.getExperimentResult().getVariationWeights());
+        });
+    }
+
+    @Test
+    @DisplayName("Verify: a definition that fails to deserialize evaluates as an ordinary experiment with no metadata")
+    void malformedDefinitionLeavesNoMetadata() throws IOException {
+        withClient(PAYLOAD_MALFORMED_DEFINITION, client -> {
+            FeatureResult<String> result = client.evalFeature("banner", String.class, userContext("{\"id\":\"u1\",\"country\":\"US\"}"));
+
+            assertTrue(result.getExperimentResult().getInExperiment());
+            assertNull(result.getExperimentResult().getLeafId());
+            assertNull(result.getExperimentResult().getBanditVersion());
+            assertNull(result.getExperimentResult().getVariationWeights());
+        });
+    }
+
+    @Test
+    @DisplayName("Verify: a bandit ref with ordinary variations buckets on variations and still records metadata")
+    void refWithoutContextualVariationsStillResolvesBandit() throws IOException {
+        withClient(PAYLOAD_REF_WITHOUT_CONTEXTUAL_VARIATIONS, client -> {
+            FeatureResult<String> result = client.evalFeature("banner", String.class, userContext("{\"id\":\"u1\",\"country\":\"US\"}"));
+
+            assertEquals("control", result.getValue());
+            assertTrue(result.getExperimentResult().getInExperiment());
+            assertEquals(Integer.valueOf(0), result.getExperimentResult().getLeafId());
+            assertEquals(Integer.valueOf(4), result.getExperimentResult().getBanditVersion());
+            assertEquals(Arrays.asList(1.0f, 0.0f), result.getExperimentResult().getVariationWeights());
+        });
+    }
+
+    @Test
+    @DisplayName("Verify: a rule with neither variations nor contextualVariations is skipped and the default value is returned")
+    void ruleWithoutAnyVariationsReturnsDefault() throws IOException {
+        withClient(PAYLOAD_NO_VARIATIONS, client -> {
+            FeatureResult<String> result = client.evalFeature("banner", String.class, userContext("{\"id\":\"u1\",\"country\":\"US\"}"));
+
+            assertEquals("default", result.getValue());
+            assertNull(result.getExperimentResult());
+        });
+    }
+
     private void withClient(String payload, Consumer<GrowthBookClient> assertions) throws IOException {
+        withClient(payload, options -> {}, assertions);
+    }
+
+    private void withClient(String payload, Consumer<Options> optionsCustomizer, Consumer<GrowthBookClient> assertions) throws IOException {
         HttpServer server = startFeatureServer(payload);
         GrowthBookClient client = null;
         try {
@@ -157,6 +268,7 @@ class ContextualBanditEvaluationTest {
                     .clientKey(TEST_CLIENT_KEY)
                     .isCacheDisabled(true)
                     .build();
+            optionsCustomizer.accept(options);
             client = new GrowthBookClient(options);
             assertTrue(client.initialize(), "client should initialize from the served payload");
             assertions.accept(client);
