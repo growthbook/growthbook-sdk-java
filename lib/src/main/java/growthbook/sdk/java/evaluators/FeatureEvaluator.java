@@ -8,6 +8,7 @@ import growthbook.sdk.java.util.GrowthBookUtils;
 import growthbook.sdk.java.model.bandit.ContextualBandit;
 import growthbook.sdk.java.model.bandit.ContextualBanditContext;
 import growthbook.sdk.java.model.bandit.ContextualBanditDefinition;
+import growthbook.sdk.java.model.BucketRange;
 import growthbook.sdk.java.model.ParentCondition;
 import growthbook.sdk.java.model.Experiment;
 import growthbook.sdk.java.model.ExperimentResult;
@@ -545,7 +546,11 @@ public class FeatureEvaluator implements IFeatureEvaluator {
 
         if (leaf != null && isUsableWeights(leaf.getWeights(), variationCount)) {
             experiment.setWeights(leaf.getWeights());
-            experiment.setRanges(null);
+            ArrayList<BucketRange> ruleRanges = experiment.getRanges();
+            if (ruleRanges != null) {
+                experiment.setCoverage(totalRangeCoverage(ruleRanges));
+                experiment.setRanges(null);
+            }
             experiment.setContextualBandit(ContextualBandit.builder()
                     .leafId(leaf.getLeafId())
                     .variationWeights(leaf.getWeights())
@@ -586,6 +591,22 @@ public class FeatureEvaluator implements IFeatureEvaluator {
             sum += weight;
         }
         return sum >= 0.99f && sum <= 1.01f;
+    }
+
+    /**
+     * The fraction of traffic enrolled by a rule's explicit ranges, i.e. the sum of their widths.
+     * A matched leaf replaces the variation split but must keep this traffic limit, so it is carried
+     * over as the experiment's coverage before the ranges are rebuilt from the leaf weights.
+     */
+    private static float totalRangeCoverage(ArrayList<BucketRange> ranges) {
+        float total = 0f;
+        for (BucketRange range : ranges) {
+            if (range == null || range.getRangeStart() == null || range.getRangeEnd() == null) {
+                continue;
+            }
+            total += range.getRangeEnd() - range.getRangeStart();
+        }
+        return Math.max(0f, Math.min(1f, total));
     }
 
     @Nullable

@@ -155,6 +155,17 @@ class ContextualBanditEvaluationTest {
                     + "{\"leafId\":0,\"condition\":{\"country\":\"US\"},\"weights\":[0.0,1.0]}"
                     + "]}}}";
 
+    private static final String PAYLOAD_RULE_RANGES_ZERO_COVERAGE =
+            "{\"features\":{\"banner\":{\"defaultValue\":\"default\",\"rules\":[{"
+                    + "\"contextualBanditRef\":\"bandit-1\","
+                    + "\"contextualVariations\":[\"control\",\"treatment\"],"
+                    + "\"ranges\":[[0.0,0.0],[0.0,0.0]],"
+                    + "\"hashAttribute\":\"id\""
+                    + "}]}},"
+                    + "\"contextualBandits\":{\"bandit-1\":{\"banditVersion\":9,\"contexts\":["
+                    + "{\"leafId\":0,\"condition\":{\"country\":\"US\"},\"weights\":[0.0,1.0]}"
+                    + "]}}}";
+
     @Test
     @DisplayName("Verify: a matching leaf applies its weights and records leafId/variationWeights/banditVersion")
     void matchingLeafAppliesWeightsAndRecordsMetadata() {
@@ -333,6 +344,17 @@ class ContextualBanditEvaluationTest {
             assertEquals("treatment", result.getValue());
             assertEquals(Integer.valueOf(0), result.getExperimentResult().getLeafId());
             assertEquals(Arrays.asList(0.0f, 1.0f), result.getExperimentResult().getVariationWeights());
+        });
+    }
+
+    @Test
+    @DisplayName("Verify: a matched leaf keeps the traffic limit encoded by the rule's ranges")
+    void matchedLeafKeepsRuleRangesTrafficLimit() {
+        withClient(PAYLOAD_RULE_RANGES_ZERO_COVERAGE, client -> {
+            FeatureResult<String> result = client.evalFeature("banner", String.class, userContext("{\"id\":\"u1\",\"country\":\"US\"}"));
+
+            assertEquals("default", result.getValue());
+            assertNull(result.getExperimentResult());
         });
     }
 
