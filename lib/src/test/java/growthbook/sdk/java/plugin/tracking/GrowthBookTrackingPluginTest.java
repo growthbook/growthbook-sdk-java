@@ -15,6 +15,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.time.Duration;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executor;
@@ -123,6 +125,48 @@ class GrowthBookTrackingPluginTest {
         // Go's contract does not include a user attribute map.
         assertFalse(event.has("attributes"), "events must not carry user attributes");
         assertFalse(event.has("experiment_key"), "field is experiment_id, not experiment_key");
+
+        plugin.close();
+    }
+
+    @Test
+    void experimentEventCarriesBanditMetadata() throws Exception {
+        server.enqueue(200);
+
+        GrowthBookTrackingPlugin plugin = GrowthBookTrackingPlugin.of(configBuilder().batchSize(1).build());
+        plugin.init();
+        ExperimentResult<String> result = experimentResult(3);
+        result.setLeafId(1);
+        result.setBanditVersion(3);
+        result.setVariationWeights(new ArrayList<>(Arrays.asList(1.0f, 0.0f)));
+        plugin.onExperimentViewed(experiment("exp1"), result);
+
+        RecordedRequest req = server.takeRequest(5, TimeUnit.SECONDS);
+        assertNotNull(req);
+        JsonObject event = firstEvent(req);
+
+        assertEquals("experiment_viewed", event.get("event_type").getAsString());
+        assertEquals(1, event.get("leaf_id").getAsInt());
+        assertEquals(3, event.get("bandit_version").getAsInt());
+
+        plugin.close();
+    }
+
+    @Test
+    void nonBanditExperimentEventOmitsBanditMetadata() throws Exception {
+        server.enqueue(200);
+
+        GrowthBookTrackingPlugin plugin = GrowthBookTrackingPlugin.of(configBuilder().batchSize(1).build());
+        plugin.init();
+        plugin.onExperimentViewed(experiment("exp1"), experimentResult(3));
+
+        RecordedRequest req = server.takeRequest(5, TimeUnit.SECONDS);
+        assertNotNull(req);
+        JsonObject event = firstEvent(req);
+
+        assertEquals("experiment_viewed", event.get("event_type").getAsString());
+        assertFalse(event.has("leaf_id"), "non-bandit events must omit leaf_id");
+        assertFalse(event.has("bandit_version"), "non-bandit events must omit bandit_version");
 
         plugin.close();
     }

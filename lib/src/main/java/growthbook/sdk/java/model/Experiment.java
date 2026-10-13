@@ -4,6 +4,7 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonSyntaxException;
 import com.google.gson.annotations.SerializedName;
+import growthbook.sdk.java.model.bandit.ContextualBandit;
 import growthbook.sdk.java.util.GrowthBookJsonUtils;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -158,6 +159,13 @@ public class Experiment<ValueType> {
     @Nullable
     Map<String, Object> customFields;
 
+    /**
+     * When this experiment was produced from a contextual bandit rule, the resolved leaf and the
+     * weights applied for the current user. {@code null} for ordinary experiments.
+     */
+    @Nullable
+    ContextualBandit contextualBandit;
+
     public Experiment(
             String key,
             ArrayList<ValueType> variations,
@@ -203,6 +211,58 @@ public class Experiment<ValueType> {
                 disableStickyBucketing,
                 bucketVersion,
                 minBucketVersion,
+                null,
+                null
+        );
+    }
+
+    public Experiment(
+            String key,
+            ArrayList<ValueType> variations,
+            @Nullable ArrayList<Float> weights,
+            @Nullable Boolean isActive,
+            @Nullable Float coverage,
+            @Nullable JsonObject conditionJson,
+            @Nullable ArrayList<ParentCondition> parentConditions,
+            @Nullable Namespace namespace,
+            @Nullable Integer force,
+            String hashAttribute,
+            @Nullable Integer hashVersion,
+            @Nullable ArrayList<BucketRange> ranges,
+            @Nullable ArrayList<VariationMeta> meta,
+            @Nullable ArrayList<Filter> filters,
+            @Nullable String seed,
+            @Nullable String name,
+            @Nullable String phase,
+            @Nullable String fallbackAttribute,
+            @Nullable Boolean disableStickyBucketing,
+            @Nullable Integer bucketVersion,
+            @Nullable Integer minBucketVersion,
+            @Nullable Map<String, Object> customFields
+    ) {
+        this(
+                key,
+                variations,
+                weights,
+                isActive,
+                coverage,
+                conditionJson,
+                parentConditions,
+                namespace,
+                force,
+                hashAttribute,
+                hashVersion,
+                ranges,
+                meta,
+                filters,
+                seed,
+                name,
+                phase,
+                fallbackAttribute,
+                disableStickyBucketing,
+                bucketVersion,
+                minBucketVersion,
+                customFields,
                 null
         );
     }

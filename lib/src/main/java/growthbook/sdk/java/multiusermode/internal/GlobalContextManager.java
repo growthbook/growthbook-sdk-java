@@ -110,6 +110,7 @@ public final class GlobalContextManager {
         return GlobalContext.builder()
                 .features(featureSnapshot.getParsedFeatures())
                 .savedGroups(featureSnapshot.getParsedSavedGroups())
+                .contextualBandits(featureSnapshot.getParsedContextualBandits())
                 .enabled(this.options.getEnabled())
                 .qaMode(this.options.getIsQaMode())
                 .forcedFeatureValues(this.options.getGlobalForcedFeatureValues())

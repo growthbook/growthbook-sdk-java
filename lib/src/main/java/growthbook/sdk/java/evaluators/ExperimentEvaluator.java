@@ -9,6 +9,7 @@ import growthbook.sdk.java.model.HashAttributeAndHashValue;
 import growthbook.sdk.java.model.Namespace;
 import growthbook.sdk.java.model.ParentCondition;
 import growthbook.sdk.java.model.BucketRange;
+import growthbook.sdk.java.model.bandit.ContextualBandit;
 import growthbook.sdk.java.model.Experiment;
 import growthbook.sdk.java.model.ExperimentResult;
 import growthbook.sdk.java.model.FeatureResult;
@@ -368,7 +369,7 @@ public class ExperimentEvaluator implements IExperimentEvaluator {
             targetValue = experiment.getVariations().get(targetVariationIndex);
         }
 
-        return ExperimentResult
+        ExperimentResult<ValueType> experimentResult = ExperimentResult
                 .<ValueType>builder()
                 .inExperiment(inExperiment)
                 .variationId(variationIndex)
@@ -383,6 +384,16 @@ public class ExperimentEvaluator implements IExperimentEvaluator {
                 .bucket(hashBucket)
                 .passThrough(passThrough)
                 .build();
+
+        ContextualBandit contextualBandit = experiment.getContextualBandit();
+        if (contextualBandit != null && Boolean.TRUE.equals(hashUsed) && inExperiment
+                && !Boolean.TRUE.equals(passThrough) && !Boolean.TRUE.equals(stickyBucketUsed)) {
+            experimentResult.setLeafId(contextualBandit.getLeafId());
+            experimentResult.setVariationWeights(contextualBandit.getVariationWeights());
+            experimentResult.setBanditVersion(contextualBandit.getBanditVersion());
+        }
+
+        return experimentResult;
     }
 
     /**
