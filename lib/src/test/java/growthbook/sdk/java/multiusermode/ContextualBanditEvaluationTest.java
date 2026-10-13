@@ -1,23 +1,24 @@
 package growthbook.sdk.java.multiusermode;
 
-import com.sun.net.httpserver.HttpServer;
+import com.github.tomakehurst.wiremock.WireMockServer;
+import com.github.tomakehurst.wiremock.core.WireMockConfiguration;
 import growthbook.sdk.java.model.FeatureResult;
-import growthbook.sdk.java.model.HttpHeaders;
 import growthbook.sdk.java.multiusermode.configurations.Options;
 import growthbook.sdk.java.multiusermode.configurations.UserContext;
 import growthbook.sdk.java.util.GrowthBookJsonUtils;
 import com.google.gson.JsonObject;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
-import java.io.IOException;
-import java.io.OutputStream;
-import java.net.InetSocketAddress;
-import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.function.Consumer;
 
+import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
+import static com.github.tomakehurst.wiremock.client.WireMock.get;
+import static com.github.tomakehurst.wiremock.client.WireMock.urlPathMatching;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -35,6 +36,19 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class ContextualBanditEvaluationTest {
 
     private static final String TEST_CLIENT_KEY = "sdk-contextual-bandit-test";
+
+    private WireMockServer wireMock;
+
+    @BeforeEach
+    void setUp() {
+        wireMock = new WireMockServer(WireMockConfiguration.options().dynamicPort());
+        wireMock.start();
+    }
+
+    @AfterEach
+    void tearDown() {
+        wireMock.stop();
+    }
 
     private static final String PAYLOAD_WITH_BANDIT =
             "{\"features\":{\"banner\":{\"defaultValue\":\"default\",\"rules\":[{"
@@ -110,9 +124,40 @@ class ContextualBanditEvaluationTest {
                     + "{\"leafId\":0,\"condition\":{\"country\":\"US\"},\"weights\":[1.0,0.0]}"
                     + "]}}}";
 
+    private static final String PAYLOAD_NULL_ENTRY_WEIGHTS =
+            "{\"features\":{\"banner\":{\"defaultValue\":\"default\",\"rules\":[{"
+                    + "\"contextualBanditRef\":\"bandit-1\","
+                    + "\"contextualVariations\":[\"control\",\"treatment\"],"
+                    + "\"hashAttribute\":\"id\""
+                    + "}]}},"
+                    + "\"contextualBandits\":{\"bandit-1\":{\"banditVersion\":6,\"contexts\":["
+                    + "{\"leafId\":0,\"condition\":{\"country\":\"US\"},\"weights\":[1.0,null]}"
+                    + "]}}}";
+
+    private static final String PAYLOAD_UNNORMALIZED_WEIGHTS =
+            "{\"features\":{\"banner\":{\"defaultValue\":\"default\",\"rules\":[{"
+                    + "\"contextualBanditRef\":\"bandit-1\","
+                    + "\"contextualVariations\":[\"control\",\"treatment\"],"
+                    + "\"hashAttribute\":\"id\""
+                    + "}]}},"
+                    + "\"contextualBandits\":{\"bandit-1\":{\"banditVersion\":8,\"contexts\":["
+                    + "{\"leafId\":0,\"condition\":{\"country\":\"US\"},\"weights\":[0.9,0.9]}"
+                    + "]}}}";
+
+    private static final String PAYLOAD_RULE_RANGES_WITH_LEAF =
+            "{\"features\":{\"banner\":{\"defaultValue\":\"default\",\"rules\":[{"
+                    + "\"contextualBanditRef\":\"bandit-1\","
+                    + "\"contextualVariations\":[\"control\",\"treatment\"],"
+                    + "\"ranges\":[[0.0,1.0],[0.0,0.0]],"
+                    + "\"hashAttribute\":\"id\""
+                    + "}]}},"
+                    + "\"contextualBandits\":{\"bandit-1\":{\"banditVersion\":9,\"contexts\":["
+                    + "{\"leafId\":0,\"condition\":{\"country\":\"US\"},\"weights\":[0.0,1.0]}"
+                    + "]}}}";
+
     @Test
     @DisplayName("Verify: a matching leaf applies its weights and records leafId/variationWeights/banditVersion")
-    void matchingLeafAppliesWeightsAndRecordsMetadata() throws IOException {
+    void matchingLeafAppliesWeightsAndRecordsMetadata() {
         withClient(PAYLOAD_WITH_BANDIT, client -> {
             FeatureResult<String> result = client.evalFeature("banner", String.class, userContext("{\"id\":\"u1\",\"country\":\"US\"}"));
 
@@ -126,7 +171,7 @@ class ContextualBanditEvaluationTest {
 
     @Test
     @DisplayName("Verify: a different segment matches a different leaf and gets that leaf's weights")
-    void differentSegmentMatchesDifferentLeaf() throws IOException {
+    void differentSegmentMatchesDifferentLeaf() {
         withClient(PAYLOAD_WITH_BANDIT, client -> {
             FeatureResult<String> result = client.evalFeature("banner", String.class, userContext("{\"id\":\"u1\",\"country\":\"CA\"}"));
 
@@ -138,7 +183,7 @@ class ContextualBanditEvaluationTest {
 
     @Test
     @DisplayName("Verify: no matching leaf falls back to leafId -1 with equal weights, user still in experiment")
-    void noMatchingLeafFallsBackToEqualWeights() throws IOException {
+    void noMatchingLeafFallsBackToEqualWeights() {
         withClient(PAYLOAD_WITH_BANDIT, client -> {
             FeatureResult<String> result = client.evalFeature("banner", String.class, userContext("{\"id\":\"u1\",\"country\":\"FR\"}"));
 
@@ -151,7 +196,7 @@ class ContextualBanditEvaluationTest {
 
     @Test
     @DisplayName("Verify: a missing bandit ref evaluates as an ordinary experiment with no bandit metadata")
-    void missingBanditRefLeavesNoMetadata() throws IOException {
+    void missingBanditRefLeavesNoMetadata() {
         withClient(PAYLOAD_MISSING_BANDIT, client -> {
             FeatureResult<String> result = client.evalFeature("banner", String.class, userContext("{\"id\":\"u1\",\"country\":\"US\"}"));
 
@@ -164,7 +209,7 @@ class ContextualBanditEvaluationTest {
 
     @Test
     @DisplayName("Verify: a definition with no leaves falls back to leafId -1 and equal weights")
-    void emptyContextsFallsBackToEqualWeights() throws IOException {
+    void emptyContextsFallsBackToEqualWeights() {
         withClient(PAYLOAD_EMPTY_CONTEXTS, client -> {
             FeatureResult<String> result = client.evalFeature("banner", String.class, userContext("{\"id\":\"u1\",\"country\":\"US\"}"));
 
@@ -177,7 +222,7 @@ class ContextualBanditEvaluationTest {
 
     @Test
     @DisplayName("Verify: a leaf with an empty condition matches any user the earlier leaves miss")
-    void emptyConditionLeafActsAsCatchAll() throws IOException {
+    void emptyConditionLeafActsAsCatchAll() {
         withClient(PAYLOAD_CATCH_ALL_LEAF, client -> {
             FeatureResult<String> result = client.evalFeature("banner", String.class, userContext("{\"id\":\"u1\",\"country\":\"FR\"}"));
 
@@ -189,7 +234,7 @@ class ContextualBanditEvaluationTest {
 
     @Test
     @DisplayName("Verify: a forced (non-hashed) variation yields the forced value but no bandit metadata")
-    void forcedVariationLeavesNoBanditMetadata() throws IOException {
+    void forcedVariationLeavesNoBanditMetadata() {
         withClient(PAYLOAD_WITH_BANDIT,
                 options -> options.setGlobalForcedVariationsMap(Collections.singletonMap("banner", 0)),
                 client -> {
@@ -206,7 +251,7 @@ class ContextualBanditEvaluationTest {
 
     @Test
     @DisplayName("Verify: a leaf whose weights length differs from the variation count falls back to equal weights")
-    void weightsLengthMismatchFallsBackToEqualWeights() throws IOException {
+    void weightsLengthMismatchFallsBackToEqualWeights() {
         withClient(PAYLOAD_WEIGHTS_LENGTH_MISMATCH, client -> {
             FeatureResult<String> result = client.evalFeature("banner", String.class, userContext("{\"id\":\"u1\",\"country\":\"US\"}"));
 
@@ -219,7 +264,7 @@ class ContextualBanditEvaluationTest {
 
     @Test
     @DisplayName("Verify: a definition that fails to deserialize evaluates as an ordinary experiment with no metadata")
-    void malformedDefinitionLeavesNoMetadata() throws IOException {
+    void malformedDefinitionLeavesNoMetadata() {
         withClient(PAYLOAD_MALFORMED_DEFINITION, client -> {
             FeatureResult<String> result = client.evalFeature("banner", String.class, userContext("{\"id\":\"u1\",\"country\":\"US\"}"));
 
@@ -232,7 +277,7 @@ class ContextualBanditEvaluationTest {
 
     @Test
     @DisplayName("Verify: a bandit ref with ordinary variations buckets on variations and still records metadata")
-    void refWithoutContextualVariationsStillResolvesBandit() throws IOException {
+    void refWithoutContextualVariationsStillResolvesBandit() {
         withClient(PAYLOAD_REF_WITHOUT_CONTEXTUAL_VARIATIONS, client -> {
             FeatureResult<String> result = client.evalFeature("banner", String.class, userContext("{\"id\":\"u1\",\"country\":\"US\"}"));
 
@@ -246,7 +291,7 @@ class ContextualBanditEvaluationTest {
 
     @Test
     @DisplayName("Verify: a rule with neither variations nor contextualVariations is skipped and the default value is returned")
-    void ruleWithoutAnyVariationsReturnsDefault() throws IOException {
+    void ruleWithoutAnyVariationsReturnsDefault() {
         withClient(PAYLOAD_NO_VARIATIONS, client -> {
             FeatureResult<String> result = client.evalFeature("banner", String.class, userContext("{\"id\":\"u1\",\"country\":\"US\"}"));
 
@@ -255,16 +300,58 @@ class ContextualBanditEvaluationTest {
         });
     }
 
-    private void withClient(String payload, Consumer<GrowthBookClient> assertions) throws IOException {
+    @Test
+    @DisplayName("Verify: a leaf whose weights contain a null entry falls back to equal weights without crashing")
+    void nullEntryWeightsFallBackToEqualWeights() {
+        withClient(PAYLOAD_NULL_ENTRY_WEIGHTS, client -> {
+            FeatureResult<String> result = client.evalFeature("banner", String.class, userContext("{\"id\":\"u1\",\"country\":\"US\"}"));
+
+            assertTrue(result.getExperimentResult().getInExperiment());
+            assertEquals(Integer.valueOf(-1), result.getExperimentResult().getLeafId());
+            assertEquals(Arrays.asList(0.5f, 0.5f), result.getExperimentResult().getVariationWeights());
+        });
+    }
+
+    @Test
+    @DisplayName("Verify: leaf weights that do not sum to 1 fall back to equal weights, and the reported weights match")
+    void unnormalizedWeightsFallBackToEqualWeights() {
+        withClient(PAYLOAD_UNNORMALIZED_WEIGHTS, client -> {
+            FeatureResult<String> result = client.evalFeature("banner", String.class, userContext("{\"id\":\"u1\",\"country\":\"US\"}"));
+
+            assertTrue(result.getExperimentResult().getInExperiment());
+            assertEquals(Integer.valueOf(-1), result.getExperimentResult().getLeafId());
+            assertEquals(Arrays.asList(0.5f, 0.5f), result.getExperimentResult().getVariationWeights());
+        });
+    }
+
+    @Test
+    @DisplayName("Verify: a matched leaf overrides the rule's explicit ranges so its weights control the split")
+    void matchedLeafOverridesRuleRanges() {
+        withClient(PAYLOAD_RULE_RANGES_WITH_LEAF, client -> {
+            FeatureResult<String> result = client.evalFeature("banner", String.class, userContext("{\"id\":\"u1\",\"country\":\"US\"}"));
+
+            assertEquals("treatment", result.getValue());
+            assertEquals(Integer.valueOf(0), result.getExperimentResult().getLeafId());
+            assertEquals(Arrays.asList(0.0f, 1.0f), result.getExperimentResult().getVariationWeights());
+        });
+    }
+
+    private void withClient(String payload, Consumer<GrowthBookClient> assertions) {
         withClient(payload, options -> {}, assertions);
     }
 
-    private void withClient(String payload, Consumer<Options> optionsCustomizer, Consumer<GrowthBookClient> assertions) throws IOException {
-        HttpServer server = startFeatureServer(payload);
+    private void withClient(String payload, Consumer<Options> optionsCustomizer, Consumer<GrowthBookClient> assertions) {
+        wireMock.stubFor(get(urlPathMatching("/api/features/.*"))
+                .willReturn(aResponse()
+                        .withStatus(200)
+                        .withHeader("X-Sse-Support", "disabled")
+                        .withHeader("Content-Type", "application/json")
+                        .withBody(payload)));
+
         GrowthBookClient client = null;
         try {
             Options options = Options.builder()
-                    .apiHost(apiHost(server))
+                    .apiHost("http://localhost:" + wireMock.port())
                     .clientKey(TEST_CLIENT_KEY)
                     .isCacheDisabled(true)
                     .build();
@@ -276,31 +363,11 @@ class ContextualBanditEvaluationTest {
             if (client != null) {
                 client.shutdown();
             }
-            server.stop(0);
         }
     }
 
     private static UserContext userContext(String attributesJson) {
         JsonObject attributes = GrowthBookJsonUtils.getInstance().gson.fromJson(attributesJson, JsonObject.class);
         return UserContext.builder().attributes(attributes).build();
-    }
-
-    private static HttpServer startFeatureServer(String body) throws IOException {
-        HttpServer server = HttpServer.create(new InetSocketAddress("127.0.0.1", 0), 0);
-        server.createContext("/api/features/" + TEST_CLIENT_KEY, exchange -> {
-            byte[] responseBytes = body.getBytes(StandardCharsets.UTF_8);
-            exchange.getResponseHeaders().add(HttpHeaders.X_SSE_SUPPORT.getHeader(), "disabled");
-            exchange.sendResponseHeaders(200, responseBytes.length);
-            try (OutputStream responseBody = exchange.getResponseBody()) {
-                responseBody.write(responseBytes);
-            }
-            exchange.close();
-        });
-        server.start();
-        return server;
-    }
-
-    private static String apiHost(HttpServer server) {
-        return "http://127.0.0.1:" + server.getAddress().getPort();
     }
 }
