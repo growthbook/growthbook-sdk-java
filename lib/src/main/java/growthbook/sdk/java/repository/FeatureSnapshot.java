@@ -19,7 +19,7 @@ public final class FeatureSnapshot {
     public static final FeatureSnapshot EMPTY = new FeatureSnapshot(
             GBFeaturesRepository.EMPTY_JSON_OBJECT_STRING,
             GBFeaturesRepository.EMPTY_JSON_OBJECT_STRING,
-            GBFeaturesRepository.EMPTY_JSON_OBJECT_STRING,
+            "",
             Collections.emptyMap(),
             new JsonObject(),
             new JsonObject()
