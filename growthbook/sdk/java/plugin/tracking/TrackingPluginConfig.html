@@ -79,8 +79,8 @@ loadScripts(document, 'script');</script>
 <div class="type-signature"><span class="modifiers">public final class </span><span class="element-name type-name-label">TrackingPluginConfig</span>
 <span class="extends-implements">extends <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html" title="class or interface in java.lang" class="external-link">Object</a></span></div>
 <div class="block">Configuration for <a href="GrowthBookTrackingPlugin.html" title="class in growthbook.sdk.java.plugin.tracking"><code>GrowthBookTrackingPlugin</code></a>. Defaults mirror the
- GrowthBook Go SDK: POST <code>{ingestorHost}/events</code>, batch size 100,
- flush every 10 seconds.
+ GrowthBook JS and Go SDKs: POST <code>{ingestorHost}/track?client_key={clientKey}</code>,
+ batch size 100, flush every 10 seconds.
 
  <p>Settings with defaults are exposed only through their <code>resolved*()</code>
  accessors so callers always read the effective value; the raw nullable

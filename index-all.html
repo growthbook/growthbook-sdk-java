@@ -1372,7 +1372,11 @@ loadScripts(document, 'script');</script>
 </dd>
 <dt><a href="growthbook/sdk/java/plugin/PluginRegistry.html#fireExperimentViewed(growthbook.sdk.java.model.Experiment,growthbook.sdk.java.model.ExperimentResult)" class="member-name-link">fireExperimentViewed(Experiment&lt;V&gt;, ExperimentResult&lt;V&gt;)</a> - Method in class growthbook.sdk.java.plugin.<a href="growthbook/sdk/java/plugin/PluginRegistry.html" title="class in growthbook.sdk.java.plugin">PluginRegistry</a></dt>
 <dd>&nbsp;</dd>
+<dt><a href="growthbook/sdk/java/plugin/PluginRegistry.html#fireExperimentViewed(growthbook.sdk.java.model.Experiment,growthbook.sdk.java.model.ExperimentResult,com.google.gson.JsonObject)" class="member-name-link">fireExperimentViewed(Experiment&lt;V&gt;, ExperimentResult&lt;V&gt;, JsonObject)</a> - Method in class growthbook.sdk.java.plugin.<a href="growthbook/sdk/java/plugin/PluginRegistry.html" title="class in growthbook.sdk.java.plugin">PluginRegistry</a></dt>
+<dd>&nbsp;</dd>
 <dt><a href="growthbook/sdk/java/plugin/PluginRegistry.html#fireFeatureEvaluated(java.lang.String,growthbook.sdk.java.model.FeatureResult)" class="member-name-link">fireFeatureEvaluated(String, FeatureResult&lt;V&gt;)</a> - Method in class growthbook.sdk.java.plugin.<a href="growthbook/sdk/java/plugin/PluginRegistry.html" title="class in growthbook.sdk.java.plugin">PluginRegistry</a></dt>
+<dd>&nbsp;</dd>
+<dt><a href="growthbook/sdk/java/plugin/PluginRegistry.html#fireFeatureEvaluated(java.lang.String,growthbook.sdk.java.model.FeatureResult,com.google.gson.JsonObject)" class="member-name-link">fireFeatureEvaluated(String, FeatureResult&lt;V&gt;, JsonObject)</a> - Method in class growthbook.sdk.java.plugin.<a href="growthbook/sdk/java/plugin/PluginRegistry.html" title="class in growthbook.sdk.java.plugin">PluginRegistry</a></dt>
 <dd>&nbsp;</dd>
 <dt><a href="growthbook/sdk/java/evaluators/ExperimentEvaluator.html#fireRemoteEvaluationTracks(java.util.List,growthbook.sdk.java.multiusermode.configurations.EvaluationContext)" class="member-name-link">fireRemoteEvaluationTracks(List&lt;TrackData&lt;ValueType&gt;&gt;, EvaluationContext)</a> - Method in class growthbook.sdk.java.evaluators.<a href="growthbook/sdk/java/evaluators/ExperimentEvaluator.html" title="class in growthbook.sdk.java.evaluators">ExperimentEvaluator</a></dt>
 <dd>
@@ -2994,7 +2998,7 @@ loadScripts(document, 'script');</script>
 <dt><a href="growthbook/sdk/java/plugin/tracking/GrowthBookTrackingPlugin.html" class="type-name-link" title="class in growthbook.sdk.java.plugin.tracking">GrowthBookTrackingPlugin</a> - Class in <a href="growthbook/sdk/java/plugin/tracking/package-summary.html">growthbook.sdk.java.plugin.tracking</a></dt>
 <dd>
 <div class="block">Batches experiment/feature evaluation events and POSTs them to the
- GrowthBook data-warehouse ingest endpoint.</div>
+ GrowthBook ingest endpoint.</div>
 </dd>
 <dt><a href="growthbook/sdk/java/util/GrowthBookUtils.html" class="type-name-link" title="class in growthbook.sdk.java.util">GrowthBookUtils</a> - Class in <a href="growthbook/sdk/java/util/package-summary.html">growthbook.sdk.java.util</a></dt>
 <dd>
@@ -3870,11 +3874,24 @@ loadScripts(document, 'script');</script>
 </dd>
 <dt><a href="growthbook/sdk/java/plugin/tracking/GrowthBookTrackingPlugin.html#onExperimentViewed(growthbook.sdk.java.model.Experiment,growthbook.sdk.java.model.ExperimentResult)" class="member-name-link">onExperimentViewed(Experiment&lt;V&gt;, ExperimentResult&lt;V&gt;)</a> - Method in class growthbook.sdk.java.plugin.tracking.<a href="growthbook/sdk/java/plugin/tracking/GrowthBookTrackingPlugin.html" title="class in growthbook.sdk.java.plugin.tracking">GrowthBookTrackingPlugin</a></dt>
 <dd>&nbsp;</dd>
+<dt><a href="growthbook/sdk/java/plugin/GrowthBookPlugin.html#onExperimentViewed(growthbook.sdk.java.model.Experiment,growthbook.sdk.java.model.ExperimentResult,com.google.gson.JsonObject)" class="member-name-link">onExperimentViewed(Experiment&lt;V&gt;, ExperimentResult&lt;V&gt;, JsonObject)</a> - Method in interface growthbook.sdk.java.plugin.<a href="growthbook/sdk/java/plugin/GrowthBookPlugin.html" title="interface in growthbook.sdk.java.plugin">GrowthBookPlugin</a></dt>
+<dd>
+<div class="block">Invoked after a user is bucketed into an experiment, with the user's attributes at evaluation
+ time.</div>
+</dd>
+<dt><a href="growthbook/sdk/java/plugin/tracking/GrowthBookTrackingPlugin.html#onExperimentViewed(growthbook.sdk.java.model.Experiment,growthbook.sdk.java.model.ExperimentResult,com.google.gson.JsonObject)" class="member-name-link">onExperimentViewed(Experiment&lt;V&gt;, ExperimentResult&lt;V&gt;, JsonObject)</a> - Method in class growthbook.sdk.java.plugin.tracking.<a href="growthbook/sdk/java/plugin/tracking/GrowthBookTrackingPlugin.html" title="class in growthbook.sdk.java.plugin.tracking">GrowthBookTrackingPlugin</a></dt>
+<dd>&nbsp;</dd>
 <dt><a href="growthbook/sdk/java/plugin/GrowthBookPlugin.html#onFeatureEvaluated(java.lang.String,growthbook.sdk.java.model.FeatureResult)" class="member-name-link">onFeatureEvaluated(String, FeatureResult&lt;V&gt;)</a> - Method in interface growthbook.sdk.java.plugin.<a href="growthbook/sdk/java/plugin/GrowthBookPlugin.html" title="interface in growthbook.sdk.java.plugin">GrowthBookPlugin</a></dt>
 <dd>
 <div class="block">Invoked every time a feature is evaluated.</div>
 </dd>
 <dt><a href="growthbook/sdk/java/plugin/tracking/GrowthBookTrackingPlugin.html#onFeatureEvaluated(java.lang.String,growthbook.sdk.java.model.FeatureResult)" class="member-name-link">onFeatureEvaluated(String, FeatureResult&lt;V&gt;)</a> - Method in class growthbook.sdk.java.plugin.tracking.<a href="growthbook/sdk/java/plugin/tracking/GrowthBookTrackingPlugin.html" title="class in growthbook.sdk.java.plugin.tracking">GrowthBookTrackingPlugin</a></dt>
+<dd>&nbsp;</dd>
+<dt><a href="growthbook/sdk/java/plugin/GrowthBookPlugin.html#onFeatureEvaluated(java.lang.String,growthbook.sdk.java.model.FeatureResult,com.google.gson.JsonObject)" class="member-name-link">onFeatureEvaluated(String, FeatureResult&lt;V&gt;, JsonObject)</a> - Method in interface growthbook.sdk.java.plugin.<a href="growthbook/sdk/java/plugin/GrowthBookPlugin.html" title="interface in growthbook.sdk.java.plugin">GrowthBookPlugin</a></dt>
+<dd>
+<div class="block">Invoked on every feature evaluation, with the user's attributes at evaluation time.</div>
+</dd>
+<dt><a href="growthbook/sdk/java/plugin/tracking/GrowthBookTrackingPlugin.html#onFeatureEvaluated(java.lang.String,growthbook.sdk.java.model.FeatureResult,com.google.gson.JsonObject)" class="member-name-link">onFeatureEvaluated(String, FeatureResult&lt;V&gt;, JsonObject)</a> - Method in class growthbook.sdk.java.plugin.tracking.<a href="growthbook/sdk/java/plugin/tracking/GrowthBookTrackingPlugin.html" title="class in growthbook.sdk.java.plugin.tracking">GrowthBookTrackingPlugin</a></dt>
 <dd>&nbsp;</dd>
 <dt><a href="growthbook/sdk/java/repository/GBFeaturesRepository.html#onFeaturesRefresh(growthbook.sdk.java.callback.FeatureRefreshCallback)" class="member-name-link">onFeaturesRefresh(FeatureRefreshCallback)</a> - Method in class growthbook.sdk.java.repository.<a href="growthbook/sdk/java/repository/GBFeaturesRepository.html" title="class in growthbook.sdk.java.repository">GBFeaturesRepository</a></dt>
 <dd>

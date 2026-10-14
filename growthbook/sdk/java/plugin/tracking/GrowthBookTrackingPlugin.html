@@ -84,9 +84,9 @@ loadScripts(document, 'script');</script>
 <span class="extends-implements">extends <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html" title="class or interface in java.lang" class="external-link">Object</a>
 implements <a href="../GrowthBookPlugin.html" title="interface in growthbook.sdk.java.plugin">GrowthBookPlugin</a></span></div>
 <div class="block">Batches experiment/feature evaluation events and POSTs them to the
- GrowthBook data-warehouse ingest endpoint. Wire contract mirrors the Go
- SDK: <code>POST {ingestorHost}/events</code> with JSON body
- <code>{"client_key": ..., "events": [...]}</code>.
+ GrowthBook ingest endpoint. Wire contract mirrors the JS and Go SDKs:
+ <code>POST {ingestorHost}/track?client_key={clientKey}</code> with a JSON array
+ of events as the body.
 
  <p>Resources (HTTP client, scheduler, flush executor) are created in
  <a href="#init()"><code>init()</code></a>, not the constructor, so an unregistered plugin never leaks
@@ -142,10 +142,25 @@ implements <a href="../GrowthBookPlugin.html" title="interface in growthbook.sdk
  hashAttribute/hashValue/experiment.key/variation combination).</div>
 </div>
 <div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>&lt;V&gt;&nbsp;void</code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#onFeatureEvaluated(java.lang.String,growthbook.sdk.java.model.FeatureResult)" class="member-name-link">onFeatureEvaluated</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;featureKey,
- <a href="../../model/FeatureResult.html" title="class in growthbook.sdk.java.model">FeatureResult</a>&lt;V&gt;&nbsp;result)</code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#onExperimentViewed(growthbook.sdk.java.model.Experiment,growthbook.sdk.java.model.ExperimentResult,com.google.gson.JsonObject)" class="member-name-link">onExperimentViewed</a><wbr>(<a href="../../model/Experiment.html" title="class in growthbook.sdk.java.model">Experiment</a>&lt;V&gt;&nbsp;experiment,
+ <a href="../../model/ExperimentResult.html" title="class in growthbook.sdk.java.model">ExperimentResult</a>&lt;V&gt;&nbsp;result,
+ com.google.gson.JsonObject&nbsp;userAttributes)</code></div>
 <div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="block">Invoked after a user is bucketed into an experiment, with the user's attributes at evaluation
+ time.</div>
+</div>
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>&lt;V&gt;&nbsp;void</code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#onFeatureEvaluated(java.lang.String,growthbook.sdk.java.model.FeatureResult)" class="member-name-link">onFeatureEvaluated</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;featureKey,
+ <a href="../../model/FeatureResult.html" title="class in growthbook.sdk.java.model">FeatureResult</a>&lt;V&gt;&nbsp;result)</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">Invoked every time a feature is evaluated.</div>
+</div>
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>&lt;V&gt;&nbsp;void</code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#onFeatureEvaluated(java.lang.String,growthbook.sdk.java.model.FeatureResult,com.google.gson.JsonObject)" class="member-name-link">onFeatureEvaluated</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;featureKey,
+ <a href="../../model/FeatureResult.html" title="class in growthbook.sdk.java.model">FeatureResult</a>&lt;V&gt;&nbsp;result,
+ com.google.gson.JsonObject&nbsp;userAttributes)</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="block">Invoked on every feature evaluation, with the user's attributes at evaluation time.</div>
 </div>
 </div>
 </div>
@@ -199,6 +214,24 @@ implements <a href="../GrowthBookPlugin.html" title="interface in growthbook.sdk
 </section>
 </li>
 <li>
+<section class="detail" id="onExperimentViewed(growthbook.sdk.java.model.Experiment,growthbook.sdk.java.model.ExperimentResult,com.google.gson.JsonObject)">
+<h3>onExperimentViewed</h3>
+<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="type-parameters">&lt;V&gt;</span>&nbsp;<span class="return-type">void</span>&nbsp;<span class="element-name">onExperimentViewed</span><wbr><span class="parameters">(<a href="../../model/Experiment.html" title="class in growthbook.sdk.java.model">Experiment</a>&lt;V&gt;&nbsp;experiment,
+ <a href="../../model/ExperimentResult.html" title="class in growthbook.sdk.java.model">ExperimentResult</a>&lt;V&gt;&nbsp;result,
+ @Nullable
+ com.google.gson.JsonObject&nbsp;userAttributes)</span></div>
+<div class="block"><span class="descfrm-type-label">Description copied from interface:&nbsp;<code><a href="../GrowthBookPlugin.html#onExperimentViewed(growthbook.sdk.java.model.Experiment,growthbook.sdk.java.model.ExperimentResult,com.google.gson.JsonObject)">GrowthBookPlugin</a></code></span></div>
+<div class="block">Invoked after a user is bucketed into an experiment, with the user's attributes at evaluation
+ time. The default delegates to <a href="../GrowthBookPlugin.html#onExperimentViewed(growthbook.sdk.java.model.Experiment,growthbook.sdk.java.model.ExperimentResult)"><code>GrowthBookPlugin.onExperimentViewed(Experiment, ExperimentResult)</code></a> so
+ existing plugins keep working; override this overload to receive the attributes.</div>
+<dl class="notes">
+<dt>Specified by:</dt>
+<dd><code><a href="../GrowthBookPlugin.html#onExperimentViewed(growthbook.sdk.java.model.Experiment,growthbook.sdk.java.model.ExperimentResult,com.google.gson.JsonObject)">onExperimentViewed</a></code>&nbsp;in interface&nbsp;<code><a href="../GrowthBookPlugin.html" title="interface in growthbook.sdk.java.plugin">GrowthBookPlugin</a></code></dd>
+<dd><code>userAttributes</code> - the evaluated user's attributes, or <code>null</code> when unavailable</dd>
+</dl>
+</section>
+</li>
+<li>
 <section class="detail" id="onFeatureEvaluated(java.lang.String,growthbook.sdk.java.model.FeatureResult)">
 <h3>onFeatureEvaluated</h3>
 <div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="type-parameters">&lt;V&gt;</span>&nbsp;<span class="return-type">void</span>&nbsp;<span class="element-name">onFeatureEvaluated</span><wbr><span class="parameters">(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;featureKey,
@@ -208,6 +241,24 @@ implements <a href="../GrowthBookPlugin.html" title="interface in growthbook.sdk
 <dl class="notes">
 <dt>Specified by:</dt>
 <dd><code><a href="../GrowthBookPlugin.html#onFeatureEvaluated(java.lang.String,growthbook.sdk.java.model.FeatureResult)">onFeatureEvaluated</a></code>&nbsp;in interface&nbsp;<code><a href="../GrowthBookPlugin.html" title="interface in growthbook.sdk.java.plugin">GrowthBookPlugin</a></code></dd>
+</dl>
+</section>
+</li>
+<li>
+<section class="detail" id="onFeatureEvaluated(java.lang.String,growthbook.sdk.java.model.FeatureResult,com.google.gson.JsonObject)">
+<h3>onFeatureEvaluated</h3>
+<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="type-parameters">&lt;V&gt;</span>&nbsp;<span class="return-type">void</span>&nbsp;<span class="element-name">onFeatureEvaluated</span><wbr><span class="parameters">(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;featureKey,
+ <a href="../../model/FeatureResult.html" title="class in growthbook.sdk.java.model">FeatureResult</a>&lt;V&gt;&nbsp;result,
+ @Nullable
+ com.google.gson.JsonObject&nbsp;userAttributes)</span></div>
+<div class="block"><span class="descfrm-type-label">Description copied from interface:&nbsp;<code><a href="../GrowthBookPlugin.html#onFeatureEvaluated(java.lang.String,growthbook.sdk.java.model.FeatureResult,com.google.gson.JsonObject)">GrowthBookPlugin</a></code></span></div>
+<div class="block">Invoked on every feature evaluation, with the user's attributes at evaluation time. The default
+ delegates to <a href="../GrowthBookPlugin.html#onFeatureEvaluated(java.lang.String,growthbook.sdk.java.model.FeatureResult)"><code>GrowthBookPlugin.onFeatureEvaluated(String, FeatureResult)</code></a> so existing plugins keep working;
+ override this overload to receive the attributes.</div>
+<dl class="notes">
+<dt>Specified by:</dt>
+<dd><code><a href="../GrowthBookPlugin.html#onFeatureEvaluated(java.lang.String,growthbook.sdk.java.model.FeatureResult,com.google.gson.JsonObject)">onFeatureEvaluated</a></code>&nbsp;in interface&nbsp;<code><a href="../GrowthBookPlugin.html" title="interface in growthbook.sdk.java.plugin">GrowthBookPlugin</a></code></dd>
+<dd><code>userAttributes</code> - the evaluated user's attributes, or <code>null</code> when unavailable</dd>
 </dl>
 </section>
 </li>

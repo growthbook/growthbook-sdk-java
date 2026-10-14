@@ -120,8 +120,18 @@ loadScripts(document, 'script');</script>
  <a href="../model/ExperimentResult.html" title="class in growthbook.sdk.java.model">ExperimentResult</a>&lt;V&gt;&nbsp;result)</code></div>
 <div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">&nbsp;</div>
 <div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>&lt;V&gt;&nbsp;void</code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#fireFeatureEvaluated(java.lang.String,growthbook.sdk.java.model.FeatureResult)" class="member-name-link">fireFeatureEvaluated</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;featureKey,
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#fireExperimentViewed(growthbook.sdk.java.model.Experiment,growthbook.sdk.java.model.ExperimentResult,com.google.gson.JsonObject)" class="member-name-link">fireExperimentViewed</a><wbr>(<a href="../model/Experiment.html" title="class in growthbook.sdk.java.model">Experiment</a>&lt;V&gt;&nbsp;experiment,
+ <a href="../model/ExperimentResult.html" title="class in growthbook.sdk.java.model">ExperimentResult</a>&lt;V&gt;&nbsp;result,
+ com.google.gson.JsonObject&nbsp;userAttributes)</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">&nbsp;</div>
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>&lt;V&gt;&nbsp;void</code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#fireFeatureEvaluated(java.lang.String,growthbook.sdk.java.model.FeatureResult)" class="member-name-link">fireFeatureEvaluated</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;featureKey,
  <a href="../model/FeatureResult.html" title="class in growthbook.sdk.java.model">FeatureResult</a>&lt;V&gt;&nbsp;result)</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">&nbsp;</div>
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>&lt;V&gt;&nbsp;void</code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#fireFeatureEvaluated(java.lang.String,growthbook.sdk.java.model.FeatureResult,com.google.gson.JsonObject)" class="member-name-link">fireFeatureEvaluated</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;featureKey,
+ <a href="../model/FeatureResult.html" title="class in growthbook.sdk.java.model">FeatureResult</a>&lt;V&gt;&nbsp;result,
+ com.google.gson.JsonObject&nbsp;userAttributes)</code></div>
 <div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">&nbsp;</div>
 <div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>void</code></div>
 <div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#initAll()" class="member-name-link">initAll</a>()</code></div>
@@ -181,10 +191,28 @@ loadScripts(document, 'script');</script>
 </section>
 </li>
 <li>
+<section class="detail" id="fireExperimentViewed(growthbook.sdk.java.model.Experiment,growthbook.sdk.java.model.ExperimentResult,com.google.gson.JsonObject)">
+<h3>fireExperimentViewed</h3>
+<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="type-parameters">&lt;V&gt;</span>&nbsp;<span class="return-type">void</span>&nbsp;<span class="element-name">fireExperimentViewed</span><wbr><span class="parameters">(<a href="../model/Experiment.html" title="class in growthbook.sdk.java.model">Experiment</a>&lt;V&gt;&nbsp;experiment,
+ <a href="../model/ExperimentResult.html" title="class in growthbook.sdk.java.model">ExperimentResult</a>&lt;V&gt;&nbsp;result,
+ @Nullable
+ com.google.gson.JsonObject&nbsp;userAttributes)</span></div>
+</section>
+</li>
+<li>
 <section class="detail" id="fireFeatureEvaluated(java.lang.String,growthbook.sdk.java.model.FeatureResult)">
 <h3>fireFeatureEvaluated</h3>
 <div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="type-parameters">&lt;V&gt;</span>&nbsp;<span class="return-type">void</span>&nbsp;<span class="element-name">fireFeatureEvaluated</span><wbr><span class="parameters">(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;featureKey,
  <a href="../model/FeatureResult.html" title="class in growthbook.sdk.java.model">FeatureResult</a>&lt;V&gt;&nbsp;result)</span></div>
+</section>
+</li>
+<li>
+<section class="detail" id="fireFeatureEvaluated(java.lang.String,growthbook.sdk.java.model.FeatureResult,com.google.gson.JsonObject)">
+<h3>fireFeatureEvaluated</h3>
+<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="type-parameters">&lt;V&gt;</span>&nbsp;<span class="return-type">void</span>&nbsp;<span class="element-name">fireFeatureEvaluated</span><wbr><span class="parameters">(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;featureKey,
+ <a href="../model/FeatureResult.html" title="class in growthbook.sdk.java.model">FeatureResult</a>&lt;V&gt;&nbsp;result,
+ @Nullable
+ com.google.gson.JsonObject&nbsp;userAttributes)</span></div>
 </section>
 </li>
 <li>
