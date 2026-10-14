@@ -1070,21 +1070,9 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
         }
     }
 
-    /**
-     * Reads the cached payload for this repository's per-endpoint {@link #cacheKey}, falling back to
-     * the legacy shared {@link #FILE_NAME} key. Entries written before per-endpoint cache keys were
-     * introduced live under {@code FILE_NAME}; without this fallback they would look missing after an
-     * upgrade, so a failed first fetch could not serve the still-valid cached features. The per-endpoint
-     * key is tried first, so tenant isolation holds and the fallback only applies until the first
-     * successful fetch repopulates the new key.
-     */
     @Nullable
     private String loadCachedPayload(GbCacheManager manager) {
-        String data = manager.loadCache(this.cacheKey);
-        if (data == null && !FILE_NAME.equals(this.cacheKey)) {
-            data = manager.loadCache(FILE_NAME);
-        }
-        return data;
+        return manager.loadCache(this.cacheKey);
     }
 
     private boolean loadCachedFeaturesIfAvailable() {

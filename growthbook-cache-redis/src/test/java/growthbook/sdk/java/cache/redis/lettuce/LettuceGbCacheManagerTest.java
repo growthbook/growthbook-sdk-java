@@ -13,6 +13,8 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
+import java.lang.reflect.Field;
+import java.nio.charset.StandardCharsets;
 import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
@@ -22,12 +24,12 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -41,6 +43,14 @@ import static org.mockito.Mockito.when;
 class LettuceGbCacheManagerTest {
 
     private static final String PREFIX = LettuceCacheOptions.DEFAULT_KEY_PREFIX;
+
+    private static final String HSET_PERSIST_SCRIPT =
+            "redis.call('HSET', KEYS[1], unpack(ARGV))\n"
+                    + "return redis.call('PERSIST', KEYS[1])";
+
+    private static final String HSET_PEXPIRE_SCRIPT =
+            "redis.call('HSET', KEYS[1], unpack(ARGV, 2))\n"
+                    + "return redis.call('PEXPIRE', KEYS[1], ARGV[1])";
 
     private StatefulRedisConnection<String, String> connection;
     private RedisCommands<String, String> commands;
@@ -66,11 +76,12 @@ class LettuceGbCacheManagerTest {
         cache.saveContent("FEATURE_CACHE.json", "{\"features\":{}}");
 
         // Then
-        ArgumentCaptor<String> scriptCaptor = ArgumentCaptor.forClass(String.class);
+        @SuppressWarnings("unchecked")
+        ArgumentCaptor<String[]> keysCaptor = ArgumentCaptor.forClass(String[].class);
         ArgumentCaptor<String> argvCaptor = ArgumentCaptor.forClass(String.class);
-        verify(commands).eval(scriptCaptor.capture(), eq(ScriptOutputType.INTEGER), any(String[].class),
+        verify(commands).eval(eq(HSET_PERSIST_SCRIPT), eq(ScriptOutputType.INTEGER), keysCaptor.capture(),
                 argvCaptor.capture());
-        assertTrue(scriptCaptor.getValue().contains("PERSIST"));
+        assertArrayEquals(new String[]{PREFIX + "FEATURE_CACHE.json"}, keysCaptor.getValue());
         Map<String, String> hash = pairsToMap(argvCaptor.getAllValues());
         assertEquals("{\"features\":{}}", hash.get("data"));
         assertEquals("1234", hash.get("updatedAt"));
@@ -100,8 +111,12 @@ class LettuceGbCacheManagerTest {
 
         // Then: a single EVAL sets the hash and TTL (30_000ms) together; no MULTI/EXEC on the shared
         // connection, so concurrent writes cannot interleave and a failure cannot leave it open.
+        @SuppressWarnings("unchecked")
+        ArgumentCaptor<String[]> keysCaptor = ArgumentCaptor.forClass(String[].class);
         ArgumentCaptor<String> argvCaptor = ArgumentCaptor.forClass(String.class);
-        verify(commands).eval(anyString(), eq(ScriptOutputType.INTEGER), any(String[].class), argvCaptor.capture());
+        verify(commands).eval(eq(HSET_PEXPIRE_SCRIPT), eq(ScriptOutputType.INTEGER), keysCaptor.capture(),
+                argvCaptor.capture());
+        assertArrayEquals(new String[]{PREFIX + "k"}, keysCaptor.getValue());
         assertEquals("30000", argvCaptor.getAllValues().get(0));
         verify(commands, never()).multi();
         verify(commands, never()).exec();
@@ -121,8 +136,12 @@ class LettuceGbCacheManagerTest {
         cache.saveContent("k", "v");
 
         // Then: TTL argument is 500ms, never EXPIRE 0 (which would immediately delete the entry)
+        @SuppressWarnings("unchecked")
+        ArgumentCaptor<String[]> keysCaptor = ArgumentCaptor.forClass(String[].class);
         ArgumentCaptor<String> argvCaptor = ArgumentCaptor.forClass(String.class);
-        verify(commands).eval(anyString(), eq(ScriptOutputType.INTEGER), any(String[].class), argvCaptor.capture());
+        verify(commands).eval(eq(HSET_PEXPIRE_SCRIPT), eq(ScriptOutputType.INTEGER), keysCaptor.capture(),
+                argvCaptor.capture());
+        assertArrayEquals(new String[]{PREFIX + "k"}, keysCaptor.getValue());
         assertEquals("500", argvCaptor.getAllValues().get(0));
         verify(commands, never()).expire(anyString(), anyLong());
     }
@@ -196,7 +215,21 @@ class LettuceGbCacheManagerTest {
         cache.clearCache();
 
         // Then
+        ArgumentCaptor<ScanArgs> argsCaptor = ArgumentCaptor.forClass(ScanArgs.class);
+        verify(commands).scan(any(ScanCursor.class), argsCaptor.capture());
+        assertEquals(PREFIX + "*", matchPatternOf(argsCaptor.getValue()));
         verify(commands).del(PREFIX + "a", PREFIX + "b");
+    }
+
+    private static String matchPatternOf(ScanArgs scanArgs) {
+        try {
+            Field match = ScanArgs.class.getDeclaredField("match");
+            match.setAccessible(true);
+            byte[] pattern = (byte[]) match.get(scanArgs);
+            return pattern == null ? null : new String(pattern, StandardCharsets.UTF_8);
+        } catch (ReflectiveOperationException e) {
+            throw new AssertionError("Could not read ScanArgs.match", e);
+        }
     }
 
     @Test
@@ -245,7 +278,10 @@ class LettuceGbCacheManagerTest {
         // When & Then
         assertThrows(NullPointerException.class, () -> LettuceGbCacheManager.create((LettuceCacheOptions) null));
         assertThrows(NullPointerException.class, () -> options.connection(null));
+        assertThrows(IllegalArgumentException.class, () -> options.keyPrefix(null));
+        assertThrows(IllegalArgumentException.class, () -> options.keyPrefix(""));
         assertThrows(IllegalArgumentException.class, () -> options.keyPrefix(" "));
+        assertThrows(IllegalArgumentException.class, () -> options.ttl(Duration.ofSeconds(-1)));
         assertThrows(IllegalArgumentException.class, () -> options.ttl(Duration.ZERO));
         assertThrows(IllegalArgumentException.class, () -> options.ttl(Duration.ofNanos(500)));
         assertThrows(NullPointerException.class, () -> options.clock(null));

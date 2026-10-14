@@ -385,6 +385,39 @@ public class InMemoryStickyBucketServiceImpl implements StickyBucketService {
 }
 ```
 
+#### Redis-backed sticky bucketing (multi-instance)
+
+`InMemoryStickyBucketServiceImpl` keeps assignments inside a single JVM, so on a horizontally
+scaled fleet each instance buckets the same user independently and assignments are lost on restart.
+The `growthbook-cache-redis` module ships a shared, durable implementation backed by Redis so a user
+keeps the same variation across the whole fleet and across restarts. It reuses the same Jedis or
+Lettuce client you already provide for the Redis feature cache, and stores each user's assignments
+as a JSON string under `<keyPrefix><attributeName>||<attributeValue>` — wire-compatible with the
+TypeScript `RedisStickyBucketService` (with the default empty prefix). Assignments are written
+without a TTL. Genuine Redis access failures and malformed payloads surface as a
+`StickyBucketServiceException` (mirroring how the feature cache throws `FeatureCacheException`)
+rather than being swallowed; an absent key is a normal miss, not a failure.
+
+```java
+// Jedis
+JedisPool jedisPool = new JedisPool("localhost", 6379);
+Options options = Options.builder()
+    .stickyBucketService(new JedisStickyBucketService(jedisPool))
+    .stickyBucketIdentifierAttributes(Arrays.asList("id"))
+    .build();
+
+// Lettuce
+StatefulRedisConnection<String, String> connection =
+    RedisClient.create("redis://localhost:6379").connect();
+Options lettuceOptions = Options.builder()
+    .stickyBucketService(new LettuceStickyBucketService(connection))
+    .stickyBucketIdentifierAttributes(Arrays.asList("id"))
+    .build();
+```
+
+Both constructors accept an optional second `keyPrefix` argument when you want to namespace the keys
+(e.g. `new JedisStickyBucketService(jedisPool, "growthbook:sticky:")`).
+
 ## Contributing
 
 ### Releasing a new version
