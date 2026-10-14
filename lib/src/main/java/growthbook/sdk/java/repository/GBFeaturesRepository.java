@@ -37,8 +37,6 @@ import growthbook.sdk.java.sse.SseEventPayloadValidator;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
-import okhttp3.Call;
-import okhttp3.Callback;
 import okhttp3.MediaType;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
@@ -503,17 +501,7 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
         this.refreshExpiresAt();
 
         // Use provided OkHttpClient or create a new one
-        if (okHttpClient == null) {
-            this.okHttpClient = this.initializeHttpClient();
-        } else if (okHttpClient.retryOnConnectionFailure()) {
-            log.warn("Disabling OkHttpClient.retryOnConnectionFailure because feature fetch retries are handled by FeatureFetchRetryPolicy.");
-            this.okHttpClient = okHttpClient.newBuilder()
-                    .retryOnConnectionFailure(false)
-                    .build();
-        } else {
-            // TODO: Check for valid interceptor
-            this.okHttpClient = okHttpClient;
-        }
+        this.okHttpClient = okHttpClient == null ? this.initializeHttpClient() : okHttpClient;
         if (!this.isCacheDisabled) {
             this.cacheManager.set(cacheManager != null ? cacheManager : createCacheManager());
         }
@@ -833,19 +821,6 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
         this.sseEventSource.set(EventSources
                 .createFactory(this.sseHttpClient.get())
                 .newEventSource(sseRequest, gbEventSourceListener));
-
-        this.sseHttpClient.get().newCall(sseRequest).enqueue(new Callback() {
-            @Override
-            public void onFailure(@NotNull Call call, @NotNull IOException e) {
-                log.error("SSE connection failed: {}", e.getMessage(), e);
-                call.cancel();
-            }
-
-            @Override
-            public void onResponse(@NotNull Call call, @NotNull Response response) {
-                response.close();
-            }
-        });
     }
 
     private synchronized void scheduleSseReconnect(Boolean retryOnFailure) {
@@ -898,7 +873,7 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
 
         return new OkHttpClient.Builder()
                 .addInterceptor(new GBFeaturesRepositoryRequestInterceptor())
-                .retryOnConnectionFailure(false)
+                .retryOnConnectionFailure(true)
                 .build();
     }
 
