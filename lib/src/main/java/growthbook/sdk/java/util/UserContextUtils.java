@@ -49,6 +49,20 @@ public final class UserContextUtils {
         return mergedUserContext;
     }
 
+    /**
+     * Merges global and per-user attributes <em>without</em> preloading sticky-bucket assignments or
+     * touching any evaluation data. For paths that only need the resolved user attributes (e.g.
+     * {@code logEvent}) and must not trigger a feature fetch or a sticky-bucket service lookup.
+     *
+     * @param options     client options (global attributes)
+     * @param userContext the per-request user context; {@code null} is treated as an empty context
+     * @return a new user context carrying the merged attributes
+     */
+    public static UserContext withMergedAttributes(Options options, @Nullable UserContext userContext) {
+        UserContext safeUserContext = userContext == null ? UserContext.builder().build() : userContext;
+        return safeUserContext.withAttributes(mergeAttributes(options, safeUserContext));
+    }
+
     private static JsonObject mergeAttributes(Options options, UserContext userContext) {
         JsonObject merged = globalAttributes(options);
         JsonObject userAttributes = userContext.getAttributes();
