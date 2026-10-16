@@ -1,38 +1,42 @@
 package growthbook.sdk.java.repository;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpServer;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.OutputStream;
+import java.lang.reflect.Field;
 import java.net.InetSocketAddress;
 import java.nio.charset.StandardCharsets;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
+import okhttp3.Dispatcher;
+import okhttp3.OkHttpClient;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 /**
- * Guards the SSE connection contract: starting the server-sent-events strategy must open exactly one
- * connection to the stream endpoint. A duplicate {@code newCall(sseRequest).enqueue(...)} alongside
- * the {@code EventSource} would open a second, immediately-closed stream connection per (re)connect;
- * this test fails if that duplicate is ever restored.
+ * Guards the SSE connection contract: starting the server-sent-events strategy must submit exactly
+ * one call to the stream endpoint. A duplicate {@code newCall(sseRequest).enqueue(...)} alongside the
+ * {@code EventSource} would open a second, immediately-closed stream connection per (re)connect; this
+ * test fails if that duplicate is ever restored.
+ *
+ * <p>Both SSE calls are enqueued synchronously inside {@code initialize()}, so the assertion reads the
+ * SSE client's OkHttp dispatcher directly — no real-time polling. The test double holds the stream
+ * connection open so the submitted calls stay in flight and cannot settle before they are counted.
  */
 class SseStreamSingleConnectionTest {
 
     private static final String FEATURES = "{\"features\":{\"flag\":{\"defaultValue\":true}},\"savedGroups\":{}}";
 
     @Test
-    @DisplayName("Verify: starting SSE opens exactly one connection to the stream endpoint")
-    void startingSseOpensExactlyOneStreamConnection() throws Exception {
-        // Given a proxy that advertises SSE support and counts stream connections
+    @DisplayName("Verify: starting SSE submits exactly one call to the stream endpoint")
+    void startingSseSubmitsExactlyOneStreamCall() throws Exception {
+        // Given a proxy that advertises SSE support and holds the stream connection open
         try (SseServer server = new SseServer()) {
             GBFeaturesRepository repository = GBFeaturesRepository.builder()
                     .apiHost(server.apiHost())
@@ -42,29 +46,36 @@ class SseStreamSingleConnectionTest {
                     .build();
 
             try {
-                // When the repository initializes and establishes the stream
+                // When the repository initializes and enqueues the stream call(s)
                 repository.initialize();
-                assertTrue(server.awaitFirstConnection(2000), "SSE stream was never opened");
 
-                // Then no second connection arrives within the window a duplicate request would use
-                assertFalse(
-                        server.awaitSecondConnection(500),
-                        "SSE must open exactly one stream connection, but a duplicate request was observed"
+                // Then exactly one SSE call is in flight on the SSE client's dispatcher
+                Dispatcher dispatcher = readSseDispatcher(repository);
+                int inFlight = dispatcher.runningCallsCount() + dispatcher.queuedCallsCount();
+                assertEquals(
+                        1,
+                        inFlight,
+                        "SSE must submit exactly one stream call, but a duplicate request was observed"
                 );
-                assertEquals(1, server.streamConnectionCount());
             } finally {
                 repository.shutdown();
             }
         }
     }
 
-    /** Minimal proxy: GET /api/features (advertising SSE) and GET /sub (event stream, counted). */
+    private static Dispatcher readSseDispatcher(GBFeaturesRepository repository) throws Exception {
+        Field field = GBFeaturesRepository.class.getDeclaredField("sseHttpClient");
+        field.setAccessible(true);
+        AtomicReference<?> clientRef = (AtomicReference<?>) field.get(repository);
+        OkHttpClient sseClient = (OkHttpClient) clientRef.get();
+        assertNotNull(sseClient, "SSE client was never created; the stream was not started");
+        return sseClient.dispatcher();
+    }
+
+    /** Minimal proxy: GET /api/features (advertising SSE) and GET /sub (stream held open). */
     private static final class SseServer implements AutoCloseable {
         private final HttpServer server;
         private final ExecutorService executor;
-        private final AtomicInteger streamConnections = new AtomicInteger();
-        private final CountDownLatch firstConnection = new CountDownLatch(1);
-        private final CountDownLatch secondConnection = new CountDownLatch(1);
         private final CountDownLatch stop = new CountDownLatch(1);
 
         SseServer() throws IOException {
@@ -80,49 +91,28 @@ class SseStreamSingleConnectionTest {
             return "http://127.0.0.1:" + this.server.getAddress().getPort();
         }
 
-        int streamConnectionCount() {
-            return this.streamConnections.get();
-        }
-
-        boolean awaitFirstConnection(long millis) throws InterruptedException {
-            return firstConnection.await(millis, TimeUnit.MILLISECONDS);
-        }
-
-        boolean awaitSecondConnection(long millis) throws InterruptedException {
-            return secondConnection.await(millis, TimeUnit.MILLISECONDS);
-        }
-
         private void handleFeatures(HttpExchange exchange) throws IOException {
             drain(exchange);
             exchange.getResponseHeaders().add("Content-Type", "application/json");
             exchange.getResponseHeaders().add("X-Sse-Support", "enabled");
             byte[] body = FEATURES.getBytes(StandardCharsets.UTF_8);
             exchange.sendResponseHeaders(200, body.length);
-            try (OutputStream os = exchange.getResponseBody()) {
+            try (java.io.OutputStream os = exchange.getResponseBody()) {
                 os.write(body);
             }
         }
 
-        private void handleSse(HttpExchange exchange) throws IOException {
-            drain(exchange);
-            int connection = streamConnections.incrementAndGet();
-            firstConnection.countDown();
-            if (connection >= 2) {
-                secondConnection.countDown();
-            }
-            exchange.getResponseHeaders().add("Content-Type", "text/event-stream");
-            exchange.sendResponseHeaders(200, 0);
-            OutputStream os = exchange.getResponseBody();
+        private void handleSse(HttpExchange exchange) {
             try {
+                drain(exchange);
+                // Hold the connection open so the submitted call stays in flight until teardown.
                 stop.await();
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
+            } catch (IOException e) {
+                throw new IllegalStateException("Unexpected failure draining SSE request", e);
             } finally {
-                try {
-                    os.close();
-                } catch (IOException ignored) {
-                    // stream already torn down by shutdown
-                }
+                exchange.close();
             }
         }
 
