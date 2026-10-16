@@ -438,7 +438,6 @@ public class NativeJavaGbFeatureRepository implements IGBFeaturesRepository {
 
     public void requestFeatureRefresh(RefreshMode refreshMode) {
         RefreshMode mode = refreshMode == null ? RefreshMode.DEFAULT : refreshMode;
-        // A forced refresh is fire-and-forget (never blocks the caller); a default refresh runs inline.
         if (mode == RefreshMode.FORCE) {
             this.featureRefreshScheduler.runInBackground(mode, this::refreshFeatures);
         } else {

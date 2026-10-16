@@ -6,6 +6,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.sun.net.httpserver.HttpServer;
+import growthbook.sdk.java.callback.FeatureRefreshCallback;
 import growthbook.sdk.java.exception.FeatureFetchException;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -23,6 +24,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * Cross-instance behavior of the opt-in process-shared payload cache, asserted against real request
@@ -38,12 +40,16 @@ class GBFeaturesRepositorySharedCacheTest {
     private final AtomicInteger requestCount = new AtomicInteger();
     private final List<GBFeaturesRepository> repositories = new ArrayList<>();
     private volatile long responseDelayMillis = 0L;
+    private final AtomicReference<String> responseBody = new AtomicReference<>(FEATURES_BODY);
+    private volatile int responseStatus = 200;
 
     @BeforeEach
     void setUp() throws IOException {
         GBFeaturesRepository.clearSharedPayloadState();
         requestCount.set(0);
         responseDelayMillis = 0L;
+        responseBody.set(FEATURES_BODY);
+        responseStatus = 200;
         server = HttpServer.create(new InetSocketAddress("127.0.0.1", 0), 0);
         server.setExecutor(Executors.newFixedThreadPool(4));
         server.createContext("/api/features/", exchange -> {
@@ -55,9 +61,11 @@ class GBFeaturesRepositorySharedCacheTest {
                     Thread.currentThread().interrupt();
                 }
             }
-            byte[] body = FEATURES_BODY.getBytes(StandardCharsets.UTF_8);
+            int status = responseStatus;
+            byte[] body = (status == 200 ? responseBody.get() : "{\"error\":\"boom\"}")
+                    .getBytes(StandardCharsets.UTF_8);
             exchange.getResponseHeaders().add("Content-Type", "application/json");
-            exchange.sendResponseHeaders(200, body.length);
+            exchange.sendResponseHeaders(status, body.length);
             try (OutputStream os = exchange.getResponseBody()) {
                 os.write(body);
             }
@@ -235,6 +243,84 @@ class GBFeaturesRepositorySharedCacheTest {
 
         // Then it fetched again despite the fresh entry
         assertEquals(2, requestCount.get());
+    }
+
+    @Test
+    @DisplayName("Verify: a background reload de-duplicated onto another instance still updates this one")
+    void backgroundReloadFollowerAdoptsRefreshedPayload() throws InterruptedException, FeatureFetchException {
+        // Given a stale (but not expired) shared entry holding v1
+        GBFeaturesRepository.configureSharedCache(Duration.ZERO, Duration.ofMinutes(5), 10);
+        responseBody.set("{\"features\":{\"v1-flag\":{\"defaultValue\":true}}}");
+        GBFeaturesRepository warm = sharedRepository("sdk-abc");
+        warm.initialize();
+        assertEquals(1, requestCount.get());
+
+        // and the server now serves v2, slowly, so the two background reloads overlap in flight
+        responseBody.set("{\"features\":{\"v2-flag\":{\"defaultValue\":true}}}");
+        responseDelayMillis = 200L;
+
+        // When two instances initialize concurrently against the stale entry
+        GBFeaturesRepository a = sharedRepository("sdk-abc");
+        GBFeaturesRepository b = sharedRepository("sdk-abc");
+        CountDownLatch start = new CountDownLatch(1);
+        Thread t1 = initThread(a, start);
+        Thread t2 = initThread(b, start);
+        t1.start();
+        t2.start();
+        start.countDown();
+        t1.join(5000);
+        t2.join(5000);
+
+        // Then the stale-serve background reloads collapsed to a single network fetch...
+        awaitRequestCount(2);
+        assertEquals(2, requestCount.get());
+        // ...and both instances adopted the refreshed v2 payload — the follower was not left on v1
+        awaitFeatures(a, "v2-flag");
+        awaitFeatures(b, "v2-flag");
+        assertTrue(a.getFeaturesJson().contains("v2-flag"));
+        assertTrue(b.getFeaturesJson().contains("v2-flag"));
+    }
+
+    @Test
+    @DisplayName("Verify: a shared-cache hit notifies the legacy feature-refresh callback")
+    void sharedCacheHitNotifiesLegacyCallback() throws FeatureFetchException {
+        // Given a warmed fresh shared entry
+        GBFeaturesRepository first = sharedRepository("sdk-abc");
+        first.initialize();
+        assertEquals(1, requestCount.get());
+
+        // and a second instance with a legacy FeatureRefreshCallback registered before init
+        GBFeaturesRepository second = sharedRepository("sdk-abc");
+        AtomicReference<String> delivered = new AtomicReference<>();
+        second.onFeaturesRefresh(new FeatureRefreshCallback() {
+            @Override
+            public void onRefresh(String featuresJson) {
+                delivered.set(featuresJson);
+            }
+
+            @Override
+            public void onError(Throwable throwable) {
+                // not expected in this scenario
+            }
+        });
+
+        // When it serves from the shared cache (no extra network fetch)
+        second.initialize();
+
+        // Then the legacy callback received the shared payload
+        assertEquals(1, requestCount.get());
+        assertTrue(delivered.get() != null && delivered.get().contains("my-flag"));
+    }
+
+    private void awaitFeatures(GBFeaturesRepository repository, String token) {
+        long deadlineNanos = System.nanoTime() + TimeUnit.SECONDS.toNanos(5);
+        while (System.nanoTime() < deadlineNanos) {
+            String json = repository.getFeaturesJson();
+            if (json != null && json.contains(token)) {
+                return;
+            }
+            Thread.yield();
+        }
     }
 
     private void awaitRequestCount(int expected) {

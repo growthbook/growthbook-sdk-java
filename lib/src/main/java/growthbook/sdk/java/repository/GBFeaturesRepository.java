@@ -1049,7 +1049,6 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
 
     public void requestFeatureRefresh(RefreshMode refreshMode) {
         RefreshMode mode = refreshMode == null ? RefreshMode.DEFAULT : refreshMode;
-        // A forced refresh is fire-and-forget (never blocks the caller); a default refresh runs inline.
         if (mode == RefreshMode.FORCE) {
             this.featureRefreshScheduler.runInBackground(mode, this::refreshFeatures);
         } else {
@@ -1171,8 +1170,13 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
      * leader may have just published a fresh entry, closing the gap between the caller's miss and
      * acquiring the in-flight slot — and reuses it. Otherwise performs the network refresh, which
      * publishes the payload via {@link #onResponseJson} and applies it to this instance; in that case
-     * {@code appliedLocally} is set so the caller does not re-seed. Returns whatever now sits in the
-     * shared cache.
+     * {@code appliedLocally} is set so the caller does not re-seed.
+     *
+     * <p>Returns a shared payload still within its max age for waiting followers to adopt, or
+     * {@code null} when none is — e.g. the network fetch failed and this instance fell back to its own
+     * disk cache, leaving the shared entry expired. Returning {@code null} there keeps followers from
+     * adopting an expired payload past its max age; each uses its own fallback instead. A successful
+     * refresh (re)publishes the entry, so it is within max age and is returned.
      */
     @Nullable
     private String fetchIntoSharedCache(
@@ -1183,7 +1187,8 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
         }
         refreshFeatures(RefreshMode.DEFAULT, source);
         appliedLocally.set(true);
-        return SHARED_CACHE.peek(this.sharedCacheKey);
+        SharedFeatureCache.Read reread = SHARED_CACHE.read(this.sharedCacheKey, true, false);
+        return reread.shouldFetch() ? null : reread.payload();
     }
 
     /**
@@ -1191,13 +1196,22 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
      * when serving stale data. Runs on the refresh scheduler's background executor with normal
      * (ETag-aware) refresh semantics; the action is a de-duplicated shared fetch so concurrent stale
      * instances trigger a single network reload.
+     *
+     * <p>The instance that performs the reload applies the fresh payload to itself via the refresh path.
+     * An instance whose reload was de-duplicated onto another leader must adopt the leader's payload
+     * here; otherwise it would keep serving the stale flags until its next poll even after the shared
+     * entry was refreshed.
      */
     private void triggerBackgroundSharedReload(FeatureRefreshSource source) {
-        this.featureRefreshScheduler.runInBackground(
-                mode -> SHARED_CACHE.runDeduped(
-                        this.sharedCacheKey,
-                        () -> fetchIntoSharedCache(source, false, new AtomicBoolean(false)))
-        );
+        this.featureRefreshScheduler.runInBackground(mode -> {
+            AtomicBoolean appliedLocally = new AtomicBoolean(false);
+            String payload = SHARED_CACHE.runDeduped(
+                    this.sharedCacheKey,
+                    () -> fetchIntoSharedCache(source, false, appliedLocally));
+            if (!appliedLocally.get() && payload != null) {
+                seedFromSharedPayload(payload, source);
+            }
+        });
     }
 
     /**
@@ -1212,11 +1226,14 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
      * Applies a payload obtained from the shared cache to this instance's state without re-fetching.
      * Reuses the cache-load path ({@code isFromCache=true}) so it neither re-publishes to the shared
      * cache nor writes the per-instance file cache; success is reported with {@code loadedFromCache=true}.
+     * Notifies both the legacy {@link FeatureRefreshCallback} channel and the modern listener channel so
+     * callers that copy flags from the legacy callback receive the shared payload on a cache hit too.
      */
     private void seedFromSharedPayload(String payload, FeatureRefreshSource source) throws FeatureFetchException {
         long startedAtNanos = System.nanoTime();
         boolean featuresChanged = onResponseJson(payload, true);
         this.lastSuccessfulFetchAtMillis.set(System.currentTimeMillis());
+        this.onRefreshSuccess(getFeaturesJson());
         this.featureRefreshNotifier.notifySuccess(
                 source,
                 featuresChanged,
