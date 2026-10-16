@@ -19,6 +19,8 @@ import growthbook.sdk.java.model.FeatureKey;
 import growthbook.sdk.java.model.FeatureResult;
 import growthbook.sdk.java.model.GBContext;
 import growthbook.sdk.java.model.RequestBodyForRemoteEval;
+import growthbook.sdk.java.repository.GBFeaturesRepository;
+import growthbook.sdk.java.repository.PrefetchOptions;
 import growthbook.sdk.java.remoteeval.RemoteEvalCache;
 import growthbook.sdk.java.remoteeval.RemoteEvalCacheKey;
 import growthbook.sdk.java.remoteeval.RemoteEvalOptionsValidator;
@@ -94,6 +96,20 @@ public class GrowthBook implements IGrowthBook {
         refreshStickyBucketService(null);
         this.initializeEvalContext();
         this.pluginRegistry.initAll();
+    }
+
+    /**
+     * Warms the process-shared feature payload cache for the given {@code (apiHost, clientKey)} so a
+     * later {@link GBFeaturesRepository} configured with the same key and {@code sharedCacheEnabled(true)}
+     * serves its first request from cache with no network round trip. Boot-time warm-up and
+     * thundering-herd protection for the single-context path where many short-lived instances share a
+     * key (per-request / serverless). Delegates to {@link GBFeaturesRepository#prefetchPayload(PrefetchOptions)}.
+     *
+     * @param options identifies the payload to warm; {@code clientKey} is required
+     * @throws FeatureFetchException when the warm-up fetch fails
+     */
+    public static void prefetchPayload(PrefetchOptions options) throws FeatureFetchException {
+        GBFeaturesRepository.prefetchPayload(options);
     }
 
     /**
