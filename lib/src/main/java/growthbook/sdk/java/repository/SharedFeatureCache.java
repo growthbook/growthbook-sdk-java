@@ -113,6 +113,13 @@ final class SharedFeatureCache {
         return dedup.run(key, action);
     }
 
+    /**
+     * Number of callers currently inside a de-duplicated fetch (leaders plus waiting followers). For tests.
+     */
+    int fetchParticipantCount() {
+        return dedup.participantCount();
+    }
+
     void configure(SharedPayloadCache.Settings settings) {
         cache.configure(settings);
     }

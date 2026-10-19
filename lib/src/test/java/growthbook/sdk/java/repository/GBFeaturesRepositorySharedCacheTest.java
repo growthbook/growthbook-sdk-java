@@ -21,6 +21,7 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -31,32 +32,49 @@ import java.util.concurrent.atomic.AtomicReference;
  * counts on a loopback {@link HttpServer}. Covers the acceptance criteria: two instances → one fetch,
  * concurrent inits → one fetch, prefetch → zero extra fetches, distinct keys isolated, and the
  * opt-out default preserving per-instance fetching.
+ *
+ * <p>Concurrency is exercised deterministically — no {@code Thread.sleep} or timing assumptions. The
+ * server can hold its response on a latch, so a test releases it only once both callers are provably
+ * inside the single-flight ({@link #awaitSingleFlightParticipants}); this gating is why a plain
+ * {@code HttpServer} is used rather than WireMock, which cannot block a response until N concurrent
+ * callers have arrived.
  */
 class GBFeaturesRepositorySharedCacheTest {
 
     private static final String FEATURES_BODY = "{\"features\":{\"my-flag\":{\"defaultValue\":true}}}";
 
     private HttpServer server;
+    private ExecutorService serverExecutor;
     private final AtomicInteger requestCount = new AtomicInteger();
     private final List<GBFeaturesRepository> repositories = new ArrayList<>();
-    private volatile long responseDelayMillis = 0L;
     private final AtomicReference<String> responseBody = new AtomicReference<>(FEATURES_BODY);
     private volatile int responseStatus = 200;
+    /** When set, each request counts this down on arrival so a test can await the leader reaching the server. */
+    private volatile CountDownLatch requestArrived;
+    /** When set, each request blocks on this before responding so a test can hold the response open. */
+    private volatile CountDownLatch releaseResponse;
 
     @BeforeEach
     void setUp() throws IOException {
         GBFeaturesRepository.clearSharedPayloadState();
         requestCount.set(0);
-        responseDelayMillis = 0L;
         responseBody.set(FEATURES_BODY);
         responseStatus = 200;
+        requestArrived = null;
+        releaseResponse = null;
         server = HttpServer.create(new InetSocketAddress("127.0.0.1", 0), 0);
-        server.setExecutor(Executors.newFixedThreadPool(4));
+        serverExecutor = Executors.newFixedThreadPool(4);
+        server.setExecutor(serverExecutor);
         server.createContext("/api/features/", exchange -> {
             requestCount.incrementAndGet();
-            if (responseDelayMillis > 0) {
+            CountDownLatch arrived = requestArrived;
+            if (arrived != null) {
+                arrived.countDown();
+            }
+            CountDownLatch release = releaseResponse;
+            if (release != null) {
                 try {
-                    Thread.sleep(responseDelayMillis);
+                    release.await();
                 } catch (InterruptedException e) {
                     Thread.currentThread().interrupt();
                 }
@@ -75,18 +93,31 @@ class GBFeaturesRepositorySharedCacheTest {
 
     @AfterEach
     void tearDown() {
+        // Tear down every resource, then surface the first shutdown failure instead of swallowing it.
+        RuntimeException firstFailure = null;
         for (GBFeaturesRepository repository : repositories) {
             try {
                 repository.shutdown();
-            } catch (RuntimeException ignored) {
-                // best-effort cleanup
+            } catch (RuntimeException e) {
+                if (firstFailure == null) {
+                    firstFailure = e;
+                }
             }
         }
         repositories.clear();
+        if (releaseResponse != null) {
+            releaseResponse.countDown();
+        }
         if (server != null) {
             server.stop(0);
         }
+        if (serverExecutor != null) {
+            serverExecutor.shutdownNow();
+        }
         GBFeaturesRepository.clearSharedPayloadState();
+        if (firstFailure != null) {
+            throw firstFailure;
+        }
     }
 
     @Test
@@ -109,8 +140,11 @@ class GBFeaturesRepositorySharedCacheTest {
     @Test
     @DisplayName("Verify: concurrent inits for the same key de-duplicate to a single in-flight fetch")
     void concurrentInitsSameKeyDedupeToSingleFetch() throws InterruptedException {
-        // Given a slow server so both cold starts overlap in flight
-        responseDelayMillis = 200L;
+        // Given the server holds its response until released, so the leader's fetch stays in flight
+        CountDownLatch arrived = new CountDownLatch(1);
+        CountDownLatch release = new CountDownLatch(1);
+        requestArrived = arrived;
+        releaseResponse = release;
         GBFeaturesRepository first = sharedRepository("sdk-abc");
         GBFeaturesRepository second = sharedRepository("sdk-abc");
 
@@ -121,6 +155,11 @@ class GBFeaturesRepositorySharedCacheTest {
         t1.start();
         t2.start();
         start.countDown();
+
+        // Hold the leader's fetch until both callers are provably inside the single-flight, then release
+        assertTrue(arrived.await(5, TimeUnit.SECONDS), "leader fetch never reached the server");
+        awaitSingleFlightParticipants(2);
+        release.countDown();
         t1.join(5000);
         t2.join(5000);
 
@@ -255,11 +294,14 @@ class GBFeaturesRepositorySharedCacheTest {
         warm.initialize();
         assertEquals(1, requestCount.get());
 
-        // and the server now serves v2, slowly, so the two background reloads overlap in flight
+        // and the server now serves v2 but holds the response until both reloads are in flight
         responseBody.set("{\"features\":{\"v2-flag\":{\"defaultValue\":true}}}");
-        responseDelayMillis = 200L;
+        CountDownLatch arrived = new CountDownLatch(1);
+        CountDownLatch release = new CountDownLatch(1);
+        requestArrived = arrived;
+        releaseResponse = release;
 
-        // When two instances initialize concurrently against the stale entry
+        // When two instances initialize concurrently: each serves stale v1 and schedules a background reload
         GBFeaturesRepository a = sharedRepository("sdk-abc");
         GBFeaturesRepository b = sharedRepository("sdk-abc");
         CountDownLatch start = new CountDownLatch(1);
@@ -271,7 +313,12 @@ class GBFeaturesRepositorySharedCacheTest {
         t1.join(5000);
         t2.join(5000);
 
-        // Then the stale-serve background reloads collapsed to a single network fetch...
+        // Hold the leader's background reload until the follower has joined the same single-flight, then release
+        assertTrue(arrived.await(5, TimeUnit.SECONDS), "leader background reload never reached the server");
+        awaitSingleFlightParticipants(2);
+        release.countDown();
+
+        // Then the two background reloads collapsed to a single network fetch (1 warm + 1 reload)...
         awaitRequestCount(2);
         assertEquals(2, requestCount.get());
         // ...and both instances adopted the refreshed v2 payload — the follower was not left on v1
@@ -331,6 +378,22 @@ class GBFeaturesRepositorySharedCacheTest {
             }
             Thread.yield();
         }
+    }
+
+    /**
+     * Blocks until at least {@code expected} callers are inside the shared single-flight (a leader plus
+     * its waiting followers), so a gated test can release the held response only once the followers have
+     * joined — making de-duplication deterministic without any {@code Thread.sleep}.
+     */
+    private void awaitSingleFlightParticipants(int expected) {
+        long deadlineNanos = System.nanoTime() + TimeUnit.SECONDS.toNanos(5);
+        while (System.nanoTime() < deadlineNanos) {
+            if (SharedFeatureCache.SHARED.fetchParticipantCount() >= expected) {
+                return;
+            }
+            Thread.yield();
+        }
+        throw new AssertionError("Timed out waiting for " + expected + " single-flight participants");
     }
 
     private String apiHost() {

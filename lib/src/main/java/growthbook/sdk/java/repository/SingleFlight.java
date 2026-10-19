@@ -5,6 +5,7 @@ import growthbook.sdk.java.exception.FeatureFetchException;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * Runs at most one {@code action} per key at a time and shares its result with all concurrent callers.
@@ -40,15 +41,22 @@ final class SingleFlight<T> {
 
     private final ConcurrentHashMap<String, CompletableFuture<T>> inFlight = new ConcurrentHashMap<>();
 
+    private final AtomicInteger participants = new AtomicInteger();
+
     /**
      * Returns the result of {@code action} for {@code key}, running it once across all callers that
      * overlap in time. A leader runs the action; followers await it and, on leader failure, run it
      * themselves.
      */
     T run(String key, Action<T> action) throws FeatureFetchException {
-        CompletableFuture<T> mine = new CompletableFuture<>();
-        CompletableFuture<T> leader = inFlight.putIfAbsent(key, mine);
-        return leader == null ? lead(key, mine, action) : follow(leader, action);
+        participants.incrementAndGet();
+        try {
+            CompletableFuture<T> mine = new CompletableFuture<>();
+            CompletableFuture<T> leader = inFlight.putIfAbsent(key, mine);
+            return leader == null ? lead(key, mine, action) : follow(leader, action);
+        } finally {
+            participants.decrementAndGet();
+        }
     }
 
     private T lead(String key, CompletableFuture<T> mine, Action<T> action) throws FeatureFetchException {
@@ -81,6 +89,14 @@ final class SingleFlight<T> {
      */
     int inFlightCount() {
         return inFlight.size();
+    }
+
+    /**
+     * Number of callers currently inside {@link #run} (leaders plus waiting followers). Lets a test
+     * deterministically hold a leader until its followers have joined the same in-flight fetch. For tests.
+     */
+    int participantCount() {
+        return participants.get();
     }
 
     void clear() {
