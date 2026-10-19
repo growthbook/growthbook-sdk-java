@@ -11,6 +11,7 @@ import redis.clients.jedis.Jedis;
 import redis.clients.jedis.JedisPool;
 import redis.clients.jedis.exceptions.JedisException;
 
+import java.time.Duration;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
@@ -111,7 +112,7 @@ class JedisStickyBucketServiceTest {
         // Given
         StickyAssignmentsDocument doc = document("id", "123", "exp__0", "control");
         when(jedis.get("id||123")).thenReturn(null);
-        when(jedis.eval(eq(COMPARE_AND_SET_SCRIPT), eq(1), eq("id||123"), eq("nx"), eq(""), anyString()))
+        when(jedis.eval(eq(COMPARE_AND_SET_SCRIPT), eq(1), eq("id||123"), eq("nx"), eq(""), anyString(), anyString()))
                 .thenReturn(1L);
         JedisStickyBucketService service = new JedisStickyBucketService(pool);
 
@@ -120,7 +121,7 @@ class JedisStickyBucketServiceTest {
 
         // Then
         ArgumentCaptor<String> valueCaptor = ArgumentCaptor.forClass(String.class);
-        verify(jedis).eval(eq(COMPARE_AND_SET_SCRIPT), eq(1), eq("id||123"), eq("nx"), eq(""), valueCaptor.capture());
+        verify(jedis).eval(eq(COMPARE_AND_SET_SCRIPT), eq(1), eq("id||123"), eq("nx"), eq(""), valueCaptor.capture(), eq("0"));
         assertEquals(doc, GrowthBookJsonUtils.getInstance().gson
                 .fromJson(valueCaptor.getValue(), StickyAssignmentsDocument.class));
     }
@@ -145,7 +146,7 @@ class JedisStickyBucketServiceTest {
     void saveAssignmentsThrowsWhenRedisFails() {
         // Given
         when(jedis.get(anyString())).thenReturn(null);
-        when(jedis.eval(anyString(), anyInt(), anyString(), anyString(), anyString(), anyString()))
+        when(jedis.eval(anyString(), anyInt(), anyString(), anyString(), anyString(), anyString(), anyString()))
                 .thenThrow(new JedisException("boom"));
         JedisStickyBucketService service = new JedisStickyBucketService(pool);
         StickyAssignmentsDocument doc = document("id", "123", "exp__0", "control");
@@ -209,7 +210,7 @@ class JedisStickyBucketServiceTest {
         when(jedis.get("gb:sticky:id||123")).thenReturn(json(document("id", "123", "exp__0", "control")));
         JedisStickyBucketService service = new JedisStickyBucketService(pool, "gb:sticky:");
 
-        when(jedis.eval(eq(COMPARE_AND_SET_SCRIPT), eq(1), eq("gb:sticky:id||123"), anyString(), anyString(), anyString()))
+        when(jedis.eval(eq(COMPARE_AND_SET_SCRIPT), eq(1), eq("gb:sticky:id||123"), anyString(), anyString(), anyString(), anyString()))
                 .thenReturn(1L);
 
         // When
@@ -218,7 +219,7 @@ class JedisStickyBucketServiceTest {
 
         // Then
         verify(jedis, atLeastOnce()).get("gb:sticky:id||123");
-        verify(jedis).eval(eq(COMPARE_AND_SET_SCRIPT), eq(1), eq("gb:sticky:id||123"), anyString(), anyString(), anyString());
+        verify(jedis).eval(eq(COMPARE_AND_SET_SCRIPT), eq(1), eq("gb:sticky:id||123"), anyString(), anyString(), anyString(), anyString());
     }
 
     @Test
@@ -226,6 +227,47 @@ class JedisStickyBucketServiceTest {
     void constructorRejectsNullPool() {
         // When & Then
         assertThrows(NullPointerException.class, () -> new JedisStickyBucketService(null));
+    }
+
+    @Test
+    @DisplayName("Verify: with no TTL configured, the compare-and-set carries a 0 TTL (no expiry)")
+    void saveWithoutTtlPassesZeroTtlArg() {
+        // Given
+        when(jedis.get("id||123")).thenReturn(null);
+        when(jedis.eval(eq(COMPARE_AND_SET_SCRIPT), eq(1), eq("id||123"), eq("nx"), eq(""), anyString(), eq("0")))
+                .thenReturn(1L);
+        JedisStickyBucketService service = new JedisStickyBucketService(pool);
+
+        // When
+        service.saveAssignments(document("id", "123", "exp__0", "control"));
+
+        // Then
+        verify(jedis).eval(eq(COMPARE_AND_SET_SCRIPT), eq(1), eq("id||123"), eq("nx"), eq(""), anyString(), eq("0"));
+    }
+
+    @Test
+    @DisplayName("Verify: a configured TTL is carried to the compare-and-set as milliseconds")
+    void saveWithTtlPassesTtlMillisArg() {
+        // Given
+        when(jedis.get("id||123")).thenReturn(null);
+        when(jedis.eval(eq(COMPARE_AND_SET_SCRIPT), eq(1), eq("id||123"), eq("nx"), eq(""), anyString(), eq("3600000")))
+                .thenReturn(1L);
+        JedisStickyBucketService service = new JedisStickyBucketService(pool, Duration.ofHours(1));
+
+        // When
+        service.saveAssignments(document("id", "123", "exp__0", "control"));
+
+        // Then
+        verify(jedis).eval(eq(COMPARE_AND_SET_SCRIPT), eq(1), eq("id||123"), eq("nx"), eq(""), anyString(), eq("3600000"));
+    }
+
+    @Test
+    @DisplayName("Verify: the constructor rejects a zero or negative TTL")
+    void constructorRejectsNonPositiveTtl() {
+        // When & Then
+        assertThrows(IllegalArgumentException.class, () -> new JedisStickyBucketService(pool, Duration.ZERO));
+        assertThrows(IllegalArgumentException.class, () -> new JedisStickyBucketService(pool, Duration.ofMillis(-1)));
+        assertThrows(IllegalArgumentException.class, () -> new JedisStickyBucketService(pool, Duration.ofNanos(500)));
     }
 
     private static StickyAssignmentsDocument document(String name, String value, String expKey, String variation) {

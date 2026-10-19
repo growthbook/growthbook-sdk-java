@@ -3,6 +3,7 @@ package growthbook.sdk.java.cache.redis.stickybucket;
 import redis.clients.jedis.Jedis;
 import redis.clients.jedis.JedisPool;
 
+import java.time.Duration;
 import java.util.List;
 import java.util.Objects;
 
@@ -37,7 +38,26 @@ public final class JedisStickyBucketService extends AbstractRedisStickyBucketSer
      *                  with the TypeScript service
      */
     public JedisStickyBucketService(JedisPool jedisPool, String keyPrefix) {
-        super(keyPrefix);
+        this(jedisPool, keyPrefix, null);
+    }
+
+    /**
+     * @param jedisPool the Jedis connection pool used to reach Redis; owned by the caller
+     * @param ttl       optional per-entry expiry; {@code null} (the default) writes entries without a TTL
+     */
+    public JedisStickyBucketService(JedisPool jedisPool, Duration ttl) {
+        this(jedisPool, DEFAULT_KEY_PREFIX, ttl);
+    }
+
+    /**
+     * @param jedisPool the Jedis connection pool used to reach Redis; owned by the caller
+     * @param keyPrefix namespace applied to every Redis key; empty by default for wire-compatibility
+     *                  with the TypeScript service
+     * @param ttl       optional per-entry expiry; {@code null} (the default) writes entries without a
+     *                  TTL. When set it must be at least 1 millisecond.
+     */
+    public JedisStickyBucketService(JedisPool jedisPool, String keyPrefix, Duration ttl) {
+        super(keyPrefix, ttl);
         this.jedisPool = Objects.requireNonNull(jedisPool, "jedisPool");
     }
 
@@ -55,7 +75,8 @@ public final class JedisStickyBucketService extends AbstractRedisStickyBucketSer
                     COMPARE_AND_SET_SCRIPT, 1, redisKey,
                     expected == null ? "nx" : "cas",
                     expected == null ? "" : expected,
-                    updated);
+                    updated,
+                    ttlMillisArg());
             return result instanceof Long && (Long) result == 1L;
         }
     }

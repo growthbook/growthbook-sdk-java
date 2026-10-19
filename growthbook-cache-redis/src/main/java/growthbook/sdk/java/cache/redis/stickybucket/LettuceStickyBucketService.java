@@ -5,6 +5,7 @@ import io.lettuce.core.ScriptOutputType;
 import io.lettuce.core.api.StatefulRedisConnection;
 import io.lettuce.core.api.sync.RedisCommands;
 
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -41,7 +42,26 @@ public final class LettuceStickyBucketService extends AbstractRedisStickyBucketS
      *                   with the TypeScript service
      */
     public LettuceStickyBucketService(StatefulRedisConnection<String, String> connection, String keyPrefix) {
-        super(keyPrefix);
+        this(connection, keyPrefix, null);
+    }
+
+    /**
+     * @param connection the Lettuce connection used to reach Redis; owned by the caller
+     * @param ttl        optional per-entry expiry; {@code null} (the default) writes entries without a TTL
+     */
+    public LettuceStickyBucketService(StatefulRedisConnection<String, String> connection, Duration ttl) {
+        this(connection, DEFAULT_KEY_PREFIX, ttl);
+    }
+
+    /**
+     * @param connection the Lettuce connection used to reach Redis; owned by the caller
+     * @param keyPrefix  namespace applied to every Redis key; empty by default for wire-compatibility
+     *                   with the TypeScript service
+     * @param ttl        optional per-entry expiry; {@code null} (the default) writes entries without a
+     *                   TTL. When set it must be at least 1 millisecond.
+     */
+    public LettuceStickyBucketService(StatefulRedisConnection<String, String> connection, String keyPrefix, Duration ttl) {
+        super(keyPrefix, ttl);
         this.commands = Objects.requireNonNull(connection, "connection").sync();
     }
 
@@ -56,7 +76,8 @@ public final class LettuceStickyBucketService extends AbstractRedisStickyBucketS
                 COMPARE_AND_SET_SCRIPT, ScriptOutputType.INTEGER, new String[]{redisKey},
                 expected == null ? "nx" : "cas",
                 expected == null ? "" : expected,
-                updated);
+                updated,
+                ttlMillisArg());
         return result != null && result == 1L;
     }
 

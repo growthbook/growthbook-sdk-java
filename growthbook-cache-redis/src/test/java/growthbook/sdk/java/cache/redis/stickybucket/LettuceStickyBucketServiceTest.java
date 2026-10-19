@@ -13,6 +13,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
+import java.time.Duration;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
@@ -114,7 +115,7 @@ class LettuceStickyBucketServiceTest {
         StickyAssignmentsDocument doc = document("id", "123", "exp__0", "control");
         when(commands.get("id||123")).thenReturn(null);
         when(commands.<Long>eval(eq(COMPARE_AND_SET_SCRIPT), eq(ScriptOutputType.INTEGER), any(String[].class),
-                eq("nx"), eq(""), anyString())).thenReturn(1L);
+                eq("nx"), eq(""), anyString(), anyString())).thenReturn(1L);
         LettuceStickyBucketService service = new LettuceStickyBucketService(connection);
 
         // When
@@ -124,7 +125,7 @@ class LettuceStickyBucketServiceTest {
         ArgumentCaptor<String[]> keysCaptor = ArgumentCaptor.forClass(String[].class);
         ArgumentCaptor<String> valueCaptor = ArgumentCaptor.forClass(String.class);
         verify(commands).eval(eq(COMPARE_AND_SET_SCRIPT), eq(ScriptOutputType.INTEGER), keysCaptor.capture(),
-                eq("nx"), eq(""), valueCaptor.capture());
+                eq("nx"), eq(""), valueCaptor.capture(), eq("0"));
         assertArrayEquals(new String[]{"id||123"}, keysCaptor.getValue());
         assertEquals(doc, GrowthBookJsonUtils.getInstance().gson
                 .fromJson(valueCaptor.getValue(), StickyAssignmentsDocument.class));
@@ -151,7 +152,7 @@ class LettuceStickyBucketServiceTest {
         // Given
         when(commands.get(anyString())).thenReturn(null);
         when(commands.<Long>eval(anyString(), eq(ScriptOutputType.INTEGER), any(String[].class),
-                anyString(), anyString(), anyString())).thenThrow(new RedisException("boom"));
+                anyString(), anyString(), anyString(), anyString())).thenThrow(new RedisException("boom"));
         LettuceStickyBucketService service = new LettuceStickyBucketService(connection);
         StickyAssignmentsDocument doc = document("id", "123", "exp__0", "control");
 
@@ -218,7 +219,7 @@ class LettuceStickyBucketServiceTest {
         LettuceStickyBucketService service = new LettuceStickyBucketService(connection, "gb:sticky:");
 
         when(commands.<Long>eval(eq(COMPARE_AND_SET_SCRIPT), eq(ScriptOutputType.INTEGER), any(String[].class),
-                anyString(), anyString(), anyString())).thenReturn(1L);
+                anyString(), anyString(), anyString(), anyString())).thenReturn(1L);
 
         // When
         service.getAssignments("id", "123");
@@ -228,7 +229,7 @@ class LettuceStickyBucketServiceTest {
         ArgumentCaptor<String[]> keysCaptor = ArgumentCaptor.forClass(String[].class);
         verify(commands, atLeastOnce()).get("gb:sticky:id||123");
         verify(commands).eval(eq(COMPARE_AND_SET_SCRIPT), eq(ScriptOutputType.INTEGER), keysCaptor.capture(),
-                anyString(), anyString(), anyString());
+                anyString(), anyString(), anyString(), anyString());
         assertArrayEquals(new String[]{"gb:sticky:id||123"}, keysCaptor.getValue());
     }
 
@@ -237,6 +238,49 @@ class LettuceStickyBucketServiceTest {
     void constructorRejectsNullConnection() {
         // When & Then
         assertThrows(NullPointerException.class, () -> new LettuceStickyBucketService(null));
+    }
+
+    @Test
+    @DisplayName("Verify: with no TTL configured, the compare-and-set carries a 0 TTL (no expiry)")
+    void saveWithoutTtlPassesZeroTtlArg() {
+        // Given
+        when(commands.get("id||123")).thenReturn(null);
+        when(commands.<Long>eval(eq(COMPARE_AND_SET_SCRIPT), eq(ScriptOutputType.INTEGER), any(String[].class),
+                eq("nx"), eq(""), anyString(), eq("0"))).thenReturn(1L);
+        LettuceStickyBucketService service = new LettuceStickyBucketService(connection);
+
+        // When
+        service.saveAssignments(document("id", "123", "exp__0", "control"));
+
+        // Then
+        verify(commands).eval(eq(COMPARE_AND_SET_SCRIPT), eq(ScriptOutputType.INTEGER), any(String[].class),
+                eq("nx"), eq(""), anyString(), eq("0"));
+    }
+
+    @Test
+    @DisplayName("Verify: a configured TTL is carried to the compare-and-set as milliseconds")
+    void saveWithTtlPassesTtlMillisArg() {
+        // Given
+        when(commands.get("id||123")).thenReturn(null);
+        when(commands.<Long>eval(eq(COMPARE_AND_SET_SCRIPT), eq(ScriptOutputType.INTEGER), any(String[].class),
+                eq("nx"), eq(""), anyString(), eq("3600000"))).thenReturn(1L);
+        LettuceStickyBucketService service = new LettuceStickyBucketService(connection, Duration.ofHours(1));
+
+        // When
+        service.saveAssignments(document("id", "123", "exp__0", "control"));
+
+        // Then
+        verify(commands).eval(eq(COMPARE_AND_SET_SCRIPT), eq(ScriptOutputType.INTEGER), any(String[].class),
+                eq("nx"), eq(""), anyString(), eq("3600000"));
+    }
+
+    @Test
+    @DisplayName("Verify: the constructor rejects a zero or negative TTL")
+    void constructorRejectsNonPositiveTtl() {
+        // When & Then
+        assertThrows(IllegalArgumentException.class, () -> new LettuceStickyBucketService(connection, Duration.ZERO));
+        assertThrows(IllegalArgumentException.class, () -> new LettuceStickyBucketService(connection, Duration.ofMillis(-1)));
+        assertThrows(IllegalArgumentException.class, () -> new LettuceStickyBucketService(connection, Duration.ofNanos(500)));
     }
 
     private static StickyAssignmentsDocument document(String name, String value, String expKey, String variation) {

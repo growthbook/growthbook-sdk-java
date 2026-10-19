@@ -394,7 +394,9 @@ keeps the same variation across the whole fleet and across restarts. It reuses t
 Lettuce client you already provide for the Redis feature cache, and stores each user's assignments
 as a JSON string under `<keyPrefix><attributeName>||<attributeValue>` — wire-compatible with the
 TypeScript `RedisStickyBucketService` (with the default empty prefix). Assignments are written
-without a TTL. Genuine Redis access failures and malformed payloads surface as a
+without a TTL by default (an assignment should outlive any single process); an optional TTL can be
+configured to bound retention on long-running deployments (see below). Genuine Redis access failures
+and malformed payloads surface as a
 `StickyBucketServiceException` (mirroring how the feature cache throws `FeatureCacheException`)
 rather than being swallowed; an absent key is a normal miss, not a failure.
 
@@ -415,8 +417,19 @@ Options lettuceOptions = Options.builder()
     .build();
 ```
 
-Both constructors accept an optional second `keyPrefix` argument when you want to namespace the keys
+Both constructors accept an optional `keyPrefix` argument when you want to namespace the keys
 (e.g. `new JedisStickyBucketService(jedisPool, "growthbook:sticky:")`).
+
+An optional `Duration ttl` bounds how long each entry is retained — useful so a long-running
+deployment does not keep every user's assignments forever. There is no expiry by default. Each write
+(re)sets the expiry, so an active user's assignment is refreshed while an abandoned one eventually
+expires:
+
+```java
+new JedisStickyBucketService(jedisPool, Duration.ofDays(30));                 // default prefix, 30-day TTL
+new JedisStickyBucketService(jedisPool, "growthbook:sticky:", Duration.ofDays(30));
+new LettuceStickyBucketService(connection, Duration.ofDays(30));
+```
 
 ## Contributing
 

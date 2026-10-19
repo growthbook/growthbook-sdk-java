@@ -6,6 +6,7 @@ import growthbook.sdk.java.model.StickyAssignmentsDocument;
 import growthbook.sdk.java.stickyBucketing.StickyBucketService;
 import growthbook.sdk.java.util.GrowthBookJsonUtils;
 
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.LinkedHashMap;
@@ -20,9 +21,11 @@ import java.util.Map;
  * TypeScript {@code RedisStickyBucketService}: with the default (empty) prefix a Java and a TS
  * service can share one Redis and read each other's assignments.
  *
- * <p>Assignments are written <strong>without</strong> a TTL on purpose — an assignment must outlive
+ * <p>Assignments are written <strong>without</strong> a TTL by default — an assignment must outlive
  * any single process so a user keeps the same variation across restarts and across a horizontally
- * scaled fleet.
+ * scaled fleet. An optional TTL may be configured so that a long-running deployment does not retain
+ * every user's assignments forever; each write (re)sets the expiry, so an active user's assignment is
+ * refreshed while an abandoned one eventually expires.
  *
  * <p><strong>Failure handling.</strong> Genuine Redis access failures and malformed payloads are
  * reported by throwing {@link StickyBucketServiceException}; they are never swallowed. Whether to
@@ -51,19 +54,25 @@ public abstract class AbstractRedisStickyBucketService implements StickyBucketSe
     /**
      * Compare-and-set over a single key. {@code ARGV[1]} is the mode ({@code nx} to set only when the
      * key is absent, {@code cas} to set only when the current value equals {@code ARGV[2]}),
-     * {@code ARGV[3]} is the new value. Returns 1 when the write happened, 0 otherwise.
+     * {@code ARGV[3]} is the new value, and {@code ARGV[4]} is the TTL in milliseconds ({@code 0} for
+     * no expiry). On a successful write a positive TTL is applied with {@code PEXPIRE}; a plain
+     * {@code SET} already clears any previous expiry, so the no-TTL path leaves the key persistent.
+     * Returns 1 when the write happened, 0 otherwise.
      */
     protected static final String COMPARE_AND_SET_SCRIPT =
             "local current = redis.call('GET', KEYS[1])\n"
+                    + "local ttl = tonumber(ARGV[4])\n"
                     + "if ARGV[1] == 'nx' then\n"
                     + "    if current == false then\n"
                     + "        redis.call('SET', KEYS[1], ARGV[3])\n"
+                    + "        if ttl and ttl > 0 then redis.call('PEXPIRE', KEYS[1], ttl) end\n"
                     + "        return 1\n"
                     + "    end\n"
                     + "    return 0\n"
                     + "end\n"
                     + "if current == ARGV[2] then\n"
                     + "    redis.call('SET', KEYS[1], ARGV[3])\n"
+                    + "    if ttl and ttl > 0 then redis.call('PEXPIRE', KEYS[1], ttl) end\n"
                     + "    return 1\n"
                     + "end\n"
                     + "return 0";
@@ -73,8 +82,40 @@ public abstract class AbstractRedisStickyBucketService implements StickyBucketSe
     private final Gson gson = GrowthBookJsonUtils.getInstance().gson;
     private final String keyPrefix;
 
+    /** Entry TTL in milliseconds, or {@code null} for no expiry (the default). */
+    private final Long ttlMillis;
+
     protected AbstractRedisStickyBucketService(String keyPrefix) {
+        this(keyPrefix, null);
+    }
+
+    /**
+     * @param keyPrefix namespace applied to every Redis key; {@code null} uses {@link #DEFAULT_KEY_PREFIX}
+     * @param ttl       optional per-entry expiry; {@code null} (the default) writes entries without a
+     *                  TTL. When set it must be at least 1 millisecond.
+     * @throws IllegalArgumentException if {@code ttl} is zero, negative, or below 1 millisecond
+     */
+    protected AbstractRedisStickyBucketService(String keyPrefix, Duration ttl) {
         this.keyPrefix = keyPrefix == null ? DEFAULT_KEY_PREFIX : keyPrefix;
+        if (ttl == null) {
+            this.ttlMillis = null;
+        } else {
+            if (ttl.isZero() || ttl.isNegative()) {
+                throw new IllegalArgumentException("ttl must be greater than 0");
+            }
+            if (ttl.toMillis() < 1) {
+                throw new IllegalArgumentException("ttl must be at least 1 millisecond");
+            }
+            this.ttlMillis = ttl.toMillis();
+        }
+    }
+
+    /**
+     * @return the TTL argument ({@code ARGV[4]}) for {@link #COMPARE_AND_SET_SCRIPT}: the configured
+     * expiry in milliseconds, or {@code "0"} when entries are written without a TTL
+     */
+    protected final String ttlMillisArg() {
+        return ttlMillis == null ? "0" : Long.toString(ttlMillis);
     }
 
     @Override
@@ -222,9 +263,10 @@ public abstract class AbstractRedisStickyBucketService implements StickyBucketSe
     protected abstract String read(String redisKey);
 
     /**
-     * Atomically installs {@code updated} for {@code redisKey}, without expiry, only when the current
-     * stored value still matches {@code expected}. A {@code null} {@code expected} means "write only
-     * if the key is currently absent".
+     * Atomically installs {@code updated} for {@code redisKey}, only when the current stored value
+     * still matches {@code expected}. A {@code null} {@code expected} means "write only if the key is
+     * currently absent". Implementations run {@link #COMPARE_AND_SET_SCRIPT}, passing
+     * {@link #ttlMillisArg()} as {@code ARGV[4]} so the configured TTL (if any) is applied on write.
      *
      * @param redisKey the namespaced key
      * @param expected the value previously read, or {@code null} to require an absent key
