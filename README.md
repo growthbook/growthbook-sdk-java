@@ -421,9 +421,10 @@ Both constructors accept an optional `keyPrefix` argument when you want to names
 (e.g. `new JedisStickyBucketService(jedisPool, "growthbook:sticky:")`).
 
 An optional `Duration ttl` bounds how long each entry is retained — useful so a long-running
-deployment does not keep every user's assignments forever. There is no expiry by default. Each write
-(re)sets the expiry, so an active user's assignment is refreshed while an abandoned one eventually
-expires:
+deployment does not keep every user's assignments forever. There is no expiry by default. The TTL is
+(re)set on each write, and the SDK writes only when a user's assignments **change**, so the expiry
+counts from the last assignment change — **not** from the user's last evaluation. Set the TTL
+comfortably longer than an experiment's lifetime so an active user is not re-bucketed mid-experiment:
 
 ```java
 new JedisStickyBucketService(jedisPool, Duration.ofDays(30));                 // default prefix, 30-day TTL

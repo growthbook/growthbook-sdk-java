@@ -24,8 +24,11 @@ import java.util.Map;
  * <p>Assignments are written <strong>without</strong> a TTL by default — an assignment must outlive
  * any single process so a user keeps the same variation across restarts and across a horizontally
  * scaled fleet. An optional TTL may be configured so that a long-running deployment does not retain
- * every user's assignments forever; each write (re)sets the expiry, so an active user's assignment is
- * refreshed while an abandoned one eventually expires.
+ * every user's assignments forever. The TTL is (re)set on each write, and the SDK writes only when a
+ * user's assignments <em>change</em> — so the expiry counts from the last assignment change, not from
+ * the user's last evaluation. An entry is therefore <strong>not</strong> refreshed just because the
+ * user keeps evaluating: set the TTL comfortably longer than an experiment's lifetime so an active
+ * user is not re-bucketed mid-experiment when their entry expires between assignment changes.
  *
  * <p><strong>Failure handling.</strong> Genuine Redis access failures and malformed payloads are
  * reported by throwing {@link StickyBucketServiceException}; they are never swallowed. Whether to
