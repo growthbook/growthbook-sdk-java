@@ -13,7 +13,7 @@ import java.util.Objects;
 
 /**
  * A tuple that describes a range of the number line between 0 and 1.
- * The tuple has 2 parts, both floats - the start of the range and the end.
+ * The tuple has 2 parts, both doubles - the start of the range and the end.
  */
 @Data
 @Builder
@@ -22,8 +22,8 @@ public class BucketRange {
 
     private static final int BUCKET_RANGE_FLOAT_PRECISION = 3;
 
-    Float rangeStart;
-    Float rangeEnd;
+    Double rangeStart;
+    Double rangeEnd;
 
     /**
      * This method help to convert BucketRange object from JsonElement
@@ -33,13 +33,10 @@ public class BucketRange {
      */
     static BucketRange fromJson(JsonElement jsonElement) {
         JsonArray array = (JsonArray) jsonElement;
-        float start = array.get(0).getAsFloat();
-        float end = array.get(1).getAsFloat();
-
         return BucketRange
                 .builder()
-                .rangeStart(Precision.round(start, BUCKET_RANGE_FLOAT_PRECISION))
-                .rangeEnd(Precision.round(end, BUCKET_RANGE_FLOAT_PRECISION))
+                .rangeStart(array.get(0).getAsDouble())
+                .rangeEnd(array.get(1).getAsDouble())
                 .build();
     }
 
@@ -87,8 +84,8 @@ public class BucketRange {
     static JsonElement getJson(BucketRange object) {
         JsonArray array = new JsonArray();
 
-        array.add(Precision.round(object.rangeStart, BUCKET_RANGE_FLOAT_PRECISION));
-        array.add(Precision.round(object.rangeEnd, BUCKET_RANGE_FLOAT_PRECISION));
+        array.add(object.rangeStart);
+        array.add(object.rangeEnd);
 
         return array;
     }

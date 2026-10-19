@@ -57,7 +57,7 @@ public class FeatureRule<ValueType> extends SuperTypeToken<ValueType> implements
      * What percent of users should be included in the experiment (between 0 and 1, inclusive)
      */
     @Nullable
-    Float coverage;
+    Double coverage;
 
     /**
      * Immediately force a specific value (ignore every other option besides condition and coverage)
@@ -75,7 +75,7 @@ public class FeatureRule<ValueType> extends SuperTypeToken<ValueType> implements
      * How to weight traffic between variations. Must add to 1.
      */
     @Nullable
-    ArrayList<Float> weights;
+    ArrayList<Double> weights;
 
     /**
      * A tuple that contains the namespace identifier, plus a range of coverage for the experiment.
@@ -191,10 +191,10 @@ public class FeatureRule<ValueType> extends SuperTypeToken<ValueType> implements
     public FeatureRule(
             @Nullable String id,
             @Nullable String key,
-            @Nullable Float coverage,
+            @Nullable Double coverage,
             @Nullable OptionalField<ValueType> force,
             @Nullable ArrayList<ValueType> variations,
-            @Nullable ArrayList<Float> weights,
+            @Nullable ArrayList<Double> weights,
             @Nullable Namespace namespace,
             String hashAttribute,
             @Nullable JsonObject condition,
@@ -248,7 +248,7 @@ public class FeatureRule<ValueType> extends SuperTypeToken<ValueType> implements
 
         builder.id(jsonObject.has("id") ? context.deserialize(jsonObject.get("id"), String.class) : "");
         builder.key(jsonObject.has("key") ? context.deserialize(jsonObject.get("key"), String.class) : null);
-        builder.coverage(jsonObject.has("coverage") ? context.deserialize(jsonObject.get("coverage"), Float.class) : null);
+        builder.coverage(jsonObject.has("coverage") ? context.deserialize(jsonObject.get("coverage"), Double.class) : null);
 
 
         if (jsonObject.has("force")) {
@@ -269,7 +269,7 @@ public class FeatureRule<ValueType> extends SuperTypeToken<ValueType> implements
         }
 
         if (jsonObject.has("weights")) {
-            builder.weights(context.deserialize(jsonObject.get("weights"), new TypeToken<ArrayList<Float>>() {
+            builder.weights(context.deserialize(jsonObject.get("weights"), new TypeToken<ArrayList<Double>>() {
             }.getType()));
         }
 
