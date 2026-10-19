@@ -163,6 +163,34 @@ public final class RemoteEvalCoordinator {
     }
 
     /**
+     * The feature definitions from the most recent explicit {@link #refresh(RequestBodyForRemoteEval)},
+     * used to back the client's read-only feature accessor in remote-eval mode.
+     *
+     * @return the fallback feature map, or an empty map when none has been fetched
+     */
+    public Map<String, Feature<?>> getFallbackFeatures() {
+        GlobalContext context = this.fallbackContext;
+        if (context == null || context.getFeatures() == null) {
+            return Collections.emptyMap();
+        }
+        return context.getFeatures();
+    }
+
+    /**
+     * The saved groups from the most recent explicit {@link #refresh(RequestBodyForRemoteEval)},
+     * used to back the client's read-only payload accessor in remote-eval mode.
+     *
+     * @return the fallback saved groups, or an empty object when none has been fetched
+     */
+    public JsonObject getFallbackSavedGroups() {
+        GlobalContext context = this.fallbackContext;
+        if (context == null || context.getSavedGroups() == null) {
+            return new JsonObject();
+        }
+        return context.getSavedGroups();
+    }
+
+    /**
      * Drops all cached remote responses; the next evaluation refetches per user context.
      */
     public void invalidateCache() {

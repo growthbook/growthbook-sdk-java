@@ -33,6 +33,7 @@ import growthbook.sdk.java.sandbox.CacheMode;
 import growthbook.sdk.java.sandbox.GbCacheManager;
 import growthbook.sdk.java.util.DecryptionUtils;
 import growthbook.sdk.java.util.GrowthBookJsonUtils;
+import growthbook.sdk.java.util.PayloadUtils;
 import growthbook.sdk.java.sse.SseEventPayloadValidator;
 import lombok.Builder;
 import lombok.Getter;
@@ -236,6 +237,37 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
      * observe features from one payload paired with saved groups from another.
      */
     private final AtomicReference<FeatureSnapshot> snapshot = new AtomicReference<>(FeatureSnapshot.EMPTY);
+
+    /**
+     * Raw features-endpoint response from the last successful load, exactly as received — encrypted
+     * fields intact when the endpoint is encrypted. Backs the read-only payload accessors on the SDK
+     * facades. {@code null} before the first successful load. Never logged: it may echo the whole
+     * response body.
+     */
+    @Nullable
+    private volatile String rawResponseJson = null;
+
+    /**
+     * Memoized decrypted payload paired with the raw response it was derived from, so repeated
+     * introspection through {@link #getDecryptedPayloadObject()} does not re-run parsing and
+     * decryption on every call. Held as a single immutable reference so a concurrent reader always
+     * observes a matching {@code (source, payload)} pair, never a stale payload against a fresh source.
+     */
+    @Nullable
+    private volatile DecryptedPayloadCache decryptedPayloadCache = null;
+
+    /**
+     * Immutable pairing of a raw response and the decrypted payload derived from it.
+     */
+    private static final class DecryptedPayloadCache {
+        private final String source;
+        private final JsonObject payload;
+
+        DecryptedPayloadCache(String source, JsonObject payload) {
+            this.source = source;
+            this.payload = payload;
+        }
+    }
 
     /**
      * The current features payload as one immutable snapshot. Prefer this over the
@@ -1134,6 +1166,7 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
                 saveToCacheQuietly(responseJsonString);
             }
 
+            this.rawResponseJson = responseJsonString;
             return applyPayload(payload, isFromCache);
         } catch (DecryptionUtils.DecryptionException e) {
             log.error("FeatureFetchException: UNKNOWN feature fetch error code {}",
@@ -1399,6 +1432,38 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
 
     public int getActiveFeatureCount() {
         return this.snapshot.get().getParsedFeatures().size();
+    }
+
+    /**
+     * The raw feature payload from the last successful load, parsed into a JSON object with any
+     * {@code encrypted*} fields intact when the endpoint is encrypted.
+     *
+     * @return a fresh payload object the caller may mutate freely; empty before the first load
+     */
+    public JsonObject getPayloadObject() {
+        return PayloadUtils.parsePayload(this.rawResponseJson);
+    }
+
+    /**
+     * The last payload with any encrypted fields decrypted to plaintext; equal to
+     * {@link #getPayloadObject()} when the payload is not encrypted. The parse-and-decrypt result is
+     * memoized against the raw response, so repeated introspection does not re-run decryption; each
+     * call still returns a fresh defensive copy. The decryption key is never logged.
+     *
+     * @return a fresh decrypted payload object the caller may mutate freely; empty before the first load
+     */
+    public JsonObject getDecryptedPayloadObject() {
+        String raw = this.rawResponseJson;
+        if (raw == null) {
+            return new JsonObject();
+        }
+        DecryptedPayloadCache cached = this.decryptedPayloadCache;
+        if (cached != null && raw.equals(cached.source)) {
+            return cached.payload.deepCopy();
+        }
+        JsonObject computed = PayloadUtils.decryptPayload(PayloadUtils.parsePayload(raw), this.decryptionKey);
+        this.decryptedPayloadCache = new DecryptedPayloadCache(raw, computed);
+        return computed.deepCopy();
     }
 
     /**

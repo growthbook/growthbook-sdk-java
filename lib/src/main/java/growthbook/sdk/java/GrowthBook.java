@@ -3,7 +3,10 @@ package growthbook.sdk.java;
 import java.util.Map;
 import java.util.HashMap;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.concurrent.ConcurrentHashMap;
 import javax.annotation.Nullable;
 import java.time.Duration;
 import com.google.gson.JsonObject;
@@ -15,6 +18,7 @@ import growthbook.sdk.java.exception.FeatureFetchException;
 import growthbook.sdk.java.model.AssignedExperiment;
 import growthbook.sdk.java.model.Experiment;
 import growthbook.sdk.java.model.ExperimentResult;
+import growthbook.sdk.java.model.Feature;
 import growthbook.sdk.java.model.FeatureKey;
 import growthbook.sdk.java.model.FeatureResult;
 import growthbook.sdk.java.model.GBContext;
@@ -27,6 +31,7 @@ import growthbook.sdk.java.remoteeval.RemoteEvalResponse;
 import growthbook.sdk.java.remoteeval.RemoteEvalService;
 import growthbook.sdk.java.util.GrowthBookJsonUtils;
 import growthbook.sdk.java.util.GrowthBookUtils;
+import growthbook.sdk.java.util.PayloadUtils;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
@@ -69,6 +74,7 @@ public class GrowthBook implements IGrowthBook {
 
     public EvaluationContext evaluationContext = null;
     private final Map<String, AssignedExperiment> assigned;
+    private final Map<String, ExperimentResult<?>> lastResults = new ConcurrentHashMap<>();
     private final PluginRegistry pluginRegistry;
     private RemoteEvalService remoteEvalService;
     private RemoteEvalCache remoteEvalCache;
@@ -363,6 +369,10 @@ public class GrowthBook implements IGrowthBook {
     public <ValueType> ExperimentResult<ValueType> run(Experiment<ValueType> experiment) {
         ExperimentResult<ValueType> result = experimentEvaluatorEvaluator
                 .evaluateExperiment(experiment, getEvaluationContext(), null);
+
+        if (experiment.getKey() != null) {
+            this.lastResults.put(experiment.getKey(), result);
+        }
 
         GrowthBookUtils.fireSubscriptions(this.assigned, this.callbacks, experiment, result);
 
@@ -704,12 +714,15 @@ public class GrowthBook implements IGrowthBook {
     // endregion Typed feature access
 
     /**
-     * Reinitialized the list of ExperimentRunCallbacks.
-     * This method clears the current list of callbacks by replacing it with a new empty ArrayList.
+     * Releases this instance's transient state: clears registered {@link ExperimentRunCallback}s, the
+     * tracked experiment assignments, and the results exposed by {@link #getAllResults()}, then shuts
+     * down any remote-eval resources. After this call {@link #getAllResults()} starts empty again.
      */
     @Override
     public void destroy() {
         this.callbacks = new ArrayList<>();
+        this.assigned.clear();
+        this.lastResults.clear();
         if (this.remoteEvalCache != null) {
             this.remoteEvalCache.shutdown();
         }
@@ -721,6 +734,87 @@ public class GrowthBook implements IGrowthBook {
         if (this.pluginRegistry != null) {
             this.pluginRegistry.closeAll();
         }
+    }
+
+    /**
+     * The feature definitions the SDK has currently loaded, keyed by feature key. In the single-context
+     * path these come from the {@link GBContext} — typically seeded at construction or pushed in by a
+     * repository through {@link #featuresAPIModelSuccessfully(String)}.
+     *
+     * <p>Read-only: returns a defensive, unmodifiable snapshot. Returns an empty map — never
+     * {@code null} — before any features are loaded.
+     *
+     * @return an unmodifiable snapshot of the loaded features
+     */
+    @Override
+    public Map<String, Feature<?>> getFeatures() {
+        Map<String, Feature<?>> source = this.context.getFeatures();
+        if (source == null || source.isEmpty()) {
+            return Collections.emptyMap();
+        }
+        return Collections.unmodifiableMap(new LinkedHashMap<>(source));
+    }
+
+    /**
+     * The auto-experiment definitions carried by the current payload's {@code experiments} array.
+     *
+     * <p>Read-only. This array is only delivered by the features endpoint, which the single-context
+     * {@code GrowthBook} does not retain — features reach it as already-parsed {@link GBContext} state
+     * with no {@code experiments} source — so this always returns empty here. Returns an empty list,
+     * never {@code null}.
+     *
+     * @return an unmodifiable snapshot of the loaded experiments
+     */
+    @Override
+    public List<Experiment<?>> getExperiments() {
+        return PayloadUtils.extractExperiments(getDecryptedPayload());
+    }
+
+    /**
+     * The current feature payload, in the same shape as the features endpoint response, reconstructed
+     * from the in-memory {@link GBContext} state. Because that state is always plaintext, this equals
+     * {@link #getDecryptedPayload()}.
+     *
+     * <p>Read-only: returns a fresh object the caller may mutate freely. Returns an empty object —
+     * never {@code null} — before load.
+     *
+     * @return the payload as a JSON object
+     */
+    @Override
+    public JsonObject getPayload() {
+        return PayloadUtils.reconstructPayload(
+                this.context.getFeatures(),
+                this.context.getSavedGroups(),
+                this.context.getContextualBandits());
+    }
+
+    /**
+     * The current payload with encrypted fields decrypted. In the single-context path the
+     * {@link GBContext} state is already plaintext, so this is equal to {@link #getPayload()}.
+     *
+     * <p>Read-only: returns a fresh object the caller may mutate freely. Returns an empty object —
+     * never {@code null} — before load.
+     *
+     * @return the decrypted payload as a JSON object
+     */
+    @Override
+    public JsonObject getDecryptedPayload() {
+        return getPayload();
+    }
+
+    /**
+     * The last {@link ExperimentResult} observed for every experiment run through this instance so
+     * far, keyed by experiment key.
+     *
+     * <p>Read-only: returns a defensive, unmodifiable snapshot. Returns an empty map — never
+     * {@code null} — before any experiment has been run. Experiments with a {@code null} key are not
+     * tracked.
+     *
+     * @return an unmodifiable snapshot of the most recent experiment results
+     */
+    @Override
+    public Map<String, ExperimentResult<?>> getAllResults() {
+        return Collections.unmodifiableMap(new LinkedHashMap<>(this.lastResults));
     }
 
     /**
