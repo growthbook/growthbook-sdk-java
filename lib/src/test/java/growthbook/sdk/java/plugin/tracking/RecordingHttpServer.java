@@ -49,6 +49,7 @@ final class RecordingHttpServer implements AutoCloseable {
                 requests.add(new RecordedRequest(
                         exchange.getRequestMethod(),
                         exchange.getRequestURI().getPath(),
+                        exchange.getRequestURI().getRawQuery(),
                         headers,
                         body));
 
@@ -118,12 +119,14 @@ final class RecordingHttpServer implements AutoCloseable {
     static final class RecordedRequest {
         private final String method;
         private final String path;
+        private final String query;
         private final Map<String, String> headers;
         private final String body;
 
-        RecordedRequest(String method, String path, Map<String, String> headers, String body) {
+        RecordedRequest(String method, String path, String query, Map<String, String> headers, String body) {
             this.method = method;
             this.path = path;
+            this.query = query;
             this.headers = headers;
             this.body = body;
         }
@@ -134,6 +137,10 @@ final class RecordingHttpServer implements AutoCloseable {
 
         String getPath() {
             return path;
+        }
+
+        String getQuery() {
+            return query;
         }
 
         String getHeader(String name) {

@@ -412,7 +412,8 @@ public class FeatureEvaluator implements IFeatureEvaluator {
         }
         PluginRegistry registry = context.getPluginRegistry();
         if (registry != null) {
-            registry.fireFeatureEvaluated(key, result);
+            registry.fireFeatureEvaluated(key, result,
+                    context.getUser() != null ? context.getUser().getAttributes() : null);
         }
     }
 
