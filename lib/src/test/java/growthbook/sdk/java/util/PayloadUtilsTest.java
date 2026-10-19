@@ -2,7 +2,9 @@ package growthbook.sdk.java.util;
 
 import com.google.gson.JsonObject;
 import growthbook.sdk.java.model.Experiment;
+import growthbook.sdk.java.model.ExperimentResult;
 import growthbook.sdk.java.model.Feature;
+import growthbook.sdk.java.model.GBContext;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -12,6 +14,7 @@ import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -188,5 +191,72 @@ class PayloadUtilsTest {
 
         // When & Then
         assertThrows(UnsupportedOperationException.class, () -> experiments.add(null));
+    }
+
+    @Test
+    @DisplayName("Verify: reconstruct writes a rule's force as the raw endpoint value, not the OptionalField wrapper")
+    void reconstructPayloadWritesForceInEndpointFormat() {
+        // Given features parsed from the endpoint shape: one rule forces true, one has no force
+        Map<String, Feature<?>> features = GBContext.builder()
+                .featuresJson("{\"flag\":{\"defaultValue\":false,"
+                        + "\"rules\":[{\"force\":true},{\"condition\":{\"id\":\"1\"}}]}}")
+                .build()
+                .getFeatures();
+
+        // When
+        JsonObject payload = PayloadUtils.reconstructPayload(features, null, null);
+
+        // Then the forced rule keeps force as a primitive true (not {"isPresent":...})
+        JsonObject flag = payload.getAsJsonObject("features").getAsJsonObject("flag");
+        JsonObject forcedRule = flag.getAsJsonArray("rules").get(0).getAsJsonObject();
+        assertTrue(forcedRule.get("force").isJsonPrimitive());
+        assertTrue(forcedRule.get("force").getAsBoolean());
+        // A rule without force must not gain a wrapper
+        JsonObject conditionRule = flag.getAsJsonArray("rules").get(1).getAsJsonObject();
+        assertFalse(conditionRule.has("force"));
+        // And the exported features re-parse to the same rule shape (round-trips)
+        Map<String, Feature<?>> reloaded = GBContext.builder()
+                .featuresJson(payload.getAsJsonObject("features").toString())
+                .build()
+                .getFeatures();
+        assertEquals(2, reloaded.get("flag").getRules().size());
+        assertTrue(reloaded.get("flag").getRules().get(0).getForce().isPresent());
+        assertEquals(Boolean.TRUE, reloaded.get("flag").getRules().get(0).getForce().getValue());
+    }
+
+    @Test
+    @DisplayName("Verify: decrypt leaves a malformed encrypted field intact instead of throwing")
+    void decryptPayloadLeavesMalformedFieldIntact() {
+        // Given a payload with valid encryptedFeatures and a malformed encryptedExperiments
+        JsonObject raw = new JsonObject();
+        raw.addProperty("encryptedFeatures", ENCRYPTED_FEATURES);
+        raw.addProperty("encryptedExperiments", ".");
+
+        // When — must not throw despite the malformed field
+        JsonObject decrypted = PayloadUtils.decryptPayload(raw, DECRYPTION_KEY);
+
+        // Then the good field decrypts and the bad one is left intact
+        assertTrue(decrypted.getAsJsonObject("features").has("greeting"));
+        assertTrue(decrypted.has("encryptedExperiments"));
+        assertFalse(decrypted.has("experiments"));
+    }
+
+    @Test
+    @DisplayName("Verify: copyResult returns an independent ExperimentResult")
+    void copyResultReturnsIndependentObject() {
+        // Given
+        ExperimentResult<String> original = ExperimentResult.<String>builder()
+                .variationId(1)
+                .key("control")
+                .value("v-1")
+                .build();
+
+        // When
+        ExperimentResult<?> copy = PayloadUtils.copyResult(original);
+        original.setVariationId(99);
+
+        // Then
+        assertEquals(1, copy.getVariationId());
+        assertNull(PayloadUtils.copyResult(null));
     }
 }

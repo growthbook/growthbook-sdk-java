@@ -237,15 +237,6 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
     private final AtomicReference<FeatureSnapshot> snapshot = new AtomicReference<>(FeatureSnapshot.EMPTY);
 
     /**
-     * Raw features-endpoint response from the last successful load, exactly as received — encrypted
-     * fields intact when the endpoint is encrypted. Backs the read-only payload accessors on the SDK
-     * facades. {@code null} before the first successful load. Never logged: it may echo the whole
-     * response body.
-     */
-    @Nullable
-    private volatile String rawResponseJson = null;
-
-    /**
      * Memoized decrypted payload paired with the raw response it was derived from, so repeated
      * introspection through {@link #getDecryptedPayloadObject()} does not re-run parsing and
      * decryption on every call. Held as a single immutable reference so a concurrent reader always
@@ -1141,8 +1132,7 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
                 saveToCacheQuietly(responseJsonString);
             }
 
-            this.rawResponseJson = responseJsonString;
-            return applyPayload(payload, isFromCache);
+            return applyPayload(payload, responseJsonString, isFromCache);
         } catch (DecryptionUtils.DecryptionException e) {
             log.error("FeatureFetchException: UNKNOWN feature fetch error code {}",
                     e.getMessage(), e);
@@ -1302,7 +1292,7 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
      *
      * @return {@code true} when the payload differs from the previously held snapshot
      */
-    private boolean applyPayload(RefreshedPayload payload, boolean isFromCache) {
+    private boolean applyPayload(RefreshedPayload payload, @Nullable String rawResponseJson, boolean isFromCache) {
         FeatureSnapshot previous = this.snapshot.get();
         Map<String, Feature<?>> newParsed = TransformationUtil.transformFeatures(payload.features);
         JsonObject newSaved = TransformationUtil.transformSavedGroups(payload.savedGroups);
@@ -1319,7 +1309,8 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
                 payload.contextualBandits,
                 newParsed == null ? Collections.emptyMap() : newParsed,
                 newSaved == null ? new JsonObject() : newSaved,
-                newBandits == null ? new JsonObject() : newBandits
+                newBandits == null ? new JsonObject() : newBandits,
+                rawResponseJson
         ));
         this.hasFeatureData.set(true);
 
@@ -1416,7 +1407,7 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
      * @return a fresh payload object the caller may mutate freely; empty before the first load
      */
     public JsonObject getPayloadObject() {
-        return PayloadUtils.parsePayload(this.rawResponseJson);
+        return PayloadUtils.parsePayload(this.snapshot.get().getRawResponseJson());
     }
 
     /**
@@ -1428,7 +1419,7 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
      * @return a fresh decrypted payload object the caller may mutate freely; empty before the first load
      */
     public JsonObject getDecryptedPayloadObject() {
-        String raw = this.rawResponseJson;
+        String raw = this.snapshot.get().getRawResponseJson();
         if (raw == null) {
             return new JsonObject();
         }

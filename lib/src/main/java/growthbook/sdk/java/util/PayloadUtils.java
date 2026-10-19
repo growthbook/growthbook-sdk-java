@@ -5,12 +5,14 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonSyntaxException;
 import growthbook.sdk.java.model.Experiment;
+import growthbook.sdk.java.model.ExperimentResult;
 import growthbook.sdk.java.model.Feature;
 import lombok.extern.slf4j.Slf4j;
 
 import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -121,11 +123,53 @@ public final class PayloadUtils {
                 String plaintext = DecryptionUtils.decrypt(encryptedElement.getAsString(), decryptionKey);
                 decrypted.add(plainKey, gson.fromJson(plaintext, JsonElement.class));
                 decrypted.remove(encryptedKey);
-            } catch (DecryptionUtils.DecryptionException | JsonSyntaxException e) {
-                log.warn("Unable to decrypt payload field '{}' for a read-only accessor.", encryptedKey, e);
+            } catch (DecryptionUtils.DecryptionException | RuntimeException e) {
+                log.warn("Unable to decrypt payload field '{}' for a read-only accessor; leaving it intact.",
+                        encryptedKey, e);
             }
         }
         return decrypted;
+    }
+
+    /**
+     * Deep-copies a feature map so a caller of a read-only accessor cannot mutate the SDK's live
+     * feature definitions (e.g. by clearing a rule list) and change later evaluations. Each
+     * {@link Feature} is round-tripped through the SDK's Gson, which also normalizes a rule's
+     * {@code force} back to the endpoint shape.
+     *
+     * @param features the live feature map; may be {@code null}
+     * @return a new map of independent feature copies, empty when the input is {@code null} or empty
+     */
+    public static Map<String, Feature<?>> copyFeatures(@Nullable Map<String, Feature<?>> features) {
+        if (features == null || features.isEmpty()) {
+            return new LinkedHashMap<>();
+        }
+        Gson gson = GrowthBookJsonUtils.getInstance().gson;
+        Map<String, Feature<?>> copy = new LinkedHashMap<>(features.size());
+        for (Map.Entry<String, Feature<?>> entry : features.entrySet()) {
+            Feature<?> original = entry.getValue();
+            copy.put(entry.getKey(),
+                    original == null ? null : gson.fromJson(gson.toJsonTree(original), Feature.class));
+        }
+        return copy;
+    }
+
+    /**
+     * Deep-copies an {@link ExperimentResult} via the SDK's Gson, so the mutable result recorded for
+     * {@code getAllResults()} is independent of the object returned to the caller of {@code run(...)}
+     * and of the snapshots returned by later calls. Prevents a caller's {@code setX(...)} on one from
+     * silently changing the others.
+     *
+     * @param result the result to copy; may be {@code null}
+     * @return an independent copy, or {@code null} when the input is {@code null}
+     */
+    @Nullable
+    public static ExperimentResult<?> copyResult(@Nullable ExperimentResult<?> result) {
+        if (result == null) {
+            return null;
+        }
+        Gson gson = GrowthBookJsonUtils.getInstance().gson;
+        return gson.fromJson(gson.toJsonTree(result), ExperimentResult.class);
     }
 
     /**

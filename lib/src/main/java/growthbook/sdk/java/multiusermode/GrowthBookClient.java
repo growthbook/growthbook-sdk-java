@@ -37,7 +37,6 @@ import lombok.extern.slf4j.Slf4j;
 
 import javax.annotation.Nullable;
 import java.util.Collections;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -204,10 +203,7 @@ public class GrowthBookClient {
      */
     public JsonObject getPayload() {
         if (this.options.isRemoteEvalEnabled()) {
-            return PayloadUtils.reconstructPayload(
-                    this.remoteEvalCoordinator.getFallbackFeatures(),
-                    this.remoteEvalCoordinator.getFallbackSavedGroups(),
-                    null);
+            return this.remoteEvalCoordinator.getFallbackPayload();
         }
         GBFeaturesRepository repository = currentRepository();
         return repository == null ? new JsonObject() : repository.getPayloadObject();
@@ -249,7 +245,7 @@ public class GrowthBookClient {
         if (source == null || source.isEmpty()) {
             return Collections.emptyMap();
         }
-        return Collections.unmodifiableMap(new LinkedHashMap<>(source));
+        return Collections.unmodifiableMap(PayloadUtils.copyFeatures(source));
     }
 
     // endregion Read-only payload accessors

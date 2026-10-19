@@ -17,6 +17,7 @@ import growthbook.sdk.java.remoteeval.RemoteEvalResponse;
 import growthbook.sdk.java.remoteeval.RemoteEvalService;
 import growthbook.sdk.java.repository.FeatureRefreshStrategy;
 import growthbook.sdk.java.repository.GBFeaturesRepository;
+import growthbook.sdk.java.util.PayloadUtils;
 import growthbook.sdk.java.util.UserContextUtils;
 import lombok.extern.slf4j.Slf4j;
 
@@ -177,17 +178,19 @@ public final class RemoteEvalCoordinator {
     }
 
     /**
-     * The saved groups from the most recent explicit {@link #refresh(RequestBodyForRemoteEval)},
-     * used to back the client's read-only payload accessor in remote-eval mode.
+     * The payload from the most recent explicit {@link #refresh(RequestBodyForRemoteEval)},
+     * reconstructed from the already-plaintext fallback state. Reads {@code fallbackContext} once so
+     * the features and saved groups always belong to the same response — an explicit refresh between
+     * two separate getter calls could otherwise mix an old features map with new saved groups.
      *
-     * @return the fallback saved groups, or an empty object when none has been fetched
+     * @return the fallback payload as a JSON object, or an empty-features payload when none has been fetched
      */
-    public JsonObject getFallbackSavedGroups() {
+    public JsonObject getFallbackPayload() {
         GlobalContext context = this.fallbackContext;
-        if (context == null || context.getSavedGroups() == null) {
-            return new JsonObject();
-        }
-        return context.getSavedGroups();
+        return PayloadUtils.reconstructPayload(
+                context == null ? null : context.getFeatures(),
+                context == null ? null : context.getSavedGroups(),
+                null);
     }
 
     /**

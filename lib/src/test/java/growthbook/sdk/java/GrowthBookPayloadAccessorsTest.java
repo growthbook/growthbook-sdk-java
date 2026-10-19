@@ -137,4 +137,42 @@ class GrowthBookPayloadAccessorsTest {
         // When & Then
         assertThrows(UnsupportedOperationException.class, () -> subject.getAllResults().put("x", null));
     }
+
+    @Test
+    @DisplayName("Verify: getFeatures returns deep copies — mutating a returned rule list cannot change the SDK's state")
+    void getFeaturesReturnsDeepCopies() {
+        // Given
+        GBContext context = GBContext.builder()
+                .featuresJson("{\"flag\":{\"defaultValue\":false,\"rules\":[{\"force\":true}]}}")
+                .build();
+        GrowthBook subject = new GrowthBook(context);
+
+        // When — a caller clears the rules on the returned copy
+        subject.getFeatures().get("flag").getRules().clear();
+
+        // Then — the SDK's live features are untouched, and a fresh read still has the rule
+        assertEquals(1, context.getFeatures().get("flag").getRules().size());
+        assertEquals(1, subject.getFeatures().get("flag").getRules().size());
+    }
+
+    @Test
+    @DisplayName("Verify: getAllResults returns copies — mutating one result cannot change later snapshots")
+    void getAllResultsReturnsCopies() {
+        // Given
+        GBContext context = GBContext.builder().attributesJson("{\"id\":\"user-123\"}").build();
+        GrowthBook subject = new GrowthBook(context);
+        Experiment<String> experiment = Experiment.<String>builder()
+                .key("my-exp")
+                .variations(new ArrayList<>(Arrays.asList("control", "variation")))
+                .build();
+        ExperimentResult<String> runResult = subject.run(experiment);
+        Integer original = subject.getAllResults().get("my-exp").getVariationId();
+
+        // When — mutate both a returned snapshot and the object run(...) handed back
+        subject.getAllResults().get("my-exp").setVariationId(99);
+        runResult.setVariationId(77);
+
+        // Then — a later snapshot is unaffected by either mutation
+        assertEquals(original, subject.getAllResults().get("my-exp").getVariationId());
+    }
 }

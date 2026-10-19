@@ -371,7 +371,7 @@ public class GrowthBook implements IGrowthBook {
                 .evaluateExperiment(experiment, getEvaluationContext(), null);
 
         if (experiment.getKey() != null) {
-            this.lastResults.put(experiment.getKey(), result);
+            this.lastResults.put(experiment.getKey(), PayloadUtils.copyResult(result));
         }
 
         GrowthBookUtils.fireSubscriptions(this.assigned, this.callbacks, experiment, result);
@@ -752,7 +752,7 @@ public class GrowthBook implements IGrowthBook {
         if (source == null || source.isEmpty()) {
             return Collections.emptyMap();
         }
-        return Collections.unmodifiableMap(new LinkedHashMap<>(source));
+        return Collections.unmodifiableMap(PayloadUtils.copyFeatures(source));
     }
 
     /**
@@ -767,7 +767,7 @@ public class GrowthBook implements IGrowthBook {
      */
     @Override
     public List<Experiment<?>> getExperiments() {
-        return PayloadUtils.extractExperiments(getDecryptedPayload());
+        return Collections.emptyList();
     }
 
     /**
@@ -814,7 +814,11 @@ public class GrowthBook implements IGrowthBook {
      */
     @Override
     public Map<String, ExperimentResult<?>> getAllResults() {
-        return Collections.unmodifiableMap(new LinkedHashMap<>(this.lastResults));
+        Map<String, ExperimentResult<?>> snapshot = new LinkedHashMap<>(this.lastResults.size());
+        for (Map.Entry<String, ExperimentResult<?>> entry : this.lastResults.entrySet()) {
+            snapshot.put(entry.getKey(), PayloadUtils.copyResult(entry.getValue()));
+        }
+        return Collections.unmodifiableMap(snapshot);
     }
 
     /**

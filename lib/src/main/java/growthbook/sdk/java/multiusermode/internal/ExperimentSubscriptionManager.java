@@ -4,6 +4,7 @@ import growthbook.sdk.java.callback.ExperimentRunCallback;
 import growthbook.sdk.java.model.AssignedExperiment;
 import growthbook.sdk.java.model.Experiment;
 import growthbook.sdk.java.model.ExperimentResult;
+import growthbook.sdk.java.util.PayloadUtils;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.Collections;
@@ -50,7 +51,7 @@ public final class ExperimentSubscriptionManager {
         // under one shared sentinel entry.
         String key = experiment.getKey() != null ? experiment.getKey() : "";
         if (experiment.getKey() != null) {
-            this.lastResults.put(experiment.getKey(), result);
+            this.lastResults.put(experiment.getKey(), PayloadUtils.copyResult(result));
         }
         AssignedExperiment nextAssignment = new AssignedExperiment(
                 experiment.getKey(),
@@ -85,7 +86,11 @@ public final class ExperimentSubscriptionManager {
      * @return an unmodifiable snapshot; empty when no experiment has been run
      */
     public Map<String, ExperimentResult<?>> getAllResults() {
-        return Collections.unmodifiableMap(new LinkedHashMap<>(this.lastResults));
+        Map<String, ExperimentResult<?>> snapshot = new LinkedHashMap<>(this.lastResults.size());
+        for (Map.Entry<String, ExperimentResult<?>> entry : this.lastResults.entrySet()) {
+            snapshot.put(entry.getKey(), PayloadUtils.copyResult(entry.getValue()));
+        }
+        return Collections.unmodifiableMap(snapshot);
     }
 
     /**
