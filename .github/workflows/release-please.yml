@@ -52,9 +52,9 @@ jobs:
         if: ${{ steps.release.outputs.release_created }}
         uses: softprops/action-gh-release@v1
         with:
-          tag_name: v${{ steps.release.outputs.major }}.${{ steps.release.outputs.minor }}.${{ steps.release.outputs.patch }}
+          # Attach the jars to release-please's release rather than creating a second, v-prefixed tag and release.
+          tag_name: ${{ steps.release.outputs.tag_name }}
           files: |
             lib/build/libs/lib-*.jar
-          generate_release_notes: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} 
