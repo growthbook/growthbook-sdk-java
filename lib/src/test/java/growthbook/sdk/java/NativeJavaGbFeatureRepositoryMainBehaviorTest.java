@@ -16,6 +16,8 @@ import static com.github.tomakehurst.wiremock.client.WireMock.*;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.argThat;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 import static org.mockito.Mockito.verify;
 
@@ -335,6 +337,52 @@ class NativeJavaGbFeatureRepositoryMainBehaviorTest {
         repo.fetchFeatures();
 
         verify(mockCache).loadCache(anyString());
+    }
+
+    @Test
+    void fetchFeatures_whenNetworkFails_ignoresUnownedLegacyCacheEntry() {
+        GbCacheManager mockCache = mock(GbCacheManager.class);
+        String foreignData = "{\"features\":{\"banner_text\":{\"defaultValue\":\"Welcome\"}}}";
+        // Only the legacy shared key holds data; the per-endpoint key is a miss. The repository must
+        // not borrow another client's cache entry from the shared "FEATURE_CACHE.json" key.
+        when(mockCache.loadCache("FEATURE_CACHE.json")).thenReturn(foreignData);
+
+        wireMock.stubFor(get(urlPathMatching("/api/features/.*"))
+                .willReturn(aResponse().withFault(Fault.CONNECTION_RESET_BY_PEER)));
+
+        NativeJavaGbFeatureRepository repo = NativeJavaGbFeatureRepository.builder()
+                .apiHost("http://localhost:" + wireMock.port())
+                .clientKey("sdk-test123")
+                .isCacheDisabled(false)
+                .cacheManager(mockCache)
+                .build();
+
+        assertThrows(FeatureFetchException.class, repo::fetchFeatures);
+        verify(mockCache, never()).loadCache("FEATURE_CACHE.json");
+    }
+
+    @Test
+    void successfulFetch_persistsUnderPerEndpointKeyNotLegacy() throws Exception {
+        GbCacheManager mockCache = mock(GbCacheManager.class);
+        wireMock.stubFor(get(urlPathMatching("/api/features/.*"))
+                .willReturn(aResponse()
+                        .withStatus(200)
+                        .withHeader("X-Sse-Support", "disabled")
+                        .withBody("{\"features\":{\"dark-mode\":{\"defaultValue\":true}}}")));
+
+        NativeJavaGbFeatureRepository repo = NativeJavaGbFeatureRepository.builder()
+                .apiHost("http://localhost:" + wireMock.port())
+                .clientKey("sdk-test123")
+                .isCacheDisabled(false)
+                .cacheManager(mockCache)
+                .build();
+
+        repo.fetchFeatures();
+
+        verify(mockCache).saveContent(
+                argThat(key -> key.startsWith("FEATURE_CACHE_") && !"FEATURE_CACHE.json".equals(key)),
+                anyString());
+        verify(mockCache, never()).saveContent(eq("FEATURE_CACHE.json"), anyString());
     }
 
     @Test
