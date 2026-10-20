@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.11.4](https://github.com/growthbook/growthbook-sdk-java/compare/0.11.3...0.11.4) (2026-10-20)
+
+
+### Features
+
+* Add Redis cache adapter ([#222](https://github.com/growthbook/growthbook-sdk-java/issues/222)) ([05cc5bc](https://github.com/growthbook/growthbook-sdk-java/commit/05cc5bc312ab03acf2b4dbe9c1637380efd3440b))
+* Redis-backed StickyBucketService (Jedis & Lettuce) ([#264](https://github.com/growthbook/growthbook-sdk-java/issues/264)) ([823a540](https://github.com/growthbook/growthbook-sdk-java/commit/823a540a71998bbc8a4ce5eb4effe0f8410a67a3))
+
 ## [0.11.3](https://github.com/growthbook/growthbook-sdk-java/compare/0.11.2...0.11.3) (2026-10-20)
 
 
