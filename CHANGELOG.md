@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.11.2](https://github.com/growthbook/growthbook-sdk-java/compare/v0.11.1...0.11.2) (2026-10-19)
+
+
+### Bug Fixes
+
+* recover polling from stale keep-alive connections  ([#268](https://github.com/growthbook/growthbook-sdk-java/issues/268)) ([235a874](https://github.com/growthbook/growthbook-sdk-java/commit/235a874ed6bcf16fdd2d02d184452e264edcf666))
+
 ## [0.11.1](https://github.com/growthbook/growthbook-sdk-java/compare/0.11.0...0.11.1) (2026-10-14)
 
 
