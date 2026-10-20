@@ -5,6 +5,7 @@ import growthbook.sdk.java.util.GrowthBookJsonUtils;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 
 class BucketRangeTest {
     @Test
@@ -42,5 +43,16 @@ class BucketRangeTest {
 
         assertEquals(subject.getRangeStart(), 0.3);
         assertEquals(subject.getRangeEnd(), 0.7);
+    }
+
+    @Test
+    void equalsComparesExactly() {
+        BucketRange a = new BucketRange(0.3, 0.7);
+        BucketRange same = new BucketRange(0.3, 0.7);
+        BucketRange nearby = new BucketRange(0.3 + 1e-9, 0.7);
+
+        assertEquals(a, same);
+        assertEquals(a.hashCode(), same.hashCode());
+        assertNotEquals(a, nearby);
     }
 }
