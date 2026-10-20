@@ -7,6 +7,7 @@ import com.google.gson.JsonSyntaxException;
 import growthbook.sdk.java.model.Experiment;
 import growthbook.sdk.java.model.ExperimentResult;
 import growthbook.sdk.java.model.Feature;
+import growthbook.sdk.java.model.FeatureRule;
 import lombok.extern.slf4j.Slf4j;
 
 import javax.annotation.Nullable;
@@ -134,11 +135,15 @@ public final class PayloadUtils {
     /**
      * Deep-copies a feature map so a caller of a read-only accessor cannot mutate the SDK's live
      * feature definitions (e.g. by clearing a rule list) and change later evaluations. Each
-     * {@link Feature} is round-tripped through the SDK's Gson, which also normalizes a rule's
-     * {@code force} back to the endpoint shape.
+     * {@link Feature} is round-tripped through the SDK's Gson for structural isolation, then each
+     * rule's caller-typed values ({@code force}, {@code variations}, {@code contextualVariations},
+     * {@code tracks}) are restored from the original so the JSON round-trip does not renumber an
+     * {@code Integer} to a {@code Long} or turn an object into a map. (A feature's {@code defaultValue}
+     * is final and only ever set by Gson, so it is already normalized and round-trips unchanged.)
      *
      * @param features the live feature map; may be {@code null}
-     * @return a new map of independent feature copies, empty when the input is {@code null} or empty
+     * @return a new map of independent, type-preserving feature copies, empty when the input is
+     * {@code null} or empty
      */
     public static Map<String, Feature<?>> copyFeatures(@Nullable Map<String, Feature<?>> features) {
         if (features == null || features.isEmpty()) {
@@ -148,20 +153,46 @@ public final class PayloadUtils {
         Map<String, Feature<?>> copy = new LinkedHashMap<>(features.size());
         for (Map.Entry<String, Feature<?>> entry : features.entrySet()) {
             Feature<?> original = entry.getValue();
-            copy.put(entry.getKey(),
-                    original == null ? null : gson.fromJson(gson.toJsonTree(original), Feature.class));
+            if (original == null) {
+                copy.put(entry.getKey(), null);
+                continue;
+            }
+            Feature<?> featureCopy = gson.fromJson(gson.toJsonTree(original), Feature.class);
+            restoreRuleValueTypes(original.getRules(), featureCopy.getRules());
+            copy.put(entry.getKey(), featureCopy);
         }
         return copy;
     }
 
+    @SuppressWarnings("unchecked")
+    private static void restoreRuleValueTypes(List<? extends FeatureRule<?>> original,
+                                              List<? extends FeatureRule<?>> copy) {
+        int shared = Math.min(original.size(), copy.size());
+        for (int i = 0; i < shared; i++) {
+            FeatureRule<Object> src = (FeatureRule<Object>) original.get(i);
+            FeatureRule<Object> dst = (FeatureRule<Object>) copy.get(i);
+            dst.setForce(src.getForce());
+            dst.setVariations(copyList(src.getVariations()));
+            dst.setContextualVariations(copyList(src.getContextualVariations()));
+            dst.setTracks(copyList(src.getTracks()));
+        }
+    }
+
+    @Nullable
+    private static <T> ArrayList<T> copyList(@Nullable ArrayList<T> list) {
+        return list == null ? null : new ArrayList<>(list);
+    }
+
     /**
-     * Deep-copies an {@link ExperimentResult} via the SDK's Gson, so the mutable result recorded for
-     * {@code getAllResults()} is independent of the object returned to the caller of {@code run(...)}
-     * and of the snapshots returned by later calls. Prevents a caller's {@code setX(...)} on one from
-     * silently changing the others.
+     * Deep-copies an {@link ExperimentResult} so the mutable result recorded for {@code getAllResults()}
+     * is independent of the object returned to the caller of {@code run(...)} and of later snapshots.
+     * The structure is copied through the SDK's Gson, then the variation {@code value} — the only
+     * caller-typed field — is restored from the original by reference, so an {@code Integer} stays an
+     * {@code Integer} (and an object stays its own type) rather than being renumbered to a {@code Long}
+     * or turned into a map by the JSON round-trip.
      *
      * @param result the result to copy; may be {@code null}
-     * @return an independent copy, or {@code null} when the input is {@code null}
+     * @return an independent, type-preserving copy, or {@code null} when the input is {@code null}
      */
     @Nullable
     public static ExperimentResult<?> copyResult(@Nullable ExperimentResult<?> result) {
@@ -169,7 +200,9 @@ public final class PayloadUtils {
             return null;
         }
         Gson gson = GrowthBookJsonUtils.getInstance().gson;
-        return gson.fromJson(gson.toJsonTree(result), ExperimentResult.class);
+        ExperimentResult<Object> copy = gson.fromJson(gson.toJsonTree(result), ExperimentResult.class);
+        copy.setValue(result.getValue());
+        return copy;
     }
 
     /**

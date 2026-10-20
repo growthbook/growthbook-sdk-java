@@ -175,4 +175,24 @@ class GrowthBookPayloadAccessorsTest {
         // Then — a later snapshot is unaffected by either mutation
         assertEquals(original, subject.getAllResults().get("my-exp").getVariationId());
     }
+
+    @Test
+    @DisplayName("Verify: getAllResults preserves a variation value's runtime type (Integer stays Integer)")
+    void getAllResultsPreservesValueType() {
+        // Given an Experiment<Integer>
+        GBContext context = GBContext.builder().attributesJson("{\"id\":\"user-123\"}").build();
+        GrowthBook subject = new GrowthBook(context);
+        Experiment<Integer> experiment = Experiment.<Integer>builder()
+                .key("int-exp")
+                .variations(new ArrayList<>(Arrays.asList(10, 20)))
+                .build();
+
+        // When
+        ExperimentResult<Integer> runResult = subject.run(experiment);
+        Object snapshotValue = subject.getAllResults().get("int-exp").getValue();
+
+        // Then getAllResults returns the same Integer type run(...) did, not a Long
+        assertEquals(runResult.getValue(), snapshotValue);
+        assertTrue(snapshotValue instanceof Integer);
+    }
 }

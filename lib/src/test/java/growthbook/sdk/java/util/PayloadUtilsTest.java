@@ -4,7 +4,9 @@ import com.google.gson.JsonObject;
 import growthbook.sdk.java.model.Experiment;
 import growthbook.sdk.java.model.ExperimentResult;
 import growthbook.sdk.java.model.Feature;
+import growthbook.sdk.java.model.FeatureRule;
 import growthbook.sdk.java.model.GBContext;
+import growthbook.sdk.java.model.OptionalField;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -14,7 +16,9 @@ import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -258,5 +262,64 @@ class PayloadUtilsTest {
         // Then
         assertEquals(1, copy.getVariationId());
         assertNull(PayloadUtils.copyResult(null));
+    }
+
+    @Test
+    @DisplayName("Verify: copyResult preserves a numeric value's runtime type (Integer stays Integer)")
+    void copyResultPreservesNumericValueType() {
+        // Given an Experiment<Integer>-style result whose value is an Integer
+        ExperimentResult<Integer> original = ExperimentResult.<Integer>builder()
+                .variationId(1)
+                .key("1")
+                .value(42)
+                .build();
+
+        // When
+        ExperimentResult<?> copy = PayloadUtils.copyResult(original);
+
+        // Then the copied value is still an Integer, not a Long
+        assertInstanceOf(Integer.class, copy.getValue());
+        assertEquals(42, copy.getValue());
+    }
+
+    @Test
+    @DisplayName("Verify: copyResult preserves an object value by its original reference")
+    void copyResultPreservesObjectValue() {
+        // Given a result whose value is an application object
+        Map<String, Object> value = new HashMap<>();
+        value.put("k", "v");
+        ExperimentResult<Object> original = ExperimentResult.builder()
+                .variationId(0)
+                .key("0")
+                .value(value)
+                .build();
+
+        // When
+        ExperimentResult<?> copy = PayloadUtils.copyResult(original);
+
+        // Then the value keeps its type (same object), not a parsed map
+        assertSame(value, copy.getValue());
+    }
+
+    @Test
+    @DisplayName("Verify: copyFeatures preserves a rule's forced value type and isolates the rule list")
+    void copyFeaturesPreservesRuleValueTypeAndIsolatesList() {
+        // Given a feature whose rule forces a numeric (Integer) value
+        Feature<Object> feature = new Feature<>();
+        feature.getRules().add(FeatureRule.builder().force(new OptionalField<>(true, 42)).build());
+        Map<String, Feature<?>> features = new HashMap<>();
+        features.put("flag", feature);
+
+        // When
+        Map<String, Feature<?>> copy = PayloadUtils.copyFeatures(features);
+
+        // Then the forced value keeps its Integer type
+        Object forcedValue = copy.get("flag").getRules().get(0).getForce().getValue();
+        assertInstanceOf(Integer.class, forcedValue);
+        assertEquals(42, forcedValue);
+
+        // And clearing the copy's rule list does not affect the original
+        copy.get("flag").getRules().clear();
+        assertEquals(1, feature.getRules().size());
     }
 }
