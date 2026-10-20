@@ -61,13 +61,8 @@ public final class UserContextUtils {
     }
 
     private static JsonObject globalAttributes(Options options) {
-        if (options.getGlobalAttributes() == null) {
-            return new JsonObject();
-        }
-        JsonObject globalAttributes = GrowthBookJsonUtils.getInstance()
-                .gson
-                .fromJson(options.getGlobalAttributes(), JsonObject.class);
-        return globalAttributes == null ? new JsonObject() : globalAttributes;
+        JsonObject globalAttributes = options.getGlobalAttributes();
+        return globalAttributes == null ? new JsonObject() : globalAttributes.deepCopy();
     }
 
     /**
