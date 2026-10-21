@@ -154,6 +154,37 @@ class GrowthBookClientStickyBucketTest {
 
     @Test
     @Timeout(30)
+    void inlineExperimentIdentifierIsFetchedWithoutConfiguredOrDerivedIdentifiers() {
+        // No configured stickyBucketIdentifierAttributes and no loaded features, so the only identifier
+        // available is the inline experiment's own hashAttribute. It must still be read from the store.
+        GatedAsyncStickyService service = new GatedAsyncStickyService();
+        GrowthBookClient client = new GrowthBookClient(Options.builder()
+                .asyncStickyBucketService(service)
+                .build());
+        try {
+            Experiment<String> experiment = Experiment.<String>builder()
+                    .key("exp-inline")
+                    .hashAttribute("userId")
+                    .variations(new ArrayList<>(Arrays.asList("control", "treatment")))
+                    .meta(new ArrayList<>(Arrays.asList(
+                            growthbook.sdk.java.model.VariationMeta.builder().key("control").build(),
+                            growthbook.sdk.java.model.VariationMeta.builder().key("treatment").build())))
+                    .build();
+            UserContext userContext = UserContext.builder().attributesJson("{\"userId\":\"u1\"}").build();
+
+            client.run(experiment, userContext);
+
+            assertFalse(service.fetchCalls.isEmpty(), "a sticky read must happen for the inline experiment");
+            boolean fetchedInlineIdentifier = service.fetchCalls.stream().anyMatch(c -> c.containsKey("userId"));
+            assertTrue(fetchedInlineIdentifier,
+                    "the inline experiment's hashAttribute must be fetched; calls=" + service.fetchCalls);
+        } finally {
+            client.shutdown();
+        }
+    }
+
+    @Test
+    @Timeout(30)
     void fetchesAreScopedToIdentifierAttributes() {
         GatedAsyncStickyService service = new GatedAsyncStickyService();
         GrowthBookClient client = new GrowthBookClient(stickyOptions(service));

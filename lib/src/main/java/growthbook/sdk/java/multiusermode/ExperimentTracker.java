@@ -41,6 +41,19 @@ public class ExperimentTracker {
     }
 
     /**
+     * Atomically claims an exposure for delivery: marks it tracked and reports
+     * whether this caller was the first to do so. Concurrent first evaluations of
+     * the same key on a shared tracker see exactly one {@code true}, so the
+     * exposure is dispatched once rather than racing a separate check-then-mark.
+     *
+     * @param experimentId the dedup key to claim
+     * @return {@code true} if this call marked the key, {@code false} if it was already tracked
+     */
+    public boolean markIfFirst(String experimentId) {
+        return trackedExperiments.asMap().putIfAbsent(experimentId, Boolean.TRUE) == null;
+    }
+
+    /**
      * Un-marks an exposure whose delivery failed, so it is retried on the next
      * evaluation instead of being silently lost.
      *
