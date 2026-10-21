@@ -306,6 +306,20 @@ public class GrowthBookClient {
     }
 
     /**
+     * Creates a lightweight, per-user handle bound to the supplied context.
+     *
+     * <p>The returned {@link UserScopedGrowthBook} exposes context-free evaluation methods and owns
+     * per-user state (forced values, attributes, URL, tracking callback) while delegating every
+     * evaluation back to this shared client. Intended for per-request use.
+     *
+     * @param userContext user context to bind; null binds an empty context
+     * @return a user-scoped handle over this client
+     */
+    public UserScopedGrowthBook createScopedInstance(UserContext userContext) {
+        return new UserScopedGrowthBook(this, userContext);
+    }
+
+    /**
      * Evaluates a feature for a user.
      *
      * @param key feature key
