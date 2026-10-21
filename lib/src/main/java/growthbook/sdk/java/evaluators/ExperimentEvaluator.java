@@ -301,7 +301,11 @@ public class ExperimentEvaluator implements IExperimentEvaluator {
 
                 // save doc
                 if (context.getOptions().getStickyBucketService() != null) {
-                    context.getOptions().getStickyBucketService().saveAssignments(docModel.getStickyAssignmentsDocument());
+                    try {
+                        context.getOptions().getStickyBucketService().saveAssignments(docModel.getStickyAssignmentsDocument());
+                    } catch (RuntimeException e) {
+                        log.warn("Sticky bucket service failed to save assignments; continuing without persisting them.", e);
+                    }
                 }
             }
         }
@@ -439,7 +443,8 @@ public class ExperimentEvaluator implements IExperimentEvaluator {
         }
         PluginRegistry pluginRegistry = context.getPluginRegistry();
         if (pluginRegistry != null) {
-            pluginRegistry.fireExperimentViewed(experiment, result);
+            pluginRegistry.fireExperimentViewed(experiment, result,
+                    context.getUser() != null ? context.getUser().getAttributes() : null);
         }
     }
 
