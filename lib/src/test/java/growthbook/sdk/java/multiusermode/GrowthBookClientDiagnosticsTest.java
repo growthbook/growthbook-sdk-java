@@ -27,6 +27,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockStatic;
@@ -323,7 +324,7 @@ class GrowthBookClientDiagnosticsTest {
         String unsafeErrorMessage = "network unavailable for "
                 + "https://user:pass@custom.growthbook.io/api/features/custom_key?token=secret using test_key";
         doThrow(new FeatureFetchException(FeatureFetchException.FeatureFetchErrorCode.NO_RESPONSE_ERROR, unsafeErrorMessage))
-                .when(mockRepository).initialize();
+                .when(mockRepository).initialize(anyBoolean());
         mockBuilder = createMockBuilder(mockRepository);
 
         try (MockedStatic<GBFeaturesRepository> mockedStatic = mockStatic(GBFeaturesRepository.class)) {

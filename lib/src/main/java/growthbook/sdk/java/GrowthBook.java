@@ -4,7 +4,6 @@ import java.util.Map;
 import java.util.HashMap;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Objects;
 import javax.annotation.Nullable;
 import java.time.Duration;
 import com.google.gson.JsonObject;
@@ -280,6 +279,23 @@ public class GrowthBook implements IGrowthBook {
     }
 
     /**
+     * Evaluates a batch of features reusing a single {@link EvaluationContext}, so shared
+     * setup (attribute state, global context references) is not repeated per feature.
+     *
+     * @param featureKeys    the feature keys to evaluate
+     * @param valueTypeClass the expected value type (typically {@code Object.class} for mixed types)
+     * @param <ValueType>    the result value type
+     * @return a map from feature key to its {@link FeatureResult}
+     */
+    @Override
+    public <ValueType> Map<String, FeatureResult<ValueType>> evalFeatures(
+            List<String> featureKeys,
+            Class<ValueType> valueTypeClass
+    ) {
+        return featureEvaluator.evaluateFeatures(featureKeys, getEvaluationContext(), valueTypeClass);
+    }
+
+    /**
      * Update the user's attributes
      *
      * @param attributesJsonString user attributes JSON
@@ -347,7 +363,7 @@ public class GrowthBook implements IGrowthBook {
         ExperimentResult<ValueType> result = experimentEvaluatorEvaluator
                 .evaluateExperiment(experiment, getEvaluationContext(), null);
 
-        fireSubscriptions(experiment, result);
+        GrowthBookUtils.fireSubscriptions(this.assigned, this.callbacks, experiment, result);
 
         return result;
     }
@@ -749,30 +765,6 @@ public class GrowthBook implements IGrowthBook {
             // Sync updated docs into the evaluation context so the next evalFeature call sees them.
             if (evaluationContext != null && evaluationContext.getUser() != null) {
                 evaluationContext.getUser().setStickyBucketAssignmentDocs(context.getStickyBucketAssignmentDocs());
-            }
-        }
-    }
-
-    private <ValueType> void fireSubscriptions(Experiment<ValueType> experiment, ExperimentResult<ValueType> result) {
-        String key = experiment.getKey();
-        // If assigned variation has changed, fire subscriptions
-        AssignedExperiment prev = this.assigned.get(key);
-        if (prev == null
-                || !Objects.equals(prev.getInExperiment(), result.getInExperiment())
-                || !Objects.equals(prev.getVariationId(), result.getVariationId())) {
-            AssignedExperiment current = new AssignedExperiment(
-                    experiment.getKey(),
-                    result.getInExperiment(),
-                    result.getVariationId()
-            );
-            this.assigned.put(key, current);
-
-            for (ExperimentRunCallback cb : this.callbacks) {
-                try {
-                    cb.onRun(experiment, result);
-                } catch (Exception e) {
-                    log.error(e.getMessage());
-                }
             }
         }
     }
