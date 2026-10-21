@@ -1,5 +1,64 @@
 # Changelog
 
+## [0.11.3](https://github.com/growthbook/growthbook-sdk-java/compare/0.11.2...0.11.3) (2026-10-20)
+
+
+### Bug Fixes
+
+* stop user attributes leaking into GrowthBookClient global attributes ([#276](https://github.com/growthbook/growthbook-sdk-java/issues/276)) ([ce5a530](https://github.com/growthbook/growthbook-sdk-java/commit/ce5a530126243e5269aa87a96e4f9b854ec39a0a))
+
+## [0.11.2](https://github.com/growthbook/growthbook-sdk-java/compare/v0.11.1...0.11.2) (2026-10-19)
+
+
+### Bug Fixes
+
+* recover polling from stale keep-alive connections  ([#268](https://github.com/growthbook/growthbook-sdk-java/issues/268)) ([235a874](https://github.com/growthbook/growthbook-sdk-java/commit/235a874ed6bcf16fdd2d02d184452e264edcf666))
+
+## [0.11.1](https://github.com/growthbook/growthbook-sdk-java/compare/0.11.0...0.11.1) (2026-10-14)
+
+
+### Features
+
+* add feature refresh listeners and align condition evaluation with the JS SDK ([#215](https://github.com/growthbook/growthbook-sdk-java/issues/215)) ([a228e1a](https://github.com/growthbook/growthbook-sdk-java/commit/a228e1a1c1edf12eb5b11c77d9c6ab38d2d00faf))
+* add Map-based attributes overload to UserContextBuilder ([#233](https://github.com/growthbook/growthbook-sdk-java/issues/233)) ([7d5d881](https://github.com/growthbook/growthbook-sdk-java/commit/7d5d8818c0de76cf2836ae9e7b53eeee5060c675))
+* Implement evalFeatures() for optimized batch evaluation ([#185](https://github.com/growthbook/growthbook-sdk-java/issues/185)) ([fc8c081](https://github.com/growthbook/growthbook-sdk-java/commit/fc8c0814fccbadf1a93b7ed72610ee33ffd8f682))
+* support saved group references (v1) in GBContext ([#245](https://github.com/growthbook/growthbook-sdk-java/issues/245)) ([6f62492](https://github.com/growthbook/growthbook-sdk-java/commit/6f62492c5f9e5fbafe56609b63070f254a86cafe))
+
+
+### Bug Fixes
+
+* atomic cache writes and thread-safe repository lifecycle state ([#204](https://github.com/growthbook/growthbook-sdk-java/issues/204)) ([01fd716](https://github.com/growthbook/growthbook-sdk-java/commit/01fd716643a0c9958c617b912aaa28402302dbff))
+* concurrency groundwork for the multi-user client and features repository ([#234](https://github.com/growthbook/growthbook-sdk-java/issues/234)) ([0c3631e](https://github.com/growthbook/growthbook-sdk-java/commit/0c3631eddfa948c3fc97b9f89ce82857eb270f9e))
+* enable SSE reconnect in multi-user client ([#228](https://github.com/growthbook/growthbook-sdk-java/issues/228)) ([f52f193](https://github.com/growthbook/growthbook-sdk-java/commit/f52f1938125d314696d4b09c5a5a2632192175dd))
+* guard against null Gson parse result in onResponseJson ([#241](https://github.com/growthbook/growthbook-sdk-java/issues/241)) ([d2fa0e3](https://github.com/growthbook/growthbook-sdk-java/commit/d2fa0e30146971f5d7cbfd0ea36ab4585fac3902))
+* send tracking events to /track with the JS/Go wire contract ([#262](https://github.com/growthbook/growthbook-sdk-java/issues/262)) ([27b6e40](https://github.com/growthbook/growthbook-sdk-java/commit/27b6e4002e8c90e454076e05204543bc4c38c046))
+
+## [0.11.0](https://github.com/growthbook/growthbook-sdk-java/compare/v0.10.10...0.11.0) (2026-08-04)
+
+
+### ⚠ BREAKING CHANGES
+
+* update OkHttp dependencies to version 5.4.0 ([#218](https://github.com/growthbook/growthbook-sdk-java/issues/218))
+
+### Features
+
+* add Caffeine cache adapter module ([#220](https://github.com/growthbook/growthbook-sdk-java/issues/220)) ([bee3e01](https://github.com/growthbook/growthbook-sdk-java/commit/bee3e010ac7b4a2be4c9df59ddbdda9c3470d44d))
+* add configuration validation at client start-up ([#223](https://github.com/growthbook/growthbook-sdk-java/issues/223)) ([f0fb1ae](https://github.com/growthbook/growthbook-sdk-java/commit/f0fb1aecbfdf8f713a39b6e8ca0c44b6f9eda3c2))
+* add custom fields ([#217](https://github.com/growthbook/growthbook-sdk-java/issues/217)) ([06c2b98](https://github.com/growthbook/growthbook-sdk-java/commit/06c2b98b68fd37695efc5ad9bd9fdf870707ff94))
+* add diagnostics API ([#219](https://github.com/growthbook/growthbook-sdk-java/issues/219)) ([32925a6](https://github.com/growthbook/growthbook-sdk-java/commit/32925a6b9140808197424eb2aa26ce73d899ae3b))
+* add JCache (JSR-107) cache adapter module ([#221](https://github.com/growthbook/growthbook-sdk-java/issues/221)) ([621121e](https://github.com/growthbook/growthbook-sdk-java/commit/621121e4d2fc84e2efa11213727601dc3e3cb044))
+* add remote evaluation support ([#216](https://github.com/growthbook/growthbook-sdk-java/issues/216)) ([393fdc8](https://github.com/growthbook/growthbook-sdk-java/commit/393fdc8fd4eec5f346556192fe19ad936905ab7d))
+* Typed feature access ([#224](https://github.com/growthbook/growthbook-sdk-java/issues/224)) ([45c57b4](https://github.com/growthbook/growthbook-sdk-java/commit/45c57b45fec74427c4acbae0e5de296d033e5d50))
+
+
+### Bug Fixes
+
+* apply 200 response payload when x-sse-support header is absent ([#231](https://github.com/growthbook/growthbook-sdk-java/issues/231)) ([e1e3b13](https://github.com/growthbook/growthbook-sdk-java/commit/e1e3b130fcf3abbe87c38c5e594f8f7141325407))
+* correct sticky bucketing logic in single-user and multi-user modes ([#211](https://github.com/growthbook/growthbook-sdk-java/issues/211)) ([1ffd7dc](https://github.com/growthbook/growthbook-sdk-java/commit/1ffd7dc30de0fc5e2e56c80cdb69d9ff746aeda1))
+* handle double forced variation values ([#213](https://github.com/growthbook/growthbook-sdk-java/issues/213)) ([0e5cb83](https://github.com/growthbook/growthbook-sdk-java/commit/0e5cb83fcb1126e7cdf4d6bf5fdf21bb37187a6f))
+* prevent unhandled exceptions when processing empty SSE event payloads ([#214](https://github.com/growthbook/growthbook-sdk-java/issues/214)) ([c509792](https://github.com/growthbook/growthbook-sdk-java/commit/c509792a3492ac443f3685b07de7fcff8dbcbf24))
+* update OkHttp dependencies to version 5.4.0 ([#218](https://github.com/growthbook/growthbook-sdk-java/issues/218)) ([72bb348](https://github.com/growthbook/growthbook-sdk-java/commit/72bb348765dc10cca78710dd1e1e6cd487ad4808))
+
 ## [0.10.10](https://github.com/growthbook/growthbook-sdk-java/compare/v0.10.9...0.10.10) (2026-05-08)
 
 

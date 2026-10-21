@@ -7,6 +7,8 @@ import growthbook.sdk.java.model.FeatureKey;
 import growthbook.sdk.java.model.FeatureResult;
 import growthbook.sdk.java.stickyBucketing.StickyBucketService;
 import javax.annotation.Nullable;
+import java.util.List;
+import java.util.Map;
 
 interface IGrowthBook {
 
@@ -20,6 +22,16 @@ interface IGrowthBook {
     // region Features
 
     <ValueType> FeatureResult<ValueType> evalFeature(String key, Class<ValueType> valueTypeClass);
+
+    /**
+     * Evaluates a batch of features for the current user, reusing a single evaluation context.
+     *
+     * @param featureKeys    the feature keys to evaluate
+     * @param valueTypeClass the expected value type (typically {@code Object.class} for mixed types)
+     * @param <ValueType>    the result value type
+     * @return a map from feature key to its {@link FeatureResult}
+     */
+    <ValueType> Map<String, FeatureResult<ValueType>> evalFeatures(List<String> featureKeys, Class<ValueType> valueTypeClass);
 
     /**
      * Update the user's attributes

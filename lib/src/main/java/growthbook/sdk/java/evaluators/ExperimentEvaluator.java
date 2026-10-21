@@ -300,13 +300,15 @@ public class ExperimentEvaluator implements IExperimentEvaluator {
                         docModel.getStickyAssignmentsDocument()
                 );
 
-                // save doc: through the owning client's writer seam when set
-                // (fire-and-forget persistence), else the legacy direct call.
                 StickyBucketDocWriter docWriter = context.getStickyBucketDocWriter();
                 if (docWriter != null) {
                     docWriter.write(docModel.getStickyAssignmentsDocument());
                 } else if (context.getOptions().getStickyBucketService() != null) {
-                    context.getOptions().getStickyBucketService().saveAssignments(docModel.getStickyAssignmentsDocument());
+                    try {
+                        context.getOptions().getStickyBucketService().saveAssignments(docModel.getStickyAssignmentsDocument());
+                    } catch (RuntimeException e) {
+                        log.warn("Sticky bucket service failed to save assignments; continuing without persisting them.", e);
+                    }
                 }
             }
         }
@@ -444,7 +446,8 @@ public class ExperimentEvaluator implements IExperimentEvaluator {
         }
         PluginRegistry pluginRegistry = context.getPluginRegistry();
         if (pluginRegistry != null) {
-            pluginRegistry.fireExperimentViewed(experiment, result);
+            pluginRegistry.fireExperimentViewed(experiment, result,
+                    context.getUser() != null ? context.getUser().getAttributes() : null);
         }
     }
 

@@ -1,5 +1,6 @@
 package growthbook.sdk.java.plugin;
 
+import com.google.gson.JsonObject;
 import growthbook.sdk.java.model.Experiment;
 import growthbook.sdk.java.model.ExperimentResult;
 import growthbook.sdk.java.model.FeatureResult;
@@ -60,12 +61,18 @@ public final class PluginRegistry {
     }
 
     public <V> void fireExperimentViewed(Experiment<V> experiment, ExperimentResult<V> result) {
+        fireExperimentViewed(experiment, result, null);
+    }
+
+    public <V> void fireExperimentViewed(Experiment<V> experiment,
+                                         ExperimentResult<V> result,
+                                         @Nullable JsonObject userAttributes) {
         if (plugins.isEmpty()) {
             return;
         }
         for (GrowthBookPlugin plugin : plugins) {
             try {
-                plugin.onExperimentViewed(experiment, result);
+                plugin.onExperimentViewed(experiment, result, userAttributes);
             } catch (Exception e) {
                 log.warn("Plugin {} onExperimentViewed failed",
                         plugin.getClass().getName(), e);
@@ -74,12 +81,18 @@ public final class PluginRegistry {
     }
 
     public <V> void fireFeatureEvaluated(String featureKey, FeatureResult<V> result) {
+        fireFeatureEvaluated(featureKey, result, null);
+    }
+
+    public <V> void fireFeatureEvaluated(String featureKey,
+                                         FeatureResult<V> result,
+                                         @Nullable JsonObject userAttributes) {
         if (plugins.isEmpty()) {
             return;
         }
         for (GrowthBookPlugin plugin : plugins) {
             try {
-                plugin.onFeatureEvaluated(featureKey, result);
+                plugin.onFeatureEvaluated(featureKey, result, userAttributes);
             } catch (Exception e) {
                 log.warn("Plugin {} onFeatureEvaluated failed",
                         plugin.getClass().getName(), e);
