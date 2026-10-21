@@ -1,0 +1,48 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(./gradlew test)",
+      "Bash(./gradlew test *)",
+      "Bash(./gradlew build)",
+      "Bash(./gradlew build *)",
+      "Bash(./gradlew compileJava)",
+      "Bash(./gradlew compileJava *)",
+      "Bash(./gradlew jacocoTestReport)",
+      "Bash(./gradlew :lib:test)",
+      "Bash(./gradlew :lib:test *)",
+      "Bash(./gradlew :lib:compileJava)",
+      "Bash(./gradlew :lib:compileJava *)",
+      "Bash(./gradlew :growthbook-cache-jcache:test)",
+      "Bash(./gradlew :growthbook-cache-jcache:test *)",
+      "Bash(./gradlew :growthbook-cache-caffeine:test)",
+      "Bash(./gradlew :growthbook-cache-caffeine:test *)",
+      "Bash(./gradlew javadoc)",
+      "Bash(/usr/libexec/java_home)",
+      "Bash(/usr/libexec/java_home *)"
+    ],
+    "deny": [
+      "Bash(rm -rf *)",
+      "Bash(git push --force *)",
+      "Bash(git push --force)",
+      "Bash(git push -f *)",
+      "Bash(git push -f)",
+      "Bash(git reset --hard *)",
+      "Bash(git reset --hard)",
+      "Bash(git clean -f*)",
+      "Bash(./gradlew publish*)"
+    ]
+  },
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Edit|Write|MultiEdit|NotebookEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "command -v jq >/dev/null 2>&1 || { echo \"Blocked: jq is required by the release-please guard hook; install jq (brew install jq).\" >&2; exit 2; }; FP=$(jq -r '.tool_input.file_path // empty'); case \"$FP\" in *CHANGELOG.md|*versions.txt|*growthbook/sdk/java/Version.java|*gradle.properties) echo \"Blocked: $FP is owned by release-please (see AGENTS.md). gradle.properties is blocked whole because the hook only sees the path; edit non-version properties yourself.\" >&2; exit 2 ;; esac"
+          }
+        ]
+      }
+    ]
+  }
+}

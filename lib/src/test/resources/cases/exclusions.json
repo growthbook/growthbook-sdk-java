@@ -1,0 +1,23 @@
+{
+  "suites": {
+    "contextualBandit": "Contextual bandits are not supported by the Java SDK.",
+    "savedGroupReferencesV2": "savedGroupReferencesV2 is not supported by the Java SDK yet."
+  },
+  "cases": {
+    "evalCondition": {
+      "$vlt - absent attribute is below any release": "Version operators do not treat an absent attribute as version 0 yet.",
+      "$veq - absent attribute equals 0": "Version operators do not treat an absent attribute as version 0 yet.",
+      "$vne - absent attribute differs from a real version": "Version operators do not treat an absent attribute as version 0 yet.",
+      "$veq - empty string attribute is version 0": "Version operators do not treat a non-version attribute as version 0 yet.",
+      "$veq - boolean attribute is version 0": "Version operators do not treat a non-version attribute as version 0 yet.",
+      "$veq - array attribute is version 0": "Version operators do not treat a non-version attribute as version 0 yet.",
+      "$veq - null attribute is version 0": "Version operators do not treat a null attribute as version 0 yet."
+    },
+    "feature": {
+      "CB rule with empty contexts (explore) buckets on marginal weights with fallback leaf -1": "Contextual bandits are not supported by the Java SDK.",
+      "CB rule with no contexts key falls back to marginal weights (fallback leaf -1)": "Contextual bandits are not supported by the Java SDK.",
+      "CB rule with empty contexts uses marginal weights (fallback leaf -1)": "Contextual bandits are not supported by the Java SDK.",
+      "CB rule with empty contexts is overridden by forced variation like a normal experiment": "Contextual bandits are not supported by the Java SDK."
+    }
+  }
+}
