@@ -580,11 +580,14 @@ public class GrowthBookUtils {
                         attributeOverrides
                 );
 
-        context.setStickyBucketAssignmentDocs(
-                stickyBucketService.getAllAssignments(
-                        stickyBucketAttributes
-                )
-        );
+        Map<String, StickyAssignmentsDocument> docs;
+        try {
+            docs = stickyBucketService.getAllAssignments(stickyBucketAttributes);
+        } catch (RuntimeException e) {
+            log.warn("Sticky bucket service failed to load assignments; continuing with normal bucketing.", e);
+            docs = new HashMap<>();
+        }
+        context.setStickyBucketAssignmentDocs(docs);
     }
 
     /**
