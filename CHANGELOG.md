@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.11.3](https://github.com/growthbook/growthbook-sdk-java/compare/0.11.2...0.11.3) (2026-10-20)
+
+
+### Bug Fixes
+
+* stop user attributes leaking into GrowthBookClient global attributes ([#276](https://github.com/growthbook/growthbook-sdk-java/issues/276)) ([ce5a530](https://github.com/growthbook/growthbook-sdk-java/commit/ce5a530126243e5269aa87a96e4f9b854ec39a0a))
+
+## [0.11.2](https://github.com/growthbook/growthbook-sdk-java/compare/v0.11.1...0.11.2) (2026-10-19)
+
+
+### Bug Fixes
+
+* recover polling from stale keep-alive connections  ([#268](https://github.com/growthbook/growthbook-sdk-java/issues/268)) ([235a874](https://github.com/growthbook/growthbook-sdk-java/commit/235a874ed6bcf16fdd2d02d184452e264edcf666))
+
 ## [0.11.1](https://github.com/growthbook/growthbook-sdk-java/compare/0.11.0...0.11.1) (2026-10-14)
 
 

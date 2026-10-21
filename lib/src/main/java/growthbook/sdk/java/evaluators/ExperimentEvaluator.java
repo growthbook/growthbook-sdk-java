@@ -302,7 +302,11 @@ public class ExperimentEvaluator implements IExperimentEvaluator {
 
                 // save doc
                 if (context.getOptions().getStickyBucketService() != null) {
-                    context.getOptions().getStickyBucketService().saveAssignments(docModel.getStickyAssignmentsDocument());
+                    try {
+                        context.getOptions().getStickyBucketService().saveAssignments(docModel.getStickyAssignmentsDocument());
+                    } catch (RuntimeException e) {
+                        log.warn("Sticky bucket service failed to save assignments; continuing without persisting them.", e);
+                    }
                 }
             }
         }
