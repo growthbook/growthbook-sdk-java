@@ -4,8 +4,11 @@ import growthbook.sdk.java.callback.ExperimentRunCallback;
 import growthbook.sdk.java.model.AssignedExperiment;
 import growthbook.sdk.java.model.Experiment;
 import growthbook.sdk.java.model.ExperimentResult;
+import growthbook.sdk.java.util.PayloadUtils;
 import lombok.extern.slf4j.Slf4j;
 
+import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -25,6 +28,7 @@ public final class ExperimentSubscriptionManager {
 
     private final List<ExperimentRunCallback> callbacks = new CopyOnWriteArrayList<>();
     private final Map<String, AssignedExperiment> assigned = new ConcurrentHashMap<>();
+    private final Map<String, ExperimentResult<?>> lastResults = new ConcurrentHashMap<>();
 
     /**
      * Registers an experiment run callback.
@@ -46,6 +50,9 @@ public final class ExperimentSubscriptionManager {
         // ConcurrentHashMap rejects null keys; a key-less experiment still dedupes,
         // under one shared sentinel entry.
         String key = experiment.getKey() != null ? experiment.getKey() : "";
+        if (experiment.getKey() != null) {
+            this.lastResults.put(experiment.getKey(), PayloadUtils.copyResult(result));
+        }
         AssignedExperiment nextAssignment = new AssignedExperiment(
                 experiment.getKey(),
                 result.getInExperiment(),
@@ -70,6 +77,29 @@ public final class ExperimentSubscriptionManager {
                 log.error("Experiment run callback failed for experiment={}", experiment.getKey(), e);
             }
         }
+    }
+
+    /**
+     * Returns the last {@link ExperimentResult} seen for every experiment run through this manager,
+     * keyed by experiment key. Reflects every run, not only assignment changes.
+     *
+     * @return an unmodifiable snapshot; empty when no experiment has been run
+     */
+    public Map<String, ExperimentResult<?>> getAllResults() {
+        Map<String, ExperimentResult<?>> snapshot = new LinkedHashMap<>(this.lastResults.size());
+        for (Map.Entry<String, ExperimentResult<?>> entry : this.lastResults.entrySet()) {
+            snapshot.put(entry.getKey(), PayloadUtils.copyResult(entry.getValue()));
+        }
+        return Collections.unmodifiableMap(snapshot);
+    }
+
+    /**
+     * Drops the tracked assignments and results so a subsequent {@link #getAllResults()} starts empty.
+     * Registered callbacks are left intact. Invoked when the owning client shuts down.
+     */
+    public void clear() {
+        this.assigned.clear();
+        this.lastResults.clear();
     }
 
     private <T> boolean hasAssignmentChanged(AssignedExperiment previous, ExperimentResult<T> result) {

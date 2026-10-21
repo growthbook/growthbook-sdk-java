@@ -1,5 +1,6 @@
 package growthbook.sdk.java.multiusermode;
 
+import com.google.gson.JsonObject;
 import growthbook.sdk.java.callback.ExperimentRunCallback;
 import growthbook.sdk.java.diagnostics.model.Diagnostics;
 import growthbook.sdk.java.diagnostics.provider.DiagnosticsProvider;
@@ -12,6 +13,7 @@ import growthbook.sdk.java.listener.FeatureRefreshListener;
 import growthbook.sdk.java.listener.FeatureRefreshSubscription;
 import growthbook.sdk.java.model.Experiment;
 import growthbook.sdk.java.model.ExperimentResult;
+import growthbook.sdk.java.model.Feature;
 import growthbook.sdk.java.model.FeatureKey;
 import growthbook.sdk.java.model.FeatureRefreshEvent;
 import growthbook.sdk.java.model.FeatureResult;
@@ -30,9 +32,11 @@ import growthbook.sdk.java.plugin.PluginRegistry;
 import growthbook.sdk.java.repository.GBFeaturesRepository;
 import growthbook.sdk.java.repository.RefreshMode;
 import growthbook.sdk.java.util.GrowthBookJsonUtils;
+import growthbook.sdk.java.util.PayloadUtils;
 import lombok.extern.slf4j.Slf4j;
 
 import javax.annotation.Nullable;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -148,6 +152,103 @@ public class GrowthBookClient {
     public Diagnostics getDiagnostics() {
         return this.diagnosticsProvider.getDiagnostics();
     }
+
+    // region Read-only payload accessors
+
+    /**
+     * The feature definitions the SDK has currently loaded, keyed by feature key.
+     *
+     * <p>Thread-safe and read-only: returns a defensive, unmodifiable snapshot of the shared feature
+     * state, so a concurrent refresh can never surface a partially updated map to the caller. Returns
+     * an empty map — never {@code null} — before {@link #initialize()} completes, and in remote-eval
+     * mode returns the features from the most recent {@link #refreshForRemoteEval(RequestBodyForRemoteEval)}.
+     *
+     * @return an unmodifiable snapshot of the loaded features
+     */
+    public Map<String, Feature<?>> getFeatures() {
+        if (this.options.isRemoteEvalEnabled()) {
+            return unmodifiableFeatures(this.remoteEvalCoordinator.getFallbackFeatures());
+        }
+        GBFeaturesRepository repository = currentRepository();
+        return repository == null
+                ? Collections.<String, Feature<?>>emptyMap()
+                : unmodifiableFeatures(repository.getParsedFeatures());
+    }
+
+    /**
+     * The auto-experiment definitions carried by the current payload's {@code experiments} array.
+     *
+     * <p>Thread-safe and read-only. This array is only delivered by the features endpoint, so it is
+     * populated only in the repository-backed refresh modes; in remote-eval mode the fallback state
+     * carries no {@code experiments} and this always returns empty. Returns an empty list — never
+     * {@code null} — when the payload carries no {@code experiments} array (the common case for a
+     * backend SDK) or before load.
+     *
+     * @return an unmodifiable snapshot of the loaded experiments
+     */
+    public List<Experiment<?>> getExperiments() {
+        return PayloadUtils.extractExperiments(getDecryptedPayload());
+    }
+
+    /**
+     * The raw feature payload the SDK loaded, in the same shape as the features endpoint response
+     * (features, saved groups, and — when the endpoint is encrypted — the {@code encrypted*} fields
+     * exactly as received).
+     *
+     * <p>Thread-safe and read-only: returns a freshly parsed object the caller may mutate freely.
+     * Returns an empty object — never {@code null} — before load. In remote-eval mode the payload is
+     * reconstructed from the already-plaintext fallback state, so it equals {@link #getDecryptedPayload()}.
+     *
+     * @return the raw payload as a JSON object
+     */
+    public JsonObject getPayload() {
+        if (this.options.isRemoteEvalEnabled()) {
+            return this.remoteEvalCoordinator.getFallbackPayload();
+        }
+        GBFeaturesRepository repository = currentRepository();
+        return repository == null ? new JsonObject() : repository.getPayloadObject();
+    }
+
+    /**
+     * The current payload with any encrypted fields decrypted to plaintext; equal to
+     * {@link #getPayload()} when the payload is not encrypted.
+     *
+     * <p>Thread-safe and read-only: returns a freshly built object the caller may mutate freely.
+     * Returns an empty object — never {@code null} — before load. The decryption key is used only to
+     * decrypt and is never logged.
+     *
+     * @return the decrypted payload as a JSON object
+     */
+    public JsonObject getDecryptedPayload() {
+        if (this.options.isRemoteEvalEnabled()) {
+            return getPayload();
+        }
+        GBFeaturesRepository repository = currentRepository();
+        return repository == null ? new JsonObject() : repository.getDecryptedPayloadObject();
+    }
+
+    /**
+     * The last {@link ExperimentResult} observed for every experiment run through this client so far,
+     * keyed by experiment key.
+     *
+     * <p>Thread-safe and read-only: returns a defensive, unmodifiable snapshot. Returns an empty map —
+     * never {@code null} — before any experiment has been run. Experiments with a {@code null} key are
+     * not tracked.
+     *
+     * @return an unmodifiable snapshot of the most recent experiment results
+     */
+    public Map<String, ExperimentResult<?>> getAllResults() {
+        return this.experimentSubscriptions.getAllResults();
+    }
+
+    private static Map<String, Feature<?>> unmodifiableFeatures(Map<String, Feature<?>> source) {
+        if (source == null || source.isEmpty()) {
+            return Collections.emptyMap();
+        }
+        return Collections.unmodifiableMap(PayloadUtils.copyFeatures(source));
+    }
+
+    // endregion Read-only payload accessors
 
     /**
      * Initializes the feature repository or remote-eval service.
@@ -589,6 +690,7 @@ public class GrowthBookClient {
         featureRepositoryProvider.shutdown();
         this.remoteEvalCoordinator.shutdown();
         listenerExecutor.shutdown();
+        this.experimentSubscriptions.clear();
         // Flush registered plugins (including the built-in tracking plugin) so
         // any buffered events are sent before the client is discarded.
         this.pluginRegistry.closeAll();
