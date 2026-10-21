@@ -16,6 +16,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class ExperimentTrackerTest {
@@ -224,5 +225,35 @@ class ExperimentTrackerTest {
 
         assertTrue(tracker.markIfFirst("exp"), "a failed delivery frees the key for retry");
         assertFalse(tracker.markIfFirst("exp"), "the retried exposure is claimed only once");
+    }
+
+    /**
+     * Test 8: Sizing boundaries for the ExperimentTracker(int) constructor.
+     * A dedup cache must hold at least one entry, so a non-positive bound is rejected; the
+     * smallest valid bound still dedupes a hot key and never retains more than its size.
+     */
+    @Test
+    void constructorRejectsNonPositiveMaxSize() {
+        assertThrows(IllegalArgumentException.class, () -> new ExperimentTracker(-1));
+        assertThrows(IllegalArgumentException.class, () -> new ExperimentTracker(0));
+    }
+
+    @Test
+    void smallCacheDedupesTheHotKeyAndStaysWithinItsBound() {
+        ExperimentTracker tracker = new ExperimentTracker(2);
+
+        assertTrue(tracker.markIfFirst("a"), "first claim of a key wins");
+        assertFalse(tracker.markIfFirst("a"), "the just-claimed key is deduped");
+
+        for (int i = 0; i < 50; i++) {
+            tracker.markIfFirst("k-" + i);
+        }
+        int retained = 0;
+        for (int i = 0; i < 50; i++) {
+            if (tracker.isExperimentTracked("k-" + i)) {
+                retained++;
+            }
+        }
+        assertTrue(retained <= 2, "a size-2 cache must not retain more than its bound");
     }
 }

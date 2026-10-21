@@ -1,12 +1,12 @@
 package growthbook.sdk.java.multiusermode;
 
-import com.sun.net.httpserver.HttpServer;
+import com.github.tomakehurst.wiremock.WireMockServer;
+import com.github.tomakehurst.wiremock.core.WireMockConfiguration;
 import growthbook.sdk.java.evaluators.ExperimentEvaluator;
 import growthbook.sdk.java.model.Experiment;
 import growthbook.sdk.java.model.ExperimentResult;
 import growthbook.sdk.java.model.FeatureResult;
 import growthbook.sdk.java.model.FeatureResultSource;
-import growthbook.sdk.java.model.HttpHeaders;
 import growthbook.sdk.java.multiusermode.configurations.EvaluationContext;
 import growthbook.sdk.java.multiusermode.configurations.GlobalContext;
 import growthbook.sdk.java.multiusermode.configurations.Options;
@@ -16,16 +16,15 @@ import growthbook.sdk.java.multiusermode.usage.TrackingCallbackWithUser;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 
-import java.io.IOException;
-import java.io.OutputStream;
-import java.net.InetSocketAddress;
-import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
+import static com.github.tomakehurst.wiremock.client.WireMock.get;
+import static com.github.tomakehurst.wiremock.client.WireMock.urlPathMatching;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -68,16 +67,13 @@ class GrowthBookClientTrackingTest {
                 .trackingCallBackWithUser(failsOnce)
                 .build());
         try {
-            // First evaluation: the callback throws — the assignment must still succeed.
             ExperimentResult<String> first = client.run(experiment("exp-retry"), user("u1"));
-            assertNotNull(first);
+            assertNotNull(first, "a throwing tracking callback must not fail the assignment");
             assertEquals(1, attempts.get());
 
-            // Same exposure again: the failed delivery was un-marked, so it retries.
             client.run(experiment("exp-retry"), user("u1"));
             assertEquals(2, attempts.get(), "failed exposure must be retried, not lost");
 
-            // Once delivered, the dedup holds.
             client.run(experiment("exp-retry"), user("u1"));
             assertEquals(2, attempts.get(), "delivered exposure must not re-fire");
         } finally {
@@ -122,7 +118,7 @@ class GrowthBookClientTrackingTest {
 
     @Test
     @Timeout(30)
-    void failedFeatureUsageCallbackDoesNotFailEvaluation() throws IOException {
+    void failedFeatureUsageCallbackDoesNotFailEvaluation() {
         FeatureUsageCallbackWithUser throwing = new FeatureUsageCallbackWithUser() {
             @Override
             public <ValueType> void onFeatureUsage(String featureKey,
@@ -131,14 +127,22 @@ class GrowthBookClientTrackingTest {
                 throw new IllegalStateException("analytics backend down");
             }
         };
-        HttpServer server = startFeatureServer("{\"features\":{\"plain\":{\"defaultValue\":42}}}");
-        GrowthBookClient client = new GrowthBookClient(Options.builder()
-                .apiHost(apiHost(server))
-                .clientKey(FEATURE_USAGE_CLIENT_KEY)
-                .isCacheDisabled(true)
-                .featureUsageCallbackWithUser(throwing)
-                .build());
+        WireMockServer wireMock = new WireMockServer(WireMockConfiguration.options().dynamicPort());
+        wireMock.start();
+        GrowthBookClient client = null;
         try {
+            wireMock.stubFor(get(urlPathMatching("/api/features/.*"))
+                    .willReturn(aResponse()
+                            .withStatus(200)
+                            .withHeader("Content-Type", "application/json")
+                            .withBody("{\"features\":{\"plain\":{\"defaultValue\":42}}}")));
+
+            client = new GrowthBookClient(Options.builder()
+                    .apiHost("http://localhost:" + wireMock.port())
+                    .clientKey("sdk-tracking-test")
+                    .isCacheDisabled(true)
+                    .featureUsageCallbackWithUser(throwing)
+                    .build());
             assertTrue(client.initialize(), "client failed to initialize");
 
             FeatureResult<Object> result = client.evalFeature("plain", Object.class, user("u1"));
@@ -149,30 +153,11 @@ class GrowthBookClientTrackingTest {
             assertEquals(FeatureResultSource.DEFAULT_VALUE, result.getSource(),
                     "a defined feature's source must survive a throwing usage callback");
         } finally {
-            client.shutdown();
-            server.stop(0);
-        }
-    }
-
-    private static final String FEATURE_USAGE_CLIENT_KEY = "sdk-tracking-test";
-
-    private static String apiHost(HttpServer server) {
-        return "http://127.0.0.1:" + server.getAddress().getPort();
-    }
-
-    private static HttpServer startFeatureServer(String body) throws IOException {
-        HttpServer server = HttpServer.create(new InetSocketAddress("127.0.0.1", 0), 0);
-        server.createContext("/api/features/" + FEATURE_USAGE_CLIENT_KEY, exchange -> {
-            byte[] responseBytes = body.getBytes(StandardCharsets.UTF_8);
-            exchange.getResponseHeaders().add(HttpHeaders.X_SSE_SUPPORT.getHeader(), "enabled");
-            exchange.sendResponseHeaders(200, responseBytes.length);
-            try (OutputStream responseBody = exchange.getResponseBody()) {
-                responseBody.write(responseBytes);
+            if (client != null) {
+                client.shutdown();
             }
-            exchange.close();
-        });
-        server.start();
-        return server;
+            wireMock.stop();
+        }
     }
 
     @Test
