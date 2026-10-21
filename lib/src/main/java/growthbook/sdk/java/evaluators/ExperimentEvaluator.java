@@ -460,10 +460,9 @@ public class ExperimentEvaluator implements IExperimentEvaluator {
                                            boolean suppressErrors) {
         ExperimentTracker tracker = trackerFor(context);
         String key = trackingKey(experiment, result);
-        if (tracker.isExperimentTracked(key)) {
+        if (!tracker.markIfFirst(key)) {
             return;
         }
-        tracker.trackExperiment(key);
         try {
             dispatchExperimentViewed(context, experiment, result);
         } catch (RuntimeException e) {

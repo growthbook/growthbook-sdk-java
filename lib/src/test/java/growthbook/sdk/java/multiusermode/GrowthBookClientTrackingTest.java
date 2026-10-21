@@ -1,9 +1,12 @@
 package growthbook.sdk.java.multiusermode;
 
+import com.sun.net.httpserver.HttpServer;
 import growthbook.sdk.java.evaluators.ExperimentEvaluator;
 import growthbook.sdk.java.model.Experiment;
 import growthbook.sdk.java.model.ExperimentResult;
 import growthbook.sdk.java.model.FeatureResult;
+import growthbook.sdk.java.model.FeatureResultSource;
+import growthbook.sdk.java.model.HttpHeaders;
 import growthbook.sdk.java.multiusermode.configurations.EvaluationContext;
 import growthbook.sdk.java.multiusermode.configurations.GlobalContext;
 import growthbook.sdk.java.multiusermode.configurations.Options;
@@ -13,6 +16,10 @@ import growthbook.sdk.java.multiusermode.usage.TrackingCallbackWithUser;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 
+import java.io.IOException;
+import java.io.OutputStream;
+import java.net.InetSocketAddress;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Map;
@@ -22,6 +29,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Exposure-tracking hardening on the multi-user client: a throwing callback
@@ -114,7 +122,7 @@ class GrowthBookClientTrackingTest {
 
     @Test
     @Timeout(30)
-    void failedFeatureUsageCallbackDoesNotFailEvaluation() {
+    void failedFeatureUsageCallbackDoesNotFailEvaluation() throws IOException {
         FeatureUsageCallbackWithUser throwing = new FeatureUsageCallbackWithUser() {
             @Override
             public <ValueType> void onFeatureUsage(String featureKey,
@@ -123,15 +131,48 @@ class GrowthBookClientTrackingTest {
                 throw new IllegalStateException("analytics backend down");
             }
         };
+        HttpServer server = startFeatureServer("{\"features\":{\"plain\":{\"defaultValue\":42}}}");
         GrowthBookClient client = new GrowthBookClient(Options.builder()
+                .apiHost(apiHost(server))
+                .clientKey(FEATURE_USAGE_CLIENT_KEY)
+                .isCacheDisabled(true)
                 .featureUsageCallbackWithUser(throwing)
                 .build());
         try {
-            assertNotNull(client.evalFeature("missing-feature", Object.class, user("u1")),
-                    "a throwing feature usage callback must not fail evaluation on the multi-user client");
+            assertTrue(client.initialize(), "client failed to initialize");
+
+            FeatureResult<Object> result = client.evalFeature("plain", Object.class, user("u1"));
+            assertNotNull(result.getValue(),
+                    "a defined feature's value must survive a throwing usage callback, not collapse to the unknown-feature fallback");
+            assertEquals(42, ((Number) result.getValue()).intValue(),
+                    "a defined feature's value must survive a throwing usage callback");
+            assertEquals(FeatureResultSource.DEFAULT_VALUE, result.getSource(),
+                    "a defined feature's source must survive a throwing usage callback");
         } finally {
             client.shutdown();
+            server.stop(0);
         }
+    }
+
+    private static final String FEATURE_USAGE_CLIENT_KEY = "sdk-tracking-test";
+
+    private static String apiHost(HttpServer server) {
+        return "http://127.0.0.1:" + server.getAddress().getPort();
+    }
+
+    private static HttpServer startFeatureServer(String body) throws IOException {
+        HttpServer server = HttpServer.create(new InetSocketAddress("127.0.0.1", 0), 0);
+        server.createContext("/api/features/" + FEATURE_USAGE_CLIENT_KEY, exchange -> {
+            byte[] responseBytes = body.getBytes(StandardCharsets.UTF_8);
+            exchange.getResponseHeaders().add(HttpHeaders.X_SSE_SUPPORT.getHeader(), "enabled");
+            exchange.sendResponseHeaders(200, responseBytes.length);
+            try (OutputStream responseBody = exchange.getResponseBody()) {
+                responseBody.write(responseBytes);
+            }
+            exchange.close();
+        });
+        server.start();
+        return server;
     }
 
     @Test
