@@ -86,6 +86,9 @@ public class GrowthBookClient {
     private final AtomicLong lastInitializationErrorAtMillis = new AtomicLong(0);
     private final AtomicBoolean clientShutdown = new AtomicBoolean(false);
 
+    /** Exposure dedup shared across all of this client's evaluations; sized for multi-user traffic. */
+    private final ExperimentTracker exposureTracker = new ExperimentTracker(10_000);
+
     /** Owns all sticky bucket I/O; null when no sticky bucket service is configured. */
     @Nullable
     private final StickyBucketManager stickyBucketManager;
@@ -1069,6 +1072,8 @@ public class GrowthBookClient {
     /** Attaches this client's own plugin registry so events never route through another client's plugins. */
     private EvaluationContext withPluginRegistry(EvaluationContext context) {
         context.setPluginRegistry(this.pluginRegistry);
+        context.setSharedExperimentTracker(this.exposureTracker);
+        context.setSuppressTrackingErrors(true);
         return context;
     }
 
