@@ -154,7 +154,7 @@ public final class RemoteEvalOptionsValidator {
                     options.getApiHost(),
                     options.getClientKey(),
                     options.getDecryptionKey(),
-                    options.getStickyBucketService() != null,
+                    options.isStickyBucketingConfigured(),
                     options.getRefreshStrategy()
             );
         }
