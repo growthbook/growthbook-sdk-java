@@ -401,7 +401,6 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
         );
     }
 
-    @Builder
     public GBFeaturesRepository(
             @Nullable String apiHost,
             String clientKey,
@@ -416,6 +415,26 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
             @Nullable Duration backgroundFetchInterval,
             @Nullable FeatureFetchRetryPolicy retryPolicy
     ) {
+        this(apiHost, clientKey, encryptionKey, refreshStrategy, swrTtlSeconds, okHttpClient, decryptionKey,
+                isCacheDisabled, requestBodyForRemoteEval, cacheManager, backgroundFetchInterval, retryPolicy, null);
+    }
+
+    @Builder
+    public GBFeaturesRepository(
+            @Nullable String apiHost,
+            String clientKey,
+            @Deprecated @Nullable String encryptionKey,
+            @Nullable FeatureRefreshStrategy refreshStrategy,
+            @Nullable Integer swrTtlSeconds,
+            @Nullable OkHttpClient okHttpClient,
+            @Nullable String decryptionKey,
+            @Nullable Boolean isCacheDisabled,
+            @Nullable RequestBodyForRemoteEval requestBodyForRemoteEval,
+            @Nullable GbCacheManager cacheManager,
+            @Nullable Duration backgroundFetchInterval,
+            @Nullable FeatureFetchRetryPolicy retryPolicy,
+            @Nullable Duration requestTimeout
+    ) {
         this(apiHost, clientKey, (decryptionKey != null) ? decryptionKey : encryptionKey,
                 refreshStrategy,
                 swrTtlSeconds,
@@ -424,7 +443,8 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
                 (requestBodyForRemoteEval != null) ? requestBodyForRemoteEval : new RequestBodyForRemoteEval(),
                 cacheManager,
                 backgroundFetchInterval,
-                retryPolicy
+                retryPolicy,
+                requestTimeout
         );
     }
 
@@ -478,10 +498,31 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
             @Nullable Duration backgroundFetchInterval,
             @Nullable FeatureFetchRetryPolicy retryPolicy
     ) {
+        this(apiHost, clientKey, decryptionKey, refreshStrategy, swrTtlSeconds, okHttpClient, isCacheDisabled,
+                requestBodyForRemoteEval, cacheManager, backgroundFetchInterval, retryPolicy, null);
+    }
+
+    public GBFeaturesRepository(
+            @Nullable String apiHost,
+            String clientKey,
+            @Nullable String decryptionKey,
+            @Nullable FeatureRefreshStrategy refreshStrategy,
+            @Nullable Integer swrTtlSeconds,
+            @Nullable OkHttpClient okHttpClient,
+            @Nullable Boolean isCacheDisabled,
+            @Nullable RequestBodyForRemoteEval requestBodyForRemoteEval,
+            @Nullable GbCacheManager cacheManager,
+            @Nullable Duration backgroundFetchInterval,
+            @Nullable FeatureFetchRetryPolicy retryPolicy,
+            @Nullable Duration requestTimeout
+    ) {
         this.isCacheDisabled = isCacheDisabled != null && isCacheDisabled; // cache enable by default
         if (clientKey == null) throw new IllegalArgumentException("clientKey cannot be null");
         if (backgroundFetchInterval != null && backgroundFetchInterval.isNegative()) {
             throw new IllegalArgumentException("backgroundFetchInterval must not be negative");
+        }
+        if (requestTimeout != null && requestTimeout.isNegative()) {
+            throw new IllegalArgumentException("requestTimeout must not be negative");
         }
 
         // Set the defaults when the user does not provide them
@@ -508,7 +549,11 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
         this.refreshExpiresAt();
 
         // Use provided OkHttpClient or create a new one
-        this.okHttpClient = okHttpClient == null ? this.initializeHttpClient() : okHttpClient;
+        if (okHttpClient == null) {
+            this.okHttpClient = this.initializeHttpClient(resolveRequestTimeout(requestTimeout));
+        } else {
+            this.okHttpClient = reconfigureSuppliedClient(okHttpClient, requestTimeout);
+        }
         if (!this.isCacheDisabled) {
             this.cacheManager.set(cacheManager != null ? cacheManager : createCacheManager());
         }
@@ -891,12 +936,47 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
     /**
      * @return A new {@link OkHttpClient} with an interceptor {@link GBFeaturesRepositoryRequestInterceptor}
      */
-    private OkHttpClient initializeHttpClient() {
-
-        return new OkHttpClient.Builder()
+    private OkHttpClient initializeHttpClient(Duration requestTimeout) {
+        OkHttpClient.Builder builder = new OkHttpClient.Builder()
                 .addInterceptor(new GBFeaturesRepositoryRequestInterceptor())
-                .retryOnConnectionFailure(true)
-                .build();
+                .retryOnConnectionFailure(true);
+        applyRequestTimeout(builder, requestTimeout);
+        return builder.build();
+    }
+
+    /**
+     * Reuses a caller-supplied client, applying an explicit {@code requestTimeout} so callers can
+     * bound a shared client without mutating it for their other uses. When {@code requestTimeout} is
+     * {@code null} the supplied client is returned untouched — including its own
+     * {@code retryOnConnectionFailure} choice, which the SDK honors.
+     */
+    private static OkHttpClient reconfigureSuppliedClient(
+            OkHttpClient okHttpClient,
+            @Nullable Duration requestTimeout
+    ) {
+        if (requestTimeout == null) {
+            return okHttpClient;
+        }
+        OkHttpClient.Builder builder = okHttpClient.newBuilder();
+        applyRequestTimeout(builder, requestTimeout);
+        return builder.build();
+    }
+
+    private static Duration resolveRequestTimeout(@Nullable Duration requestTimeout) {
+        return requestTimeout == null ? SDKConstants.DEFAULT_REQUEST_TIMEOUT : requestTimeout;
+    }
+
+    /**
+     * Applies the timeout to the whole call ({@code callTimeout}) and to connect, read, and write.
+     * The call timeout bounds total elapsed time, so a trickle of response chunks cannot keep a read
+     * alive indefinitely. {@link Duration#ZERO} restores OkHttp's infinite timeout. Not applied to the
+     * SSE client, whose read stream is intentionally unbounded.
+     */
+    private static void applyRequestTimeout(OkHttpClient.Builder builder, Duration requestTimeout) {
+        builder.callTimeout(requestTimeout)
+                .connectTimeout(requestTimeout)
+                .readTimeout(requestTimeout)
+                .writeTimeout(requestTimeout);
     }
 
     private void refreshExpiresAt() {
