@@ -17,6 +17,16 @@ import org.junit.jupiter.api.io.TempDir;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.nio.charset.CharacterCodingException;
+import java.nio.charset.Charset;
+import java.nio.charset.CharsetDecoder;
+import java.nio.charset.CodingErrorAction;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+
+import static org.junit.jupiter.api.Assumptions.assumeFalse;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 class FileCachingManagerImplTest {
     private FileCachingManagerImpl fileCachingManagerImpl;
@@ -112,6 +122,28 @@ class FileCachingManagerImplTest {
     }
 
     @Test
+    void shouldRoundTripNonAsciiContentAsUtf8() {
+        String fileName = "utf8.json";
+        // Mix of Cyrillic, CJK and an emoji to ensure encoding is UTF-8 on both write and read.
+        String content = "{\"msg\":\"Привіт, 世界 🚀\"}";
+
+        fileCachingManagerImpl.saveContent(fileName, content);
+
+        assertEquals(content, fileCachingManagerImpl.loadCache(fileName));
+    }
+
+    @Test
+    void shouldNotLeaveTempFilesAfterSave() {
+        fileCachingManagerImpl.saveContent("clean.txt", "payload");
+
+        File[] files = tempDir.listFiles();
+        assertNotNull(files);
+        // Exactly the destination file, no leftover *.tmp from the write-to-temp + atomic move.
+        assertEquals(1, files.length);
+        assertFalse(files[0].getName().endsWith(".tmp"));
+    }
+
+    @Test
     void shouldReturnEmptyStringForEmptyFile() {
         String fileName = "empty.txt";
         fileCachingManagerImpl.saveContent(fileName, "");
@@ -165,6 +197,76 @@ class FileCachingManagerImplTest {
         manager.saveContent("x.txt", "hello");
 
         assertEquals("hello", manager.loadCache("x.txt"));
+    }
+
+    /**
+     * Non-ASCII sample text, written as escapes so the constant does not depend on the encoding
+     * javac happens to read this file with. U+00E9 is "e" with an acute accent: the single-byte
+     * charsets Windows and older Linux default to can all represent it, and each encodes it as
+     * one byte that is not valid UTF-8 on its own.
+     */
+    private static final String NON_ASCII_SAMPLE = "{\"name\":\"caf\u00e9\"}";
+
+    @Test
+    void shouldReadLegacyCacheWrittenWithThePlatformDefaultCharset() throws IOException {
+        // Caches written by earlier SDK versions used FileWriter, i.e. the platform default
+        // charset. Such a file must stay readable instead of being discarded as a cache miss.
+        Charset legacyCharset = Charset.defaultCharset();
+
+        assumeTrue(legacyCharset.newEncoder().canEncode(NON_ASCII_SAMPLE),
+                "platform default charset (" + legacyCharset + ") cannot represent the sample text, "
+                        + "so it could not have produced this cache file either");
+        byte[] legacyBytes = NON_ASCII_SAMPLE.getBytes(legacyCharset);
+        assumeFalse(isValidUtf8(legacyBytes),
+                "platform default charset (" + legacyCharset + ") already produces valid UTF-8, "
+                        + "so there is no legacy encoding to exercise");
+
+        String fileName = "legacy.txt";
+        Files.write(new File(tempDir, fileName).toPath(), legacyBytes);
+
+        assertEquals(NON_ASCII_SAMPLE, fileCachingManagerImpl.loadCache(fileName));
+    }
+
+    /** Mirrors how {@code Files.newBufferedReader} decodes: malformed input is reported, not replaced. */
+    private static boolean isValidUtf8(byte[] bytes) {
+        CharsetDecoder decoder = StandardCharsets.UTF_8.newDecoder()
+                .onMalformedInput(CodingErrorAction.REPORT)
+                .onUnmappableCharacter(CodingErrorAction.REPORT);
+        try {
+            decoder.decode(ByteBuffer.wrap(bytes));
+            return true;
+        } catch (CharacterCodingException e) {
+            return false;
+        }
+    }
+
+    @Test
+    void shouldTreatUndecodableCacheAsAMissRatherThanFailing() throws IOException {
+        // Bytes that decode under neither UTF-8 nor the platform charset must not abort startup:
+        // a cache miss lets the repository fetch instead.
+        String fileName = "corrupt.txt";
+        Files.write(new File(tempDir, fileName).toPath(), new byte[]{(byte) 0xC3, (byte) 0x28, (byte) 0xA9});
+
+        String loaded = fileCachingManagerImpl.loadCache(fileName);
+
+        if (StandardCharsets.UTF_8.equals(Charset.defaultCharset())) {
+            assertNull(loaded);
+        } else {
+            // A single-byte legacy charset decodes anything, so the fallback read succeeds.
+            assertNotNull(loaded);
+        }
+    }
+
+    @Test
+    void shouldRewriteALegacyCacheAsUtf8OnTheNextSave() throws IOException {
+        String fileName = "rewrite.txt";
+        String content = NON_ASCII_SAMPLE;
+
+        fileCachingManagerImpl.saveContent(fileName, content);
+
+        byte[] written = Files.readAllBytes(new File(tempDir, fileName).toPath());
+        assertEquals(content, new String(written, StandardCharsets.UTF_8));
+        assertEquals(content, fileCachingManagerImpl.loadCache(fileName));
     }
 
     @Test

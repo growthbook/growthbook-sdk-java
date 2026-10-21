@@ -19,6 +19,7 @@ import com.google.gson.annotations.SerializedName;
 import com.google.gson.reflect.TypeToken;
 import growthbook.sdk.java.callback.ExperimentRunCallback;
 import growthbook.sdk.java.callback.FeatureUsageCallback;
+import growthbook.sdk.java.callback.TrackingCallback;
 import growthbook.sdk.java.evaluators.ConditionEvaluator;
 import growthbook.sdk.java.evaluators.ExperimentEvaluator;
 import growthbook.sdk.java.evaluators.FeatureEvaluator;
@@ -253,6 +254,39 @@ class GrowthBookTest {
     }
 
     @Test
+    void run_keylessAndEmptyKeyExperimentsEachFireTheirOwnCallback() {
+        // The dedup map cannot use null keys, but a key-less experiment must not share an entry
+        // with one whose key really is "": the second run would otherwise be treated as a repeat
+        // and its subscription callback suppressed.
+        GrowthBook subject = new GrowthBook();
+        ExperimentRunCallback mockCallback = mock(ExperimentRunCallback.class);
+        Experiment<String> keyless = Experiment.<String>builder().build();
+        Experiment<String> emptyKey = Experiment.<String>builder().key("").build();
+
+        subject.subscribe(mockCallback);
+        ExperimentResult<String> keylessResult = subject.run(keyless);
+        ExperimentResult<String> emptyKeyResult = subject.run(emptyKey);
+
+        verify(mockCallback).onRun(keyless, keylessResult);
+        verify(mockCallback).onRun(emptyKey, emptyKeyResult);
+        verify(mockCallback, times(2)).onRun(any(), any());
+    }
+
+    @Test
+    void run_keylessExperimentStillDedupesAcrossRepeatedRuns() {
+        GrowthBook subject = new GrowthBook();
+        ExperimentRunCallback mockCallback = mock(ExperimentRunCallback.class);
+        Experiment<String> keyless = Experiment.<String>builder().build();
+
+        subject.subscribe(mockCallback);
+        subject.run(keyless);
+        subject.run(keyless);
+        subject.run(keyless);
+
+        verify(mockCallback, times(1)).onRun(any(), any());
+    }
+
+    @Test
     void run_executesExperimentResultCallbacksTwiceWhenRunInvokeMultipleTimes() {
         ExperimentEvaluator experimentEvaluator = mock(ExperimentEvaluator.class);
         GrowthBook subject = new GrowthBook(
@@ -344,6 +378,68 @@ class GrowthBookTest {
         subject.run(mockExperiment1);
 
         verify(mockCallback, times(2)).onRun(any(), any());
+    }
+
+    // De-duplication key is (hashAttribute, hashValue, experimentKey, variationId).
+    @Test
+    @DisplayName("Tracking callback fires only once per unique experiment assignment across repeated runs")
+    void run_firesTrackingCallbackOncePerAssignment() {
+        TrackingCallback trackingCallback = mock(TrackingCallback.class);
+
+        ArrayList<Integer> variations = new ArrayList<>();
+        variations.add(0);
+        variations.add(1);
+
+        GBContext context = GBContext.builder()
+                .attributesJson("{\"id\":\"1\"}")
+                .enabled(true)
+                .trackingCallback(trackingCallback)
+                .build();
+        GrowthBook subject = new GrowthBook(context);
+
+        Experiment<Integer> experiment = Experiment.<Integer>builder()
+                .key("my-test")
+                .variations(variations)
+                .build();
+
+        subject.run(experiment);
+        subject.run(experiment);
+        subject.run(experiment);
+
+        verify(trackingCallback, times(1)).onTrack(any(), any());
+    }
+
+    @Test
+    @DisplayName("Tracking callback fires once for each distinct experiment assignment")
+    void run_firesTrackingCallbackPerDistinctAssignment() {
+        TrackingCallback trackingCallback = mock(TrackingCallback.class);
+
+        ArrayList<Integer> variations = new ArrayList<>();
+        variations.add(0);
+        variations.add(1);
+
+        GBContext context = GBContext.builder()
+                .attributesJson("{\"id\":\"1\"}")
+                .enabled(true)
+                .trackingCallback(trackingCallback)
+                .build();
+        GrowthBook subject = new GrowthBook(context);
+
+        Experiment<Integer> experiment1 = Experiment.<Integer>builder()
+                .key("my-test")
+                .variations(variations)
+                .build();
+        Experiment<Integer> experiment2 = Experiment.<Integer>builder()
+                .key("my-test-2")
+                .variations(variations)
+                .build();
+
+        subject.run(experiment1);
+        subject.run(experiment2);
+        subject.run(experiment1);
+        subject.run(experiment2);
+
+        verify(trackingCallback, times(2)).onTrack(any(), any());
     }
 
     @Test

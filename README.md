@@ -65,8 +65,8 @@ Next, add the dependency with the latest version to your project's dependencies:
 
 `GrowthBookClient` lets you share the same instance for all requests with an ability to accept the user attributes
 while calling the feature methods like `isOn()`. This `GrowthBookClient` instance is decoupled from the `GBContext`,
-creates a singleton featureRepository based on your refreshStrategy and uses the latest features at the time of
-evaluation, all managed internally.
+owns a feature repository based on your refresh strategy and uses the latest features at the time of evaluation,
+all managed internally.
 
 ```java
 
@@ -79,13 +79,33 @@ Options options = Options.builder()
 // Create growthbook instance using the options you need
 GrowthBookClient gb = new GrowthBookClient(options);
 
+// Optional metadata-only listener for successful and failed feature refreshes
+FeatureRefreshSubscription refreshSubscription = gb.subscribeFeatureRefreshListener(event -> {
+    if (event.isSuccessful()) {
+        System.out.println("Refresh source: " + event.getSource());
+        System.out.println("Features changed: " + event.isFeaturesChanged());
+        System.out.println("Loaded from cache: " + event.isLoadedFromCache());
+        System.out.println("Refresh duration: " + event.getDurationMillis() + " ms");
+        System.out.println("Active features: " + event.getActiveFeatureCount());
+    } else {
+        System.out.println("Feature refresh failed: " + event.getError());
+    }
+});
+
 // call the init method to load features 
 gb.initialize();
 
 gb.isOn("featureKey", UserContext.builder()
     .attributesJson("{\"id\" : \"123\"}").build()
 );
+
+// Stop receiving refresh events when no longer needed
+refreshSubscription.close();
 ```
+
+Feature refresh listeners are dispatched off the refresh thread on a dedicated daemon thread owned by
+the client. Supply your own executor with
+`Options.builder().featureRefreshListenerExecutor(executor).build()` to control the threading yourself.
 
 ### Manually create separate instance of GBContext, Repository and Growthbook classes
 
@@ -98,18 +118,17 @@ GBFeaturesRepository featuresRepository = GBFeaturesRepository
     .refreshStrategy(FeatureRefreshStrategy.SERVER_SENT_EVENTS) // optional; options: STALE_WHILE_REVALIDATE, SERVER_SENT_EVENTS (default: STALE_WHILE_REVALIDATE)
     .build();
 
-// Optional callback for getting updates when features are refreshed
-featuresRepository.onFeaturesRefresh(new FeatureRefreshCallback() {
-    @Override
-    public void onRefresh(String featuresJson) {
+// Optional listener for getting metadata when features are refreshed
+FeatureRefreshListener refreshListener = event -> {
+    if (event.isSuccessful()) {
         System.out.println("Features have been refreshed");
-        System.out.println(featuresJson);
-    }
-    @Override
-    public void onError(Throwable throwable) {
+        System.out.println("Features changed: " + event.isFeaturesChanged());
+    } else {
         System.out.println("Features refreshed with error");
+        System.out.println(event.getError());
     }
-});
+};
+featuresRepository.addFeatureRefreshListener(refreshListener);
 
 try {
     featuresRepository.initialize();
@@ -118,10 +137,10 @@ try {
     e.printStackTrace();
 }
 
-// Initialize the GrowthBook SDK with the GBContext and features
+// Initialize the GrowthBook SDK with the GBContext, features and saved groups
 GBContext context = GBContext
     .builder()
-    .featuresJson(featuresRepository.getFeaturesJson())
+    .featureSnapshot(featuresRepository.getFeatureSnapshot())
     .attributesJson(userAttributesJson)
     .build();
 
@@ -129,6 +148,27 @@ GrowthBook growthBook = new GrowthBook(context);
 
 growthBook.isOn("featureKey");
 ```
+
+> **Threading note.** Listeners registered directly on a repository
+> (`featuresRepository.addFeatureRefreshListener(...)`) run **synchronously on the refresh thread** —
+> the polling scheduler, the SSE event thread, or the caller of a manual refresh. A slow listener
+> delays the next refresh, and a blocking one stalls feature updates. Keep the callback short or
+> hand the event off to your own executor.
+>
+> This does not apply to `GrowthBookClient.addFeatureRefreshListener(...)` /
+> `subscribeFeatureRefreshListener(...)`: the client dispatches those off the refresh thread, on a
+> dedicated daemon thread or on the executor you pass via `Options.featureRefreshListenerExecutor`.
+
+`GBContext` needs both the features and the saved groups from the payload. Without the saved
+groups, rules that reference them by ID match nobody (or, for exclusions, everybody).
+
+| Source | Builder call |
+| --- | --- |
+| `GBFeaturesRepository` | `.featureSnapshot(repo.getFeatureSnapshot())` |
+| `NativeJavaGbFeatureRepository` | `.featuresJson(repo.getFeaturesJson()).savedGroupsJson(repo.getSavedGroupsJson())` |
+| Your own fetch | `.featuresJson(...)` and `.savedGroupsJson(...)` from the response's `features` and `savedGroups` |
+
+`GrowthBookClient` handles this itself. After a refresh, build a new `GBContext` from the repository.
 
 ## Usage
 ## Caching & Refresh Strategy
@@ -182,7 +222,7 @@ With the SWR strategy, the repository will:
 
 - Perform an initial synchronous fetch during `initialize()`.
 - Start a lightweight background poller that revalidates features on a fixed delay (by default equal to the TTL). The poller is protected against overlapping runs and logs start/end of each polling cycle.
-- Keep the latest features in memory and invoke registered `FeatureRefreshCallback`s when updated so the `GlobalContext` stays fresh.
+- Keep the latest features in memory and publish `FeatureRefreshListener` events when updated so the `GlobalContext` stays fresh.
 
 For SSE connections, the repository establishes a server‑sent events stream and updates as changes arrive; the SWR poller is not used.
 
@@ -219,7 +259,7 @@ public <ValueType> ExperimentResult<ValueType> run(Experiment<ValueType> experim
 
 - If you changed, added or removed any features, trigger a feature refresh. A forced refresh always performs a
   network request in the background and bypasses cache freshness checks, while current features remain available
-  for evaluation.
+  for evaluation. For remote evaluation payloads, use `refreshForRemoteEval(...)`.
 
 ```java
 growthBook.refreshFeatures(RefreshMode.FORCE);
@@ -343,6 +383,53 @@ public class InMemoryStickyBucketServiceImpl implements StickyBucketService {
         return docs;
     }
 }
+```
+
+#### Redis-backed sticky bucketing (multi-instance)
+
+`InMemoryStickyBucketServiceImpl` keeps assignments inside a single JVM, so on a horizontally
+scaled fleet each instance buckets the same user independently and assignments are lost on restart.
+The `growthbook-cache-redis` module ships a shared, durable implementation backed by Redis so a user
+keeps the same variation across the whole fleet and across restarts. It reuses the same Jedis or
+Lettuce client you already provide for the Redis feature cache, and stores each user's assignments
+as a JSON string under `<keyPrefix><attributeName>||<attributeValue>` — wire-compatible with the
+TypeScript `RedisStickyBucketService` (with the default empty prefix). Assignments are written
+without a TTL by default (an assignment should outlive any single process); an optional TTL can be
+configured to bound retention on long-running deployments (see below). Genuine Redis access failures
+and malformed payloads surface as a
+`StickyBucketServiceException` (mirroring how the feature cache throws `FeatureCacheException`)
+rather than being swallowed; an absent key is a normal miss, not a failure.
+
+```java
+// Jedis
+JedisPool jedisPool = new JedisPool("localhost", 6379);
+Options options = Options.builder()
+    .stickyBucketService(new JedisStickyBucketService(jedisPool))
+    .stickyBucketIdentifierAttributes(Arrays.asList("id"))
+    .build();
+
+// Lettuce
+StatefulRedisConnection<String, String> connection =
+    RedisClient.create("redis://localhost:6379").connect();
+Options lettuceOptions = Options.builder()
+    .stickyBucketService(new LettuceStickyBucketService(connection))
+    .stickyBucketIdentifierAttributes(Arrays.asList("id"))
+    .build();
+```
+
+Both constructors accept an optional `keyPrefix` argument when you want to namespace the keys
+(e.g. `new JedisStickyBucketService(jedisPool, "growthbook:sticky:")`).
+
+An optional `Duration ttl` bounds how long each entry is retained — useful so a long-running
+deployment does not keep every user's assignments forever. There is no expiry by default. The TTL is
+(re)set on each write, and the SDK writes only when a user's assignments **change**, so the expiry
+counts from the last assignment change — **not** from the user's last evaluation. Set the TTL
+comfortably longer than an experiment's lifetime so an active user is not re-bucketed mid-experiment:
+
+```java
+new JedisStickyBucketService(jedisPool, Duration.ofDays(30));                 // default prefix, 30-day TTL
+new JedisStickyBucketService(jedisPool, "growthbook:sticky:", Duration.ofDays(30));
+new LettuceStickyBucketService(connection, Duration.ofDays(30));
 ```
 
 ## Contributing
