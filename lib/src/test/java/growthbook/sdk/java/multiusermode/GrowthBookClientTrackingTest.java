@@ -68,16 +68,13 @@ class GrowthBookClientTrackingTest {
                 .trackingCallBackWithUser(failsOnce)
                 .build());
         try {
-            // First evaluation: the callback throws — the assignment must still succeed.
             ExperimentResult<String> first = client.run(experiment("exp-retry"), user("u1"));
-            assertNotNull(first);
+            assertNotNull(first, "a throwing tracking callback must not fail the assignment");
             assertEquals(1, attempts.get());
 
-            // Same exposure again: the failed delivery was un-marked, so it retries.
             client.run(experiment("exp-retry"), user("u1"));
             assertEquals(2, attempts.get(), "failed exposure must be retried, not lost");
 
-            // Once delivered, the dedup holds.
             client.run(experiment("exp-retry"), user("u1"));
             assertEquals(2, attempts.get(), "delivered exposure must not re-fire");
         } finally {

@@ -24,9 +24,13 @@ public class ExperimentTracker {
     }
 
     /**
-     * @param maxSize maximum tracked exposures before least-recently-used eviction
+     * @param maxSize maximum tracked exposures before least-recently-used eviction; must be at least 1
+     * @throws IllegalArgumentException if {@code maxSize} is less than 1
      */
     public ExperimentTracker(int maxSize) {
+        if (maxSize < 1) {
+            throw new IllegalArgumentException("maxSize must be at least 1, was " + maxSize);
+        }
         this.trackedExperiments = CacheBuilder.newBuilder()
                 .maximumSize(maxSize)
                 .build();
