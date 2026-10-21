@@ -49,6 +49,8 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
@@ -92,6 +94,11 @@ public class GrowthBookClient {
     private final ExecutorService ownedAsyncExecutor;
     /** Resolved offload executor for async APIs; the owned pool unless the caller supplied one. */
     private final Executor asyncExecutor;
+
+    /** In-flight {@link #initializeAsync()} futures; completed with {@code false} if shutdown discards their task. */
+    private final Set<CompletableFuture<Boolean>> pendingInitializations = ConcurrentHashMap.newKeySet();
+    /** In-flight async evaluation futures; completed exceptionally if shutdown discards their task. */
+    private final Set<CompletableFuture<?>> pendingAsyncEvaluations = ConcurrentHashMap.newKeySet();
 
     private static final AtomicLong ASYNC_THREAD_COUNTER = new AtomicLong();
 
@@ -273,7 +280,17 @@ public class GrowthBookClient {
      * @return a future completing with whether the client is ready for evaluation
      */
     public CompletableFuture<Boolean> initializeAsync() {
-        return CompletableFuture.supplyAsync(this::initialize, this.asyncExecutor);
+        CompletableFuture<Boolean> future = CompletableFuture.supplyAsync(this::initialize, this.asyncExecutor);
+        pendingInitializations.add(future);
+        future.whenComplete((ready, error) -> pendingInitializations.remove(future));
+        return future;
+    }
+
+    /** Registers an async evaluation future so shutdown can complete it rather than leave it hanging. */
+    private <T> CompletableFuture<T> trackAsyncEvaluation(CompletableFuture<T> future) {
+        pendingAsyncEvaluations.add(future);
+        future.whenComplete((result, error) -> pendingAsyncEvaluations.remove(future));
+        return future;
     }
 
     private void recordInitializationFailure(Throwable error) {
@@ -632,8 +649,8 @@ public class GrowthBookClient {
     public <ValueType> CompletableFuture<FeatureResult<ValueType>> evalFeatureAsync(String key,
                                                                                     Class<ValueType> valueTypeClass,
                                                                                     UserContext userContext) {
-        return getEvalContextAsync(userContext)
-                .thenApply(evalContext -> featureEvaluator.evaluateFeature(key, evalContext, valueTypeClass));
+        return trackAsyncEvaluation(getEvalContextAsync(userContext)
+                .thenApply(evalContext -> featureEvaluator.evaluateFeature(key, evalContext, valueTypeClass)));
     }
 
     /**
@@ -644,8 +661,8 @@ public class GrowthBookClient {
      * @return a future completing with whether the feature is on
      */
     public CompletableFuture<Boolean> isOnAsync(String featureKey, UserContext userContext) {
-        return getEvalContextAsync(userContext)
-                .thenApply(evalContext -> featureEvaluator.evaluateFeature(featureKey, evalContext, Object.class).isOn());
+        return trackAsyncEvaluation(getEvalContextAsync(userContext)
+                .thenApply(evalContext -> featureEvaluator.evaluateFeature(featureKey, evalContext, Object.class).isOn()));
     }
 
     /**
@@ -656,8 +673,8 @@ public class GrowthBookClient {
      * @return a future completing with whether the feature is off
      */
     public CompletableFuture<Boolean> isOffAsync(String featureKey, UserContext userContext) {
-        return getEvalContextAsync(userContext)
-                .thenApply(evalContext -> featureEvaluator.evaluateFeature(featureKey, evalContext, Object.class).isOff());
+        return trackAsyncEvaluation(getEvalContextAsync(userContext)
+                .thenApply(evalContext -> featureEvaluator.evaluateFeature(featureKey, evalContext, Object.class).isOff()));
     }
 
     /**
@@ -675,7 +692,7 @@ public class GrowthBookClient {
                                                                          ValueType defaultValue,
                                                                          Class<ValueType> gsonDeserializableClass,
                                                                          UserContext userContext) {
-        return getEvalContextAsync(userContext).thenApply(evalContext -> {
+        return trackAsyncEvaluation(getEvalContextAsync(userContext).thenApply(evalContext -> {
             try {
                 Object evaluatedValue = featureEvaluator
                         .evaluateFeature(featureKey, evalContext, gsonDeserializableClass).getValue();
@@ -688,7 +705,12 @@ public class GrowthBookClient {
                 log.error(e.getMessage(), e);
                 return defaultValue;
             }
-        });
+        }).exceptionally(throwable -> {
+            // A failed sticky read (or any context-build failure) falls back to the default, matching
+            // the synchronous getFeatureValue contract instead of surfacing the failure to the caller.
+            log.warn("Async feature value evaluation failed for {}; returning default", featureKey, throwable);
+            return defaultValue;
+        }));
     }
 
     /**
@@ -731,12 +753,13 @@ public class GrowthBookClient {
      */
     public <ValueType> CompletableFuture<ExperimentResult<ValueType>> runAsync(Experiment<ValueType> experiment,
                                                                                UserContext userContext) {
-        return getEvalContextAsync(userContext, inlineIdentifierAttributes(experiment)).thenApply(evalContext -> {
-            ExperimentResult<ValueType> result =
-                    experimentEvaluator.evaluateExperiment(experiment, evalContext, null);
-            experimentSubscriptions.publishIfChanged(experiment, result);
-            return result;
-        });
+        return trackAsyncEvaluation(getEvalContextAsync(userContext, inlineIdentifierAttributes(experiment))
+                .thenApply(evalContext -> {
+                    ExperimentResult<ValueType> result =
+                            experimentEvaluator.evaluateExperiment(experiment, evalContext, null);
+                    experimentSubscriptions.publishIfChanged(experiment, result);
+                    return result;
+                }));
     }
 
     /**
@@ -809,6 +832,17 @@ public class GrowthBookClient {
                 this.ownedAsyncExecutor.shutdownNow();
             }
         }
+        // Complete any async operation whose queued task shutdownNow() discarded, so a caller is never
+        // left waiting forever: initialize futures resolve to "not ready", evaluations complete
+        // exceptionally. Still-live futures remove themselves and ignore these no-op completions.
+        for (CompletableFuture<Boolean> pending : pendingInitializations) {
+            pending.complete(false);
+        }
+        pendingInitializations.clear();
+        for (CompletableFuture<?> pending : pendingAsyncEvaluations) {
+            pending.completeExceptionally(new IllegalStateException("GrowthBookClient has been shut down"));
+        }
+        pendingAsyncEvaluations.clear();
         featureRepositoryProvider.shutdown();
         this.remoteEvalCoordinator.shutdown();
         listenerExecutor.shutdown();
@@ -877,8 +911,15 @@ public class GrowthBookClient {
         Map<String, String> identifiers = stickyIdentifierAttributesFor(
                 mergeGlobalAttributes(safeUserContext.getAttributes()), snapshot, inlineIdentifierAttributes);
         UserContext scoped = safeUserContext.withAttributes(safeUserContext.getAttributes());
+        // handleAsync (not thenApplyAsync) so BOTH success and failure hop to the offload executor: a
+        // rejecting store must never run caller continuations (whenComplete/exceptionally) on its own
+        // completion thread — e.g. a Netty event loop during an outage.
         return this.stickyBucketManager.fetchAssignments(identifiers)
-                .thenApplyAsync(docs -> {
+                .handleAsync((docs, error) -> {
+                    if (error != null) {
+                        throw error instanceof CompletionException
+                                ? (CompletionException) error : new CompletionException(error);
+                    }
                     scoped.setStickyBucketAssignmentDocs(docs);
                     return buildEvalContext(scoped, snapshot);
                 }, this.asyncExecutor);
