@@ -15,6 +15,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.time.Duration;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executor;
@@ -134,6 +136,46 @@ class GrowthBookTrackingPluginTest {
         JsonObject attributes = event.getAsJsonObject("attributes");
         assertEquals("user-123", attributes.get("id").getAsString());
         assertEquals("US", attributes.get("country").getAsString());
+
+        plugin.close();
+    }
+
+    @Test
+    void experimentEventCarriesBanditMetadata() throws Exception {
+        server.enqueue(200);
+
+        GrowthBookTrackingPlugin plugin = GrowthBookTrackingPlugin.of(configBuilder().batchSize(1).build());
+        plugin.init();
+        ExperimentResult<String> result = experimentResult(3);
+        result.setLeafId(1);
+        result.setBanditVersion(3);
+        result.setVariationWeights(new ArrayList<>(Arrays.asList(1.0f, 0.0f)));
+        plugin.onExperimentViewed(experiment("exp1"), result);
+
+        RecordedRequest req = server.takeRequest(5, TimeUnit.SECONDS);
+        assertNotNull(req);
+        JsonObject properties = firstEvent(req).getAsJsonObject("properties");
+
+        assertEquals(1, properties.get("leafId").getAsInt());
+        assertEquals(3, properties.get("banditVersion").getAsInt());
+
+        plugin.close();
+    }
+
+    @Test
+    void nonBanditExperimentEventOmitsBanditMetadata() throws Exception {
+        server.enqueue(200);
+
+        GrowthBookTrackingPlugin plugin = GrowthBookTrackingPlugin.of(configBuilder().batchSize(1).build());
+        plugin.init();
+        plugin.onExperimentViewed(experiment("exp1"), experimentResult(3));
+
+        RecordedRequest req = server.takeRequest(5, TimeUnit.SECONDS);
+        assertNotNull(req);
+        JsonObject properties = firstEvent(req).getAsJsonObject("properties");
+
+        assertFalse(properties.has("leafId"), "non-bandit events must omit leafId");
+        assertFalse(properties.has("banditVersion"), "non-bandit events must omit banditVersion");
 
         plugin.close();
     }

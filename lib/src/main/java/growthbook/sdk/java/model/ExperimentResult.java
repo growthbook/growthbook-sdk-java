@@ -8,6 +8,7 @@ import lombok.Builder;
 import lombok.Data;
 
 import javax.annotation.Nullable;
+import java.util.ArrayList;
 
 /**
  * The result of an {@link GrowthBook#run(Experiment)} call
@@ -87,6 +88,27 @@ public class ExperimentResult<ValueType> {
      */
     @Nullable
     Boolean stickyBucketUsed;
+
+    /**
+     * When the assignment came from a contextual bandit rule, the id of the matched leaf
+     * ({@code -1} if none matched and fallback weights were used). {@code null} otherwise.
+     */
+    @Nullable
+    Integer leafId;
+
+    /**
+     * When the assignment came from a contextual bandit rule, the weights that were applied.
+     * {@code null} otherwise.
+     */
+    @Nullable
+    ArrayList<Float> variationWeights;
+
+    /**
+     * When the assignment came from a contextual bandit rule, the version of the backend-computed
+     * weights that produced this assignment. {@code null} otherwise.
+     */
+    @Nullable
+    Integer banditVersion;
 
     /**
      * The result of running an {@link Experiment} given a specific {@link GBContext}

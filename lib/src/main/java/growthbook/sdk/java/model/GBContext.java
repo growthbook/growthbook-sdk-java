@@ -79,7 +79,8 @@ public class GBContext {
             @Nullable List<String> cacheKeyAttributes,
             @Nullable Integer remoteEvalCacheSize,
             @Nullable Integer remoteEvalCacheTtlSeconds,
-            @Nullable List<GrowthBookPlugin> plugins
+            @Nullable List<GrowthBookPlugin> plugins,
+            @Nullable JsonObject contextualBandits
     ) {
         this.encryptionKey = encryptionKey;
         this.attributesJson = attributesJson == null ? "{}" : attributesJson;
@@ -110,6 +111,64 @@ public class GBContext {
         this.remoteEvalCacheSize = RemoteEvalRequestBuilder.normalizeCacheSize(remoteEvalCacheSize);
         this.remoteEvalCacheTtlSeconds = remoteEvalCacheTtlSeconds;
         this.plugins = plugins;
+        this.contextualBandits = contextualBandits == null ? new JsonObject() : contextualBandits;
+    }
+
+    /**
+     * Delegating constructor preserving the pre-contextual-bandit positional signature. Passes a
+     * {@code null} (empty) contextual bandit map.
+     */
+    public GBContext(
+            @Nullable String attributesJson,
+            @Nullable JsonObject attributes,
+            @Nullable String featuresJson,
+            @Nullable Map<String, Feature<?>> features,
+            @Nullable String encryptionKey,
+            @Nullable Boolean enabled,
+            Boolean isQaMode,
+            @Nullable String url,
+            Boolean allowUrlOverrides,
+            @Nullable Map<String, ?> forcedVariationsMap,
+            @Nullable TrackingCallback trackingCallback,
+            @Nullable FeatureUsageCallback featureUsageCallback,
+            @Nullable StickyBucketService stickyBucketService,
+            @Nullable Map<String, StickyAssignmentsDocument> stickyBucketAssignmentDocs,
+            @Nullable List<String> stickyBucketIdentifierAttributes,
+            @Nullable JsonObject savedGroups,
+            @Nullable String apiHost,
+            @Nullable String clientKey,
+            @Nullable Boolean remoteEval,
+            @Nullable List<String> cacheKeyAttributes,
+            @Nullable Integer remoteEvalCacheSize,
+            @Nullable Integer remoteEvalCacheTtlSeconds,
+            @Nullable List<GrowthBookPlugin> plugins
+    ) {
+        this(
+                attributesJson,
+                attributes,
+                featuresJson,
+                features,
+                encryptionKey,
+                enabled,
+                isQaMode,
+                url,
+                allowUrlOverrides,
+                forcedVariationsMap,
+                trackingCallback,
+                featureUsageCallback,
+                stickyBucketService,
+                stickyBucketAssignmentDocs,
+                stickyBucketIdentifierAttributes,
+                savedGroups,
+                apiHost,
+                clientKey,
+                remoteEval,
+                cacheKeyAttributes,
+                remoteEvalCacheSize,
+                remoteEvalCacheTtlSeconds,
+                plugins,
+                null
+        );
     }
 
     public GBContext(
@@ -226,6 +285,14 @@ public class GBContext {
      */
     @Nullable
     private JsonObject savedGroups;
+
+    /**
+     * Contextual bandit definitions, keyed by bandit ref. Populate this (alongside
+     * {@link #savedGroups}) from the feature payload to evaluate contextual bandit rules in the
+     * single-context path. Defaults to an empty object.
+     */
+    @Nullable
+    private JsonObject contextualBandits;
 
     /**
      * You can update the attributes JSON with new user attributes to evaluate against.
@@ -352,6 +419,7 @@ public class GBContext {
         public GBContextBuilder featureSnapshot(FeatureSnapshot snapshot) {
             this.features = snapshot.getParsedFeatures();
             this.savedGroups = snapshot.getParsedSavedGroups();
+            this.contextualBandits = snapshot.getParsedContextualBandits();
             return this;
         }
 
@@ -365,6 +433,19 @@ public class GBContext {
          */
         public GBContextBuilder savedGroupsJson(@Nullable String savedGroupsJson) {
             this.savedGroups = TransformationUtil.transformSavedGroups(savedGroupsJson);
+            return this;
+        }
+
+        /**
+         * Sets the contextual bandit definitions from the {@code contextualBandits} JSON of the SDK
+         * payload, such as {@code GBFeaturesRepository#getFeatureSnapshot()}. Invalid JSON results in
+         * no contextual bandits.
+         *
+         * @param contextualBanditsJson decrypted contextual bandits as a JSON object string
+         * @return this builder
+         */
+        public GBContextBuilder contextualBanditsJson(@Nullable String contextualBanditsJson) {
+            this.contextualBandits = TransformationUtil.transformContextualBandits(contextualBanditsJson);
             return this;
         }
     } // This stub is required for JavaDoc and is filled by Lombuk
