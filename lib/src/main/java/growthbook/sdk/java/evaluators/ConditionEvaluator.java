@@ -12,7 +12,6 @@ import lombok.extern.slf4j.Slf4j;
 
 import javax.annotation.Nullable;
 import java.util.Objects;
-import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -151,7 +150,7 @@ public class ConditionEvaluator implements IConditionEvaluator {
             case GTE:
             case LT:
             case LTE:
-                return evalComparison(operator, actual, expected, attributeDataType);
+                return evalComparison(operator, actual, expected);
 
             case REGEX:
                 return evalRegex(actual, expected, attributeDataType, false, false);
@@ -224,64 +223,17 @@ public class ConditionEvaluator implements IConditionEvaluator {
     }
 
     /**
-     * {@code $gt}/{@code $gte}/{@code $lt}/{@code $lte}: numeric or lexical comparison.
+     * {@code $gt}/{@code $gte}/{@code $lt}/{@code $lte}: JS relational comparison. Two strings
+     * compare lexically; any other pair compares as JS numbers (numeric strings parse, booleans are
+     * 1/0, null and missing are 0), and NaN never matches.
      *
-     * <p>Numbers are compared as {@code double}, deliberately: the reference JavaScript SDK applies
-     * native {@code <}/{@code >} to IEEE-754 doubles, so anything narrower diverges from the
-     * cross-SDK contract. An earlier version narrowed both operands to {@code float} first, which
-     * made values differing only beyond 2^24 compare equal — for example {@code 16777217 $gt
-     * 16777216} returned {@code false}. Do not reintroduce narrowing here; {@code arePrimitivesEqual}
-     * compares doubles on the {@code $eq}/{@code $ne} path for the same reason.
+     * <p>Numbers are compared as {@code double}, deliberately: narrowing to {@code float} made
+     * values differing only beyond 2^24 compare equal. {@code -0.0} and {@code 0.0} compare equal,
+     * as with native JS comparison.
      */
-    private boolean evalComparison(Operator operator, @Nullable JsonElement actual, JsonElement expected, DataType attributeDataType) {
-        if (actual == null || DataType.NULL.equals(attributeDataType)) {
-            if (expected.isJsonPrimitive() && !expected.getAsJsonPrimitive().isNumber()) {
-                return false;
-            }
-            return compareNumbers(operator, 0.0, expected.getAsDouble());
-        }
-        if (operator == Operator.LT && actual.getAsString().toLowerCase().matches("\\d+")) {
-            return Double.parseDouble(actual.getAsString()) < expected.getAsDouble();
-        }
-        if (actual.getAsJsonPrimitive().isNumber()) {
-            return compareNumbers(operator, actual.getAsNumber().doubleValue(), expected.getAsNumber().doubleValue());
-        }
-        if (actual.getAsJsonPrimitive().isString()) {
-            return matchesSign(operator, actual.getAsString().compareTo(expected.getAsString()));
-        }
-        return false;
-    }
-
-    /**
-     * Orders two doubles the way the reference JavaScript SDK's {@code <}/{@code >} do.
-     *
-     * <p>{@link Double#compare} imposes a total order in which {@code -0.0} sorts below {@code 0.0},
-     * so {@code -0.0 $gte 0} would be false. Native comparison treats them as equal, which is what
-     * the other SDKs — and this one before the switch to doubles — report.
-     */
-    private static int compareDoubles(double left, double right) {
-        if (left < right) {
-            return -1;
-        }
-        if (left > right) {
-            return 1;
-        }
-        return 0;
-    }
-
-    /**
-     * Applies a {@code $gt}/{@code $gte}/{@code $lt}/{@code $lte} operator to two doubles.
-     *
-     * <p>A {@code NaN} operand makes every comparison false, matching the reference JavaScript SDK
-     * where {@code <}/{@code >}/{@code <=}/{@code >=} against {@code NaN} are all false. Without this
-     * guard {@link #compareDoubles} reports {@code NaN} as equal to any finite number — neither
-     * {@code <} nor {@code >} holds — so {@code $gte}/{@code $lte} would wrongly match.
-     */
-    private static boolean compareNumbers(Operator operator, double left, double right) {
-        if (Double.isNaN(left) || Double.isNaN(right)) {
-            return false;
-        }
-        return matchesSign(operator, compareDoubles(left, right));
+    private boolean evalComparison(Operator operator, @Nullable JsonElement actual, JsonElement expected) {
+        Integer comparison = JsCoercion.compare(actual, expected);
+        return comparison != null && matchesSign(operator, comparison);
     }
 
     /**
@@ -389,36 +341,31 @@ public class ConditionEvaluator implements IConditionEvaluator {
             return attributeValue == null;
         }
         DataType conditionValueElementType = GrowthBookJsonUtils.getElementType(conditionValue);
-        DataType attributeValueElementType = GrowthBookJsonUtils.getElementType(attributeValue);
-
-        if (inSensitive && attributeValue != null
-                && attributeValueElementType == DataType.STRING
-                && conditionValueElementType == DataType.STRING) {
-            return conditionValue.getAsString().equalsIgnoreCase(attributeValue.getAsString());
-        }
 
         switch (conditionValueElementType) {
             case STRING:
-                return isMatchingPrimitive(conditionValue, attributeValue, JsonPrimitive::getAsString);
+                String attributeString = JsCoercion.toJsString(attributeValue);
+                return inSensitive
+                        ? conditionValue.getAsString().equalsIgnoreCase(attributeString)
+                        : conditionValue.getAsString().equals(attributeString);
 
             case NUMBER:
-                return isMatchingPrimitive(conditionValue, attributeValue, JsonPrimitive::getAsDouble);
+                return JsCoercion.toJsNumber(attributeValue) == conditionValue.getAsDouble();
 
             case BOOLEAN:
-                return isMatchingPrimitive(conditionValue, attributeValue, JsonPrimitive::getAsBoolean);
+                return attributeValue != null && !attributeValue.isJsonNull()
+                        && JsCoercion.isJsTruthy(attributeValue) == conditionValue.getAsBoolean();
 
             case ARRAY:
-                return attributeValue != null && attributeValue.isJsonArray()
-                        && conditionValue.equals(attributeValue);
+                return JsCoercion.toJsJson(attributeValue).equals(JsCoercion.toJsJson(conditionValue));
 
             case OBJECT:
                 JsonObject conditionValueObject = conditionValue.getAsJsonObject();
-                if (isOperatorObjectInternal(conditionValueObject)) {
+                if (conditionValueObject.size() > 0 && isOperatorObjectInternal(conditionValueObject)) {
                     return conditionValueObject.entrySet().stream()
                             .allMatch(entry -> evalOperatorCondition(entry.getKey(), attributeValue, entry.getValue(), savedGroups));
                 }
-                return attributeValue != null && attributeValue.isJsonObject()
-                        && conditionValue.equals(attributeValue);
+                return JsCoercion.toJsJson(attributeValue).equals(JsCoercion.toJsJson(conditionValue));
 
             case NULL:
                 return attributeValue == null || attributeValue.isJsonNull();
@@ -504,13 +451,6 @@ public class ConditionEvaluator implements IConditionEvaluator {
             }
         }
         return true;
-    }
-
-    private <T> boolean isMatchingPrimitive(JsonElement conditionValue, @Nullable JsonElement attributeValue, Function<JsonPrimitive, T> extractor) {
-        return attributeValue != null
-                && attributeValue.isJsonPrimitive()
-                && extractor.apply(conditionValue.getAsJsonPrimitive())
-                        .equals(extractor.apply(attributeValue.getAsJsonPrimitive()));
     }
 
     private static boolean evalRegex(@Nullable JsonElement actual, JsonElement expected, DataType attributeDataType, boolean caseInsensitive, boolean negate) {

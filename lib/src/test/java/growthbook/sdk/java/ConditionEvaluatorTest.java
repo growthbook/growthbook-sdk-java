@@ -177,20 +177,16 @@ class ConditionEvaluatorTest {
     }
 
     @Test
-    @DisplayName("object and array conditions match structurally, ignoring key order")
-    void test_objectEqualityIgnoresKeyOrder() {
-        // Changed from comparing serialized JSON (key-order sensitive) to JsonElement.equals.
-        // Note this diverges from the JS SDK, which compares JSON.stringify output; pinned here so
-        // the divergence is a recorded decision rather than an accident of refactoring.
+    @DisplayName("object and array conditions compare like JSON.stringify, as in the JS SDK")
+    void test_objectEqualityIsKeyOrderSensitive() {
         ConditionEvaluator evaluator = new ConditionEvaluator();
 
-        assertTrue(evaluator.evaluateCondition(
+        assertFalse(evaluator.evaluateCondition(
                 parse("{\"a\":{\"x\":1,\"y\":2}}"), parse("{\"a\":{\"y\":2,\"x\":1}}"), null));
         assertFalse(evaluator.evaluateCondition(
                 parse("{\"a\":{\"x\":1}}"), parse("{\"a\":{\"x\":2}}"), null));
         assertTrue(evaluator.evaluateCondition(
                 parse("{\"a\":[1,2]}"), parse("{\"a\":[1,2]}"), null));
-        // Arrays stay order sensitive — only object keys are unordered.
         assertFalse(evaluator.evaluateCondition(
                 parse("{\"a\":[1,2]}"), parse("{\"a\":[2,1]}"), null));
     }
