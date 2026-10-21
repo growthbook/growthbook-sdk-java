@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.11.3](https://github.com/growthbook/growthbook-sdk-java/compare/0.11.2...0.11.3) (2026-10-20)
+
+
+### Bug Fixes
+
+* stop user attributes leaking into GrowthBookClient global attributes ([#276](https://github.com/growthbook/growthbook-sdk-java/issues/276)) ([ce5a530](https://github.com/growthbook/growthbook-sdk-java/commit/ce5a530126243e5269aa87a96e4f9b854ec39a0a))
+
 ## [0.11.2](https://github.com/growthbook/growthbook-sdk-java/compare/v0.11.1...0.11.2) (2026-10-19)
 
 
