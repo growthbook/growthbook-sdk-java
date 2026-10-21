@@ -177,25 +177,32 @@ public final class StickyBucketPerfHarness {
         GrowthBookClient client = new GrowthBookClient(options);
         List<Long> latenciesNanos = Collections.synchronizedList(new ArrayList<>(REQUESTS));
         AtomicInteger next = new AtomicInteger();
+        AtomicInteger failures = new AtomicInteger();
         CountDownLatch done = new CountDownLatch(THREADS);
         long started = System.nanoTime();
         for (int t = 0; t < THREADS; t++) {
             Thread worker = new Thread(() -> {
-                int i;
-                while ((i = next.getAndIncrement()) < REQUESTS) {
-                    String userId = distinctUsers ? "user-" + i : "hot-user";
-                    long begin = System.nanoTime();
-                    client.run(experiment("exp-perf"), user(userId));
-                    latenciesNanos.add(System.nanoTime() - begin);
+                try {
+                    int i;
+                    while ((i = next.getAndIncrement()) < REQUESTS) {
+                        String userId = distinctUsers ? "user-" + i : "hot-user";
+                        long begin = System.nanoTime();
+                        client.run(experiment("exp-perf"), user(userId));
+                        latenciesNanos.add(System.nanoTime() - begin);
+                    }
+                } catch (RuntimeException e) {
+                    failures.incrementAndGet();
+                } finally {
+                    done.countDown();
                 }
-                done.countDown();
             });
             worker.setDaemon(true);
             worker.start();
         }
-        done.await(10, TimeUnit.MINUTES);
+        boolean completed = done.await(10, TimeUnit.MINUTES);
         long elapsed = System.nanoTime() - started;
         client.shutdown();
+        requireClean(name, completed, failures.get(), latenciesNanos.size());
         report(name, elapsed, latenciesNanos);
     }
 
@@ -203,6 +210,7 @@ public final class StickyBucketPerfHarness {
     private static void runAsyncApiScenario(String name, Options options, ScheduledExecutorService timer) throws Exception {
         GrowthBookClient client = new GrowthBookClient(options);
         List<Long> latenciesNanos = Collections.synchronizedList(new ArrayList<>(REQUESTS));
+        AtomicInteger failures = new AtomicInteger();
         Semaphore inflight = new Semaphore(THREADS);
         CountDownLatch done = new CountDownLatch(REQUESTS);
         long started = System.nanoTime();
@@ -211,14 +219,22 @@ public final class StickyBucketPerfHarness {
             long begin = System.nanoTime();
             client.runAsync(experiment("exp-perf"), user("user-" + i))
                     .whenComplete((result, error) -> {
-                        latenciesNanos.add(System.nanoTime() - begin);
-                        inflight.release();
-                        done.countDown();
+                        try {
+                            if (error != null) {
+                                failures.incrementAndGet();
+                            } else {
+                                latenciesNanos.add(System.nanoTime() - begin);
+                            }
+                        } finally {
+                            inflight.release();
+                            done.countDown();
+                        }
                     });
         }
-        done.await(10, TimeUnit.MINUTES);
+        boolean completed = done.await(10, TimeUnit.MINUTES);
         long elapsed = System.nanoTime() - started;
         client.shutdown();
+        requireClean(name, completed, failures.get(), latenciesNanos.size());
         report(name, elapsed, latenciesNanos);
     }
 
@@ -227,31 +243,51 @@ public final class StickyBucketPerfHarness {
         GrowthBookClient client = new GrowthBookClient(options);
         List<Long> latenciesNanos = Collections.synchronizedList(new ArrayList<>(REQUESTS));
         AtomicInteger next = new AtomicInteger();
+        AtomicInteger failures = new AtomicInteger();
         AtomicLong evals = new AtomicLong();
         CountDownLatch done = new CountDownLatch(THREADS);
         long started = System.nanoTime();
         for (int t = 0; t < THREADS; t++) {
             Thread worker = new Thread(() -> {
-                int i;
-                while ((i = next.getAndIncrement()) < REQUESTS) {
-                    long begin = System.nanoTime();
-                    UserContext prefetched = client.prefetchStickyBuckets(user("user-" + i)).join();
-                    for (int e = 0; e < EVALS_PER_REQUEST_PREFETCH; e++) {
-                        client.run(experiment("exp-" + e), prefetched);
-                        evals.incrementAndGet();
+                try {
+                    int i;
+                    while ((i = next.getAndIncrement()) < REQUESTS) {
+                        long begin = System.nanoTime();
+                        UserContext prefetched = client.prefetchStickyBuckets(user("user-" + i)).join();
+                        for (int e = 0; e < EVALS_PER_REQUEST_PREFETCH; e++) {
+                            client.run(experiment("exp-" + e), prefetched);
+                            evals.incrementAndGet();
+                        }
+                        latenciesNanos.add(System.nanoTime() - begin);
                     }
-                    latenciesNanos.add(System.nanoTime() - begin);
+                } catch (RuntimeException e) {
+                    failures.incrementAndGet();
+                } finally {
+                    done.countDown();
                 }
-                done.countDown();
             });
             worker.setDaemon(true);
             worker.start();
         }
-        done.await(10, TimeUnit.MINUTES);
+        boolean completed = done.await(10, TimeUnit.MINUTES);
         long elapsed = System.nanoTime() - started;
         client.shutdown();
+        requireClean(name, completed, failures.get(), latenciesNanos.size());
         System.out.printf("  (%d total evaluations across %d requests)%n", evals.get(), REQUESTS);
         report(name, elapsed, latenciesNanos);
+    }
+
+    /**
+     * Fails the run loudly rather than letting a timed-out or partially-failed scenario print
+     * successful-looking numbers: a scenario is only valid when every thread finished, no worker
+     * threw, and one latency sample was recorded per request.
+     */
+    private static void requireClean(String name, boolean completed, int failures, int recorded) {
+        if (!completed || failures > 0 || recorded < REQUESTS) {
+            throw new IllegalStateException(String.format(
+                    "%s did not complete cleanly: completed=%b failures=%d recorded=%d/%d",
+                    name, completed, failures, recorded, REQUESTS));
+        }
     }
 
     private static void report(String name, long elapsedNanos, List<Long> latenciesNanos) {

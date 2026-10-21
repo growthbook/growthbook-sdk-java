@@ -30,6 +30,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.CompletionStage;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
 
@@ -58,7 +59,8 @@ class GrowthBookClientStickyBucketConformanceTest {
 
     /** Minimal async-native in-memory store, mirroring InMemoryStickyBucketServiceImpl. */
     private static final class AsyncInMemoryStickyService implements AsyncStickyBucketService {
-        private final InMemoryStickyBucketServiceImpl delegate = new InMemoryStickyBucketServiceImpl();
+        private final Map<String, StickyAssignmentsDocument> backing = new ConcurrentHashMap<>();
+        private final InMemoryStickyBucketServiceImpl delegate = new InMemoryStickyBucketServiceImpl(backing);
 
         @Override
         public CompletionStage<StickyAssignmentsDocument> getAssignments(String attributeName, String attributeValue) {
@@ -71,9 +73,8 @@ class GrowthBookClientStickyBucketConformanceTest {
             return java.util.concurrent.CompletableFuture.completedFuture(null);
         }
 
-        StickyAssignmentsDocument stored(String key) {
-            String[] parts = key.split("\\|\\|", 2);
-            return delegate.getAssignments(parts[0], parts[1]);
+        Map<String, StickyAssignmentsDocument> backingStore() {
+            return backing;
         }
     }
 
@@ -103,13 +104,17 @@ class GrowthBookClientStickyBucketConformanceTest {
         JsonElement attributesJson = testCase.get(1).getAsJsonObject().get("attributes");
         String featureKey = testCase.get(3).getAsJsonPrimitive().getAsString();
 
-        // Seed the store with the case's input documents.
-        InMemoryStickyBucketServiceImpl syncService = new InMemoryStickyBucketServiceImpl();
+        // Seed the store with the case's input documents, keeping the seeded state so the final
+        // store can be compared against it overlaid with the expected documents.
+        Map<String, StickyAssignmentsDocument> syncBacking = new ConcurrentHashMap<>();
+        InMemoryStickyBucketServiceImpl syncService = new InMemoryStickyBucketServiceImpl(syncBacking);
         AsyncInMemoryStickyService asyncService = new AsyncInMemoryStickyService();
+        Map<String, StickyAssignmentsDocument> seeded = new HashMap<>();
         for (JsonElement element : testCase.get(2).getAsJsonArray()) {
             StickyAssignmentsDocument doc = utils.gson.fromJson(element, StickyAssignmentsDocument.class);
             syncService.saveAssignments(doc);
             asyncService.saveAssignments(doc);
+            seeded.put(doc.getAttributeName() + "||" + doc.getAttributeValue(), doc);
         }
 
         Options.OptionsBuilder optionsBuilder = Options.builder()
@@ -156,19 +161,25 @@ class GrowthBookClientStickyBucketConformanceTest {
             assertEquals(expectedExperimentResult, actualExperimentResult,
                     "experiment result mismatch for " + name);
 
-            // The persisted store must contain, for every expected document key,
-            // exactly the expected assignments (the case's expected map is the
-            // post-eval merged state for the addressed keys).
+            // The case's expected map is the post-eval state for the keys the evaluation addresses;
+            // the full persisted store must equal the seeded documents overlaid with it — so an
+            // extra write, or a mutation of an unaddressed seeded document, fails the test.
             Map<String, StickyAssignmentsDocument> expectedDocs = utils.gson.fromJson(
                     testCase.get(5), new TypeToken<HashMap<String, StickyAssignmentsDocument>>() { }.getType());
-            for (Map.Entry<String, StickyAssignmentsDocument> expected : expectedDocs.entrySet()) {
-                StickyAssignmentsDocument stored = flavor == ServiceFlavor.SYNC_OFFLOADED
-                        ? syncService.getAssignments(expected.getValue().getAttributeName(),
-                        expected.getValue().getAttributeValue())
-                        : asyncService.stored(expected.getKey());
+            Map<String, StickyAssignmentsDocument> expectedStore = new HashMap<>(seeded);
+            expectedStore.putAll(expectedDocs);
+
+            Map<String, StickyAssignmentsDocument> actualStore = flavor == ServiceFlavor.SYNC_OFFLOADED
+                    ? syncBacking
+                    : asyncService.backingStore();
+
+            assertEquals(expectedStore.keySet(), actualStore.keySet(),
+                    "persisted store key set mismatch for " + name);
+            for (Map.Entry<String, StickyAssignmentsDocument> expected : expectedStore.entrySet()) {
+                StickyAssignmentsDocument stored = actualStore.get(expected.getKey());
                 assertNotNull(stored, "expected persisted doc missing: " + expected.getKey());
                 assertEquals(expected.getValue().getAssignments(), stored.getAssignments(),
-                        "persisted assignments mismatch for " + expected.getKey());
+                        "persisted assignments mismatch for " + expected.getKey() + " in " + name);
             }
         } finally {
             client.shutdown();
