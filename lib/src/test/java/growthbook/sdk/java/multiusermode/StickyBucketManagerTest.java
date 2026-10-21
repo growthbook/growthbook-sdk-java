@@ -323,6 +323,71 @@ class StickyBucketManagerTest {
         service.pendingSaves.get(0).complete(null);
     }
 
+    @Test
+    @Timeout(30)
+    void evictingAnAuthoritativeDocInvalidatesItsStaleCachedRead() throws Exception {
+        ScriptedService service = new ScriptedService();
+        service.completeFetchesImmediately = true;
+        service.completeSavesImmediately = true;
+        // Cache larger than the authoritative bound, so a cached entry can outlive its local document.
+        StickyBucketManager manager =
+                new StickyBucketManager(service, 300L, StickyBucketManager.STICKY_DOCS_MAX + 500);
+
+        // Cache a MISS for u-keep (store has no document yet).
+        manager.fetchAssignments(attrs("u-keep")).get(5, TimeUnit.SECONDS);
+        assertEquals(1, service.fetchCalls.size());
+
+        // Assign and persist u-keep, then blow past the bound so its local document is evicted.
+        manager.recordAndSave(doc("u-keep", "exp__0", "v")).get(5, TimeUnit.SECONDS);
+        for (int i = 0; i < StickyBucketManager.STICKY_DOCS_MAX + 200; i++) {
+            manager.recordAndSave(doc("user-" + i, "exp__0", "v")).get(5, TimeUnit.SECONDS);
+        }
+        assertNull(manager.authoritativeDoc("id||u-keep"), "u-keep's saved document should have been evicted");
+
+        // The cached miss must not survive: the next read refetches and sees the stored assignment.
+        int fetchesBefore = service.fetchCalls.size();
+        Map<String, StickyAssignmentsDocument> result =
+                manager.fetchAssignments(attrs("u-keep")).get(5, TimeUnit.SECONDS);
+        assertEquals(fetchesBefore + 1, service.fetchCalls.size(),
+                "a stale cached miss must be invalidated when its local document is evicted");
+        assertEquals("v", result.get("id||u-keep").getAssignments().get("exp__0"));
+    }
+
+    // ------------------------------------------------------------- shutdown
+
+    @Test
+    @Timeout(30)
+    void closeUnblocksAnInFlightReadInsteadOfHangingForever() throws Exception {
+        // A service whose fetch never completes — mimics a store call whose offloaded task is
+        // discarded by the executor during shutdown, which would otherwise hang fetchAssignments().get().
+        AsyncStickyBucketService neverCompletes = new AsyncStickyBucketService() {
+            @Override
+            public CompletionStage<StickyAssignmentsDocument> getAssignments(String name, String value) {
+                return new CompletableFuture<>();
+            }
+
+            @Override
+            public CompletionStage<Void> saveAssignments(StickyAssignmentsDocument doc) {
+                return CompletableFuture.completedFuture(null);
+            }
+
+            @Override
+            public CompletionStage<Map<String, StickyAssignmentsDocument>> getAllAssignments(Map<String, String> attributes) {
+                return new CompletableFuture<>();
+            }
+        };
+        StickyBucketManager manager = new StickyBucketManager(neverCompletes, null, null);
+
+        CompletableFuture<Map<String, StickyAssignmentsDocument>> fetch = manager.fetchAssignments(attrs("u1"));
+        assertFalse(fetch.isDone(), "fetch should still be pending");
+
+        manager.startDraining();
+        manager.close(1_000);
+
+        assertThrows(ExecutionException.class, () -> fetch.get(5, TimeUnit.SECONDS),
+                "shutdown must complete pending reads so no evaluation thread is left blocked");
+    }
+
     // ------------------------------------------------------------------ cache
 
     @Test

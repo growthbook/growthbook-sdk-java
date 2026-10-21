@@ -85,7 +85,10 @@ public interface AsyncStickyBucketService {
     default CompletionStage<Map<String, StickyAssignmentsDocument>> getAllAssignments(Map<String, String> attributes) {
         List<CompletableFuture<StickyAssignmentsDocument>> lookups = new ArrayList<>(attributes.size());
         for (Map.Entry<String, String> attribute : attributes.entrySet()) {
-            lookups.add(getAssignments(attribute.getKey(), attribute.getValue()).toCompletableFuture());
+            CompletionStage<StickyAssignmentsDocument> stage = getAssignments(attribute.getKey(), attribute.getValue());
+            // A null stage (as opposed to a stage completing with null) violates the contract, but treat
+            // it as an absent document rather than throwing NPE out of the whole batch fetch.
+            lookups.add(stage == null ? CompletableFuture.completedFuture(null) : stage.toCompletableFuture());
         }
         return CompletableFuture.allOf(lookups.toArray(new CompletableFuture[0]))
                 .thenApply(ignored -> {
