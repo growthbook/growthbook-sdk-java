@@ -41,6 +41,7 @@ import growthbook.sdk.java.util.GrowthBookJsonUtils;
 import lombok.extern.slf4j.Slf4j;
 
 import javax.annotation.Nullable;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -593,7 +594,7 @@ public class GrowthBookClient {
      */
     public <T> ExperimentResult<T> run(Experiment<T> experiment, UserContext userContext) {
         ExperimentResult<T> result = experimentEvaluator
-                .evaluateExperiment(experiment, getEvalContext(userContext), null);
+                .evaluateExperiment(experiment, getEvalContext(userContext, inlineIdentifierAttributes(experiment)), null);
 
         experimentSubscriptions.publishIfChanged(experiment, result);
 
@@ -699,30 +700,52 @@ public class GrowthBookClient {
     }
 
     private EvaluationContext getEvalContext(UserContext userContext) {
+        return getEvalContext(userContext, Collections.<String>emptySet());
+    }
+
+    private EvaluationContext getEvalContext(UserContext userContext, Set<String> inlineIdentifierAttributes) {
         UserContext safeUserContext = userContext == null ? UserContext.builder().build() : userContext;
+        // Capture ONE feature snapshot for both identifier derivation and evaluation, so a refresh
+        // landing mid-read cannot pair new rules with documents fetched for the old identifiers.
+        GlobalContext snapshot = this.globalContextManager.getCurrentGlobalContext();
         if (this.stickyBucketManager != null && safeUserContext.getStickyBucketAssignmentDocs() == null) {
             // Scoped async read: fetch the user's sticky docs through the manager (coalesced, cached,
             // overlaid with this process's own writes) and populate the context so the managers' own
             // synchronous preload skips. A read failure propagates out of eval (JS/Python parity).
             JsonObject mergedAttributes = mergeGlobalAttributes(safeUserContext.getAttributes());
-            Map<String, String> identifiers = stickyIdentifierAttributesFor(mergedAttributes);
+            Map<String, String> identifiers =
+                    stickyIdentifierAttributesFor(mergedAttributes, snapshot, inlineIdentifierAttributes);
             UserContext scoped = safeUserContext.withAttributes(safeUserContext.getAttributes());
             scoped.setStickyBucketAssignmentDocs(fetchStickyDocsBlocking(identifiers));
             safeUserContext = scoped;
         }
         EvaluationContext context = this.options.isRemoteEvalEnabled()
                 ? this.remoteEvalCoordinator.createEvaluationContext(safeUserContext)
-                : this.globalContextManager.createEvaluationContext(safeUserContext);
+                : this.globalContextManager.createEvaluationContext(safeUserContext, snapshot);
         if (this.stickyBucketManager != null) {
             context.setStickyBucketDocWriter(this.stickyBucketManager::recordAndSave);
         }
         return withPluginRegistry(context);
     }
 
+    /** The sticky identifier attributes an inline experiment reads, so its persisted assignment is loaded. */
+    private static Set<String> inlineIdentifierAttributes(@Nullable Experiment<?> experiment) {
+        if (experiment == null) {
+            return Collections.emptySet();
+        }
+        Set<String> identifiers = new HashSet<>();
+        identifiers.add(experiment.getHashAttribute() != null ? experiment.getHashAttribute() : "id");
+        if (experiment.getFallbackAttribute() != null) {
+            identifiers.add(experiment.getFallbackAttribute());
+        }
+        return identifiers;
+    }
+
     /**
      * Prefetch sticky bucket assignments for a user context, so later evaluations with the same
      * context perform no sticky bucket I/O. The context's {@code stickyBucketAssignmentDocs} is
-     * populated and the same instance is returned.
+     * populated and the same instance is returned. The populated map is concurrency-safe, so the
+     * returned context may be reused across concurrent evaluations.
      *
      * @param userContext the request-scoped user context to prefetch for
      * @return a future completing with the same context, docs populated
@@ -732,7 +755,9 @@ public class GrowthBookClient {
         if (this.stickyBucketManager == null || context.getStickyBucketAssignmentDocs() != null) {
             return CompletableFuture.completedFuture(context);
         }
-        Map<String, String> identifiers = stickyIdentifierAttributesFor(mergeGlobalAttributes(context.getAttributes()));
+        GlobalContext snapshot = this.globalContextManager.getCurrentGlobalContext();
+        Map<String, String> identifiers = stickyIdentifierAttributesFor(
+                mergeGlobalAttributes(context.getAttributes()), snapshot, Collections.<String>emptySet());
         return this.stickyBucketManager.fetchAssignments(identifiers)
                 .thenApply(docs -> {
                     context.setStickyBucketAssignmentDocs(docs);
@@ -741,9 +766,11 @@ public class GrowthBookClient {
     }
 
     /**
-     * Completes when every pending sticky bucket save has been attempted. Fire-and-forget writes do
-     * not need this; short-lived processes should await it (or call {@link #shutdown()}, which flushes
-     * automatically) before exiting to guarantee durability.
+     * Completes when every pending sticky bucket save has been <em>attempted</em>. This is not a
+     * durability guarantee: a save the store rejects is logged and not retried, so a completed flush
+     * future means "no save is still outstanding", not "every assignment reached the store".
+     * Fire-and-forget writes do not need this; short-lived processes should await it (or call
+     * {@link #shutdown()}, which flushes automatically) before exiting to drain in-flight saves.
      *
      * @return a future completing when all pending saves have been attempted
      */
@@ -765,8 +792,13 @@ public class GrowthBookClient {
         return merged;
     }
 
-    private Map<String, String> stickyIdentifierAttributesFor(JsonObject mergedAttributes) {
-        Set<String> identifiers = resolveStickyIdentifierAttributes();
+    private Map<String, String> stickyIdentifierAttributesFor(JsonObject mergedAttributes,
+                                                              GlobalContext snapshot,
+                                                              Set<String> extraIdentifiers) {
+        Set<String> identifiers = new HashSet<>(resolveStickyIdentifierAttributes(snapshot));
+        if (extraIdentifiers != null) {
+            identifiers.addAll(extraIdentifiers);
+        }
         Map<String, String> attributes = new HashMap<>(Math.max(4, identifiers.size() * 2));
         for (String name : identifiers) {
             JsonElement value = mergedAttributes.get(name);
@@ -777,16 +809,15 @@ public class GrowthBookClient {
         return attributes;
     }
 
-    private Set<String> resolveStickyIdentifierAttributes() {
+    private Set<String> resolveStickyIdentifierAttributes(GlobalContext snapshot) {
         List<String> configured = this.options.getStickyBucketIdentifierAttributes();
         if (configured != null && !configured.isEmpty()) {
             return new HashSet<>(configured);
         }
-        GlobalContext currentGlobalContext = this.globalContextManager.getCurrentGlobalContext();
-        Set<String> derived = currentGlobalContext.getDerivedStickyIdentifierAttributes();
+        Set<String> derived = snapshot.getDerivedStickyIdentifierAttributes();
         if (derived == null) {
-            derived = deriveStickyIdentifierAttributes(currentGlobalContext.getFeatures());
-            currentGlobalContext.setDerivedStickyIdentifierAttributes(derived);
+            derived = deriveStickyIdentifierAttributes(snapshot.getFeatures());
+            snapshot.setDerivedStickyIdentifierAttributes(derived);
         }
         return derived;
     }

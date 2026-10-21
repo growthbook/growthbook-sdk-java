@@ -11,6 +11,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -139,13 +140,14 @@ final class StickyBucketManager {
         while (true) {
             FetchEntry existing = inflightFetches.get(key);
             if (existing != null) {
-                // Dependent stage: a waiter's cancel() cannot reach the shared future.
-                return existing.future.thenApply(fetched -> overlay(key, fetched));
+                // Dependent stage: a waiter's cancel() cannot reach the shared future. The shared
+                // future already carries the overlaid snapshot; copy it so each caller mutates its own.
+                return existing.future.thenApply(StickyBucketManager::copyDocs);
             }
             FetchEntry created = new FetchEntry(sequence.incrementAndGet());
             if (inflightFetches.putIfAbsent(key, created) == null) {
                 startFetch(key, created);
-                return created.future.thenApply(fetched -> overlay(key, fetched));
+                return created.future.thenApply(StickyBucketManager::copyDocs);
             }
         }
     }
@@ -167,15 +169,13 @@ final class StickyBucketManager {
             return;
         }
         if (stage == null) {
+            entry.future.complete(overlay(key, Collections.emptyMap()));
             inflightFetches.remove(key, entry);
-            entry.future.complete(Collections.emptyMap());
             return;
         }
         stage.whenComplete((fetched, error) -> {
-            // Remove BEFORE completing so a dependent stage that immediately
-            // re-fetches starts a fresh store call instead of re-joining this one.
-            inflightFetches.remove(key, entry);
             if (error != null) {
+                inflightFetches.remove(key, entry);
                 entry.future.completeExceptionally(error);
                 return;
             }
@@ -184,21 +184,31 @@ final class StickyBucketManager {
             if (readCache != null) {
                 readCache.put(key, result); // successful raw fetches only
             }
-            entry.future.complete(result);
+            // Overlay this process's writes while the fetch is still registered: its startSequence
+            // keeps eviction from pruning a document a waiter still needs until the merge is done.
+            // Only then drop the entry (a later re-fetch starts a fresh store call).
+            Map<String, StickyAssignmentsDocument> overlaid = overlay(key, result);
+            entry.future.complete(overlaid);
+            inflightFetches.remove(key, entry);
         });
     }
 
     /**
      * Merge this process's authoritative documents (local wins per experiment
      * key) over a fetched/cached snapshot, for the document keys this attribute
-     * map can address. Returns a fresh mutable map — the evaluator mutates the
-     * per-eval docs map in place for in-eval read-your-writes, and that map must
-     * never be shared between evaluations.
+     * map can address. Returns a fresh {@link ConcurrentHashMap} — the evaluator
+     * mutates the per-eval docs map in place for in-eval read-your-writes, and a
+     * prefetched context may be reused across concurrent evaluations, so the map
+     * must be both unshared per call and safe to mutate concurrently.
      */
     private Map<String, StickyAssignmentsDocument> overlay(Map<String, String> attributes,
                                                            Map<String, StickyAssignmentsDocument> fetched) {
-        Map<String, StickyAssignmentsDocument> merged = new HashMap<>(Math.max(8, fetched.size() * 2));
-        merged.putAll(fetched);
+        Map<String, StickyAssignmentsDocument> merged = new ConcurrentHashMap<>(Math.max(8, fetched.size() * 2));
+        for (Map.Entry<String, StickyAssignmentsDocument> fetchedDoc : fetched.entrySet()) {
+            if (fetchedDoc.getValue() != null) { // ConcurrentHashMap rejects nulls; absent docs are omitted
+                merged.put(fetchedDoc.getKey(), fetchedDoc.getValue());
+            }
+        }
         for (Map.Entry<String, String> attribute : attributes.entrySet()) {
             String docKey = attribute.getKey() + "||" + attribute.getValue();
             StickyAssignmentsDocument local = authoritativeDocs.get(docKey);
@@ -207,6 +217,11 @@ final class StickyBucketManager {
             }
         }
         return merged;
+    }
+
+    /** Defensive per-caller copy of an already-overlaid snapshot; coalesced waiters must not share one map. */
+    private static Map<String, StickyAssignmentsDocument> copyDocs(Map<String, StickyAssignmentsDocument> docs) {
+        return new ConcurrentHashMap<>(docs);
     }
 
     /** Per-experiment-key merge; {@code wins}'s entries take precedence. Always returns a fresh document. */
@@ -235,29 +250,38 @@ final class StickyBucketManager {
      */
     CompletableFuture<Void> recordAndSave(StickyAssignmentsDocument doc) {
         String key = doc.getAttributeName() + "||" + doc.getAttributeValue();
-        authoritativeDocs.merge(key, doc, (existing, incoming) -> mergeDocs(existing, incoming));
-
-        SaveState state = saveStates.computeIfAbsent(key, k -> new SaveState()); // pure creation only
-        boolean start = false;
-        CompletableFuture<Void> waiter;
-        state.lock.lock();
-        try {
-            if (state.inFlight) {
-                state.dirty = true;
-            } else {
-                state.inFlight = true;
-                state.dirty = false; // the save snapshots the latest merged doc anyway
-                state.quiescent = new CompletableFuture<>();
-                start = true;
+        while (true) {
+            SaveState state = saveStates.computeIfAbsent(key, k -> new SaveState()); // pure creation only
+            boolean start = false;
+            CompletableFuture<Void> waiter;
+            state.lock.lock();
+            try {
+                if (saveStates.get(key) != state) {
+                    // Evicted between computeIfAbsent and acquiring the lock; retry with the live state
+                    // so the merge below cannot land on a document pruneAuthoritativeDocs just removed.
+                    continue;
+                }
+                // Merge under the state lock. Eviction locks this same state before removing the
+                // document, so the merge and the in-flight transition are atomic against prune — a
+                // freshly recorded assignment can never be dropped before its save is scheduled.
+                authoritativeDocs.merge(key, doc, (existing, incoming) -> mergeDocs(existing, incoming));
+                if (state.inFlight) {
+                    state.dirty = true;
+                } else {
+                    state.inFlight = true;
+                    state.dirty = false; // the save snapshots the latest merged doc anyway
+                    state.quiescent = new CompletableFuture<>();
+                    start = true;
+                }
+                waiter = state.quiescent;
+            } finally {
+                state.lock.unlock();
             }
-            waiter = state.quiescent;
-        } finally {
-            state.lock.unlock();
+            if (start) {
+                driveSave(key, state); // outside the map AND the state lock
+            }
+            return waiter.thenApply(v -> v); // dependent copy: caller cancel() can't detach other writers
         }
-        if (start) {
-            driveSave(key, state); // outside the map AND the state lock
-        }
-        return waiter.thenApply(v -> v); // dependent copy: caller cancel() can't detach other writers
     }
 
     private void driveSave(String key, SaveState state) {
@@ -312,9 +336,10 @@ final class StickyBucketManager {
     // ------------------------------------------------------------- lifecycle
 
     /**
-     * Completes when every pending or dirty save has been attempted. Loops
-     * because a trailing save can be scheduled while a round is awaited;
-     * bounded so a persistently rejecting executor cannot spin it forever.
+     * Completes when every pending or dirty save has been <em>attempted</em> — not a durability
+     * guarantee: a write the store rejects is logged and not retried. Loops because a trailing save
+     * can be scheduled while a round is awaited; bounded so a persistently rejecting executor cannot
+     * spin it forever.
      */
     CompletableFuture<Void> flush() {
         return flush(20);
@@ -374,6 +399,19 @@ final class StickyBucketManager {
             log.warn("Timed out after {}ms flushing sticky bucket saves during shutdown", timeoutMillis);
         } catch (ExecutionException e) {
             log.warn("Sticky bucket save flush failed during shutdown", e.getCause());
+        } finally {
+            // Unblock readers before the offload executor is torn down: a queued fetch task discarded
+            // by shutdownNow() would otherwise never complete its future, hanging fetchAssignments().get().
+            failInflightFetches();
+        }
+    }
+
+    /** Completes every in-flight fetch exceptionally so no evaluation thread is left blocked on a read. */
+    private void failInflightFetches() {
+        for (Map.Entry<Map<String, String>, FetchEntry> entry : inflightFetches.entrySet()) {
+            entry.getValue().future.completeExceptionally(
+                    new IllegalStateException("client is shutting down"));
+            inflightFetches.remove(entry.getKey(), entry.getValue());
         }
     }
 
@@ -404,6 +442,7 @@ final class StickyBucketManager {
         candidates.sort(Comparator.comparingLong(e -> e.getValue().lastSaveCompletedSequence));
 
         int excess = authoritativeDocs.size() - STICKY_DOCS_MAX;
+        List<String> evictedDocKeys = new ArrayList<>();
         for (Map.Entry<String, SaveState> entry : candidates) {
             if (excess <= 0) {
                 break;
@@ -416,10 +455,32 @@ final class StickyBucketManager {
                 }
                 if (authoritativeDocs.remove(entry.getKey()) != null) {
                     excess--;
+                    evictedDocKeys.add(entry.getKey());
                 }
                 saveStates.remove(entry.getKey(), state);
             } finally {
                 state.lock.unlock();
+            }
+        }
+        invalidateCachedReadsFor(evictedDocKeys);
+    }
+
+    /**
+     * Drop read-cache entries whose attribute map addresses an evicted document key. Without this a
+     * cached miss can outlive the local document it would have been overlaid with, so a later cache
+     * hit would return the stale miss instead of the assignment this process already holds.
+     */
+    private void invalidateCachedReadsFor(List<String> evictedDocKeys) {
+        if (readCache == null || evictedDocKeys.isEmpty()) {
+            return;
+        }
+        Set<String> evicted = new HashSet<>(evictedDocKeys);
+        for (Map<String, String> cacheKey : readCache.asMap().keySet()) {
+            for (Map.Entry<String, String> attribute : cacheKey.entrySet()) {
+                if (evicted.contains(attribute.getKey() + "||" + attribute.getValue())) {
+                    readCache.invalidate(cacheKey);
+                    break;
+                }
             }
         }
     }
