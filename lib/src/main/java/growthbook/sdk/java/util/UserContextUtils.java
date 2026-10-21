@@ -9,6 +9,7 @@ import growthbook.sdk.java.multiusermode.internal.GlobalContextManager;
 import growthbook.sdk.java.multiusermode.internal.RemoteEvalCoordinator;
 import growthbook.sdk.java.stickyBucketing.StickyBucketService;
 import lombok.experimental.UtilityClass;
+import lombok.extern.slf4j.Slf4j;
 
 import javax.annotation.Nullable;
 import java.util.HashMap;
@@ -29,6 +30,7 @@ import java.util.Map;
  * without their persisted assignments, changing assignment behaviour and diverging from the
  * sticky-bucketing contract shared across GrowthBook SDKs.
  */
+@Slf4j
 @UtilityClass
 public final class UserContextUtils {
 
@@ -61,13 +63,8 @@ public final class UserContextUtils {
     }
 
     private static JsonObject globalAttributes(Options options) {
-        if (options.getGlobalAttributes() == null) {
-            return new JsonObject();
-        }
-        JsonObject globalAttributes = GrowthBookJsonUtils.getInstance()
-                .gson
-                .fromJson(options.getGlobalAttributes(), JsonObject.class);
-        return globalAttributes == null ? new JsonObject() : globalAttributes;
+        JsonObject globalAttributes = options.getGlobalAttributes();
+        return globalAttributes == null ? new JsonObject() : globalAttributes.deepCopy();
     }
 
     /**
@@ -87,7 +84,13 @@ public final class UserContextUtils {
                 attributeStrings.put(entry.getKey(), value.getAsString());
             }
         }
-        Map<String, StickyAssignmentsDocument> docs = stickyBucketService.getAllAssignments(attributeStrings);
+        Map<String, StickyAssignmentsDocument> docs;
+        try {
+            docs = stickyBucketService.getAllAssignments(attributeStrings);
+        } catch (RuntimeException e) {
+            log.warn("Sticky bucket service failed to load assignments; continuing with normal bucketing.", e);
+            return;
+        }
         userContext.setStickyBucketAssignmentDocs(docs);
     }
 }
