@@ -57,9 +57,22 @@ public final class GlobalContextManager {
      * @return evaluation context used by feature and experiment evaluators
      */
     public EvaluationContext createEvaluationContext(UserContext userContext) {
+        return createEvaluationContext(userContext, currentGlobalContext());
+    }
+
+    /**
+     * Creates an evaluation context against a caller-provided feature snapshot, so a feature refresh
+     * landing mid-request cannot pair sticky identifiers derived from one snapshot with evaluation
+     * against another.
+     *
+     * @param userContext   per-user evaluation context
+     * @param globalContext the feature snapshot to evaluate against
+     * @return evaluation context used by feature and experiment evaluators
+     */
+    public EvaluationContext createEvaluationContext(UserContext userContext, GlobalContext globalContext) {
         UserContext updatedUserContext = UserContextUtils.mergeAttributesAndPreloadSticky(this.options, userContext);
         return new EvaluationContext(
-                currentGlobalContext(),
+                globalContext,
                 updatedUserContext,
                 new EvaluationContext.StackContext(),
                 this.options

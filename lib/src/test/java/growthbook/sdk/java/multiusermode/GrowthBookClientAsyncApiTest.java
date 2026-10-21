@@ -1,22 +1,18 @@
 package growthbook.sdk.java.multiusermode;
 
-import com.sun.net.httpserver.HttpServer;
 import growthbook.sdk.java.model.Experiment;
 import growthbook.sdk.java.model.ExperimentResult;
-import growthbook.sdk.java.model.FeatureResult;
 import growthbook.sdk.java.model.StickyAssignmentsDocument;
 import growthbook.sdk.java.model.VariationMeta;
 import growthbook.sdk.java.multiusermode.configurations.Options;
 import growthbook.sdk.java.multiusermode.configurations.UserContext;
 import growthbook.sdk.java.multiusermode.usage.TrackingCallbackWithUser;
 import growthbook.sdk.java.stickyBucketing.AsyncStickyBucketService;
+import com.github.tomakehurst.wiremock.WireMockServer;
+import com.github.tomakehurst.wiremock.core.WireMockConfiguration;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 
-import java.io.IOException;
-import java.io.OutputStream;
-import java.net.InetSocketAddress;
-import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -28,8 +24,13 @@ import java.util.concurrent.CompletionStage;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
+import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
+import static com.github.tomakehurst.wiremock.client.WireMock.get;
+import static com.github.tomakehurst.wiremock.client.WireMock.urlPathMatching;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -45,48 +46,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class GrowthBookClientAsyncApiTest {
 
     private static final String CLIENT_KEY = "async_api_key";
-
-    /** Async service completing fetches on its own named thread. */
-    private static final class ForeignThreadStickyService implements AsyncStickyBucketService {
-        final Map<String, StickyAssignmentsDocument> store = new HashMap<>();
-        volatile CountDownLatch fetchGate = null;
-        volatile boolean failFetches = false;
-
-        @Override
-        public CompletionStage<StickyAssignmentsDocument> getAssignments(String attributeName, String attributeValue) {
-            return CompletableFuture.completedFuture(store.get(getKey(attributeName, attributeValue)));
-        }
-
-        @Override
-        public CompletionStage<Void> saveAssignments(StickyAssignmentsDocument doc) {
-            store.put(getKey(doc.getAttributeName(), doc.getAttributeValue()), doc);
-            return CompletableFuture.completedFuture(null);
-        }
-
-        @Override
-        public CompletionStage<Map<String, StickyAssignmentsDocument>> getAllAssignments(Map<String, String> attributes) {
-            CompletableFuture<Map<String, StickyAssignmentsDocument>> pending = new CompletableFuture<>();
-            CountDownLatch gate = fetchGate;
-            Thread completer = new Thread(() -> {
-                try {
-                    if (gate != null && !gate.await(10, TimeUnit.SECONDS)) {
-                        pending.completeExceptionally(new IllegalStateException("fetch gate never opened"));
-                        return;
-                    }
-                    if (failFetches) {
-                        pending.completeExceptionally(new IllegalStateException("store unavailable"));
-                    } else {
-                        pending.complete(new HashMap<>());
-                    }
-                } catch (InterruptedException e) {
-                    pending.completeExceptionally(e);
-                }
-            }, "store-io-thread");
-            completer.setDaemon(true);
-            completer.start();
-            return pending;
-        }
-    }
 
     private static Options stickyOptions(AsyncStickyBucketService service, TrackingCallbackWithUser tracking) {
         return Options.builder()
@@ -172,6 +131,33 @@ class GrowthBookClientAsyncApiTest {
 
     @Test
     @Timeout(30)
+    void failedStickyFetchStillRunsCallerContinuationsOffTheStoreThread() throws Exception {
+        // The store fails its fetch on its own completion thread; the caller's exceptionally() handler
+        // must run on the SDK executor, never on the store's thread (which may be a Netty event loop).
+        ForeignThreadStickyService service = new ForeignThreadStickyService();
+        service.failFetches = true;
+        GrowthBookClient client = new GrowthBookClient(stickyOptions(service, null));
+        try {
+            List<String> handlerThreads = new CopyOnWriteArrayList<>();
+            CountDownLatch handled = new CountDownLatch(1);
+            client.isOnAsync("any", user("u1")).exceptionally(throwable -> {
+                handlerThreads.add(Thread.currentThread().getName());
+                handled.countDown();
+                return false;
+            });
+
+            assertTrue(handled.await(10, TimeUnit.SECONDS), "exceptionally handler never ran");
+            for (String threadName : handlerThreads) {
+                assertFalse(threadName.equals("store-io-thread"),
+                        "a failed fetch ran the caller continuation on the store's completion thread");
+            }
+        } finally {
+            client.shutdown();
+        }
+    }
+
+    @Test
+    @Timeout(30)
     void cancellingOneCallerDoesNotAffectACoalescedOther() throws Exception {
         ForeignThreadStickyService service = new ForeignThreadStickyService();
         CountDownLatch fetchGate = new CountDownLatch(1);
@@ -207,16 +193,40 @@ class GrowthBookClientAsyncApiTest {
         }
     }
 
+    @Test
+    @Timeout(30)
+    void getFeatureValueAsyncReturnsDefaultWhenTheStickyStoreFails() throws Exception {
+        // Parity with synchronous getFeatureValue: a failed sticky read falls back to the default
+        // instead of surfacing the failure to the caller.
+        ForeignThreadStickyService service = new ForeignThreadStickyService();
+        service.failFetches = true;
+        GrowthBookClient client = new GrowthBookClient(stickyOptions(service, null));
+        try {
+            String value = client.getFeatureValueAsync("missing", "fallback", String.class, user("u1"))
+                    .get(10, TimeUnit.SECONDS);
+            assertEquals("fallback", value, "a failed sticky read must fall back to the default value");
+        } finally {
+            client.shutdown();
+        }
+    }
+
     // ------------------------------------------------------------ initializeAsync
 
     @Test
     @Timeout(30)
     void initializeAsyncLoadsFeaturesWithoutBlockingTheCaller() throws Exception {
-        HttpServer server = startFeatureServer("{\"features\":{\"new-home\":{\"defaultValue\":true}}}", null);
+        WireMockServer wireMock = new WireMockServer(WireMockConfiguration.options().dynamicPort());
+        wireMock.start();
         GrowthBookClient client = null;
         try {
+            wireMock.stubFor(get(urlPathMatching("/api/features/.*"))
+                    .willReturn(aResponse()
+                            .withStatus(200)
+                            .withHeader("Content-Type", "application/json")
+                            .withBody("{\"features\":{\"new-home\":{\"defaultValue\":true}}}")));
+
             client = new GrowthBookClient(Options.builder()
-                    .apiHost("http://127.0.0.1:" + server.getAddress().getPort())
+                    .apiHost("http://localhost:" + wireMock.port())
                     .clientKey(CLIENT_KEY)
                     .build());
 
@@ -226,7 +236,7 @@ class GrowthBookClientAsyncApiTest {
             if (client != null) {
                 client.shutdown();
             }
-            server.stop(0);
+            wireMock.stop();
         }
     }
 
@@ -245,26 +255,30 @@ class GrowthBookClientAsyncApiTest {
     @Test
     @Timeout(30)
     void shutdownDuringInitializeAsyncNeverLeavesTheFutureHanging() throws Exception {
-        CountDownLatch responseGate = new CountDownLatch(1);
-        HttpServer server = startFeatureServer("{\"features\":{}}", responseGate);
-        GrowthBookClient client = null;
+        // Occupy the (caller-supplied) async executor so the initializeAsync task stays queued, then
+        // shut down: the discarded task's future must be completed (false), never left hanging. No
+        // network — initialize() short-circuits to false on the empty options.
+        ExecutorService callerPool = Executors.newSingleThreadExecutor(runnable -> {
+            Thread thread = new Thread(runnable, "caller-async");
+            thread.setDaemon(true);
+            return thread;
+        });
+        CountDownLatch releaseOccupier = new CountDownLatch(1);
+        GrowthBookClient client = new GrowthBookClient(Options.builder()
+                .asyncExecutor(callerPool)
+                .build());
         try {
-            client = new GrowthBookClient(Options.builder()
-                    .apiHost("http://127.0.0.1:" + server.getAddress().getPort())
-                    .clientKey(CLIENT_KEY)
-                    .build());
+            callerPool.submit(() -> releaseOccupier.await(10, TimeUnit.SECONDS)); // holds the only thread
 
-            CompletableFuture<Boolean> initializing = client.initializeAsync();
-            client.shutdown(); // cancels the in-flight enqueue()d call
+            CompletableFuture<Boolean> initializing = client.initializeAsync(); // queues behind the occupier
+            client.shutdown();
 
             assertFalse(initializing.get(10, TimeUnit.SECONDS),
                     "a shutdown mid-initialize must complete the future (false), never hang it");
         } finally {
-            responseGate.countDown();
-            if (client != null) {
-                client.shutdown();
-            }
-            server.stop(0);
+            releaseOccupier.countDown();
+            client.shutdown();
+            callerPool.shutdownNow();
         }
     }
 
@@ -276,24 +290,45 @@ class GrowthBookClientAsyncApiTest {
         client.shutdown(); // second call returns immediately, no exception
     }
 
-    private static HttpServer startFeatureServer(String body, CountDownLatch responseGate) throws IOException {
-        HttpServer server = HttpServer.create(new InetSocketAddress("127.0.0.1", 0), 0);
-        server.createContext("/api/features/" + CLIENT_KEY, exchange -> {
-            if (responseGate != null) {
+    /** Async service completing fetches on its own named thread. */
+    private static final class ForeignThreadStickyService implements AsyncStickyBucketService {
+        final Map<String, StickyAssignmentsDocument> store = new HashMap<>();
+        volatile CountDownLatch fetchGate = null;
+        volatile boolean failFetches = false;
+
+        @Override
+        public CompletionStage<StickyAssignmentsDocument> getAssignments(String attributeName, String attributeValue) {
+            return CompletableFuture.completedFuture(store.get(getKey(attributeName, attributeValue)));
+        }
+
+        @Override
+        public CompletionStage<Void> saveAssignments(StickyAssignmentsDocument doc) {
+            store.put(getKey(doc.getAttributeName(), doc.getAttributeValue()), doc);
+            return CompletableFuture.completedFuture(null);
+        }
+
+        @Override
+        public CompletionStage<Map<String, StickyAssignmentsDocument>> getAllAssignments(Map<String, String> attributes) {
+            CompletableFuture<Map<String, StickyAssignmentsDocument>> pending = new CompletableFuture<>();
+            CountDownLatch gate = fetchGate;
+            Thread completer = new Thread(() -> {
                 try {
-                    responseGate.await(15, TimeUnit.SECONDS);
-                } catch (InterruptedException ignored) {
-                    Thread.currentThread().interrupt();
+                    if (gate != null && !gate.await(10, TimeUnit.SECONDS)) {
+                        pending.completeExceptionally(new IllegalStateException("fetch gate never opened"));
+                        return;
+                    }
+                    if (failFetches) {
+                        pending.completeExceptionally(new IllegalStateException("store unavailable"));
+                    } else {
+                        pending.complete(new HashMap<>());
+                    }
+                } catch (InterruptedException e) {
+                    pending.completeExceptionally(e);
                 }
-            }
-            byte[] responseBytes = body.getBytes(StandardCharsets.UTF_8);
-            exchange.sendResponseHeaders(200, responseBytes.length);
-            try (OutputStream responseBody = exchange.getResponseBody()) {
-                responseBody.write(responseBytes);
-            }
-            exchange.close();
-        });
-        server.start();
-        return server;
+            }, "store-io-thread");
+            completer.setDaemon(true);
+            completer.start();
+            return pending;
+        }
     }
 }
