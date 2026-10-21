@@ -731,7 +731,7 @@ public class GrowthBookClient {
      */
     public <ValueType> CompletableFuture<ExperimentResult<ValueType>> runAsync(Experiment<ValueType> experiment,
                                                                                UserContext userContext) {
-        return getEvalContextAsync(userContext).thenApply(evalContext -> {
+        return getEvalContextAsync(userContext, inlineIdentifierAttributes(experiment)).thenApply(evalContext -> {
             ExperimentResult<ValueType> result =
                     experimentEvaluator.evaluateExperiment(experiment, evalContext, null);
             experimentSubscriptions.publishIfChanged(experiment, result);
@@ -857,30 +857,34 @@ public class GrowthBookClient {
             scoped.setStickyBucketAssignmentDocs(fetchStickyDocsBlocking(identifiers));
             safeUserContext = scoped;
         }
-        return buildEvalContext(safeUserContext);
+        return buildEvalContext(safeUserContext, snapshot);
     }
 
     private CompletableFuture<EvaluationContext> getEvalContextAsync(UserContext userContext) {
+        return getEvalContextAsync(userContext, Collections.<String>emptySet());
+    }
+
+    private CompletableFuture<EvaluationContext> getEvalContextAsync(UserContext userContext,
+                                                                     Set<String> inlineIdentifierAttributes) {
         UserContext safeUserContext = userContext == null ? UserContext.builder().build() : userContext;
+        GlobalContext snapshot = this.globalContextManager.getCurrentGlobalContext();
         if (this.options.isRemoteEvalEnabled()) {
-            return CompletableFuture.supplyAsync(() -> buildEvalContext(safeUserContext), this.asyncExecutor);
+            return CompletableFuture.supplyAsync(() -> buildEvalContext(safeUserContext, snapshot), this.asyncExecutor);
         }
         if (this.stickyBucketManager == null || safeUserContext.getStickyBucketAssignmentDocs() != null) {
-            return CompletableFuture.completedFuture(buildEvalContext(safeUserContext));
+            return CompletableFuture.completedFuture(buildEvalContext(safeUserContext, snapshot));
         }
-        Map<String, String> identifiers = stickyIdentifierAttributesFor(mergeGlobalAttributes(safeUserContext.getAttributes()));
+        Map<String, String> identifiers = stickyIdentifierAttributesFor(
+                mergeGlobalAttributes(safeUserContext.getAttributes()), snapshot, inlineIdentifierAttributes);
         UserContext scoped = safeUserContext.withAttributes(safeUserContext.getAttributes());
-        // One executor hop at the foreign-completion boundary: the store's completion thread (a Netty
-        // event loop, an OkHttp dispatcher) must never run evaluation, a tracking callback, or caller
-        // continuations. The hop also defends the shared coalesced future from a caller's cancel().
         return this.stickyBucketManager.fetchAssignments(identifiers)
                 .thenApplyAsync(docs -> {
                     scoped.setStickyBucketAssignmentDocs(docs);
-                    return buildEvalContext(scoped);
+                    return buildEvalContext(scoped, snapshot);
                 }, this.asyncExecutor);
     }
 
-    private EvaluationContext buildEvalContext(UserContext safeUserContext) {
+    private EvaluationContext buildEvalContext(UserContext safeUserContext, GlobalContext snapshot) {
         EvaluationContext context = this.options.isRemoteEvalEnabled()
                 ? this.remoteEvalCoordinator.createEvaluationContext(safeUserContext)
                 : this.globalContextManager.createEvaluationContext(safeUserContext, snapshot);
