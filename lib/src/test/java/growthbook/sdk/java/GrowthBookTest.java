@@ -131,8 +131,8 @@ class GrowthBookTest {
                     System.out.printf("\n\nExpected getExperimentResult().getHashValue(): %s, Actual getExperimentResult().getHashValue(): %s", expectedResult.getExperimentResult().getHashValue(), actualHashValue);
                 }
 
-                Float expectedBucket = expectedResult.getExperimentResult().getBucket();
-                Float actualBucket = actualResult != null ? result.getExperimentResult().getBucket() : null;
+                Double expectedBucket = expectedResult.getExperimentResult().getBucket();
+                Double actualBucket = actualResult != null ? result.getExperimentResult().getBucket() : null;
                 bucketPasses = Objects.equals(expectedBucket, actualBucket);
                 if (!bucketPasses) {
                     System.out.printf("\n\nExpected bucket: %s, Actual bucket: %s", expectedBucket, actualBucket);
@@ -300,7 +300,7 @@ class GrowthBookTest {
                 .key("test1")
                 .bucketVersion(1)
                 .conditionJson(new JsonObject())
-                .coverage(1.0f)
+                .coverage(1.0)
                 .force(1)
                 .meta(new ArrayList<>())
                 .name("exp")
@@ -322,7 +322,7 @@ class GrowthBookTest {
                 .key("test2")
                 .bucketVersion(1)
                 .conditionJson(new JsonObject())
-                .coverage(0.5f)
+                .coverage(0.5)
                 .force(1)
                 .meta(new ArrayList<>())
                 .name("exp")
@@ -346,7 +346,7 @@ class GrowthBookTest {
                 .variationId(0)
                 .key("test1")
                 .name("exp")
-                .bucket(0.0f)
+                .bucket(0.0)
                 .value("")
                 .featureId("feature")
                 .hashAttribute("id")
@@ -360,7 +360,7 @@ class GrowthBookTest {
                 .variationId(1)
                 .key("test2")
                 .name("exp")
-                .bucket(0.0f)
+                .bucket(0.0)
                 .value("")
                 .featureId("feature")
                 .hashAttribute("id")
