@@ -3,7 +3,6 @@ package growthbook.sdk.java;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
-import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.reflect.TypeToken;
@@ -200,13 +199,13 @@ class GrowthBookUtilsTest {
     void test_getBucketRanges_matchesJsExactly() throws IOException {
         JsonArray vectors;
         try (FileReader reader = new FileReader("src/test/resources/bucket-ranges-js-reference.json")) {
-            vectors = new Gson().fromJson(reader, JsonArray.class);
+            vectors = GrowthBookJsonUtils.getInstance().gson.fromJson(reader, JsonArray.class);
         }
         Type doubleList = new TypeToken<ArrayList<Double>>() {}.getType();
 
         vectors.forEach(jsonElement -> {
             JsonObject vector = jsonElement.getAsJsonObject();
-            ArrayList<Double> weights = new Gson().fromJson(vector.get("weights"), doubleList);
+            ArrayList<Double> weights = GrowthBookJsonUtils.getInstance().gson.fromJson(vector.get("weights"), doubleList);
             JsonArray expected = vector.getAsJsonArray("ranges");
 
             List<BucketRange> results = GrowthBookUtils.getBucketRanges(

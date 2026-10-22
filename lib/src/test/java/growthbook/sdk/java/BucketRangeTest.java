@@ -46,6 +46,19 @@ class BucketRangeTest {
     }
 
     @Test
+    void jsonRoundTripKeepsFullDoublePrecision() {
+        String json = "[0.020000000000000004,0.6000000000000001]";
+
+        BucketRange subject = GrowthBookJsonUtils.getInstance().gson.fromJson(json, BucketRange.class);
+
+        assertEquals(0.020000000000000004, subject.getRangeStart());
+        assertEquals(0.6000000000000001, subject.getRangeEnd());
+        assertEquals(json, GrowthBookJsonUtils.getInstance().gson.toJson(subject));
+        assertEquals(json, new BucketRange(0.020000000000000004, 0.6000000000000001).toJson());
+        assertEquals(subject, GrowthBookJsonUtils.getInstance().gson.fromJson(subject.toJson(), BucketRange.class));
+    }
+
+    @Test
     void equalsComparesExactly() {
         BucketRange a = new BucketRange(0.3, 0.7);
         BucketRange same = new BucketRange(0.3, 0.7);
