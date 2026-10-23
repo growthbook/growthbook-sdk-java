@@ -32,6 +32,10 @@ public class StringUtils {
     }
 
     public static String paddedVersionString(String input) {
+        // Like the JS SDK, an empty or null version is version 0
+        if (input == null || input.isEmpty()) {
+            input = "0";
+        }
         // Remove build info and leading `v` if any
         // Split version into parts (both core version numbers and pre-release tags)
         // "v1.2.3-rc.1+build123" -> ["1","2","3","rc","1"]

@@ -141,15 +141,16 @@ class ConditionEvaluatorTest {
     }
 
     @Test
-    @DisplayName("$eq keeps comparing numeric strings by value")
-    void test_equalOperatorStillParsesNumericStrings() {
-        // Guards the fix above from being tightened into a strict type check, which would change
-        // which users match targeting rules.
+    @DisplayName("$eq does not coerce numeric strings, and $ne matches them")
+    void test_equalOperatorDoesNotParseNumericStrings() {
+        // Spec 0.10.0: an attribute of a different type than the condition value never equals it.
         ConditionEvaluator evaluator = new ConditionEvaluator();
 
-        assertTrue(evaluator.evaluateCondition(parse("{\"a\":1}"), parse("{\"a\":{\"$eq\":\"1\"}}"), null));
-        assertTrue(evaluator.evaluateCondition(parse("{\"a\":\"1\"}"), parse("{\"a\":{\"$eq\":1}}"), null));
+        assertFalse(evaluator.evaluateCondition(parse("{\"a\":1}"), parse("{\"a\":{\"$eq\":\"1\"}}"), null));
+        assertFalse(evaluator.evaluateCondition(parse("{\"a\":\"1\"}"), parse("{\"a\":{\"$eq\":1}}"), null));
+        assertTrue(evaluator.evaluateCondition(parse("{\"a\":\"1\"}"), parse("{\"a\":{\"$ne\":1}}"), null));
         assertTrue(evaluator.evaluateCondition(parse("{\"a\":1}"), parse("{\"a\":{\"$eq\":1}}"), null));
+        assertTrue(evaluator.evaluateCondition(parse("{\"a\":1}"), parse("{\"a\":{\"$eq\":1.0}}"), null));
         assertFalse(evaluator.evaluateCondition(parse("{\"a\":1}"), parse("{\"a\":{\"$eq\":2}}"), null));
     }
 
@@ -196,14 +197,14 @@ class ConditionEvaluatorTest {
     }
 
     @Test
-    @DisplayName("implicit equality coerces to string, matching the JS SDK")
-    void test_implicitEqualityCoercesToString() {
-        // The JS SDK compares `value + "" === condition` for string conditions, so a numeric or
-        // boolean attribute matches its string form. The previous type-strict comparison diverged.
+    @DisplayName("implicit equality does not coerce to string, matching the JS SDK 2.0.0")
+    void test_implicitEqualityDoesNotCoerceToString() {
+        // Spec 0.10.0: a numeric or boolean attribute no longer matches its string form.
         ConditionEvaluator evaluator = new ConditionEvaluator();
 
-        assertTrue(evaluator.evaluateCondition(parse("{\"a\":123}"), parse("{\"a\":\"123\"}"), null));
-        assertTrue(evaluator.evaluateCondition(parse("{\"a\":true}"), parse("{\"a\":\"true\"}"), null));
+        assertFalse(evaluator.evaluateCondition(parse("{\"a\":123}"), parse("{\"a\":\"123\"}"), null));
+        assertFalse(evaluator.evaluateCondition(parse("{\"a\":true}"), parse("{\"a\":\"true\"}"), null));
+        assertTrue(evaluator.evaluateCondition(parse("{\"a\":\"123\"}"), parse("{\"a\":\"123\"}"), null));
         assertFalse(evaluator.evaluateCondition(parse("{\"a\":12}"), parse("{\"a\":\"123\"}"), null));
         assertFalse(evaluator.evaluateCondition(parse("{}"), parse("{\"a\":\"123\"}"), null));
     }
