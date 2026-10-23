@@ -12,7 +12,6 @@ import lombok.extern.slf4j.Slf4j;
 
 import javax.annotation.Nullable;
 import java.util.Objects;
-import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -163,12 +162,10 @@ public class ConditionEvaluator implements IConditionEvaluator {
                 return evalRegex(actual, expected, attributeDataType, true, true);
 
             case NE:
-                if (DataType.NULL.equals(attributeDataType)) return !expected.isJsonNull();
-                return !Objects.equals(actual, expected);
+                return !strictEquals(actual, expected);
 
             case EQ:
-                if (actual == null || DataType.NULL.equals(attributeDataType)) return false;
-                return arePrimitivesEqual(actual.getAsJsonPrimitive(), expected.getAsJsonPrimitive(), attributeDataType);
+                return strictEquals(actual, expected);
 
             case SIZE:
                 if (actual == null || !actual.isJsonArray()) return false;
@@ -200,7 +197,7 @@ public class ConditionEvaluator implements IConditionEvaluator {
             case VERSION_LTE:
             case VERSION_NE:
             case VERSION_EQ:
-                return evalVersion(operator, actual, expected, attributeDataType);
+                return evalVersion(operator, actual, expected);
 
             case IN_GROUP:
             case NOT_IN_GROUP:
@@ -226,30 +223,33 @@ public class ConditionEvaluator implements IConditionEvaluator {
     /**
      * {@code $gt}/{@code $gte}/{@code $lt}/{@code $lte}: numeric or lexical comparison.
      *
+     * <p>Both sides must be numbers, or both strings; anything else (a type mismatch, a boolean, a
+     * missing or null attribute) never matches. Two strings compare as text, so {@code "10" < "9"}.
+     *
      * <p>Numbers are compared as {@code double}, deliberately: the reference JavaScript SDK applies
      * native {@code <}/{@code >} to IEEE-754 doubles, so anything narrower diverges from the
      * cross-SDK contract. An earlier version narrowed both operands to {@code float} first, which
      * made values differing only beyond 2^24 compare equal — for example {@code 16777217 $gt
-     * 16777216} returned {@code false}. Do not reintroduce narrowing here; {@code arePrimitivesEqual}
+     * 16777216} returned {@code false}. Do not reintroduce narrowing here; {@code primitivesEqual}
      * compares doubles on the {@code $eq}/{@code $ne} path for the same reason.
      */
     private boolean evalComparison(Operator operator, @Nullable JsonElement actual, JsonElement expected, DataType attributeDataType) {
-        if (actual == null || DataType.NULL.equals(attributeDataType)) {
-            if (expected.isJsonPrimitive() && !expected.getAsJsonPrimitive().isNumber()) {
-                return false;
-            }
-            return compareNumbers(operator, 0.0, expected.getAsDouble());
+        if (!isOrderable(actual, expected)) {
+            return false;
         }
-        if (operator == Operator.LT && actual.getAsString().toLowerCase().matches("\\d+")) {
-            return Double.parseDouble(actual.getAsString()) < expected.getAsDouble();
+        if (attributeDataType == DataType.NUMBER) {
+            return compareNumbers(operator, actual.getAsDouble(), expected.getAsDouble());
         }
-        if (actual.getAsJsonPrimitive().isNumber()) {
-            return compareNumbers(operator, actual.getAsNumber().doubleValue(), expected.getAsNumber().doubleValue());
-        }
-        if (actual.getAsJsonPrimitive().isString()) {
-            return matchesSign(operator, actual.getAsString().compareTo(expected.getAsString()));
-        }
-        return false;
+        return matchesSign(operator, actual.getAsString().compareTo(expected.getAsString()));
+    }
+
+    /**
+     * Whether two values can be ordered against each other: both numbers, or both strings.
+     */
+    private static boolean isOrderable(@Nullable JsonElement actual, @Nullable JsonElement expected) {
+        DataType type = GrowthBookJsonUtils.getElementType(actual);
+        return (type == DataType.NUMBER || type == DataType.STRING)
+                && type == GrowthBookJsonUtils.getElementType(expected);
     }
 
     /**
@@ -287,10 +287,13 @@ public class ConditionEvaluator implements IConditionEvaluator {
     /**
      * {@code $vgt}/{@code $vgte}/{@code $vlt}/{@code $vlte}/{@code $vne}/{@code $veq}:
      * compares padded semantic-version strings.
+     *
+     * <p>Both sides must be strings, or both numbers. On any other combination, including a missing
+     * or null attribute, every operator fails except {@code $vne}, which matches.
      */
-    private boolean evalVersion(Operator operator, @Nullable JsonElement actual, JsonElement expected, DataType attributeDataType) {
-        if (actual == null || expected == null || DataType.NULL.equals(attributeDataType)) {
-            return false;
+    private boolean evalVersion(Operator operator, @Nullable JsonElement actual, JsonElement expected) {
+        if (!isOrderable(actual, expected)) {
+            return operator == Operator.VERSION_NE;
         }
         int cmp = StringUtils.paddedVersionString(actual.getAsString())
                 .compareTo(StringUtils.paddedVersionString(expected.getAsString()));
@@ -332,47 +335,37 @@ public class ConditionEvaluator implements IConditionEvaluator {
     }
 
     /**
-     * Compares two primitives for equality, based on their data type.
+     * {@code $eq}/{@code $ne} equality: the same type and the same value, with no coercion, like
+     * JavaScript's {@code ===}. A missing attribute equals nothing, and arrays and objects are never
+     * equal here.
      */
-    private boolean arePrimitivesEqual(JsonPrimitive a, JsonPrimitive b, DataType dataType) {
-        switch (dataType) {
-            case STRING:
-                return a.getAsString().equals(b.getAsString());
-            case NUMBER: {
-                Double left = asDoubleOrNull(a);
-                Double right = asDoubleOrNull(b);
-                return left != null && right != null && Double.compare(left, right) == 0;
-            }
-            case BOOLEAN:
-                return a.getAsBoolean() == b.getAsBoolean();
-            default:
-                log.info("Unsupported data type {}", dataType);
-                return false;
+    private static boolean strictEquals(@Nullable JsonElement actual, JsonElement expected) {
+        if (actual == null) {
+            return false;
         }
+        if (actual.isJsonNull()) {
+            return expected.isJsonNull();
+        }
+        return actual.isJsonPrimitive() && expected.isJsonPrimitive()
+                && primitivesEqual(actual.getAsJsonPrimitive(), expected.getAsJsonPrimitive());
     }
 
     /**
-     * Numeric value of a primitive, or {@code null} when it does not represent a number.
-     *
-     * <p>The data type comes from the <em>attribute</em>, so a numeric attribute can still be
-     * compared against a non-numeric condition value. Reading that value as a double directly
-     * throws {@link NumberFormatException}, which escapes to the catch in
-     * {@link #evaluateCondition}: that turns the <em>whole</em> condition false, so a wrapping
-     * {@code $not}/{@code $elemMatch}/{@code $all} never sees this operator's result. Returning
-     * {@code null} keeps the mismatch a plain "not equal" instead.
-     *
-     * <p>Numeric strings are still parsed, so {@code 1 $eq "1"} stays true as before.
+     * Whether two primitives have the same type and value. Numbers compare as {@code double}, so
+     * {@code 1} equals {@code 1.0} and {@code -0.0} equals {@code 0}; a number never equals a string
+     * or boolean.
      */
-    @Nullable
-    private static Double asDoubleOrNull(JsonPrimitive primitive) {
-        if (primitive.isNumber()) {
-            return primitive.getAsDouble();
+    private static boolean primitivesEqual(JsonPrimitive a, JsonPrimitive b) {
+        if (a.isNumber() && b.isNumber()) {
+            return a.getAsDouble() == b.getAsDouble();
         }
-        try {
-            return Double.valueOf(primitive.getAsString());
-        } catch (NumberFormatException e) {
-            return null;
+        if (a.isString() && b.isString()) {
+            return a.getAsString().equals(b.getAsString());
         }
+        if (a.isBoolean() && b.isBoolean()) {
+            return a.getAsBoolean() == b.getAsBoolean();
+        }
+        return false;
     }
 
     /**
@@ -399,13 +392,10 @@ public class ConditionEvaluator implements IConditionEvaluator {
 
         switch (conditionValueElementType) {
             case STRING:
-                return isMatchingPrimitive(conditionValue, attributeValue, JsonPrimitive::getAsString);
-
             case NUMBER:
-                return isMatchingPrimitive(conditionValue, attributeValue, JsonPrimitive::getAsDouble);
-
             case BOOLEAN:
-                return isMatchingPrimitive(conditionValue, attributeValue, JsonPrimitive::getAsBoolean);
+                return attributeValue != null && attributeValue.isJsonPrimitive()
+                        && primitivesEqual(conditionValue.getAsJsonPrimitive(), attributeValue.getAsJsonPrimitive());
 
             case ARRAY:
                 return attributeValue != null && attributeValue.isJsonArray()
@@ -506,15 +496,12 @@ public class ConditionEvaluator implements IConditionEvaluator {
         return true;
     }
 
-    private <T> boolean isMatchingPrimitive(JsonElement conditionValue, @Nullable JsonElement attributeValue, Function<JsonPrimitive, T> extractor) {
-        return attributeValue != null
-                && attributeValue.isJsonPrimitive()
-                && extractor.apply(conditionValue.getAsJsonPrimitive())
-                        .equals(extractor.apply(attributeValue.getAsJsonPrimitive()));
-    }
-
+    /**
+     * {@code $regex}/{@code $regexi} and their negations. Only a string attribute can match; any
+     * other attribute fails the positive operators and matches the negated ones.
+     */
     private static boolean evalRegex(@Nullable JsonElement actual, JsonElement expected, DataType attributeDataType, boolean caseInsensitive, boolean negate) {
-        if (actual == null || DataType.NULL.equals(attributeDataType)) {
+        if (attributeDataType != DataType.STRING) {
             return negate;
         }
         int flags = caseInsensitive ? Pattern.CASE_INSENSITIVE : 0;
