@@ -10,9 +10,11 @@ import growthbook.sdk.java.model.ReducePayloadOptions;
 
 import javax.annotation.Nullable;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * Shrinks a features payload for a user whose attributes are only partly known, e.g. on a server
@@ -73,6 +75,8 @@ public final class PayloadReducer {
         private final PayloadFilters exclude;
         private final boolean filterPrerequisites;
         private final Map<String, JsonElement> added = new LinkedHashMap<>();
+        /** Groups that keep their condition as written. */
+        private final Set<String> asWritten = new HashSet<>();
 
         Reduction(JsonObject payload, JsonObject attributes, ReducePayloadOptions options) {
             this.payload = payload;
@@ -96,7 +100,7 @@ public final class PayloadReducer {
             if (allExperiments != null && allExperiments.isJsonArray()) {
                 for (JsonElement experiment : allExperiments.getAsJsonArray()) {
                     if (matches(metadataOf(experiment))) {
-                        experiments.add(prune(experiment));
+                        experiments.add(prune(experiment, false));
                     }
                 }
             }
@@ -110,6 +114,16 @@ public final class PayloadReducer {
             }
 
             JsonObject contextualBandits = reduceBandits(features, experiments);
+
+            // Groups that keep their condition as written: those evaluated against something
+            // other than the user (each item in $elemMatch, or the parent's value in a
+            // prerequisite), and the groups those reference
+            Set<String> seen = new HashSet<>();
+            JsonArray reduced = new JsonArray();
+            reduced.add(features);
+            reduced.add(experiments);
+            reduced.add(contextualBandits);
+            markAsWritten(reduced, true, seen);
 
             Map<String, JsonElement> groups = new LinkedHashMap<>();
             keepSavedGroups(features, groups);
@@ -154,7 +168,7 @@ public final class PayloadReducer {
             JsonArray keptRules = new JsonArray();
             for (JsonElement rule : rules.getAsJsonArray()) {
                 if (!scoped || ruleInProjects(rule.isJsonObject() ? rule.getAsJsonObject().get("metadata") : null)) {
-                    keptRules.add(prune(rule));
+                    keptRules.add(prune(rule, true));
                 }
             }
             JsonObject reduced = shallowCopy(feature.getAsJsonObject());
@@ -185,7 +199,7 @@ public final class PayloadReducer {
         /**
          * Reduces a rule or an auto experiment's condition.
          */
-        private JsonElement prune(JsonElement item) {
+        private JsonElement prune(JsonElement item, boolean isRule) {
             if (!item.isJsonObject()) {
                 return item;
             }
@@ -204,8 +218,9 @@ public final class PayloadReducer {
                     JsonObject never = new JsonObject();
                     never.add("$not", new JsonObject());
                     reduced.add("condition", never);
-                    // A force rule that never passes never returns its value
-                    if (reduced.has("force")) {
+                    // A force rule that never passes never returns its value. An auto
+                    // experiment's forced variation still applies to a sticky bucketed user.
+                    if (isRule && reduced.has("force")) {
                         reduced.add("force", JsonNull.INSTANCE);
                     }
                 }
@@ -237,7 +252,12 @@ public final class PayloadReducer {
             JsonObject bandits = new JsonObject();
             for (JsonElement item : items) {
                 String ref = item.isJsonObject() ? ConditionEvaluator.stringField(item.getAsJsonObject(), "contextualBanditRef") : null;
-                if (ref == null || ref.isEmpty() || bandits.has(ref) || !allBandits.has(ref) || !allBandits.get(ref).isJsonObject()) {
+                if (ref == null || ref.isEmpty() || bandits.has(ref) || !allBandits.has(ref)) {
+                    continue;
+                }
+                // Evaluation tolerates a definition that isn't an object, so it stays
+                if (!allBandits.get(ref).isJsonObject()) {
+                    bandits.add(ref, allBandits.get(ref));
                     continue;
                 }
                 JsonObject bandit = shallowCopy(allBandits.get(ref).getAsJsonObject());
@@ -263,6 +283,66 @@ public final class PayloadReducer {
             return bandits;
         }
 
+        private void markAsWritten(@Nullable JsonElement value, boolean user, Set<String> seen) {
+            if (value == null) {
+                return;
+            }
+            if (ConditionEvaluator.isString(value)) {
+                String id = value.getAsString();
+                if (!savedGroups.has(id) || asWritten.contains(id) || (user && seen.contains(id))) {
+                    return;
+                }
+                (user ? seen : asWritten).add(id);
+                markAsWritten(savedGroups.get(id), user, seen);
+            } else if (value.isJsonObject()) {
+                for (Map.Entry<String, JsonElement> entry : value.getAsJsonObject().entrySet()) {
+                    String key = entry.getKey();
+                    markAsWritten(entry.getValue(), user && !key.equals("$elemMatch") && !key.equals("parentConditions"), seen);
+                }
+            } else if (value.isJsonArray()) {
+                for (JsonElement element : value.getAsJsonArray()) {
+                    markAsWritten(element, user, seen);
+                }
+            }
+        }
+
+        /**
+         * A group on a cycle can't be reduced on its own: its result depends on which group the
+         * evaluation entered the cycle from.
+         */
+        private boolean reaches(String from, String to, Set<String> visited) {
+            List<String> found = new ArrayList<>();
+            collectGroupIds(savedGroups.get(from), found);
+            for (String id : found) {
+                if (id.equals(to)) {
+                    return true;
+                }
+                if (visited.add(id) && reaches(id, to, visited)) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        private void collectGroupIds(@Nullable JsonElement value, List<String> found) {
+            if (value == null) {
+                return;
+            }
+            if (ConditionEvaluator.isString(value)) {
+                if (savedGroups.has(value.getAsString())) {
+                    found.add(value.getAsString());
+                }
+            } else if (value.isJsonObject()) {
+                for (Map.Entry<String, JsonElement> entry : value.getAsJsonObject().entrySet()) {
+                    collectGroupIds(entry.getValue(), found);
+                }
+            } else if (value.isJsonArray()) {
+                for (JsonElement element : value.getAsJsonArray()) {
+                    collectGroupIds(element, found);
+                }
+            }
+        }
+
         /**
          * Keeps each saved group whose id appears as a string anywhere, with condition groups
          * reduced. This needs no list of the operators that reference groups.
@@ -277,7 +357,9 @@ public final class PayloadReducer {
                     return;
                 }
                 JsonElement entry = savedGroups.get(id);
-                JsonElement condition = EVALUATOR.pruneSavedGroup(attributes, id, savedGroups);
+                JsonElement condition = asWritten.contains(id) || reaches(id, id, new HashSet<>())
+                        ? null
+                        : EVALUATOR.pruneSavedGroup(attributes, id, savedGroups);
                 JsonElement kept = entry;
                 if (condition != null && condition.isJsonObject() && entry.isJsonObject()) {
                     JsonObject reduced = shallowCopy(entry.getAsJsonObject());
