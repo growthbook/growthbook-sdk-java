@@ -188,6 +188,7 @@ class PayloadReducerTest {
                 {"{\"x\": [[1]]}", "{\"x\": {\"$elemMatch\": {\"$or\": [{\"0\": 1}]}}}"},
                 {"{\"x\": 1e3}", "{\"x\": {\"$veq\": 1000}}"},
                 {"{\"x\": \"\u00c9\"}", "{\"x\": {\"$regexi\": \"^\u00e9$\"}}"},
+                {"{\"x\": 5.9604644775390625e-8}", "{\"x\": {\"$vgt\": 5.960464477539062e-8}}"},
         };
         for (String[] c : cases) {
             JsonObject payload = parse("{\"features\": {\"f\": {\"defaultValue\": false, \"rules\": [{\"force\": true, \"condition\": " + c[1] + "}]}}}");

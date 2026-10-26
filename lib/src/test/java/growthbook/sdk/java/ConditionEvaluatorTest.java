@@ -331,6 +331,11 @@ class ConditionEvaluatorTest {
         assertTrue(evaluator.evaluateCondition(attributes, condition("{\"x\": {\"$veq\": 1000}}"), null));
         assertFalse(evaluator.evaluateCondition(attributes, condition("{\"x\": {\"$vne\": 1000.0}}"), null));
         assertTrue(evaluator.evaluateCondition(attributes, condition("{\"y\": {\"$veq\": 1.5}}"), null));
+
+        // 2^-24 is "5.960464477539063e-8" in JS, so it's greater than 5.960464477539062e-8
+        JsonObject powerOfTwo = condition("{\"x\": 5.9604644775390625e-8}");
+        assertTrue(evaluator.evaluateCondition(powerOfTwo, condition("{\"x\": {\"$vgt\": 5.960464477539062e-8}}"), null));
+        assertTrue(evaluator.evaluateCondition(powerOfTwo, condition("{\"x\": {\"$veq\": 5.960464477539063e-8}}"), null));
     }
 
     @Test

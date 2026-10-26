@@ -85,18 +85,7 @@ public class StringUtils {
             return "-" + jsNumberToString(-value);
         }
 
-        // The fewest significant digits that parse back to the same double; rounding the exact
-        // value picks the closest such digits, and an even last digit on a tie. 17 always do.
-        BigDecimal exact = new BigDecimal(value);
-        BigDecimal shortest = exact;
-        for (int precision = 1; precision <= 17; precision++) {
-            BigDecimal rounded = exact.round(new MathContext(precision, RoundingMode.HALF_EVEN));
-            if (rounded.doubleValue() == value) {
-                shortest = rounded;
-                break;
-            }
-        }
-        shortest = shortest.stripTrailingZeros();
+        BigDecimal shortest = shortestRoundTrip(value);
 
         // value = 0.digits * 10^n
         String digits = shortest.unscaledValue().toString();
@@ -124,5 +113,37 @@ public class StringUtils {
             out.append('e').append(n - 1 >= 0 ? '+' : '-').append(Math.abs(n - 1));
         }
         return out.toString();
+    }
+
+    /**
+     * Finds the fewest significant digits that parse back to {@code value}, as ECMAScript
+     * Number::toString requires: of the candidates with that many digits, the one closest to the
+     * exact value, and the one with an even last digit on a tie.
+     *
+     * @param value a finite, positive double
+     * @return those digits, without trailing zeros
+     */
+    private static BigDecimal shortestRoundTrip(double value) {
+        BigDecimal exact = new BigDecimal(value);
+        // 17 significant digits always round-trip
+        for (int precision = 1; precision <= 17; precision++) {
+            // Only the candidates just below and just above the exact value can round-trip at this
+            // precision. Rounding to the nearest alone isn't enough: next to a power of two the
+            // double's rounding interval is lopsided, so only the farther candidate may parse back.
+            BigDecimal below = exact.round(new MathContext(precision, RoundingMode.FLOOR));
+            BigDecimal above = exact.round(new MathContext(precision, RoundingMode.CEILING));
+            boolean belowMatches = Double.parseDouble(below.toString()) == value;
+            boolean aboveMatches = Double.parseDouble(above.toString()) == value;
+            if (belowMatches && aboveMatches) {
+                return exact.round(new MathContext(precision, RoundingMode.HALF_EVEN)).stripTrailingZeros();
+            }
+            if (belowMatches) {
+                return below.stripTrailingZeros();
+            }
+            if (aboveMatches) {
+                return above.stripTrailingZeros();
+            }
+        }
+        return exact.round(new MathContext(17, RoundingMode.HALF_EVEN)).stripTrailingZeros();
     }
 }

@@ -48,5 +48,9 @@ class StringUtilsTest {
         assertEquals("0", StringUtils.jsNumberToString(-0.0));
         assertEquals("NaN", StringUtils.jsNumberToString(Double.NaN));
         assertEquals("-Infinity", StringUtils.jsNumberToString(Double.NEGATIVE_INFINITY));
+        // Powers of two, where the shortest digits that round-trip aren't the nearest ones
+        assertEquals("5.960464477539063e-8", StringUtils.jsNumberToString(Math.scalb(1.0, -24)));
+        assertEquals("7.174648137343064e-43", StringUtils.jsNumberToString(Math.scalb(1.0, -140)));
+        assertEquals("7.854549544476363e-90", StringUtils.jsNumberToString(Math.scalb(1.0, -296)));
     }
 }
