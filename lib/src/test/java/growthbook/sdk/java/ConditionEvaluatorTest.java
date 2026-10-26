@@ -295,6 +295,34 @@ class ConditionEvaluatorTest {
     }
 
     @Test
+    @DisplayName("getPath reads an array's own index and length keys, like the JS SDK")
+    void test_getPathReadsArrayIndexAndLength() {
+        ConditionEvaluator evaluator = new ConditionEvaluator();
+        JsonElement attributes = condition("{\"x\": [[1, 2]], \"s\": \"ab\"}");
+
+        assertEquals(1, ((JsonElement) Objects.requireNonNull(evaluator.getPath(attributes, "x.0.0"))).getAsInt());
+        assertEquals(2, ((JsonElement) Objects.requireNonNull(evaluator.getPath(attributes, "x.0.length"))).getAsInt());
+        assertNull(evaluator.getPath(attributes, "x.1"));
+        assertNull(evaluator.getPath(attributes, "x.00"));
+        assertNull(evaluator.getPath(attributes, "x.-1"));
+        assertNull(evaluator.getPath(attributes, "s.length"));
+    }
+
+    @Test
+    @DisplayName("A logical $elemMatch reads a nested array element's index keys")
+    void test_logicalElemMatchOnNestedArrays() {
+        ConditionEvaluator evaluator = new ConditionEvaluator();
+        JsonObject attributes = condition("{\"x\": [[1]]}");
+
+        assertTrue(evaluator.evaluateCondition(attributes, condition("{\"x\": {\"$elemMatch\": {\"$or\": [{\"0\": 1}]}}}"), null));
+        assertTrue(evaluator.evaluateCondition(attributes, condition("{\"x\": {\"$elemMatch\": {\"$and\": [{\"length\": 1}]}}}"), null));
+        assertFalse(evaluator.evaluateCondition(attributes, condition("{\"x\": {\"$elemMatch\": {\"$or\": [{\"0\": 2}]}}}"), null));
+
+        JsonObject savedGroups = condition("{\"g\": {\"type\": \"list\", \"attributeKey\": \"0\", \"values\": [1]}}");
+        assertTrue(evaluator.evaluateCondition(attributes, condition("{\"x\": {\"$elemMatch\": {\"$savedGroup\": {\"id\": \"g\"}}}}"), savedGroups));
+    }
+
+    @Test
     @DisplayName("Numeric comparisons keep double precision, matching the JS reference SDK")
     void test_numericComparison_usesDoublePrecision() {
         // The JS SDK compares with native `<`/`>` on IEEE-754 doubles (packages/sdk-js/src/mongrule.ts).

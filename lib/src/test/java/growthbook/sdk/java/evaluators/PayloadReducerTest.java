@@ -180,6 +180,25 @@ class PayloadReducerTest {
     }
 
     @Test
+    @DisplayName("Verify: conditions that match like JS are removed and the rule's force kept")
+    void matchingConditionsAreRemoved() {
+        // Given: a logical $elemMatch on nested arrays, which matches in JS
+        String[][] cases = {
+                {"{\"x\": [[1]]}", "{\"x\": {\"$elemMatch\": {\"$or\": [{\"0\": 1}]}}}"},
+        };
+        for (String[] c : cases) {
+            JsonObject payload = parse("{\"features\": {\"f\": {\"defaultValue\": false, \"rules\": [{\"force\": true, \"condition\": " + c[1] + "}]}}}");
+
+            // When
+            JsonObject reduced = PayloadReducer.reducePayload(payload, parse(c[0]), null);
+
+            // Then
+            assertEquals(parse("{\"defaultValue\": false, \"rules\": [{\"force\": true}]}"),
+                    reduced.getAsJsonObject("features").get("f"), c[1]);
+        }
+    }
+
+    @Test
     @DisplayName("Verify: null attributes and options mean nothing is known and nothing is filtered")
     void nullAttributesAndOptions() {
         // Given

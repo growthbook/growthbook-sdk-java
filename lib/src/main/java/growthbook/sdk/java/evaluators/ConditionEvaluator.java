@@ -41,6 +41,9 @@ public class ConditionEvaluator implements IConditionEvaluator {
      */
     private static final List<String> CONDITION_OPERATORS = Arrays.asList("$or", "$nor", "$and", "$savedGroup");
 
+    /** A canonical array index short enough to parse as an int. */
+    private static final Pattern ARRAY_INDEX = Pattern.compile("0|[1-9][0-9]{0,8}");
+
     private static final String SAVED_GROUP = "$savedGroup";
 
     /**
@@ -176,12 +179,34 @@ public class ConditionEvaluator implements IConditionEvaluator {
 
         JsonElement element = attributes;
         for (String segment : path.split("\\.")) {
-            if (!(element instanceof JsonObject)) {
+            if (element instanceof JsonObject) {
+                element = ((JsonObject) element).get(segment);
+            } else if (element instanceof JsonArray) {
+                element = arrayOwnKey((JsonArray) element, segment);
+            } else {
                 return null;
             }
-            element = ((JsonObject) element).get(segment);
         }
         return element;
+    }
+
+    /**
+     * Reads one of a JS array's own keys: a canonical index ({@code "0"}, {@code "1"}, ...) or
+     * {@code "length"}.
+     *
+     * @return the value at that key, or {@code null} if the array has no such own key
+     */
+    @Nullable
+    private static JsonElement arrayOwnKey(JsonArray array, String key) {
+        if ("length".equals(key)) {
+            return new JsonPrimitive(array.size());
+        }
+        // "01", "-1" and "+1" aren't own keys; a long run of digits is past any index
+        if (!ARRAY_INDEX.matcher(key).matches()) {
+            return null;
+        }
+        int index = Integer.parseInt(key);
+        return index < array.size() ? array.get(index) : null;
     }
 
     /**
