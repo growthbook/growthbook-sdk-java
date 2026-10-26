@@ -782,7 +782,8 @@ public class ConditionEvaluator implements IConditionEvaluator {
     JsonElement pruneCondition(JsonObject attributes, JsonObject condition, @Nullable JsonObject savedGroups) {
         try {
             return pruneEntries(attributes, condition, new Scope(savedGroups));
-        } catch (RuntimeException e) {
+        } catch (RuntimeException | StackOverflowError e) {
+            // A very long chain of group references can exhaust the stack; keep it as written
             return condition;
         }
     }
@@ -800,7 +801,7 @@ public class ConditionEvaluator implements IConditionEvaluator {
         reference.addProperty("id", groupId);
         try {
             return pruneSavedGroupReference(attributes, reference, new Scope(savedGroups));
-        } catch (RuntimeException e) {
+        } catch (RuntimeException | StackOverflowError e) {
             return null;
         }
     }

@@ -98,6 +98,88 @@ class PayloadReducerTest {
     }
 
     @Test
+    @DisplayName("Verify: many condition groups sharing one large list group are all kept")
+    void manyGroupsSharingALargeList() {
+        // Given
+        JsonArray values = new JsonArray();
+        for (int i = 0; i < 50_000; i++) {
+            values.add("user-" + i);
+        }
+        JsonObject big = new JsonObject();
+        big.addProperty("type", "list");
+        big.addProperty("attributeKey", "id");
+        big.add("values", values);
+        JsonObject savedGroups = new JsonObject();
+        savedGroups.add("big", big);
+        JsonArray rules = new JsonArray();
+        for (int i = 0; i < 1_000; i++) {
+            savedGroups.add("g" + i, parse("{\"type\": \"condition\", \"condition\": {\"$or\": [{\"$savedGroup\": {\"id\": \"big\"}}, {\"plan\": \"p" + i + "\"}]}}"));
+            rules.add(parse("{\"condition\": {\"$savedGroup\": {\"id\": \"g" + i + "\"}}, \"force\": " + i + "}"));
+        }
+        JsonObject feature = new JsonObject();
+        feature.addProperty("defaultValue", -1);
+        feature.add("rules", rules);
+        JsonObject features = new JsonObject();
+        features.add("f", feature);
+        JsonObject payload = new JsonObject();
+        payload.add("features", features);
+        payload.add("savedGroups", savedGroups);
+
+        // When
+        JsonObject reduced = PayloadReducer.reducePayload(payload, new JsonObject(), null);
+
+        // Then
+        assertEquals(savedGroups, reduced.getAsJsonObject("savedGroups"));
+        assertEquals(features, reduced.getAsJsonObject("features"));
+    }
+
+    @Test
+    @DisplayName("Verify: condition groups on a cycle, including one that references itself, are kept as written")
+    void groupsOnCyclesAreKeptAsWritten() {
+        // Given
+        JsonObject payload = parse("{\"features\": {\"f\": {\"defaultValue\": false, \"rules\": ["
+                + "{\"condition\": {\"$savedGroup\": {\"id\": \"b\"}}, \"force\": true},"
+                + "{\"condition\": {\"$savedGroup\": {\"id\": \"self\"}}, \"force\": true},"
+                + "{\"condition\": {\"$savedGroup\": {\"id\": \"plain\"}}, \"force\": true}]}},"
+                + " \"savedGroups\": {"
+                + "\"a\": {\"type\": \"condition\", \"condition\": {\"$or\": [{\"$savedGroup\": {\"id\": \"b\"}}, {\"x\": true}], \"y\": true}},"
+                + "\"b\": {\"type\": \"condition\", \"condition\": {\"$not\": {\"$savedGroup\": {\"id\": \"a\"}}}},"
+                + "\"self\": {\"type\": \"condition\", \"condition\": {\"$or\": [{\"$savedGroup\": {\"id\": \"self\"}}, {\"x\": true}], \"y\": true}},"
+                + "\"plain\": {\"type\": \"condition\", \"condition\": {\"x\": true, \"y\": true}}}}");
+
+        // When
+        JsonObject reduced = PayloadReducer.reducePayload(payload, parse("{\"y\": true}"), null);
+
+        // Then
+        JsonObject groups = reduced.getAsJsonObject("savedGroups");
+        assertEquals(payload.getAsJsonObject("savedGroups").get("a"), groups.get("a"));
+        assertEquals(payload.getAsJsonObject("savedGroups").get("b"), groups.get("b"));
+        assertEquals(payload.getAsJsonObject("savedGroups").get("self"), groups.get("self"));
+        assertEquals(parse("{\"type\": \"condition\", \"condition\": {\"x\": true}}"), groups.get("plain"));
+    }
+
+    @Test
+    @DisplayName("Verify: a long chain of group references doesn't overflow the stack")
+    void longChainOfGroupReferences() {
+        // Given
+        int length = 20_000;
+        JsonObject savedGroups = new JsonObject();
+        for (int i = 0; i < length; i++) {
+            String next = i + 1 < length ? "{\"$savedGroup\": {\"id\": \"c" + (i + 1) + "\"}}" : "{\"x\": 1}";
+            savedGroups.add("c" + i, parse("{\"type\": \"condition\", \"condition\": " + next + "}"));
+        }
+        JsonObject payload = parse("{\"features\": {\"f\": {\"defaultValue\": false, \"rules\": ["
+                + "{\"condition\": {\"items\": {\"$elemMatch\": {\"$savedGroup\": {\"id\": \"c0\"}}}}, \"force\": true}]}}}");
+        payload.add("savedGroups", savedGroups);
+
+        // When
+        JsonObject reduced = PayloadReducer.reducePayload(payload, new JsonObject(), null);
+
+        // Then
+        assertEquals(savedGroups, reduced.getAsJsonObject("savedGroups"));
+    }
+
+    @Test
     @DisplayName("Verify: null attributes and options mean nothing is known and nothing is filtered")
     void nullAttributesAndOptions() {
         // Given

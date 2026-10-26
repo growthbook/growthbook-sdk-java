@@ -9,7 +9,10 @@ import growthbook.sdk.java.model.PayloadFilters;
 import growthbook.sdk.java.model.ReducePayloadOptions;
 
 import javax.annotation.Nullable;
+import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.Deque;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -118,17 +121,17 @@ public final class PayloadReducer {
             // Groups that keep their condition as written: those evaluated against something
             // other than the user (each item in $elemMatch, or the parent's value in a
             // prerequisite), and the groups those reference
-            Set<String> seen = new HashSet<>();
             JsonArray reduced = new JsonArray();
             reduced.add(features);
             reduced.add(experiments);
             reduced.add(contextualBandits);
-            markAsWritten(reduced, true, seen);
+            markAsWritten(reduced);
+            Set<String> onCycle = groupsOnCycles();
 
             Map<String, JsonElement> groups = new LinkedHashMap<>();
-            keepSavedGroups(features, groups);
-            keepSavedGroups(experiments, groups);
-            keepSavedGroups(contextualBandits, groups);
+            keepSavedGroups(features, groups, onCycle);
+            keepSavedGroups(experiments, groups, onCycle);
+            keepSavedGroups(contextualBandits, groups, onCycle);
             JsonObject reducedGroups = new JsonObject();
             for (Map.Entry<String, JsonElement> entry : groups.entrySet()) {
                 reducedGroups.add(entry.getKey(), entry.getValue());
@@ -283,99 +286,192 @@ public final class PayloadReducer {
             return bandits;
         }
 
-        private void markAsWritten(@Nullable JsonElement value, boolean user, Set<String> seen) {
-            if (value == null) {
-                return;
-            }
-            if (ConditionEvaluator.isString(value)) {
-                String id = value.getAsString();
-                if (!savedGroups.has(id) || asWritten.contains(id) || (user && seen.contains(id))) {
-                    return;
-                }
-                (user ? seen : asWritten).add(id);
-                markAsWritten(savedGroups.get(id), user, seen);
-            } else if (value.isJsonObject()) {
-                for (Map.Entry<String, JsonElement> entry : value.getAsJsonObject().entrySet()) {
-                    String key = entry.getKey();
-                    markAsWritten(entry.getValue(), user && !key.equals("$elemMatch") && !key.equals("parentConditions"), seen);
-                }
-            } else if (value.isJsonArray()) {
-                for (JsonElement element : value.getAsJsonArray()) {
-                    markAsWritten(element, user, seen);
+        /**
+         * Marks the groups that keep their condition as written. Walks with an explicit stack, so a
+         * long chain of group references can't overflow the call stack.
+         */
+        private void markAsWritten(JsonElement root) {
+            Set<String> seen = new HashSet<>();
+            Deque<JsonElement> values = new ArrayDeque<>();
+            Deque<Boolean> users = new ArrayDeque<>();
+            values.push(root);
+            users.push(true);
+            while (!values.isEmpty()) {
+                JsonElement value = values.pop();
+                boolean user = users.pop();
+                if (ConditionEvaluator.isString(value)) {
+                    String id = value.getAsString();
+                    if (!savedGroups.has(id) || asWritten.contains(id) || (user && seen.contains(id))) {
+                        continue;
+                    }
+                    (user ? seen : asWritten).add(id);
+                    values.push(savedGroups.get(id));
+                    users.push(user);
+                } else if (value.isJsonObject()) {
+                    for (Map.Entry<String, JsonElement> entry : value.getAsJsonObject().entrySet()) {
+                        String key = entry.getKey();
+                        values.push(entry.getValue());
+                        users.push(user && !key.equals("$elemMatch") && !key.equals("parentConditions"));
+                    }
+                } else if (value.isJsonArray()) {
+                    for (JsonElement element : value.getAsJsonArray()) {
+                        values.push(element);
+                        users.push(user);
+                    }
                 }
             }
         }
 
         /**
-         * A group on a cycle can't be reduced on its own: its result depends on which group the
-         * evaluation entered the cycle from.
+         * The condition groups that can reach themselves through saved-group references. A group on
+         * a cycle can't be reduced on its own: its result depends on which group the evaluation
+         * entered the cycle from. Each group's references are collected once, then Tarjan's
+         * algorithm finds the cycles in one iterative pass.
          */
-        private boolean reaches(String from, String to, Set<String> visited) {
-            List<String> found = new ArrayList<>();
-            collectGroupIds(savedGroups.get(from), found);
-            for (String id : found) {
-                if (id.equals(to)) {
-                    return true;
+        private Set<String> groupsOnCycles() {
+            Map<String, List<String>> references = new HashMap<>();
+            for (Map.Entry<String, JsonElement> entry : savedGroups.entrySet()) {
+                references.put(entry.getKey(), groupIdsIn(entry.getValue()));
+            }
+
+            Set<String> onCycle = new HashSet<>();
+            Map<String, Integer> index = new HashMap<>();
+            Map<String, Integer> low = new HashMap<>();
+            Deque<String> component = new ArrayDeque<>();
+            Set<String> inComponent = new HashSet<>();
+            for (String start : references.keySet()) {
+                if (index.containsKey(start)) {
+                    continue;
                 }
-                if (visited.add(id) && reaches(id, to, visited)) {
-                    return true;
+                // Each frame is a group and the position of the next reference to follow
+                Deque<String> frames = new ArrayDeque<>();
+                Deque<Integer> positions = new ArrayDeque<>();
+                frames.push(start);
+                positions.push(0);
+                index.put(start, index.size());
+                low.put(start, index.get(start));
+                component.push(start);
+                inComponent.add(start);
+                while (!frames.isEmpty()) {
+                    String id = frames.peek();
+                    int position = positions.pop();
+                    List<String> next = references.get(id);
+                    if (position < next.size()) {
+                        positions.push(position + 1);
+                        String to = next.get(position);
+                        if (to.equals(id)) {
+                            onCycle.add(id);
+                        }
+                        if (!index.containsKey(to)) {
+                            index.put(to, index.size());
+                            low.put(to, index.get(to));
+                            component.push(to);
+                            inComponent.add(to);
+                            frames.push(to);
+                            positions.push(0);
+                        } else if (inComponent.contains(to)) {
+                            low.put(id, Math.min(low.get(id), index.get(to)));
+                        }
+                        continue;
+                    }
+                    frames.pop();
+                    if (!frames.isEmpty()) {
+                        String parent = frames.peek();
+                        low.put(parent, Math.min(low.get(parent), low.get(id)));
+                    }
+                    if (low.get(id).equals(index.get(id))) {
+                        List<String> members = new ArrayList<>();
+                        String member;
+                        do {
+                            member = component.pop();
+                            inComponent.remove(member);
+                            members.add(member);
+                        } while (!member.equals(id));
+                        if (members.size() > 1) {
+                            onCycle.addAll(members);
+                        }
+                    }
                 }
             }
-            return false;
+            return onCycle;
         }
 
-        private void collectGroupIds(@Nullable JsonElement value, List<String> found) {
-            if (value == null) {
-                return;
+        /**
+         * The saved group ids that appear as strings anywhere in a value.
+         */
+        private List<String> groupIdsIn(JsonElement root) {
+            List<String> found = new ArrayList<>();
+            Deque<JsonElement> values = new ArrayDeque<>();
+            values.push(root);
+            while (!values.isEmpty()) {
+                JsonElement value = values.pop();
+                if (ConditionEvaluator.isString(value)) {
+                    if (savedGroups.has(value.getAsString())) {
+                        found.add(value.getAsString());
+                    }
+                } else if (value.isJsonObject()) {
+                    for (Map.Entry<String, JsonElement> entry : value.getAsJsonObject().entrySet()) {
+                        values.push(entry.getValue());
+                    }
+                } else if (value.isJsonArray()) {
+                    for (JsonElement element : value.getAsJsonArray()) {
+                        values.push(element);
+                    }
+                }
             }
-            if (ConditionEvaluator.isString(value)) {
-                if (savedGroups.has(value.getAsString())) {
-                    found.add(value.getAsString());
-                }
-            } else if (value.isJsonObject()) {
-                for (Map.Entry<String, JsonElement> entry : value.getAsJsonObject().entrySet()) {
-                    collectGroupIds(entry.getValue(), found);
-                }
-            } else if (value.isJsonArray()) {
-                for (JsonElement element : value.getAsJsonArray()) {
-                    collectGroupIds(element, found);
-                }
-            }
+            return found;
         }
 
         /**
          * Keeps each saved group whose id appears as a string anywhere, with condition groups
-         * reduced. This needs no list of the operators that reference groups.
+         * reduced. This needs no list of the operators that reference groups. Walks with an
+         * explicit stack, in the same order as a recursive walk, so a long chain of group
+         * references can't overflow the call stack.
          */
-        private void keepSavedGroups(@Nullable JsonElement value, Map<String, JsonElement> groups) {
-            if (value == null) {
+        private void keepSavedGroups(@Nullable JsonElement root, Map<String, JsonElement> groups, Set<String> onCycle) {
+            if (root == null) {
                 return;
             }
-            if (ConditionEvaluator.isString(value)) {
-                String id = value.getAsString();
-                if (!savedGroups.has(id) || groups.containsKey(id)) {
-                    return;
+            Deque<JsonElement> values = new ArrayDeque<>();
+            values.push(root);
+            while (!values.isEmpty()) {
+                JsonElement value = values.pop();
+                if (ConditionEvaluator.isString(value)) {
+                    String id = value.getAsString();
+                    if (!savedGroups.has(id) || groups.containsKey(id)) {
+                        continue;
+                    }
+                    JsonElement entry = savedGroups.get(id);
+                    JsonElement condition = asWritten.contains(id) || onCycle.contains(id)
+                            ? null
+                            : EVALUATOR.pruneSavedGroup(attributes, id, savedGroups);
+                    JsonElement kept = entry;
+                    if (condition != null && condition.isJsonObject() && entry.isJsonObject()) {
+                        JsonObject reduced = shallowCopy(entry.getAsJsonObject());
+                        reduced.add("condition", condition);
+                        kept = reduced;
+                    }
+                    groups.put(id, kept);
+                    values.push(kept);
+                } else if (value.isJsonObject()) {
+                    List<JsonElement> children = new ArrayList<>();
+                    for (Map.Entry<String, JsonElement> entry : value.getAsJsonObject().entrySet()) {
+                        children.add(entry.getValue());
+                    }
+                    pushReversed(values, children);
+                } else if (value.isJsonArray()) {
+                    List<JsonElement> children = new ArrayList<>();
+                    for (JsonElement element : value.getAsJsonArray()) {
+                        children.add(element);
+                    }
+                    pushReversed(values, children);
                 }
-                JsonElement entry = savedGroups.get(id);
-                JsonElement condition = asWritten.contains(id) || reaches(id, id, new HashSet<>())
-                        ? null
-                        : EVALUATOR.pruneSavedGroup(attributes, id, savedGroups);
-                JsonElement kept = entry;
-                if (condition != null && condition.isJsonObject() && entry.isJsonObject()) {
-                    JsonObject reduced = shallowCopy(entry.getAsJsonObject());
-                    reduced.add("condition", condition);
-                    kept = reduced;
-                }
-                groups.put(id, kept);
-                keepSavedGroups(kept, groups);
-            } else if (value.isJsonObject()) {
-                for (Map.Entry<String, JsonElement> entry : value.getAsJsonObject().entrySet()) {
-                    keepSavedGroups(entry.getValue(), groups);
-                }
-            } else if (value.isJsonArray()) {
-                for (JsonElement element : value.getAsJsonArray()) {
-                    keepSavedGroups(element, groups);
-                }
+            }
+        }
+
+        private static void pushReversed(Deque<JsonElement> values, List<JsonElement> children) {
+            for (int i = children.size() - 1; i >= 0; i--) {
+                values.push(children.get(i));
             }
         }
 
