@@ -83,6 +83,21 @@ class PayloadReducerTest {
     }
 
     @Test
+    @DisplayName("Verify: a malformed condition group is kept as written instead of failing the reduction")
+    void malformedSavedGroupIsKeptAsWritten() {
+        // Given
+        JsonObject payload = parse("{\"features\": {\"f\": {\"defaultValue\": false, \"rules\": [{\"condition\": {\"$savedGroup\": {\"id\": \"g\"}}, \"force\": true}]}},"
+                + " \"savedGroups\": {\"g\": {\"type\": \"condition\", \"condition\": {\"$not\": null}}}}");
+
+        // When
+        JsonObject reduced = PayloadReducer.reducePayload(payload, parse("{\"id\": \"1\"}"), null);
+
+        // Then
+        assertEquals(payload.getAsJsonObject("savedGroups"), reduced.getAsJsonObject("savedGroups"));
+        assertEquals(payload.getAsJsonObject("features"), reduced.getAsJsonObject("features"));
+    }
+
+    @Test
     @DisplayName("Verify: null attributes and options mean nothing is known and nothing is filtered")
     void nullAttributesAndOptions() {
         // Given

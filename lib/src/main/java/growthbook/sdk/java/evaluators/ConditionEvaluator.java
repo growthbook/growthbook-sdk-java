@@ -791,14 +791,18 @@ public class ConditionEvaluator implements IConditionEvaluator {
      * Prunes the saved group with this id.
      *
      * @return the group's result once decided; its condition minus every decided branch for a
-     * condition group that isn't; or {@code null} while a list group's attribute is unknown or the
-     * group's type is unknown
+     * condition group that isn't; or {@code null} while a list group's attribute is unknown, the
+     * group's type is unknown, or its condition throws (it is then kept as written)
      */
     @Nullable
     JsonElement pruneSavedGroup(JsonObject attributes, String groupId, @Nullable JsonObject savedGroups) {
         JsonObject reference = new JsonObject();
         reference.addProperty("id", groupId);
-        return pruneSavedGroupReference(attributes, reference, new Scope(savedGroups));
+        try {
+            return pruneSavedGroupReference(attributes, reference, new Scope(savedGroups));
+        } catch (RuntimeException e) {
+            return null;
+        }
     }
 
     @Nullable
