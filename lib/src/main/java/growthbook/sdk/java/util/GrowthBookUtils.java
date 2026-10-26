@@ -506,6 +506,8 @@ public class GrowthBookUtils {
      *     <li>If range is null and coverage is zero, return false immediately.
      *     This catches an edge case where the bucket is zero and users are let through when they shouldn't be</li>
      *     <li>If hashValue is empty, return false immediately</li>
+     *     <li>With a coverage, the user is included when their hash is below it, so a coverage of
+     *     k/10000 includes exactly k hash buckets</li>
      * </ul>
      *
      * @param attributes JsonObject
@@ -554,7 +556,7 @@ public class GrowthBookUtils {
         if (range != null) {
             return GrowthBookUtils.inRange(hash, range);
         } else {
-            return hash <= coverage;
+            return hash < coverage;
         }
     }
 
