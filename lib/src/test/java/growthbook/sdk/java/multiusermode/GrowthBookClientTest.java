@@ -1094,6 +1094,48 @@ class GrowthBookClientTest {
         }
     }
 
+    @Test
+    void reducePayload_reducesTheSnapshotForGlobalAndUserAttributes() {
+        String featuresJson = "{\"f\": {\"defaultValue\": 0, \"rules\": ["
+                + "{\"condition\": {\"env\": \"dev\"}, \"force\": 1},"
+                + "{\"condition\": {\"country\": \"US\", \"plan\": \"pro\"}, \"force\": 2},"
+                + "{\"condition\": {\"id\": {\"$inGroup\": \"grp\"}}, \"force\": 3}]}}";
+        JsonObject savedGroups = jsonUtils.gson.fromJson("{\"grp\": [\"a\"], \"unused\": [\"b\"]}", JsonObject.class);
+
+        mockRepository = createMockRepository();
+        mockBuilder = createMockBuilder(mockRepository);
+        when(mockRepository.getFeatureSnapshot()).thenReturn(
+                FeatureSnapshot.of(featuresJson, savedGroups.toString(), new HashMap<>(), savedGroups));
+
+        try (MockedStatic<GBFeaturesRepository> mockedStatic = mockStatic(GBFeaturesRepository.class)) {
+            mockedStatic.when(GBFeaturesRepository::builder).thenReturn(mockBuilder);
+
+            Options options = createDefaultOptions(null);
+            options.setGlobalAttributes("{\"env\": \"dev\", \"country\": \"US\"}");
+            GrowthBookClient client = new GrowthBookClient(options);
+            client.initialize();
+
+            UserContext userContext = UserContext.builder().attributesJson("{\"env\": \"prod\"}").build();
+            JsonObject reduced = client.reducePayload(userContext);
+
+            JsonObject expected = jsonUtils.gson.fromJson("{\"features\": {\"f\": {\"defaultValue\": 0, \"rules\": ["
+                    + "{\"condition\": {\"$not\": {}}, \"force\": null},"
+                    + "{\"condition\": {\"plan\": \"pro\"}, \"force\": 2},"
+                    + "{\"condition\": {\"id\": {\"$inGroup\": \"grp\"}}, \"force\": 3}]}},"
+                    + "\"experiments\": [], \"savedGroups\": {\"grp\": [\"a\"]}}", JsonObject.class);
+            assertEquals(expected, reduced);
+        }
+    }
+
+    @Test
+    void reducePayload_beforeInitialize_returnsAnEmptyPayload() {
+        GrowthBookClient client = new GrowthBookClient(createDefaultOptions(null));
+
+        JsonObject reduced = client.reducePayload(null, null);
+
+        assertEquals(jsonUtils.gson.fromJson("{\"features\": {}, \"experiments\": [], \"savedGroups\": {}}", JsonObject.class), reduced);
+    }
+
     private Options createDefaultOptions(FeatureRefreshCallback callback) {
         return Options.builder()
                 .apiHost("https://custom.growthbook.io")

@@ -41,6 +41,8 @@ public class ConditionEvaluator implements IConditionEvaluator {
      */
     private static final List<String> CONDITION_OPERATORS = Arrays.asList("$or", "$nor", "$and", "$savedGroup");
 
+    private static final String SAVED_GROUP = "$savedGroup";
+
     /**
      * <b>INTERNAL</b>: The saved groups a condition is evaluated against, and the group ids already
      * being resolved, to stop reference cycles. Immutable; a nested group gets a copy.
@@ -119,6 +121,9 @@ public class ConditionEvaluator implements IConditionEvaluator {
 
     @Nullable
     private Boolean evalConditionEntry(String key, JsonElement value, @Nullable JsonElement attributes, Scope scope) {
+        if (SAVED_GROUP.equals(key)) {
+            return evalSavedGroupReference(attributes, value, scope);
+        }
         Condition operator = Condition.fromValue(key);
         return operator != null
                 ? operator.apply(attributes, value, scope, this)
@@ -591,7 +596,7 @@ public class ConditionEvaluator implements IConditionEvaluator {
     /**
      * Tests whether {@code actual} (a primitive or array) is contained in the {@code expected} array.
      */
-    private boolean isIn(JsonElement actual, JsonArray expected, boolean caseInsensitive) {
+    static boolean isIn(@Nullable JsonElement actual, JsonArray expected, boolean caseInsensitive) {
         if (actual == null) {
             return false;
         }
@@ -666,6 +671,236 @@ public class ConditionEvaluator implements IConditionEvaluator {
         } catch (Exception e) {
             return negate;
         }
+    }
+
+    /**
+     * What a {@code $savedGroup} reference resolves to before it is evaluated: a decided result, an
+     * unknown group type, a list group (attribute key and values), or a condition group.
+     */
+    private static final class SavedGroupTarget {
+        @Nullable
+        final Boolean decided;
+        @Nullable
+        final String listKey;
+        @Nullable
+        final JsonArray listValues;
+        @Nullable
+        final JsonObject condition;
+        @Nullable
+        final Scope nested;
+
+        private SavedGroupTarget(@Nullable Boolean decided, @Nullable String listKey, @Nullable JsonArray listValues,
+                                 @Nullable JsonObject condition, @Nullable Scope nested) {
+            this.decided = decided;
+            this.listKey = listKey;
+            this.listValues = listValues;
+            this.condition = condition;
+            this.nested = nested;
+        }
+
+        static SavedGroupTarget decided(@Nullable Boolean result) {
+            return new SavedGroupTarget(result, null, null, null, null);
+        }
+
+        boolean isDecided() {
+            return listKey == null && condition == null;
+        }
+    }
+
+    /**
+     * Resolves a {@code $savedGroup} reference ({@code {"id": ..., "attributeKey": ...}}).
+     * Anything unrecognized matches nobody; a group type added after this SDK was built is unknown.
+     */
+    private static SavedGroupTarget resolveSavedGroup(@Nullable JsonElement reference, Scope scope) {
+        if (reference == null || !reference.isJsonObject()) {
+            return SavedGroupTarget.decided(false);
+        }
+        JsonObject ref = reference.getAsJsonObject();
+        String id = stringField(ref, "id");
+        if (id == null || scope.visited.contains(id)) {
+            return SavedGroupTarget.decided(false);
+        }
+        // Falling back to the entry's attribute would check a different population
+        JsonElement attributeKey = ref.get("attributeKey");
+        if (attributeKey != null && !isString(attributeKey)) {
+            return SavedGroupTarget.decided(false);
+        }
+
+        JsonElement entry = scope.savedGroups.get(id);
+        if (entry == null || !entry.isJsonObject()) {
+            return SavedGroupTarget.decided(false);
+        }
+        JsonObject group = entry.getAsJsonObject();
+        String type = stringField(group, "type");
+
+        if ("list".equals(type)) {
+            String key = attributeKey != null ? attributeKey.getAsString() : stringField(group, "attributeKey");
+            JsonElement values = group.get("values");
+            if (key == null || values == null || !values.isJsonArray()) {
+                return SavedGroupTarget.decided(false);
+            }
+            return new SavedGroupTarget(null, key, values.getAsJsonArray(), null, null);
+        }
+
+        if ("condition".equals(type)) {
+            // A condition group has no single attribute, so any override is ignored
+            JsonElement condition = group.get("condition");
+            if (condition == null || !condition.isJsonObject()) {
+                return SavedGroupTarget.decided(false);
+            }
+            return new SavedGroupTarget(null, null, null, condition.getAsJsonObject(), scope.visiting(id));
+        }
+
+        return SavedGroupTarget.decided(null);
+    }
+
+    /**
+     * {@code $savedGroup}: whether the attributes are in the referenced saved group.
+     *
+     * @return the result, or null for a saved group type this SDK doesn't know
+     */
+    @Nullable
+    private Boolean evalSavedGroupReference(@Nullable JsonElement attributes, @Nullable JsonElement reference, Scope scope) {
+        SavedGroupTarget target = resolveSavedGroup(reference, scope);
+        if (target.isDecided()) {
+            return target.decided;
+        }
+        if (target.listKey != null) {
+            return isIn(resolvePath(attributes, target.listKey), target.listValues, false);
+        }
+        return evalCondition(attributes, target.condition, target.nested);
+    }
+
+    /**
+     * Partially evaluates a condition when only some attributes are known. Attributes missing
+     * from {@code attributes} are unknown, and so is any nested path.
+     *
+     * @return {@code true} or {@code false} once the result can't depend on unknown attributes,
+     * otherwise the condition minus every branch that is already decided. A condition that
+     * throws, such as a malformed one, is returned as written.
+     */
+    JsonElement pruneCondition(JsonObject attributes, JsonObject condition, @Nullable JsonObject savedGroups) {
+        try {
+            return pruneEntries(attributes, condition, new Scope(savedGroups));
+        } catch (RuntimeException e) {
+            return condition;
+        }
+    }
+
+    /**
+     * Prunes the saved group with this id.
+     *
+     * @return the group's result once decided; its condition minus every decided branch for a
+     * condition group that isn't; or {@code null} while a list group's attribute is unknown or the
+     * group's type is unknown
+     */
+    @Nullable
+    JsonElement pruneSavedGroup(JsonObject attributes, String groupId, @Nullable JsonObject savedGroups) {
+        JsonObject reference = new JsonObject();
+        reference.addProperty("id", groupId);
+        return pruneSavedGroupReference(attributes, reference, new Scope(savedGroups));
+    }
+
+    @Nullable
+    private JsonElement pruneSavedGroupReference(JsonObject attributes, @Nullable JsonElement reference, Scope scope) {
+        SavedGroupTarget target = resolveSavedGroup(reference, scope);
+        if (target.isDecided()) {
+            return target.decided == null ? null : new JsonPrimitive(target.decided);
+        }
+        if (target.listKey != null) {
+            if (!isKnown(attributes, target.listKey)) {
+                return null;
+            }
+            return new JsonPrimitive(isIn(resolvePath(attributes, target.listKey), target.listValues, false));
+        }
+        return pruneEntries(attributes, target.condition, target.nested);
+    }
+
+    /**
+     * @return a boolean primitive once decided, otherwise the undecided entries
+     */
+    private JsonElement pruneEntries(JsonObject attributes, JsonObject condition, Scope scope) {
+        JsonObject out = new JsonObject();
+        for (Map.Entry<String, JsonElement> entry : condition.entrySet()) {
+            String key = entry.getKey();
+            JsonElement value = entry.getValue();
+            JsonElement pruned;
+            switch (key) {
+                case "$or":
+                case "$nor":
+                case "$and":
+                    pruned = pruneList(attributes, value.getAsJsonArray(), scope, !"$and".equals(key));
+                    break;
+                case "$not":
+                    pruned = pruneEntries(attributes, value.getAsJsonObject(), scope);
+                    break;
+                case SAVED_GROUP:
+                    pruned = pruneSavedGroupReference(attributes, value, scope);
+                    // Keep an undecided reference as is rather than inlining the group
+                    if (!isBoolean(pruned)) {
+                        pruned = null;
+                    }
+                    break;
+                default:
+                    // null when the attribute is unknown, or the value uses an operator this SDK
+                    // doesn't support, which the client's SDK may
+                    Boolean matched = isKnown(attributes, key)
+                            ? evalConditionValue(value, resolvePath(attributes, key), scope, false)
+                            : null;
+                    pruned = matched == null ? null : new JsonPrimitive(matched);
+            }
+            // $not and $nor pass when what they hold fails
+            if (("$not".equals(key) || "$nor".equals(key)) && isBoolean(pruned)) {
+                pruned = new JsonPrimitive(!pruned.getAsBoolean());
+            }
+
+            if (isBoolean(pruned) && !pruned.getAsBoolean()) {
+                return new JsonPrimitive(false);
+            }
+            if (pruned == null) {
+                out.add(key, value);
+            } else if (!isBoolean(pruned)) {
+                out.add(key, pruned);
+            }
+        }
+        return out.size() > 0 ? out : new JsonPrimitive(true);
+    }
+
+    /**
+     * Prunes an {@code $or} (or an {@code $and}) list.
+     *
+     * @return the conditions still undecided, or the list's result once there are none
+     */
+    private JsonElement pruneList(JsonObject attributes, JsonArray conditions, Scope scope, boolean or) {
+        JsonArray out = new JsonArray();
+        for (JsonElement condition : conditions) {
+            JsonElement pruned = pruneEntries(attributes, condition.getAsJsonObject(), scope);
+            if (isBoolean(pruned)) {
+                // One passing condition decides an $or, and one failing condition an $and
+                if (or == pruned.getAsBoolean()) {
+                    return pruned;
+                }
+            } else {
+                out.add(pruned);
+            }
+        }
+        if (out.size() > 0) {
+            return out;
+        }
+        // Every condition failed an $or, or passed an $and. Like evaluation, an empty $or passes.
+        return new JsonPrimitive(!or || conditions.isEmpty());
+    }
+
+    /**
+     * Whether a top-level attribute is known. A nested path is unknown, since a server may only
+     * have part of the object.
+     */
+    private static boolean isKnown(JsonObject attributes, String path) {
+        return !path.contains(".") && attributes.has(path);
+    }
+
+    static boolean isBoolean(@Nullable JsonElement value) {
+        return value != null && value.isJsonPrimitive() && value.getAsJsonPrimitive().isBoolean();
     }
 
     /**

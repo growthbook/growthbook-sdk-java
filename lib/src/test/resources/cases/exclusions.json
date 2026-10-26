@@ -1,7 +1,6 @@
 {
   "suites": {
-    "contextualBandit": "Contextual bandits are not supported by the Java SDK.",
-    "savedGroupReferencesV2": "savedGroupReferencesV2 is not supported by the Java SDK yet."
+    "contextualBandit": "Contextual bandits are not supported by the Java SDK."
   },
   "cases": {
     "feature": {

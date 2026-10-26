@@ -44,14 +44,21 @@ class ConditionEvaluatorTest {
 
     @Test
     void test_evaluateCondition_testCases() {
+        assertEvalConditionCasesPass(helper.evalConditionTestCases());
+    }
+
+    @Test
+    void test_savedGroupReferencesV2_evaluateCondition_testCases() {
+        assertEvalConditionCasesPass(helper.getTestCases().getAsJsonObject("savedGroupReferencesV2").getAsJsonArray("evalCondition"));
+    }
+
+    private void assertEvalConditionCasesPass(JsonArray testCases) {
         ArrayList<String> passedTests = new ArrayList<>();
         ArrayList<String> failedTests = new ArrayList<>();
 
         ArrayList<Integer> failingIndexes = new ArrayList<>();
 
         ConditionEvaluator evaluator = new ConditionEvaluator();
-
-        JsonArray testCases = helper.evalConditionTestCases();
 
         for (int i = 0; i < testCases.size(); i++) {
             resetErrorOutputStream();

@@ -52,7 +52,15 @@ class GrowthBookTest {
 
     @Test
     void test_evalFeature() {
-        JsonArray testCases = helper.featureTestCases();
+        assertFeatureCasesPass(helper.featureTestCases());
+    }
+
+    @Test
+    void test_savedGroupReferencesV2_evalFeature() {
+        assertFeatureCasesPass(helper.getTestCases().getAsJsonObject("savedGroupReferencesV2").getAsJsonArray("feature"));
+    }
+
+    private void assertFeatureCasesPass(JsonArray testCases) {
 
         ArrayList<String> passedTests = new ArrayList<>();
         ArrayList<String> failedTests = new ArrayList<>();
@@ -444,7 +452,15 @@ class GrowthBookTest {
 
     @Test
     void test_runExperiment() {
-        JsonArray testCases = helper.runTestCases();
+        assertRunCasesPass(helper.runTestCases());
+    }
+
+    @Test
+    void test_savedGroupReferencesV2_runExperiment() {
+        assertRunCasesPass(helper.getTestCases().getAsJsonObject("savedGroupReferencesV2").getAsJsonArray("run"));
+    }
+
+    private void assertRunCasesPass(JsonArray testCases) {
 
         ArrayList<String> passedTests = new ArrayList<>();
         ArrayList<String> failedTests = new ArrayList<>();
