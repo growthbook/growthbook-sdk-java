@@ -323,6 +323,17 @@ class ConditionEvaluatorTest {
     }
 
     @Test
+    @DisplayName("Numeric version operands are formatted like JS String(number)")
+    void test_numericVersionUsesJsNumberFormatting() {
+        ConditionEvaluator evaluator = new ConditionEvaluator();
+        JsonObject attributes = condition("{\"x\": 1e3, \"y\": 1.50}");
+
+        assertTrue(evaluator.evaluateCondition(attributes, condition("{\"x\": {\"$veq\": 1000}}"), null));
+        assertFalse(evaluator.evaluateCondition(attributes, condition("{\"x\": {\"$vne\": 1000.0}}"), null));
+        assertTrue(evaluator.evaluateCondition(attributes, condition("{\"y\": {\"$veq\": 1.5}}"), null));
+    }
+
+    @Test
     @DisplayName("Numeric comparisons keep double precision, matching the JS reference SDK")
     void test_numericComparison_usesDoublePrecision() {
         // The JS SDK compares with native `<`/`>` on IEEE-754 doubles (packages/sdk-js/src/mongrule.ts).

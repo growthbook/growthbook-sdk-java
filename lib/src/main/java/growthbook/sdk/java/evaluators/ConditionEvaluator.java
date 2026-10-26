@@ -398,8 +398,8 @@ public class ConditionEvaluator implements IConditionEvaluator {
         if (!isOrderable(actual, expected)) {
             return operator == Operator.VERSION_NE;
         }
-        int cmp = StringUtils.paddedVersionString(actual.getAsString())
-                .compareTo(StringUtils.paddedVersionString(expected.getAsString()));
+        int cmp = StringUtils.paddedVersionString(versionString(actual))
+                .compareTo(StringUtils.paddedVersionString(versionString(expected)));
         switch (operator) {
             case VERSION_GT:  return cmp > 0;
             case VERSION_GTE: return cmp >= 0;
@@ -409,6 +409,17 @@ public class ConditionEvaluator implements IConditionEvaluator {
             case VERSION_EQ:  return cmp == 0;
             default:          return false;
         }
+    }
+
+    /**
+     * A version operand as text. A number is formatted like JS {@code String(number)}, so
+     * {@code 1e3} and {@code 1000.0} are both {@code "1000"}, as they are in the JS SDK.
+     */
+    private static String versionString(JsonElement value) {
+        JsonPrimitive primitive = value.getAsJsonPrimitive();
+        return primitive.isNumber()
+                ? StringUtils.jsNumberToString(primitive.getAsDouble())
+                : primitive.getAsString();
     }
 
     /**
