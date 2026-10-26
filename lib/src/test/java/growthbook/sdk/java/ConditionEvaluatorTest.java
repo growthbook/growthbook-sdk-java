@@ -334,6 +334,17 @@ class ConditionEvaluatorTest {
     }
 
     @Test
+    @DisplayName("$regexi folds non-ASCII case, like a JS /i regex")
+    void test_caseInsensitiveRegexFoldsUnicode() {
+        ConditionEvaluator evaluator = new ConditionEvaluator();
+        JsonObject attributes = condition("{\"x\": \"\u00c9\"}");
+
+        assertTrue(evaluator.evaluateCondition(attributes, condition("{\"x\": {\"$regexi\": \"^\u00e9$\"}}"), null));
+        assertFalse(evaluator.evaluateCondition(attributes, condition("{\"x\": {\"$notRegexi\": \"^\u00e9$\"}}"), null));
+        assertFalse(evaluator.evaluateCondition(attributes, condition("{\"x\": {\"$regex\": \"^\u00e9$\"}}"), null));
+    }
+
+    @Test
     @DisplayName("Numeric comparisons keep double precision, matching the JS reference SDK")
     void test_numericComparison_usesDoublePrecision() {
         // The JS SDK compares with native `<`/`>` on IEEE-754 doubles (packages/sdk-js/src/mongrule.ts).

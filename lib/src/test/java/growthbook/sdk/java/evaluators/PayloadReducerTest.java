@@ -182,11 +182,12 @@ class PayloadReducerTest {
     @Test
     @DisplayName("Verify: conditions that match like JS are removed and the rule's force kept")
     void matchingConditionsAreRemoved() {
-        // Given: a logical $elemMatch on nested arrays, and a numeric version written with an
-        // exponent, both of which match in JS
+        // Given: a logical $elemMatch on nested arrays, a numeric version written with an
+        // exponent, and a case-insensitive regex on non-ASCII text, all of which match in JS
         String[][] cases = {
                 {"{\"x\": [[1]]}", "{\"x\": {\"$elemMatch\": {\"$or\": [{\"0\": 1}]}}}"},
                 {"{\"x\": 1e3}", "{\"x\": {\"$veq\": 1000}}"},
+                {"{\"x\": \"\u00c9\"}", "{\"x\": {\"$regexi\": \"^\u00e9$\"}}"},
         };
         for (String[] c : cases) {
             JsonObject payload = parse("{\"features\": {\"f\": {\"defaultValue\": false, \"rules\": [{\"force\": true, \"condition\": " + c[1] + "}]}}}");

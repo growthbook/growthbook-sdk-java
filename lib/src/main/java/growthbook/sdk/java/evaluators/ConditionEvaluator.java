@@ -700,7 +700,8 @@ public class ConditionEvaluator implements IConditionEvaluator {
         if (attributeDataType != DataType.STRING) {
             return negate;
         }
-        int flags = caseInsensitive ? Pattern.CASE_INSENSITIVE : 0;
+        // Like a JS /i regex, fold non-ASCII letters too ("É" matches "é")
+        int flags = caseInsensitive ? Pattern.CASE_INSENSITIVE | Pattern.UNICODE_CASE : 0;
         try {
             Matcher matcher = Pattern.compile(expected.getAsString(), flags).matcher(actual.getAsString());
             return negate != matcher.find();
