@@ -11,7 +11,13 @@ import growthbook.sdk.java.model.DataType;
 import lombok.extern.slf4j.Slf4j;
 
 import javax.annotation.Nullable;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -29,9 +35,51 @@ import java.util.regex.Pattern;
 public class ConditionEvaluator implements IConditionEvaluator {
 
     /**
+     * Keys a condition can have that aren't attributes, besides {@code $not}, which is also an
+     * operator on a value. On a value they never match, and in {@code $elemMatch} they make the
+     * operand a condition on each element's fields.
+     */
+    private static final List<String> CONDITION_OPERATORS = Arrays.asList("$or", "$nor", "$and", "$savedGroup");
+
+    /**
+     * <b>INTERNAL</b>: The saved groups a condition is evaluated against, and the group ids already
+     * being resolved, to stop reference cycles. Immutable; a nested group gets a copy.
+     */
+    static final class Scope {
+        final JsonObject savedGroups;
+        final Set<String> visited;
+
+        Scope(@Nullable JsonObject savedGroups) {
+            this(savedGroups != null ? savedGroups : new JsonObject(), Collections.<String>emptySet());
+        }
+
+        private Scope(JsonObject savedGroups, Set<String> visited) {
+            this.savedGroups = savedGroups;
+            this.visited = visited;
+        }
+
+        Scope visiting(String groupId) {
+            Set<String> next = new HashSet<>(visited);
+            next.add(groupId);
+            return new Scope(savedGroups, Collections.unmodifiableSet(next));
+        }
+    }
+
+    /**
+     * Negates a three-valued result: {@code null} (unknown) stays {@code null}.
+     */
+    @Nullable
+    static Boolean not(@Nullable Boolean result) {
+        return result == null ? null : !result;
+    }
+
+    /**
      * Evaluate a condition for a set of user attributes based on the provided condition.
      * The condition syntax closely resembles MongoDB's syntax.
      * This is defined in the Feature's targeting conditions' Advanced settings.
+     *
+     * <p>A condition that depends on an operator or saved group type this SDK doesn't support
+     * fails, including under {@code $not} and {@code $nor}. A malformed condition fails as a whole.
      *
      * @param attributes    A JsonObject of the user attributes to evaluate
      * @param conditionJson A JsonObject of the condition
@@ -40,8 +88,7 @@ public class ConditionEvaluator implements IConditionEvaluator {
     @Override
     public Boolean evaluateCondition(JsonObject attributes, JsonObject conditionJson, @Nullable JsonObject savedGroups) {
         try {
-            return conditionJson.entrySet().stream()
-                    .allMatch(entry -> matchesConditionEntry(entry.getKey(), entry.getValue(), attributes, savedGroups));
+            return Boolean.TRUE.equals(evalCondition(attributes, conditionJson, new Scope(savedGroups)));
         } catch (Exception exception) {
             log.error(exception.getMessage(), exception);
             return false;
@@ -49,15 +96,33 @@ public class ConditionEvaluator implements IConditionEvaluator {
     }
 
     /**
-     * Evaluates a single top-level condition entry: a logical operator ($or/$nor/$and/$not) is
-     * handled by its strategy (recursing back through this evaluator); any other key is treated as
-     * an attribute path and compared as a leaf value.
+     * Evaluates every entry of a condition: a logical operator ($or/$nor/$and/$not) is handled by
+     * its strategy (recursing back through this evaluator); any other key is treated as an
+     * attribute path and compared as a leaf value. Throws on a malformed condition.
+     *
+     * @return false if any entry fails; otherwise null if any entry is unknown, else true
      */
-    private boolean matchesConditionEntry(String key, JsonElement value, JsonObject attributes, @Nullable JsonObject savedGroups) {
+    @Nullable
+    Boolean evalCondition(@Nullable JsonElement attributes, JsonObject condition, Scope scope) {
+        Boolean result = true;
+        for (Map.Entry<String, JsonElement> entry : condition.entrySet()) {
+            Boolean matched = evalConditionEntry(entry.getKey(), entry.getValue(), attributes, scope);
+            if (Boolean.FALSE.equals(matched)) {
+                return false;
+            }
+            if (matched == null) {
+                result = null;
+            }
+        }
+        return result;
+    }
+
+    @Nullable
+    private Boolean evalConditionEntry(String key, JsonElement value, @Nullable JsonElement attributes, Scope scope) {
         Condition operator = Condition.fromValue(key);
         return operator != null
-                ? operator.apply(attributes, value, savedGroups, this)
-                : evalConditionValue(value, resolvePath(attributes, key), savedGroups);
+                ? operator.apply(attributes, value, scope, this)
+                : evalConditionValue(value, resolvePath(attributes, key), scope, false);
     }
 
     /**
@@ -99,7 +164,7 @@ public class ConditionEvaluator implements IConditionEvaluator {
     }
 
     @Nullable
-    private JsonElement resolvePath(JsonElement attributes, String path) {
+    private JsonElement resolvePath(@Nullable JsonElement attributes, String path) {
         if (Objects.equals(path, "")) {
             return null;
         }
@@ -131,11 +196,19 @@ public class ConditionEvaluator implements IConditionEvaluator {
      * @param operatorString String value of the operator
      * @param actual         Nullable attribute value
      * @param expected       The condition value to compare against
-     * @return if it's a match
+     * @return if it's a match, or null for an operator or saved group type this SDK doesn't
+     * support. {@code $or}, {@code $nor}, {@code $and} and {@code $savedGroup} on a value never match.
      */
-    boolean evalOperatorCondition(String operatorString, @Nullable JsonElement actual, JsonElement expected, @Nullable JsonObject savedGroups) {
+    @Nullable
+    Boolean evalOperatorCondition(String operatorString, @Nullable JsonElement actual, JsonElement expected, Scope scope) {
         Operator operator = Operator.fromString(operatorString);
-        if (operator == null) return false;
+        if (operator == null) {
+            if (CONDITION_OPERATORS.contains(operatorString)) {
+                return false;
+            }
+            log.error("Unknown operator: {}", operatorString);
+            return null;
+        }
 
         DataType attributeDataType = GrowthBookJsonUtils.getElementType(actual);
 
@@ -169,21 +242,21 @@ public class ConditionEvaluator implements IConditionEvaluator {
 
             case SIZE:
                 if (actual == null || !actual.isJsonArray()) return false;
-                return evalConditionValue(expected, new JsonPrimitive(actual.getAsJsonArray().size()), savedGroups);
+                return evalConditionValue(expected, new JsonPrimitive(actual.getAsJsonArray().size()), scope, false);
 
             case ELEMENT_MATCH:
                 if (actual == null) return false;
-                return elemMatch(actual, expected, savedGroups);
+                return elemMatch(actual, expected, scope);
 
             case ALL:
                 if (actual == null || !actual.isJsonArray() || !expected.isJsonArray()) return false;
-                return isInAll(actual.getAsJsonArray(), expected.getAsJsonArray(), savedGroups, false);
+                return isInAll(actual.getAsJsonArray(), expected.getAsJsonArray(), scope, false);
             case ALLI:
                 if (actual == null || !actual.isJsonArray() || !expected.isJsonArray()) return false;
-                return isInAll(actual.getAsJsonArray(), expected.getAsJsonArray(), savedGroups, true);
+                return isInAll(actual.getAsJsonArray(), expected.getAsJsonArray(), scope, true);
 
             case NOT:
-                return !evalConditionValue(expected, actual, savedGroups);
+                return not(evalConditionValue(expected, actual, scope, false));
 
             case TYPE:
                 return GrowthBookJsonUtils.getElementType(actual).toString().equals(expected.getAsString());
@@ -201,7 +274,7 @@ public class ConditionEvaluator implements IConditionEvaluator {
 
             case IN_GROUP:
             case NOT_IN_GROUP:
-                return evalSavedGroup(operator, actual, expected, savedGroups);
+                return evalGroupMembership(operator, actual, expected, scope);
 
             default:
                 return false;
@@ -309,16 +382,67 @@ public class ConditionEvaluator implements IConditionEvaluator {
     }
 
     /**
-     * {@code $inGroup}/{@code $notInGroup}: membership in a named saved group (empty if unknown).
+     * {@code $inGroup}/{@code $notInGroup}: membership in a named saved group.
+     *
+     * <p>An unknown id behaves like an empty list. The group can be a bare array or a typed
+     * {@code list} entry. A condition group or a malformed entry matches nobody, under either
+     * operator; a group type added after this SDK was built is unknown ({@code null}).
      */
-    private boolean evalSavedGroup(Operator operator, @Nullable JsonElement actual, @Nullable JsonElement expected, @Nullable JsonObject savedGroups) {
-        if (actual == null || expected == null) {
+    @Nullable
+    private Boolean evalGroupMembership(Operator operator, @Nullable JsonElement actual, @Nullable JsonElement expected, Scope scope) {
+        if (actual == null || expected == null || !isString(expected)) {
             return false;
         }
-        JsonElement group = savedGroups != null ? savedGroups.get(expected.getAsString()) : null;
-        JsonArray groupValues = group != null ? group.getAsJsonArray() : new JsonArray();
+        JsonElement group = scope.savedGroups.get(expected.getAsString());
+        if (isNewGroupType(group)) {
+            return null;
+        }
+        JsonArray groupValues = savedGroupArrayValues(group);
+        if (groupValues == null) {
+            return false;
+        }
         boolean negate = operator == Operator.NOT_IN_GROUP;
         return negate != isIn(actual, groupValues, false);
+    }
+
+    /**
+     * The values of a saved group usable by {@code $inGroup}: an empty list for an unknown id, a
+     * bare array, or a typed {@code list} entry's {@code values}; {@code null} for anything else.
+     */
+    @Nullable
+    private static JsonArray savedGroupArrayValues(@Nullable JsonElement group) {
+        if (group == null) {
+            return new JsonArray();
+        }
+        if (group.isJsonArray()) {
+            return group.getAsJsonArray();
+        }
+        if (group.isJsonObject() && "list".equals(stringField(group.getAsJsonObject(), "type"))) {
+            JsonElement values = group.getAsJsonObject().get("values");
+            return values != null && values.isJsonArray() ? values.getAsJsonArray() : null;
+        }
+        return null;
+    }
+
+    /**
+     * Whether a saved group entry has a type added after this SDK was built.
+     */
+    static boolean isNewGroupType(@Nullable JsonElement group) {
+        if (group == null || !group.isJsonObject()) {
+            return false;
+        }
+        String type = stringField(group.getAsJsonObject(), "type");
+        return !"list".equals(type) && !"condition".equals(type);
+    }
+
+    @Nullable
+    static String stringField(JsonObject object, String key) {
+        JsonElement value = object.get(key);
+        return isString(value) ? value.getAsString() : null;
+    }
+
+    static boolean isString(@Nullable JsonElement value) {
+        return value != null && value.isJsonPrimitive() && value.getAsJsonPrimitive().isString();
     }
 
     /**
@@ -375,9 +499,10 @@ public class ConditionEvaluator implements IConditionEvaluator {
      * @param conditionValue Object or primitive
      * @param attributeValue Object or primitive
      * @param inSensitive    if true, top-level string comparisons are case-insensitive
-     * @return true if equal / matched
+     * @return true if equal / matched, null if an operator can't be evaluated by this SDK
      */
-    boolean evalConditionValue(JsonElement conditionValue, @Nullable JsonElement attributeValue, @Nullable JsonObject savedGroups, boolean inSensitive) {
+    @Nullable
+    Boolean evalConditionValue(JsonElement conditionValue, @Nullable JsonElement attributeValue, Scope scope, boolean inSensitive) {
         if (conditionValue == null) {
             return attributeValue == null;
         }
@@ -404,8 +529,17 @@ public class ConditionEvaluator implements IConditionEvaluator {
             case OBJECT:
                 JsonObject conditionValueObject = conditionValue.getAsJsonObject();
                 if (isOperatorObjectInternal(conditionValueObject)) {
-                    return conditionValueObject.entrySet().stream()
-                            .allMatch(entry -> evalOperatorCondition(entry.getKey(), attributeValue, entry.getValue(), savedGroups));
+                    Boolean result = true;
+                    for (Map.Entry<String, JsonElement> entry : conditionValueObject.entrySet()) {
+                        Boolean matched = evalOperatorCondition(entry.getKey(), attributeValue, entry.getValue(), scope);
+                        if (Boolean.FALSE.equals(matched)) {
+                            return false;
+                        }
+                        if (matched == null) {
+                            result = null;
+                        }
+                    }
+                    return result;
                 }
                 return attributeValue != null && attributeValue.isJsonObject()
                         && conditionValue.equals(attributeValue);
@@ -420,28 +554,38 @@ public class ConditionEvaluator implements IConditionEvaluator {
         }
     }
 
-    boolean evalConditionValue(JsonElement conditionValue, @Nullable JsonElement attributeValue, @Nullable JsonObject savedGroups) {
-        return evalConditionValue(conditionValue, attributeValue, savedGroups, false);
-    }
-
     /**
-     * {@code $elemMatch}: true if any element of the {@code actual} array matches the expected
-     * operator object / nested condition.
+     * {@code $elemMatch}: true if any element of the {@code actual} array matches.
+     *
+     * <p>Operators test each element itself. A condition, including one that only uses
+     * {@code $or}, {@code $and}, {@code $nor} or {@code $savedGroup}, tests each element's fields.
+     * Null elements are skipped; falsy values like {@code 0}, {@code ""} and {@code false} are tested.
+     *
+     * @return true if an element matches; otherwise null if any element is unknown, else false
      */
-    private boolean elemMatch(JsonElement actual, JsonElement expected, @Nullable JsonObject savedGroups) {
+    @Nullable
+    private Boolean elemMatch(JsonElement actual, JsonElement expected, Scope scope) {
         if (!actual.isJsonArray()) {
             return false;
         }
-        boolean isOperator = isOperatorObjectInternal(expected);
+        boolean testsElement = isOperatorObjectInternal(expected)
+                && expected.getAsJsonObject().keySet().stream().noneMatch(CONDITION_OPERATORS::contains);
+        Boolean result = false;
         for (JsonElement element : actual.getAsJsonArray()) {
-            boolean matched = isOperator
-                    ? evalConditionValue(expected, element, savedGroups)
-                    : evaluateCondition(element.getAsJsonObject(), expected.getAsJsonObject(), savedGroups);
-            if (matched) {
+            if (element == null || element.isJsonNull()) {
+                continue;
+            }
+            Boolean matched = testsElement
+                    ? evalConditionValue(expected, element, scope, false)
+                    : evalCondition(element, expected.getAsJsonObject(), scope);
+            if (Boolean.TRUE.equals(matched)) {
                 return true;
             }
+            if (matched == null) {
+                result = null;
+            }
         }
-        return false;
+        return result;
     }
 
     /**
@@ -479,21 +623,32 @@ public class ConditionEvaluator implements IConditionEvaluator {
 
     /**
      * {@code $all}/{@code $allI}: every expected element must match at least one actual element.
+     *
+     * @return false if an expected element matches none; otherwise null if any is unknown, else true
      */
-    private boolean isInAll(JsonArray actual, JsonArray expected, @Nullable JsonObject savedGroups, boolean inSensitive) {
+    @Nullable
+    private Boolean isInAll(JsonArray actual, JsonArray expected, Scope scope, boolean inSensitive) {
+        Boolean result = true;
         for (JsonElement expectedItem : expected) {
-            boolean matched = false;
+            Boolean passed = false;
             for (JsonElement actualItem : actual) {
-                if (evalConditionValue(expectedItem, actualItem, savedGroups, inSensitive)) {
-                    matched = true;
+                Boolean matched = evalConditionValue(expectedItem, actualItem, scope, inSensitive);
+                if (Boolean.TRUE.equals(matched)) {
+                    passed = true;
                     break;
                 }
+                if (matched == null) {
+                    passed = null;
+                }
             }
-            if (!matched) {
+            if (Boolean.FALSE.equals(passed)) {
                 return false;
             }
+            if (passed == null) {
+                result = null;
+            }
         }
-        return true;
+        return result;
     }
 
     /**
