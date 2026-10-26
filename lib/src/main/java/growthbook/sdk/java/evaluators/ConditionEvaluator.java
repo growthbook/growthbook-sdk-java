@@ -178,7 +178,8 @@ public class ConditionEvaluator implements IConditionEvaluator {
         }
 
         JsonElement element = attributes;
-        for (String segment : path.split("\\.")) {
+        // Keep trailing empty segments, like JS split: "a." reads key "" of a
+        for (String segment : path.split("\\.", -1)) {
             if (element instanceof JsonObject) {
                 element = ((JsonObject) element).get(segment);
             } else if (element instanceof JsonArray) {

@@ -306,6 +306,18 @@ class ConditionEvaluatorTest {
         assertNull(evaluator.getPath(attributes, "x.00"));
         assertNull(evaluator.getPath(attributes, "x.-1"));
         assertNull(evaluator.getPath(attributes, "s.length"));
+        assertNull(evaluator.getPath(attributes, "x.0.0."));
+    }
+
+    @Test
+    @DisplayName("getPath keeps a trailing empty segment, which reads an empty-string key")
+    void test_getPathKeepsTrailingEmptySegment() {
+        ConditionEvaluator evaluator = new ConditionEvaluator();
+        JsonObject attributes = condition("{\"a\": {\"\": 1}, \"b\": 2, \"x\": [{\"a\": {\"\": 1}}]}");
+
+        assertEquals(1, ((JsonElement) Objects.requireNonNull(evaluator.getPath(attributes, "a."))).getAsInt());
+        assertNull(evaluator.getPath(attributes, "b."));
+        assertTrue(evaluator.evaluateCondition(attributes, condition("{\"x\": {\"$elemMatch\": {\"$or\": [{\"a.\": 1}]}}}"), null));
     }
 
     @Test
@@ -317,6 +329,8 @@ class ConditionEvaluatorTest {
         assertTrue(evaluator.evaluateCondition(attributes, condition("{\"x\": {\"$elemMatch\": {\"$or\": [{\"0\": 1}]}}}"), null));
         assertTrue(evaluator.evaluateCondition(attributes, condition("{\"x\": {\"$elemMatch\": {\"$and\": [{\"length\": 1}]}}}"), null));
         assertFalse(evaluator.evaluateCondition(attributes, condition("{\"x\": {\"$elemMatch\": {\"$or\": [{\"0\": 2}]}}}"), null));
+        // "0." reads key "" of element 1, which a number doesn't have
+        assertFalse(evaluator.evaluateCondition(attributes, condition("{\"x\": {\"$elemMatch\": {\"$or\": [{\"0.\": 1}]}}}"), null));
 
         JsonObject savedGroups = condition("{\"g\": {\"type\": \"list\", \"attributeKey\": \"0\", \"values\": [1]}}");
         assertTrue(evaluator.evaluateCondition(attributes, condition("{\"x\": {\"$elemMatch\": {\"$savedGroup\": {\"id\": \"g\"}}}}"), savedGroups));

@@ -203,6 +203,25 @@ class PayloadReducerTest {
     }
 
     @Test
+    @DisplayName("Verify: conditions that fail like JS disable the rule")
+    void failingConditionsDisableTheRule() {
+        // Given: a path with a trailing empty segment, which reads key "" of element 1 in JS
+        String[][] cases = {
+                {"{\"x\": [[1]]}", "{\"x\": {\"$elemMatch\": {\"$or\": [{\"0.\": 1}]}}}"},
+        };
+        for (String[] c : cases) {
+            JsonObject payload = parse("{\"features\": {\"f\": {\"defaultValue\": false, \"rules\": [{\"force\": true, \"condition\": " + c[1] + "}]}}}");
+
+            // When
+            JsonObject reduced = PayloadReducer.reducePayload(payload, parse(c[0]), null);
+
+            // Then
+            assertEquals(parse("{\"defaultValue\": false, \"rules\": [{\"force\": null, \"condition\": {\"$not\": {}}}]}"),
+                    reduced.getAsJsonObject("features").get("f"), c[1]);
+        }
+    }
+
+    @Test
     @DisplayName("Verify: null attributes and options mean nothing is known and nothing is filtered")
     void nullAttributesAndOptions() {
         // Given
