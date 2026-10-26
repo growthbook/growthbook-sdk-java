@@ -42,15 +42,15 @@ import java.util.Set;
 @Slf4j
 public class GrowthBookUtils {
     /**
-     * Hashes a string to a float between 0 and 1, or null if the hash version is unsupported.
+     * Hashes a string to a double between 0 and 1, or null if the hash version is unsupported.
      * Uses the simple Fowler–Noll–Vo algorithm, specifically fnv32a.
      *
      * @param stringValue Input string
      * @param hashVersion The hash version
      * @param seed        A seed value that can be used instead of the experiment key for hashing
-     * @return hashed float value or null if the hash version is unsupported.
+     * @return hashed double value or null if the hash version is unsupported.
      */
-    public static @Nullable Float hash(String stringValue, Integer hashVersion, String seed) {
+    public static @Nullable Double hash(String stringValue, Integer hashVersion, String seed) {
         if (hashVersion == null) return null;
 
         switch (hashVersion) {
@@ -63,24 +63,22 @@ public class GrowthBookUtils {
         }
     }
 
-    private static Float hashV1(String stringValue, String seed) {
+    private static Double hashV1(String stringValue, String seed) {
         long hashValue = MathUtils.fnv1a_32((stringValue + seed).getBytes());
         long thousand = 1000;
         long remainder = hashValue % thousand;
 
-        float remainderAsFloat = Float.parseFloat(String.valueOf(remainder));
-        return remainderAsFloat / 1000f;
+        return remainder / 1000.0;
     }
 
-    private static Float hashV2(String stringValue, String seed) {
+    private static Double hashV2(String stringValue, String seed) {
         long first = MathUtils.fnv1a_32((seed + stringValue).getBytes());
         long second = MathUtils.fnv1a_32(String.valueOf(first).getBytes());
 
         long tenThousand = 10000;
         long remainder = second % tenThousand;
 
-        float remainderAsFloat = Float.parseFloat(String.valueOf(remainder));
-        return remainderAsFloat / 10000f;
+        return remainder / 10000.0;
     }
 
     /**
@@ -91,7 +89,7 @@ public class GrowthBookUtils {
      * @return whether the user is in the namespace
      */
     public static Boolean inNameSpace(String userId, Namespace namespace) {
-        Float n = hash(userId + "__", 1, namespace.getId());
+        Double n = hash(userId + "__", 1, namespace.getId());
         if (n == null) return false;
         return inRange(n, BucketRange
                 .builder()
@@ -109,7 +107,7 @@ public class GrowthBookUtils {
      * @param bucketRanges list of {@link BucketRange}
      * @return index of the {@link BucketRange} list to assign
      */
-    public static Integer chooseVariation(@NotNull Float n, ArrayList<BucketRange> bucketRanges) {
+    public static Integer chooseVariation(@NotNull Double n, ArrayList<BucketRange> bucketRanges) {
         for (int i = 0; i < bucketRanges.size(); i++) {
             BucketRange range = bucketRanges.get(i);
             if (inRange(n, range)) {
@@ -121,20 +119,20 @@ public class GrowthBookUtils {
     }
 
     /**
-     * Returns an array of floats with numVariations items that are all equal and sum to 1.
+     * Returns an array of doubles with numVariations items that are all equal and sum to 1.
      * For example, getEqualWeights(2) would return [0.5, 0.5]
      *
      * @param numberOfVariations The number of variations you would like
      * @return A list of variations
      */
-    public static ArrayList<Float> getEqualWeights(Integer numberOfVariations) {
+    public static ArrayList<Double> getEqualWeights(Integer numberOfVariations) {
         // Accommodate -1 number of variations
         int size = Math.max(0, numberOfVariations);
         if (size == 0) {
             return new ArrayList<>();
         }
 
-        Float weight = 1f / numberOfVariations;
+        Double weight = 1.0 / numberOfVariations;
         return new ArrayList<>(Collections.nCopies(size, weight));
     }
 
@@ -396,28 +394,28 @@ public class GrowthBookUtils {
      */
     public static ArrayList<BucketRange> getBucketRanges(
             Integer numberOfVariations,
-            @NotNull Float coverage,
-            @Nullable ArrayList<Float> weights
+            @NotNull Double coverage,
+            @Nullable ArrayList<Double> weights
     ) {
-        float clampedCoverage = MathUtils.clamp(coverage, 0.0f, 1.0f);
+        double clampedCoverage = MathUtils.clamp(coverage, 0.0, 1.0);
 
         // When the number of variations doesn't match the weights provided, ignore the weights and get equal weights.
-        ArrayList<Float> adjustedWeights = weights;
+        ArrayList<Double> adjustedWeights = weights;
         if (weights == null || numberOfVariations != weights.size()) {
             adjustedWeights = getEqualWeights(numberOfVariations);
         }
 
         // When the sums of the weights are not equal to 1, ignore the weights and get equal weights
-        float sumOfWeights = MathUtils.sum(adjustedWeights);
+        double sumOfWeights = MathUtils.sum(adjustedWeights);
         if (sumOfWeights < 0.99 || sumOfWeights > 1.01) {
             adjustedWeights = getEqualWeights(numberOfVariations);
         }
 
-        float start;
-        float cumulative = 0.0f;
+        double start;
+        double cumulative = 0.0;
         ArrayList<BucketRange> bucketRanges = new ArrayList<>();
 
-        for (float weight : adjustedWeights) {
+        for (double weight : adjustedWeights) {
             start = cumulative;
             cumulative += weight;
 
@@ -435,14 +433,14 @@ public class GrowthBookUtils {
 
     /**
      * Determines if a number n is within the provided range.
-     * Verifies if the provided float is within the lower (inclusive) and upper (exclusive) bounds of
+     * Verifies if the provided double is within the lower (inclusive) and upper (exclusive) bounds of
      * the provided {@link BucketRange}.
      *
-     * @param n     Float value to check if it's in range
+     * @param n     Double value to check if it's in range
      * @param range {@link BucketRange}
      * @return whether to include this hash value is within range. Returns false if either arguments are null.
      */
-    public static Boolean inRange(Float n, BucketRange range) {
+    public static Boolean inRange(Double n, BucketRange range) {
         if (n == null || range == null) return false;
         return n >= range.getRangeStart() && n < range.getRangeEnd();
     }
@@ -489,7 +487,7 @@ public class GrowthBookUtils {
                 hashVersion = 2;
             }
 
-            Float n = GrowthBookUtils.hash(hashValue, hashVersion, filter.getSeed());
+            Double n = GrowthBookUtils.hash(hashValue, hashVersion, filter.getSeed());
             if (n == null) return true;
 
             List<BucketRange> ranges = filter.getRanges();
@@ -515,7 +513,7 @@ public class GrowthBookUtils {
      * @param hashAttribute      String
      * @param fallbackAttribute  String
      * @param range              BucketRange
-     * @param coverage           Float
+     * @param coverage           Double
      * @param hashVersion        Integer
      * @return Boolean - check if user is included
      */
@@ -525,7 +523,7 @@ public class GrowthBookUtils {
             String hashAttribute,
             String fallbackAttribute,
             @Nullable BucketRange range,
-            @Nullable Float coverage,
+            @Nullable Double coverage,
             @Nullable Integer hashVersion
     ) {
         if (range == null && coverage == null) return true;
@@ -545,7 +543,7 @@ public class GrowthBookUtils {
         }
 
         // Determine the bucket for the user
-        Float hash = GrowthBookUtils.hash(
+        Double hash = GrowthBookUtils.hash(
                 hashValue,
                 hashVersion,
                 seed

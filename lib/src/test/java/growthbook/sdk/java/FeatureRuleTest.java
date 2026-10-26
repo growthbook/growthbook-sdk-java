@@ -18,23 +18,23 @@ class FeatureRuleTest {
 
     @Test
     void canBeConstructed() {
-        ArrayList<Float> weights = new ArrayList<>();
-        weights.add(0.3f);
-        weights.add(0.7f);
+        ArrayList<Double> weights = new ArrayList<>();
+        weights.add(0.3);
+        weights.add(0.7);
 
         ArrayList<Integer> variations = new ArrayList<>();
 
         Namespace namespace = Namespace
                 .builder()
                 .id("pricing")
-                .rangeStart(0.0f)
-                .rangeEnd(0.6f)
+                .rangeStart(0.0)
+                .rangeEnd(0.6)
                 .build();
 
         FeatureRule<Integer> subject = new FeatureRule<>(
                 null,
                 "my-key",
-                0.5f,
+                0.5,
                 new OptionalField<>(true, 100),
                 variations,
                 weights,
@@ -57,8 +57,8 @@ class FeatureRuleTest {
                 null
         );
 
-        assertEquals(0.5f, subject.getCoverage());
-        assertEquals(0.5f, subject.getCoverage());
+        assertEquals(0.5, subject.getCoverage());
+        assertEquals(0.5, subject.getCoverage());
         assertEquals(100, subject.getForce() != null ? subject.getForce().getValue() : null);
         assertEquals(100, subject.getForce() != null ? subject.getForce().getValue() : null);
         assertEquals(namespace, subject.getNamespace());
@@ -71,22 +71,22 @@ class FeatureRuleTest {
 
     @Test
     void canBeBuilt() {
-        ArrayList<Float> weights = new ArrayList<>();
-        weights.add(0.3f);
-        weights.add(0.7f);
+        ArrayList<Double> weights = new ArrayList<>();
+        weights.add(0.3);
+        weights.add(0.7);
 
         ArrayList<String> variations = new ArrayList<>();
 
         Namespace namespace = Namespace
                 .builder()
                 .id("pricing")
-                .rangeStart(0.0f)
-                .rangeEnd(0.6f)
+                .rangeStart(0.0)
+                .rangeEnd(0.6)
                 .build();
 
         FeatureRule<String> subject = FeatureRule
                 .<String>builder()
-                .coverage(0.5f)
+                .coverage(0.5)
                 .force(new OptionalField<>(true, "forced-value"))
                 .namespace(namespace)
                 .weights(weights)
@@ -94,8 +94,8 @@ class FeatureRuleTest {
                 .hashAttribute("_id")
                 .build();
 
-        assertEquals(0.5f, subject.getCoverage());
-        assertEquals(0.5f, subject.getCoverage());
+        assertEquals(0.5, subject.getCoverage());
+        assertEquals(0.5, subject.getCoverage());
         assertEquals("forced-value", subject.getForce() != null ? subject.getForce().getValue() : null);
         assertEquals("forced-value", subject.getForce() != null ? subject.getForce().getValue() : null);
         assertEquals(namespace, subject.getNamespace());

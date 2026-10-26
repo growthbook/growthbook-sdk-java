@@ -9,7 +9,7 @@ public class MathUtils {
 
     /**
      * Fowler-Noll-Vo algorithm
-     * fnv32a returns a long, so we convert that to a float using a modulus
+     * fnv32a returns a long, so we convert that to a double using a modulus
      *
      * @param data byte list
      * @return long
@@ -34,7 +34,7 @@ public class MathUtils {
      * @param upperRange The highest value
      * @return the clamped number
      */
-    public static float clamp(float value, float lowerRange, float upperRange) {
+    public static double clamp(double value, double lowerRange, double upperRange) {
         if (value > upperRange) return upperRange;
         if (value < lowerRange) return lowerRange;
         return value;
@@ -46,10 +46,10 @@ public class MathUtils {
      * @param items Numbers to add
      * @return total
      */
-    public static float sum(List<Float> items) {
-        float total = 0;
+    public static double sum(List<Double> items) {
+        double total = 0;
 
-        for (float item : items) {
+        for (double item : items) {
             total += item;
         }
 
