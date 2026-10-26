@@ -159,6 +159,70 @@ class PayloadReducerTest {
     }
 
     @Test
+    @DisplayName("Verify: a list group's values never reference other groups")
+    void listValuesAreNotGroupReferences() {
+        // Given: list values that happen to name groups, including the group that uses the list
+        JsonObject payload = parse("{\"features\": {\"f\": {\"defaultValue\": false, \"rules\": ["
+                + "{\"condition\": {\"$savedGroup\": {\"id\": \"g\"}}, \"force\": true},"
+                + "{\"condition\": {\"items\": {\"$elemMatch\": {\"$inGroup\": \"elem\"}}}, \"force\": true},"
+                + "{\"condition\": {\"id\": {\"$inGroup\": \"legacy\"}}, \"force\": true}]}},"
+                + " \"savedGroups\": {"
+                + "\"g\": {\"type\": \"condition\", \"condition\": {\"$or\": [{\"id\": {\"$inGroup\": \"list\"}}, {\"x\": true}], \"y\": true}},"
+                + "\"list\": {\"type\": \"list\", \"attributeKey\": \"id\", \"values\": [\"g\", \"h\"]},"
+                + "\"elem\": {\"type\": \"list\", \"attributeKey\": \"id\", \"values\": [\"e\"]},"
+                + "\"legacy\": [\"l\"],"
+                + "\"h\": {\"type\": \"condition\", \"condition\": {\"x\": true}},"
+                + "\"e\": {\"type\": \"condition\", \"condition\": {\"y\": true}},"
+                + "\"l\": {\"type\": \"condition\", \"condition\": {\"y\": true}}}}");
+
+        // When
+        JsonObject reduced = PayloadReducer.reducePayload(payload, parse("{\"y\": true}"), null);
+
+        // Then: g isn't on a cycle, so it's reduced, and groups only named in list values go
+        JsonObject groups = payload.getAsJsonObject("savedGroups");
+        JsonObject expected = new JsonObject();
+        expected.add("g", parse("{\"type\": \"condition\", \"condition\": {\"$or\": [{\"id\": {\"$inGroup\": \"list\"}}, {\"x\": true}]}}"));
+        expected.add("list", groups.get("list"));
+        expected.add("elem", groups.get("elem"));
+        expected.add("legacy", groups.get("legacy"));
+        assertEquals(expected, reduced.getAsJsonObject("savedGroups"));
+    }
+
+    @Test
+    @DisplayName("Verify: a payload without saved groups reduces to an empty savedGroups object")
+    void payloadWithoutSavedGroups() {
+        // Given
+        JsonObject payload = parse("{\"features\": {\"g\": {\"defaultValue\": \"g\", \"rules\": [{\"condition\": {\"id\": {\"$inGroup\": \"g\"}}, \"force\": \"g\"}]}}}");
+
+        // When
+        JsonObject reduced = PayloadReducer.reducePayload(payload, new JsonObject(), null);
+
+        // Then
+        assertEquals(new JsonObject(), reduced.getAsJsonObject("savedGroups"));
+        assertEquals(payload.getAsJsonObject("features"), reduced.getAsJsonObject("features"));
+    }
+
+    @Test
+    @DisplayName("Verify: contextualBandits is left out of the result when the payload has none")
+    void contextualBanditsLeftOutWhenAbsent() {
+        // Given
+        String features = "\"features\": {\"f\": {\"defaultValue\": 0, \"rules\": [{\"contextualBanditRef\": \"b\"}]}}";
+        String bandit = "{\"contexts\": []}";
+
+        // When
+        JsonObject absent = PayloadReducer.reducePayload(parse("{" + features + "}"), null, null);
+        JsonObject nullBandits = PayloadReducer.reducePayload(parse("{" + features + ", \"contextualBandits\": null}"), null, null);
+        JsonObject emptyBandits = PayloadReducer.reducePayload(parse("{" + features + ", \"contextualBandits\": {}}"), null, null);
+        JsonObject withBandit = PayloadReducer.reducePayload(parse("{" + features + ", \"contextualBandits\": {\"b\": " + bandit + "}}"), null, null);
+
+        // Then
+        assertTrue(!absent.has("contextualBandits"));
+        assertTrue(!nullBandits.has("contextualBandits"));
+        assertEquals(new JsonObject(), emptyBandits.get("contextualBandits"));
+        assertEquals(parse("{\"b\": " + bandit + "}"), withBandit.get("contextualBandits"));
+    }
+
+    @Test
     @DisplayName("Verify: a long chain of group references doesn't overflow the stack")
     void longChainOfGroupReferences() {
         // Given

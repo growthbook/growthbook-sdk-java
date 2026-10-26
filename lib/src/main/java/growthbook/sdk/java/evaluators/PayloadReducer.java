@@ -125,13 +125,13 @@ public final class PayloadReducer {
             reduced.add(features);
             reduced.add(experiments);
             reduced.add(contextualBandits);
-            markAsWritten(reduced);
-            Set<String> onCycle = groupsOnCycles();
-
             Map<String, JsonElement> groups = new LinkedHashMap<>();
-            keepSavedGroups(features, groups, onCycle);
-            keepSavedGroups(experiments, groups, onCycle);
-            keepSavedGroups(contextualBandits, groups, onCycle);
+            // Walking the payload is only needed when there are groups to find
+            if (savedGroups.size() > 0) {
+                markAsWritten(reduced);
+                Set<String> onCycle = groupsOnCycles();
+                keepSavedGroups(reduced, groups, onCycle);
+            }
             JsonObject reducedGroups = new JsonObject();
             for (Map.Entry<String, JsonElement> entry : groups.entrySet()) {
                 reducedGroups.add(entry.getKey(), entry.getValue());
@@ -305,8 +305,10 @@ public final class PayloadReducer {
                         continue;
                     }
                     (user ? seen : asWritten).add(id);
-                    values.push(savedGroups.get(id));
-                    users.push(user);
+                    if (canReference(savedGroups.get(id))) {
+                        values.push(savedGroups.get(id));
+                        users.push(user);
+                    }
                 } else if (value.isJsonObject()) {
                     for (Map.Entry<String, JsonElement> entry : value.getAsJsonObject().entrySet()) {
                         String key = entry.getKey();
@@ -331,7 +333,9 @@ public final class PayloadReducer {
         private Set<String> groupsOnCycles() {
             Map<String, List<String>> references = new HashMap<>();
             for (Map.Entry<String, JsonElement> entry : savedGroups.entrySet()) {
-                references.put(entry.getKey(), groupIdsIn(entry.getValue()));
+                references.put(entry.getKey(), canReference(entry.getValue())
+                        ? groupIdsIn(entry.getValue())
+                        : new ArrayList<String>());
             }
 
             Set<String> onCycle = new HashSet<>();
@@ -452,7 +456,9 @@ public final class PayloadReducer {
                         kept = reduced;
                     }
                     groups.put(id, kept);
-                    values.push(kept);
+                    if (canReference(entry)) {
+                        values.push(kept);
+                    }
                 } else if (value.isJsonObject()) {
                     List<JsonElement> children = new ArrayList<>();
                     for (Map.Entry<String, JsonElement> entry : value.getAsJsonObject().entrySet()) {
@@ -467,6 +473,18 @@ public final class PayloadReducer {
                     pushReversed(values, children);
                 }
             }
+        }
+
+        /**
+         * Whether a saved group's contents can reference other groups. A list's values (or a legacy
+         * bare array's) are attribute values, never group ids.
+         */
+        private static boolean canReference(JsonElement entry) {
+            if (!entry.isJsonObject()) {
+                return false;
+            }
+            JsonElement type = entry.getAsJsonObject().get("type");
+            return !(ConditionEvaluator.isString(type) && type.getAsString().equals("list"));
         }
 
         private static void pushReversed(Deque<JsonElement> values, List<JsonElement> children) {
