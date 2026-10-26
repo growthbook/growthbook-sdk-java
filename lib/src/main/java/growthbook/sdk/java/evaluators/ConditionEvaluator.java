@@ -701,7 +701,9 @@ public class ConditionEvaluator implements IConditionEvaluator {
         if (attributeDataType != DataType.STRING) {
             return negate;
         }
-        // Like a JS /i regex, fold non-ASCII letters too ("É" matches "é")
+        // Like a JS /i regex, fold non-ASCII letters too ("É" matches "é"). Known gap: Java also
+        // folds a few non-ASCII letters to ASCII ones ("ı" matches "i", "ſ" "s", Kelvin "K" "k"),
+        // which JS /i without the u flag doesn't
         int flags = caseInsensitive ? Pattern.CASE_INSENSITIVE | Pattern.UNICODE_CASE : 0;
         try {
             Matcher matcher = Pattern.compile(expected.getAsString(), flags).matcher(actual.getAsString());
