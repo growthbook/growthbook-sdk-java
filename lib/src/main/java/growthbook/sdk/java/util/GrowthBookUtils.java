@@ -554,7 +554,7 @@ public class GrowthBookUtils {
         if (range != null) {
             return GrowthBookUtils.inRange(hash, range);
         } else {
-            return hash <= coverage;
+            return hash < coverage;
         }
     }
 
