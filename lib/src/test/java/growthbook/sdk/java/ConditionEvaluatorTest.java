@@ -302,6 +302,35 @@ class ConditionEvaluatorTest {
         assertTrue(evaluator.evaluateCondition(attributes, condition("{\"count\":{\"$ne\":16777216}}"), null));
     }
 
+    @Test
+    @DisplayName("$inGroup/$notInGroup agree with the JS SDK, including for an absent attribute")
+    void test_savedGroupOperatorsMatchReferenceTruthTable() {
+        ConditionEvaluator evaluator = new ConditionEvaluator();
+        JsonObject savedGroups = parse("{\"admins\":[\"u1\",\"u2\"]}");
+        JsonObject inGroup = parse("{\"id\":{\"$inGroup\":\"admins\"}}");
+        JsonObject notInGroup = parse("{\"id\":{\"$notInGroup\":\"admins\"}}");
+
+        assertTrue(evaluator.evaluateCondition(parse("{\"id\":\"u1\"}"), inGroup, savedGroups));
+        assertFalse(evaluator.evaluateCondition(parse("{\"id\":\"u9\"}"), inGroup, savedGroups));
+        assertFalse(evaluator.evaluateCondition(parse("{}"), inGroup, savedGroups));
+        assertFalse(evaluator.evaluateCondition(parse("{\"id\":\"u1\"}"), parse("{\"id\":{\"$inGroup\":\"unknown\"}}"), savedGroups));
+
+        assertFalse(evaluator.evaluateCondition(parse("{\"id\":\"u1\"}"), notInGroup, savedGroups));
+        assertTrue(evaluator.evaluateCondition(parse("{\"id\":\"u9\"}"), notInGroup, savedGroups));
+        assertTrue(evaluator.evaluateCondition(parse("{}"), notInGroup, savedGroups));
+        assertTrue(evaluator.evaluateCondition(parse("{\"id\":\"u1\"}"), parse("{\"id\":{\"$notInGroup\":\"unknown\"}}"), savedGroups));
+    }
+
+    @Test
+    @DisplayName("a non-array saved-group value resolves to an empty group instead of throwing")
+    void test_savedGroupOperatorsTolerateNonArrayGroupValue() {
+        ConditionEvaluator evaluator = new ConditionEvaluator();
+        JsonObject savedGroups = parse("{\"admins\":42}");
+
+        assertFalse(evaluator.evaluateCondition(parse("{\"id\":\"u1\"}"), parse("{\"id\":{\"$inGroup\":\"admins\"}}"), savedGroups));
+        assertTrue(evaluator.evaluateCondition(parse("{\"id\":\"u1\"}"), parse("{\"id\":{\"$notInGroup\":\"admins\"}}"), savedGroups));
+    }
+
     private JsonObject condition(String json) {
         return GrowthBookJsonUtils.getInstance().gson.fromJson(json, JsonObject.class);
     }
