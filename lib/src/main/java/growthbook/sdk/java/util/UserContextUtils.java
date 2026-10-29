@@ -71,6 +71,8 @@ public final class UserContextUtils {
      * Fetches sticky-bucket assignment docs for the user's (string-valued) attributes once per
      * request, unless the caller preloaded them. Mirrors the previous {@code GrowthBookClient}
      * behaviour so a configured {@link StickyBucketService} keeps driving experiment assignments.
+     * Values are formatted the way evaluation formats hash values, so {@code {"id": 1.0}} loads the
+     * {@code id||1} doc, and values that can't be hash values are skipped.
      */
     private static void preloadStickyBucketAssignments(Options options, UserContext userContext, JsonObject attributes) {
         StickyBucketService stickyBucketService = options.getStickyBucketService();
@@ -79,9 +81,9 @@ public final class UserContextUtils {
         }
         Map<String, String> attributeStrings = new HashMap<>();
         for (Map.Entry<String, JsonElement> entry : attributes.entrySet()) {
-            JsonElement value = entry.getValue();
-            if (value != null && value.isJsonPrimitive()) {
-                attributeStrings.put(entry.getKey(), value.getAsString());
+            String value = GrowthBookUtils.toHashValue(entry.getValue());
+            if (!value.isEmpty()) {
+                attributeStrings.put(entry.getKey(), value);
             }
         }
         Map<String, StickyAssignmentsDocument> docs;
