@@ -2,6 +2,7 @@ package growthbook.sdk.java.evaluators;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
+import com.google.gson.JsonNull;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
 import growthbook.sdk.java.util.GrowthBookJsonUtils;
@@ -130,7 +131,16 @@ public class ConditionEvaluator implements IConditionEvaluator {
         Condition operator = Condition.fromValue(key);
         return operator != null
                 ? operator.apply(attributes, value, scope, this)
-                : evalConditionValue(value, resolvePath(attributes, key), scope, false);
+                : evalConditionValue(value, attributeAt(attributes, key), scope, false);
+    }
+
+    /**
+     * The attribute value a condition tests. Like the JS SDK, a missing attribute is {@code null},
+     * so {@code $eq: null} and {@code $type: "null"} match it and {@code $nin} passes it.
+     */
+    private JsonElement attributeAt(@Nullable JsonElement attributes, String path) {
+        JsonElement value = resolvePath(attributes, path);
+        return value != null ? value : JsonNull.INSTANCE;
     }
 
     /**
@@ -293,7 +303,8 @@ public class ConditionEvaluator implements IConditionEvaluator {
                 return GrowthBookJsonUtils.getElementType(actual).toString().equals(expected.getAsString());
 
             case EXISTS:
-                return expected.getAsBoolean() ? actual != null : (actual == null || actual.isJsonNull());
+                boolean present = actual != null && !actual.isJsonNull();
+                return expected.getAsBoolean() == present;
 
             case VERSION_GT:
             case VERSION_GTE:
@@ -657,10 +668,20 @@ public class ConditionEvaluator implements IConditionEvaluator {
         return false;
     }
 
+    /**
+     * Membership equality, like JS {@code ===}: nulls match each other, primitives match by type and
+     * value (so {@code 1} equals {@code 1.0}), and arrays and objects never match.
+     */
     private static boolean elementsEqual(JsonElement a, JsonElement b, boolean caseInsensitive) {
-        return caseInsensitive
-                ? Objects.equals(caseFold(a), caseFold(b))
-                : Objects.equals(a, b);
+        if (a == null || b == null || a.isJsonNull() || b.isJsonNull()) {
+            return (a == null || a.isJsonNull()) && (b == null || b.isJsonNull());
+        }
+        if (!a.isJsonPrimitive() || !b.isJsonPrimitive()) {
+            return false;
+        }
+        JsonElement left = caseInsensitive ? caseFold(a) : a;
+        JsonElement right = caseInsensitive ? caseFold(b) : b;
+        return primitivesEqual(left.getAsJsonPrimitive(), right.getAsJsonPrimitive());
     }
 
     /**
@@ -698,7 +719,8 @@ public class ConditionEvaluator implements IConditionEvaluator {
      * other attribute fails the positive operators and matches the negated ones.
      */
     private static boolean evalRegex(@Nullable JsonElement actual, JsonElement expected, DataType attributeDataType, boolean caseInsensitive, boolean negate) {
-        if (attributeDataType != DataType.STRING) {
+        // Like the JS SDK, only a string pattern can match
+        if (attributeDataType != DataType.STRING || !isString(expected)) {
             return negate;
         }
         // Like a JS /i regex, fold non-ASCII letters too ("É" matches "é"). Known gap: Java also
@@ -806,7 +828,7 @@ public class ConditionEvaluator implements IConditionEvaluator {
             return target.decided;
         }
         if (target.listKey != null) {
-            return isIn(resolvePath(attributes, target.listKey), target.listValues, false);
+            return isIn(attributeAt(attributes, target.listKey), target.listValues, false);
         }
         return evalCondition(attributes, target.condition, target.nested);
     }

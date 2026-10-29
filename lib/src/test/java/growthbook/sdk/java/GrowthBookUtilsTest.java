@@ -2,15 +2,18 @@ package growthbook.sdk.java;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.reflect.TypeToken;
 import growthbook.sdk.java.model.BucketRange;
+import growthbook.sdk.java.model.HashAttributeAndHashValue;
 import growthbook.sdk.java.model.Namespace;
 import growthbook.sdk.java.testhelpers.TestCasesJsonHelper;
 import growthbook.sdk.java.util.GrowthBookJsonUtils;
 import growthbook.sdk.java.util.GrowthBookUtils;
+import growthbook.sdk.java.util.MathUtils;
 import org.junit.jupiter.api.Test;
 import javax.annotation.Nullable;
 import java.io.FileReader;
@@ -266,5 +269,52 @@ class GrowthBookUtilsTest {
 
         assertEquals(Integer.valueOf(2), merged.get("key"));
         assertEquals(Integer.valueOf(3), merged.get("other"));
+    }
+
+    @Test
+    void fnv1a_hashesUtf16CodeUnitsLikeJs() {
+        // Expected values are the JS SDK's FNV-1a over charCodeAt
+        assertEquals(1812687940L, MathUtils.fnv1a_32("\u00e9"));
+        // An astral character is two surrogate code units
+        assertEquals(3409036472L, MathUtils.fnv1a_32("\uD83D\uDE00"));
+        assertEquals(440920331L, MathUtils.fnv1a_32("abc"));
+        assertEquals(Double.valueOf(0.2851), GrowthBookUtils.hash("ren\u00e9e", 2, "seed"));
+        assertEquals(Double.valueOf(0.429), GrowthBookUtils.hash("\uD83D\uDE00", 1, "seed"));
+    }
+
+    @Test
+    void getHashAttribute_usesOnlyNonEmptyStringsAndNonZeroNumbers() {
+        String[] missing = {"true", "false", "0", "0.0", "\"\"", "null", "[]", "[1]", "{}", "{\"a\":1}"};
+        for (String value : missing) {
+            JsonObject attributes = GrowthBookJsonUtils.getInstance().gson
+                    .fromJson("{\"id\": " + value + ", \"deviceId\": \"d1\"}", JsonObject.class);
+
+            HashAttributeAndHashValue withFallback = GrowthBookUtils.getHashAttribute("id", "deviceId", attributes);
+            assertEquals("deviceId", withFallback.getHashAttribute(), value);
+            assertEquals("d1", withFallback.getHashValue(), value);
+
+            HashAttributeAndHashValue withoutFallback = GrowthBookUtils.getHashAttribute("id", null, attributes);
+            assertEquals("", withoutFallback.getHashValue(), value);
+        }
+    }
+
+    @Test
+    void getHashAttribute_formatsNumbersLikeJsString() {
+        JsonObject attributes = GrowthBookJsonUtils.getInstance().gson
+                .fromJson("{\"a\": 1.0, \"b\": 1.5, \"c\": -2}", JsonObject.class);
+
+        assertEquals("1", GrowthBookUtils.getHashAttribute("a", null, attributes).getHashValue());
+        assertEquals("1.5", GrowthBookUtils.getHashAttribute("b", null, attributes).getHashValue());
+        assertEquals("-2", GrowthBookUtils.getHashAttribute("c", null, attributes).getHashValue());
+    }
+
+    @Test
+    void isIncludedInRollout_excludesAUserWhoseHashAttributeIsNotHashable() {
+        JsonObject attributes = GrowthBookJsonUtils.getInstance().gson
+                .fromJson("{\"id\": {}, \"deviceId\": true}", JsonObject.class);
+
+        assertEquals(false, GrowthBookUtils.isIncludedInRollout(attributes, "s", "id", "deviceId", null, 1.0, 2));
+        attributes.addProperty("deviceId", "d1");
+        assertTrue(GrowthBookUtils.isIncludedInRollout(attributes, "s", "id", "deviceId", null, 1.0, 2));
     }
 }

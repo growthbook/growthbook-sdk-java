@@ -1,6 +1,7 @@
 {
   "suites": {
-    "contextualBandit": "Contextual bandits are not supported by the Java SDK."
+    "contextualBandit": "Contextual bandits are not supported by the Java SDK.",
+    "savedGroupReferencesRemote": "Remote saved groups are not supported by the Java SDK yet."
   },
   "cases": {
     "feature": {

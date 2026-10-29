@@ -1,7 +1,7 @@
 {
   "repository": "growthbook/growthbook",
-  "commit": "ba7fab3bafebf65f055ccf382fadea28c32455ca",
+  "commit": "69deff4c06fab984a4e74b7fe57eb6616047ad82",
   "path": "packages/sdk-js/test/cases.json",
-  "specVersion": "0.11.3",
-  "sha256": "2a1841a437d9730d4aa49ef9fdda1995e2d483779df026fd381ff8b3165e3775"
+  "specVersion": "0.12.0",
+  "sha256": "01811b2c39ab6f80426376342fa8338f5447d6d1a9d14095dbc06fc3cc882bf3"
 }

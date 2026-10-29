@@ -64,7 +64,7 @@ public class GrowthBookUtils {
     }
 
     private static Double hashV1(String stringValue, String seed) {
-        long hashValue = MathUtils.fnv1a_32((stringValue + seed).getBytes());
+        long hashValue = MathUtils.fnv1a_32(stringValue + seed);
         long thousand = 1000;
         long remainder = hashValue % thousand;
 
@@ -72,8 +72,8 @@ public class GrowthBookUtils {
     }
 
     private static Double hashV2(String stringValue, String seed) {
-        long first = MathUtils.fnv1a_32((seed + stringValue).getBytes());
-        long second = MathUtils.fnv1a_32(String.valueOf(first).getBytes());
+        long first = MathUtils.fnv1a_32(seed + stringValue);
+        long second = MathUtils.fnv1a_32(String.valueOf(first));
 
         long tenThousand = 10000;
         long remainder = second % tenThousand;
@@ -472,15 +472,8 @@ public class GrowthBookUtils {
                 hashAttribute = "id";
             }
 
-            JsonElement hashValueElement = attributes.get(hashAttribute);
-            if (hashValueElement == null) return true;
-            if (hashValueElement.isJsonNull()) return true;
-            if (!hashValueElement.isJsonPrimitive()) return true;
-
-            JsonPrimitive hashValuePrimitive = hashValueElement.getAsJsonPrimitive();
-
-            String hashValue = hashValuePrimitive.getAsString();
-            if (hashValue == null || hashValue.isEmpty()) return true;
+            String hashValue = toHashValue(attributes.get(hashAttribute));
+            if (hashValue.isEmpty()) return true;
 
             Integer hashVersion = filter.getHashVersion();
             if (hashVersion == null) {
@@ -859,17 +852,10 @@ public class GrowthBookUtils {
             JsonObject attributes
     ) {
         String hashAttribute = attr != null ? attr : "id";
-        String hashValue = "";
+        String hashValue = attributes != null ? toHashValue(attributes.get(hashAttribute)) : "";
 
-        if (attributes.get(hashAttribute) != null && !attributes.get(hashAttribute).isJsonNull()) {
-            hashValue = attributes.get(hashAttribute).getAsString();
-        }
-
-        if (hashValue.isEmpty() && fallbackAttribute != null) {
-            if (attributes.get(fallbackAttribute) != null
-                    && !attributes.get(fallbackAttribute).isJsonNull()) {
-                hashValue = attributes.get(fallbackAttribute).getAsString();
-            }
+        if (hashValue.isEmpty() && fallbackAttribute != null && attributes != null) {
+            hashValue = toHashValue(attributes.get(fallbackAttribute));
 
             if (!hashValue.isEmpty()) {
                 hashAttribute = fallbackAttribute;
@@ -877,6 +863,33 @@ public class GrowthBookUtils {
         }
 
         return new HashAttributeAndHashValue(hashAttribute, hashValue);
+    }
+
+    /**
+     * Converts an attribute value to the string that gets hashed, like the JS SDK: a non-empty
+     * string as is, and a finite, non-zero number formatted like JS {@code String(number)}, so
+     * {@code 1.0} hashes as {@code "1"}. Any other value, including {@code 0}, booleans, null,
+     * arrays and objects, counts as missing.
+     *
+     * @param value the attribute value, or null when the attribute is absent
+     * @return the value to hash, or an empty string when the attribute counts as missing
+     */
+    static String toHashValue(@Nullable JsonElement value) {
+        if (value == null || !value.isJsonPrimitive()) {
+            return "";
+        }
+        JsonPrimitive primitive = value.getAsJsonPrimitive();
+        if (primitive.isString()) {
+            return primitive.getAsString();
+        }
+        if (primitive.isNumber()) {
+            double number = primitive.getAsDouble();
+            if (number == 0 || Double.isNaN(number) || Double.isInfinite(number)) {
+                return "";
+            }
+            return StringUtils.jsNumberToString(number);
+        }
+        return "";
     }
 
     private static int findVariationIndex(List<VariationMeta> meta, String variationKey) {

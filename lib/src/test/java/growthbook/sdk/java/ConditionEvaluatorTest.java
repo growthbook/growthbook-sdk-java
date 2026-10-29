@@ -379,6 +379,66 @@ class ConditionEvaluatorTest {
         assertTrue(evaluator.evaluateCondition(attributes, condition("{\"count\":{\"$ne\":16777216}}"), null));
     }
 
+    @Test
+    @DisplayName("$eq and $ne never match an array or object operand, like JS ===")
+    void test_equalityWithArrayOrObjectOperand() {
+        ConditionEvaluator evaluator = new ConditionEvaluator();
+        JsonObject attributes = condition("{\"a\": [1], \"o\": {\"x\": 1}}");
+
+        assertFalse(evaluator.evaluateCondition(attributes, condition("{\"a\": {\"$eq\": [1]}}"), null));
+        assertTrue(evaluator.evaluateCondition(attributes, condition("{\"a\": {\"$ne\": [1]}}"), null));
+        assertFalse(evaluator.evaluateCondition(attributes, condition("{\"o\": {\"$eq\": {\"x\": 1}}}"), null));
+        assertTrue(evaluator.evaluateCondition(attributes, condition("{\"o\": {\"$ne\": {\"x\": 1}}}"), null));
+    }
+
+    @Test
+    @DisplayName("$in, $nin, $ini and $nini never match an array or object item")
+    void test_membershipWithArrayOrObjectItems() {
+        ConditionEvaluator evaluator = new ConditionEvaluator();
+        JsonObject attributes = condition("{\"a\": [[1]], \"o\": {\"x\": 1}}");
+
+        assertFalse(evaluator.evaluateCondition(attributes, condition("{\"a\": {\"$in\": [[1]]}}"), null));
+        assertTrue(evaluator.evaluateCondition(attributes, condition("{\"a\": {\"$nin\": [[1]]}}"), null));
+        assertFalse(evaluator.evaluateCondition(attributes, condition("{\"o\": {\"$ini\": [{\"x\": 1}]}}"), null));
+        assertTrue(evaluator.evaluateCondition(attributes, condition("{\"o\": {\"$nini\": [{\"x\": 1}]}}"), null));
+    }
+
+    @Test
+    @DisplayName("$regex and $regexi with a non-string pattern never match")
+    void test_regexWithNonStringPattern() {
+        ConditionEvaluator evaluator = new ConditionEvaluator();
+        JsonObject attributes = condition("{\"x\": \"10\", \"t\": \"true\"}");
+
+        assertFalse(evaluator.evaluateCondition(attributes, condition("{\"x\": {\"$regex\": 1}}"), null));
+        assertFalse(evaluator.evaluateCondition(attributes, condition("{\"x\": {\"$regexi\": 1}}"), null));
+        assertFalse(evaluator.evaluateCondition(attributes, condition("{\"t\": {\"$regex\": true}}"), null));
+        assertFalse(evaluator.evaluateCondition(attributes, condition("{\"x\": {\"$regex\": [\"1\"]}}"), null));
+    }
+
+    @Test
+    @DisplayName("Numbers in lists and saved groups compare by value, so 1 matches 1.0")
+    void test_membershipComparesNumbersByValue() {
+        ConditionEvaluator evaluator = new ConditionEvaluator();
+        JsonObject savedGroups = condition("{\"nums\": [1.0, 2], \"typed\": {\"type\": \"list\", \"attributeKey\": \"n\", \"values\": [1.0]}}");
+
+        assertTrue(evaluator.evaluateCondition(condition("{\"n\": 1}"), condition("{\"n\": {\"$in\": [1.0]}}"), null));
+        assertTrue(evaluator.evaluateCondition(condition("{\"n\": 1.0}"), condition("{\"n\": {\"$in\": [1]}}"), null));
+        assertTrue(evaluator.evaluateCondition(condition("{\"n\": [2.0]}"), condition("{\"n\": {\"$in\": [2]}}"), null));
+        assertFalse(evaluator.evaluateCondition(condition("{\"n\": \"1\"}"), condition("{\"n\": {\"$in\": [1]}}"), null));
+        assertTrue(evaluator.evaluateCondition(condition("{\"n\": 1}"), condition("{\"n\": {\"$inGroup\": \"nums\"}}"), savedGroups));
+        assertTrue(evaluator.evaluateCondition(condition("{\"n\": 1}"), condition("{\"$savedGroup\": {\"id\": \"typed\"}}"), savedGroups));
+    }
+
+    @Test
+    @DisplayName("A null attribute does not exist, like a missing one")
+    void test_existsTreatsNullAsMissing() {
+        ConditionEvaluator evaluator = new ConditionEvaluator();
+
+        assertFalse(evaluator.evaluateCondition(condition("{\"a\": null}"), condition("{\"a\": {\"$exists\": true}}"), null));
+        assertTrue(evaluator.evaluateCondition(condition("{\"a\": null}"), condition("{\"a\": {\"$exists\": false}}"), null));
+        assertTrue(evaluator.evaluateCondition(condition("{}"), condition("{\"a\": {\"$notInGroup\": \"g\"}}"), condition("{\"g\": [1]}")));
+    }
+
     private JsonObject condition(String json) {
         return GrowthBookJsonUtils.getInstance().gson.fromJson(json, JsonObject.class);
     }

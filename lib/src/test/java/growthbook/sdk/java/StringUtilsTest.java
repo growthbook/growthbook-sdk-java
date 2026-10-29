@@ -21,11 +21,23 @@ class StringUtilsTest {
     }
 
     @Test
-    void padLeftZeros() {
+    void paddedVersionStringPadsNumbersWithSpaces() {
         String input = "1.10.20";
         String result = StringUtils.paddedVersionString(input);
 
-        assertEquals("00001-00010-00020-~", result);
+        assertEquals("    1-   10-   20-~", result);
+    }
+
+    @Test
+    void paddedVersionStringKeepsEmptyPartsLikeJavaScript() {
+        // Expected values are the JS SDK's paddedVersionString
+        assertEquals("-    1", StringUtils.paddedVersionString("-1"));
+        assertEquals(" 5", StringUtils.paddedVersionString(" 5"));
+        assertEquals("    1-    2--~", StringUtils.paddedVersionString("1.2."));
+        assertEquals("    1-    2-    3-rc-    1", StringUtils.paddedVersionString("v1.2.3-rc.1+build.7"));
+        // A padded number sorts below " 5" and "-1", like JS, where the pad is spaces
+        assertTrue(StringUtils.paddedVersionString("1.2.3").compareTo(StringUtils.paddedVersionString(" 5")) < 0);
+        assertTrue(StringUtils.paddedVersionString("1.2.3").compareTo(StringUtils.paddedVersionString("-1")) < 0);
     }
 
     @Test

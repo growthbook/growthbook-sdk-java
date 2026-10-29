@@ -27,6 +27,25 @@ public class MathUtils {
     }
 
     /**
+     * Fowler-Noll-Vo FNV-1a 32 over the string's UTF-16 code units, like the JS SDK, which XORs
+     * each {@code charCodeAt} value. A character outside the BMP contributes its two surrogates.
+     *
+     * @param value the string to hash
+     * @return the unsigned 32-bit hash
+     */
+    public static long fnv1a_32(String value) {
+        long hash = INIT32;
+
+        for (int i = 0; i < value.length(); i++) {
+            hash ^= value.charAt(i);
+            hash *= PRIME32;
+            hash %= MOD32;
+        }
+
+        return hash;
+    }
+
+    /**
      * Given a value, ensures it's clamped between the range provided
      *
      * @param value      The number you want to make sure is between lowerRange and upperRange
