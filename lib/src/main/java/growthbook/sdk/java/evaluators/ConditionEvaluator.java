@@ -309,11 +309,11 @@ public class ConditionEvaluator implements IConditionEvaluator {
      * {@code $inGroup}/{@code $notInGroup}: membership in a named saved group (empty if unknown).
      */
     private boolean evalSavedGroup(Operator operator, @Nullable JsonElement actual, @Nullable JsonElement expected, @Nullable JsonObject savedGroups) {
-        if (actual == null || expected == null) {
+        if (expected == null) {
             return false;
         }
         JsonElement group = savedGroups != null ? savedGroups.get(expected.getAsString()) : null;
-        JsonArray groupValues = group != null ? group.getAsJsonArray() : new JsonArray();
+        JsonArray groupValues = group != null && group.isJsonArray() ? group.getAsJsonArray() : new JsonArray();
         boolean negate = operator == Operator.NOT_IN_GROUP;
         return negate != isIn(actual, groupValues, false);
     }
