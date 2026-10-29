@@ -7,8 +7,11 @@ import com.google.gson.JsonObject;
 import lombok.Getter;
 
 import java.io.FileNotFoundException;
-import java.io.FileReader;
+import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.Reader;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Map;
@@ -113,7 +116,8 @@ public class TestCasesJsonHelper implements ITestCasesJsonHelper {
     }
 
     private static JsonObject readJsonObject(String path) {
-        try (FileReader reader = new FileReader(path)) {
+        // The cases contain non-ASCII text, and the platform charset isn't always UTF-8 (Windows, POSIX locales)
+        try (Reader reader = new InputStreamReader(new FileInputStream(path), StandardCharsets.UTF_8)) {
             return new Gson().fromJson(reader, JsonObject.class);
         } catch (IOException e) {
             throw new RuntimeException(e);
@@ -227,7 +231,7 @@ public class TestCasesJsonHelper implements ITestCasesJsonHelper {
 
         Gson gson = new Gson();
         try {
-            JsonObject features = gson.fromJson(new FileReader(absolutePath + "/demo-features-001.json"), JsonObject.class);
+            JsonObject features = gson.fromJson(new InputStreamReader(new FileInputStream(absolutePath + "/demo-features-001.json"), StandardCharsets.UTF_8), JsonObject.class);
             return features.toString();
         } catch (FileNotFoundException e) {
             throw new RuntimeException(e);
