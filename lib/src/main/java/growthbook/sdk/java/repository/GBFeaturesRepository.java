@@ -70,6 +70,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Supplier;
 
 /**
  * This class can be created with its `builder()` or constructor.
@@ -671,6 +672,8 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
 
     // Scheduled polling (non-SSE) drives refresh for STALE_WHILE_REVALIDATE strategy
     private final AtomicReference<ScheduledExecutorService> pollScheduler = new AtomicReference<>(null);
+    private Supplier<ScheduledExecutorService> pollSchedulerFactory =
+            () -> Executors.newSingleThreadScheduledExecutor(POLL_THREAD_FACTORY);
     private final AtomicBoolean polling = new AtomicBoolean(false);
     private volatile ScheduledExecutorService sseRetryScheduler;
     private final AtomicBoolean sseReconnectScheduled = new AtomicBoolean(false);
@@ -679,14 +682,22 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
     private final AtomicBoolean shuttingDown = new AtomicBoolean(false);
     private final Object initLock = new Object();
 
+    /**
+     * Overrides the scheduler backing {@link FeatureRefreshStrategy#STALE_WHILE_REVALIDATE} polling.
+     * Package-private seam for deterministic tests; invoke before {@link #initialize()} so the
+     * supplied scheduler is in place when polling is scheduled. The default factory produces a named
+     * daemon thread via {@code POLL_THREAD_FACTORY}.
+     */
+    void setPollSchedulerFactory(Supplier<ScheduledExecutorService> pollSchedulerFactory) {
+        this.pollSchedulerFactory = Objects.requireNonNull(pollSchedulerFactory, "pollSchedulerFactory");
+    }
+
     private void schedulePolling() {
         if (this.refreshStrategy == FeatureRefreshStrategy.SERVER_SENT_EVENTS) {
             return;
         }
 
-        // Named daemon thread: a non-daemon poller would keep the JVM alive when the
-        // application exits without calling shutdown().
-        ScheduledExecutorService newScheduler = Executors.newSingleThreadScheduledExecutor(POLL_THREAD_FACTORY);
+        ScheduledExecutorService newScheduler = this.pollSchedulerFactory.get();
         if (!pollScheduler.compareAndSet(null, newScheduler)) {
             newScheduler.shutdown();
             return;
