@@ -8,6 +8,6 @@ package growthbook.sdk.java;
 public class Version {
     // The current version of the GrowthBook SDK for Java
     // x-release-please-start-version
-    public static final String SDK_VERSION = "0.11.4-SNAPSHOT";
+    public static final String SDK_VERSION = "0.12.0";
     // x-release-please-end
 }
