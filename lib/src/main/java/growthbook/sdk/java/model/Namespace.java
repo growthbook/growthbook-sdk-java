@@ -16,8 +16,8 @@ import lombok.Data;
  * </p>
  * <ul>
  *     <li>The namespace id (string)</li>
- *     <li>The beginning of the range (float, between 0 and 1)</li>
- *     <li>The end of the range (float, between 0 and 1)</li>
+ *     <li>The beginning of the range (double, between 0 and 1)</li>
+ *     <li>The end of the range (double, between 0 and 1)</li>
  * </ul>
  */
 @Deprecated
@@ -29,10 +29,10 @@ public class Namespace {
     String id;
 
     @Expose(serialize = false)
-    Float rangeStart;
+    Double rangeStart;
 
     @Expose(serialize = false)
-    Float rangeEnd;
+    Double rangeEnd;
 
     static JsonElement getJson(Namespace object) {
         JsonArray array = new JsonArray();
@@ -47,8 +47,8 @@ public class Namespace {
     static Namespace fromJson(JsonElement jsonElement) {
         JsonArray namespaceArray = (JsonArray) jsonElement;
         String id = namespaceArray.get(0).getAsString();
-        Float start = namespaceArray.get(1).getAsFloat();
-        Float end = namespaceArray.get(2).getAsFloat();
+        Double start = namespaceArray.get(1).getAsDouble();
+        Double end = namespaceArray.get(2).getAsDouble();
 
         return Namespace
                 .builder()

@@ -44,14 +44,21 @@ class ConditionEvaluatorTest {
 
     @Test
     void test_evaluateCondition_testCases() {
+        assertEvalConditionCasesPass(helper.evalConditionTestCases());
+    }
+
+    @Test
+    void test_savedGroupReferencesV2_evaluateCondition_testCases() {
+        assertEvalConditionCasesPass(helper.getTestCases().getAsJsonObject("savedGroupReferencesV2").getAsJsonArray("evalCondition"));
+    }
+
+    private void assertEvalConditionCasesPass(JsonArray testCases) {
         ArrayList<String> passedTests = new ArrayList<>();
         ArrayList<String> failedTests = new ArrayList<>();
 
         ArrayList<Integer> failingIndexes = new ArrayList<>();
 
         ConditionEvaluator evaluator = new ConditionEvaluator();
-
-        JsonArray testCases = helper.evalConditionTestCases();
 
         for (int i = 0; i < testCases.size(); i++) {
             resetErrorOutputStream();
@@ -141,15 +148,16 @@ class ConditionEvaluatorTest {
     }
 
     @Test
-    @DisplayName("$eq keeps comparing numeric strings by value")
-    void test_equalOperatorStillParsesNumericStrings() {
-        // Guards the fix above from being tightened into a strict type check, which would change
-        // which users match targeting rules.
+    @DisplayName("$eq does not coerce numeric strings, and $ne matches them")
+    void test_equalOperatorDoesNotParseNumericStrings() {
+        // Spec 0.10.0: an attribute of a different type than the condition value never equals it.
         ConditionEvaluator evaluator = new ConditionEvaluator();
 
-        assertTrue(evaluator.evaluateCondition(parse("{\"a\":1}"), parse("{\"a\":{\"$eq\":\"1\"}}"), null));
-        assertTrue(evaluator.evaluateCondition(parse("{\"a\":\"1\"}"), parse("{\"a\":{\"$eq\":1}}"), null));
+        assertFalse(evaluator.evaluateCondition(parse("{\"a\":1}"), parse("{\"a\":{\"$eq\":\"1\"}}"), null));
+        assertFalse(evaluator.evaluateCondition(parse("{\"a\":\"1\"}"), parse("{\"a\":{\"$eq\":1}}"), null));
+        assertTrue(evaluator.evaluateCondition(parse("{\"a\":\"1\"}"), parse("{\"a\":{\"$ne\":1}}"), null));
         assertTrue(evaluator.evaluateCondition(parse("{\"a\":1}"), parse("{\"a\":{\"$eq\":1}}"), null));
+        assertTrue(evaluator.evaluateCondition(parse("{\"a\":1}"), parse("{\"a\":{\"$eq\":1.0}}"), null));
         assertFalse(evaluator.evaluateCondition(parse("{\"a\":1}"), parse("{\"a\":{\"$eq\":2}}"), null));
     }
 
@@ -196,14 +204,14 @@ class ConditionEvaluatorTest {
     }
 
     @Test
-    @DisplayName("implicit equality coerces to string, matching the JS SDK")
-    void test_implicitEqualityCoercesToString() {
-        // The JS SDK compares `value + "" === condition` for string conditions, so a numeric or
-        // boolean attribute matches its string form. The previous type-strict comparison diverged.
+    @DisplayName("implicit equality does not coerce to string, matching the JS SDK 2.0.0")
+    void test_implicitEqualityDoesNotCoerceToString() {
+        // Spec 0.10.0: a numeric or boolean attribute no longer matches its string form.
         ConditionEvaluator evaluator = new ConditionEvaluator();
 
-        assertTrue(evaluator.evaluateCondition(parse("{\"a\":123}"), parse("{\"a\":\"123\"}"), null));
-        assertTrue(evaluator.evaluateCondition(parse("{\"a\":true}"), parse("{\"a\":\"true\"}"), null));
+        assertFalse(evaluator.evaluateCondition(parse("{\"a\":123}"), parse("{\"a\":\"123\"}"), null));
+        assertFalse(evaluator.evaluateCondition(parse("{\"a\":true}"), parse("{\"a\":\"true\"}"), null));
+        assertTrue(evaluator.evaluateCondition(parse("{\"a\":\"123\"}"), parse("{\"a\":\"123\"}"), null));
         assertFalse(evaluator.evaluateCondition(parse("{\"a\":12}"), parse("{\"a\":\"123\"}"), null));
         assertFalse(evaluator.evaluateCondition(parse("{}"), parse("{\"a\":\"123\"}"), null));
     }
@@ -287,6 +295,75 @@ class ConditionEvaluatorTest {
     }
 
     @Test
+    @DisplayName("getPath reads an array's own index and length keys, like the JS SDK")
+    void test_getPathReadsArrayIndexAndLength() {
+        ConditionEvaluator evaluator = new ConditionEvaluator();
+        JsonElement attributes = condition("{\"x\": [[1, 2]], \"s\": \"ab\"}");
+
+        assertEquals(1, ((JsonElement) Objects.requireNonNull(evaluator.getPath(attributes, "x.0.0"))).getAsInt());
+        assertEquals(2, ((JsonElement) Objects.requireNonNull(evaluator.getPath(attributes, "x.0.length"))).getAsInt());
+        assertNull(evaluator.getPath(attributes, "x.1"));
+        assertNull(evaluator.getPath(attributes, "x.00"));
+        assertNull(evaluator.getPath(attributes, "x.-1"));
+        assertNull(evaluator.getPath(attributes, "s.length"));
+        assertNull(evaluator.getPath(attributes, "x.0.0."));
+    }
+
+    @Test
+    @DisplayName("getPath keeps a trailing empty segment, which reads an empty-string key")
+    void test_getPathKeepsTrailingEmptySegment() {
+        ConditionEvaluator evaluator = new ConditionEvaluator();
+        JsonObject attributes = condition("{\"a\": {\"\": 1}, \"b\": 2, \"x\": [{\"a\": {\"\": 1}}]}");
+
+        assertEquals(1, ((JsonElement) Objects.requireNonNull(evaluator.getPath(attributes, "a."))).getAsInt());
+        assertNull(evaluator.getPath(attributes, "b."));
+        assertTrue(evaluator.evaluateCondition(attributes, condition("{\"x\": {\"$elemMatch\": {\"$or\": [{\"a.\": 1}]}}}"), null));
+    }
+
+    @Test
+    @DisplayName("A logical $elemMatch reads a nested array element's index keys")
+    void test_logicalElemMatchOnNestedArrays() {
+        ConditionEvaluator evaluator = new ConditionEvaluator();
+        JsonObject attributes = condition("{\"x\": [[1]]}");
+
+        assertTrue(evaluator.evaluateCondition(attributes, condition("{\"x\": {\"$elemMatch\": {\"$or\": [{\"0\": 1}]}}}"), null));
+        assertTrue(evaluator.evaluateCondition(attributes, condition("{\"x\": {\"$elemMatch\": {\"$and\": [{\"length\": 1}]}}}"), null));
+        assertFalse(evaluator.evaluateCondition(attributes, condition("{\"x\": {\"$elemMatch\": {\"$or\": [{\"0\": 2}]}}}"), null));
+        // "0." reads key "" of element 1, which a number doesn't have
+        assertFalse(evaluator.evaluateCondition(attributes, condition("{\"x\": {\"$elemMatch\": {\"$or\": [{\"0.\": 1}]}}}"), null));
+
+        JsonObject savedGroups = condition("{\"g\": {\"type\": \"list\", \"attributeKey\": \"0\", \"values\": [1]}}");
+        assertTrue(evaluator.evaluateCondition(attributes, condition("{\"x\": {\"$elemMatch\": {\"$savedGroup\": {\"id\": \"g\"}}}}"), savedGroups));
+    }
+
+    @Test
+    @DisplayName("Numeric version operands are formatted like JS String(number)")
+    void test_numericVersionUsesJsNumberFormatting() {
+        ConditionEvaluator evaluator = new ConditionEvaluator();
+        JsonObject attributes = condition("{\"x\": 1e3, \"y\": 1.50}");
+
+        assertTrue(evaluator.evaluateCondition(attributes, condition("{\"x\": {\"$veq\": 1000}}"), null));
+        assertFalse(evaluator.evaluateCondition(attributes, condition("{\"x\": {\"$vne\": 1000.0}}"), null));
+        assertTrue(evaluator.evaluateCondition(attributes, condition("{\"y\": {\"$veq\": 1.5}}"), null));
+
+        // 2^-24 is "5.960464477539063e-8" in JS, so it's greater than 5.960464477539062e-8
+        JsonObject powerOfTwo = condition("{\"x\": 5.9604644775390625e-8}");
+        assertTrue(evaluator.evaluateCondition(powerOfTwo, condition("{\"x\": {\"$vgt\": 5.960464477539062e-8}}"), null));
+        assertTrue(evaluator.evaluateCondition(powerOfTwo, condition("{\"x\": {\"$veq\": 5.960464477539063e-8}}"), null));
+    }
+
+    @Test
+    @DisplayName("$regexi folds non-ASCII case, like a JS /i regex")
+    void test_caseInsensitiveRegexFoldsUnicode() {
+        ConditionEvaluator evaluator = new ConditionEvaluator();
+        JsonObject attributes = condition("{\"x\": \"\u00c9\"}");
+
+        assertTrue(evaluator.evaluateCondition(attributes, condition("{\"x\": {\"$regexi\": \"^\u00e9$\"}}"), null));
+        assertFalse(evaluator.evaluateCondition(attributes, condition("{\"x\": {\"$notRegexi\": \"^\u00e9$\"}}"), null));
+        assertFalse(evaluator.evaluateCondition(attributes, condition("{\"x\": {\"$regex\": \"^\u00e9$\"}}"), null));
+    }
+
+    @Test
     @DisplayName("Numeric comparisons keep double precision, matching the JS reference SDK")
     void test_numericComparison_usesDoublePrecision() {
         // The JS SDK compares with native `<`/`>` on IEEE-754 doubles (packages/sdk-js/src/mongrule.ts).
@@ -300,6 +377,66 @@ class ConditionEvaluatorTest {
         assertFalse(evaluator.evaluateCondition(attributes, condition("{\"count\":{\"$lte\":16777216}}"), null));
         assertFalse(evaluator.evaluateCondition(attributes, condition("{\"count\":{\"$eq\":16777216}}"), null));
         assertTrue(evaluator.evaluateCondition(attributes, condition("{\"count\":{\"$ne\":16777216}}"), null));
+    }
+
+    @Test
+    @DisplayName("$eq and $ne never match an array or object operand, like JS ===")
+    void test_equalityWithArrayOrObjectOperand() {
+        ConditionEvaluator evaluator = new ConditionEvaluator();
+        JsonObject attributes = condition("{\"a\": [1], \"o\": {\"x\": 1}}");
+
+        assertFalse(evaluator.evaluateCondition(attributes, condition("{\"a\": {\"$eq\": [1]}}"), null));
+        assertTrue(evaluator.evaluateCondition(attributes, condition("{\"a\": {\"$ne\": [1]}}"), null));
+        assertFalse(evaluator.evaluateCondition(attributes, condition("{\"o\": {\"$eq\": {\"x\": 1}}}"), null));
+        assertTrue(evaluator.evaluateCondition(attributes, condition("{\"o\": {\"$ne\": {\"x\": 1}}}"), null));
+    }
+
+    @Test
+    @DisplayName("$in, $nin, $ini and $nini never match an array or object item")
+    void test_membershipWithArrayOrObjectItems() {
+        ConditionEvaluator evaluator = new ConditionEvaluator();
+        JsonObject attributes = condition("{\"a\": [[1]], \"o\": {\"x\": 1}}");
+
+        assertFalse(evaluator.evaluateCondition(attributes, condition("{\"a\": {\"$in\": [[1]]}}"), null));
+        assertTrue(evaluator.evaluateCondition(attributes, condition("{\"a\": {\"$nin\": [[1]]}}"), null));
+        assertFalse(evaluator.evaluateCondition(attributes, condition("{\"o\": {\"$ini\": [{\"x\": 1}]}}"), null));
+        assertTrue(evaluator.evaluateCondition(attributes, condition("{\"o\": {\"$nini\": [{\"x\": 1}]}}"), null));
+    }
+
+    @Test
+    @DisplayName("$regex and $regexi with a non-string pattern never match")
+    void test_regexWithNonStringPattern() {
+        ConditionEvaluator evaluator = new ConditionEvaluator();
+        JsonObject attributes = condition("{\"x\": \"10\", \"t\": \"true\"}");
+
+        assertFalse(evaluator.evaluateCondition(attributes, condition("{\"x\": {\"$regex\": 1}}"), null));
+        assertFalse(evaluator.evaluateCondition(attributes, condition("{\"x\": {\"$regexi\": 1}}"), null));
+        assertFalse(evaluator.evaluateCondition(attributes, condition("{\"t\": {\"$regex\": true}}"), null));
+        assertFalse(evaluator.evaluateCondition(attributes, condition("{\"x\": {\"$regex\": [\"1\"]}}"), null));
+    }
+
+    @Test
+    @DisplayName("Numbers in lists and saved groups compare by value, so 1 matches 1.0")
+    void test_membershipComparesNumbersByValue() {
+        ConditionEvaluator evaluator = new ConditionEvaluator();
+        JsonObject savedGroups = condition("{\"nums\": [1.0, 2], \"typed\": {\"type\": \"list\", \"attributeKey\": \"n\", \"values\": [1.0]}}");
+
+        assertTrue(evaluator.evaluateCondition(condition("{\"n\": 1}"), condition("{\"n\": {\"$in\": [1.0]}}"), null));
+        assertTrue(evaluator.evaluateCondition(condition("{\"n\": 1.0}"), condition("{\"n\": {\"$in\": [1]}}"), null));
+        assertTrue(evaluator.evaluateCondition(condition("{\"n\": [2.0]}"), condition("{\"n\": {\"$in\": [2]}}"), null));
+        assertFalse(evaluator.evaluateCondition(condition("{\"n\": \"1\"}"), condition("{\"n\": {\"$in\": [1]}}"), null));
+        assertTrue(evaluator.evaluateCondition(condition("{\"n\": 1}"), condition("{\"n\": {\"$inGroup\": \"nums\"}}"), savedGroups));
+        assertTrue(evaluator.evaluateCondition(condition("{\"n\": 1}"), condition("{\"$savedGroup\": {\"id\": \"typed\"}}"), savedGroups));
+    }
+
+    @Test
+    @DisplayName("A null attribute does not exist, like a missing one")
+    void test_existsTreatsNullAsMissing() {
+        ConditionEvaluator evaluator = new ConditionEvaluator();
+
+        assertFalse(evaluator.evaluateCondition(condition("{\"a\": null}"), condition("{\"a\": {\"$exists\": true}}"), null));
+        assertTrue(evaluator.evaluateCondition(condition("{\"a\": null}"), condition("{\"a\": {\"$exists\": false}}"), null));
+        assertTrue(evaluator.evaluateCondition(condition("{}"), condition("{\"a\": {\"$notInGroup\": \"g\"}}"), condition("{\"g\": [1]}")));
     }
 
     private JsonObject condition(String json) {

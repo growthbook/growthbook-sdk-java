@@ -11,8 +11,8 @@ class FilterTest {
     @Test
     void test_canBeBuilt() {
         ArrayList<BucketRange> ranges = new ArrayList<>();
-        ranges.add(new BucketRange(0.f, 0.2f));
-        ranges.add(new BucketRange(0.2f, 0.5f));
+        ranges.add(new BucketRange(0.0, 0.2));
+        ranges.add(new BucketRange(0.2, 0.5));
 
         Filter subject = Filter.builder()
             .attribute("user_id")
@@ -40,7 +40,7 @@ class FilterTest {
     @Test
     void test_canBeConstructed() {
         ArrayList<BucketRange> ranges = new ArrayList<>();
-        ranges.add(new BucketRange(0.f, 0.2f));
+        ranges.add(new BucketRange(0.0, 0.2));
 
         Filter subject = new Filter("seed", ranges, "user_id", 1);
 
@@ -63,8 +63,8 @@ class FilterTest {
     @Test
     void testCanBeSerializedIntoJson() {
         ArrayList<BucketRange> ranges = new ArrayList<>();
-        ranges.add(new BucketRange(0.f, 0.2f));
-        ranges.add(new BucketRange(0.2f, 0.5f));
+        ranges.add(new BucketRange(0.0, 0.2));
+        ranges.add(new BucketRange(0.2, 0.5));
 
         Filter subject = Filter.builder()
             .attribute("user_id")
