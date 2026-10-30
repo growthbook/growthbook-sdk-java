@@ -178,7 +178,10 @@ implements <a href="IConditionEvaluator.html" title="interface in growthbook.sdk
  com.google.gson.JsonObject&nbsp;savedGroups)</span></div>
 <div class="block">Evaluate a condition for a set of user attributes based on the provided condition.
  The condition syntax closely resembles MongoDB's syntax.
- This is defined in the Feature's targeting conditions' Advanced settings.</div>
+ This is defined in the Feature's targeting conditions' Advanced settings.
+
+ <p>A condition that depends on an operator or saved group type this SDK doesn't support
+ fails, including under <code>$not</code> and <code>$nor</code>. A malformed condition fails as a whole.</div>
 <dl class="notes">
 <dt>Specified by:</dt>
 <dd><code><a href="IConditionEvaluator.html#evaluateCondition(com.google.gson.JsonObject,com.google.gson.JsonObject,com.google.gson.JsonObject)">evaluateCondition</a></code>&nbsp;in interface&nbsp;<code><a href="IConditionEvaluator.html" title="interface in growthbook.sdk.java.evaluators">IConditionEvaluator</a></code></dd>

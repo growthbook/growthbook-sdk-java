@@ -87,9 +87,13 @@ loadScripts(document, 'script');</script>
 <div class="block"><b>INTERNAL</b>: Top-level logical operators that may appear as keys in a condition object.
 
  <p>Each constant carries the strategy that combines its operand against the user attributes.
- Conditions are recursive, so a strategy receives the <a href="IConditionEvaluator.html" title="interface in growthbook.sdk.java.evaluators"><code>IConditionEvaluator</code></a> and calls back
+ Conditions are recursive, so a strategy receives the <a href="ConditionEvaluator.html" title="class in growthbook.sdk.java.evaluators"><code>ConditionEvaluator</code></a> and calls back
  into it for nested sub-conditions (the Interpreter pattern). Adding a logical operator is a
- single entry here.</p></div>
+ single entry here.</p>
+
+ <p>Strategies return <code>true</code>, <code>false</code>, or <code>null</code> when the result depends on an
+ operator or saved group type this SDK doesn't support. <code>null</code> stays <code>null</code> under
+ <code>$not</code> and <code>$nor</code>, so negating an unsupported condition never makes it pass.</p></div>
 </section>
 <section class="summary">
 <ul class="summary-list">

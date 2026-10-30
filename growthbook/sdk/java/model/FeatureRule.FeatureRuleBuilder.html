@@ -110,7 +110,7 @@ loadScripts(document, 'script');</script>
 <div class="block">Optional targeting condition</div>
 </div>
 <div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="FeatureRule.FeatureRuleBuilder.html" title="class in growthbook.sdk.java.model">FeatureRule.FeatureRuleBuilder</a>&lt;<a href="FeatureRule.FeatureRuleBuilder.html" title="type parameter in FeatureRule.FeatureRuleBuilder">ValueType</a>&gt;</code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#coverage(java.lang.Float)" class="member-name-link">coverage</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Float.html" title="class or interface in java.lang" class="external-link">Float</a>&nbsp;coverage)</code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#coverage(java.lang.Double)" class="member-name-link">coverage</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Double.html" title="class or interface in java.lang" class="external-link">Double</a>&nbsp;coverage)</code></div>
 <div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">What percent of users should be included in the experiment (between 0 and 1, inclusive)</div>
 </div>
@@ -217,7 +217,7 @@ loadScripts(document, 'script');</script>
 <div class="block">Run an experiment (A/B test) and randomly choose between these variations</div>
 </div>
 <div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="FeatureRule.FeatureRuleBuilder.html" title="class in growthbook.sdk.java.model">FeatureRule.FeatureRuleBuilder</a>&lt;<a href="FeatureRule.FeatureRuleBuilder.html" title="type parameter in FeatureRule.FeatureRuleBuilder">ValueType</a>&gt;</code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#weights(java.util.ArrayList)" class="member-name-link">weights</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/ArrayList.html" title="class or interface in java.util" class="external-link">ArrayList</a>&lt;<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Float.html" title="class or interface in java.lang" class="external-link">Float</a>&gt;&nbsp;weights)</code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#weights(java.util.ArrayList)" class="member-name-link">weights</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/ArrayList.html" title="class or interface in java.util" class="external-link">ArrayList</a>&lt;<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Double.html" title="class or interface in java.lang" class="external-link">Double</a>&gt;&nbsp;weights)</code></div>
 <div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">How to weight traffic between variations.</div>
 </div>
@@ -263,10 +263,10 @@ loadScripts(document, 'script');</script>
 </section>
 </li>
 <li>
-<section class="detail" id="coverage(java.lang.Float)">
+<section class="detail" id="coverage(java.lang.Double)">
 <h3>coverage</h3>
 <div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="FeatureRule.FeatureRuleBuilder.html" title="class in growthbook.sdk.java.model">FeatureRule.FeatureRuleBuilder</a>&lt;<a href="FeatureRule.FeatureRuleBuilder.html" title="type parameter in FeatureRule.FeatureRuleBuilder">ValueType</a>&gt;</span>&nbsp;<span class="element-name">coverage</span><wbr><span class="parameters">(@Nullable
- <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Float.html" title="class or interface in java.lang" class="external-link">Float</a>&nbsp;coverage)</span></div>
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Double.html" title="class or interface in java.lang" class="external-link">Double</a>&nbsp;coverage)</span></div>
 <div class="block">What percent of users should be included in the experiment (between 0 and 1, inclusive)</div>
 <dl class="notes">
 <dt>Returns:</dt>
@@ -302,7 +302,7 @@ loadScripts(document, 'script');</script>
 <section class="detail" id="weights(java.util.ArrayList)">
 <h3>weights</h3>
 <div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="FeatureRule.FeatureRuleBuilder.html" title="class in growthbook.sdk.java.model">FeatureRule.FeatureRuleBuilder</a>&lt;<a href="FeatureRule.FeatureRuleBuilder.html" title="type parameter in FeatureRule.FeatureRuleBuilder">ValueType</a>&gt;</span>&nbsp;<span class="element-name">weights</span><wbr><span class="parameters">(@Nullable
- <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/ArrayList.html" title="class or interface in java.util" class="external-link">ArrayList</a>&lt;<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Float.html" title="class or interface in java.lang" class="external-link">Float</a>&gt;&nbsp;weights)</span></div>
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/ArrayList.html" title="class or interface in java.util" class="external-link">ArrayList</a>&lt;<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Double.html" title="class or interface in java.lang" class="external-link">Double</a>&gt;&nbsp;weights)</span></div>
 <div class="block">How to weight traffic between variations. Must add to 1.</div>
 <dl class="notes">
 <dt>Returns:</dt>

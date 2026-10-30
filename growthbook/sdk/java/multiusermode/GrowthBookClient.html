@@ -234,6 +234,17 @@ loadScripts(document, 'script');</script>
 <div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>boolean</code></div>
 <div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#preloadRemoteEval(growthbook.sdk.java.multiusermode.configurations.UserContext)" class="member-name-link">preloadRemoteEval</a><wbr>(<a href="configurations/UserContext.html" title="class in growthbook.sdk.java.multiusermode.configurations">UserContext</a>&nbsp;userContext)</code></div>
 <div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">&nbsp;</div>
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>com.google.gson.JsonObject</code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#reducePayload(growthbook.sdk.java.multiusermode.configurations.UserContext)" class="member-name-link">reducePayload</a><wbr>(<a href="configurations/UserContext.html" title="class in growthbook.sdk.java.multiusermode.configurations">UserContext</a>&nbsp;userContext)</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="block">Shrinks the current features payload for one user with the default options.</div>
+</div>
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>com.google.gson.JsonObject</code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#reducePayload(growthbook.sdk.java.multiusermode.configurations.UserContext,growthbook.sdk.java.model.ReducePayloadOptions)" class="member-name-link">reducePayload</a><wbr>(<a href="configurations/UserContext.html" title="class in growthbook.sdk.java.multiusermode.configurations">UserContext</a>&nbsp;userContext,
+ <a href="../model/ReducePayloadOptions.html" title="class in growthbook.sdk.java.model">ReducePayloadOptions</a>&nbsp;options)</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="block">Shrinks the current features payload for one user, e.g.</div>
+</div>
 <div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4 method-summary-table-tab6"><code>void</code></div>
 <div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4 method-summary-table-tab6"><code><a href="#refreshFeature()" class="member-name-link">refreshFeature</a>()</code></div>
 <div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4 method-summary-table-tab6">
@@ -727,6 +738,50 @@ loadScripts(document, 'script');</script>
 <dd><code>userContext</code> - user context</dd>
 <dt>Returns:</dt>
 <dd>experiment evaluation result</dd>
+</dl>
+</section>
+</li>
+<li>
+<section class="detail" id="reducePayload(growthbook.sdk.java.multiusermode.configurations.UserContext,growthbook.sdk.java.model.ReducePayloadOptions)">
+<h3>reducePayload</h3>
+<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type">com.google.gson.JsonObject</span>&nbsp;<span class="element-name">reducePayload</span><wbr><span class="parameters">(@Nullable
+ <a href="configurations/UserContext.html" title="class in growthbook.sdk.java.multiusermode.configurations">UserContext</a>&nbsp;userContext,
+ @Nullable
+ <a href="../model/ReducePayloadOptions.html" title="class in growthbook.sdk.java.model">ReducePayloadOptions</a>&nbsp;options)</span></div>
+<div class="block">Shrinks the current features payload for one user, e.g. to bootstrap a client SDK during
+ server-side rendering. The result evaluates the same as the full payload for anyone who
+ agrees with the known attributes: this client's global attributes overlaid by the user's.
+
+ <p>The payload is the one held by this client's feature repository: its features and saved
+ groups. The repository doesn't keep auto experiments or contextual bandits, so the result's
+ <code>experiments</code> list is empty. To reduce a whole payload, use
+ <a href="../evaluators/PayloadReducer.html#reducePayload(com.google.gson.JsonObject,com.google.gson.JsonObject,growthbook.sdk.java.model.ReducePayloadOptions)"><code>PayloadReducer.reducePayload(com.google.gson.JsonObject, com.google.gson.JsonObject, growthbook.sdk.java.model.ReducePayloadOptions)</code></a>. Safe for concurrent use.</div>
+<dl class="notes">
+<dt>Parameters:</dt>
+<dd><code>userContext</code> - the attributes known for the user; <code>null</code> for none</dd>
+<dd><code>options</code> - filters and prerequisite handling; <code>null</code> for defaults</dd>
+<dt>Returns:</dt>
+<dd>a new payload JSON object with <code>features</code>, <code>experiments</code> and <code>savedGroups</code></dd>
+</dl>
+</section>
+</li>
+<li>
+<section class="detail" id="reducePayload(growthbook.sdk.java.multiusermode.configurations.UserContext)">
+<h3>reducePayload</h3>
+<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type">com.google.gson.JsonObject</span>&nbsp;<span class="element-name">reducePayload</span><wbr><span class="parameters">(@Nullable
+ <a href="configurations/UserContext.html" title="class in growthbook.sdk.java.multiusermode.configurations">UserContext</a>&nbsp;userContext)</span></div>
+<div class="block">Shrinks the current features payload for one user with the default options.</div>
+<dl class="notes">
+<dt>Parameters:</dt>
+<dd><code>userContext</code> - the attributes known for the user; <code>null</code> for none</dd>
+<dt>Returns:</dt>
+<dd>a new payload JSON object</dd>
+<dt>See Also:</dt>
+<dd>
+<ul class="see-list-long">
+<li><a href="#reducePayload(growthbook.sdk.java.multiusermode.configurations.UserContext,growthbook.sdk.java.model.ReducePayloadOptions)"><code>reducePayload(UserContext, ReducePayloadOptions)</code></a></li>
+</ul>
+</dd>
 </dl>
 </section>
 </li>
