@@ -4,6 +4,7 @@ import com.google.gson.Gson;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
+import java.math.BigDecimal;
 import growthbook.sdk.java.callback.ExperimentRunCallback;
 import growthbook.sdk.java.model.AssignedExperiment;
 import growthbook.sdk.java.model.BucketRange;
@@ -474,15 +475,8 @@ public class GrowthBookUtils {
                 hashAttribute = "id";
             }
 
-            JsonElement hashValueElement = attributes.get(hashAttribute);
-            if (hashValueElement == null) return true;
-            if (hashValueElement.isJsonNull()) return true;
-            if (!hashValueElement.isJsonPrimitive()) return true;
-
-            JsonPrimitive hashValuePrimitive = hashValueElement.getAsJsonPrimitive();
-
-            String hashValue = hashValuePrimitive.getAsString();
-            if (hashValue == null || hashValue.isEmpty()) return true;
+            String hashValue = canonicalHashValue(attributes.get(hashAttribute));
+            if (hashValue.isEmpty()) return true;
 
             Integer hashVersion = filter.getHashVersion();
             if (hashVersion == null) {
@@ -889,21 +883,20 @@ public class GrowthBookUtils {
             return primitive.getAsString();
         }
         if (primitive.isNumber()) {
-            String raw = primitive.getAsString();
-            double number;
+            BigDecimal number;
             try {
-                number = Double.parseDouble(raw);
+                number = new BigDecimal(primitive.getAsString());
             } catch (NumberFormatException e) {
                 return "";
             }
-            if (number == 0.0) {
+            if (number.signum() == 0) {
                 return "";
             }
-            if (number == Math.rint(number) && !Double.isInfinite(number)
-                    && Math.abs(number) < 9.007199254740992E15) {
-                return Long.toString((long) number);
+            BigDecimal stripped = number.stripTrailingZeros();
+            if (stripped.scale() <= 0) {
+                return stripped.toBigInteger().toString();
             }
-            return raw;
+            return stripped.toPlainString();
         }
         return "";
     }
