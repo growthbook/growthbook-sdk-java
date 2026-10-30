@@ -64,7 +64,7 @@ public class GrowthBookUtils {
     }
 
     private static Float hashV1(String stringValue, String seed) {
-        long hashValue = MathUtils.fnv1a_32((stringValue + seed).getBytes());
+        long hashValue = MathUtils.fnv1a_32(stringValue + seed);
         long thousand = 1000;
         long remainder = hashValue % thousand;
 
@@ -73,8 +73,8 @@ public class GrowthBookUtils {
     }
 
     private static Float hashV2(String stringValue, String seed) {
-        long first = MathUtils.fnv1a_32((seed + stringValue).getBytes());
-        long second = MathUtils.fnv1a_32(String.valueOf(first).getBytes());
+        long first = MathUtils.fnv1a_32(seed + stringValue);
+        long second = MathUtils.fnv1a_32(String.valueOf(first));
 
         long tenThousand = 10000;
         long remainder = second % tenThousand;
@@ -859,24 +859,53 @@ public class GrowthBookUtils {
             JsonObject attributes
     ) {
         String hashAttribute = attr != null ? attr : "id";
-        String hashValue = "";
-
-        if (attributes.get(hashAttribute) != null && !attributes.get(hashAttribute).isJsonNull()) {
-            hashValue = attributes.get(hashAttribute).getAsString();
-        }
+        String hashValue = canonicalHashValue(attributes.get(hashAttribute));
 
         if (hashValue.isEmpty() && fallbackAttribute != null) {
-            if (attributes.get(fallbackAttribute) != null
-                    && !attributes.get(fallbackAttribute).isJsonNull()) {
-                hashValue = attributes.get(fallbackAttribute).getAsString();
-            }
-
+            hashValue = canonicalHashValue(attributes.get(fallbackAttribute));
             if (!hashValue.isEmpty()) {
                 hashAttribute = fallbackAttribute;
             }
         }
 
         return new HashAttributeAndHashValue(hashAttribute, hashValue);
+    }
+
+    /**
+     * The hashable string form of a hash-attribute value, per spec 0.12.0: only a non-empty string
+     * or a non-zero number is a valid hash attribute. A boolean, array, object, null, missing value,
+     * empty string, or zero returns {@code ""} — treated as a missing attribute, so the user is not
+     * bucketed. A whole number hashes like its integer (e.g. {@code 1.0} hashes as {@code "1"}).
+     *
+     * @param element the attribute value, or {@code null} when the attribute is absent
+     * @return the canonical hash string, or {@code ""} when the value is not a valid hash attribute
+     */
+    private static String canonicalHashValue(@Nullable JsonElement element) {
+        if (element == null || element.isJsonNull() || !element.isJsonPrimitive()) {
+            return "";
+        }
+        JsonPrimitive primitive = element.getAsJsonPrimitive();
+        if (primitive.isString()) {
+            return primitive.getAsString();
+        }
+        if (primitive.isNumber()) {
+            String raw = primitive.getAsString();
+            double number;
+            try {
+                number = Double.parseDouble(raw);
+            } catch (NumberFormatException e) {
+                return "";
+            }
+            if (number == 0.0) {
+                return "";
+            }
+            if (number == Math.rint(number) && !Double.isInfinite(number)
+                    && Math.abs(number) < 9.007199254740992E15) {
+                return Long.toString((long) number);
+            }
+            return raw;
+        }
+        return "";
     }
 
     private static int findVariationIndex(List<VariationMeta> meta, String variationKey) {

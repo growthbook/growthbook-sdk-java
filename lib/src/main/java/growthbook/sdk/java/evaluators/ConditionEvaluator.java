@@ -107,12 +107,29 @@ public class ConditionEvaluator implements IConditionEvaluator {
 
         JsonElement element = attributes;
         for (String segment : path.split("\\.")) {
-            if (!(element instanceof JsonObject)) {
+            if (element instanceof JsonObject) {
+                element = ((JsonObject) element).get(segment);
+            } else if (element instanceof JsonArray) {
+                JsonArray array = (JsonArray) element;
+                Integer index = parseArrayIndex(segment);
+                if (index == null || index < 0 || index >= array.size()) {
+                    return null;
+                }
+                element = array.get(index);
+            } else {
                 return null;
             }
-            element = ((JsonObject) element).get(segment);
         }
         return element;
+    }
+
+    @Nullable
+    private static Integer parseArrayIndex(String segment) {
+        try {
+            return Integer.parseInt(segment);
+        } catch (NumberFormatException e) {
+            return null;
+        }
     }
 
     /**
@@ -167,6 +184,7 @@ public class ConditionEvaluator implements IConditionEvaluator {
                 return !Objects.equals(actual, expected);
 
             case EQ:
+                if (expected.isJsonNull()) return actual == null || actual.isJsonNull();
                 if (actual == null || DataType.NULL.equals(attributeDataType)) return false;
                 return arePrimitivesEqual(actual.getAsJsonPrimitive(), expected.getAsJsonPrimitive(), attributeDataType);
 
@@ -188,8 +206,11 @@ public class ConditionEvaluator implements IConditionEvaluator {
             case NOT:
                 return !evalConditionValue(expected, actual, savedGroups);
 
-            case TYPE:
-                return GrowthBookJsonUtils.getElementType(actual).toString().equals(expected.getAsString());
+            case TYPE: {
+                // A missing attribute is null, not undefined, for $type purposes (spec 0.12.0).
+                DataType actualType = actual == null ? DataType.NULL : GrowthBookJsonUtils.getElementType(actual);
+                return actualType.toString().equals(expected.getAsString());
+            }
 
             case EXISTS:
                 return expected.getAsBoolean() ? actual != null : (actual == null || actual.isJsonNull());
@@ -215,11 +236,15 @@ public class ConditionEvaluator implements IConditionEvaluator {
      * {@code $in}/{@code $nin} (and their case-insensitive variants): tests array membership.
      */
     private boolean evalMembership(Operator operator, @Nullable JsonElement actual, JsonElement expected) {
-        if (actual == null || !expected.isJsonArray()) {
+        if (!expected.isJsonArray()) {
             return false;
         }
         boolean caseInsensitive = operator == Operator.INI || operator == Operator.NINI;
         boolean negate = operator == Operator.NIN || operator == Operator.NINI;
+        if (actual == null) {
+            // A missing attribute is not a member of any list: $nin matches, $in does not.
+            return negate;
+        }
         return negate != isIn(actual, expected.getAsJsonArray(), caseInsensitive);
     }
 

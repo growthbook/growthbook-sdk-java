@@ -27,6 +27,26 @@ public class MathUtils {
     }
 
     /**
+     * FNV-1a over the string's UTF-16 code units, matching the reference SDK's {@code charCodeAt}
+     * hashing. Each code unit is XOR-ed whole (0..0xFFFF), so non-ASCII characters hash identically
+     * to the JavaScript SDK; for ASCII this is identical to {@link #fnv1a_32(byte[])}.
+     *
+     * @param data string to hash
+     * @return the 32-bit FNV-1a hash
+     */
+    public static long fnv1a_32(String data) {
+        long hash = INIT32;
+
+        for (int i = 0; i < data.length(); i++) {
+            hash ^= (data.charAt(i) & 0xffff);
+            hash *= PRIME32;
+            hash %= MOD32;
+        }
+
+        return hash;
+    }
+
+    /**
      * Given a value, ensures it's clamped between the range provided
      *
      * @param value      The number you want to make sure is between lowerRange and upperRange
