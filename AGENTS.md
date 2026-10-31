@@ -167,7 +167,8 @@ automated compatibility check — review is the only gate.
 The exception is `<feature>/internal` packages (e.g. `evaluators/internal`, `multiusermode/internal`):
 their types are `public` only because Java 8 has no module boundaries, and they may change
 freely. New implementation code goes there, behind the public classes of the owning package;
-other features use those public classes, not another feature's `internal`.
+other features use those public classes, not another feature's `internal`. One exception: `util/GrowthBookUtils` is the legacy public facade
+over `evaluators/internal` and `evaluators/internal/bucketing`, kept for binary compatibility.
 
 ## Commits & releases
 
