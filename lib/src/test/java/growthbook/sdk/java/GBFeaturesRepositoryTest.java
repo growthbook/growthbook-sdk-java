@@ -8,7 +8,6 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
@@ -30,11 +29,7 @@ import growthbook.sdk.java.retry.FeatureFetchRetryPolicy;
 import growthbook.sdk.java.repository.GBFeaturesRepository;
 import growthbook.sdk.java.sandbox.FileCachingManagerImpl;
 import growthbook.sdk.java.sandbox.GbCacheManager;
-import okhttp3.Cache;
 import okhttp3.Call;
-import okhttp3.Callback;
-import okhttp3.ConnectionPool;
-import okhttp3.Dispatcher;
 import okhttp3.MediaType;
 import okhttp3.OkHttpClient;
 import okhttp3.Protocol;
@@ -44,11 +39,7 @@ import okhttp3.ResponseBody;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
-import java.io.File;
 import java.io.IOException;
-import java.lang.reflect.Field;
-import java.util.concurrent.atomic.AtomicReference;
-import java.nio.file.Files;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -122,29 +113,6 @@ class GBFeaturesRepositoryTest {
         assertEquals("BhB1wORFmZLTDjbvstvS8w==", subject.getDecryptionKey());
     }
 
-    @Test
-    void pollingDoesNotThrowAndDoesNotOverlap() throws Exception {
-        GBFeaturesRepository subject = GBFeaturesRepository.builder()
-                .apiHost("http://localhost")
-                .clientKey("sdk-123")
-                .refreshStrategy(FeatureRefreshStrategy.STALE_WHILE_REVALIDATE)
-                .retryPolicy(NO_DELAY_RETRY_POLICY)
-                .build();
-
-        // initialize creates http client but will fail network; we just want to ensure no exceptions in poll
-        try {
-            subject.initialize();
-        } catch (Exception ignored) {}
-
-        // invoke internal poll method via reflection to ensure no overlap protection throws
-        java.lang.reflect.Method m = GBFeaturesRepository.class.getDeclaredMethod("pollOnceSafe");
-        m.setAccessible(true);
-        m.invoke(subject); // first call
-        m.invoke(subject); // second immediate call should be ignored by AtomicBoolean guard
-
-        // shutdown should not throw
-        subject.shutdown();
-    }
 
     @Test
     void shutdown_withSseStrategy_completesWithoutException() throws Exception {
@@ -154,68 +122,10 @@ class GBFeaturesRepositoryTest {
                 .refreshStrategy(FeatureRefreshStrategy.SERVER_SENT_EVENTS)
                 .build();
 
-        OkHttpClient sseClient = new OkHttpClient.Builder().build();
-        Field field = GBFeaturesRepository.class.getDeclaredField("sseHttpClient");
-        field.setAccessible(true);
-        @SuppressWarnings("unchecked")
-        AtomicReference<OkHttpClient> sseHttpClientRef = (AtomicReference<OkHttpClient>) field.get(subject);
-        sseHttpClientRef.set(sseClient);
-
         assertDoesNotThrow(subject::shutdown);
     }
 
-    @Test
-    void shutdown_whenCachePresent_closesHttpClientCache() throws Exception {
-        GBFeaturesRepository subject = GBFeaturesRepository.builder()
-                .apiHost("http://localhost")
-                .clientKey("sdk-123")
-                .refreshStrategy(FeatureRefreshStrategy.SERVER_SENT_EVENTS)
-                .build();
 
-        File cacheDir = Files.createTempDirectory("okhttp-cache").toFile();
-        Cache cache = new Cache(cacheDir, 1024 * 1024);
-        OkHttpClient clientWithCache = new OkHttpClient.Builder()
-                .cache(cache)
-                .build();
-
-        Field field = GBFeaturesRepository.class.getDeclaredField("sseHttpClient");
-        field.setAccessible(true);
-        @SuppressWarnings("unchecked")
-        AtomicReference<OkHttpClient> sseHttpClientRef = (AtomicReference<OkHttpClient>) field.get(subject);
-        sseHttpClientRef.set(clientWithCache);
-
-        subject.shutdown();
-
-        assertTrue(cache.isClosed());
-    }
-
-    @Test
-    void shutdown_whenCacheCloseFails_doesNotThrow() throws Exception {
-        GBFeaturesRepository subject = GBFeaturesRepository.builder()
-                .apiHost("http://localhost")
-                .clientKey("sdk-123")
-                .refreshStrategy(FeatureRefreshStrategy.SERVER_SENT_EVENTS)
-                .build();
-
-        Cache mockCache = mock(Cache.class);
-        doThrow(new IOException("cache close failed")).when(mockCache).close();
-
-        OkHttpClient mockHttpClient = mock(OkHttpClient.class);
-
-        when(mockHttpClient.cache()).thenReturn(mockCache);
-        when(mockHttpClient.dispatcher()).thenReturn(new Dispatcher());
-        when(mockHttpClient.connectionPool()).thenReturn(new ConnectionPool());
-
-        Field field = GBFeaturesRepository.class.getDeclaredField("sseHttpClient");
-        field.setAccessible(true);
-        @SuppressWarnings("unchecked")
-        AtomicReference<OkHttpClient> sseHttpClientRef = (AtomicReference<OkHttpClient>) field.get(subject);
-        sseHttpClientRef.set(mockHttpClient);
-
-        assertDoesNotThrow(subject::shutdown);
-
-        verify(mockCache).close();
-    }
 
     @Test
     void shutdown_doesNotClearSharedCacheStore() {

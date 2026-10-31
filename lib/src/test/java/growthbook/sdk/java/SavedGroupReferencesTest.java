@@ -4,7 +4,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import growthbook.sdk.java.model.GBContext;
 import growthbook.sdk.java.repository.GBFeaturesRepository;
-import java.lang.reflect.Method;
+import growthbook.sdk.java.repository.RepositoryInternals;
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 import javax.crypto.Cipher;
@@ -39,9 +39,7 @@ class SavedGroupReferencesTest {
         String payload = encrypted
                 ? "{\"encryptedFeatures\":\"" + encrypt(FEATURES) + "\",\"encryptedSavedGroups\":\"" + encrypt(SAVED_GROUPS) + "\"}"
                 : "{\"features\":" + FEATURES + ",\"savedGroups\":" + SAVED_GROUPS + "}";
-        Method onResponseJson = GBFeaturesRepository.class.getDeclaredMethod("onResponseJson", String.class, boolean.class);
-        onResponseJson.setAccessible(true);
-        onResponseJson.invoke(repository, payload, false);
+        RepositoryInternals.applyResponse(repository, payload, false);
 
         for (String id : new String[]{"u_1", "u_3"}) {
             GrowthBook growthBook = new GrowthBook(GBContext.builder()

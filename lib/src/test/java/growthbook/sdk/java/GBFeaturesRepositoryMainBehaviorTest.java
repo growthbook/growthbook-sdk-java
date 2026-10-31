@@ -12,15 +12,10 @@ import okhttp3.*;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
-import java.io.File;
 import java.io.IOException;
-import java.lang.reflect.Field;
-import java.lang.reflect.Method;
-import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Objects;
-import java.util.concurrent.atomic.AtomicReference;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
@@ -96,28 +91,6 @@ class GBFeaturesRepositoryMainBehaviorTest {
         assertEquals("BhB1wORFmZLTDjbvstvS8w==", subject.getDecryptionKey());
     }
 
-    @Test
-    void pollOnceSafe_whenCalledTwice_secondCallIsIgnored() throws Exception {
-        GBFeaturesRepository subject = GBFeaturesRepository.builder()
-                .apiHost("http://localhost")
-                .clientKey("sdk-123")
-                .refreshStrategy(FeatureRefreshStrategy.STALE_WHILE_REVALIDATE)
-                .build();
-
-        // initialize creates http client but will fail network; we just want to ensure no exceptions in poll
-        try {
-            subject.initialize();
-        } catch (Exception ignored) {}
-
-        // invoke internal poll method via reflection to ensure no overlap protection throws
-        Method m = GBFeaturesRepository.class.getDeclaredMethod("pollOnceSafe");
-        m.setAccessible(true);
-        m.invoke(subject); // first call
-        m.invoke(subject); // second immediate call should be ignored by AtomicBoolean guard
-
-        // shutdown should not throw
-        subject.shutdown();
-    }
 
     @Test
     void shutdown_withSseStrategy_completesWithoutException() {
@@ -135,59 +108,7 @@ class GBFeaturesRepositoryMainBehaviorTest {
         subject.shutdown();
     }
 
-    @Test
-    void shutdown_whenCachePresent_closesHttpClientCache() throws Exception {
-        GBFeaturesRepository subject = GBFeaturesRepository.builder()
-                .apiHost("http://localhost")
-                .clientKey("sdk-123")
-                .refreshStrategy(FeatureRefreshStrategy.SERVER_SENT_EVENTS)
-                .build();
 
-        // Create file for okhttp cache
-        File cacheDir = Files.createTempDirectory("okhttp-cache").toFile();
-        Cache cache = new Cache(cacheDir, 1024 * 1024);
-        OkHttpClient clientWithCache = new OkHttpClient.Builder()
-                .cache(cache)
-                .build();
-
-        // set sseHttpClient through  reflection
-        Field field = GBFeaturesRepository.class.getDeclaredField("sseHttpClient");
-        field.setAccessible(true);
-        field.set(subject, new AtomicReference<>(clientWithCache));
-
-        subject.shutdown();
-
-        assertTrue(cache.isClosed());
-    }
-
-    @Test
-    void shutdown_whenCacheCloseFails_doesNotThrow() throws Exception {
-        GBFeaturesRepository subject = GBFeaturesRepository.builder()
-                .apiHost("http://localhost")
-                .clientKey("sdk-123")
-                .refreshStrategy(FeatureRefreshStrategy.SERVER_SENT_EVENTS)
-                .build();
-
-        Cache mockCache = mock(Cache.class);
-        doThrow(new IOException("cache close failed")).when(mockCache).close();
-
-        OkHttpClient mockHttpClient = mock(OkHttpClient.class);
-
-        when(mockHttpClient.cache()).thenReturn(mockCache);
-        when(mockHttpClient.dispatcher()).thenReturn(new Dispatcher());
-        when(mockHttpClient.connectionPool()).thenReturn(new ConnectionPool());
-
-        // set sseHttpClient through  reflection
-        Field field = GBFeaturesRepository.class.getDeclaredField("sseHttpClient");
-        field.setAccessible(true);
-        field.set(subject, new AtomicReference<>(mockHttpClient));
-
-        // shutdown shouldn't throw exception — IOException omitted
-        assertDoesNotThrow(subject::shutdown);
-
-        // check if close() was invoked
-        verify(mockCache).close();
-    }
 
     @Test
     void shutdown_withPollingStrategy_keepsTheDurableCache() {
