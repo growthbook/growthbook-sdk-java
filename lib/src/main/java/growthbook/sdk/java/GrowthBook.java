@@ -30,6 +30,7 @@ import growthbook.sdk.java.util.GrowthBookUtils;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
+import growthbook.sdk.java.multiusermode.ExperimentTracker;
 import growthbook.sdk.java.multiusermode.configurations.EvaluationContext;
 import growthbook.sdk.java.multiusermode.configurations.GlobalContext;
 import growthbook.sdk.java.multiusermode.configurations.Options;
@@ -70,6 +71,7 @@ public class GrowthBook implements IGrowthBook {
     public EvaluationContext evaluationContext = null;
     private final Map<String, AssignedExperiment> assigned;
     private final PluginRegistry pluginRegistry;
+    private final ExperimentTracker experimentTracker = new ExperimentTracker();
     private RemoteEvalService remoteEvalService;
     private RemoteEvalCache remoteEvalCache;
 
@@ -198,6 +200,7 @@ public class GrowthBook implements IGrowthBook {
         EvaluationContext evalContext = new EvaluationContext(globalContext, userContext,
                 new EvaluationContext.StackContext(), options);
         evalContext.setPluginRegistry(this.pluginRegistry);
+        evalContext.setExperimentTracker(this.experimentTracker);
         return evalContext;
     }
 

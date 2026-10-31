@@ -1,6 +1,7 @@
 package growthbook.sdk.java.multiusermode.configurations;
 
 import growthbook.sdk.java.model.FeatureResult;
+import growthbook.sdk.java.multiusermode.ExperimentTracker;
 import growthbook.sdk.java.plugin.PluginRegistry;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
@@ -27,6 +28,14 @@ public class EvaluationContext {
      */
     @Nullable
     private PluginRegistry pluginRegistry;
+
+    /**
+     * Exposure de-duplication shared by every evaluation of the owning SDK instance, carried
+     * here for the same isolation reason as {@link #pluginRegistry}. When {@code null}, every
+     * exposure is reported.
+     */
+    @Nullable
+    private ExperimentTracker experimentTracker;
 
     public EvaluationContext(GlobalContext global, UserContext user, StackContext stack, Options options) {
         this.global = global;

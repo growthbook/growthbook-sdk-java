@@ -54,20 +54,21 @@ import java.util.concurrent.atomic.AtomicReference;
 public class GrowthBookClient {
 
     private final Options options;
+    private final PluginRegistry pluginRegistry;
     private final FeatureEvaluator featureEvaluator;
     private final ExperimentEvaluator experimentEvaluator;
-    private final GlobalContextManager globalContextManager;
+    private final DiagnosticsProvider diagnosticsProvider;
     private final ManagedListenerExecutor listenerExecutor;
+    private final GlobalContextManager globalContextManager;
     private final RemoteEvalCoordinator remoteEvalCoordinator;
     private final FeatureRepositoryProvider featureRepositoryProvider;
     private final ExperimentSubscriptionManager experimentSubscriptions;
     private final FeatureRefreshListenerRegistry featureRefreshListeners;
-    private final DiagnosticsProvider diagnosticsProvider;
-    private final PluginRegistry pluginRegistry;
+    private final ExperimentTracker experimentTracker = new ExperimentTracker();
 
-    private final AtomicReference<Throwable> lastInitializationError = new AtomicReference<>();
-    private final AtomicLong lastInitializationErrorAtMillis = new AtomicLong(0);
     private final AtomicBoolean clientShutdown = new AtomicBoolean(false);
+    private final AtomicLong lastInitializationErrorAtMillis = new AtomicLong(0);
+    private final AtomicReference<Throwable> lastInitializationError = new AtomicReference<>();
 
     /**
      * Creates a client with default options.
@@ -674,14 +675,18 @@ public class GrowthBookClient {
     private EvaluationContext getEvalContext(UserContext userContext) {
         UserContext safeUserContext = userContext == null ? UserContext.builder().build() : userContext;
         if (this.options.isRemoteEvalEnabled()) {
-            return withPluginRegistry(this.remoteEvalCoordinator.createEvaluationContext(safeUserContext));
+            return withInstanceScope(this.remoteEvalCoordinator.createEvaluationContext(safeUserContext));
         }
-        return withPluginRegistry(this.globalContextManager.createEvaluationContext(safeUserContext));
+        return withInstanceScope(this.globalContextManager.createEvaluationContext(safeUserContext));
     }
 
-    /** Attaches this client's own plugin registry so events never route through another client's plugins. */
-    private EvaluationContext withPluginRegistry(EvaluationContext context) {
+    /**
+     * Attaches this client's own plugin registry and exposure tracker, so events never route
+     * through another client's plugins and every entry point shares one de-duplication.
+     */
+    private EvaluationContext withInstanceScope(EvaluationContext context) {
         context.setPluginRegistry(this.pluginRegistry);
+        context.setExperimentTracker(this.experimentTracker);
         return context;
     }
 
