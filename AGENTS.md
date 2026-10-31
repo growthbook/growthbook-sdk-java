@@ -164,6 +164,11 @@ without a deprecation cycle (`@Deprecated` plus Javadoc pointing at the replacem
 additive changes; new behavior defaults to the old behavior unless explicitly opted in. There is no
 automated compatibility check — review is the only gate.
 
+The exception is `<feature>/internal` packages (e.g. `evaluators/internal`, `multiusermode/internal`):
+their types are `public` only because Java 8 has no module boundaries, and they may change
+freely. New implementation code goes there, behind the public classes of the owning package;
+other features use those public classes, not another feature's `internal`.
+
 ## Commits & releases
 
 Conventional Commits, enforced by `.githooks/commit-msg` and `conventional-commits.yml`:
