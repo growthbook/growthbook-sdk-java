@@ -98,7 +98,7 @@ public final class RemoteEvalCoordinator {
         try {
             RemoteEvalResponse response = fetchResponse(mergedUserContext);
             GlobalContext remoteGlobalContext = buildGlobalContext(response.getFeatures(), response.getSavedGroups());
-            return new EvaluationContext(remoteGlobalContext, mergedUserContext, new EvaluationContext.StackContext(), this.options);
+            return new EvaluationContext(remoteGlobalContext, mergedUserContext, this.options);
         } catch (FeatureFetchException e) {
             log.warn("Remote evaluation request failed. Falling back to local feature context.", e);
             return fallbackEvaluationContext(mergedUserContext);
@@ -255,7 +255,7 @@ public final class RemoteEvalCoordinator {
     }
 
     private EvaluationContext fallbackEvaluationContext(UserContext userContext) {
-        return new EvaluationContext(fallbackContext(), userContext, new EvaluationContext.StackContext(), this.options);
+        return new EvaluationContext(fallbackContext(), userContext, this.options);
     }
 
     private RemoteEvalResponse fetchResponse(UserContext userContext) throws FeatureFetchException {

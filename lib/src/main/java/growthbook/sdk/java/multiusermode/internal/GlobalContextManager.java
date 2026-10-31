@@ -61,7 +61,6 @@ public final class GlobalContextManager {
         return new EvaluationContext(
                 currentGlobalContext(),
                 updatedUserContext,
-                new EvaluationContext.StackContext(),
                 this.options
         );
     }

@@ -23,6 +23,17 @@ import java.util.concurrent.atomic.AtomicBoolean;
 @Slf4j
 public final class ExperimentSubscriptionManager {
 
+    /**
+     * The entry for experiments without a key; {@link ConcurrentHashMap} rejects null keys.
+     */
+    private static final String NULL_EXPERIMENT_KEY = "null-key";
+
+    /**
+     * Prefixed to every real key, so no experiment key can collide with {@link #NULL_EXPERIMENT_KEY},
+     * not even {@code ""}.
+     */
+    private static final String KEYED_EXPERIMENT_PREFIX = "key:";
+
     private final List<ExperimentRunCallback> callbacks = new CopyOnWriteArrayList<>();
     private final Map<String, AssignedExperiment> assigned = new ConcurrentHashMap<>();
 
@@ -36,6 +47,14 @@ public final class ExperimentSubscriptionManager {
     }
 
     /**
+     * Removes every callback; the remembered assignments stay, so a later subscriber is only
+     * told about changes.
+     */
+    public void clear() {
+        this.callbacks.clear();
+    }
+
+    /**
      * Publishes an experiment result to callbacks when the assignment changed.
      *
      * @param experiment evaluated experiment
@@ -43,9 +62,7 @@ public final class ExperimentSubscriptionManager {
      * @param <T> experiment value type
      */
     public <T> void publishIfChanged(Experiment<T> experiment, ExperimentResult<T> result) {
-        // ConcurrentHashMap rejects null keys; a key-less experiment still dedupes,
-        // under one shared sentinel entry.
-        String key = experiment.getKey() != null ? experiment.getKey() : "";
+        String key = experiment.getKey() == null ? NULL_EXPERIMENT_KEY : KEYED_EXPERIMENT_PREFIX + experiment.getKey();
         AssignedExperiment nextAssignment = new AssignedExperiment(
                 experiment.getKey(),
                 result.getInExperiment(),

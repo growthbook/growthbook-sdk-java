@@ -1,18 +1,17 @@
 package growthbook.sdk.java;
 
-import java.util.Map;
 import java.util.HashMap;
-import java.util.ArrayList;
+import java.util.Map;
 import java.util.List;
 import javax.annotation.Nullable;
 import java.time.Duration;
 import com.google.gson.JsonObject;
+import com.google.gson.JsonParseException;
 import growthbook.sdk.java.callback.ExperimentRunCallback;
 import growthbook.sdk.java.evaluators.ConditionEvaluator;
 import growthbook.sdk.java.evaluators.ExperimentEvaluator;
 import growthbook.sdk.java.evaluators.FeatureEvaluator;
 import growthbook.sdk.java.exception.FeatureFetchException;
-import growthbook.sdk.java.model.AssignedExperiment;
 import growthbook.sdk.java.model.Experiment;
 import growthbook.sdk.java.model.ExperimentResult;
 import growthbook.sdk.java.model.FeatureKey;
@@ -30,14 +29,14 @@ import growthbook.sdk.java.util.GrowthBookUtils;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
-import growthbook.sdk.java.multiusermode.ExperimentTracker;
 import growthbook.sdk.java.multiusermode.configurations.EvaluationContext;
 import growthbook.sdk.java.multiusermode.configurations.GlobalContext;
 import growthbook.sdk.java.multiusermode.configurations.Options;
 import growthbook.sdk.java.multiusermode.configurations.UserContext;
+import growthbook.sdk.java.multiusermode.internal.ClientCore;
+import growthbook.sdk.java.multiusermode.internal.FeatureValues;
 import growthbook.sdk.java.multiusermode.usage.FeatureUsageCallbackAdapter;
 import growthbook.sdk.java.multiusermode.usage.TrackingCallbackAdapter;
-import growthbook.sdk.java.plugin.PluginRegistry;
 import growthbook.sdk.java.stickyBucketing.InMemoryStickyBucketServiceImpl;
 import growthbook.sdk.java.stickyBucketing.StickyBucketService;
 
@@ -57,21 +56,18 @@ import growthbook.sdk.java.stickyBucketing.StickyBucketService;
 public class GrowthBook implements IGrowthBook {
 
     private final GBContext context;
-
-    // dependencies
-    private final FeatureEvaluator featureEvaluator;
+    private final ClientCore core;
     private final ConditionEvaluator conditionEvaluator;
-    private final ExperimentEvaluator experimentEvaluatorEvaluator;
-
     private final GrowthBookJsonUtils jsonUtils = GrowthBookJsonUtils.getInstance();
 
-    private List<ExperimentRunCallback> callbacks;
     @Getter @Setter private JsonObject attributeOverrides;
 
+    /**
+     * @deprecated internal state, exposed by accident; it is rebuilt whenever attributes, the URL,
+     * forced values or the sticky bucket service change. Evaluate through this class instead.
+     */
+    @Deprecated
     public EvaluationContext evaluationContext = null;
-    private final Map<String, AssignedExperiment> assigned;
-    private final PluginRegistry pluginRegistry;
-    private final ExperimentTracker experimentTracker = new ExperimentTracker();
     private RemoteEvalService remoteEvalService;
     private RemoteEvalCache remoteEvalCache;
 
@@ -83,19 +79,12 @@ public class GrowthBook implements IGrowthBook {
      */
     public GrowthBook(GBContext context) {
         this.context = context;
-
-        this.assigned = new HashMap<>();
-        this.callbacks = new ArrayList<>();
-        this.featureEvaluator = new FeatureEvaluator();
+        this.core = new ClientCore(context.getPlugins());
         this.conditionEvaluator = new ConditionEvaluator();
-        this.experimentEvaluatorEvaluator = new ExperimentEvaluator();
         this.attributeOverrides = context.getAttributes() == null ? new JsonObject() : context.getAttributes();
-        this.pluginRegistry = new PluginRegistry(context.getPlugins());
 
-        // Load sticky bucket docs on construction if a service is configured,
         refreshStickyBucketService(null);
         this.initializeEvalContext();
-        this.pluginRegistry.initAll();
     }
 
     /**
@@ -104,19 +93,11 @@ public class GrowthBook implements IGrowthBook {
      */
     public GrowthBook() {
         this.context = GBContext.builder().build();
-
-        // dependencies
-        this.assigned = new HashMap<>();
-        this.callbacks = new ArrayList<>();
-        this.featureEvaluator = new FeatureEvaluator();
+        this.core = new ClientCore(context.getPlugins());
         this.conditionEvaluator = new ConditionEvaluator();
-        this.experimentEvaluatorEvaluator = new ExperimentEvaluator();
         this.attributeOverrides = context.getAttributes() == null ? new JsonObject() : context.getAttributes();
-        this.pluginRegistry = new PluginRegistry(context.getPlugins());
-
 
         this.initializeEvalContext();
-        this.pluginRegistry.initAll();
     }
 
     /**
@@ -128,18 +109,12 @@ public class GrowthBook implements IGrowthBook {
      * @param experimentEvaluator ExperimentEvaluator
      */
     GrowthBook(GBContext context, FeatureEvaluator featureEvaluator, ConditionEvaluator conditionEvaluator, ExperimentEvaluator experimentEvaluator) {
-        this.featureEvaluator = featureEvaluator;
-        this.conditionEvaluator = conditionEvaluator;
-        this.experimentEvaluatorEvaluator = experimentEvaluator;
         this.context = context;
-        this.assigned = new HashMap<>();
-        this.callbacks = new ArrayList<>();
+        this.core = new ClientCore(context.getPlugins(), featureEvaluator, experimentEvaluator);
+        this.conditionEvaluator = conditionEvaluator;
         this.attributeOverrides = context.getAttributes() == null ? new JsonObject() : context.getAttributes();
-        //this.savedGroups = context.getSavedGroups() == null ? new JsonObject() : context.getSavedGroups();
-        this.pluginRegistry = new PluginRegistry(context.getPlugins());
 
         this.initializeEvalContext();
-        this.pluginRegistry.initAll();
     }
 
     private void initializeEvalContext() {
@@ -197,11 +172,7 @@ public class GrowthBook implements IGrowthBook {
                 .forcedFeatureValues(this.forcedFeatureValues)
                 .build();
 
-        EvaluationContext evalContext = new EvaluationContext(globalContext, userContext,
-                new EvaluationContext.StackContext(), options);
-        evalContext.setPluginRegistry(this.pluginRegistry);
-        evalContext.setExperimentTracker(this.experimentTracker);
-        return evalContext;
+        return core.scope(new EvaluationContext(globalContext, userContext, options));
     }
 
     private RemoteEvalResponse getRemoteEvalResponse() throws FeatureFetchException {
@@ -252,8 +223,6 @@ public class GrowthBook implements IGrowthBook {
     }
 
     private EvaluationContext getEvaluationContext() {
-        // Reset the stackContext for every evaluation.
-        this.evaluationContext.setStack(new EvaluationContext.StackContext());
         return this.evaluationContext;
     }
 
@@ -278,7 +247,7 @@ public class GrowthBook implements IGrowthBook {
     @Nullable
     @Override
     public <T> FeatureResult<T> evalFeature(String key, Class<T> valueTypeClass) {
-        return featureEvaluator.evaluateFeature(key, getEvaluationContext(), valueTypeClass);
+        return core.evalFeature(key, valueTypeClass, getEvaluationContext());
     }
 
     /**
@@ -295,7 +264,7 @@ public class GrowthBook implements IGrowthBook {
             List<String> featureKeys,
             Class<T> valueTypeClass
     ) {
-        return featureEvaluator.evaluateFeatures(featureKeys, getEvaluationContext(), valueTypeClass);
+        return core.evalFeatures(featureKeys, valueTypeClass, getEvaluationContext());
     }
 
     /**
@@ -363,12 +332,7 @@ public class GrowthBook implements IGrowthBook {
      */
     @Override
     public <T> ExperimentResult<T> run(Experiment<T> experiment) {
-        ExperimentResult<T> result = experimentEvaluatorEvaluator
-                .evaluateExperiment(experiment, getEvaluationContext(), null);
-
-        GrowthBookUtils.fireSubscriptions(this.assigned, this.callbacks, experiment, result);
-
-        return result;
+        return core.run(experiment, getEvaluationContext());
     }
 
     /**
@@ -409,7 +373,7 @@ public class GrowthBook implements IGrowthBook {
      */
     @Override
     public Boolean isOn(String featureKey) {
-        return this.featureEvaluator.evaluateFeature(featureKey, getEvaluationContext(), Object.class).isOn();
+        return core.evalFeature(featureKey, Object.class, getEvaluationContext()).isOn();
     }
 
     /**
@@ -428,7 +392,7 @@ public class GrowthBook implements IGrowthBook {
      */
     @Override
     public Boolean isOff(String featureKey) {
-        return this.featureEvaluator.evaluateFeature(featureKey, getEvaluationContext(), Object.class).isOff();
+        return core.evalFeature(featureKey, Object.class, getEvaluationContext()).isOff();
     }
 
     /**
@@ -440,14 +404,7 @@ public class GrowthBook implements IGrowthBook {
      */
     @Override
     public Boolean getFeatureValue(String featureKey, Boolean defaultValue) {
-        try {
-            Boolean maybeValue = (Boolean) this.featureEvaluator
-                    .evaluateFeature(featureKey, getEvaluationContext(), Boolean.class).getValue();
-            return maybeValue == null ? defaultValue : maybeValue;
-        } catch (Exception e) {
-            log.error(e.getMessage(), e);
-            return defaultValue;
-        }
+        return FeatureValues.asBoolean(value(featureKey, Boolean.class), defaultValue);
     }
 
     /**
@@ -459,14 +416,7 @@ public class GrowthBook implements IGrowthBook {
      */
     @Override
     public String getFeatureValue(String featureKey, String defaultValue) {
-        try {
-            String maybeValue = (String) this.featureEvaluator
-                    .evaluateFeature(featureKey, getEvaluationContext(), String.class).getValue();
-            return maybeValue == null ? defaultValue : maybeValue;
-        } catch (Exception e) {
-            log.error(e.getMessage(), e);
-            return defaultValue;
-        }
+        return FeatureValues.asString(value(featureKey, String.class), defaultValue);
     }
 
     /**
@@ -478,26 +428,7 @@ public class GrowthBook implements IGrowthBook {
      */
     @Override
     public Float getFeatureValue(String featureKey, Float defaultValue) {
-        try {
-            // Type erasure occurs so a Double ends up being returned
-            Object maybeValue = this.featureEvaluator
-                    .evaluateFeature(featureKey, getEvaluationContext(), Object.class).getValue();
-
-            if (maybeValue == null) {
-                return defaultValue;
-            }
-
-            if (maybeValue instanceof Double) {
-                return ((Double) maybeValue).floatValue();
-            } else if (maybeValue instanceof Long) {
-                return ((Long) maybeValue).floatValue();
-            } else {
-                return defaultValue;
-            }
-        } catch (Exception e) {
-            log.error(e.getMessage(), e);
-            return defaultValue;
-        }
+        return FeatureValues.asFloat(value(featureKey, Object.class), defaultValue);
     }
 
     /**
@@ -509,25 +440,7 @@ public class GrowthBook implements IGrowthBook {
      */
     @Override
     public Integer getFeatureValue(String featureKey, Integer defaultValue) {
-        try {
-            Object maybeValue = this.featureEvaluator
-                    .evaluateFeature(featureKey, getEvaluationContext(), Object.class).getValue();
-
-            if (maybeValue == null) {
-                return defaultValue;
-            }
-
-            if (maybeValue instanceof Double) {
-                return ((Double) maybeValue).intValue();
-            } else if (maybeValue instanceof Long) {
-                return ((Long) maybeValue).intValue();
-            } else {
-                return defaultValue;
-            }
-        } catch (Exception e) {
-            log.error(e.getMessage(), e);
-            return defaultValue;
-        }
+        return FeatureValues.asInteger(value(featureKey, Object.class), defaultValue);
     }
 
     /**
@@ -539,14 +452,8 @@ public class GrowthBook implements IGrowthBook {
      */
     @Override
     public Object getFeatureValue(String featureKey, Object defaultValue) {
-        try {
-            Object maybeValue = this.featureEvaluator
-                    .evaluateFeature(featureKey, getEvaluationContext(), defaultValue.getClass()).getValue();
-            return maybeValue == null ? defaultValue : maybeValue;
-        } catch (Exception e) {
-            log.error(e.getMessage(), e);
-            return defaultValue;
-        }
+        Object value = value(featureKey, defaultValue == null ? Object.class : defaultValue.getClass());
+        return value == null ? defaultValue : value;
     }
 
     /**
@@ -561,20 +468,7 @@ public class GrowthBook implements IGrowthBook {
      */
     @Override
     public <T> T getFeatureValue(String featureKey, T defaultValue, Class<T> gsonDeserializableClass) {
-        try {
-            Object maybeValue = this.featureEvaluator
-                    .evaluateFeature(featureKey, getEvaluationContext(), gsonDeserializableClass).getValue();
-            if (maybeValue == null) {
-                return defaultValue;
-            }
-
-            String stringValue = jsonUtils.gson.toJson(maybeValue);
-
-            return jsonUtils.gson.fromJson(stringValue, gsonDeserializableClass);
-        } catch (Exception e) {
-            log.error(e.getMessage(), e);
-            return defaultValue;
-        }
+        return FeatureValues.convert(value(featureKey, gsonDeserializableClass), defaultValue, gsonDeserializableClass);
     }
 
     /**
@@ -601,8 +495,8 @@ public class GrowthBook implements IGrowthBook {
             JsonObject conditionJson = jsonUtils.gson.fromJson(conditionJsonString, JsonObject.class);
             JsonObject savedGroupsJson = jsonUtils.gson.fromJson(this.context.getSavedGroups(), JsonObject.class);
             return conditionEvaluator.evaluateCondition(attributesJson, conditionJson, savedGroupsJson);
-        } catch (Exception e) {
-            log.error(e.getMessage(), e);
+        } catch (JsonParseException e) {
+            log.error("Condition or attributes are not valid JSON: {}", e.getMessage());
             return false;
         }
     }
@@ -616,25 +510,7 @@ public class GrowthBook implements IGrowthBook {
      */
     @Override
     public Double getFeatureValue(String featureKey, Double defaultValue) {
-        try {
-            Object maybeValue = this.featureEvaluator
-                    .evaluateFeature(featureKey, getEvaluationContext(), Object.class).getValue();
-
-            if (maybeValue == null) {
-                return defaultValue;
-            }
-
-            if (maybeValue instanceof Double) {
-                return (Double) maybeValue;
-            } else if (maybeValue instanceof Long) {
-                return ((Long) maybeValue).doubleValue();
-            } else {
-                return defaultValue;
-            }
-        } catch (Exception e) {
-            log.error(e.getMessage(), e);
-            return defaultValue;
-        }
+        return FeatureValues.asDouble(value(featureKey, Object.class), defaultValue);
     }
 
     /**
@@ -706,22 +582,21 @@ public class GrowthBook implements IGrowthBook {
     // endregion Typed feature access
 
     /**
-     * Reinitialized the list of ExperimentRunCallbacks.
-     * This method clears the current list of callbacks by replacing it with a new empty ArrayList.
+     * Removes every experiment run callback and releases resources: plugins are closed first, so
+     * they can flush buffered events, then the remote evaluation cache and service.
      */
     @Override
     public void destroy() {
-        this.callbacks = new ArrayList<>();
+        core.clearSubscriptions();
+        core.close(this::shutdownRemoteEval);
+    }
+
+    private synchronized void shutdownRemoteEval() {
         if (this.remoteEvalCache != null) {
             this.remoteEvalCache.shutdown();
         }
         if (this.remoteEvalService != null) {
             this.remoteEvalService.close();
-        }
-        // Flush registered plugins (including the built-in tracking plugin) so
-        // any buffered events are sent before the instance is discarded.
-        if (this.pluginRegistry != null) {
-            this.pluginRegistry.closeAll();
         }
     }
 
@@ -731,7 +606,12 @@ public class GrowthBook implements IGrowthBook {
      */
     @Override
     public void subscribe(ExperimentRunCallback callback) {
-        this.callbacks.add(callback);
+        core.subscribe(callback);
+    }
+
+    @Nullable
+    private Object value(String featureKey, Class<?> valueTypeClass) {
+        return core.evalFeature(featureKey, valueTypeClass, getEvaluationContext()).getValue();
     }
 
     /**
