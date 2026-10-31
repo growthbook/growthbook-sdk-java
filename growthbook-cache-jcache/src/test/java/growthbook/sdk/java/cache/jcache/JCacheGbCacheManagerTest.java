@@ -35,7 +35,7 @@ class JCacheGbCacheManagerTest {
     }
 
     @Test
-    @DisplayName("Verify: cached content is saved with a last-updated timestamp and can be loaded")
+    @DisplayName("Cached content is saved with a last-updated timestamp and can be loaded")
     void savesAndLoadsContent() {
         // Given
         JCacheGbCacheManager cache = JCacheGbCacheManager.builder().cacheManager(cacheManager).buildManager();
@@ -49,7 +49,7 @@ class JCacheGbCacheManagerTest {
     }
 
     @Test
-    @DisplayName("Verify: missing entries return null content and null last-updated timestamp")
+    @DisplayName("Missing entries return null content and null last-updated timestamp")
     void returnsNullForMissingEntry() {
         // Given
         JCacheGbCacheManager cache = JCacheGbCacheManager.builder().cacheManager(cacheManager).buildManager();
@@ -60,7 +60,7 @@ class JCacheGbCacheManagerTest {
     }
 
     @Test
-    @DisplayName("Verify: clearing cache removes stored content and timestamps")
+    @DisplayName("Clearing cache removes stored content and timestamps")
     void clearsEntries() {
         // Given
         JCacheGbCacheManager cache = JCacheGbCacheManager.builder().cacheManager(cacheManager).buildManager();
@@ -75,7 +75,7 @@ class JCacheGbCacheManagerTest {
     }
 
     @Test
-    @DisplayName("Verify: overwriting content replaces the cached value and timestamp")
+    @DisplayName("Overwriting content replaces the cached value and timestamp")
     void overwritesContentAndTimestamp() {
         // Given
         MutableClock clock = new MutableClock(1000L);
@@ -95,7 +95,7 @@ class JCacheGbCacheManagerTest {
     }
 
     @Test
-    @DisplayName("Verify: invalid options fail fast")
+    @DisplayName("Invalid options fail fast")
     void validatesOptions() {
         // Given
         JCacheCacheOptions.Builder options = JCacheGbCacheManager.builder();
@@ -109,7 +109,7 @@ class JCacheGbCacheManagerTest {
     }
 
     @Test
-    @DisplayName("Verify: default cache name and clock are applied")
+    @DisplayName("Default cache name and clock are applied")
     void usesDefaults() {
         // Given
         JCacheCacheOptions options = JCacheGbCacheManager.builder().cacheManager(cacheManager).build();

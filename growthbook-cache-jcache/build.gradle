@@ -32,6 +32,7 @@ dependencies {
     api 'javax.cache:cache-api:1.1.1'
 
     testImplementation 'org.junit.jupiter:junit-jupiter:5.8.2'
+    testImplementation testFixtures(project(':lib'))
     // A JSR-107 provider implementation is required to run the tests.
     testRuntimeOnly 'org.ehcache:ehcache:3.10.8'
 }

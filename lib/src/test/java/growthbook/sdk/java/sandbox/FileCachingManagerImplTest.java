@@ -1,19 +1,12 @@
-package growthbook.sdk.java;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertInstanceOf;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.fail;
+package growthbook.sdk.java.sandbox;
 
 import growthbook.sdk.java.exception.FeatureCacheException;
-import growthbook.sdk.java.sandbox.FileCachingManagerImpl;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import java.io.File;
 import java.io.IOException;
@@ -24,210 +17,244 @@ import java.nio.charset.CharsetDecoder;
 import java.nio.charset.CodingErrorAction;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.attribute.FileTime;
 
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assumptions.assumeFalse;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 class FileCachingManagerImplTest {
-    private FileCachingManagerImpl fileCachingManagerImpl;
+
+    private static final String NON_ASCII_SAMPLE = "{\"name\":\"caf\u00e9\"}";
+    private static final byte[] UNDECODABLE_BYTES = {(byte) 0xC3, (byte) 0x28, (byte) 0xA9};
 
     @TempDir
     File tempDir;
 
+    private FileCachingManagerImpl manager;
+
     @BeforeEach
     void setUp() {
-        fileCachingManagerImpl = new FileCachingManagerImpl(tempDir.getAbsolutePath());
+        manager = new FileCachingManagerImpl(tempDir.getAbsolutePath());
+    }
+
+    @ParameterizedTest(name = "content \"{0}\"")
+    @ValueSource(strings = {
+            "Hello, cache!",
+            "",
+            "{\"msg\":\"Привіт, 世界 🚀\"}"
+    })
+    @DisplayName("Loads exactly the content that was saved")
+    void loadsSavedContent(String content) {
+        // Given
+        manager.saveContent("content.json", content);
+
+        // When
+        String loaded = manager.loadCache("content.json");
+
+        // Then
+        assertEquals(content, loaded);
     }
 
     @Test
-    void shouldSaveAndLoadContentSuccessfully() {
-        String fileName = "test.txt";
-        String content = "Hello, cache!";
+    @DisplayName("Returns null content and no timestamp for a file that does not exist")
+    void returnsNullForMissingFile() {
+        // Given
+        // When
+        String loaded = manager.loadCache("missing.json");
+        Long updatedAt = manager.getLastUpdatedMillis("missing.json");
 
-        fileCachingManagerImpl.saveContent(fileName, content);
-        String loadedContent = fileCachingManagerImpl.loadCache(fileName);
-        assertEquals(content, loadedContent);
+        // Then
+        assertNull(loaded);
+        assertNull(updatedAt);
     }
 
     @Test
-    void shouldReturnNullWhenFileDoesNotExist() {
-        String loadedContent = fileCachingManagerImpl.loadCache("nonexistent.txt");
-        assertNull(loadedContent);
-        assertNull(fileCachingManagerImpl.getLastUpdatedMillis("nonexistent.txt"));
+    @DisplayName("Reports the cache file's last modified time as the last updated timestamp")
+    void reportsLastModifiedTimeAsLastUpdated() throws IOException {
+        // Given
+        manager.saveContent("timestamped.json", "cached");
+        Files.setLastModifiedTime(new File(tempDir, "timestamped.json").toPath(), FileTime.fromMillis(1_700_000_000_000L));
+
+        // When
+        Long updatedAt = manager.getLastUpdatedMillis("timestamped.json");
+
+        // Then
+        assertEquals(1_700_000_000_000L, updatedAt);
     }
 
     @Test
-    void shouldExposeLastUpdatedTime() {
-        String fileName = "timestamped.txt";
+    @DisplayName("Fails with a cache exception when the existing cache file is read-only")
+    void failsWhenCacheFileIsReadOnly() throws IOException {
+        // Given
+        File file = new File(tempDir, "readonly.json");
+        assertTrue(file.createNewFile());
+        assertTrue(file.setReadOnly());
 
-        fileCachingManagerImpl.saveContent(fileName, "cached");
+        // When
+        FeatureCacheException thrown = assertThrows(FeatureCacheException.class,
+                () -> manager.saveContent("readonly.json", "content"));
 
-        assertNotNull(fileCachingManagerImpl.getLastUpdatedMillis(fileName));
-        assertTrue(fileCachingManagerImpl.getLastUpdatedMillis(fileName) > 0);
-    }
-
-    @Test
-    void shouldThrowExceptionWhenWritingFails() {
-        String fileName = "readonly.txt";
-        File file = new File(tempDir, fileName);
-
-        try {
-            boolean created = file.createNewFile();
-            assertTrue(created);
-            boolean readOnly = file.setReadOnly();
-            assertTrue(readOnly);
-        } catch (IOException e) {
-            fail("Creating test file was not successful.");
-        }
-
-        FeatureCacheException thrown = assertThrows(
-                FeatureCacheException.class,
-                () -> fileCachingManagerImpl.saveContent(fileName, "This should fail")
-        );
-
+        // Then
+        assertEquals("Failed to write feature cache file: readonly.json", thrown.getMessage());
         assertInstanceOf(IOException.class, thrown.getCause());
     }
 
-    // can't change readable for ci/cd
-//    @Test
-//    void shouldThrowExceptionWhenReadingFails() {
-//        String fileName = "unreadable.txt";
-//        File file = new File(tempDir, fileName);
-//
-//        try {
-//            boolean created = file.createNewFile();
-//            assertTrue(created);
-//            boolean unreadable = file.setReadable(false);
-//            assertTrue(unreadable);
-//        } catch (IOException e) {
-//            fail("Creating test file was not successful.");
-//        }
-//
-//        RuntimeException thrown = assertThrows(RuntimeException.class, () -> {
-//            cachingManager.loadCache(fileName);
-//        });
-//
-//        assertInstanceOf(IOException.class, thrown.getCause());
-//    }
-
     @Test
-    void shouldOverwriteExistingFile() {
-        String fileName = "overwrite.txt";
+    @DisplayName("Replaces the content of a file that is saved again")
+    void replacesContentOfSavedFile() {
+        // Given
+        manager.saveContent("overwrite.json", "Initial content");
 
-        fileCachingManagerImpl.saveContent(fileName, "Initial content");
-        fileCachingManagerImpl.saveContent(fileName, "New content");
+        // When
+        manager.saveContent("overwrite.json", "New content");
 
-        String loadedContent = fileCachingManagerImpl.loadCache(fileName);
-        assertEquals("New content", loadedContent);
+        // Then
+        assertEquals("New content", manager.loadCache("overwrite.json"));
     }
 
     @Test
-    void shouldRoundTripNonAsciiContentAsUtf8() {
-        String fileName = "utf8.json";
-        // Mix of Cyrillic, CJK and an emoji to ensure encoding is UTF-8 on both write and read.
-        String content = "{\"msg\":\"Привіт, 世界 🚀\"}";
+    @DisplayName("Leaves only the destination file behind after a save")
+    void leavesNoTemporaryFilesAfterSave() {
+        // Given
+        // When
+        manager.saveContent("clean.json", "payload");
 
-        fileCachingManagerImpl.saveContent(fileName, content);
-
-        assertEquals(content, fileCachingManagerImpl.loadCache(fileName));
+        // Then
+        assertArrayEquals(new String[]{"clean.json"}, tempDir.list());
     }
 
     @Test
-    void shouldNotLeaveTempFilesAfterSave() {
-        fileCachingManagerImpl.saveContent("clean.txt", "payload");
+    @DisplayName("Keeps the content of different files independent")
+    void keepsFilesIndependent() {
+        // Given
+        // When
+        manager.saveContent("file-1.json", "Content 1");
+        manager.saveContent("file-2.json", "Content 2");
 
-        File[] files = tempDir.listFiles();
-        assertNotNull(files);
-        // Exactly the destination file, no leftover *.tmp from the write-to-temp + atomic move.
-        assertEquals(1, files.length);
-        assertFalse(files[0].getName().endsWith(".tmp"));
+        // Then
+        assertEquals("Content 1", manager.loadCache("file-1.json"));
+        assertEquals("Content 2", manager.loadCache("file-2.json"));
     }
 
     @Test
-    void shouldReturnEmptyStringForEmptyFile() {
-        String fileName = "empty.txt";
-        fileCachingManagerImpl.saveContent(fileName, "");
+    @DisplayName("Deletes every cached file when cleared")
+    void deletesAllFilesWhenCleared() {
+        // Given
+        manager.saveContent("a.json", "aaa");
+        manager.saveContent("b.json", "bbb");
 
-        String loadedContent = fileCachingManagerImpl.loadCache(fileName);
-        assertEquals("", loadedContent);
-    }
+        // When
+        manager.clearCache();
 
-    // fail ci/cd
-//    @Test
-//    void shouldHandleLargeContent() {
-//        String fileName = "large.txt";
-//        StringBuilder largeContent = new StringBuilder();
-//        for (int i = 0; i < 10000; i++) {
-//            largeContent.append("Line ").append(i).append("\n");
-//        }
-//
-//        cachingManager.saveContent(fileName, largeContent.toString());
-//        String loadedContent = cachingManager.loadCache(fileName);
-//
-//        assertEquals(largeContent.toString().trim(), loadedContent);
-//    }
-
-    @Test
-    void shouldHandleMultipleFilesSeparately() {
-        fileCachingManagerImpl.saveContent("file1.txt", "Content 1");
-        fileCachingManagerImpl.saveContent("file2.txt", "Content 2");
-
-        assertEquals("Content 1", fileCachingManagerImpl.loadCache("file1.txt"));
-        assertEquals("Content 2", fileCachingManagerImpl.loadCache("file2.txt"));
+        // Then
+        assertNull(manager.loadCache("a.json"));
+        assertNull(manager.loadCache("b.json"));
+        assertEquals(0, tempDir.list().length);
     }
 
     @Test
-    void shouldClearAllCachedFiles() {
-        fileCachingManagerImpl.saveContent("a.txt", "aaa");
-        fileCachingManagerImpl.saveContent("b.txt", "bbb");
+    @DisplayName("Creates a missing nested cache directory")
+    void createsMissingNestedCacheDirectory() {
+        // Given
+        File nestedDir = new File(tempDir, "nested/cache");
+        assertFalse(nestedDir.exists());
 
-        fileCachingManagerImpl.clearCache();
+        // When
+        FileCachingManagerImpl nested = new FileCachingManagerImpl(nestedDir.getAbsolutePath());
+        nested.saveContent("x.json", "hello");
 
-        assertNull(fileCachingManagerImpl.loadCache("a.txt"));
-        assertNull(fileCachingManagerImpl.loadCache("b.txt"));
-        assertEquals(0, tempDir.listFiles().length);
+        // Then
+        assertTrue(nestedDir.isDirectory());
+        assertEquals("hello", nested.loadCache("x.json"));
     }
 
     @Test
-    void shouldCreateCacheDirIfNotExists() {
-        File subDir = new File(tempDir, "nested/cache");
-        assertFalse(subDir.exists());
+    @DisplayName("Fails with a cache exception when the cache directory cannot be created")
+    void failsWhenCacheDirectoryCannotBeCreated() throws IOException {
+        // Given
+        File plainFile = new File(tempDir, "notadir.txt");
+        assertTrue(plainFile.createNewFile());
+        String impossiblePath = plainFile.getAbsolutePath() + File.separator + "subdir";
 
-        FileCachingManagerImpl manager = new FileCachingManagerImpl(subDir.getAbsolutePath());
-        manager.saveContent("x.txt", "hello");
+        // When
+        FeatureCacheException thrown = assertThrows(FeatureCacheException.class,
+                () -> new FileCachingManagerImpl(impossiblePath));
 
-        assertEquals("hello", manager.loadCache("x.txt"));
+        // Then
+        assertEquals("Failed to create cache directory at " + impossiblePath, thrown.getMessage());
     }
 
-    /**
-     * Non-ASCII sample text, written as escapes so the constant does not depend on the encoding
-     * javac happens to read this file with. U+00E9 is "e" with an acute accent: the single-byte
-     * charsets Windows and older Linux default to can all represent it, and each encodes it as
-     * one byte that is not valid UTF-8 on its own.
-     */
-    private static final String NON_ASCII_SAMPLE = "{\"name\":\"caf\u00e9\"}";
-
     @Test
-    void shouldReadLegacyCacheWrittenWithThePlatformDefaultCharset() throws IOException {
-        // Caches written by earlier SDK versions used FileWriter, i.e. the platform default
-        // charset. Such a file must stay readable instead of being discarded as a cache miss.
+    @DisplayName("Reads a legacy cache file written in the platform default charset")
+    void readsLegacyCacheInPlatformDefaultCharset() throws IOException {
+        // Given
         Charset legacyCharset = Charset.defaultCharset();
-
         assumeTrue(legacyCharset.newEncoder().canEncode(NON_ASCII_SAMPLE),
-                "platform default charset (" + legacyCharset + ") cannot represent the sample text, "
-                        + "so it could not have produced this cache file either");
+                "platform default charset (" + legacyCharset + ") cannot represent the sample text");
         byte[] legacyBytes = NON_ASCII_SAMPLE.getBytes(legacyCharset);
         assumeFalse(isValidUtf8(legacyBytes),
-                "platform default charset (" + legacyCharset + ") already produces valid UTF-8, "
-                        + "so there is no legacy encoding to exercise");
+                "platform default charset (" + legacyCharset + ") already produces valid UTF-8");
+        Files.write(new File(tempDir, "legacy.json").toPath(), legacyBytes);
 
-        String fileName = "legacy.txt";
-        Files.write(new File(tempDir, fileName).toPath(), legacyBytes);
+        // When
+        String loaded = manager.loadCache("legacy.json");
 
-        assertEquals(NON_ASCII_SAMPLE, fileCachingManagerImpl.loadCache(fileName));
+        // Then
+        assertEquals(NON_ASCII_SAMPLE, loaded);
     }
 
-    /** Mirrors how {@code Files.newBufferedReader} decodes: malformed input is reported, not replaced. */
+    @Test
+    @DisplayName("Treats a file that is not valid UTF-8 as a cache miss when the platform charset is UTF-8")
+    void treatsUndecodableFileAsMissOnUtf8Platform() throws IOException {
+        // Given
+        assumeTrue(StandardCharsets.UTF_8.equals(Charset.defaultCharset()), "platform default charset is not UTF-8");
+        Files.write(new File(tempDir, "corrupt.json").toPath(), UNDECODABLE_BYTES);
+
+        // When
+        String loaded = manager.loadCache("corrupt.json");
+
+        // Then
+        assertNull(loaded);
+    }
+
+    @Test
+    @DisplayName("Decodes a file that is not valid UTF-8 with a non-UTF-8 platform charset")
+    void decodesNonUtf8FileWithNonUtf8PlatformCharset() throws IOException {
+        // Given
+        Charset platformCharset = Charset.defaultCharset();
+        assumeFalse(StandardCharsets.UTF_8.equals(platformCharset), "platform default charset is UTF-8");
+        Files.write(new File(tempDir, "corrupt.json").toPath(), UNDECODABLE_BYTES);
+
+        // When
+        String loaded = manager.loadCache("corrupt.json");
+
+        // Then
+        assertEquals(new String(UNDECODABLE_BYTES, platformCharset).trim(), loaded);
+    }
+
+    @Test
+    @DisplayName("Rewrites a legacy-encoded cache file as UTF-8 on the next save")
+    void rewritesLegacyCacheAsUtf8OnNextSave() throws IOException {
+        // Given
+        Path cacheFile = new File(tempDir, "rewrite.json").toPath();
+        Files.write(cacheFile, NON_ASCII_SAMPLE.getBytes(StandardCharsets.ISO_8859_1));
+
+        // When
+        manager.saveContent("rewrite.json", NON_ASCII_SAMPLE);
+
+        // Then
+        assertArrayEquals(NON_ASCII_SAMPLE.getBytes(StandardCharsets.UTF_8), Files.readAllBytes(cacheFile));
+        assertEquals(NON_ASCII_SAMPLE, manager.loadCache("rewrite.json"));
+    }
+
     private static boolean isValidUtf8(byte[] bytes) {
         CharsetDecoder decoder = StandardCharsets.UTF_8.newDecoder()
                 .onMalformedInput(CodingErrorAction.REPORT)
@@ -238,48 +265,5 @@ class FileCachingManagerImplTest {
         } catch (CharacterCodingException e) {
             return false;
         }
-    }
-
-    @Test
-    void shouldTreatUndecodableCacheAsAMissRatherThanFailing() throws IOException {
-        // Bytes that decode under neither UTF-8 nor the platform charset must not abort startup:
-        // a cache miss lets the repository fetch instead.
-        String fileName = "corrupt.txt";
-        Files.write(new File(tempDir, fileName).toPath(), new byte[]{(byte) 0xC3, (byte) 0x28, (byte) 0xA9});
-
-        String loaded = fileCachingManagerImpl.loadCache(fileName);
-
-        if (StandardCharsets.UTF_8.equals(Charset.defaultCharset())) {
-            assertNull(loaded);
-        } else {
-            // A single-byte legacy charset decodes anything, so the fallback read succeeds.
-            assertNotNull(loaded);
-        }
-    }
-
-    @Test
-    void shouldRewriteALegacyCacheAsUtf8OnTheNextSave() throws IOException {
-        String fileName = "rewrite.txt";
-        String content = NON_ASCII_SAMPLE;
-
-        fileCachingManagerImpl.saveContent(fileName, content);
-
-        byte[] written = Files.readAllBytes(new File(tempDir, fileName).toPath());
-        assertEquals(content, new String(written, StandardCharsets.UTF_8));
-        assertEquals(content, fileCachingManagerImpl.loadCache(fileName));
-    }
-
-    @Test
-    void shouldThrowWhenCacheDirectoryCannotBeCreated() {
-        File file = new File(tempDir, "notadir.txt");
-        try {
-            file.createNewFile();
-        } catch (IOException e) {
-            fail("Precondition setup failed");
-        }
-        // A path *inside* a plain file cannot be a directory.
-        String impossiblePath = file.getAbsolutePath() + File.separator + "subdir";
-
-        assertThrows(RuntimeException.class, () -> new FileCachingManagerImpl(impossiblePath));
     }
 }

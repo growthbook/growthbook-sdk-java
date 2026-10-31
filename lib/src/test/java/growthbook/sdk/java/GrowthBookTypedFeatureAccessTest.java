@@ -1,13 +1,5 @@
 package growthbook.sdk.java;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 import growthbook.sdk.java.model.FeatureResult;
 import growthbook.sdk.java.model.FeatureResultSource;
 import growthbook.sdk.java.model.GBContext;
@@ -15,60 +7,102 @@ import growthbook.sdk.java.model.TypedKey;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
-class TypedFeatureAccessTest {
+import java.util.Objects;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+class GrowthBookTypedFeatureAccessTest {
+
+    private static final String FEATURES_JSON = "{"
+            + "\"new-home\":{\"defaultValue\":true},"
+            + "\"dark-mode\":{\"defaultValue\":false},"
+            + "\"theme\":{\"defaultValue\":\"dark\"},"
+            + "\"max-items\":{\"defaultValue\":25},"
+            + "\"ratio\":{\"defaultValue\":1.5},"
+            + "\"weight\":{\"defaultValue\":2.5},"
+            + "\"home-config\":{\"defaultValue\":{\"title\":\"Welcome\",\"limit\":5}}"
+            + "}";
+
+    private static final TypedKey<String> THEME = TypedKey.ofString("theme");
+    private static final TypedKey<Double> RATIO = TypedKey.ofDouble("ratio");
+    private static final TypedKey<Float> WEIGHT = TypedKey.ofFloat("weight");
+    private static final TypedKey<Boolean> NEW_HOME = TypedKey.ofBoolean("new-home");
+    private static final TypedKey<Boolean> DARK_MODE = TypedKey.ofBoolean("dark-mode");
+    private static final TypedKey<Integer> MAX_ITEMS = TypedKey.ofInteger("max-items");
+    private static final TypedKey<HomeConfig> HOME_CONFIG = TypedKey.of("home-config", HomeConfig.class);
+
+    private final GrowthBook subject = new GrowthBook(GBContext.builder().featuresJson(FEATURES_JSON).build());
 
     @Test
-    @DisplayName("TypedKey exposes the raw key and value type")
-    void typedKey_exposesKeyAndType() {
-        assertEquals("new-home", Features.NEW_HOME.getKey());
-        assertEquals(Boolean.class, Features.NEW_HOME.getValueType());
-        assertEquals(String.class, Features.THEME.getValueType());
-    }
-
-    @Test
-    @DisplayName("TypedKey.of rejects null arguments")
-    void typedKey_rejectsNulls() {
-        assertThrows(NullPointerException.class, () -> TypedKey.of(null, Boolean.class));
-        assertThrows(NullPointerException.class, () -> TypedKey.of("x", null));
-    }
-
-    @Test
-    @DisplayName("TypedKey equality is based on key and value type")
-    void typedKey_equality() {
+    @DisplayName("A typed key exposes its raw key and value type")
+    void typedKeyExposesKeyAndValueType() {
+        // When
         TypedKey<Boolean> key = TypedKey.ofBoolean("new-home");
 
-        assertEquals(TypedKey.ofBoolean("new-home"), TypedKey.ofBoolean("new-home"));
-        assertEquals(TypedKey.ofBoolean("new-home").hashCode(), TypedKey.ofBoolean("new-home").hashCode());
-        assertNotEquals(TypedKey.ofBoolean("new-home"), TypedKey.ofBoolean("other"));
+        // Then
+        assertEquals("new-home", key.getKey());
+        assertEquals(Boolean.class, key.getValueType());
+        assertEquals(String.class, THEME.getValueType());
+    }
+
+    @Test
+    @DisplayName("A typed key rejects a null key or value type")
+    void typedKeyRejectsNullArguments() {
+        // When / Then
+        NullPointerException nullKey = assertThrows(NullPointerException.class, () -> TypedKey.of(null, Boolean.class));
+        NullPointerException nullType = assertThrows(NullPointerException.class, () -> TypedKey.of("feature-1", null));
+        assertEquals("feature key must not be null", nullKey.getMessage());
+        assertEquals("feature value type must not be null", nullType.getMessage());
+    }
+
+    @Test
+    @DisplayName("Typed keys are equal when key and value type are equal")
+    void typedKeysAreEqualByKeyAndValueType() {
+        // Given
+        TypedKey<Boolean> key = TypedKey.ofBoolean("new-home");
+
+        // When / Then
+        assertEquals(TypedKey.ofBoolean("new-home"), key);
+        assertEquals(TypedKey.ofBoolean("new-home").hashCode(), key.hashCode());
+        assertNotEquals(TypedKey.ofBoolean("other"), key);
+        assertNotEquals(TypedKey.ofString("new-home"), key);
         assertNotEquals(null, key);
     }
 
     @Test
-    @DisplayName("TypedKey.toString includes the key and value type")
-    void typedKey_toString() {
-        String text = Features.NEW_HOME.toString();
+    @DisplayName("A typed key prints its key and simple value type name")
+    void typedKeyPrintsKeyAndValueType() {
+        // When
+        String text = NEW_HOME.toString();
 
-        assertTrue(text.contains("new-home"), text);
-        assertTrue(text.contains("Boolean"), text);
+        // Then
+        assertEquals("TypedKey{key='new-home', valueType=Boolean}", text);
     }
 
     @Test
-    @DisplayName("getFeature returns a typed FeatureResult")
-    void getFeature_returnsTypedResult() {
-        FeatureResult<Boolean> result = growthBook().getFeature(Features.NEW_HOME);
+    @DisplayName("getFeature returns a typed result for a known key")
+    void getFeatureReturnsTypedResult() {
+        // When
+        FeatureResult<Boolean> result = subject.getFeature(NEW_HOME);
 
-        assertNotNull(result);
+        // Then
         assertEquals(Boolean.TRUE, result.getValue());
         assertEquals(FeatureResultSource.DEFAULT_VALUE, result.getSource());
         assertTrue(result.isOn());
     }
 
     @Test
-    @DisplayName("getFeature on an unknown key returns an unknownFeature result rather than null")
-    void getFeature_unknownKey_returnsUnknownFeatureResult() {
-        FeatureResult<Boolean> result = growthBook().getFeature(TypedKey.ofBoolean("missing"));
+    @DisplayName("getFeature returns an unknown feature result for an unknown key")
+    void getFeatureReturnsUnknownFeatureResultForUnknownKey() {
+        // When
+        FeatureResult<Boolean> result = subject.getFeature(TypedKey.ofBoolean("missing"));
 
-        assertNotNull(result);
+        // Then
         assertNull(result.getValue());
         assertEquals(FeatureResultSource.UNKNOWN_FEATURE, result.getSource());
         assertFalse(result.isOn());
@@ -76,66 +110,62 @@ class TypedFeatureAccessTest {
     }
 
     @Test
-    @DisplayName("getFeatureValue deserializes a complex value type, falling back on unknown keys")
-    void getFeatureValue_complexType() {
-        GrowthBook subject = growthBook();
+    @DisplayName("getFeatureValue deserializes a complex value type and falls back for unknown keys")
+    void getFeatureValueDeserializesComplexType() {
+        // Given
         HomeConfig fallback = new HomeConfig("fallback", 0);
 
-        HomeConfig config = subject.getFeatureValue(Features.HOME_CONFIG, fallback);
-        assertEquals("Welcome", config.getTitle());
-        assertEquals(5, config.getLimit());
-
+        // When
+        HomeConfig config = subject.getFeatureValue(HOME_CONFIG, fallback);
         HomeConfig missing = subject.getFeatureValue(TypedKey.of("missing", HomeConfig.class), fallback);
+
+        // Then
+        assertEquals(new HomeConfig("Welcome", 5), config);
         assertEquals(fallback, missing);
     }
 
     @Test
-    @DisplayName("A feature whose value is falsy reports off")
-    void offFeature_reportsOff() {
-        GrowthBook subject = growthBook();
-
-        assertFalse(subject.isOn(Features.DARK_MODE));
-        assertTrue(subject.isOff(Features.DARK_MODE));
-        assertFalse(subject.getBooleanFeature(Features.DARK_MODE));
-        assertFalse(subject.getBooleanFeature(Features.DARK_MODE, true));
+    @DisplayName("A feature with a falsy value is off")
+    void featureWithFalsyValueIsOff() {
+        // When / Then
+        assertFalse(subject.isOn(DARK_MODE));
+        assertTrue(subject.isOff(DARK_MODE));
+        assertFalse(subject.getBooleanFeature(DARK_MODE));
+        assertFalse(subject.getBooleanFeature(DARK_MODE, true));
     }
 
     @Test
-    @DisplayName("isOn / isOff accept a typed key")
-    void isOnIsOff_acceptTypedKey() {
-        GrowthBook subject = growthBook();
-
-        assertTrue(subject.isOn(Features.NEW_HOME));
-        assertFalse(subject.isOff(Features.NEW_HOME));
+    @DisplayName("isOn and isOff accept a typed key")
+    void isOnAndIsOffAcceptTypedKey() {
+        // When / Then
+        assertTrue(subject.isOn(NEW_HOME));
+        assertFalse(subject.isOff(NEW_HOME));
     }
 
     @Test
-    @DisplayName("getBooleanFeature returns the value, defaulting to false when unknown")
-    void getBooleanFeature() {
-        GrowthBook subject = growthBook();
-
-        assertTrue(subject.getBooleanFeature(Features.NEW_HOME));
-        assertTrue(subject.getBooleanFeature(Features.NEW_HOME, false));
+    @DisplayName("getBooleanFeature returns the value and defaults to false for unknown keys")
+    void getBooleanFeatureReturnsValueOrDefault() {
+        // When / Then
+        assertTrue(subject.getBooleanFeature(NEW_HOME));
+        assertTrue(subject.getBooleanFeature(NEW_HOME, false));
         assertFalse(subject.getBooleanFeature(TypedKey.ofBoolean("missing")));
         assertTrue(subject.getBooleanFeature(TypedKey.ofBoolean("missing"), true));
     }
 
     @Test
     @DisplayName("Typed getters read string, integer, double and float values")
-    void typedGetters_readValues() {
-        GrowthBook subject = growthBook();
-
-        assertEquals("dark", subject.getStringFeature(Features.THEME, "light"));
-        assertEquals(Integer.valueOf(25), subject.getIntegerFeature(Features.MAX_ITEMS, 10));
-        assertEquals(Double.valueOf(1.5), subject.getDoubleFeature(Features.RATIO, 0.0));
-        assertEquals(Float.valueOf(2.5f), subject.getFloatFeature(Features.WEIGHT, 0.0f));
+    void typedGettersReadValues() {
+        // When / Then
+        assertEquals("dark", subject.getStringFeature(THEME, "light"));
+        assertEquals(Integer.valueOf(25), subject.getIntegerFeature(MAX_ITEMS, 10));
+        assertEquals(Double.valueOf(1.5), subject.getDoubleFeature(RATIO, 0.0));
+        assertEquals(Float.valueOf(2.5f), subject.getFloatFeature(WEIGHT, 0.0f));
     }
 
     @Test
     @DisplayName("Typed getters fall back to the default for unknown keys")
-    void typedGetters_fallBackToDefault() {
-        GrowthBook subject = growthBook();
-
+    void typedGettersFallBackToDefault() {
+        // When / Then
         assertEquals("light", subject.getStringFeature(TypedKey.ofString("missing"), "light"));
         assertEquals(Integer.valueOf(10), subject.getIntegerFeature(TypedKey.ofInteger("missing"), 10));
         assertEquals(Double.valueOf(9.9), subject.getDoubleFeature(TypedKey.ofDouble("missing"), 9.9));
@@ -144,42 +174,19 @@ class TypedFeatureAccessTest {
 
     @Test
     @DisplayName("getFeatureValue infers the deserialization class from the key")
-    void getFeatureValue_infersClassFromKey() {
-        GrowthBook subject = growthBook();
-
-        assertEquals("dark", subject.getFeatureValue(Features.THEME, "light"));
-        assertEquals(Integer.valueOf(25), subject.getFeatureValue(Features.MAX_ITEMS, 0));
+    void getFeatureValueInfersClassFromKey() {
+        // When / Then
+        assertEquals("dark", subject.getFeatureValue(THEME, "light"));
+        assertEquals(Integer.valueOf(25), subject.getFeatureValue(MAX_ITEMS, 0));
     }
 
-    static final class Features {
-
-        static final TypedKey<String> THEME = TypedKey.ofString("theme");
-        static final TypedKey<Double> RATIO = TypedKey.ofDouble("ratio");
-        static final TypedKey<Float> WEIGHT = TypedKey.ofFloat("weight");
-        static final TypedKey<Boolean> NEW_HOME = TypedKey.ofBoolean("new-home");
-        static final TypedKey<Boolean> DARK_MODE = TypedKey.ofBoolean("dark-mode");
-        static final TypedKey<Integer> MAX_ITEMS = TypedKey.ofInteger("max-items");
-        static final TypedKey<HomeConfig> HOME_CONFIG = TypedKey.of("home-config", HomeConfig.class);
-
-        private Features() {
-        }
-    }
-
-    static final class HomeConfig {
+    private static final class HomeConfig {
         private final String title;
         private final int limit;
 
         HomeConfig(String title, int limit) {
             this.title = title;
             this.limit = limit;
-        }
-
-        String getTitle() {
-            return title;
-        }
-
-        int getLimit() {
-            return limit;
         }
 
         @Override
@@ -191,29 +198,12 @@ class TypedFeatureAccessTest {
                 return false;
             }
             HomeConfig other = (HomeConfig) o;
-            return limit == other.limit && java.util.Objects.equals(title, other.title);
+            return limit == other.limit && Objects.equals(title, other.title);
         }
 
         @Override
         public int hashCode() {
-            return java.util.Objects.hash(title, limit);
+            return Objects.hash(title, limit);
         }
-    }
-
-    private static final String FEATURES_JSON = "{"
-        + "\"new-home\":{\"defaultValue\":true},"
-        + "\"dark-mode\":{\"defaultValue\":false},"
-        + "\"theme\":{\"defaultValue\":\"dark\"},"
-        + "\"max-items\":{\"defaultValue\":25},"
-        + "\"ratio\":{\"defaultValue\":1.5},"
-        + "\"weight\":{\"defaultValue\":2.5},"
-        + "\"home-config\":{\"defaultValue\":{\"title\":\"Welcome\",\"limit\":5}}"
-        + "}";
-
-    private GrowthBook growthBook() {
-        GBContext context = GBContext.builder()
-            .featuresJson(FEATURES_JSON)
-            .build();
-        return new GrowthBook(context);
     }
 }

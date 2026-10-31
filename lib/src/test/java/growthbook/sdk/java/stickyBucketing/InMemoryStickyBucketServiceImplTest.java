@@ -1,187 +1,184 @@
 package growthbook.sdk.java.stickyBucketing;
 
-import growthbook.sdk.java.model.StickyAssignmentsDocument;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import growthbook.sdk.java.model.StickyAssignmentsDocument;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-
-import static org.junit.jupiter.api.Assertions.*;
+import java.util.stream.Stream;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 class InMemoryStickyBucketServiceImplTest {
-    private InMemoryStickyBucketServiceImpl service;
 
-    @BeforeEach
-    void setUp() {
-        service = new InMemoryStickyBucketServiceImpl(new ConcurrentHashMap<>());
-    }
+    private final InMemoryStickyBucketServiceImpl service = new InMemoryStickyBucketServiceImpl(new ConcurrentHashMap<>());
 
-    @AfterEach
-    void tearDown() {
-        service = null;
+    @Test
+    @DisplayName("Returns the saved document for its attribute name and value")
+    void returnsSavedDocumentForAttribute() {
+        // Given
+        StickyAssignmentsDocument doc = document("id", "user-1", Collections.singletonMap("exp1__0", "control"));
+        service.saveAssignments(doc);
+
+        // When
+        StickyAssignmentsDocument result = service.getAssignments("id", "user-1");
+
+        // Then
+        assertEquals(doc, result);
     }
 
     @Test
-    void getAssignments_returnDocument_whenExists() {
-        Map<String, String> assignments = new HashMap<>();
+    @DisplayName("Returns null for an attribute value with no saved document")
+    void returnsNullForUnknownAttributeValue() {
+        // Given
+        service.saveAssignments(document("id", "user-1", Collections.singletonMap("exp1__0", "control")));
 
-        assignments.put("exp1__0", "control");
-        StickyAssignmentsDocument doc = new StickyAssignmentsDocument("id", "user_1", assignments);
-        service.saveAssignments(doc);
+        // When
+        StickyAssignmentsDocument result = service.getAssignments("id", "user-2");
 
-        StickyAssignmentsDocument result = service.getAssignments("id", "user_1");
-
-        assertNotNull(result);
-        assertEquals(doc.getAttributeName(), result.getAttributeName());
-        assertEquals(doc.getAttributeValue(), result.getAttributeValue());
-        assertEquals(doc.getAssignments(), result.getAssignments());
-
-    }
-
-    @Test
-    void getAssignments_returnNull_whenNotExists() {
-        Map<String, String> assignments = new HashMap<>();
-
-        assignments.put("exp1__0", "control");
-        StickyAssignmentsDocument doc = new StickyAssignmentsDocument("id", "user_1", assignments);
-        service.saveAssignments(doc);
-
-        StickyAssignmentsDocument result = service.getAssignments("id", "user_2");
-
+        // Then
         assertNull(result);
     }
 
     @Test
-    void saveAssignments_storesUnderCorrectKey() {
-        StickyAssignmentsDocument doc = new StickyAssignmentsDocument("id", "user_1", new HashMap<>());
-        service.saveAssignments(doc);
+    @DisplayName("Does not find a document when attribute name and value are swapped")
+    void doesNotFindDocumentWithSwappedNameAndValue() {
+        // Given
+        service.saveAssignments(document("id", "user-1", Collections.<String, String>emptyMap()));
 
-        assertNotNull(service.getAssignments("id", "user_1"));
-        assertNull(service.getAssignments("user_1", "id"));
+        // When
+        StickyAssignmentsDocument result = service.getAssignments("user-1", "id");
+
+        // Then
+        assertNull(result);
     }
 
     @Test
-    void saveAssignments_overwrites_existingDocument() {
-        Map<String, String> assignments1 = new HashMap<>();
-        assignments1.put("exp1__0", "control");
-        service.saveAssignments(new StickyAssignmentsDocument("id", "user_1", assignments1));
-
-        Map<String, String> assignments2 = new HashMap<>();
-        assignments2.put("exp1__0", "variation");
-        StickyAssignmentsDocument doc2 = new StickyAssignmentsDocument("id", "user_1", assignments2);
-        service.saveAssignments(doc2);
-
-        StickyAssignmentsDocument result = service.getAssignments("id", "user_1");
-        assertEquals("variation", result.getAssignments().get("exp1__0"));
-    }
-
-    @Test
-    void getAllAssignments_returnsMatchingDocuments() {
-        service.saveAssignments(
-                new StickyAssignmentsDocument("id", "user-1", new HashMap<>())
-        );
-        service.saveAssignments(
-                new StickyAssignmentsDocument("cookie_id", "cookie-99", new HashMap<>())
-        );
-
+    @DisplayName("Returns every stored document matching the attributes, keyed by name||value")
+    void returnsAllMatchingDocumentsKeyedByNameAndValue() {
+        // Given
+        StickyAssignmentsDocument idDoc = document("id", "user-1", Collections.<String, String>emptyMap());
+        StickyAssignmentsDocument cookieDoc = document("cookie_id", "cookie-99", Collections.<String, String>emptyMap());
+        service.saveAssignments(idDoc);
+        service.saveAssignments(cookieDoc);
         Map<String, String> attributes = new HashMap<>();
         attributes.put("id", "user-1");
         attributes.put("cookie_id", "cookie-99");
 
+        // When
         Map<String, StickyAssignmentsDocument> result = service.getAllAssignments(attributes);
 
-        assertEquals(2, result.size());
-        assertTrue(result.containsKey("id||user-1"));
-        assertTrue(result.containsKey("cookie_id||cookie-99"));
+        // Then
+        Map<String, StickyAssignmentsDocument> expected = new HashMap<>();
+        expected.put("id||user-1", idDoc);
+        expected.put("cookie_id||cookie-99", cookieDoc);
+        assertEquals(expected, result);
     }
 
     @Test
-    void getAllAssignments_skipsAttributes_withNoStoredDocument() {
-        service.saveAssignments(
-                new StickyAssignmentsDocument("id", "user-1", new HashMap<>())
-        );
-        service.saveAssignments(
-                new StickyAssignmentsDocument("cookie_id", "cookie-99", new HashMap<>())
-        );
-
+    @DisplayName("Skips attributes that have no stored document")
+    void skipsAttributesWithoutStoredDocument() {
+        // Given
+        StickyAssignmentsDocument idDoc = document("id", "user-1", Collections.<String, String>emptyMap());
+        service.saveAssignments(idDoc);
+        service.saveAssignments(document("cookie_id", "cookie-99", Collections.<String, String>emptyMap()));
         Map<String, String> attributes = new HashMap<>();
         attributes.put("id", "user-1");
         attributes.put("cookie_id", "cookie-100");
 
+        // When
         Map<String, StickyAssignmentsDocument> result = service.getAllAssignments(attributes);
 
-        assertEquals(1, result.size());
-        assertTrue(result.containsKey("id||user-1"));
-        assertFalse(result.containsKey("cookie_id||cookie-100"));
+        // Then
+        assertEquals(Collections.singletonMap("id||user-1", idDoc), result);
     }
 
     @Test
-    void getAllAssignments_returnsEmpty_whenNoAttributesMatch() {
-        Map<String, String> attributes = new HashMap<>();
-        attributes.put("id", "nobody");
+    @DisplayName("Returns no documents when no attribute matches")
+    void returnsNoDocumentsWhenNoAttributeMatches() {
+        // When
+        Map<String, StickyAssignmentsDocument> result = service.getAllAssignments(Collections.singletonMap("id", "nobody"));
 
-        Map<String, StickyAssignmentsDocument> result = service.getAllAssignments(attributes);
-
+        // Then
         assertTrue(result.isEmpty());
     }
 
     @Test
-    void getAllAssignments_returnsEmpty_whenAttributesMapIsEmpty() {
-        service.saveAssignments(new StickyAssignmentsDocument("id", "user-1", new HashMap<>()));
+    @DisplayName("Returns no documents for empty attributes")
+    void returnsNoDocumentsForEmptyAttributes() {
+        // Given
+        service.saveAssignments(document("id", "user-1", Collections.<String, String>emptyMap()));
 
-        Map<String, StickyAssignmentsDocument> result = service.getAllAssignments(new HashMap<>());
+        // When
+        Map<String, StickyAssignmentsDocument> result = service.getAllAssignments(Collections.<String, String>emptyMap());
 
+        // Then
         assertTrue(result.isEmpty());
     }
 
-    @Test
-    void saveAssignments_writesThroughToTheSuppliedStorage() {
-        // The supplied map is the documented backing storage: callers that observe or persist it
-        // must see assignments saved through the service.
-        Map<String, StickyAssignmentsDocument> backingStorage = new HashMap<>();
+    @ParameterizedTest(name = "{0}")
+    @MethodSource("backingStorages")
+    @DisplayName("Writes saved documents through to the supplied backing storage without copying it")
+    void writesSavedDocumentsThroughToSuppliedStorage(String storageType, Map<String, StickyAssignmentsDocument> backingStorage) {
+        // Given
         InMemoryStickyBucketServiceImpl subject = new InMemoryStickyBucketServiceImpl(backingStorage);
+        StickyAssignmentsDocument doc = document("id", "user-1", Collections.<String, String>emptyMap());
 
-        StickyAssignmentsDocument doc = new StickyAssignmentsDocument("id", "user-1", new HashMap<>());
+        // When
         subject.saveAssignments(doc);
 
+        // Then
         assertEquals(1, backingStorage.size());
         assertSame(doc, backingStorage.get("id||user-1"));
     }
 
+    static Stream<Arguments> backingStorages() {
+        return Stream.of(
+                Arguments.of("HashMap", new HashMap<String, StickyAssignmentsDocument>()),
+                Arguments.of("ConcurrentHashMap", new ConcurrentHashMap<String, StickyAssignmentsDocument>()));
+    }
+
     @Test
-    void getAssignments_seesEntriesAddedToTheSuppliedStorageAfterConstruction() {
+    @DisplayName("Sees documents added to the supplied backing storage after construction")
+    void seesDocumentsAddedToSuppliedStorageAfterConstruction() {
+        // Given
         Map<String, StickyAssignmentsDocument> backingStorage = new HashMap<>();
         InMemoryStickyBucketServiceImpl subject = new InMemoryStickyBucketServiceImpl(backingStorage);
-
-        StickyAssignmentsDocument doc = new StickyAssignmentsDocument("id", "user-2", new HashMap<>());
+        StickyAssignmentsDocument doc = document("id", "user-2", Collections.<String, String>emptyMap());
         backingStorage.put("id||user-2", doc);
 
-        assertSame(doc, subject.getAssignments("id", "user-2"));
+        // When
+        StickyAssignmentsDocument result = subject.getAssignments("id", "user-2");
+
+        // Then
+        assertSame(doc, result);
     }
 
     @Test
-    void constructor_usesAConcurrentMapAsIsWithoutCopying() {
-        ConcurrentHashMap<String, StickyAssignmentsDocument> backingStorage = new ConcurrentHashMap<>();
-        InMemoryStickyBucketServiceImpl subject = new InMemoryStickyBucketServiceImpl(backingStorage);
-
-        StickyAssignmentsDocument doc = new StickyAssignmentsDocument("id", "user-3", new HashMap<>());
-        subject.saveAssignments(doc);
-
-        assertSame(doc, backingStorage.get("id||user-3"));
-    }
-
-    @Test
-    void constructor_nullStorage_fallsBackToAnEmptyThreadSafeMap() {
+    @DisplayName("Falls back to empty storage when constructed with null")
+    void fallsBackToEmptyStorageForNull() {
+        // Given
         InMemoryStickyBucketServiceImpl subject = new InMemoryStickyBucketServiceImpl(null);
+        StickyAssignmentsDocument doc = document("id", "user-4", Collections.<String, String>emptyMap());
 
-        assertNull(subject.getAssignments("id", "user-4"));
-
-        StickyAssignmentsDocument doc = new StickyAssignmentsDocument("id", "user-4", new HashMap<>());
+        // When
+        StickyAssignmentsDocument before = subject.getAssignments("id", "user-4");
         subject.saveAssignments(doc);
 
+        // Then
+        assertNull(before);
         assertSame(doc, subject.getAssignments("id", "user-4"));
+    }
+
+    private static StickyAssignmentsDocument document(String attributeName, String attributeValue, Map<String, String> assignments) {
+        return new StickyAssignmentsDocument(attributeName, attributeValue, new HashMap<>(assignments));
     }
 }

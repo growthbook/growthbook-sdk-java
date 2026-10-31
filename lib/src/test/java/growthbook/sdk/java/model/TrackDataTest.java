@@ -1,27 +1,24 @@
-package growthbook.sdk.java;
+package growthbook.sdk.java.model;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-
-import growthbook.sdk.java.model.Experiment;
-import growthbook.sdk.java.model.ExperimentResult;
-import growthbook.sdk.java.model.TrackData;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
+import static org.junit.jupiter.api.Assertions.assertSame;
+
 class TrackDataTest {
+
     @Test
-    void canBeConstructed() {
-        Experiment<Integer> experiment = Experiment.<Integer>builder()
-                .key("my_experiment")
-                .force(100)
-                .build();
-        ExperimentResult<Integer> experimentResult = ExperimentResult.<Integer>builder()
-                .inExperiment(true)
-                .key("my_experiment")
-                .build();
+    @DisplayName("Exposes the experiment and result it was constructed with")
+    void exposesExperimentAndResult() {
+        // Given
+        Experiment<Integer> experiment = Experiment.<Integer>builder().key("experiment-1").force(100).build();
+        ExperimentResult<Integer> result = ExperimentResult.<Integer>builder().inExperiment(true).key("experiment-1").build();
 
-        TrackData<Integer> subject = new TrackData<>(experiment, experimentResult);
+        // When
+        TrackData<Integer> subject = new TrackData<>(experiment, result);
 
-        assertEquals(experiment, subject.getExperiment());
-        assertEquals(experimentResult, subject.getResult());
+        // Then
+        assertSame(experiment, subject.getExperiment());
+        assertSame(result, subject.getResult());
     }
 }

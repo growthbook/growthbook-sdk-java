@@ -1,24 +1,21 @@
 package growthbook.sdk.java.repository.internal;
 
+import growthbook.sdk.java.testhelpers.InMemoryCacheManager;
+import growthbook.sdk.java.testhelpers.RecordingRefreshListener;
+import growthbook.sdk.java.testhelpers.TestClock;
 import growthbook.sdk.java.exception.FeatureFetchException;
-import growthbook.sdk.java.listener.FeatureRefreshListener;
-import growthbook.sdk.java.model.FeatureRefreshEvent;
 import growthbook.sdk.java.model.FeatureRefreshSource;
 import growthbook.sdk.java.repository.FeatureRefreshStrategy;
 import growthbook.sdk.java.repository.FeatureSnapshot;
 import growthbook.sdk.java.repository.RefreshMode;
 import growthbook.sdk.java.retry.FeatureFetchRetryPolicy;
-import growthbook.sdk.java.sandbox.GbCacheManager;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import javax.annotation.Nullable;
 import java.io.IOException;
-import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
-import java.time.ZoneId;
-import java.time.ZoneOffset;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Deque;
@@ -41,9 +38,9 @@ class FeatureRefreshEngineOnReadTest {
     private static final String BODY = "{\"features\":" + FEATURES_JSON + ",\"savedGroups\":" + SAVED_GROUPS_JSON + "}";
 
     private final FakeTransport transport = new FakeTransport();
-    private final FakeCacheManager cacheManager = new FakeCacheManager();
-    private final MutableClock clock = new MutableClock(Instant.parse("2026-01-01T00:00:00Z"));
-    private final RecordingListener listener = new RecordingListener();
+    private final InMemoryCacheManager cacheManager = new InMemoryCacheManager();
+    private final TestClock clock = new TestClock(Instant.parse("2026-01-01T00:00:00Z"));
+    private final RecordingRefreshListener listener = new RecordingRefreshListener();
 
     @Test
     @DisplayName("Does not refresh on read before the TTL expired")
@@ -217,60 +214,6 @@ class FeatureRefreshEngineOnReadTest {
         }
     }
 
-    private static final class FakeCacheManager implements GbCacheManager {
-        private final Map<String, String> store = new HashMap<>();
-        private int saveCount;
 
-        @Override
-        public void saveContent(String key, String data) {
-            saveCount++;
-            store.put(key, data);
-        }
 
-        @Override
-        public String loadCache(String key) {
-            return store.get(key);
-        }
-
-        @Override
-        public void clearCache() {
-            store.clear();
-        }
-    }
-
-    private static final class MutableClock extends Clock {
-        private Instant now;
-
-        MutableClock(Instant start) {
-            this.now = start;
-        }
-
-        void advance(Duration duration) {
-            now = now.plus(duration);
-        }
-
-        @Override
-        public ZoneId getZone() {
-            return ZoneOffset.UTC;
-        }
-
-        @Override
-        public Clock withZone(ZoneId zone) {
-            return this;
-        }
-
-        @Override
-        public Instant instant() {
-            return now;
-        }
-    }
-
-    private static final class RecordingListener implements FeatureRefreshListener {
-        private final List<FeatureRefreshEvent> events = new ArrayList<>();
-
-        @Override
-        public void onRefresh(FeatureRefreshEvent event) {
-            events.add(event);
-        }
-    }
 }

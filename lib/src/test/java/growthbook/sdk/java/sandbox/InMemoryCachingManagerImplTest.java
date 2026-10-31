@@ -1,62 +1,101 @@
-package growthbook.sdk.java;
+package growthbook.sdk.java.sandbox;
 
-import growthbook.sdk.java.sandbox.InMemoryCachingManagerImpl;
-import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class InMemoryCachingManagerImplTest {
 
-    private InMemoryCachingManagerImpl cache;
+    private final InMemoryCachingManagerImpl cache = new InMemoryCachingManagerImpl();
 
-    @BeforeEach
-    void setUp() {
-        cache = new InMemoryCachingManagerImpl();
+    @Test
+    @DisplayName("Returns null content and no timestamp for a key that was never saved")
+    void returnsNullForMissingKey() {
+        // Given
+        // When
+        String content = cache.loadCache("missing");
+        Long updatedAt = cache.getLastUpdatedMillis("missing");
+
+        // Then
+        assertNull(content);
+        assertNull(updatedAt);
+    }
+
+    @ParameterizedTest(name = "content \"{0}\"")
+    @ValueSource(strings = {"value-1", ""})
+    @DisplayName("Loads exactly the content that was saved")
+    void loadsSavedContent(String content) {
+        // Given
+        cache.saveContent("key-1", content);
+
+        // When
+        String loaded = cache.loadCache("key-1");
+
+        // Then
+        assertEquals(content, loaded);
     }
 
     @Test
-    void shouldReturnNullForMissingKey() {
-        assertNull(cache.loadCache("missing"));
+    @DisplayName("Records the save time as the last updated timestamp")
+    void recordsSaveTimeAsLastUpdated() {
+        // Given
+        long before = System.currentTimeMillis();
+
+        // When
+        cache.saveContent("key-1", "value-1");
+        long after = System.currentTimeMillis();
+
+        // Then
+        long updatedAt = cache.getLastUpdatedMillis("key-1");
+        assertTrue(updatedAt >= before && updatedAt <= after,
+                "expected " + updatedAt + " within [" + before + ", " + after + "]");
     }
 
     @Test
-    void shouldSaveAndLoadValue() {
-        cache.saveContent("key1", "value1");
-        assertEquals("value1", cache.loadCache("key1"));
+    @DisplayName("Replaces the content of a key that is saved again")
+    void replacesContentOfSavedKey() {
+        // Given
+        cache.saveContent("key-1", "first");
+
+        // When
+        cache.saveContent("key-1", "second");
+
+        // Then
+        assertEquals("second", cache.loadCache("key-1"));
     }
 
     @Test
-    void shouldOverwriteExistingKey() {
-        cache.saveContent("key", "first");
-        cache.saveContent("key", "second");
-        assertEquals("second", cache.loadCache("key"));
+    @DisplayName("Keeps the content of different keys independent")
+    void keepsKeysIndependent() {
+        // Given
+        // When
+        cache.saveContent("key-a", "alpha");
+        cache.saveContent("key-b", "beta");
+
+        // Then
+        assertEquals("alpha", cache.loadCache("key-a"));
+        assertEquals("beta", cache.loadCache("key-b"));
     }
 
     @Test
-    void shouldStoreMultipleKeysIndependently() {
-        cache.saveContent("a", "alpha");
-        cache.saveContent("b", "beta");
+    @DisplayName("Clears every saved entry and its timestamp")
+    void clearsEntriesAndTimestamps() {
+        // Given
+        cache.saveContent("key-x", "1");
+        cache.saveContent("key-y", "2");
 
-        assertEquals("alpha", cache.loadCache("a"));
-        assertEquals("beta", cache.loadCache("b"));
-    }
-
-    @Test
-    void shouldClearAllEntries() {
-        cache.saveContent("x", "1");
-        cache.saveContent("y", "2");
-
+        // When
         cache.clearCache();
 
-        assertNull(cache.loadCache("x"));
-        assertNull(cache.loadCache("y"));
-    }
-
-    @Test
-    void shouldSaveEmptyStringValue() {
-        cache.saveContent("empty", "");
-        assertEquals("", cache.loadCache("empty"));
+        // Then
+        assertNull(cache.loadCache("key-x"));
+        assertNull(cache.loadCache("key-y"));
+        assertNull(cache.getLastUpdatedMillis("key-x"));
+        assertNull(cache.getLastUpdatedMillis("key-y"));
     }
 }

@@ -1,248 +1,164 @@
-package growthbook.sdk.java;
+package growthbook.sdk.java.model;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.Mockito.verify;
-
+import com.google.gson.JsonObject;
 import growthbook.sdk.java.callback.TrackingCallback;
-import growthbook.sdk.java.model.Experiment;
-import growthbook.sdk.java.model.ExperimentResult;
-import growthbook.sdk.java.model.Feature;
-import growthbook.sdk.java.model.GBContext;
 import growthbook.sdk.java.multiusermode.util.TransformationUtil;
 import growthbook.sdk.java.util.GrowthBookJsonUtils;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
+
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Mockito.mock;
+
 class GBContextTest {
-    private AutoCloseable closeable;
-    @Mock
-    private TrackingCallback trackingCallback;
 
-    final String sampleUserAttributes = "{\"country\": \"canada\", \"device\": \"android\"}";
-
-    @BeforeEach
-    void setUp() {
-        closeable = MockitoAnnotations.openMocks(this);
-    }
-
-    @AfterEach
-    void tearDown() throws Exception {
-        closeable.close();
-    }
+    private static final String ATTRIBUTES_JSON = "{\"country\": \"canada\", \"device\": \"android\"}";
+    private static final String ENCRYPTED_FEATURES = "7rvPA94JEsqRo9yPZsdsXg==.bJ8vtYvX+ur3cEUFVkYo1OyWb98oLnMlpeoO0Hs4YPc0EVb7oKX4KNz+Yt6GUMBsieXqtL7oaYzX+kMayZEtV+3bhyDYnS9QBrvalnfxbLExjtnsy8g0pPQHU/P/DPIzO0F+pphcahRfi+3AMTnIreqvkqrcX+MyOwHN56lqEs23Vp4Rsq2qDow/LZmn5kpwMNhMY0DBq7jC+lh2Oyly0g==";
+    private static final String ENCRYPTION_KEY = "BhB1wORFmZLTDjbvstvS8w==";
+    private static final String DECRYPTED_FEATURES = "{\"greeting\":{\"defaultValue\":\"hello\",\"rules\":["
+            + "{\"condition\":{\"country\":\"france\"},\"force\":\"bonjour\"},"
+            + "{\"condition\":{\"country\":\"mexico\"},\"force\":\"hola\"}]}}";
 
     @Test
-    void canBeConstructed() {
-        Boolean isEnabled = true;
-        Boolean isQaMode = false;
-        Boolean allowUrlOverride = false;
-        String url = "http://localhost:3000";
+    @DisplayName("The constructor keeps the given settings")
+    void constructorKeepsGivenSettings() {
+        // Given
+        TrackingCallback trackingCallback = mock(TrackingCallback.class);
         HashMap<String, Integer> forcedVariations = new HashMap<>();
-        forcedVariations.put("my-test", 0);
-        forcedVariations.put("other-test", 1);
-        String featuresJson = "{}";
+        forcedVariations.put("experiment-1", 0);
+        forcedVariations.put("experiment-2", 1);
 
-        GBContext subject = new GBContext(
-                sampleUserAttributes,
-                null,
-                featuresJson,
-                null,
-                null,
-                isEnabled,
-                isQaMode,
-                url,
-                allowUrlOverride,
-                forcedVariations,
-                trackingCallback,
-                null,
-                null,
-                null,
-                null,
-                null
-        );
+        // When
+        GBContext subject = new GBContext(ATTRIBUTES_JSON, null, "{}", null, null, true, false,
+                "http://localhost:3000", false, forcedVariations, trackingCallback, null, null, null, null, null);
 
-        assertNotNull(subject);
+        // Then
+        assertEquals(ATTRIBUTES_JSON, subject.getAttributesJson());
+        assertEquals(Collections.emptyMap(), subject.getFeatures());
+        assertTrue(subject.getEnabled());
+        assertFalse(subject.getIsQaMode());
+        assertFalse(subject.getAllowUrlOverride());
+        assertEquals("http://localhost:3000", subject.getUrl());
+        assertEquals(forcedVariations, subject.getForcedVariationsMap());
+        assertSame(trackingCallback, subject.getTrackingCallback());
+        assertEquals(new JsonObject(), subject.getSavedGroups());
     }
 
     @Test
-    void normalizesForcedVariationsFromExternalNumericMap() {
+    @DisplayName("Normalizes numeric forced variations and drops non-numeric ones")
+    void normalizesForcedVariations() {
+        // Given
         Map<String, Object> forcedVariations = new HashMap<>();
         forcedVariations.put("integer", 1);
         forcedVariations.put("double", 1.0);
         forcedVariations.put("invalid", "abc");
 
-        GBContext subject = GBContext
-                .builder()
-                .forcedVariationsMap(forcedVariations)
-                .build();
+        // When
+        GBContext subject = GBContext.builder().forcedVariationsMap(forcedVariations).build();
 
-        assertEquals(Integer.valueOf(1), subject.getForcedVariationsMap().get("integer"));
-        assertEquals(Integer.valueOf(1), subject.getForcedVariationsMap().get("double"));
-        assertFalse(subject.getForcedVariationsMap().containsKey("invalid"));
+        // Then
+        Map<String, Integer> expected = new HashMap<>();
+        expected.put("integer", 1);
+        expected.put("double", 1);
+        assertEquals(expected, subject.getForcedVariationsMap());
     }
 
     @Test
-    void hasGetterSetterForInitialState() {
-        Boolean isEnabled = true;
-        Boolean isQaMode = false;
-        String url = "http://localhost:3000";
+    @DisplayName("The builder keeps the given settings and parses the attributes JSON")
+    void builderKeepsSettingsAndParsesAttributes() {
+        // Given
+        JsonObject expectedAttributes = new JsonObject();
+        expectedAttributes.addProperty("country", "canada");
+        expectedAttributes.addProperty("device", "android");
 
-        GBContext subject = GBContext
-                .builder()
-                .enabled(isEnabled)
-                .attributesJson(sampleUserAttributes)
-                .url(url)
+        // When
+        GBContext subject = GBContext.builder()
+                .enabled(true)
+                .attributesJson(ATTRIBUTES_JSON)
+                .url("http://localhost:3000")
                 .featuresJson("{}")
-                .forcedVariationsMap(new HashMap<>())
-                .isQaMode(isQaMode)
-                .trackingCallback(trackingCallback)
+                .forcedVariationsMap(new HashMap<String, Integer>())
+                .isQaMode(false)
                 .build();
 
-        // Initial state OK
-        assertEquals(Boolean.TRUE, subject.getEnabled());
+        // Then
+        assertEquals(expectedAttributes, subject.getAttributes());
+        assertEquals(Collections.emptyMap(), subject.getFeatures());
+        assertTrue(subject.getEnabled());
         assertFalse(subject.getIsQaMode());
         assertEquals("http://localhost:3000", subject.getUrl());
+    }
 
-        // Use setters
+    @Test
+    @DisplayName("The setters replace the initial state")
+    void settersReplaceInitialState() {
+        // Given
+        GBContext subject = GBContext.builder().enabled(true).isQaMode(false).url("http://localhost:3000").build();
+
+        // When
         subject.setEnabled(false);
         subject.setIsQaMode(true);
-        subject.setUrl("https://docs.growthbook.io/lib/build-your-own");
+        subject.setUrl("http://localhost:3001");
 
-        assertNotEquals(Boolean.TRUE, subject.getEnabled());
+        // Then
+        assertFalse(subject.getEnabled());
         assertTrue(subject.getIsQaMode());
-        assertEquals("https://docs.growthbook.io/lib/build-your-own", subject.getUrl());
+        assertEquals("http://localhost:3001", subject.getUrl());
     }
 
     @Test
-    void canExecuteATrackingCallback() {
-        GBContext subject = GBContext
-                .builder()
-                .trackingCallback(trackingCallback)
+    @DisplayName("The constructor decrypts encrypted features with the encryption key")
+    void constructorDecryptsEncryptedFeatures() {
+        // When
+        GBContext subject = new GBContext(ATTRIBUTES_JSON, null, ENCRYPTED_FEATURES, null, ENCRYPTION_KEY, true, false,
+                "http://localhost:3000", false, new HashMap<String, Integer>(), null, null, null, null, null, null);
+
+        // Then
+        assertEquals(expectedDecryptedFeaturesJson(), GrowthBookJsonUtils.getInstance().gson.toJson(subject.getFeatures()));
+    }
+
+    @Test
+    @DisplayName("The builder decrypts encrypted features with the encryption key")
+    void builderDecryptsEncryptedFeatures() {
+        // When
+        GBContext subject = GBContext.builder()
+                .attributesJson(ATTRIBUTES_JSON)
+                .featuresJson(ENCRYPTED_FEATURES)
+                .encryptionKey(ENCRYPTION_KEY)
                 .build();
 
-        Experiment<String> experiment = Experiment.<String>builder().build();
-        ExperimentResult<String> result = ExperimentResult
-                .<String>builder()
-                .value("Hello, world!")
-                .build();
-        if (subject.getTrackingCallback() != null) {
-            subject.getTrackingCallback().onTrack(experiment, result);
-        }
-
-        verify(trackingCallback).onTrack(experiment, result);
+        // Then
+        assertEquals(expectedDecryptedFeaturesJson(), GrowthBookJsonUtils.getInstance().gson.toJson(subject.getFeatures()));
     }
 
-    @Test
-    void supportsEncryptedFeaturesUsingConstructor() {
-        Boolean isEnabled = true;
-        Boolean isQaMode = false;
-        Boolean allowUrlOverride = false;
-        String url = "http://localhost:3000";
-        HashMap<String, Integer> forcedVariations = new HashMap<>();
-        forcedVariations.put("my-test", 0);
-        forcedVariations.put("other-test", 1);
-        String encryptedFeaturesJson = "7rvPA94JEsqRo9yPZsdsXg==.bJ8vtYvX+ur3cEUFVkYo1OyWb98oLnMlpeoO0Hs4YPc0EVb7oKX4KNz+Yt6GUMBsieXqtL7oaYzX+kMayZEtV+3bhyDYnS9QBrvalnfxbLExjtnsy8g0pPQHU/P/DPIzO0F+pphcahRfi+3AMTnIreqvkqrcX+MyOwHN56lqEs23Vp4Rsq2qDow/LZmn5kpwMNhMY0DBq7jC+lh2Oyly0g==";
-        String encryptionKey = "BhB1wORFmZLTDjbvstvS8w==";
-
-        GBContext subject = new GBContext(
-                sampleUserAttributes,
-                null,
-                encryptedFeaturesJson,
-                null,
-                encryptionKey,
-                isEnabled,
-                isQaMode,
-                url,
-                allowUrlOverride,
-                forcedVariations,
-                trackingCallback,
-                null,
-                null,
-                null,
-                null,
-                null
-        );
-        String expectedFeaturesJson = "{\"greeting\":{\"defaultValue\":\"hello\",\"rules\":[{\"condition\":{\"country\":\"france\"},\"force\":\"bonjour\"},{\"condition\":{\"country\":\"mexico\"},\"force\":\"hola\"}]}}";
-        Map<String, Feature<?>> stringFeatureMap = TransformationUtil.transformFeatures(expectedFeaturesJson);
-        String expectedResult = GrowthBookJsonUtils.getInstance().gson.toJson(stringFeatureMap);
-
-        String actualResult = GrowthBookJsonUtils.getInstance().gson.toJson(subject.getFeatures());
-
-
-        assertNotNull(subject);
-        assertEquals(expectedResult, actualResult);
-    }
-
-    @Test
-    void supportsEncryptedFeaturesUsingBuilder() {
-        Boolean isEnabled = true;
-        Boolean isQaMode = false;
-        Boolean allowUrlOverride = false;
-        String url = "http://localhost:3000";
-        HashMap<String, Integer> forcedVariations = new HashMap<>();
-        forcedVariations.put("my-test", 0);
-        forcedVariations.put("other-test", 1);
-        String encryptedFeaturesJson = "7rvPA94JEsqRo9yPZsdsXg==.bJ8vtYvX+ur3cEUFVkYo1OyWb98oLnMlpeoO0Hs4YPc0EVb7oKX4KNz+Yt6GUMBsieXqtL7oaYzX+kMayZEtV+3bhyDYnS9QBrvalnfxbLExjtnsy8g0pPQHU/P/DPIzO0F+pphcahRfi+3AMTnIreqvkqrcX+MyOwHN56lqEs23Vp4Rsq2qDow/LZmn5kpwMNhMY0DBq7jC+lh2Oyly0g==";
-        String encryptionKey = "BhB1wORFmZLTDjbvstvS8w==";
-
-        GBContext subject = GBContext
-                .builder()
-                .enabled(isEnabled)
-                .attributesJson(sampleUserAttributes)
-                .url(url)
-                .allowUrlOverrides(allowUrlOverride)
-                .featuresJson(encryptedFeaturesJson)
-                .encryptionKey(encryptionKey)
-                .forcedVariationsMap(forcedVariations)
-                .isQaMode(isQaMode)
-                .trackingCallback(trackingCallback)
-                .build();
-
-        String expectedFeaturesJson = "{\"greeting\":{\"defaultValue\":\"hello\",\"rules\":[{\"condition\":{\"country\":\"france\"},\"force\":\"bonjour\"},{\"condition\":{\"country\":\"mexico\"},\"force\":\"hola\"}]}}";
-        Map<String, Feature<?>> expectedFeaturesJsonMapFormat = TransformationUtil.transformFeatures(expectedFeaturesJson);
-        String expectedResult = GrowthBookJsonUtils.getInstance().gson.toJson(expectedFeaturesJsonMapFormat);
-        String actualResult = GrowthBookJsonUtils.getInstance().gson.toJson(subject.getFeatures());
-
-        assertNotNull(subject);
-        assert subject.getFeatures() != null;
-        assertEquals(expectedResult, actualResult);
-    }
-
-    @Test
-    void whenEncryptionKeyInvalid_featuresStayEmpty() {
-        String encryptedFeaturesJson = "7rvPA94JEsqRo9yPZsdsXg==.bJ8vtYvX+ur3cEUFVkYo1OyWb98oLnMlpeoO0Hs4YPc0EVb7oKX4KNz+Yt6GUMBsieXqtL7oaYzX+kMayZEtV+3bhyDYnS9QBrvalnfxbLExjtnsy8g0pPQHU/P/DPIzO0F+pphcahRfi+3AMTnIreqvkqrcX+MyOwHN56lqEs23Vp4Rsq2qDow/LZmn5kpwMNhMY0DBq7jC+lh2Oyly0g==";
-        String encryptionKey = "nope";
-
-        GBContext subject = GBContext
-                .builder()
-                .attributesJson(sampleUserAttributes)
-                .featuresJson(encryptedFeaturesJson)
+    @ParameterizedTest(name = "{0}")
+    @CsvSource({
+            "invalid key, 7rvPA94JEsqRo9yPZsdsXg==.bJ8vtYvX+ur3cEUFVkYo1OyWb98oLnMlpeoO0Hs4YPc0EVb7oKX4KNz+Yt6GUMBsieXqtL7oaYzX+kMayZEtV+3bhyDYnS9QBrvalnfxbLExjtnsy8g0pPQHU/P/DPIzO0F+pphcahRfi+3AMTnIreqvkqrcX+MyOwHN56lqEs23Vp4Rsq2qDow/LZmn5kpwMNhMY0DBq7jC+lh2Oyly0g==, nope",
+            "malformed payload, foo.bar.baz.==.ow/LZmn5kpwMNhMY0DBq7jC+lh2Oyly0g==, BhB1wORFmZLTDjbvstvS8w=="
+    })
+    @DisplayName("Leaves features empty when the encrypted payload cannot be decrypted")
+    void leavesFeaturesEmptyWhenDecryptionFails(String scenario, String encryptedFeatures, String encryptionKey) {
+        // When
+        GBContext subject = GBContext.builder()
+                .attributesJson(ATTRIBUTES_JSON)
+                .featuresJson(encryptedFeatures)
                 .encryptionKey(encryptionKey)
                 .build();
 
-        assertEquals("{}", subject.getFeatures() != null ? subject.getFeatures().toString() : null);
+        // Then
+        assertEquals(Collections.emptyMap(), subject.getFeatures());
     }
 
-    @Test
-    void whenEncryptedPayloadMalformed_featuresStayEmpty() {
-        String encryptedFeaturesJson = "foo.bar.baz.==.ow/LZmn5kpwMNhMY0DBq7jC+lh2Oyly0g==";
-        String encryptionKey = "BhB1wORFmZLTDjbvstvS8w==";
-
-        GBContext subject = GBContext
-                .builder()
-                .attributesJson(sampleUserAttributes)
-                .featuresJson(encryptedFeaturesJson)
-                .encryptionKey(encryptionKey)
-                .build();
-
-        assertEquals("{}", subject.getFeatures() != null ? subject.getFeatures().toString() : null);
+    private static String expectedDecryptedFeaturesJson() {
+        return GrowthBookJsonUtils.getInstance().gson.toJson(TransformationUtil.transformFeatures(DECRYPTED_FEATURES));
     }
 }

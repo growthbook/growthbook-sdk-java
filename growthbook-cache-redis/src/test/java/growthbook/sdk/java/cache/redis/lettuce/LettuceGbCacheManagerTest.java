@@ -64,7 +64,7 @@ class LettuceGbCacheManagerTest {
     }
 
     @Test
-    @DisplayName("Verify: saveContent sets the hash and clears any stale expiry atomically when no TTL is configured")
+    @DisplayName("SaveContent sets the hash and clears any stale expiry atomically when no TTL is configured")
     void saveContentWritesHashWithTimestamp() {
         // Given
         LettuceGbCacheManager cache = LettuceGbCacheManager.builder()
@@ -98,7 +98,7 @@ class LettuceGbCacheManagerTest {
     }
 
     @Test
-    @DisplayName("Verify: saveContent applies a TTL atomically via a script, not a shared-connection transaction")
+    @DisplayName("SaveContent applies a TTL atomically via a script, not a shared-connection transaction")
     void saveContentAppliesTtlWhenConfigured() {
         // Given
         LettuceGbCacheManager cache = LettuceGbCacheManager.builder()
@@ -124,7 +124,7 @@ class LettuceGbCacheManagerTest {
     }
 
     @Test
-    @DisplayName("Verify: a sub-second TTL is honoured with millisecond precision, not truncated to 0")
+    @DisplayName("A sub-second TTL is honoured with millisecond precision, not truncated to 0")
     void saveContentHonoursSubSecondTtl() {
         // Given
         LettuceGbCacheManager cache = LettuceGbCacheManager.builder()
@@ -147,7 +147,7 @@ class LettuceGbCacheManagerTest {
     }
 
     @Test
-    @DisplayName("Verify: loadCache and getLastUpdatedMillis read the stored hash")
+    @DisplayName("LoadCache and getLastUpdatedMillis read the stored hash")
     void loadCacheReturnsStoredData() {
         // Given
         Map<String, String> stored = new HashMap<>();
@@ -163,7 +163,7 @@ class LettuceGbCacheManagerTest {
     }
 
     @Test
-    @DisplayName("Verify: getLastUpdatedMillis reads only the timestamp field, not the payload")
+    @DisplayName("GetLastUpdatedMillis reads only the timestamp field, not the payload")
     void getLastUpdatedMillisReadsSingleField() {
         // Given
         when(commands.hget(PREFIX + "k", "updatedAt")).thenReturn("555");
@@ -178,7 +178,7 @@ class LettuceGbCacheManagerTest {
     }
 
     @Test
-    @DisplayName("Verify: a non-numeric timestamp reads as unknown freshness (null)")
+    @DisplayName("A non-numeric timestamp reads as unknown freshness (null)")
     void malformedTimestampIsUnknown() {
         // Given
         when(commands.hget(PREFIX + "k", "updatedAt")).thenReturn("not-a-number");
@@ -189,7 +189,7 @@ class LettuceGbCacheManagerTest {
     }
 
     @Test
-    @DisplayName("Verify: a missing key is a miss (null content and null timestamp)")
+    @DisplayName("A missing key is a miss (null content and null timestamp)")
     void returnsNullForMissingEntry() {
         // Given
         when(commands.hgetall(anyString())).thenReturn(new HashMap<>());
@@ -201,7 +201,7 @@ class LettuceGbCacheManagerTest {
     }
 
     @Test
-    @DisplayName("Verify: clearCache scans by prefix and deletes matching keys")
+    @DisplayName("ClearCache scans by prefix and deletes matching keys")
     void clearCacheScansAndDeletesByPrefix() {
         // Given
         KeyScanCursor<String> cursor = new KeyScanCursor<>();
@@ -233,7 +233,7 @@ class LettuceGbCacheManagerTest {
     }
 
     @Test
-    @DisplayName("Verify: clearCache follows the SCAN cursor across multiple iterations")
+    @DisplayName("ClearCache follows the SCAN cursor across multiple iterations")
     void clearCacheFollowsCursorAcrossIterations() {
         // Given
         KeyScanCursor<String> first = new KeyScanCursor<>();
@@ -244,7 +244,7 @@ class LettuceGbCacheManagerTest {
         second.setCursor("0");
         second.setFinished(true);
         second.getKeys().add(PREFIX + "b");
-        when(commands.scan(any(ScanCursor.class), any(ScanArgs.class))).thenReturn(first, second);
+        when(commands.scan(any(ScanCursor.class), any(ScanArgs.class))).thenReturn(first).thenReturn(second);
         LettuceGbCacheManager cache = LettuceGbCacheManager.builder().connection(connection).buildManager();
 
         // When
@@ -257,7 +257,7 @@ class LettuceGbCacheManagerTest {
     }
 
     @Test
-    @DisplayName("Verify: a Redis access failure is wrapped in FeatureCacheException")
+    @DisplayName("A Redis access failure is wrapped in FeatureCacheException")
     void wrapsFailuresInFeatureCacheException() {
         // Given
         when(commands.hgetall(anyString())).thenThrow(new RedisException("boom"));
@@ -270,7 +270,7 @@ class LettuceGbCacheManagerTest {
     }
 
     @Test
-    @DisplayName("Verify: invalid options fail fast")
+    @DisplayName("Invalid options fail fast")
     void validatesOptions() {
         // Given
         LettuceCacheOptions.Builder options = LettuceGbCacheManager.builder();
@@ -289,7 +289,7 @@ class LettuceGbCacheManagerTest {
     }
 
     @Test
-    @DisplayName("Verify: default key prefix, clock, and no TTL are applied")
+    @DisplayName("Default key prefix, clock, and no TTL are applied")
     void usesDefaults() {
         // Given
         LettuceCacheOptions options = LettuceGbCacheManager.builder().connection(connection).build();

@@ -1,31 +1,38 @@
-package growthbook.sdk.java;
+package growthbook.sdk.java.model;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-
-import growthbook.sdk.java.model.VariationMeta;
+import growthbook.sdk.java.util.GrowthBookJsonUtils;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
-class VariationMetaTest {
-    @Test
-    void canBeBuilt() {
-        VariationMeta subject = VariationMeta
-                .builder()
-                .key("my-key")
-                .name("my-name")
-                .passThrough(true)
-                .build();
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
-        assertEquals("my-key", subject.getKey());
-        assertEquals("my-name", subject.getName());
-        assertEquals(true, subject.getPassThrough());
+class VariationMetaTest {
+
+    @Test
+    @DisplayName("The builder and the constructor produce the same variation meta")
+    void builderAndConstructorProduceSameMeta() {
+        // Given
+        VariationMeta built = VariationMeta.builder().key("key-1").name("name-1").passThrough(true).build();
+
+        // When
+        VariationMeta constructed = new VariationMeta("key-1", "name-1", true);
+
+        // Then
+        assertEquals("key-1", built.getKey());
+        assertEquals("name-1", built.getName());
+        assertTrue(built.getPassThrough());
+        assertEquals(built, constructed);
     }
 
     @Test
-    void canBeConstructed() {
-        VariationMeta subject = new VariationMeta("my-key", "my-name", true);
+    @DisplayName("Reads passThrough from the passthrough JSON field")
+    void readsPassThroughFromPassthroughJsonField() {
+        // When
+        VariationMeta subject = GrowthBookJsonUtils.getInstance().gson
+                .fromJson("{\"key\":\"key-1\",\"name\":\"name-1\",\"passthrough\":true}", VariationMeta.class);
 
-        assertEquals("my-key", subject.getKey());
-        assertEquals("my-name", subject.getName());
-        assertEquals(true, subject.getPassThrough());
+        // Then
+        assertEquals(new VariationMeta("key-1", "name-1", true), subject);
     }
 }

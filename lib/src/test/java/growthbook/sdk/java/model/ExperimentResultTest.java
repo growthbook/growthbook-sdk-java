@@ -1,145 +1,111 @@
-package growthbook.sdk.java;
+package growthbook.sdk.java.model;
+
+import com.google.gson.reflect.TypeToken;
+import growthbook.sdk.java.util.GrowthBookJsonUtils;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+
+import java.lang.reflect.Type;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
-
-import com.google.gson.reflect.TypeToken;
-import growthbook.sdk.java.model.ExperimentResult;
-import growthbook.sdk.java.util.GrowthBookJsonUtils;
-import org.junit.jupiter.api.Test;
-import java.lang.reflect.Type;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class ExperimentResultTest {
-    final GrowthBookJsonUtils jsonUtils = GrowthBookJsonUtils.getInstance();
+
+    private static final String JSON = "{\"value\":\"c\",\"variationId\":2,\"inExperiment\":true,\"hashAttribute\":\"id\","
+            + "\"hashValue\":\"user-1\",\"featureId\":\"feature-1\",\"hashUsed\":true,\"key\":\"2\",\"passthrough\":true}";
 
     @Test
-    void test_canBeBuilt() {
-        ExperimentResult<String> subject = ExperimentResult
-                .<String>builder()
+    @DisplayName("The builder and the constructor produce equal results and derive the key from the variation id")
+    void builderAndConstructorProduceEqualResults() {
+        // Given
+        ExperimentResult<String> built = ExperimentResult.<String>builder()
                 .value("c")
                 .variationId(2)
                 .inExperiment(true)
                 .hashAttribute("id")
-                .hashValue("123")
-                .featureId("my_feature")
+                .hashValue("user-1")
+                .featureId("feature-1")
                 .hashUsed(true)
                 .build();
 
-        assertEquals("c", subject.getValue());
-        assertEquals(2, subject.getVariationId());
-        assertEquals(true, subject.getInExperiment());
-        assertEquals("id", subject.getHashAttribute());
-        assertEquals("123", subject.getHashValue());
-        assertEquals("my_feature", subject.getFeatureId());
-        assertEquals(true, subject.getHashUsed());
+        // When
+        ExperimentResult<String> constructed = new ExperimentResult<>(
+                "c", 2, true, "id", "user-1", "feature-1", true, null, null, null, null, null);
+
+        // Then
+        assertEquals("c", built.getValue());
+        assertEquals(2, built.getVariationId());
+        assertTrue(built.getInExperiment());
+        assertEquals("id", built.getHashAttribute());
+        assertEquals("user-1", built.getHashValue());
+        assertEquals("feature-1", built.getFeatureId());
+        assertTrue(built.getHashUsed());
+        assertEquals("2", built.getKey());
+        assertEquals(built, constructed);
+        assertEquals(built.hashCode(), constructed.hashCode());
     }
 
     @Test
-    void test_builderDefaultValues() {
-        ExperimentResult<String> subject = ExperimentResult
-                .<String>builder()
-                .build();
+    @DisplayName("Defaults to the id hash attribute and not in the experiment")
+    void appliesDefaultsForMissingValues() {
+        // When
+        ExperimentResult<String> subject = ExperimentResult.<String>builder().build();
 
-        // null
+        // Then
         assertNull(subject.getValue());
         assertNull(subject.getHashValue());
         assertEquals("id", subject.getHashAttribute());
         assertNull(subject.getVariationId());
         assertNull(subject.getFeatureId());
-        // false
+        assertNull(subject.getKey());
         assertFalse(subject.getInExperiment());
         assertFalse(subject.getHashUsed());
     }
 
     @Test
-    void test_canBeConstructed() {
-        ExperimentResult<String> subject = new ExperimentResult<>(
-                "c",
-                2,
-                true,
-                "id",
-                "123",
-                "my_feature",
-                true,
-                null,
-                null,
-                null,
-                null,
-                null
-        );
-
-        assertEquals("c", subject.getValue());
-        assertEquals(2, subject.getVariationId());
-        assertEquals(true, subject.getInExperiment());
-        assertEquals("id", subject.getHashAttribute());
-        assertEquals("123", subject.getHashValue());
-        assertEquals("my_feature", subject.getFeatureId());
-        assertEquals(true, subject.getHashUsed());
-    }
-
-    @Test
-    void test_canBeSerialized() {
-        ExperimentResult<String> subject = ExperimentResult
-                .<String>builder()
+    @DisplayName("Serializes passThrough as the passthrough JSON field")
+    void serializesToJson() {
+        // Given
+        ExperimentResult<String> subject = ExperimentResult.<String>builder()
                 .value("c")
                 .variationId(2)
                 .inExperiment(true)
                 .hashAttribute("id")
-                .hashValue("123")
-                .featureId("my_feature")
+                .hashValue("user-1")
+                .featureId("feature-1")
                 .hashUsed(true)
                 .passThrough(true)
                 .build();
 
-        assertEquals(
-                "{\"value\":\"c\",\"variationId\":2,\"inExperiment\":true,\"hashAttribute\":\"id\",\"hashValue\":\"123\",\"featureId\":\"my_feature\",\"hashUsed\":true,\"key\":\"2\",\"passthrough\":true}",
-                subject.toJson()
-        );
-        assertEquals(
-                "{\"value\":\"c\",\"variationId\":2,\"inExperiment\":true,\"hashAttribute\":\"id\",\"hashValue\":\"123\",\"featureId\":\"my_feature\",\"hashUsed\":true,\"key\":\"2\",\"passthrough\":true}",
-                jsonUtils.gson.toJson(subject)
-        );
+        // When
+        String json = subject.toJson();
+
+        // Then
+        assertEquals(JSON, json);
+        assertEquals(JSON, GrowthBookJsonUtils.getInstance().gson.toJson(subject));
     }
 
     @Test
-    void test_canBeDeserialized() {
-        Type experimentResultType = new TypeToken<ExperimentResult<String>>() {}.getType();
-        ExperimentResult<String> subject = jsonUtils.gson.fromJson("{\"featureId\":\"my_feature\",\"value\":\"c\",\"variationId\":2,\"inExperiment\":true,\"hashUsed\":true,\"hashAttribute\":\"id\",\"hashValue\":\"123\"}", experimentResultType);
+    @DisplayName("Deserializes every field from JSON")
+    void deserializesFromJson() {
+        // Given
+        Type type = new TypeToken<ExperimentResult<String>>() {}.getType();
 
+        // When
+        ExperimentResult<String> subject = GrowthBookJsonUtils.getInstance().gson.fromJson(JSON, type);
+
+        // Then
         assertEquals("c", subject.getValue());
         assertEquals(2, subject.getVariationId());
-        assertEquals(true, subject.getInExperiment());
+        assertTrue(subject.getInExperiment());
         assertEquals("id", subject.getHashAttribute());
-        assertEquals("123", subject.getHashValue());
-        assertEquals("my_feature", subject.getFeatureId());
-        assertEquals(true, subject.getHashUsed());
-    }
-
-    @Test
-    void test_canBeComparedForEquality() {
-        ExperimentResult<String> a = ExperimentResult
-                .<String>builder()
-                .value("c")
-                .variationId(2)
-                .inExperiment(true)
-                .hashAttribute("id")
-                .hashValue("123")
-                .featureId("my_feature")
-                .hashUsed(true)
-                .build();
-
-        ExperimentResult<String> b = ExperimentResult
-                .<String>builder()
-                .value("c")
-                .variationId(2)
-                .inExperiment(true)
-                .hashAttribute("id")
-                .hashValue("123")
-                .featureId("my_feature")
-                .hashUsed(true)
-                .build();
-
-        assertEquals(a, b);
+        assertEquals("user-1", subject.getHashValue());
+        assertEquals("feature-1", subject.getFeatureId());
+        assertTrue(subject.getHashUsed());
+        assertEquals("2", subject.getKey());
+        assertTrue(subject.getPassThrough());
     }
 }

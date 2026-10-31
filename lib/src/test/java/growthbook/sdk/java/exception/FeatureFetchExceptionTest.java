@@ -1,96 +1,35 @@
-package growthbook.sdk.java;
+package growthbook.sdk.java.exception;
+
+import growthbook.sdk.java.exception.FeatureFetchException.FeatureFetchErrorCode;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import growthbook.sdk.java.exception.FeatureFetchException;
-import org.junit.jupiter.api.Test;
-
 class FeatureFetchExceptionTest {
 
-    @Test
-    void exceptionsHaveEnumErrorCodesAndMessages() {
-        // CONFIGURATION_ERROR
-        FeatureFetchException configExc = new FeatureFetchException(
-                FeatureFetchException.FeatureFetchErrorCode.CONFIGURATION_ERROR
-        );
-        assertEquals(
-                FeatureFetchException.FeatureFetchErrorCode.CONFIGURATION_ERROR,
-                configExc.getErrorCode()
-        );
-        FeatureFetchException configExcWithError = new FeatureFetchException(
-                FeatureFetchException.FeatureFetchErrorCode.CONFIGURATION_ERROR,
-                "config with message"
-        );
-        assertEquals(
-                FeatureFetchException.FeatureFetchErrorCode.CONFIGURATION_ERROR,
-                configExcWithError.getErrorCode()
-        );
-        assertEquals(
-                "CONFIGURATION_ERROR : config with message",
-                configExcWithError.getMessage()
-        );
+    @ParameterizedTest(name = "{0}")
+    @EnumSource(FeatureFetchErrorCode.class)
+    @DisplayName("Uses the error code as the message when no message is given")
+    void usesErrorCodeAsMessageWhenNoMessageGiven(FeatureFetchErrorCode errorCode) {
+        // When
+        FeatureFetchException exception = new FeatureFetchException(errorCode);
 
-        // NO_RESPONSE_ERROR
-        FeatureFetchException noResponseExc = new FeatureFetchException(
-                FeatureFetchException.FeatureFetchErrorCode.NO_RESPONSE_ERROR
-        );
-        assertEquals(
-                FeatureFetchException.FeatureFetchErrorCode.NO_RESPONSE_ERROR,
-                noResponseExc.getErrorCode()
-        );
-        FeatureFetchException noResponseExcWithMessage = new FeatureFetchException(
-                FeatureFetchException.FeatureFetchErrorCode.NO_RESPONSE_ERROR,
-                "no response with message"
-        );
-        assertEquals(
-                FeatureFetchException.FeatureFetchErrorCode.NO_RESPONSE_ERROR,
-                noResponseExcWithMessage.getErrorCode()
-        );
-        assertEquals(
-                "NO_RESPONSE_ERROR : no response with message",
-                noResponseExcWithMessage.getMessage()
-        );
+        // Then
+        assertEquals(errorCode, exception.getErrorCode());
+        assertEquals(errorCode.name(), exception.getMessage());
+    }
 
-        // HTTP_RESPONSE_ERROR
-        FeatureFetchException httpResponseExc = new FeatureFetchException(
-                FeatureFetchException.FeatureFetchErrorCode.HTTP_RESPONSE_ERROR
-        );
-        assertEquals(
-                FeatureFetchException.FeatureFetchErrorCode.HTTP_RESPONSE_ERROR,
-                httpResponseExc.getErrorCode()
-        );
-        FeatureFetchException httpResponseExcWithMessage = new FeatureFetchException(
-                FeatureFetchException.FeatureFetchErrorCode.HTTP_RESPONSE_ERROR,
-                "responded with status 400"
-        );
-        assertEquals(
-                FeatureFetchException.FeatureFetchErrorCode.HTTP_RESPONSE_ERROR,
-                httpResponseExcWithMessage.getErrorCode()
-        );
-        assertEquals(
-                "HTTP_RESPONSE_ERROR : responded with status 400",
-                httpResponseExcWithMessage.getMessage()
-        );
+    @ParameterizedTest(name = "{0}")
+    @EnumSource(FeatureFetchErrorCode.class)
+    @DisplayName("Prefixes the custom message with the error code")
+    void prefixesCustomMessageWithErrorCode(FeatureFetchErrorCode errorCode) {
+        // When
+        FeatureFetchException exception = new FeatureFetchException(errorCode, "request failed");
 
-        // UNKNOWN
-        FeatureFetchException unknownExc = new FeatureFetchException(
-                FeatureFetchException.FeatureFetchErrorCode.UNKNOWN
-        );
-        assertEquals(
-                FeatureFetchException.FeatureFetchErrorCode.UNKNOWN,
-                unknownExc.getErrorCode()
-        );
-        FeatureFetchException unknownExcWithMessage = new FeatureFetchException(
-                FeatureFetchException.FeatureFetchErrorCode.UNKNOWN,
-                "unknown with message"
-        );
-        assertEquals(
-                FeatureFetchException.FeatureFetchErrorCode.UNKNOWN,
-                unknownExcWithMessage.getErrorCode()
-        );
-        assertEquals(
-                "UNKNOWN : unknown with message",
-                unknownExcWithMessage.getMessage()
-        );
+        // Then
+        assertEquals(errorCode, exception.getErrorCode());
+        assertEquals(errorCode.name() + " : request failed", exception.getMessage());
     }
 }

@@ -7,7 +7,7 @@ import java.util.Collections;
 import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
 
 class FeatureValuesTest {
 
@@ -100,9 +100,8 @@ class FeatureValuesTest {
         Banner missing = FeatureValues.convert(null, defaultValue, Banner.class);
 
         // Then
-        assertEquals(defaultValue, converted);
-        assertEquals(defaultValue, missing);
-        assertNull(defaultValue.title);
+        assertSame(defaultValue, converted);
+        assertSame(defaultValue, missing);
     }
 
     private static final class Banner {

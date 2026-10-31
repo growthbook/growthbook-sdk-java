@@ -1,14 +1,15 @@
 package growthbook.sdk.java.repository.internal;
 
-import growthbook.sdk.java.callback.FeatureRefreshCallback;
+import growthbook.sdk.java.testhelpers.InMemoryCacheManager;
+import growthbook.sdk.java.testhelpers.RecordingRefreshListener;
+import growthbook.sdk.java.testhelpers.RecordingRefreshCallback;
+import growthbook.sdk.java.testhelpers.TestClock;
 import growthbook.sdk.java.exception.FeatureFetchException;
-import growthbook.sdk.java.listener.FeatureRefreshListener;
 import growthbook.sdk.java.model.FeatureRefreshEvent;
 import growthbook.sdk.java.model.FeatureRefreshSource;
 import growthbook.sdk.java.repository.FeatureSnapshot;
 import growthbook.sdk.java.repository.RefreshMode;
 import growthbook.sdk.java.retry.FeatureFetchRetryPolicy;
-import growthbook.sdk.java.sandbox.GbCacheManager;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -16,11 +17,8 @@ import org.junit.jupiter.params.provider.ValueSource;
 
 import javax.annotation.Nullable;
 import java.io.IOException;
-import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
-import java.time.ZoneId;
-import java.time.ZoneOffset;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -48,10 +46,10 @@ class FeatureRefreshEngineTest {
     private static final String DECRYPTION_KEY = "Ns04T5n9+59rl2x3SlNHtQ==";
 
     private final FakeTransport transport = new FakeTransport();
-    private final FakeCacheManager cacheManager = new FakeCacheManager();
-    private final MutableClock clock = new MutableClock(Instant.parse("2026-01-01T00:00:00Z"));
-    private final RecordingCallback callback = new RecordingCallback();
-    private final RecordingListener listener = new RecordingListener();
+    private final InMemoryCacheManager cacheManager = new InMemoryCacheManager();
+    private final TestClock clock = new TestClock(Instant.parse("2026-01-01T00:00:00Z"));
+    private final RecordingRefreshCallback callback = new RecordingRefreshCallback();
+    private final RecordingRefreshListener listener = new RecordingRefreshListener();
 
     @Test
     @DisplayName("Publishes the fetched features and saved groups as one snapshot")
@@ -252,7 +250,7 @@ class FeatureRefreshEngineTest {
         // Then
         assertEquals(FeatureFetchException.FeatureFetchErrorCode.CONFIGURATION_ERROR, error.getErrorCode());
         assertEquals(1, transport.requestUrls.size());
-        assertEquals(0, cacheManager.saveCount);
+        assertEquals(0, cacheManager.saveCount());
         assertFalse(engine.hasFeatureData());
     }
 
@@ -269,7 +267,7 @@ class FeatureRefreshEngineTest {
 
         // Then
         assertEquals(FeatureFetchException.FeatureFetchErrorCode.CONFIGURATION_ERROR, error.getErrorCode());
-        assertEquals(0, cacheManager.saveCount);
+        assertEquals(0, cacheManager.saveCount());
         assertFalse(engine.hasFeatureData());
     }
 
@@ -289,7 +287,7 @@ class FeatureRefreshEngineTest {
         // Then
         assertSame(before, engine.snapshot());
         assertEquals(BODY, cacheManager.store.get(ENDPOINTS.cacheKey()));
-        assertEquals(1, cacheManager.saveCount);
+        assertEquals(1, cacheManager.saveCount());
         assertEquals(1, engine.metrics().failureCount());
         FeatureFetchException lastError = assertInstanceOf(FeatureFetchException.class, engine.metrics().lastError());
         assertEquals(FeatureFetchException.FeatureFetchErrorCode.CONFIGURATION_ERROR, lastError.getErrorCode());
@@ -571,75 +569,7 @@ class FeatureRefreshEngineTest {
         }
     }
 
-    private static final class FakeCacheManager implements GbCacheManager {
-        private final Map<String, String> store = new HashMap<>();
-        private int saveCount;
 
-        @Override
-        public void saveContent(String key, String data) {
-            saveCount++;
-            store.put(key, data);
-        }
 
-        @Override
-        public String loadCache(String key) {
-            return store.get(key);
-        }
 
-        @Override
-        public void clearCache() {
-            store.clear();
-        }
-    }
-
-    private static final class MutableClock extends Clock {
-        private Instant now;
-
-        MutableClock(Instant start) {
-            this.now = start;
-        }
-
-        void advance(Duration duration) {
-            now = now.plus(duration);
-        }
-
-        @Override
-        public ZoneId getZone() {
-            return ZoneOffset.UTC;
-        }
-
-        @Override
-        public Clock withZone(ZoneId zone) {
-            return this;
-        }
-
-        @Override
-        public Instant instant() {
-            return now;
-        }
-    }
-
-    private static final class RecordingCallback implements FeatureRefreshCallback {
-        private final List<String> refreshes = new ArrayList<>();
-        private final List<Throwable> errors = new ArrayList<>();
-
-        @Override
-        public void onRefresh(String featuresJson) {
-            refreshes.add(featuresJson);
-        }
-
-        @Override
-        public void onError(Throwable throwable) {
-            errors.add(throwable);
-        }
-    }
-
-    private static final class RecordingListener implements FeatureRefreshListener {
-        private final List<FeatureRefreshEvent> events = new ArrayList<>();
-
-        @Override
-        public void onRefresh(FeatureRefreshEvent event) {
-            events.add(event);
-        }
-    }
 }

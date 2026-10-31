@@ -1,9 +1,9 @@
 package growthbook.sdk.java.testhelpers;
 
-import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import growthbook.sdk.java.util.GrowthBookJsonUtils;
 import lombok.Getter;
 
 import java.io.FileNotFoundException;
@@ -83,8 +83,6 @@ public class TestCasesJsonHelper implements ITestCasesJsonHelper {
         return this.testCases.get("stickyBucket").getAsJsonArray();
     }
 
-    // region Initialization
-
     private final JsonObject testCases;
 
     @Getter
@@ -100,7 +98,6 @@ public class TestCasesJsonHelper implements ITestCasesJsonHelper {
     public static TestCasesJsonHelper getInstance() {
         if (instance == null) {
             instance = new TestCasesJsonHelper();
-            System.out.printf("Creating a TestCasesJsonHelper instance: %s%n", instance);
         }
 
         return instance;
@@ -118,7 +115,7 @@ public class TestCasesJsonHelper implements ITestCasesJsonHelper {
     private static JsonObject readJsonObject(String path) {
         // The cases contain non-ASCII text, and the platform charset isn't always UTF-8 (Windows, POSIX locales)
         try (Reader reader = new InputStreamReader(new FileInputStream(path), StandardCharsets.UTF_8)) {
-            return new Gson().fromJson(reader, JsonObject.class);
+            return GrowthBookJsonUtils.getInstance().gson.fromJson(reader, JsonObject.class);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
@@ -229,9 +226,8 @@ public class TestCasesJsonHelper implements ITestCasesJsonHelper {
     private String initializeDemoFeaturesFromFile() {
         String absolutePath = getResourceDirectoryPath();
 
-        Gson gson = new Gson();
         try {
-            JsonObject features = gson.fromJson(new InputStreamReader(new FileInputStream(absolutePath + "/demo-features-001.json"), StandardCharsets.UTF_8), JsonObject.class);
+            JsonObject features = GrowthBookJsonUtils.getInstance().gson.fromJson(new InputStreamReader(new FileInputStream(absolutePath + "/demo-features-001.json"), StandardCharsets.UTF_8), JsonObject.class);
             return features.toString();
         } catch (FileNotFoundException e) {
             throw new RuntimeException(e);
@@ -240,10 +236,6 @@ public class TestCasesJsonHelper implements ITestCasesJsonHelper {
 
     private String getResourceDirectoryPath() {
         Path resourceDirectory = Paths.get("src", "test", "resources");
-        String absolutePath = resourceDirectory.toFile().getAbsolutePath();
-        System.out.println(absolutePath);
-        return absolutePath;
+        return resourceDirectory.toFile().getAbsolutePath();
     }
-
-    // endregion Initialization
 }

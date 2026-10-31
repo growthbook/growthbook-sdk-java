@@ -1,29 +1,26 @@
 package growthbook.sdk.java.multiusermode;
 
-import growthbook.sdk.java.callback.ExperimentRunCallback;
-import growthbook.sdk.java.model.Experiment;
-import growthbook.sdk.java.multiusermode.configurations.UserContext;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.Timeout;
-
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-/**
- * Regression tests for shared-state races on the multi-user client: run() and
- * subscribe() are documented as safe on one shared instance, so the assigned
- * map and callback list must tolerate concurrent use.
- */
+import growthbook.sdk.java.callback.ExperimentRunCallback;
+import growthbook.sdk.java.model.Experiment;
+import growthbook.sdk.java.model.ExperimentResult;
+import growthbook.sdk.java.multiusermode.configurations.UserContext;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
+
 class GrowthBookClientConcurrencyTest {
 
     private static final int THREADS = 8;
@@ -31,118 +28,103 @@ class GrowthBookClientConcurrencyTest {
 
     @Test
     @Timeout(30)
-    void concurrentRunAndSubscribeDoesNotCorruptSharedState() throws Exception {
+    @DisplayName("Concurrent runs and subscriptions on one client notify a subscriber once per experiment without failing")
+    void concurrentRunsAndSubscriptionsNotifyOncePerExperiment() throws Exception {
+        // Given
         GrowthBookClient client = new GrowthBookClient();
-
+        CountingRunCallback subscriber = new CountingRunCallback();
+        client.subscribe(subscriber);
         List<Throwable> failures = new CopyOnWriteArrayList<>();
-        AtomicInteger subscriptionFires = new AtomicInteger(0);
-        client.subscribe(new ExperimentRunCallback() {
-            @Override
-            public <T> void onRun(Experiment<T> experiment,
-                                          growthbook.sdk.java.model.ExperimentResult<T> result) {
-                subscriptionFires.incrementAndGet();
-            }
-        });
-
         CountDownLatch start = new CountDownLatch(1);
         CountDownLatch done = new CountDownLatch(THREADS);
-        List<Thread> threads = new ArrayList<>();
         for (int t = 0; t < THREADS; t++) {
-            final int threadId = t;
-            Thread thread = new Thread(() -> {
-                try {
-                    start.await();
-                    for (int i = 0; i < EXPERIMENTS_PER_THREAD; i++) {
-                        Experiment<String> experiment = Experiment.<String>builder()
-                                .key("exp-" + threadId + "-" + i)
-                                .variations(new ArrayList<>(Arrays.asList("control", "variant")))
-                                .build();
-                        UserContext user = UserContext.builder()
-                                .attributesJson("{\"id\":\"user-" + threadId + "-" + i + "\"}")
-                                .build();
-                        client.run(experiment, user);
-                        // Concurrent registration while other threads dispatch:
-                        // previously an unsynchronized ArrayList add.
-                        client.subscribe(new ExperimentRunCallback() {
-                            @Override
-                            public <T> void onRun(Experiment<T> e,
-                                                          growthbook.sdk.java.model.ExperimentResult<T> r) {
-                                // no-op
-                            }
-                        });
-                    }
-                } catch (Throwable e) {
-                    failures.add(e);
-                } finally {
-                    done.countDown();
+            int threadId = t;
+            startDaemon(() -> {
+                for (int i = 0; i < EXPERIMENTS_PER_THREAD; i++) {
+                    Experiment<String> experiment = experiment("exp-" + threadId + "-" + i);
+                    client.run(experiment, user("user-" + threadId + "-" + i));
+                    client.subscribe(new CountingRunCallback());
                 }
-            });
-            thread.setDaemon(true);
-            threads.add(thread);
-            thread.start();
+            }, start, done, failures);
         }
 
+        // When
         start.countDown();
-        assertTrue(done.await(20, TimeUnit.SECONDS), "workers did not finish");
-        for (Thread thread : threads) {
-            thread.join(TimeUnit.SECONDS.toMillis(5));
-        }
+        boolean finished = done.await(20, TimeUnit.SECONDS);
 
-        assertEquals(0, failures.size(), "concurrent run()/subscribe() threw: " + failures);
-        // Every distinct experiment key fired the pre-registered subscription
-        // exactly once (each key is assigned once, and the change-check +
-        // publish is atomic, so no double fire).
-        assertEquals(THREADS * EXPERIMENTS_PER_THREAD, subscriptionFires.get());
+        // Then
+        assertTrue(finished);
+        assertEquals(Collections.<Throwable>emptyList(), failures);
+        assertEquals(THREADS * EXPERIMENTS_PER_THREAD, subscriber.fires.size());
+        for (AtomicInteger fires : subscriber.fires.values()) {
+            assertEquals(1, fires.get());
+        }
     }
 
     @Test
     @Timeout(30)
-    void sameExperimentAcrossThreadsFiresSubscriptionOnce() throws Exception {
+    @DisplayName("Running one experiment for one user on many threads notifies the subscriber exactly once")
+    void sameExperimentAcrossThreadsNotifiesOnce() throws Exception {
+        // Given
         GrowthBookClient client = new GrowthBookClient();
-
-        Map<String, AtomicInteger> firesByKey = new ConcurrentHashMap<>();
-        client.subscribe(new ExperimentRunCallback() {
-            @Override
-            public <T> void onRun(Experiment<T> experiment,
-                                          growthbook.sdk.java.model.ExperimentResult<T> result) {
-                firesByKey.computeIfAbsent(experiment.getKey(), k -> new AtomicInteger()).incrementAndGet();
-            }
-        });
-
-        Experiment<String> experiment = Experiment.<String>builder()
-                .key("shared-exp")
-                .variations(new ArrayList<>(Arrays.asList("control", "variant")))
-                .build();
-        // Same user everywhere: the assigned variation never changes, so the
-        // atomic change-check must collapse all fires into exactly one.
-        UserContext user = UserContext.builder()
-                .attributesJson("{\"id\":\"same-user\"}")
-                .build();
-
+        CountingRunCallback subscriber = new CountingRunCallback();
+        client.subscribe(subscriber);
+        Experiment<String> experiment = experiment("shared-exp");
+        UserContext user = user("same-user");
+        List<Throwable> failures = new CopyOnWriteArrayList<>();
         CountDownLatch start = new CountDownLatch(1);
         CountDownLatch done = new CountDownLatch(THREADS);
-        List<Throwable> failures = new CopyOnWriteArrayList<>();
         for (int t = 0; t < THREADS; t++) {
-            Thread thread = new Thread(() -> {
-                try {
-                    start.await();
-                    for (int i = 0; i < EXPERIMENTS_PER_THREAD; i++) {
-                        client.run(experiment, user);
-                    }
-                } catch (Throwable e) {
-                    failures.add(e);
-                } finally {
-                    done.countDown();
+            startDaemon(() -> {
+                for (int i = 0; i < EXPERIMENTS_PER_THREAD; i++) {
+                    client.run(experiment, user);
                 }
-            });
-            thread.setDaemon(true);
-            thread.start();
+            }, start, done, failures);
         }
 
+        // When
         start.countDown();
-        assertTrue(done.await(20, TimeUnit.SECONDS), "workers did not finish");
-        assertEquals(0, failures.size(), "concurrent run() threw: " + failures);
-        assertEquals(1, firesByKey.get("shared-exp").get(),
-                "unchanged assignment must fire the subscription exactly once");
+        boolean finished = done.await(20, TimeUnit.SECONDS);
+
+        // Then
+        assertTrue(finished);
+        assertEquals(Collections.<Throwable>emptyList(), failures);
+        assertEquals(Collections.singleton("shared-exp"), subscriber.fires.keySet());
+        assertEquals(1, subscriber.fires.get("shared-exp").get());
+    }
+
+    private static Experiment<String> experiment(String key) {
+        return Experiment.<String>builder()
+                .key(key)
+                .variations(new ArrayList<>(Arrays.asList("control", "variant")))
+                .build();
+    }
+
+    private static UserContext user(String id) {
+        return UserContext.builder().attributesJson("{\"id\":\"" + id + "\"}").build();
+    }
+
+    private static void startDaemon(Runnable work, CountDownLatch start, CountDownLatch done, List<Throwable> failures) {
+        Thread thread = new Thread(() -> {
+            try {
+                start.await();
+                work.run();
+            } catch (Throwable e) {
+                failures.add(e);
+            } finally {
+                done.countDown();
+            }
+        });
+        thread.setDaemon(true);
+        thread.start();
+    }
+
+    private static final class CountingRunCallback implements ExperimentRunCallback {
+        private final Map<String, AtomicInteger> fires = new ConcurrentHashMap<>();
+
+        @Override
+        public <T> void onRun(Experiment<T> experiment, ExperimentResult<T> result) {
+            fires.computeIfAbsent(experiment.getKey(), k -> new AtomicInteger()).incrementAndGet();
+        }
     }
 }

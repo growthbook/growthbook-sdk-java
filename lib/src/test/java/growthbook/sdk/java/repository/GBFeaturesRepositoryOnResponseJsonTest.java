@@ -1,28 +1,108 @@
-package growthbook.sdk.java;
+package growthbook.sdk.java.repository;
 
 import growthbook.sdk.java.exception.FeatureFetchException;
-import growthbook.sdk.java.repository.GBFeaturesRepository;
-import growthbook.sdk.java.repository.RepositoryInternals;
-import growthbook.sdk.java.sandbox.GbCacheManager;
+import growthbook.sdk.java.exception.FeatureFetchException.FeatureFetchErrorCode;
+import growthbook.sdk.java.testhelpers.InMemoryCacheManager;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertInstanceOf;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.verify;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * Focused tests for {@link GBFeaturesRepository}'s response parsing. Bad response bodies must
- * surface as the SDK's declared {@link FeatureFetchException} (CONFIGURATION_ERROR) rather than
- * an unchecked exception escaping initialize()/fetchFeatures(), and must not overwrite a good
- * cached payload.
+ * How {@link GBFeaturesRepository} applies a features response body.
  */
 class GBFeaturesRepositoryOnResponseJsonTest {
+
+    private static final String ENCRYPTION_KEY = "BhB1wORFmZLTDjbvstvS8w==";
+
+    @ParameterizedTest(name = "[{0}]")
+    @ValueSource(strings = {
+            "",
+            "   ",
+            "null",
+            "[]",
+            "<html>502</html>",
+            "{\"features\":{\"a\":",
+            "{}",
+            "{\"features\":null}",
+            "{\"features\":\"nope\"}",
+    })
+    @DisplayName("Rejects an unusable unencrypted body as a configuration error")
+    void rejectsUnusableUnencryptedBody(String body) {
+        // Given
+        GBFeaturesRepository subject = repository(null);
+
+        // When
+        FeatureFetchException exception = assertThrows(FeatureFetchException.class,
+                () -> RepositoryInternals.applyResponse(subject, body, false));
+
+        // Then
+        assertEquals(FeatureFetchErrorCode.CONFIGURATION_ERROR, exception.getErrorCode());
+        assertEquals("{}", subject.getFeaturesJson());
+    }
+
+    @ParameterizedTest(name = "[{0}]")
+    @ValueSource(strings = {
+            "null",
+            "[]",
+            "{}",
+            "{\"encryptedFeatures\":null}",
+            "{\"encryptedFeatures\":123}",
+    })
+    @DisplayName("Rejects an unusable encrypted body as a configuration error")
+    void rejectsUnusableEncryptedBody(String body) {
+        // Given
+        GBFeaturesRepository subject = repository(ENCRYPTION_KEY);
+
+        // When
+        FeatureFetchException exception = assertThrows(FeatureFetchException.class,
+                () -> RepositoryInternals.applyResponse(subject, body, false));
+
+        // Then
+        assertEquals(FeatureFetchErrorCode.CONFIGURATION_ERROR, exception.getErrorCode());
+        assertEquals("{}", subject.getFeaturesJson());
+    }
+
+    @Test
+    @DisplayName("Applies the features object of a valid unencrypted body")
+    void appliesValidUnencryptedBody() throws Exception {
+        // Given
+        GBFeaturesRepository subject = repository(null);
+
+        // When
+        boolean changed = RepositoryInternals.applyResponse(subject, "{\"features\":{\"flag\":{\"defaultValue\":1}}}", false);
+
+        // Then
+        assertTrue(changed);
+        assertEquals("{\"flag\":{\"defaultValue\":1}}", subject.getFeaturesJson().trim());
+    }
+
+    @Test
+    @DisplayName("Caches a valid body but never an unusable one")
+    void cachesValidBodyButNeverUnusableOne() throws Exception {
+        // Given
+        InMemoryCacheManager cacheManager = new InMemoryCacheManager();
+        GBFeaturesRepository subject = GBFeaturesRepository.builder()
+                .apiHost("http://localhost")
+                .clientKey("sdk-123")
+                .isCacheDisabled(false)
+                .cacheManager(cacheManager)
+                .build();
+        assertThrows(FeatureFetchException.class, () -> RepositoryInternals.applyResponse(subject, "null", false));
+        int savesAfterUnusableBody = cacheManager.saveCount();
+
+        // When
+        RepositoryInternals.applyResponse(subject, "{\"features\":{}}", false);
+
+        // Then
+        assertEquals(0, savesAfterUnusableBody);
+        assertEquals(1, cacheManager.saveCount());
+        assertEquals("{\"features\":{}}", cacheManager.store.values().iterator().next());
+    }
 
     private static GBFeaturesRepository repository(String decryptionKey) {
         return GBFeaturesRepository.builder()
@@ -31,81 +111,5 @@ class GBFeaturesRepositoryOnResponseJsonTest {
                 .decryptionKey(decryptionKey)
                 .isCacheDisabled(true)
                 .build();
-    }
-
-    private static void invokeOnResponseJson(GBFeaturesRepository subject, String body) throws Throwable {
-        RepositoryInternals.applyResponse(subject, body, false);
-    }
-
-    private static void assertConfigurationError(GBFeaturesRepository subject, String body) {
-        Throwable thrown = null;
-        try {
-            invokeOnResponseJson(subject, body);
-        } catch (Throwable t) {
-            thrown = t;
-        }
-        FeatureFetchException e = assertInstanceOf(FeatureFetchException.class, thrown,
-                "Expected FeatureFetchException for body: " + body);
-        assertEquals(FeatureFetchException.FeatureFetchErrorCode.CONFIGURATION_ERROR, e.getErrorCode());
-    }
-
-    @ParameterizedTest(name = "unencrypted body [{0}] -> FeatureFetchException")
-    @ValueSource(strings = {
-            "",                        // empty body
-            "   ",                     // whitespace-only
-            "null",                    // literal null
-            "[]",                      // JSON array, not an object
-            "<html>502</html>",        // HTML error page
-            "{\"features\":{\"a\":",   // truncated / malformed JSON
-            "{}",                      // no features key
-            "{\"features\":null}",     // features present but JSON null
-            "{\"features\":\"nope\"}", // features present but not an object
-    })
-    void onResponseJson_unencrypted_badBody_throwsFeatureFetchException(String body) {
-        assertConfigurationError(repository(null), body);
-    }
-
-    @ParameterizedTest(name = "encrypted body [{0}] -> FeatureFetchException")
-    @ValueSource(strings = {
-            "null",
-            "[]",
-            "{}",                              // no encryptedFeatures key
-            "{\"encryptedFeatures\":null}",    // present but JSON null (would NPE-style throw on getAsString)
-            "{\"encryptedFeatures\":123}",     // present but not a string
-    })
-    void onResponseJson_encrypted_badBody_throwsFeatureFetchException(String body) {
-        assertConfigurationError(repository("BhB1wORFmZLTDjbvstvS8w=="), body);
-    }
-
-    @Test
-    void onResponseJson_unencrypted_validBody_setsFeaturesJson() throws Throwable {
-        GBFeaturesRepository subject = repository(null);
-
-        invokeOnResponseJson(subject, "{\"features\":{}}");
-
-        assertEquals("{}", subject.getFeaturesJson().trim());
-    }
-
-    @Test
-    void onResponseJson_badBody_doesNotOverwriteCache() throws Throwable {
-        GbCacheManager cacheManager = mock(GbCacheManager.class);
-        GBFeaturesRepository subject = GBFeaturesRepository.builder()
-                .apiHost("http://localhost")
-                .clientKey("sdk-123")
-                .isCacheDisabled(false)
-                .cacheManager(cacheManager)
-                .build();
-
-        // A bad body must never reach the cache and clobber a previously good payload.
-        try {
-            invokeOnResponseJson(subject, "null");
-        } catch (FeatureFetchException ignored) {
-            // expected
-        }
-        verify(cacheManager, never()).saveContent(anyString(), anyString());
-
-        // A good body is cached as before.
-        invokeOnResponseJson(subject, "{\"features\":{}}");
-        verify(cacheManager).saveContent(anyString(), eq("{\"features\":{}}"));
     }
 }

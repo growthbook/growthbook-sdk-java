@@ -1,5 +1,26 @@
 package growthbook.sdk.java.repository;
 
+import growthbook.sdk.java.exception.FeatureFetchException;
+import growthbook.sdk.java.exception.FeatureFetchException.FeatureFetchErrorCode;
+import growthbook.sdk.java.model.FeatureRefreshEvent;
+import growthbook.sdk.java.model.FeatureRefreshSource;
+import growthbook.sdk.java.testhelpers.RecordingRefreshCallback;
+import growthbook.sdk.java.testhelpers.RecordingRefreshListener;
+import growthbook.sdk.java.testhelpers.TestClock;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
+
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.List;
+
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -7,28 +28,6 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-
-import growthbook.sdk.java.callback.FeatureRefreshCallback;
-import growthbook.sdk.java.exception.FeatureFetchException;
-import growthbook.sdk.java.exception.FeatureFetchException.FeatureFetchErrorCode;
-import growthbook.sdk.java.listener.FeatureRefreshListener;
-import growthbook.sdk.java.model.FeatureRefreshEvent;
-import growthbook.sdk.java.model.FeatureRefreshSource;
-import java.io.IOException;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.time.Clock;
-import java.time.Instant;
-import java.time.ZoneOffset;
-import java.util.ArrayList;
-import java.util.List;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.ValueSource;
 
 class LocalGbFeatureRepositoryBehaviorTest {
 
@@ -96,7 +95,7 @@ class LocalGbFeatureRepositoryBehaviorTest {
         assertEquals(1, repository.getRefreshSuccessCount());
     }
 
-    @ParameterizedTest
+    @ParameterizedTest(name = "path=[{0}]")
     @ValueSource(strings = {
             FILE_NAME,
             "/" + FILE_NAME,
@@ -133,21 +132,7 @@ class LocalGbFeatureRepositoryBehaviorTest {
                 String.valueOf(repository.getParsedFeatures().get("greeting").getDefaultValue()));
     }
 
-    @Test
-    @DisplayName("Rejects a missing file as a configuration error")
-    void rejectsMissingFile() {
-        // Given
-        LocalGbFeatureRepository repository = new LocalGbFeatureRepository("missing-behavior-test-features");
-
-        // When
-        FeatureFetchException exception = assertThrows(FeatureFetchException.class, () -> repository.initialize());
-
-        // Then
-        assertEquals(FeatureFetchErrorCode.CONFIGURATION_ERROR, exception.getErrorCode());
-        assertEquals("{}", repository.getFeaturesJson());
-    }
-
-    @ParameterizedTest
+    @ParameterizedTest(name = "content=[{0}]")
     @ValueSource(strings = {"", "   ", "null", "{\"flag-a\":", "[1,2]", "\"text\""})
     @DisplayName("Rejects an empty, null, malformed or non-object file as a configuration error")
     void rejectsInvalidFile(String content) throws Exception {
@@ -163,7 +148,7 @@ class LocalGbFeatureRepositoryBehaviorTest {
         assertEquals("{}", repository.getFeaturesJson());
     }
 
-    @ParameterizedTest
+    @ParameterizedTest(name = "content=[{0}]")
     @ValueSource(strings = {"", "null", "{\"flag-a\":"})
     @DisplayName("Does not throw from the retry overload when the file is invalid")
     void retryOverloadDoesNotThrowOnInvalidFile(String content) throws Exception {
@@ -211,12 +196,13 @@ class LocalGbFeatureRepositoryBehaviorTest {
 
     @Test
     @DisplayName("Notifies legacy callbacks and listeners of a successful load")
+    @SuppressWarnings("deprecation")
     void notifiesCallbacksAndListenersOnSuccess() throws Exception {
         // Given
         writeResource(FEATURES);
         LocalGbFeatureRepository repository = new LocalGbFeatureRepository(FILE_NAME);
-        RecordingCallback callback = new RecordingCallback();
-        RecordingListener listener = new RecordingListener();
+        RecordingRefreshCallback callback = new RecordingRefreshCallback();
+        RecordingRefreshListener listener = new RecordingRefreshListener();
         repository.onFeaturesRefresh(callback);
         repository.addFeatureRefreshListener(listener);
 
@@ -244,7 +230,7 @@ class LocalGbFeatureRepositoryBehaviorTest {
         writeResource(FEATURES);
         LocalGbFeatureRepository repository = new LocalGbFeatureRepository(FILE_NAME);
         repository.initialize();
-        RecordingListener listener = new RecordingListener();
+        RecordingRefreshListener listener = new RecordingRefreshListener();
         repository.addFeatureRefreshListener(listener);
 
         // When
@@ -258,11 +244,12 @@ class LocalGbFeatureRepositoryBehaviorTest {
 
     @Test
     @DisplayName("Notifies legacy callbacks and listeners of a failed load")
+    @SuppressWarnings("deprecation")
     void notifiesCallbacksAndListenersOnFailure() {
         // Given
         LocalGbFeatureRepository repository = new LocalGbFeatureRepository("missing-behavior-test-features");
-        RecordingCallback callback = new RecordingCallback();
-        RecordingListener listener = new RecordingListener();
+        RecordingRefreshCallback callback = new RecordingRefreshCallback();
+        RecordingRefreshListener listener = new RecordingRefreshListener();
         repository.onFeaturesRefresh(callback);
         repository.addFeatureRefreshListener(listener);
 
@@ -283,11 +270,12 @@ class LocalGbFeatureRepositoryBehaviorTest {
 
     @Test
     @DisplayName("Notifies legacy callbacks and listeners of a failure from the retry overload")
+    @SuppressWarnings("deprecation")
     void retryOverloadNotifiesOnFailure() {
         // Given
         LocalGbFeatureRepository repository = new LocalGbFeatureRepository("missing-behavior-test-features");
-        RecordingCallback callback = new RecordingCallback();
-        RecordingListener listener = new RecordingListener();
+        RecordingRefreshCallback callback = new RecordingRefreshCallback();
+        RecordingRefreshListener listener = new RecordingRefreshListener();
         repository.onFeaturesRefresh(callback);
         repository.addFeatureRefreshListener(listener);
 
@@ -302,12 +290,13 @@ class LocalGbFeatureRepositoryBehaviorTest {
 
     @Test
     @DisplayName("Stops notifying cleared callbacks and removed listeners")
+    @SuppressWarnings("deprecation")
     void stopsNotifyingClearedCallbacksAndRemovedListeners() throws Exception {
         // Given
         writeResource(FEATURES);
         LocalGbFeatureRepository repository = new LocalGbFeatureRepository(FILE_NAME);
-        RecordingCallback callback = new RecordingCallback();
-        RecordingListener listener = new RecordingListener();
+        RecordingRefreshCallback callback = new RecordingRefreshCallback();
+        RecordingRefreshListener listener = new RecordingRefreshListener();
         repository.onFeaturesRefresh(callback);
         repository.addFeatureRefreshListener(listener);
         repository.clearCallbacks();
@@ -328,12 +317,15 @@ class LocalGbFeatureRepositoryBehaviorTest {
         writeResource(FEATURES);
         LocalGbFeatureRepository repository = new LocalGbFeatureRepository(FILE_NAME);
 
-        // When
         repository.addFeatureRefreshListener(null);
         repository.removeFeatureRefreshListener(null);
 
+        // When
+        repository.initialize();
+
         // Then
-        assertDoesNotThrow(() -> repository.initialize());
+        assertEquals(FEATURES, repository.getFeaturesJson());
+        assertEquals(1, repository.getRefreshSuccessCount());
     }
 
     @Test
@@ -376,19 +368,11 @@ class LocalGbFeatureRepositoryBehaviorTest {
         assertEquals(FeatureFetchErrorCode.CONFIGURATION_ERROR, lastError.getErrorCode());
     }
 
-    private void writeResource(String content) throws IOException {
-        Path resourcesDirectory = Paths.get("src", "main", "resources");
-        Files.createDirectories(resourcesDirectory);
-        Path file = resourcesDirectory.resolve(FILE_NAME + ".json");
-        Files.write(file, content.getBytes(StandardCharsets.UTF_8));
-        createdFiles.add(file);
-    }
-
     @Test
     @DisplayName("Records refresh times from the injected clock")
     void recordsRefreshTimesFromInjectedClock() {
         // Given
-        Clock clock = Clock.fixed(Instant.parse("2026-01-01T00:00:00Z"), ZoneOffset.UTC);
+        TestClock clock = TestClock.at("2026-01-01T00:00:00Z");
         LocalGbFeatureRepository repository = new LocalGbFeatureRepository("missing-features-for-clock-test", clock);
 
         // When
@@ -399,27 +383,11 @@ class LocalGbFeatureRepositoryBehaviorTest {
         assertEquals(clock.millis(), repository.getLastRefreshFailureAtMillis());
     }
 
-    private static final class RecordingCallback implements FeatureRefreshCallback {
-        private final List<String> refreshes = new ArrayList<>();
-        private final List<Throwable> errors = new ArrayList<>();
-
-        @Override
-        public void onRefresh(String featuresJson) {
-            refreshes.add(featuresJson);
-        }
-
-        @Override
-        public void onError(Throwable throwable) {
-            errors.add(throwable);
-        }
-    }
-
-    private static final class RecordingListener implements FeatureRefreshListener {
-        private final List<FeatureRefreshEvent> events = new ArrayList<>();
-
-        @Override
-        public void onRefresh(FeatureRefreshEvent event) {
-            events.add(event);
-        }
+    private void writeResource(String content) throws IOException {
+        Path resourcesDirectory = Paths.get("src", "main", "resources");
+        Files.createDirectories(resourcesDirectory);
+        Path file = resourcesDirectory.resolve(FILE_NAME + ".json");
+        Files.write(file, content.getBytes(StandardCharsets.UTF_8));
+        createdFiles.add(file);
     }
 }

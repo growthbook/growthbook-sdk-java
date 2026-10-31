@@ -17,21 +17,16 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
 
 /**
- * A tiny dependency-free HTTP server for tests, backed by the JDK's
- * {@link HttpServer}. Records received requests and replies with queued status
- * codes (default 200). Used instead of OkHttp's MockWebServer so the plugin
- * HTTP tests don't couple to okhttp internals on the test classpath.
+ * A JDK {@link HttpServer} for {@link TrackingPluginSmokeHarness} that records received requests and
+ * replies with queued status codes (default 200).
  */
 final class RecordingHttpServer implements AutoCloseable {
 
     private final HttpServer server;
     private final BlockingQueue<RecordedRequest> requests = new LinkedBlockingQueue<>();
     private final Queue<Integer> responseCodes = new ConcurrentLinkedQueue<>();
-    private final Queue<Long> responseDelaysMs = new ConcurrentLinkedQueue<>();
-    private final AtomicInteger requestCount = new AtomicInteger();
 
     RecordingHttpServer() throws IOException {
         server = HttpServer.create(new InetSocketAddress("127.0.0.1", 0), 0);
@@ -41,11 +36,9 @@ final class RecordingHttpServer implements AutoCloseable {
                 Map<String, String> headers = new HashMap<>();
                 for (Map.Entry<String, List<String>> e : exchange.getRequestHeaders().entrySet()) {
                     if (e.getValue() != null && !e.getValue().isEmpty()) {
-                        // Store keys lowercased so lookups are case-insensitive.
                         headers.put(e.getKey().toLowerCase(), e.getValue().get(0));
                     }
                 }
-                requestCount.incrementAndGet();
                 requests.add(new RecordedRequest(
                         exchange.getRequestMethod(),
                         exchange.getRequestURI().getPath(),
@@ -53,14 +46,6 @@ final class RecordingHttpServer implements AutoCloseable {
                         headers,
                         body));
 
-                Long delay = responseDelaysMs.poll();
-                if (delay != null && delay > 0) {
-                    try {
-                        Thread.sleep(delay);
-                    } catch (InterruptedException e) {
-                        Thread.currentThread().interrupt();
-                    }
-                }
                 Integer code = responseCodes.poll();
                 exchange.sendResponseHeaders(code != null ? code : 200, -1);
             } finally {
@@ -76,21 +61,11 @@ final class RecordingHttpServer implements AutoCloseable {
     }
 
     void enqueue(int statusCode) {
-        enqueue(statusCode, 0);
-    }
-
-    /** Queue a response that the server holds for {@code delayMs} before replying. */
-    void enqueue(int statusCode, long delayMs) {
         responseCodes.add(statusCode);
-        responseDelaysMs.add(delayMs);
     }
 
     RecordedRequest takeRequest(long timeout, TimeUnit unit) throws InterruptedException {
         return requests.poll(timeout, unit);
-    }
-
-    int getRequestCount() {
-        return requestCount.get();
     }
 
     @Override

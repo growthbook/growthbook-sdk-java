@@ -47,7 +47,7 @@ class InMemoryStickyBucketServiceImplMergeTest {
         service.saveAssignments(document(Collections.singletonMap("exp-1__0", "treatment")));
 
         // Then
-        assertEquals("treatment", service.getAssignments("id", "user-1").getAssignments().get("exp-1__0"));
+        assertEquals(Collections.singletonMap("exp-1__0", "treatment"), service.getAssignments("id", "user-1").getAssignments());
     }
 
     @Test
@@ -78,7 +78,11 @@ class InMemoryStickyBucketServiceImplMergeTest {
 
         // Then
         assertTrue(executor.awaitTermination(10, TimeUnit.SECONDS));
-        assertEquals(writers, service.getAssignments("id", "user-1").getAssignments().size());
+        Map<String, String> expected = new HashMap<>();
+        for (int i = 0; i < writers; i++) {
+            expected.put("exp-" + i + "__0", "variation");
+        }
+        assertEquals(expected, service.getAssignments("id", "user-1").getAssignments());
     }
 
     private static StickyAssignmentsDocument document(Map<String, String> assignments) {

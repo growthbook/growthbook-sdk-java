@@ -10,6 +10,8 @@ import growthbook.sdk.java.multiusermode.configurations.EvaluationContext;
 import growthbook.sdk.java.multiusermode.configurations.UserContext;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 
 import java.util.Arrays;
 import java.util.Collections;
@@ -40,7 +42,7 @@ class StickyBucketsTest {
         Map<String, String> assignments = StickyBuckets.getStickyBucketAssignments(context, "id", "deviceId");
 
         // Then
-        assertTrue(assignments.isEmpty());
+        assertEquals(Collections.emptyMap(), assignments);
     }
 
     @Test
@@ -54,7 +56,7 @@ class StickyBucketsTest {
         Map<String, String> assignments = StickyBuckets.getStickyBucketAssignments(context, "id", "deviceId");
 
         // Then
-        assertTrue(assignments.isEmpty());
+        assertEquals(Collections.emptyMap(), assignments);
     }
 
     @Test
@@ -122,30 +124,20 @@ class StickyBucketsTest {
         assertEquals(Collections.singletonMap("exp__0", "treatment"), assignments);
     }
 
-    @Test
+    @ParameterizedTest(name = "{0} with minimum version {2}")
+    @CsvSource({
+            "exp__1, 2, 2",
+            "exp__0, 1, 1"
+    })
     @DisplayName("Blocks the user when they have an assignment for a bucket version below the minimum")
-    void blocksUserWithAssignmentBelowMinimumBucketVersion() {
+    void blocksUserWithAssignmentBelowMinimumBucketVersion(String experimentKey, int bucketVersion, int minBucketVersion) {
         // Given
-        Map<String, StickyAssignmentsDocument> docs = docs(doc("id", "user-1", "exp__1", "control"));
+        Map<String, StickyAssignmentsDocument> docs = docs(doc("id", "user-1", experimentKey, "control"));
         EvaluationContext context = context(USER_ATTRIBUTES, docs);
 
         // When
-        StickyBucketVariation result = StickyBuckets.getStickyBucketVariation(context, "exp", "id", null, 2, 2, META);
-
-        // Then
-        assertEquals(-1, result.getVariation());
-        assertTrue(result.getVersionIsBlocked());
-    }
-
-    @Test
-    @DisplayName("Blocks the user when their assignment is for bucket version zero and the minimum is one")
-    void blocksUserWithVersionZeroAssignmentWhenMinimumIsOne() {
-        // Given
-        Map<String, StickyAssignmentsDocument> docs = docs(doc("id", "user-1", "exp__0", "treatment"));
-        EvaluationContext context = context(USER_ATTRIBUTES, docs);
-
-        // When
-        StickyBucketVariation result = StickyBuckets.getStickyBucketVariation(context, "exp", "id", null, 1, 1, META);
+        StickyBucketVariation result = StickyBuckets.getStickyBucketVariation(
+                context, "exp", "id", null, bucketVersion, minBucketVersion, META);
 
         // Then
         assertEquals(-1, result.getVariation());
@@ -351,7 +343,7 @@ class StickyBucketsTest {
 
         // Then
         assertFalse(result.isChanged());
-        assertTrue(result.getStickyAssignmentsDocument().getAssignments().isEmpty());
+        assertEquals(Collections.emptyMap(), result.getStickyAssignmentsDocument().getAssignments());
     }
 
     private static EvaluationContext context(String attributesJson, Map<String, StickyAssignmentsDocument> docs) {
@@ -360,7 +352,7 @@ class StickyBucketsTest {
                 .attributes(attributes)
                 .stickyBucketAssignmentDocs(docs)
                 .build();
-        return new EvaluationContext(null, user, new EvaluationContext.StackContext(), null);
+        return new EvaluationContext(null, user, null);
     }
 
     private static StickyAssignmentsDocument doc(String attributeName, String attributeValue, String experimentKey, String variationKey) {

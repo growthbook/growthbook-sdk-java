@@ -1,94 +1,97 @@
 package growthbook.sdk.java.multiusermode.configurations;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 class UserContextTest {
 
     @Test
-    void attributes_fromMap_convertsToJsonObject() {
+    @DisplayName("Converts attributes given as a map into a JSON object")
+    void convertsAttributesMapIntoJsonObject() {
+        // Given
         Map<String, Object> attributes = new LinkedHashMap<>();
         attributes.put("userId", "user-123");
         attributes.put("country", "US");
         attributes.put("loggedIn", true);
         attributes.put("age", 42);
 
-        UserContext context = UserContext.builder()
-                .attributesMap(attributes)
-                .build();
+        // When
+        UserContext context = UserContext.builder().attributesMap(attributes).build();
 
-        JsonObject result = context.getAttributes();
-        assertEquals("user-123", result.get("userId").getAsString());
-        assertEquals("US", result.get("country").getAsString());
-        assertTrue(result.get("loggedIn").getAsBoolean());
-        assertEquals(42, result.get("age").getAsInt());
+        // Then
+        assertEquals(json("{\"userId\":\"user-123\",\"country\":\"US\",\"loggedIn\":true,\"age\":42}"),
+                context.getAttributes());
     }
 
     @Test
-    void attributes_fromNullMap_yieldsEmptyJsonObject() {
-        Map<String, ?> attributes = null;
+    @DisplayName("A null attributes map gives empty attributes")
+    void nullAttributesMapGivesEmptyAttributes() {
+        // When
+        UserContext context = UserContext.builder().attributesMap(null).build();
 
-        UserContext context = UserContext.builder()
-                .attributesMap(attributes)
-                .build();
-
-        assertEquals(0, context.getAttributes().size());
+        // Then
+        assertEquals(new JsonObject(), context.getAttributes());
     }
 
     @Test
-    void attributes_fromStringValuedMap_isAccepted() {
-        // Map.of(...) infers Map<String, String>; the wildcard overload must accept it.
+    @DisplayName("Accepts a map whose values are all strings")
+    void acceptsStringValuedAttributesMap() {
+        // Given
         Map<String, String> attributes = new HashMap<>();
         attributes.put("userId", "user-123");
         attributes.put("country", "US");
 
-        UserContext context = UserContext.builder()
-                .attributesMap(attributes)
-                .build();
+        // When
+        UserContext context = UserContext.builder().attributesMap(attributes).build();
 
-        JsonObject result = context.getAttributes();
-        assertEquals("user-123", result.get("userId").getAsString());
-        assertEquals("US", result.get("country").getAsString());
+        // Then
+        assertEquals(json("{\"userId\":\"user-123\",\"country\":\"US\"}"), context.getAttributes());
     }
 
     @Test
-    void attributes_nullLiteral_remainsUnambiguousAndCompiles() {
-        // A separate attributesMap(...) method (rather than an attributes(Map) overload)
-        // keeps the existing attributes(null) call site compiling and unambiguous.
-        UserContext context = UserContext.builder()
-                .attributes(null)
-                .build();
+    @DisplayName("A null attributes JSON object gives empty attributes")
+    void nullAttributesJsonObjectGivesEmptyAttributes() {
+        // When
+        UserContext context = UserContext.builder().attributes(null).build();
 
-        assertEquals(0, context.getAttributes().size());
+        // Then
+        assertEquals(new JsonObject(), context.getAttributes());
     }
 
     @Test
-    void attributes_nullMap_thenAttributesJson_isApplied() {
-        // A null map must leave attributes unset so a subsequent attributesJson(...) applies,
-        // mirroring attributes((JsonObject) null).
+    @DisplayName("A null attributes map leaves attributes unset so later attributes JSON applies")
+    void nullAttributesMapLetsLaterAttributesJsonApply() {
+        // When
         UserContext context = UserContext.builder()
                 .attributesMap(null)
                 .attributesJson("{\"x\":1}")
                 .build();
 
-        assertEquals(1, context.getAttributes().get("x").getAsInt());
+        // Then
+        assertEquals(json("{\"x\":1}"), context.getAttributes());
     }
 
     @Test
-    void attributes_fromJsonObject_stillWorks() {
-        JsonObject attributes = new JsonObject();
-        attributes.addProperty("userId", "user-123");
+    @DisplayName("Keeps attributes given as a JSON object")
+    void keepsAttributesGivenAsJsonObject() {
+        // Given
+        JsonObject attributes = json("{\"userId\":\"user-123\"}");
 
-        UserContext context = UserContext.builder()
-                .attributes(attributes)
-                .build();
+        // When
+        UserContext context = UserContext.builder().attributes(attributes).build();
 
-        assertEquals("user-123", context.getAttributes().get("userId").getAsString());
+        // Then
+        assertEquals(json("{\"userId\":\"user-123\"}"), context.getAttributes());
+    }
+
+    private static JsonObject json(String value) {
+        return JsonParser.parseString(value).getAsJsonObject();
     }
 }

@@ -1,274 +1,277 @@
-package growthbook.sdk.java;
+package growthbook.sdk.java.repository;
 
-import growthbook.sdk.java.callback.FeatureRefreshCallback;
+import com.github.tomakehurst.wiremock.WireMockServer;
+import com.github.tomakehurst.wiremock.client.MappingBuilder;
+import com.github.tomakehurst.wiremock.core.WireMockConfiguration;
+import com.github.tomakehurst.wiremock.http.Fault;
+import com.github.tomakehurst.wiremock.stubbing.Scenario;
+import growthbook.sdk.java.listener.FeatureRefreshListener;
+import growthbook.sdk.java.model.FeatureRefreshEvent;
 import growthbook.sdk.java.retry.FeatureFetchRetryPolicy;
-import growthbook.sdk.java.repository.GBFeaturesRepository;
-import growthbook.sdk.java.repository.RefreshMode;
-import growthbook.sdk.java.sandbox.GbCacheManager;
-import okhttp3.Call;
-import okhttp3.MediaType;
+import growthbook.sdk.java.testhelpers.BlockingResponseTransformer;
+import growthbook.sdk.java.testhelpers.FixedPayloadCacheManager;
 import okhttp3.OkHttpClient;
-import okhttp3.Protocol;
-import okhttp3.Request;
-import okhttp3.Response;
-import okhttp3.ResponseBody;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.mockito.ArgumentCaptor;
 
-import java.io.IOException;
 import java.time.Duration;
+import java.time.Instant;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
 
+import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
+import static com.github.tomakehurst.wiremock.client.WireMock.equalTo;
+import static com.github.tomakehurst.wiremock.client.WireMock.get;
+import static com.github.tomakehurst.wiremock.client.WireMock.getRequestedFor;
+import static com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 
 class GBFeaturesRepositoryRefreshTest {
+
+    private static final String CLIENT_KEY = "sdk-abc123";
+    private static final String FEATURES_PATH = "/api/features/" + CLIENT_KEY;
     private static final String FEATURES_RESPONSE = "{\"features\":{\"test\":{\"defaultValue\":true}}}";
+    private static final String FETCHED_FEATURES = "{\"test\":{\"defaultValue\":true}}";
     private static final String CACHED_RESPONSE = "{\"features\":{\"cached\":{\"defaultValue\":true}}}";
+    private static final String CACHED_FEATURES = "{\"cached\":{\"defaultValue\":true}}";
+    private static final long FRESH_CACHE_UPDATED_AT_MILLIS = Instant.parse("2999-01-01T00:00:00Z").toEpochMilli();
+    private static final long STALE_CACHE_UPDATED_AT_MILLIS = Instant.parse("2020-01-01T00:00:00Z").toEpochMilli();
     private static final FeatureFetchRetryPolicy NO_DELAY_RETRY_POLICY =
             new FeatureFetchRetryPolicy(5, Duration.ZERO, Duration.ZERO);
 
-    @Test
-    void forceRefreshBypassesFreshCacheCheck() throws Exception {
-        OkHttpClient httpClient = successfulHttpClient();
-        GbCacheManager cacheManager = cacheManagerWithTimestamp(System.currentTimeMillis());
-        GBFeaturesRepository repository = repositoryBuilder(httpClient, cacheManager)
-                .backgroundFetchInterval(Duration.ofHours(48))
-                .build();
+    private final List<GBFeaturesRepository> repositories = new ArrayList<>();
+    private WireMockServer wireMock;
 
+    @BeforeEach
+    void setUp() {
+        wireMock = new WireMockServer(WireMockConfiguration.options().dynamicPort());
+        wireMock.start();
+    }
+
+    @AfterEach
+    void tearDown() {
+        for (GBFeaturesRepository repository : repositories) {
+            repository.shutdown();
+        }
+        wireMock.stop();
+    }
+
+    @Test
+    @DisplayName("A forced refresh bypasses a fresh cache and asks the server for an uncached response")
+    void forcedRefreshBypassesFreshCache() throws Exception {
+        // Given
+        wireMock.stubFor(okFeatures());
+        GBFeaturesRepository repository = track(repositoryBuilder()
+                .cacheManager(new FixedPayloadCacheManager(CACHED_RESPONSE, FRESH_CACHE_UPDATED_AT_MILLIS))
+                .backgroundFetchInterval(Duration.ofHours(48))
+                .build());
         repository.initialize();
+
+        // When
         repository.refreshFeatures(RefreshMode.FORCE);
 
-        ArgumentCaptor<Request> requestCaptor = ArgumentCaptor.forClass(Request.class);
-        verify(httpClient, times(1)).newCall(requestCaptor.capture());
-        List<Request> requests = requestCaptor.getAllValues();
-        assertEquals("no-cache", requests.get(0).header("Cache-Control"));
-        assertNull(requests.get(0).header("If-None-Match"));
-
-        repository.shutdown();
+        // Then
+        assertEquals(FETCHED_FEATURES, repository.getFeaturesJson());
+        wireMock.verify(1, getRequestedFor(urlEqualTo(FEATURES_PATH)));
+        wireMock.verify(1, getRequestedFor(urlEqualTo(FEATURES_PATH))
+                .withHeader("Cache-Control", equalTo("no-cache"))
+                .withoutHeader("If-None-Match"));
     }
 
     @Test
-    void retrySucceedsAfterInitialNetworkFailure() throws Exception {
-        OkHttpClient httpClient = mock(OkHttpClient.class);
-        AtomicInteger attempts = new AtomicInteger();
-        when(httpClient.newCall(any(Request.class))).thenAnswer(invocation ->
-                attempts.incrementAndGet() == 1 ? failedCall() : successfulCall()
-        );
-        GBFeaturesRepository repository = repositoryBuilder(httpClient).build();
+    @DisplayName("Retries after a network failure and applies the next successful response")
+    void retriesAfterNetworkFailure() throws Exception {
+        // Given
+        wireMock.stubFor(get(urlEqualTo(FEATURES_PATH))
+                .inScenario("retry")
+                .whenScenarioStateIs(Scenario.STARTED)
+                .willReturn(aResponse().withFault(Fault.CONNECTION_RESET_BY_PEER))
+                .willSetStateTo("recovered"));
+        wireMock.stubFor(get(urlEqualTo(FEATURES_PATH))
+                .inScenario("retry")
+                .whenScenarioStateIs("recovered")
+                .willReturn(aResponse().withStatus(200).withBody(FEATURES_RESPONSE)));
+        GBFeaturesRepository repository = track(repositoryBuilder().isCacheDisabled(true).build());
 
+        // When
         repository.fetchFeatures();
 
-        assertEquals("{\"test\":{\"defaultValue\":true}}", repository.getFeaturesJson());
-        verify(httpClient, times(2)).newCall(any(Request.class));
+        // Then
+        assertEquals(FETCHED_FEATURES, repository.getFeaturesJson());
+        wireMock.verify(2, getRequestedFor(urlEqualTo(FEATURES_PATH)));
     }
 
     @Test
-    void retryExhaustionUsesCachedFeaturesAndStops() throws Exception {
-        OkHttpClient httpClient = mock(OkHttpClient.class);
-        when(httpClient.newCall(any(Request.class))).thenAnswer(invocation -> failedCall());
-        GbCacheManager cacheManager = mock(GbCacheManager.class);
-        when(cacheManager.loadCache(anyString())).thenReturn(CACHED_RESPONSE);
-        GBFeaturesRepository repository = GBFeaturesRepository.builder()
-                .apiHost("http://localhost")
-                .clientKey("sdk-abc123")
-                .okHttpClient(httpClient)
-                .cacheManager(cacheManager)
-                .retryPolicy(NO_DELAY_RETRY_POLICY)
-                .build();
+    @DisplayName("Falls back to the cache once every retry has failed, and stops retrying")
+    void fallsBackToCacheAfterRetriesExhausted() throws Exception {
+        // Given
+        wireMock.stubFor(get(urlEqualTo(FEATURES_PATH)).willReturn(aResponse().withFault(Fault.CONNECTION_RESET_BY_PEER)));
+        FixedPayloadCacheManager cacheManager = new FixedPayloadCacheManager(CACHED_RESPONSE);
+        GBFeaturesRepository repository = track(repositoryBuilder().cacheManager(cacheManager).build());
 
+        // When
         repository.fetchFeatures();
 
-        assertEquals("{\"cached\":{\"defaultValue\":true}}", repository.getFeaturesJson());
-        verify(httpClient, times(5)).newCall(any(Request.class));
-        verify(cacheManager, times(1)).loadCache(anyString());
+        // Then
+        assertEquals(CACHED_FEATURES, repository.getFeaturesJson());
+        wireMock.verify(5, getRequestedFor(urlEqualTo(FEATURES_PATH)));
+        assertEquals(1, cacheManager.loadCount());
     }
 
     @Test
-    void failedRefreshKeepsExistingFeatureDataInsteadOfLoadingOlderCache() throws Exception {
-        OkHttpClient httpClient = mock(OkHttpClient.class);
-        AtomicInteger attempts = new AtomicInteger();
-        when(httpClient.newCall(any(Request.class))).thenAnswer(invocation ->
-                attempts.incrementAndGet() == 1 ? successfulCall() : failedCall()
-        );
-        GbCacheManager cacheManager = mock(GbCacheManager.class);
-        when(cacheManager.loadCache(anyString())).thenReturn(CACHED_RESPONSE);
-        GBFeaturesRepository repository = repositoryBuilder(httpClient, cacheManager).build();
-
+    @DisplayName("A failed refresh keeps the held features instead of loading an older cache")
+    void failedRefreshKeepsHeldFeatures() throws Exception {
+        // Given
+        wireMock.stubFor(okFeatures());
+        FixedPayloadCacheManager cacheManager = new FixedPayloadCacheManager(CACHED_RESPONSE);
+        GBFeaturesRepository repository = track(repositoryBuilder().cacheManager(cacheManager).build());
         repository.initialize();
+        wireMock.resetMappings();
+        wireMock.stubFor(get(urlEqualTo(FEATURES_PATH)).willReturn(aResponse().withFault(Fault.CONNECTION_RESET_BY_PEER)));
+
+        // When
         repository.refreshFeatures(RefreshMode.FORCE);
 
-        assertEquals("{\"test\":{\"defaultValue\":true}}", repository.getFeaturesJson());
-        verify(httpClient, times(6)).newCall(any(Request.class));
-        verify(cacheManager, never()).loadCache(anyString());
-        repository.shutdown();
+        // Then
+        assertEquals(FETCHED_FEATURES, repository.getFeaturesJson());
+        wireMock.verify(6, getRequestedFor(urlEqualTo(FEATURES_PATH)));
+        assertEquals(0, cacheManager.loadCount());
     }
 
     @Test
-    void backgroundForceRefreshReturnsImmediatelyAndRefreshesFeatures() throws Exception {
-        OkHttpClient httpClient = mock(OkHttpClient.class);
-        CountDownLatch refreshStarted = new CountDownLatch(1);
-        CountDownLatch releaseRefresh = new CountDownLatch(1);
-        CountDownLatch refreshCompleted = new CountDownLatch(1);
-        when(httpClient.newCall(any(Request.class))).thenAnswer(invocation ->
-                blockingSuccessfulCall(refreshStarted, releaseRefresh)
-        );
-        GBFeaturesRepository repository = repositoryBuilder(httpClient).build();
-        repository.onFeaturesRefresh(new FeatureRefreshCallback() {
-            @Override
-            public void onRefresh(String featuresJson) {
-                refreshCompleted.countDown();
-            }
+    @DisplayName("A requested background refresh returns before the fetch completes and then applies the features")
+    void requestedBackgroundRefreshDoesNotBlockCaller() throws Exception {
+        // Given
+        BlockingResponseTransformer blocking = new BlockingResponseTransformer();
+        WireMockServer blockingServer = new WireMockServer(WireMockConfiguration.options().dynamicPort().extensions(blocking));
+        blockingServer.start();
+        try {
+            blockingServer.stubFor(okFeatures());
+            GBFeaturesRepository repository = track(GBFeaturesRepository.builder()
+                    .apiHost("http://localhost:" + blockingServer.port())
+                    .clientKey(CLIENT_KEY)
+                    .isCacheDisabled(true)
+                    .retryPolicy(NO_DELAY_RETRY_POLICY)
+                    .build());
+            LatchedRefreshListener listener = new LatchedRefreshListener();
+            repository.addFeatureRefreshListener(listener);
 
-            @Override
-            public void onError(Throwable throwable) {
-            }
-        });
+            // When
+            repository.requestFeatureRefresh(RefreshMode.FORCE);
 
-        long startedAtMillis = System.currentTimeMillis();
-        repository.requestFeatureRefresh(RefreshMode.FORCE);
-        long elapsedMillis = System.currentTimeMillis() - startedAtMillis;
-
-        assertTrue(elapsedMillis < 500, "Background refresh scheduling should not block the caller");
-        assertTrue(refreshStarted.await(1, TimeUnit.SECONDS), "Background refresh should start the network request");
-
-        releaseRefresh.countDown();
-
-        assertTrue(refreshCompleted.await(1, TimeUnit.SECONDS), "Background refresh should update features");
-        assertEquals("{\"test\":{\"defaultValue\":true}}", repository.getFeaturesJson());
-        repository.shutdown();
+            // Then
+            assertTrue(blocking.awaitRequest(5, TimeUnit.SECONDS));
+            assertEquals("{}", repository.getFeaturesJson());
+            assertEquals(1, listener.refreshed.getCount());
+            blocking.release();
+            assertTrue(listener.refreshed.await(5, TimeUnit.SECONDS));
+            assertEquals(FETCHED_FEATURES, repository.getFeaturesJson());
+        } finally {
+            blocking.release();
+            blockingServer.stop();
+        }
     }
 
     @Test
-    void freshCacheSkipsDefaultRefreshNetworkCall() throws Exception {
-        OkHttpClient httpClient = successfulHttpClient();
-        GbCacheManager cacheManager = cacheManagerWithTimestamp(System.currentTimeMillis());
-        GBFeaturesRepository repository = repositoryBuilder(httpClient, cacheManager)
+    @DisplayName("A fresh cache within the background fetch interval skips the network on initialize")
+    void freshCacheSkipsNetworkOnInitialize() throws Exception {
+        // Given
+        wireMock.stubFor(okFeatures());
+        GBFeaturesRepository repository = track(repositoryBuilder()
+                .cacheManager(new FixedPayloadCacheManager(CACHED_RESPONSE, FRESH_CACHE_UPDATED_AT_MILLIS))
                 .backgroundFetchInterval(Duration.ofHours(48))
-                .build();
+                .build());
 
+        // When
         repository.initialize();
 
-        assertEquals("{\"cached\":{\"defaultValue\":true}}", repository.getFeaturesJson());
-        verify(httpClient, never()).newCall(any(Request.class));
-        repository.shutdown();
+        // Then
+        assertEquals(CACHED_FEATURES, repository.getFeaturesJson());
+        wireMock.verify(0, getRequestedFor(urlEqualTo(FEATURES_PATH)));
     }
 
     @Test
-    void staleCacheTriggersDefaultRefreshNetworkCall() throws Exception {
-        OkHttpClient httpClient = successfulHttpClient();
-        GbCacheManager cacheManager = cacheManagerWithTimestamp(
-                System.currentTimeMillis() - Duration.ofHours(2).toMillis()
-        );
-        GBFeaturesRepository repository = repositoryBuilder(httpClient, cacheManager)
+    @DisplayName("A cache older than the background fetch interval is refreshed from the network on initialize")
+    void staleCacheRefreshesFromNetworkOnInitialize() throws Exception {
+        // Given
+        wireMock.stubFor(okFeatures());
+        GBFeaturesRepository repository = track(repositoryBuilder()
+                .cacheManager(new FixedPayloadCacheManager(CACHED_RESPONSE, STALE_CACHE_UPDATED_AT_MILLIS))
                 .backgroundFetchInterval(Duration.ofHours(1))
-                .build();
+                .build());
 
+        // When
         repository.initialize();
 
-        assertEquals("{\"test\":{\"defaultValue\":true}}", repository.getFeaturesJson());
-        verify(httpClient, times(1)).newCall(any(Request.class));
-        repository.shutdown();
+        // Then
+        assertEquals(FETCHED_FEATURES, repository.getFeaturesJson());
+        wireMock.verify(1, getRequestedFor(urlEqualTo(FEATURES_PATH)));
     }
 
     @Test
-    void existingBuilderInitializationKeepsNewOptionsDisabledByDefault() {
-        GBFeaturesRepository repository = GBFeaturesRepository.builder()
-                .clientKey("sdk-abc123")
-                .build();
+    @DisplayName("Builds without a background fetch interval and with the default retry policy")
+    void buildsWithoutBackgroundFetchIntervalAndWithDefaultRetryPolicy() {
+        // Given
+        GBFeaturesRepository.GBFeaturesRepositoryBuilder builder = GBFeaturesRepository.builder().clientKey(CLIENT_KEY);
 
+        // When
+        GBFeaturesRepository repository = builder.build();
+
+        // Then
         assertNull(repository.getBackgroundFetchInterval());
         assertEquals(FeatureFetchRetryPolicy.DEFAULT_MAX_ATTEMPTS, repository.getRetryPolicy().getMaxAttempts());
     }
 
+    @Test
+    @DisplayName("Rejects a negative background fetch interval")
+    void rejectsNegativeBackgroundFetchInterval() {
+        // Given
+        GBFeaturesRepository.GBFeaturesRepositoryBuilder builder = GBFeaturesRepository.builder()
+                .clientKey(CLIENT_KEY)
+                .backgroundFetchInterval(Duration.ofSeconds(-1));
 
+        // When
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, builder::build);
 
-    private static GBFeaturesRepository.GBFeaturesRepositoryBuilder repositoryBuilder(OkHttpClient httpClient) {
+        // Then
+        assertEquals("backgroundFetchInterval must not be negative", exception.getMessage());
+    }
+
+    private GBFeaturesRepository.GBFeaturesRepositoryBuilder repositoryBuilder() {
         return GBFeaturesRepository.builder()
-                .apiHost("http://localhost")
-                .clientKey("sdk-abc123")
-                .okHttpClient(httpClient)
-                .isCacheDisabled(true)
+                .apiHost("http://localhost:" + wireMock.port())
+                .clientKey(CLIENT_KEY)
+                .okHttpClient(new OkHttpClient.Builder().retryOnConnectionFailure(false).build())
                 .retryPolicy(NO_DELAY_RETRY_POLICY);
     }
 
-    private static GBFeaturesRepository.GBFeaturesRepositoryBuilder repositoryBuilder(
-            OkHttpClient httpClient,
-            GbCacheManager cacheManager
-    ) {
-        return GBFeaturesRepository.builder()
-                .apiHost("http://localhost")
-                .clientKey("sdk-abc123")
-                .okHttpClient(httpClient)
-                .cacheManager(cacheManager)
-                .retryPolicy(NO_DELAY_RETRY_POLICY);
+    private GBFeaturesRepository track(GBFeaturesRepository repository) {
+        repositories.add(repository);
+        return repository;
     }
 
-    private static GbCacheManager cacheManagerWithTimestamp(long timestampMillis) {
-        GbCacheManager cacheManager = mock(GbCacheManager.class);
-        when(cacheManager.loadCache(anyString())).thenReturn(CACHED_RESPONSE);
-        when(cacheManager.getLastUpdatedMillis(anyString())).thenReturn(timestampMillis);
-        return cacheManager;
+    private static MappingBuilder okFeatures() {
+        return get(urlEqualTo(FEATURES_PATH)).willReturn(aResponse()
+                .withStatus(200)
+                .withHeader("ETag", "v1")
+                .withBody(FEATURES_RESPONSE));
     }
 
-    private static OkHttpClient successfulHttpClient() throws IOException {
-        OkHttpClient httpClient = mock(OkHttpClient.class);
-        when(httpClient.newCall(any(Request.class))).thenAnswer(invocation -> successfulCall());
-        return httpClient;
-    }
+    private static final class LatchedRefreshListener implements FeatureRefreshListener {
+        private final CountDownLatch refreshed = new CountDownLatch(1);
 
-    private static Call successfulCall() throws IOException {
-        Call call = mock(Call.class);
-        Response response = new Response.Builder()
-                .request(new Request.Builder().url("http://localhost").build())
-                .protocol(Protocol.HTTP_1_1)
-                .code(200)
-                .message("OK")
-                .header("ETag", "v1")
-                .body(ResponseBody.create(FEATURES_RESPONSE, MediaType.parse("application/json")))
-                .build();
-        when(call.execute()).thenReturn(response);
-        return call;
-    }
-
-    private static Call blockingSuccessfulCall(
-            CountDownLatch refreshStarted,
-            CountDownLatch releaseRefresh
-    ) throws IOException {
-        Call call = mock(Call.class);
-        when(call.execute()).thenAnswer(invocation -> {
-            refreshStarted.countDown();
-            releaseRefresh.await(2, TimeUnit.SECONDS);
-            return successfulResponse();
-        });
-        return call;
-    }
-
-    private static Response successfulResponse() {
-        return new Response.Builder()
-                .request(new Request.Builder().url("http://localhost").build())
-                .protocol(Protocol.HTTP_1_1)
-                .code(200)
-                .message("OK")
-                .header("ETag", "v1")
-                .body(ResponseBody.create(FEATURES_RESPONSE, MediaType.parse("application/json")))
-                .build();
-    }
-
-    private static Call failedCall() throws IOException {
-        Call call = mock(Call.class);
-        when(call.execute()).thenThrow(new IOException("network failure"));
-        return call;
+        @Override
+        public void onRefresh(FeatureRefreshEvent event) {
+            if (event.isSuccessful()) {
+                refreshed.countDown();
+            }
+        }
     }
 }

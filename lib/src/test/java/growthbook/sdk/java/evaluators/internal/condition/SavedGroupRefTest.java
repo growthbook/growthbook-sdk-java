@@ -7,16 +7,15 @@ import com.google.gson.JsonParser;
 import com.google.gson.JsonPrimitive;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.function.Executable;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class SavedGroupRefTest {
 
@@ -124,10 +123,11 @@ class SavedGroupRefTest {
         Cond condition = CondParser.parse(json("{\"$savedGroup\": {\"id\": \"malformedCond\"}}"));
 
         // When
-        Executable evaluation = () -> condition.eval(json("{}"), new CondScope(SAVED_GROUPS));
+        MalformedConditionException thrown = assertThrows(MalformedConditionException.class,
+                () -> condition.eval(json("{}"), new CondScope(SAVED_GROUPS)));
 
         // Then
-        assertThrows(MalformedConditionException.class, evaluation);
+        assertEquals("$or needs an array of conditions", thrown.getMessage());
     }
 
     @Test
@@ -181,38 +181,52 @@ class SavedGroupRefTest {
         assertEquals(json("{\"v\": [\"u1\", \"u2\"]}").get("v"), forTypedList);
     }
 
-    @Test
-    @DisplayName("Gives no $inGroup values for a condition group, malformed list or other entry")
-    void givesNoInGroupValuesForOtherEntries() {
+    @ParameterizedTest(name = "{0}")
+    @ValueSource(strings = {"condGroup", "badValues", "future"})
+    @DisplayName("Gives no $inGroup values for a condition group, malformed list or other group type")
+    void givesNoInGroupValuesForOtherGroups(String groupId) {
         // Given
-        JsonElement conditionGroup = SAVED_GROUPS.get("condGroup");
+        JsonElement group = SAVED_GROUPS.get(groupId);
 
         // When
-        JsonArray values = SavedGroupRef.inGroupValues(conditionGroup);
+        JsonArray values = SavedGroupRef.inGroupValues(group);
 
         // Then
         assertNull(values);
-        assertNull(SavedGroupRef.inGroupValues(SAVED_GROUPS.get("badValues")));
-        assertNull(SavedGroupRef.inGroupValues(SAVED_GROUPS.get("future")));
-        assertNull(SavedGroupRef.inGroupValues(new JsonPrimitive("u1")));
     }
 
     @Test
-    @DisplayName("Recognizes only object entries with a type other than list or condition as a new group type")
-    void recognizesNewGroupTypes() {
+    @DisplayName("Gives no $inGroup values for a primitive entry")
+    void givesNoInGroupValuesForPrimitiveEntry() {
         // Given
-        JsonElement future = SAVED_GROUPS.get("future");
+        JsonElement entry = new JsonPrimitive("u1");
 
         // When
-        boolean isNew = SavedGroupRef.isNewGroupType(future);
+        JsonArray values = SavedGroupRef.inGroupValues(entry);
 
         // Then
-        assertTrue(isNew);
-        assertTrue(SavedGroupRef.isNewGroupType(SAVED_GROUPS.get("untyped")));
-        assertFalse(SavedGroupRef.isNewGroupType(SAVED_GROUPS.get("listGroup")));
-        assertFalse(SavedGroupRef.isNewGroupType(SAVED_GROUPS.get("condGroup")));
-        assertFalse(SavedGroupRef.isNewGroupType(SAVED_GROUPS.get("bareArray")));
-        assertFalse(SavedGroupRef.isNewGroupType(null));
+        assertNull(values);
+    }
+
+    @ParameterizedTest(name = "{0} -> {1}")
+    @CsvSource({
+            "future, true",
+            "untyped, true",
+            "listGroup, false",
+            "condGroup, false",
+            "bareArray, false",
+            "missingGroup, false",
+    })
+    @DisplayName("Recognizes only object entries with a type other than list or condition as a new group type")
+    void recognizesNewGroupTypes(String groupId, boolean expected) {
+        // Given
+        JsonElement group = SAVED_GROUPS.get(groupId);
+
+        // When
+        boolean isNew = SavedGroupRef.isNewGroupType(group);
+
+        // Then
+        assertEquals(expected, isNew);
     }
 
     private static JsonObject json(String text) {
