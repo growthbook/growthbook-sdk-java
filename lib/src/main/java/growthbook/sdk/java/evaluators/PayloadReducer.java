@@ -5,6 +5,8 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonNull;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
+import growthbook.sdk.java.evaluators.internal.condition.CondPruner;
+import growthbook.sdk.java.evaluators.internal.condition.JsonValues;
 import growthbook.sdk.java.model.PayloadFilters;
 import growthbook.sdk.java.model.ReducePayloadOptions;
 
@@ -28,8 +30,6 @@ import java.util.Set;
  */
 public final class PayloadReducer {
 
-    private static final ConditionEvaluator EVALUATOR = new ConditionEvaluator();
-
     private PayloadReducer() {
     }
 
@@ -44,7 +44,7 @@ public final class PayloadReducer {
      * otherwise a {@link JsonObject} with the condition minus every branch that is already decided
      */
     public static JsonElement pruneCondition(@Nullable JsonObject attributes, JsonObject condition, @Nullable JsonObject savedGroups) {
-        return EVALUATOR.pruneCondition(attributes != null ? attributes : new JsonObject(), condition, savedGroups);
+        return CondPruner.pruneCondition(attributes != null ? attributes : new JsonObject(), condition, savedGroups);
     }
 
     /**
@@ -192,7 +192,7 @@ public final class PayloadReducer {
                 return;
             }
             for (JsonElement parent : parents.getAsJsonArray()) {
-                String id = parent.isJsonObject() ? ConditionEvaluator.stringField(parent.getAsJsonObject(), "id") : null;
+                String id = parent.isJsonObject() ? JsonValues.stringField(parent.getAsJsonObject(), "id") : null;
                 if (id != null && (!filterPrerequisites || id.startsWith("$holdout:"))) {
                     add(id);
                 }
@@ -212,7 +212,7 @@ public final class PayloadReducer {
                 return reduced;
             }
             JsonElement pruned = pruneCondition(attributes, condition.getAsJsonObject(), savedGroups);
-            if (ConditionEvaluator.isBoolean(pruned)) {
+            if (JsonValues.isBoolean(pruned)) {
                 if (pruned.getAsBoolean()) {
                     reduced.remove("condition");
                 } else {
@@ -254,7 +254,7 @@ public final class PayloadReducer {
 
             JsonObject bandits = new JsonObject();
             for (JsonElement item : items) {
-                String ref = item.isJsonObject() ? ConditionEvaluator.stringField(item.getAsJsonObject(), "contextualBanditRef") : null;
+                String ref = item.isJsonObject() ? JsonValues.stringField(item.getAsJsonObject(), "contextualBanditRef") : null;
                 if (ref == null || ref.isEmpty() || bandits.has(ref) || !allBandits.has(ref)) {
                     continue;
                 }
@@ -273,10 +273,10 @@ public final class PayloadReducer {
                         JsonElement pruned = pruneCondition(attributes,
                                 condition != null && condition.isJsonObject() ? condition.getAsJsonObject() : new JsonObject(),
                                 savedGroups);
-                        if (ConditionEvaluator.isBoolean(pruned) && !pruned.getAsBoolean()) {
+                        if (JsonValues.isBoolean(pruned) && !pruned.getAsBoolean()) {
                             continue;
                         }
-                        reducedContext.add("condition", ConditionEvaluator.isBoolean(pruned) ? new JsonObject() : pruned);
+                        reducedContext.add("condition", JsonValues.isBoolean(pruned) ? new JsonObject() : pruned);
                         contexts.add(reducedContext);
                     }
                 }
@@ -299,7 +299,7 @@ public final class PayloadReducer {
             while (!values.isEmpty()) {
                 JsonElement value = values.pop();
                 boolean user = users.pop();
-                if (ConditionEvaluator.isString(value)) {
+                if (JsonValues.isString(value)) {
                     String id = value.getAsString();
                     if (!savedGroups.has(id) || asWritten.contains(id) || (user && seen.contains(id))) {
                         continue;
@@ -409,7 +409,7 @@ public final class PayloadReducer {
             values.push(root);
             while (!values.isEmpty()) {
                 JsonElement value = values.pop();
-                if (ConditionEvaluator.isString(value)) {
+                if (JsonValues.isString(value)) {
                     if (savedGroups.has(value.getAsString())) {
                         found.add(value.getAsString());
                     }
@@ -440,7 +440,7 @@ public final class PayloadReducer {
             values.push(root);
             while (!values.isEmpty()) {
                 JsonElement value = values.pop();
-                if (ConditionEvaluator.isString(value)) {
+                if (JsonValues.isString(value)) {
                     String id = value.getAsString();
                     if (!savedGroups.has(id) || groups.containsKey(id)) {
                         continue;
@@ -448,7 +448,7 @@ public final class PayloadReducer {
                     JsonElement entry = savedGroups.get(id);
                     JsonElement condition = asWritten.contains(id) || onCycle.contains(id)
                             ? null
-                            : EVALUATOR.pruneSavedGroup(attributes, id, savedGroups);
+                            : CondPruner.pruneSavedGroup(attributes, id, savedGroups);
                     JsonElement kept = entry;
                     if (condition != null && condition.isJsonObject() && entry.isJsonObject()) {
                         JsonObject reduced = shallowCopy(entry.getAsJsonObject());
@@ -484,7 +484,7 @@ public final class PayloadReducer {
                 return false;
             }
             JsonElement type = entry.getAsJsonObject().get("type");
-            return !(ConditionEvaluator.isString(type) && type.getAsString().equals("list"));
+            return !(JsonValues.isString(type) && type.getAsString().equals("list"));
         }
 
         private static void pushReversed(Deque<JsonElement> values, List<JsonElement> children) {
@@ -562,7 +562,7 @@ public final class PayloadReducer {
             for (String value : want) {
                 values.add(value);
             }
-            return ConditionEvaluator.isIn(actual, values, false);
+            return JsonValues.isIn(actual, values, false);
         }
 
         private static JsonObject metadataOf(@Nullable JsonElement item) {
