@@ -3,12 +3,13 @@ package growthbook.sdk.java.sandbox;
 import growthbook.sdk.java.exception.FeatureCacheException;
 import lombok.extern.slf4j.Slf4j;
 
-import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.nio.charset.CharacterCodingException;
 import java.nio.charset.Charset;
+import java.nio.charset.CodingErrorAction;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.AtomicMoveNotSupportedException;
 import java.nio.file.Files;
@@ -160,16 +161,11 @@ public class FileCachingManagerImpl implements GbCacheManager {
     }
 
     private String read(Path path, Charset charset) throws IOException {
-        try (BufferedReader reader = Files.newBufferedReader(path, charset)) {
-            StringBuilder builder = new StringBuilder();
-            String line;
-
-            while ((line = reader.readLine()) != null) {
-                builder.append(line);
-            }
-
-            return builder.toString().trim();
-        }
+        return charset.newDecoder()
+                .onMalformedInput(CodingErrorAction.REPORT)
+                .onUnmappableCharacter(CodingErrorAction.REPORT)
+                .decode(ByteBuffer.wrap(Files.readAllBytes(path)))
+                .toString();
     }
 
     @Override
