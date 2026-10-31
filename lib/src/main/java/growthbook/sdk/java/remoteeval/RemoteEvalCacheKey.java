@@ -41,7 +41,7 @@ public final class RemoteEvalCacheKey {
         keyPayload.add(FORCED_FEATURES_KEY, toSortedForcedFeatures(forcedFeatures));
         keyPayload.add(URL_KEY, GrowthBookJsonUtils.getInstance().gson.toJsonTree(RemoteEvalRequestBuilder.normalizeUrl(url)));
         return normalize(apiHost) + CLIENT_SEPARATOR + normalize(clientKey)
-                + PAYLOAD_SEPARATOR + GrowthBookJsonUtils.getInstance().gson.toJson(keyPayload);
+                + PAYLOAD_SEPARATOR + keyPayload;
     }
 
     public static String from(
