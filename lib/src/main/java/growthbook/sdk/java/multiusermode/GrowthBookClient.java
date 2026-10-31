@@ -334,12 +334,12 @@ public class GrowthBookClient {
      * @param featureKeys    the feature keys to evaluate
      * @param valueTypeClass the expected value type (typically {@code Object.class} for mixed types)
      * @param userContext    the user context, processed once
-     * @param <ValueType>    the result value type
+     * @param <T>    the result value type
      * @return a map from feature key to its {@link FeatureResult}
      */
-    public <ValueType> Map<String, FeatureResult<ValueType>> evalFeatures(
+    public <T> Map<String, FeatureResult<T>> evalFeatures(
             List<String> featureKeys,
-            Class<ValueType> valueTypeClass,
+            Class<T> valueTypeClass,
             UserContext userContext
     ) {
         return featureEvaluator.evaluateFeatures(featureKeys, getEvalContext(userContext), valueTypeClass);

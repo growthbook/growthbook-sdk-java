@@ -32,14 +32,14 @@ import java.util.Map;
  * <li>hashAttribute (string) - What user attribute should be used to assign variations (defaults to id)</li>
  * </ul>
  *
- * @param <ValueType> generic type for the value type for this experiment's variations.
+ * @param <T> generic type for the value type for this experiment's variations.
  */
 @EqualsAndHashCode(callSuper = true)
 @Data
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
-public class FeatureRule<ValueType> extends SuperTypeToken<ValueType> implements JsonDeserializer<FeatureRule<ValueType>> {
+public class FeatureRule<T> extends SuperTypeToken<T> implements JsonDeserializer<FeatureRule<T>> {
     /**
      * Unique feature rule id
      */
@@ -63,13 +63,13 @@ public class FeatureRule<ValueType> extends SuperTypeToken<ValueType> implements
      * Immediately force a specific value (ignore every other option besides condition and coverage)
      */
     @Nullable
-    OptionalField<ValueType> force;
+    OptionalField<T> force;
 
     /**
      * Run an experiment (A/B test) and randomly choose between these variations
      */
     @Nullable
-    ArrayList<ValueType> variations;
+    ArrayList<T> variations;
 
     /**
      * How to weight traffic between variations. Must add to 1.
@@ -186,14 +186,14 @@ public class FeatureRule<ValueType> extends SuperTypeToken<ValueType> implements
      * Array of tracking calls to fire
      */
     @Nullable
-    ArrayList<TrackData<ValueType>> tracks;
+    ArrayList<TrackData<T>> tracks;
 
     public FeatureRule(
             @Nullable String id,
             @Nullable String key,
             @Nullable Double coverage,
-            @Nullable OptionalField<ValueType> force,
-            @Nullable ArrayList<ValueType> variations,
+            @Nullable OptionalField<T> force,
+            @Nullable ArrayList<T> variations,
             @Nullable ArrayList<Double> weights,
             @Nullable Namespace namespace,
             String hashAttribute,
@@ -211,7 +211,7 @@ public class FeatureRule<ValueType> extends SuperTypeToken<ValueType> implements
             @Nullable Boolean disableStickyBucketing,
             @Nullable Integer bucketVersion,
             @Nullable Integer minBucketVersion,
-            @Nullable ArrayList<TrackData<ValueType>> tracks
+            @Nullable ArrayList<TrackData<T>> tracks
     ) {
         this(
                 id,
@@ -242,9 +242,9 @@ public class FeatureRule<ValueType> extends SuperTypeToken<ValueType> implements
     }
 
     @Override
-    public FeatureRule<ValueType> deserialize(JsonElement json, Type typeOfT, JsonDeserializationContext context) {
+    public FeatureRule<T> deserialize(JsonElement json, Type typeOfT, JsonDeserializationContext context) {
         JsonObject jsonObject = json.getAsJsonObject();
-        FeatureRule.FeatureRuleBuilder<ValueType> builder = FeatureRule.<ValueType>builder();
+        FeatureRule.FeatureRuleBuilder<T> builder = FeatureRule.<T>builder();
 
         builder.id(jsonObject.has("id") ? context.deserialize(jsonObject.get("id"), String.class) : "");
         builder.key(jsonObject.has("key") ? context.deserialize(jsonObject.get("key"), String.class) : null);
@@ -254,7 +254,7 @@ public class FeatureRule<ValueType> extends SuperTypeToken<ValueType> implements
         if (jsonObject.has("force")) {
             JsonElement forceElement = jsonObject.get("force");
             if (!forceElement.isJsonNull()) {
-                ValueType forceValue = context.deserialize(forceElement, getType());
+                T forceValue = context.deserialize(forceElement, getType());
                 builder.force(new OptionalField<>(true, forceValue));
             } else {
                 builder.force(new OptionalField<>(true, null));
@@ -265,7 +265,7 @@ public class FeatureRule<ValueType> extends SuperTypeToken<ValueType> implements
 
         if (jsonObject.has("variations")) {
             builder.variations(context.deserialize(jsonObject.get("variations"), TypeToken.getParameterized(ArrayList.class, getType()).getType()));
-//            builder.variations(context.deserialize(jsonObject.get("variations"), new TypeToken<ArrayList<ValueType>>() {}.getType()));
+//            builder.variations(context.deserialize(jsonObject.get("variations"), new TypeToken<ArrayList<T>>() {}.getType()));
         }
 
         if (jsonObject.has("weights")) {
@@ -315,7 +315,7 @@ public class FeatureRule<ValueType> extends SuperTypeToken<ValueType> implements
 
         if (jsonObject.has("tracks")) {
             builder.tracks(context.deserialize(jsonObject.get("tracks"), TypeToken.getParameterized(ArrayList.class, TrackData.class).getType()));
-//            builder.tracks(context.deserialize(jsonObject.get("tracks"), new TypeToken<ArrayList<TrackData<ValueType>>>() {}.getType()));
+//            builder.tracks(context.deserialize(jsonObject.get("tracks"), new TypeToken<ArrayList<TrackData<T>>>() {}.getType()));
         }
 
         return builder.build();

@@ -5,5 +5,5 @@ import growthbook.sdk.java.multiusermode.configurations.UserContext;
 
 public interface FeatureUsageCallbackWithUser {
 
-    <ValueType> void onFeatureUsage(String featureKey, FeatureResult<ValueType> result, UserContext userContext);
+    <T> void onFeatureUsage(String featureKey, FeatureResult<T> result, UserContext userContext);
 }

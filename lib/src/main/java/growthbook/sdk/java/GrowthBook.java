@@ -269,12 +269,12 @@ public class GrowthBook implements IGrowthBook {
      *      2.1.2 Using the evaluated parent's result, create an object
      * @param key            name of the feature
      * @param valueTypeClass the class of the generic, e.g. MyFeature.class
-     * @param <ValueType>    Gson deserializable type
-     * @return ValueType instance
+     * @param <T>    Gson deserializable type
+     * @return T instance
      */
     @Nullable
     @Override
-    public <ValueType> FeatureResult<ValueType> evalFeature(String key, Class<ValueType> valueTypeClass) {
+    public <T> FeatureResult<T> evalFeature(String key, Class<T> valueTypeClass) {
         return featureEvaluator.evaluateFeature(key, getEvaluationContext(), valueTypeClass);
     }
 
@@ -284,13 +284,13 @@ public class GrowthBook implements IGrowthBook {
      *
      * @param featureKeys    the feature keys to evaluate
      * @param valueTypeClass the expected value type (typically {@code Object.class} for mixed types)
-     * @param <ValueType>    the result value type
+     * @param <T>    the result value type
      * @return a map from feature key to its {@link FeatureResult}
      */
     @Override
-    public <ValueType> Map<String, FeatureResult<ValueType>> evalFeatures(
+    public <T> Map<String, FeatureResult<T>> evalFeatures(
             List<String> featureKeys,
-            Class<ValueType> valueTypeClass
+            Class<T> valueTypeClass
     ) {
         return featureEvaluator.evaluateFeatures(featureKeys, getEvaluationContext(), valueTypeClass);
     }
@@ -356,11 +356,11 @@ public class GrowthBook implements IGrowthBook {
      *
      * @param experiment Experiment object
      * @return ExperimentResult instance
-     * @param <ValueType> Gson deserializable type
+     * @param <T> Gson deserializable type
      */
     @Override
-    public <ValueType> ExperimentResult<ValueType> run(Experiment<ValueType> experiment) {
-        ExperimentResult<ValueType> result = experimentEvaluatorEvaluator
+    public <T> ExperimentResult<T> run(Experiment<T> experiment) {
+        ExperimentResult<T> result = experimentEvaluatorEvaluator
                 .evaluateExperiment(experiment, getEvaluationContext(), null);
 
         GrowthBookUtils.fireSubscriptions(this.assigned, this.callbacks, experiment, result);
@@ -553,11 +553,11 @@ public class GrowthBook implements IGrowthBook {
      * @param featureKey              feature identifier
      * @param defaultValue            default generic class
      * @param gsonDeserializableClass the class of the generic, e.g. MyFeature.class
-     * @param <ValueType>             Gson deserializable type
-     * @return ValueType instance
+     * @param <T>             Gson deserializable type
+     * @return T instance
      */
     @Override
-    public <ValueType> ValueType getFeatureValue(String featureKey, ValueType defaultValue, Class<ValueType> gsonDeserializableClass) {
+    public <T> T getFeatureValue(String featureKey, T defaultValue, Class<T> gsonDeserializableClass) {
         try {
             Object maybeValue = this.featureEvaluator
                     .evaluateFeature(featureKey, getEvaluationContext(), gsonDeserializableClass).getValue();

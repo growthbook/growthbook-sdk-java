@@ -9,7 +9,7 @@ import lombok.Getter;
  */
 @AllArgsConstructor
 @Getter
-public class TrackData<ValueType> {
-    Experiment<ValueType> experiment;
-    ExperimentResult<ValueType> result;
+public class TrackData<T> {
+    Experiment<T> experiment;
+    ExperimentResult<T> result;
 }

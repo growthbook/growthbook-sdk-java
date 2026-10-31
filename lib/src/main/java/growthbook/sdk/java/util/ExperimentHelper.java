@@ -18,7 +18,7 @@ import java.util.Set;
 public class ExperimentHelper {
     private final Set<String> trackedExperiments = new HashSet<>();
 
-    public <ValueType> boolean isTracked(Experiment<ValueType> experiment, ExperimentResult<ValueType> result) {
+    public <T> boolean isTracked(Experiment<T> experiment, ExperimentResult<T> result) {
         String experimentKey = experiment.getKey();
 
         String key = (
