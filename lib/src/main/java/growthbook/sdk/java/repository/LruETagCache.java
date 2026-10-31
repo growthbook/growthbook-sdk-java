@@ -1,36 +1,46 @@
 package growthbook.sdk.java.repository;
 
-import com.google.common.cache.Cache;
-import com.google.common.cache.CacheBuilder;
+import java.util.LinkedHashMap;
+import java.util.Map;
 
+/**
+ * ETags by URL, holding at most {@code maxSize} entries and evicting the least recently used.
+ * Thread-safe.
+ */
 public class LruETagCache {
-    private final Cache<String, String> cache;
+
+    private final Map<String, String> cache;
 
     public LruETagCache(int maxSize) {
-        this.cache = CacheBuilder.newBuilder().maximumSize(maxSize).build();
+        this.cache = new LinkedHashMap<String, String>(16, 0.75f, true) {
+            @Override
+            protected boolean removeEldestEntry(Map.Entry<String, String> eldest) {
+                return size() > maxSize;
+            }
+        };
     }
 
-    public String get(String url) {
-        return cache.getIfPresent(url);
+    public synchronized String get(String url) {
+        return cache.get(url);
     }
 
-    public void put(String url, String eTag) {
+    public synchronized void put(String url, String eTag) {
         if (eTag != null) {
             cache.put(url, eTag);
         } else {
-            cache.invalidate(url);
+            cache.remove(url);
         }
     }
 
-    public void remove(String url) {
-        cache.invalidate(url);
+    public synchronized void remove(String url) {
+        cache.remove(url);
     }
 
-    public long size() {
+    public synchronized long size() {
         return cache.size();
     }
 
-    public void clear() {
-        cache.invalidateAll();
+    public synchronized void clear() {
+        cache.clear();
     }
 }
