@@ -4,6 +4,7 @@ import com.google.gson.JsonObject;
 import growthbook.sdk.java.util.ForcedVariationsUtils;
 import growthbook.sdk.java.util.GrowthBookJsonUtils;
 import growthbook.sdk.java.model.StickyAssignmentsDocument;
+import growthbook.sdk.java.multiusermode.usage.TrackingCallbackWithUser;
 import growthbook.sdk.java.multiusermode.util.TransformationUtil;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
@@ -33,6 +34,14 @@ public class UserContext {
     @Nullable
     private String attributesJson;
 
+    /**
+     * Per-user tracking callback. When set, it takes precedence over the client-level
+     * tracking callback for experiments evaluated with this context. Set through
+     * {@code UserScopedGrowthBook#setTrackingCallback}.
+     */
+    @Nullable
+    private TrackingCallbackWithUser trackingCallback;
+
     private UserContext(UserContextBuilder userContextBuilder) {
         attributes = userContextBuilder.attributes == null ? new JsonObject() : userContextBuilder.attributes;
         url = userContextBuilder.url;
@@ -40,6 +49,7 @@ public class UserContext {
         forcedVariationsMap = ForcedVariationsUtils.normalize(userContextBuilder.forcedVariationsMap);
         forcedFeatureValues = userContextBuilder.forcedFeatureValues;
         attributesJson = userContextBuilder.attributesJson;
+        trackingCallback = userContextBuilder.trackingCallback;
     }
 
     public static UserContextBuilder builder() {
@@ -54,6 +64,7 @@ public class UserContext {
                 .forcedFeatureValues(this.forcedFeatureValues)
                 .url(this.url)
                 .stickyBucketAssignmentDocs(this.stickyBucketAssignmentDocs)
+                .trackingCallback(this.trackingCallback)
                 .build();
     }
 
@@ -64,7 +75,26 @@ public class UserContext {
                 .forcedFeatureValues(this.forcedFeatureValues)
                 .url(this.url)
                 .stickyBucketAssignmentDocs(this.stickyBucketAssignmentDocs)
+                .trackingCallback(this.trackingCallback)
                 .build();
+    }
+
+    /**
+     * Returns a builder pre-populated with this context's fields, for producing a
+     * modified copy. Used by {@code UserScopedGrowthBook} to apply per-user state
+     * changes without mutating the shared context in place.
+     *
+     * @return a builder seeded with the current field values
+     */
+    public UserContextBuilder toBuilder() {
+        return new UserContextBuilder()
+                .attributes(this.attributes)
+                .attributesJson(this.attributesJson)
+                .url(this.url)
+                .stickyBucketAssignmentDocs(this.stickyBucketAssignmentDocs)
+                .forcedVariationsMap(this.forcedVariationsMap)
+                .forcedFeatureValues(this.forcedFeatureValues)
+                .trackingCallback(this.trackingCallback);
     }
 
     public JsonObject getAttributes() {
@@ -95,6 +125,11 @@ public class UserContext {
         return attributesJson;
     }
 
+    @Nullable
+    public TrackingCallbackWithUser getTrackingCallback() {
+        return trackingCallback;
+    }
+
     public static class UserContextBuilder {
         @Nullable
         private JsonObject attributes;
@@ -113,6 +148,14 @@ public class UserContext {
 
         @Nullable
         private String attributesJson;
+
+        @Nullable
+        private TrackingCallbackWithUser trackingCallback;
+
+        public UserContextBuilder trackingCallback(@Nullable TrackingCallbackWithUser trackingCallback) {
+            this.trackingCallback = trackingCallback;
+            return this;
+        }
 
         public UserContextBuilder attributesJson(String attributesJson) {
             this.attributesJson = attributesJson;
