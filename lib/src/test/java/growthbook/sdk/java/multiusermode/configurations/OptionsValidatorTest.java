@@ -106,6 +106,54 @@ class OptionsValidatorTest {
     }
 
     @Test
+    @DisplayName("Verify: accepts a positive requestTimeout")
+    void acceptsPositiveRequestTimeout() {
+        assertDoesNotThrow(() -> OptionsValidator.validate(
+                validOptions().requestTimeout(Duration.ofSeconds(5)).build()));
+    }
+
+    @Test
+    @DisplayName("Verify: accepts Duration.ZERO requestTimeout as an infinite-timeout opt-in")
+    void acceptsZeroRequestTimeout() {
+        assertDoesNotThrow(() -> OptionsValidator.validate(
+                validOptions().requestTimeout(Duration.ZERO).build()));
+    }
+
+    @Test
+    @DisplayName("Verify: accepts a null requestTimeout (falls back to the default)")
+    void acceptsNullRequestTimeout() {
+        assertDoesNotThrow(() -> OptionsValidator.validate(
+                validOptions().requestTimeout(null).build()));
+    }
+
+    @Test
+    @DisplayName("Verify: rejects a negative requestTimeout")
+    void rejectsNegativeRequestTimeout() {
+        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
+                () -> OptionsValidator.validate(
+                        validOptions().requestTimeout(Duration.ofSeconds(-1)).build()));
+        assertTrue(ex.getMessage().contains("requestTimeout"), ex.getMessage());
+    }
+
+    @Test
+    @DisplayName("Verify: rejects a requestTimeout beyond OkHttp's supported millisecond range")
+    void rejectsRequestTimeoutBeyondOkHttpRange() {
+        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
+                () -> OptionsValidator.validate(
+                        validOptions().requestTimeout(Duration.ofDays(30)).build()));
+        assertTrue(ex.getMessage().contains("requestTimeout"), ex.getMessage());
+    }
+
+    @Test
+    @DisplayName("Verify: an overflowing requestTimeout is reported as a violation, not thrown as ArithmeticException")
+    void rejectsOverflowingRequestTimeout() {
+        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
+                () -> OptionsValidator.validate(
+                        validOptions().requestTimeout(Duration.ofSeconds(Long.MAX_VALUE)).build()));
+        assertTrue(ex.getMessage().contains("requestTimeout"), ex.getMessage());
+    }
+
+    @Test
     @DisplayName("Verify: rejects a non-positive remoteEvalCacheTtlSeconds")
     void rejectsNonPositiveRemoteEvalCacheTtl() {
         assertThrows(IllegalArgumentException.class,

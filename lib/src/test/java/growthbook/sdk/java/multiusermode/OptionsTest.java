@@ -71,14 +71,15 @@ class OptionsTest {
     void publicConstructorSurfaceKeepsEveryPreviouslyAvailableArity() {
         // Positional constructors are part of the published API: dropping one is a binary break
         // (NoSuchMethodError) that compiles cleanly here. 21 and 28 shipped in 0.11.0, 29 exists
-        // on main, and 30 is the current full signature. New parameters must be added alongside
-        // a delegating overload, never by widening an existing signature in place.
+        // on main, 30 was the full signature before requestTimeout, and 31 is the current full
+        // signature. New parameters must be added alongside a delegating overload, never by widening
+        // an existing signature in place.
         Set<Integer> arities = new HashSet<>();
         for (Constructor<?> constructor : Options.class.getConstructors()) {
             arities.add(constructor.getParameterCount());
         }
 
-        assertTrue(arities.containsAll(Arrays.asList(21, 28, 29, 30)),
+        assertTrue(arities.containsAll(Arrays.asList(21, 28, 29, 30, 31)),
                 "missing positional Options constructors, found arities: " + arities);
     }
 }
