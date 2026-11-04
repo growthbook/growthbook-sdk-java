@@ -9,6 +9,7 @@ import growthbook.sdk.java.plugin.GrowthBookPlugin;
 import growthbook.sdk.java.util.GrowthBookJsonUtils;
 import growthbook.sdk.java.util.StringUtils;
 import lombok.extern.slf4j.Slf4j;
+import okhttp3.HttpUrl;
 import okhttp3.MediaType;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
@@ -36,9 +37,9 @@ import java.util.concurrent.locks.ReentrantLock;
 
 /**
  * Batches experiment/feature evaluation events and POSTs them to the
- * GrowthBook data-warehouse ingest endpoint. Wire contract mirrors the Go
- * SDK: {@code POST {ingestorHost}/events} with JSON body
- * {@code {"client_key": ..., "events": [...]}}.
+ * GrowthBook ingest endpoint. Wire contract mirrors the JS and Go SDKs:
+ * {@code POST {ingestorHost}/track?client_key={clientKey}} with a JSON array
+ * of events as the body.
  *
  * <p>Resources (HTTP client, scheduler, flush executor) are created in
  * {@link #init()}, not the constructor, so an unregistered plugin never leaks
@@ -149,18 +150,32 @@ public final class GrowthBookTrackingPlugin implements GrowthBookPlugin {
 
     @Override
     public <V> void onExperimentViewed(Experiment<V> experiment, ExperimentResult<V> result) {
+        onExperimentViewed(experiment, result, null);
+    }
+
+    @Override
+    public <V> void onExperimentViewed(Experiment<V> experiment,
+                                       ExperimentResult<V> result,
+                                       @Nullable JsonObject userAttributes) {
         if (!isActive()) {
             return;
         }
-        enqueue(TrackingEvent.forExperiment(experiment, result));
+        enqueue(TrackingEvent.forExperiment(experiment, result, userAttributes));
     }
 
     @Override
     public <V> void onFeatureEvaluated(String featureKey, FeatureResult<V> result) {
+        onFeatureEvaluated(featureKey, result, null);
+    }
+
+    @Override
+    public <V> void onFeatureEvaluated(String featureKey,
+                                       FeatureResult<V> result,
+                                       @Nullable JsonObject userAttributes) {
         if (!isActive()) {
             return;
         }
-        enqueue(TrackingEvent.forFeature(featureKey, result));
+        enqueue(TrackingEvent.forFeature(featureKey, result, userAttributes));
     }
 
     @Override
@@ -320,20 +335,22 @@ public final class GrowthBookTrackingPlugin implements GrowthBookPlugin {
         if (batch.isEmpty() || client == null) {
             return;
         }
-        String url = config.resolvedIngestorHost() + "/events";
+        HttpUrl base = HttpUrl.parse(config.resolvedIngestorHost() + "/track");
+        if (base == null) {
+            log.warn("Tracking ingest host is not a valid URL: {}", config.resolvedIngestorHost());
+            return;
+        }
+        HttpUrl url = base.newBuilder().addQueryParameter("client_key", config.getClientKey()).build();
         try {
-            JsonObject body = new JsonObject();
-            body.addProperty("client_key", config.getClientKey());
             JsonArray events = new JsonArray();
             for (TrackingEvent event : batch) {
                 events.add(GrowthBookJsonUtils.getInstance().gson.toJsonTree(event));
             }
-            body.add("events", events);
 
             Request request = new Request.Builder()
                     .url(url)
                     .header("User-Agent", SdkMetadata.USER_AGENT)
-                    .post(RequestBody.create(body.toString(), JSON))
+                    .post(RequestBody.create(events.toString(), JSON))
                     .build();
 
             try (Response response = client.newCall(request).execute()) {

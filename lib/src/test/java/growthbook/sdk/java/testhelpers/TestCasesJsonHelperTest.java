@@ -43,7 +43,7 @@ class TestCasesJsonHelperTest {
 
         assertTrue(testCases.getAsJsonArray("evalCondition").toString().contains("$notRegex - pass"));
         assertEquals(0, testCases.getAsJsonArray("contextualBandit").size());
-        assertEquals(0, testCases.getAsJsonObject("savedGroupReferencesV2").getAsJsonArray("feature").size());
+        assertTrue(testCases.getAsJsonObject("savedGroupReferencesV2").getAsJsonArray("feature").size() > 0);
     }
 
     @Test

@@ -35,7 +35,7 @@ public class Experiment<ValueType> {
      * How to weight traffic between variations. Must add to 1.
      */
     @Nullable
-    ArrayList<Float> weights;
+    ArrayList<Double> weights;
 
     /**
      * If set to false, always return the control (first variation)
@@ -48,7 +48,7 @@ public class Experiment<ValueType> {
      * What percent of users should be included in the experiment (between 0 and 1, inclusive)
      */
     @Nullable
-    Float coverage;
+    Double coverage;
 
     /**
      * Optional targeting condition
@@ -161,9 +161,9 @@ public class Experiment<ValueType> {
     public Experiment(
             String key,
             ArrayList<ValueType> variations,
-            @Nullable ArrayList<Float> weights,
+            @Nullable ArrayList<Double> weights,
             @Nullable Boolean isActive,
-            @Nullable Float coverage,
+            @Nullable Double coverage,
             @Nullable JsonObject conditionJson,
             @Nullable ArrayList<ParentCondition> parentConditions,
             @Nullable Namespace namespace,

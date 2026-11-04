@@ -385,6 +385,53 @@ public class InMemoryStickyBucketServiceImpl implements StickyBucketService {
 }
 ```
 
+#### Redis-backed sticky bucketing (multi-instance)
+
+`InMemoryStickyBucketServiceImpl` keeps assignments inside a single JVM, so on a horizontally
+scaled fleet each instance buckets the same user independently and assignments are lost on restart.
+The `growthbook-cache-redis` module ships a shared, durable implementation backed by Redis so a user
+keeps the same variation across the whole fleet and across restarts. It reuses the same Jedis or
+Lettuce client you already provide for the Redis feature cache, and stores each user's assignments
+as a JSON string under `<keyPrefix><attributeName>||<attributeValue>` — wire-compatible with the
+TypeScript `RedisStickyBucketService` (with the default empty prefix). Assignments are written
+without a TTL by default (an assignment should outlive any single process); an optional TTL can be
+configured to bound retention on long-running deployments (see below). Genuine Redis access failures
+and malformed payloads surface as a
+`StickyBucketServiceException` (mirroring how the feature cache throws `FeatureCacheException`)
+rather than being swallowed; an absent key is a normal miss, not a failure.
+
+```java
+// Jedis
+JedisPool jedisPool = new JedisPool("localhost", 6379);
+Options options = Options.builder()
+    .stickyBucketService(new JedisStickyBucketService(jedisPool))
+    .stickyBucketIdentifierAttributes(Arrays.asList("id"))
+    .build();
+
+// Lettuce
+StatefulRedisConnection<String, String> connection =
+    RedisClient.create("redis://localhost:6379").connect();
+Options lettuceOptions = Options.builder()
+    .stickyBucketService(new LettuceStickyBucketService(connection))
+    .stickyBucketIdentifierAttributes(Arrays.asList("id"))
+    .build();
+```
+
+Both constructors accept an optional `keyPrefix` argument when you want to namespace the keys
+(e.g. `new JedisStickyBucketService(jedisPool, "growthbook:sticky:")`).
+
+An optional `Duration ttl` bounds how long each entry is retained — useful so a long-running
+deployment does not keep every user's assignments forever. There is no expiry by default. The TTL is
+(re)set on each write, and the SDK writes only when a user's assignments **change**, so the expiry
+counts from the last assignment change — **not** from the user's last evaluation. Set the TTL
+comfortably longer than an experiment's lifetime so an active user is not re-bucketed mid-experiment:
+
+```java
+new JedisStickyBucketService(jedisPool, Duration.ofDays(30));                 // default prefix, 30-day TTL
+new JedisStickyBucketService(jedisPool, "growthbook:sticky:", Duration.ofDays(30));
+new LettuceStickyBucketService(connection, Duration.ofDays(30));
+```
+
 ## Contributing
 
 ### Releasing a new version

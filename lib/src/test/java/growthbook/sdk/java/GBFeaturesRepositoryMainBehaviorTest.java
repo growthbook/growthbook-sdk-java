@@ -597,6 +597,50 @@ class GBFeaturesRepositoryMainBehaviorTest {
     }
 
     @Test
+    void fetchFeatures_whenNetworkFails_ignoresUnownedLegacyCacheEntry() throws IOException {
+        OkHttpClient mockHttpClient = mock(OkHttpClient.class);
+        FileCachingManagerImpl mockCacheManager = mock(FileCachingManagerImpl.class);
+        String foreignData = "{\"status\":200,\"features\":{\"banner_text\":{\"defaultValue\":\"Welcome\"}},\"dateUpdated\":\"2023-01-11T00:26:01.745Z\"}";
+        GBFeaturesRepository subject = new GBFeaturesRepository(
+                "http://localhost:80",
+                "abc-123",
+                null,
+                null,
+                null,
+                mockHttpClient,
+                false,
+                null,
+                null
+        );
+
+        Call mockCall = mock(Call.class);
+        when(mockHttpClient.newCall(any(Request.class))).thenReturn(mockCall);
+        when(mockCall.execute()).thenThrow(new IOException("Http error"));
+        when(mockCacheManager.loadCache("FEATURE_CACHE.json")).thenReturn(foreignData);
+
+        subject.setCacheManager(mockCacheManager);
+
+        assertThrows(FeatureFetchException.class, subject::initialize);
+        assertEquals("{}", subject.getFeaturesJson());
+        verify(mockCacheManager, never()).loadCache("FEATURE_CACHE.json");
+    }
+
+    @Test
+    void freshnessTimestampDoesNotBorrowLegacyCacheKey() {
+        FileCachingManagerImpl mockCacheManager = mock(FileCachingManagerImpl.class);
+        when(mockCacheManager.getLastUpdatedMillis(anyString())).thenReturn(null);
+        when(mockCacheManager.getLastUpdatedMillis("FEATURE_CACHE.json")).thenReturn(123_456L);
+
+        GBFeaturesRepository subject = GBFeaturesRepository.builder()
+                .apiHost("http://localhost")
+                .clientKey("abc-123")
+                .cacheManager(mockCacheManager)
+                .build();
+
+        assertNull(subject.getCacheLastUpdatedMillis());
+    }
+
+    @Test
     void cacheManager_isNull_whenCacheDisabled() {
         GBFeaturesRepository subject = new GBFeaturesRepository(
                 "",
