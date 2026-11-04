@@ -69,6 +69,7 @@ final class GrowthBookClientTestFixtures {
         when(builder.cacheManager(any())).thenReturn(builder);
         when(builder.backgroundFetchInterval(any())).thenReturn(builder);
         when(builder.retryPolicy(any())).thenReturn(builder);
+        when(builder.initialPayload(any())).thenReturn(builder);
         when(builder.build()).thenReturn(repository);
 
         return builder;

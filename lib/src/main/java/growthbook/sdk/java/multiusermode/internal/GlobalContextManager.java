@@ -24,6 +24,17 @@ public final class GlobalContextManager {
     private final AtomicReference<GlobalContext> globalContext = new AtomicReference<>();
 
     /**
+     * Guards the read-snapshot-then-publish sequence so {@link #initialize} and {@link #refresh}
+     * cannot interleave. Without it, a seeded cold start can race its own background refresh:
+     * {@code initialize} reads the seed, the background refresh publishes live flags, then
+     * {@code initialize} overwrites them with the stale seed — and identical later responses do not
+     * repair it because {@code featuresChanged} is false. Both paths read the repository's current
+     * snapshot, so serializing read-and-publish is enough for the newer snapshot to win regardless
+     * of ordering.
+     */
+    private final Object publishLock = new Object();
+
+    /**
      * Creates a manager bound to the client options instance.
      *
      * @param options client options used to build evaluation contexts
@@ -38,7 +49,7 @@ public final class GlobalContextManager {
      * @param repository initialized feature repository
      */
     public void initialize(GBFeaturesRepository repository) {
-        this.globalContext.set(createGlobalContext(repository));
+        publishSnapshot(repository);
     }
 
     /**
@@ -47,7 +58,13 @@ public final class GlobalContextManager {
      * @param repository repository containing the latest parsed feature data
      */
     public void refresh(GBFeaturesRepository repository) {
-        this.globalContext.set(createGlobalContext(repository));
+        publishSnapshot(repository);
+    }
+
+    private void publishSnapshot(GBFeaturesRepository repository) {
+        synchronized (publishLock) {
+            this.globalContext.set(createGlobalContext(repository));
+        }
     }
 
     /**
