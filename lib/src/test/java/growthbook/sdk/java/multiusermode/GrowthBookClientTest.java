@@ -1000,6 +1000,45 @@ class GrowthBookClientTest {
         }
     }
 
+    @Test
+    void evalFeature_withStickyBucketService_preloadsAssignmentsUnderHashValueFormat() {
+        mockRepository = createMockRepository();
+        mockBuilder = createMockBuilder(mockRepository);
+
+        StickyBucketService stickyBucketService = mock(StickyBucketService.class);
+        when(stickyBucketService.getAllAssignments(any())).thenReturn(new HashMap<>());
+
+        try (MockedStatic<GBFeaturesRepository> mockedStatic = mockStatic(GBFeaturesRepository.class)) {
+            mockedStatic.when(GBFeaturesRepository::builder).thenReturn(mockBuilder);
+
+            Options options = Options.builder()
+                    .apiHost("https://custom.growthbook.io")
+                    .clientKey("custom_key")
+                    .decryptionKey("test_key")
+                    .refreshStrategy(FeatureRefreshStrategy.STALE_WHILE_REVALIDATE)
+                    .featureRefreshListenerExecutor(Runnable::run)
+                    .stickyBucketService(stickyBucketService)
+                    .build();
+
+            GrowthBookClient client = new GrowthBookClient(options);
+            assertTrue(client.initialize());
+
+            UserContext userContext = UserContext.builder()
+                    .attributesJson("{\"id\":1.0,\"deviceId\":1.5,\"loggedIn\":true,\"company\":\"\"}")
+                    .build();
+            client.evalFeature("test-feature", Boolean.class, userContext);
+
+            @SuppressWarnings("unchecked")
+            ArgumentCaptor<Map<String, String>> attributesCaptor = ArgumentCaptor.forClass(Map.class);
+            verify(stickyBucketService).getAllAssignments(attributesCaptor.capture());
+            Map<String, String> capturedAttributes = attributesCaptor.getValue();
+            assertEquals("1", capturedAttributes.get("id"));
+            assertEquals("1.5", capturedAttributes.get("deviceId"));
+            assertFalse(capturedAttributes.containsKey("loggedIn"));
+            assertFalse(capturedAttributes.containsKey("company"));
+        }
+    }
+
     private static final String TEST_CLIENT_KEY = "sdk-test";
 
     private static HttpServer startFeatureServer(int statusCode, String body) throws IOException {
@@ -1092,6 +1131,48 @@ class GrowthBookClientTest {
             }
             server.stop(0);
         }
+    }
+
+    @Test
+    void reducePayload_reducesTheSnapshotForGlobalAndUserAttributes() {
+        String featuresJson = "{\"f\": {\"defaultValue\": 0, \"rules\": ["
+                + "{\"condition\": {\"env\": \"dev\"}, \"force\": 1},"
+                + "{\"condition\": {\"country\": \"US\", \"plan\": \"pro\"}, \"force\": 2},"
+                + "{\"condition\": {\"id\": {\"$inGroup\": \"grp\"}}, \"force\": 3}]}}";
+        JsonObject savedGroups = jsonUtils.gson.fromJson("{\"grp\": [\"a\"], \"unused\": [\"b\"]}", JsonObject.class);
+
+        mockRepository = createMockRepository();
+        mockBuilder = createMockBuilder(mockRepository);
+        when(mockRepository.getFeatureSnapshot()).thenReturn(
+                FeatureSnapshot.of(featuresJson, savedGroups.toString(), new HashMap<>(), savedGroups));
+
+        try (MockedStatic<GBFeaturesRepository> mockedStatic = mockStatic(GBFeaturesRepository.class)) {
+            mockedStatic.when(GBFeaturesRepository::builder).thenReturn(mockBuilder);
+
+            Options options = createDefaultOptions(null);
+            options.setGlobalAttributes("{\"env\": \"dev\", \"country\": \"US\"}");
+            GrowthBookClient client = new GrowthBookClient(options);
+            client.initialize();
+
+            UserContext userContext = UserContext.builder().attributesJson("{\"env\": \"prod\"}").build();
+            JsonObject reduced = client.reducePayload(userContext);
+
+            JsonObject expected = jsonUtils.gson.fromJson("{\"features\": {\"f\": {\"defaultValue\": 0, \"rules\": ["
+                    + "{\"condition\": {\"$not\": {}}, \"force\": null},"
+                    + "{\"condition\": {\"plan\": \"pro\"}, \"force\": 2},"
+                    + "{\"condition\": {\"id\": {\"$inGroup\": \"grp\"}}, \"force\": 3}]}},"
+                    + "\"experiments\": [], \"savedGroups\": {\"grp\": [\"a\"]}}", JsonObject.class);
+            assertEquals(expected, reduced);
+        }
+    }
+
+    @Test
+    void reducePayload_beforeInitialize_returnsAnEmptyPayload() {
+        GrowthBookClient client = new GrowthBookClient(createDefaultOptions(null));
+
+        JsonObject reduced = client.reducePayload(null, null);
+
+        assertEquals(jsonUtils.gson.fromJson("{\"features\": {}, \"experiments\": [], \"savedGroups\": {}}", JsonObject.class), reduced);
     }
 
     private Options createDefaultOptions(FeatureRefreshCallback callback) {

@@ -41,5 +41,5 @@ public class ContextualBanditContext {
      * count and, like any weights, sum to 1.
      */
     @Nullable
-    ArrayList<Float> weights;
+    ArrayList<Double> weights;
 }

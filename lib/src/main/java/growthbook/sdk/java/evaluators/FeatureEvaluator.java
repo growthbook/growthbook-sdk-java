@@ -565,7 +565,7 @@ public class FeatureEvaluator implements IFeatureEvaluator {
                     leaf.getLeafId(), variationCount, contextualBanditRef);
         }
 
-        ArrayList<Float> fallbackWeights = isUsableWeights(experiment.getWeights(), variationCount)
+        ArrayList<Double> fallbackWeights = isUsableWeights(experiment.getWeights(), variationCount)
                 ? experiment.getWeights()
                 : GrowthBookUtils.getEqualWeights(variationCount);
         experiment.setContextualBandit(ContextualBandit.builder()
@@ -580,18 +580,18 @@ public class FeatureEvaluator implements IFeatureEvaluator {
      * present, one per variation, free of null entries, and summing to 1 (within rounding).
      * Otherwise bucketing would silently substitute equal weights, so the leaf must fall back.
      */
-    private static boolean isUsableWeights(@Nullable ArrayList<Float> weights, int variationCount) {
+    private static boolean isUsableWeights(@Nullable ArrayList<Double> weights, int variationCount) {
         if (weights == null || weights.size() != variationCount) {
             return false;
         }
-        float sum = 0f;
-        for (Float weight : weights) {
+        double sum = 0.0;
+        for (Double weight : weights) {
             if (weight == null) {
                 return false;
             }
             sum += weight;
         }
-        return sum >= 0.99f && sum <= 1.01f;
+        return sum >= 0.99 && sum <= 1.01;
     }
 
     /**
@@ -599,15 +599,15 @@ public class FeatureEvaluator implements IFeatureEvaluator {
      * A matched leaf replaces the variation split but must keep this traffic limit, so it is carried
      * over as the experiment's coverage before the ranges are rebuilt from the leaf weights.
      */
-    private static float totalRangeCoverage(ArrayList<BucketRange> ranges) {
-        float total = 0f;
+    private static double totalRangeCoverage(ArrayList<BucketRange> ranges) {
+        double total = 0.0;
         for (BucketRange range : ranges) {
             if (range == null || range.getRangeStart() == null || range.getRangeEnd() == null) {
                 continue;
             }
             total += range.getRangeEnd() - range.getRangeStart();
         }
-        return Math.max(0f, Math.min(1f, total));
+        return Math.max(0.0, Math.min(1.0, total));
     }
 
     @Nullable

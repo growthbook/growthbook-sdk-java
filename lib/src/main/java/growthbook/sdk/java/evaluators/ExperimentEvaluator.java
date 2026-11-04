@@ -209,7 +209,7 @@ public class ExperimentEvaluator implements IExperimentEvaluator {
         if (hashVersion == null) {
             hashVersion = 1;
         }
-        Float hash = GrowthBookUtils.hash(hashAttribute.getHashValue(), hashVersion, seed);
+        Double hash = GrowthBookUtils.hash(hashAttribute.getHashValue(), hashVersion, seed);
 
         // Get the variation from the sticky bucket or get bucket ranges and choose variation
         if (hash == null) {
@@ -219,15 +219,15 @@ public class ExperimentEvaluator implements IExperimentEvaluator {
         if (!foundStickyBucket) {
             // Set default variation weights and coverage if not set
             // Weights
-            ArrayList<Float> weights = experiment.getWeights();
+            ArrayList<Double> weights = experiment.getWeights();
             if (weights == null) {
                 weights = GrowthBookUtils.getEqualWeights(experiment.getVariations().size());
             }
 
             // Coverage
-            Float coverage = experiment.getCoverage();
+            Double coverage = experiment.getCoverage();
             if (coverage == null) {
-                coverage = 1.0f;
+                coverage = 1.0;
             }
 
             // Bucket ranges
@@ -325,7 +325,7 @@ public class ExperimentEvaluator implements IExperimentEvaluator {
             Integer variationIndex,
             Boolean hashUsed,
             String featureId,
-            @Nullable Float hashBucket,
+            @Nullable Double hashBucket,
             @Nullable Boolean stickyBucketUsed
     ) {
         boolean inExperiment = true;

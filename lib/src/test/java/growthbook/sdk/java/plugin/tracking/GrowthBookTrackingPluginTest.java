@@ -149,7 +149,7 @@ class GrowthBookTrackingPluginTest {
         ExperimentResult<String> result = experimentResult(3);
         result.setLeafId(1);
         result.setBanditVersion(3);
-        result.setVariationWeights(new ArrayList<>(Arrays.asList(1.0f, 0.0f)));
+        result.setVariationWeights(new ArrayList<>(Arrays.asList(1.0, 0.0)));
         plugin.onExperimentViewed(experiment("exp1"), result);
 
         RecordedRequest req = server.takeRequest(5, TimeUnit.SECONDS);
