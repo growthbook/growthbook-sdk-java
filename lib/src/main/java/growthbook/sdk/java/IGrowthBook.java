@@ -1,8 +1,10 @@
 package growthbook.sdk.java;
 
+import com.google.gson.JsonObject;
 import growthbook.sdk.java.callback.ExperimentRunCallback;
 import growthbook.sdk.java.model.Experiment;
 import growthbook.sdk.java.model.ExperimentResult;
+import growthbook.sdk.java.model.Feature;
 import growthbook.sdk.java.model.FeatureKey;
 import growthbook.sdk.java.model.FeatureResult;
 import growthbook.sdk.java.stickyBucketing.StickyBucketService;
@@ -238,5 +240,44 @@ interface IGrowthBook {
 
     // endregion Conditions
 
-    // TODO: getAllResults (not required)
+    /**
+     * The feature definitions the SDK has currently loaded, keyed by feature key.
+     *
+     * @return an unmodifiable snapshot of the loaded features; empty (not {@code null}) before load
+     */
+    Map<String, Feature<?>> getFeatures();
+
+    /**
+     * The auto-experiment definitions carried by the current payload's {@code experiments} array. Only
+     * populated when features are loaded through a {@code GBFeaturesRepository}; a repository-less
+     * instance has no {@code experiments} source and always returns empty.
+     *
+     * @return an unmodifiable snapshot of the loaded experiments; empty (not {@code null}) before load
+     */
+    List<Experiment<?>> getExperiments();
+
+    /**
+     * The raw feature payload the SDK loaded, with {@code encrypted*} fields intact when encrypted.
+     *
+     * @return the raw payload as a JSON object; empty (not {@code null}) before load
+     */
+    JsonObject getPayload();
+
+    /**
+     * The current payload with encrypted fields decrypted; equals {@link #getPayload()} when the
+     * payload is not encrypted.
+     *
+     * @return the decrypted payload as a JSON object; empty (not {@code null}) before load
+     */
+    JsonObject getDecryptedPayload();
+
+    /**
+     * The last {@link ExperimentResult} observed for every experiment run through {@link #run(Experiment)}
+     * so far, keyed by experiment key. Experiments triggered indirectly through feature evaluation are
+     * not tracked here.
+     *
+     * @return an unmodifiable snapshot of the most recent experiment results; empty (not {@code null})
+     * before any experiment has been run
+     */
+    Map<String, ExperimentResult<?>> getAllResults();
 }
