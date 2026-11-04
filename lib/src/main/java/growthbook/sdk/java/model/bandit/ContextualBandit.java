@@ -34,7 +34,7 @@ public class ContextualBandit {
      * The weights actually applied to the experiment for this user.
      */
     @Nullable
-    ArrayList<Float> variationWeights;
+    ArrayList<Double> variationWeights;
 
     /**
      * The bandit version of the definition that produced these weights.

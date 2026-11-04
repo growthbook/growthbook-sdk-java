@@ -176,7 +176,7 @@ class ContextualBanditEvaluationTest {
             assertTrue(result.getExperimentResult().getInExperiment());
             assertEquals(Integer.valueOf(0), result.getExperimentResult().getLeafId());
             assertEquals(Integer.valueOf(3), result.getExperimentResult().getBanditVersion());
-            assertEquals(Arrays.asList(1.0f, 0.0f), result.getExperimentResult().getVariationWeights());
+            assertEquals(Arrays.asList(1.0, 0.0), result.getExperimentResult().getVariationWeights());
         });
     }
 
@@ -188,7 +188,7 @@ class ContextualBanditEvaluationTest {
 
             assertEquals("treatment", result.getValue());
             assertEquals(Integer.valueOf(1), result.getExperimentResult().getLeafId());
-            assertEquals(Arrays.asList(0.0f, 1.0f), result.getExperimentResult().getVariationWeights());
+            assertEquals(Arrays.asList(0.0, 1.0), result.getExperimentResult().getVariationWeights());
         });
     }
 
@@ -201,7 +201,7 @@ class ContextualBanditEvaluationTest {
             assertTrue(result.getExperimentResult().getInExperiment());
             assertEquals(Integer.valueOf(-1), result.getExperimentResult().getLeafId());
             assertEquals(Integer.valueOf(3), result.getExperimentResult().getBanditVersion());
-            assertEquals(Arrays.asList(0.5f, 0.5f), result.getExperimentResult().getVariationWeights());
+            assertEquals(Arrays.asList(0.5, 0.5), result.getExperimentResult().getVariationWeights());
         });
     }
 
@@ -227,7 +227,7 @@ class ContextualBanditEvaluationTest {
             assertTrue(result.getExperimentResult().getInExperiment());
             assertEquals(Integer.valueOf(-1), result.getExperimentResult().getLeafId());
             assertEquals(Integer.valueOf(7), result.getExperimentResult().getBanditVersion());
-            assertEquals(Arrays.asList(0.5f, 0.5f), result.getExperimentResult().getVariationWeights());
+            assertEquals(Arrays.asList(0.5, 0.5), result.getExperimentResult().getVariationWeights());
         });
     }
 
@@ -239,7 +239,7 @@ class ContextualBanditEvaluationTest {
 
             assertEquals("treatment", result.getValue());
             assertEquals(Integer.valueOf(9), result.getExperimentResult().getLeafId());
-            assertEquals(Arrays.asList(0.0f, 1.0f), result.getExperimentResult().getVariationWeights());
+            assertEquals(Arrays.asList(0.0, 1.0), result.getExperimentResult().getVariationWeights());
         });
     }
 
@@ -269,7 +269,7 @@ class ContextualBanditEvaluationTest {
             assertTrue(result.getExperimentResult().getInExperiment());
             assertEquals(Integer.valueOf(-1), result.getExperimentResult().getLeafId());
             assertEquals(Integer.valueOf(5), result.getExperimentResult().getBanditVersion());
-            assertEquals(Arrays.asList(0.5f, 0.5f), result.getExperimentResult().getVariationWeights());
+            assertEquals(Arrays.asList(0.5, 0.5), result.getExperimentResult().getVariationWeights());
         });
     }
 
@@ -296,7 +296,7 @@ class ContextualBanditEvaluationTest {
             assertTrue(result.getExperimentResult().getInExperiment());
             assertEquals(Integer.valueOf(0), result.getExperimentResult().getLeafId());
             assertEquals(Integer.valueOf(4), result.getExperimentResult().getBanditVersion());
-            assertEquals(Arrays.asList(1.0f, 0.0f), result.getExperimentResult().getVariationWeights());
+            assertEquals(Arrays.asList(1.0, 0.0), result.getExperimentResult().getVariationWeights());
         });
     }
 
@@ -319,7 +319,7 @@ class ContextualBanditEvaluationTest {
 
             assertTrue(result.getExperimentResult().getInExperiment());
             assertEquals(Integer.valueOf(-1), result.getExperimentResult().getLeafId());
-            assertEquals(Arrays.asList(0.5f, 0.5f), result.getExperimentResult().getVariationWeights());
+            assertEquals(Arrays.asList(0.5, 0.5), result.getExperimentResult().getVariationWeights());
         });
     }
 
@@ -331,7 +331,7 @@ class ContextualBanditEvaluationTest {
 
             assertTrue(result.getExperimentResult().getInExperiment());
             assertEquals(Integer.valueOf(-1), result.getExperimentResult().getLeafId());
-            assertEquals(Arrays.asList(0.5f, 0.5f), result.getExperimentResult().getVariationWeights());
+            assertEquals(Arrays.asList(0.5, 0.5), result.getExperimentResult().getVariationWeights());
         });
     }
 
@@ -343,7 +343,7 @@ class ContextualBanditEvaluationTest {
 
             assertEquals("treatment", result.getValue());
             assertEquals(Integer.valueOf(0), result.getExperimentResult().getLeafId());
-            assertEquals(Arrays.asList(0.0f, 1.0f), result.getExperimentResult().getVariationWeights());
+            assertEquals(Arrays.asList(0.0, 1.0), result.getExperimentResult().getVariationWeights());
         });
     }
 
