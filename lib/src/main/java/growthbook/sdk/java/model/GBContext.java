@@ -4,6 +4,7 @@ import com.google.gson.JsonObject;
 import growthbook.sdk.java.util.ExperimentHelper;
 import growthbook.sdk.java.callback.FeatureUsageCallback;
 import growthbook.sdk.java.callback.TrackingCallback;
+import growthbook.sdk.java.multiusermode.usage.EventLogger;
 import growthbook.sdk.java.multiusermode.util.TransformationUtil;
 import growthbook.sdk.java.plugin.GrowthBookPlugin;
 import growthbook.sdk.java.remoteeval.RemoteEvalRequestBuilder;
@@ -17,6 +18,7 @@ import javax.annotation.Nullable;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.Executor;
 
 /**
  * Context object passed into the GrowthBook constructor.
@@ -79,7 +81,10 @@ public class GBContext {
             @Nullable List<String> cacheKeyAttributes,
             @Nullable Integer remoteEvalCacheSize,
             @Nullable Integer remoteEvalCacheTtlSeconds,
-            @Nullable List<GrowthBookPlugin> plugins
+            @Nullable List<GrowthBookPlugin> plugins,
+            @Nullable EventLogger eventLogger,
+            @Nullable Boolean deferTrackingCalls,
+            @Nullable Executor eventLoggerExecutor
     ) {
         this.encryptionKey = encryptionKey;
         this.attributesJson = attributesJson == null ? "{}" : attributesJson;
@@ -110,6 +115,73 @@ public class GBContext {
         this.remoteEvalCacheSize = RemoteEvalRequestBuilder.normalizeCacheSize(remoteEvalCacheSize);
         this.remoteEvalCacheTtlSeconds = remoteEvalCacheTtlSeconds;
         this.plugins = plugins;
+        this.eventLogger = eventLogger;
+        this.deferTrackingCalls = deferTrackingCalls != null && deferTrackingCalls;
+        this.eventLoggerExecutor = eventLoggerExecutor;
+    }
+
+    /**
+     * Backward-compatible constructor preserving the pre-event-logger 23-argument signature. Delegates
+     * to the full constructor with no event logger, immediate (non-deferred) tracking, and no event
+     * logger executor.
+     *
+     * @deprecated prefer {@link GBContext#builder()}; this overload exists only to keep callers compiled
+     * against the earlier signature working.
+     */
+    @Deprecated
+    public GBContext(
+            @Nullable String attributesJson,
+            @Nullable JsonObject attributes,
+            @Nullable String featuresJson,
+            @Nullable Map<String, Feature<?>> features,
+            @Nullable String encryptionKey,
+            @Nullable Boolean enabled,
+            Boolean isQaMode,
+            @Nullable String url,
+            Boolean allowUrlOverrides,
+            @Nullable Map<String, ?> forcedVariationsMap,
+            @Nullable TrackingCallback trackingCallback,
+            @Nullable FeatureUsageCallback featureUsageCallback,
+            @Nullable StickyBucketService stickyBucketService,
+            @Nullable Map<String, StickyAssignmentsDocument> stickyBucketAssignmentDocs,
+            @Nullable List<String> stickyBucketIdentifierAttributes,
+            @Nullable JsonObject savedGroups,
+            @Nullable String apiHost,
+            @Nullable String clientKey,
+            @Nullable Boolean remoteEval,
+            @Nullable List<String> cacheKeyAttributes,
+            @Nullable Integer remoteEvalCacheSize,
+            @Nullable Integer remoteEvalCacheTtlSeconds,
+            @Nullable List<GrowthBookPlugin> plugins
+    ) {
+        this(
+                attributesJson,
+                attributes,
+                featuresJson,
+                features,
+                encryptionKey,
+                enabled,
+                isQaMode,
+                url,
+                allowUrlOverrides,
+                forcedVariationsMap,
+                trackingCallback,
+                featureUsageCallback,
+                stickyBucketService,
+                stickyBucketAssignmentDocs,
+                stickyBucketIdentifierAttributes,
+                savedGroups,
+                apiHost,
+                clientKey,
+                remoteEval,
+                cacheKeyAttributes,
+                remoteEvalCacheSize,
+                remoteEvalCacheTtlSeconds,
+                plugins,
+                null,
+                null,
+                null
+        );
     }
 
     public GBContext(
@@ -147,6 +219,9 @@ public class GBContext {
                 stickyBucketAssignmentDocs,
                 stickyBucketIdentifierAttributes,
                 savedGroups,
+                null,
+                null,
+                null,
                 null,
                 null,
                 null,
@@ -198,6 +273,28 @@ public class GBContext {
      */
     @Nullable
     private FeatureUsageCallback featureUsageCallback;
+
+    /**
+     * Structured event sink invoked during evaluation ({@code "Experiment Viewed"} and
+     * {@code "Feature Evaluated"}) and by {@link growthbook.sdk.java.GrowthBook#logEvent}. Fires in
+     * addition to {@link #trackingCallback} and {@link #featureUsageCallback}.
+     */
+    @Nullable
+    private EventLogger eventLogger;
+
+    /**
+     * When {@code true}, experiment exposures are buffered instead of fired during evaluation; the
+     * caller flushes them with {@link growthbook.sdk.java.GrowthBook#fireDeferredTrackingCalls()}.
+     * Defaults to {@code false} (exposures fire immediately).
+     */
+    private Boolean deferTrackingCalls;
+
+    /**
+     * Optional executor used to dispatch {@link EventLogger} events off the evaluation thread. When
+     * {@code null} (default), events fire synchronously on the calling thread.
+     */
+    @Nullable
+    private Executor eventLoggerExecutor;
 
     /**
      * String format of user attributes that are used to assign variations

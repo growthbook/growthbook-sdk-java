@@ -17,7 +17,7 @@ import java.util.Map;
  * Defines a single Experiment
  */
 @Data
-@Builder
+@Builder(toBuilder = true)
 @AllArgsConstructor
 public class Experiment<ValueType> {
     /**
