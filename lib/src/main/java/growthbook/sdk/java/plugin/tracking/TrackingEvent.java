@@ -50,6 +50,10 @@ final class TrackingEvent {
         putString(properties, "variationId", result != null ? result.getKey() : null);
         putString(properties, "hashAttribute", result != null ? result.getHashAttribute() : null);
         putString(properties, "hashValue", result != null ? result.getHashValue() : null);
+        if (result != null) {
+            putInt(properties, "leafId", result.getLeafId());
+            putInt(properties, "banditVersion", result.getBanditVersion());
+        }
 
         return TrackingEvent.builder()
                 .eventName(EXPERIMENT_VIEWED)
@@ -85,6 +89,12 @@ final class TrackingEvent {
     }
 
     private static void putString(JsonObject target, String key, @Nullable String value) {
+        if (value != null) {
+            target.addProperty(key, value);
+        }
+    }
+
+    private static void putInt(JsonObject target, String key, @Nullable Integer value) {
         if (value != null) {
             target.addProperty(key, value);
         }

@@ -6,8 +6,10 @@ import lombok.Getter;
 public enum FeatureResponseKey {
     ENCRYPTED_FEATURES_KEY("encryptedFeatures"),
     ENCRYPTED_SAVED_GROUPS_KEY("encryptedSavedGroups"),
+    ENCRYPTED_CONTEXTUAL_BANDITS_KEY("encryptedContextualBandits"),
     FEATURE_KEY("features"),
-    SAVED_GROUP_KEY("savedGroups");
+    SAVED_GROUP_KEY("savedGroups"),
+    CONTEXTUAL_BANDITS_KEY("contextualBandits");
 
     private final String key;
 
