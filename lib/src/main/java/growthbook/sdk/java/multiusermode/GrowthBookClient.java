@@ -34,6 +34,7 @@ import growthbook.sdk.java.multiusermode.internal.FeatureRepositoryProvider;
 import growthbook.sdk.java.multiusermode.internal.GlobalContextManager;
 import growthbook.sdk.java.multiusermode.internal.ManagedListenerExecutor;
 import growthbook.sdk.java.multiusermode.internal.RemoteEvalCoordinator;
+import growthbook.sdk.java.multiusermode.internal.StickyAttributeValues;
 import growthbook.sdk.java.plugin.PluginRegistry;
 import growthbook.sdk.java.repository.FeatureSnapshot;
 import growthbook.sdk.java.repository.GBFeaturesRepository;
@@ -856,14 +857,7 @@ public class GrowthBookClient {
         if (extraIdentifiers != null) {
             identifiers.addAll(extraIdentifiers);
         }
-        Map<String, String> attributes = new HashMap<>(Math.max(4, identifiers.size() * 2));
-        for (String name : identifiers) {
-            JsonElement value = mergedAttributes.get(name);
-            if (value != null && value.isJsonPrimitive()) {
-                attributes.put(name, value.getAsString());
-            }
-        }
-        return attributes;
+        return StickyAttributeValues.of(mergedAttributes, identifiers);
     }
 
     private Set<String> resolveStickyIdentifierAttributes(GlobalContext snapshot) {
