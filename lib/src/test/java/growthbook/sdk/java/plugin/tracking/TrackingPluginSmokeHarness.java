@@ -64,7 +64,7 @@ public final class TrackingPluginSmokeHarness {
         growthBook.run(Experiment.<String>builder()
                 .key("smoke-experiment")
                 .variations(new ArrayList<>(Arrays.asList("A", "B")))
-                .coverage(1f)
+                .coverage(1.0)
                 .build());
         growthBook.destroy();
 

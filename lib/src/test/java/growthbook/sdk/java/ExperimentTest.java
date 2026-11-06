@@ -23,9 +23,9 @@ class ExperimentTest {
 
     @Test
     void canBeConstructed() {
-        ArrayList<Float> weights = new ArrayList<>();
-        weights.add(0.3f);
-        weights.add(0.7f);
+        ArrayList<Double> weights = new ArrayList<>();
+        weights.add(0.3);
+        weights.add(0.7);
 
         ArrayList<Float> variations = new ArrayList<>();
 
@@ -36,7 +36,7 @@ class ExperimentTest {
                 variations,
                 weights,
                 true,
-                0.5f,
+                0.5,
                 new JsonObject(),
                 null,
                 namespace,
@@ -54,8 +54,8 @@ class ExperimentTest {
                 null,
                 null
         );
-        assertEquals(0.5f, experiment.getCoverage());
-        assertEquals(0.5f, experiment.getCoverage());
+        assertEquals(0.5, experiment.getCoverage());
+        assertEquals(0.5, experiment.getCoverage());
         assertEquals(1, experiment.getForce());
         assertEquals(1, experiment.getForce());
         assertEquals("my_experiment", experiment.getKey());
@@ -63,21 +63,21 @@ class ExperimentTest {
         assertEquals("_id", experiment.getHashAttribute());
         assertEquals("_id", experiment.getHashAttribute());
         assert experiment.getWeights() != null;
-        assertEquals(0.3f, experiment.getWeights().get(0));
-        assertEquals(0.7f, experiment.getWeights().get(1));
+        assertEquals(0.3, experiment.getWeights().get(0));
+        assertEquals(0.7, experiment.getWeights().get(1));
         assertEquals(Boolean.TRUE, experiment.getIsActive());
         assertEquals(Boolean.TRUE, experiment.getIsActive());
     }
 
     @Test
     void canBeBuilt() {
-        ArrayList<Float> weights = new ArrayList<>();
-        weights.add(0.3f);
-        weights.add(0.7f);
+        ArrayList<Double> weights = new ArrayList<>();
+        weights.add(0.3);
+        weights.add(0.7);
 
         Experiment<Integer> experiment = Experiment
                 .<Integer>builder()
-                .coverage(0.5f)
+                .coverage(0.5)
                 .force(1)
                 .weights(weights)
                 .isActive(true)
@@ -85,12 +85,12 @@ class ExperimentTest {
                 .hashAttribute("_id")
                 .build();
 
-        assertEquals(0.5f, experiment.getCoverage());
-        assertEquals(0.5f, experiment.getCoverage());
+        assertEquals(0.5, experiment.getCoverage());
+        assertEquals(0.5, experiment.getCoverage());
         assertEquals(1, experiment.getForce());
         assertEquals(1, experiment.getForce());
-        assertEquals(0.3f, experiment.getWeights() != null ? experiment.getWeights().get(0) : null);
-        assertEquals(0.7f, experiment.getWeights() != null ? experiment.getWeights().get(1) : null);
+        assertEquals(0.3, experiment.getWeights() != null ? experiment.getWeights().get(0) : null);
+        assertEquals(0.7, experiment.getWeights() != null ? experiment.getWeights().get(1) : null);
         assertEquals("my_experiment", experiment.getKey());
         assertEquals("my_experiment", experiment.getKey());
         assertEquals("_id", experiment.getHashAttribute());
@@ -115,9 +115,9 @@ class ExperimentTest {
 
     @Test
     void test_canBeSerialized() {
-        ArrayList<Float> weights = new ArrayList<>();
-        weights.add(0.3f);
-        weights.add(0.7f);
+        ArrayList<Double> weights = new ArrayList<>();
+        weights.add(0.3);
+        weights.add(0.7);
 
         ArrayList<Integer> variations = new ArrayList<>();
         variations.add(100);
@@ -126,8 +126,8 @@ class ExperimentTest {
         Namespace namespace = Namespace
                 .builder()
                 .id("pricing")
-                .rangeStart(0.0f)
-                .rangeEnd(1.0f)
+                .rangeStart(0.0)
+                .rangeEnd(1.0)
                 .build();
 
         Experiment<Integer> subject = Experiment
@@ -136,7 +136,7 @@ class ExperimentTest {
                 .variations(variations)
                 .weights(weights)
                 .isActive(true)
-                .coverage(0.5f)
+                .coverage(0.5)
                 .conditionJson(new JsonObject())
                 .namespace(namespace)
                 .force(1)
