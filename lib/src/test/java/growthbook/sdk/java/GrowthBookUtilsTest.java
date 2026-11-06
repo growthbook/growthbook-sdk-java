@@ -2,16 +2,22 @@ package growthbook.sdk.java;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.google.gson.JsonArray;
+import com.google.gson.JsonObject;
 import com.google.gson.reflect.TypeToken;
 import growthbook.sdk.java.model.BucketRange;
+import growthbook.sdk.java.model.HashAttributeAndHashValue;
 import growthbook.sdk.java.model.Namespace;
 import growthbook.sdk.java.testhelpers.TestCasesJsonHelper;
 import growthbook.sdk.java.util.GrowthBookJsonUtils;
 import growthbook.sdk.java.util.GrowthBookUtils;
+import growthbook.sdk.java.util.MathUtils;
 import org.junit.jupiter.api.Test;
 import javax.annotation.Nullable;
+import java.io.FileReader;
+import java.io.IOException;
 import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -42,10 +48,10 @@ class GrowthBookUtilsTest {
 
             Integer hashVersion = kv.get(2).getAsInt();
 
-            Float expected = null;
+            Double expected = null;
             if (!kv.get(3).isJsonNull()) {
                 // In the case of unsupported hash versions, this method returns null
-                expected = kv.get(3).getAsFloat();
+                expected = kv.get(3).getAsDouble();
             }
 
             assertEquals(expected, GrowthBookUtils.hash(input, hashVersion, seed));
@@ -83,8 +89,8 @@ class GrowthBookUtilsTest {
 
             String testDescription = testCase.get(0).getAsString();
 
-            // Float input (1st arg)
-            Float input = testCase.get(1).getAsFloat();
+            // Double input (1st arg)
+            Double input = testCase.get(1).getAsDouble();
 
             // Bucket Range input (2nd arg)
             JsonArray bucketRangeTuples = testCase.get(2).getAsJsonArray();
@@ -113,12 +119,15 @@ class GrowthBookUtilsTest {
 
             // Expected
             JsonArray expectedArray = testCase.get(1).getAsJsonArray();
-            Type floatListType = new TypeToken<List<Float>>() {}.getType();
-            List<Float> expected = GrowthBookJsonUtils.getInstance().gson.fromJson(expectedArray, floatListType);
+            Type doubleListType = new TypeToken<List<Double>>() {}.getType();
+            List<Double> expected = GrowthBookJsonUtils.getInstance().gson.fromJson(expectedArray, doubleListType);
 
-            ArrayList<Float> result = GrowthBookUtils.getEqualWeights(numberOfVariations);
+            ArrayList<Double> result = GrowthBookUtils.getEqualWeights(numberOfVariations);
 
-            assertEquals(expected, result);
+            assertEquals(expected.size(), result.size());
+            for (int i = 0; i < expected.size(); i++) {
+                assertEquals(roundLikeSpec(expected.get(i)), roundLikeSpec(result.get(i)));
+            }
         });
     }
 
@@ -155,8 +164,7 @@ class GrowthBookUtilsTest {
     void test_getBucketRanges() {
         JsonArray testCases = helper.getBucketRangeTestCases();
 
-        Type floatList = new TypeToken<List<Float>>() {}.getType();
-        Type bucketRangeList = new TypeToken<List<BucketRange>>() {}.getType();
+        Type doubleList = new TypeToken<List<Double>>() {}.getType();
 
         testCases.forEach(jsonElement -> {
             JsonArray testCase = (JsonArray) jsonElement;
@@ -166,26 +174,61 @@ class GrowthBookUtilsTest {
             // 1st - variations
             int variations = arguments.get(0).getAsInt();
             // 2nd - coverage
-            float coverage = arguments.get(1).getAsFloat();
+            double coverage = arguments.get(1).getAsDouble();
             // 3rd - weights or null
-            @Nullable ArrayList<Float> weights = null;
+            @Nullable ArrayList<Double> weights = null;
             if (arguments.get(2).isJsonArray()) {
-                weights = GrowthBookJsonUtils.getInstance().gson.fromJson(arguments.get(2), floatList);
+                weights = GrowthBookJsonUtils.getInstance().gson.fromJson(arguments.get(2), doubleList);
             }
             // expected return value
-            List<BucketRange> expected = GrowthBookJsonUtils.getInstance().gson.fromJson(testCase.get(2), bucketRangeList);
+            JsonArray expected = testCase.get(2).getAsJsonArray();
 
             // Results
             List<BucketRange> results = GrowthBookUtils.getBucketRanges(variations, coverage, weights);
 
+            assertEquals(expected.size(), results.size(), testDescription);
             for (int i = 0; i < expected.size(); i++) {
-                BucketRange expectedBucketRange = expected.get(i);
+                JsonArray expectedBucketRange = expected.get(i).getAsJsonArray();
                 BucketRange resultingBucketRange = results.get(i);
                 String error = String.format("%s : expected bucket %s does not equal %s", testDescription, expectedBucketRange, resultingBucketRange);
 
-                assertEquals(expectedBucketRange, resultingBucketRange, error);
+                assertEquals(roundLikeSpec(expectedBucketRange.get(0).getAsDouble()), roundLikeSpec(resultingBucketRange.getRangeStart()), error);
+                assertEquals(roundLikeSpec(expectedBucketRange.get(1).getAsDouble()), roundLikeSpec(resultingBucketRange.getRangeEnd()), error);
             }
         });
+    }
+
+    @Test
+    void test_getBucketRanges_matchesJsExactly() throws IOException {
+        JsonArray vectors;
+        try (FileReader reader = new FileReader("src/test/resources/bucket-ranges-js-reference.json")) {
+            vectors = GrowthBookJsonUtils.getInstance().gson.fromJson(reader, JsonArray.class);
+        }
+        Type doubleList = new TypeToken<ArrayList<Double>>() {}.getType();
+
+        vectors.forEach(jsonElement -> {
+            JsonObject vector = jsonElement.getAsJsonObject();
+            ArrayList<Double> weights = GrowthBookJsonUtils.getInstance().gson.fromJson(vector.get("weights"), doubleList);
+            JsonArray expected = vector.getAsJsonArray("ranges");
+
+            List<BucketRange> results = GrowthBookUtils.getBucketRanges(
+                    vector.get("numVariations").getAsInt(),
+                    vector.get("coverage").getAsDouble(),
+                    weights
+            );
+
+            assertEquals(expected.size(), results.size());
+            for (int i = 0; i < expected.size(); i++) {
+                JsonArray range = expected.get(i).getAsJsonArray();
+                assertEquals(range.get(0).getAsDouble(), results.get(i).getRangeStart(), vector.toString());
+                assertEquals(range.get(1).getAsDouble(), results.get(i).getRangeEnd(), vector.toString());
+            }
+        });
+    }
+
+    // The JS SDK compares getBucketRange and getEqualWeights cases after Math.floor(n * 1e8) / 1e8
+    private static double roundLikeSpec(double n) {
+        return Math.floor(n * 1e8) / 1e8;
     }
 
     @Test
@@ -226,5 +269,52 @@ class GrowthBookUtilsTest {
 
         assertEquals(Integer.valueOf(2), merged.get("key"));
         assertEquals(Integer.valueOf(3), merged.get("other"));
+    }
+
+    @Test
+    void fnv1a_hashesUtf16CodeUnitsLikeJs() {
+        // Expected values are the JS SDK's FNV-1a over charCodeAt
+        assertEquals(1812687940L, MathUtils.fnv1a_32("\u00e9"));
+        // An astral character is two surrogate code units
+        assertEquals(3409036472L, MathUtils.fnv1a_32("\uD83D\uDE00"));
+        assertEquals(440920331L, MathUtils.fnv1a_32("abc"));
+        assertEquals(Double.valueOf(0.2851), GrowthBookUtils.hash("ren\u00e9e", 2, "seed"));
+        assertEquals(Double.valueOf(0.429), GrowthBookUtils.hash("\uD83D\uDE00", 1, "seed"));
+    }
+
+    @Test
+    void getHashAttribute_usesOnlyNonEmptyStringsAndNonZeroNumbers() {
+        String[] missing = {"true", "false", "0", "0.0", "\"\"", "null", "[]", "[1]", "{}", "{\"a\":1}"};
+        for (String value : missing) {
+            JsonObject attributes = GrowthBookJsonUtils.getInstance().gson
+                    .fromJson("{\"id\": " + value + ", \"deviceId\": \"d1\"}", JsonObject.class);
+
+            HashAttributeAndHashValue withFallback = GrowthBookUtils.getHashAttribute("id", "deviceId", attributes);
+            assertEquals("deviceId", withFallback.getHashAttribute(), value);
+            assertEquals("d1", withFallback.getHashValue(), value);
+
+            HashAttributeAndHashValue withoutFallback = GrowthBookUtils.getHashAttribute("id", null, attributes);
+            assertEquals("", withoutFallback.getHashValue(), value);
+        }
+    }
+
+    @Test
+    void getHashAttribute_formatsNumbersLikeJsString() {
+        JsonObject attributes = GrowthBookJsonUtils.getInstance().gson
+                .fromJson("{\"a\": 1.0, \"b\": 1.5, \"c\": -2}", JsonObject.class);
+
+        assertEquals("1", GrowthBookUtils.getHashAttribute("a", null, attributes).getHashValue());
+        assertEquals("1.5", GrowthBookUtils.getHashAttribute("b", null, attributes).getHashValue());
+        assertEquals("-2", GrowthBookUtils.getHashAttribute("c", null, attributes).getHashValue());
+    }
+
+    @Test
+    void isIncludedInRollout_excludesAUserWhoseHashAttributeIsNotHashable() {
+        JsonObject attributes = GrowthBookJsonUtils.getInstance().gson
+                .fromJson("{\"id\": {}, \"deviceId\": true}", JsonObject.class);
+
+        assertEquals(false, GrowthBookUtils.isIncludedInRollout(attributes, "s", "id", "deviceId", null, 1.0, 2));
+        attributes.addProperty("deviceId", "d1");
+        assertTrue(GrowthBookUtils.isIncludedInRollout(attributes, "s", "id", "deviceId", null, 1.0, 2));
     }
 }

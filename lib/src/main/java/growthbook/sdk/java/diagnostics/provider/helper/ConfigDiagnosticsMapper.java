@@ -34,7 +34,7 @@ public final class ConfigDiagnosticsMapper {
                 .retryMaxAttempts(retryMaxAttempts(options, repository))
                 .enabled(Boolean.TRUE.equals(options.getEnabled()))
                 .qaMode(Boolean.TRUE.equals(options.getIsQaMode()))
-                .stickyBucketingEnabled(options.getStickyBucketService() != null)
+                .stickyBucketingEnabled(options.isStickyBucketingConfigured())
                 .build();
     }
 
