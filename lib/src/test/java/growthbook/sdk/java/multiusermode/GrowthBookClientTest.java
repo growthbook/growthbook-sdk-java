@@ -981,6 +981,7 @@ class GrowthBookClientTest {
                     .refreshStrategy(FeatureRefreshStrategy.STALE_WHILE_REVALIDATE)
                     .featureRefreshListenerExecutor(Runnable::run)
                     .stickyBucketService(stickyBucketService)
+                    .stickyBucketIdentifierAttributes(Arrays.asList("country", "id"))
                     .globalAttributes(globalAttributes)
                     .build();
 
@@ -1018,6 +1019,7 @@ class GrowthBookClientTest {
                     .refreshStrategy(FeatureRefreshStrategy.STALE_WHILE_REVALIDATE)
                     .featureRefreshListenerExecutor(Runnable::run)
                     .stickyBucketService(stickyBucketService)
+                    .stickyBucketIdentifierAttributes(Arrays.asList("id", "deviceId", "loggedIn", "company"))
                     .build();
 
             GrowthBookClient client = new GrowthBookClient(options);
