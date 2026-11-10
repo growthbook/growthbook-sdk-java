@@ -19,6 +19,7 @@ import growthbook.sdk.java.model.FeatureKey;
 import growthbook.sdk.java.model.FeatureResult;
 import growthbook.sdk.java.model.GBContext;
 import growthbook.sdk.java.model.RequestBodyForRemoteEval;
+import growthbook.sdk.java.model.TrackData;
 import growthbook.sdk.java.remoteeval.RemoteEvalCache;
 import growthbook.sdk.java.remoteeval.RemoteEvalCacheKey;
 import growthbook.sdk.java.remoteeval.RemoteEvalOptionsValidator;
@@ -34,6 +35,10 @@ import growthbook.sdk.java.multiusermode.configurations.EvaluationContext;
 import growthbook.sdk.java.multiusermode.configurations.GlobalContext;
 import growthbook.sdk.java.multiusermode.configurations.Options;
 import growthbook.sdk.java.multiusermode.configurations.UserContext;
+import growthbook.sdk.java.multiusermode.DeferredTrackingBuffer;
+import growthbook.sdk.java.multiusermode.DeferredTrackingCall;
+import growthbook.sdk.java.multiusermode.usage.EventLogger;
+import growthbook.sdk.java.multiusermode.usage.EventLoggerDispatch;
 import growthbook.sdk.java.multiusermode.usage.FeatureUsageCallbackAdapter;
 import growthbook.sdk.java.multiusermode.usage.TrackingCallbackAdapter;
 import growthbook.sdk.java.plugin.PluginRegistry;
@@ -74,6 +79,8 @@ public class GrowthBook implements IGrowthBook {
     private RemoteEvalCache remoteEvalCache;
 
     @Getter private Map<String, Object> forcedFeatureValues;
+
+    private final DeferredTrackingBuffer deferredTrackingBuffer = new DeferredTrackingBuffer();
     /**
      * Initialize the GrowthBook SDK with a provided {@link GBContext}
      *
@@ -177,6 +184,8 @@ public class GrowthBook implements IGrowthBook {
                 .trackingCallBackWithUser(new TrackingCallbackAdapter(this.context.getTrackingCallback()))
                 .featureUsageCallbackWithUser(new FeatureUsageCallbackAdapter(this.context.getFeatureUsageCallback()))
                 .globalForcedFeatureValues(this.forcedFeatureValues)
+                .eventLogger(this.context.getEventLogger())
+                .eventLoggerExecutor(this.context.getEventLoggerExecutor())
                 .build();
 
         GlobalContext globalContext = GlobalContext.builder()
@@ -198,6 +207,9 @@ public class GrowthBook implements IGrowthBook {
         EvaluationContext evalContext = new EvaluationContext(globalContext, userContext,
                 new EvaluationContext.StackContext(), options);
         evalContext.setPluginRegistry(this.pluginRegistry);
+        if (Boolean.TRUE.equals(this.context.getDeferTrackingCalls())) {
+            evalContext.setDeferredTracking(this.deferredTrackingBuffer);
+        }
         return evalContext;
     }
 
@@ -729,6 +741,87 @@ public class GrowthBook implements IGrowthBook {
     @Override
     public void subscribe(ExperimentRunCallback callback) {
         this.callbacks.add(callback);
+    }
+
+    /**
+     * Sets or replaces the structured event sink used by subsequent evaluations.
+     *
+     * <p>Updates the live evaluation context in place; it does <em>not</em> rebuild the context or,
+     * in remote-eval mode, trigger a remote fetch (the sink is not an evaluation input).
+     *
+     * @param eventLogger the event sink, or {@code null} to disable
+     */
+    public void setEventLogger(@Nullable EventLogger eventLogger) {
+        this.context.setEventLogger(eventLogger);
+        if (this.evaluationContext != null && this.evaluationContext.getOptions() != null) {
+            this.evaluationContext.getOptions().setEventLogger(eventLogger);
+        }
+    }
+
+    /**
+     * Emits an application-defined event to the configured event logger. Fires immediately and is a
+     * no-op when no event logger is configured.
+     *
+     * @param eventName  the event name
+     * @param properties event properties; {@code null} is treated as empty
+     */
+    public void logEvent(String eventName, Map<String, Object> properties) {
+        EventLoggerDispatch.logEvent(
+                this.evaluationContext.getOptions(), eventName, properties, this.evaluationContext.getUser());
+    }
+
+    /**
+     * Returns the exposures buffered while {@link GBContext#getDeferTrackingCalls()} is enabled, in
+     * evaluation order. Empty when deferral is disabled or nothing has been evaluated.
+     *
+     * @return a snapshot of the buffered exposures
+     */
+    public List<TrackData<?>> getDeferredTrackingCalls() {
+        List<TrackData<?>> out = new ArrayList<>();
+        for (DeferredTrackingCall<?> call : this.deferredTrackingBuffer.getCalls()) {
+            out.add(toTrackData(call));
+        }
+        return out;
+    }
+
+    /**
+     * Replaces the buffered exposures, e.g. exposures serialized from another process. Each is
+     * re-associated with the current user context.
+     *
+     * @param calls the exposures to buffer
+     */
+    public void setDeferredTrackingCalls(List<TrackData<?>> calls) {
+        List<DeferredTrackingCall<?>> deferred = new ArrayList<>();
+        if (calls != null) {
+            UserContext user = this.evaluationContext.getUser();
+            for (TrackData<?> data : calls) {
+                if (data == null || data.getExperiment() == null || data.getResult() == null) {
+                    continue;
+                }
+                deferred.add(toDeferredCall(data, user));
+            }
+        }
+        this.deferredTrackingBuffer.setCalls(deferred);
+    }
+
+    /**
+     * Flushes all buffered exposures through the tracking callback and event logger, then clears the
+     * buffer. Call once at the end of a request when {@link GBContext#getDeferTrackingCalls()} is
+     * enabled.
+     *
+     * <p>Only exposure tracking is deferred. {@link ExperimentRunCallback} subscriptions registered
+     * via {@link #subscribe(ExperimentRunCallback)} still fire immediately during {@link #run(Experiment)}.
+     */
+    public void fireDeferredTrackingCalls() {
+        this.deferredTrackingBuffer.flush(this.evaluationContext.getOptions(), this.pluginRegistry);
+    }
+
+    private static <V> TrackData<V> toTrackData(DeferredTrackingCall<V> call) {
+        return new TrackData<>(call.getExperiment(), call.getResult());
+    }
+
+    private static <V> DeferredTrackingCall<V> toDeferredCall(TrackData<V> data, UserContext user) {
+        return new DeferredTrackingCall<>(data.getExperiment(), data.getResult(), user);
     }
 
     /**
