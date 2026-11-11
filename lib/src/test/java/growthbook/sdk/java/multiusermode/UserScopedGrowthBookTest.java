@@ -15,6 +15,8 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -36,6 +38,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class UserScopedGrowthBookTest {
 
     private static final String TEST_CLIENT_KEY = "sdk-test";
+    private static final String CLIENT_URL = "https://client.example.test/page";
+    private static final String USER_URL = "https://user.example.test/page";
     private static final String FEATURES =
             "{\"features\":{"
                     + "\"flag-on\":{\"defaultValue\":true},"
@@ -343,6 +347,128 @@ class UserScopedGrowthBookTest {
         }
     }
 
+    @Test
+    @DisplayName("Verify: a per-user URL feature override takes precedence over the client-level URL")
+    void perUserUrlFeatureOverrideTakesPrecedenceOverClientUrl() throws IOException {
+        // Given
+        GrowthBookClient client = initializedClientWithUrl(CLIENT_URL + "?gb~count=1");
+        try {
+            UserScopedGrowthBook scoped = client.createScopedInstance(
+                    UserContext.builder().attributesJson("{\"id\":\"1\"}").build());
+            scoped.setURL(USER_URL + "?gb~count=2");
+
+            // When
+            Integer value = scoped.getFeatureValue("count", 0, Integer.class);
+
+            // Then
+            assertEquals(Integer.valueOf(2), value);
+        } finally {
+            client.shutdown();
+        }
+    }
+
+    @Test
+    @DisplayName("Verify: a feature URL override falls back to the client-level URL when no per-user URL is set")
+    void featureUrlOverrideFallsBackToClientUrl() throws IOException {
+        // Given
+        GrowthBookClient client = initializedClientWithUrl(CLIENT_URL + "?gb~count=1");
+        try {
+            UserScopedGrowthBook scoped = client.createScopedInstance(
+                    UserContext.builder().attributesJson("{\"id\":\"1\"}").build());
+
+            // When
+            Integer value = scoped.getFeatureValue("count", 0, Integer.class);
+
+            // Then
+            assertEquals(Integer.valueOf(1), value);
+        } finally {
+            client.shutdown();
+        }
+    }
+
+    @ParameterizedTest(name = "per-user url = \"{0}\"")
+    @ValueSource(strings = {"", "not a url", "://missing-scheme?gb~count=2"})
+    @DisplayName("Verify: an empty or malformed per-user URL applies no feature override and does not fall back to the client URL")
+    void emptyOrMalformedPerUserUrlAppliesNoFeatureOverride(String userUrl) throws IOException {
+        // Given
+        GrowthBookClient client = initializedClientWithUrl(CLIENT_URL + "?gb~count=1");
+        try {
+            UserScopedGrowthBook scoped = client.createScopedInstance(
+                    UserContext.builder().attributesJson("{\"id\":\"1\"}").build());
+            scoped.setURL(userUrl);
+
+            // When
+            Integer value = scoped.getFeatureValue("count", 0, Integer.class);
+
+            // Then
+            assertEquals(Integer.valueOf(7), value);
+        } finally {
+            client.shutdown();
+        }
+    }
+
+    @Test
+    @DisplayName("Verify: a per-user URL query-string variation takes precedence over the client-level URL")
+    void perUserUrlVariationTakesPrecedenceOverClientUrl() throws IOException {
+        // Given
+        GrowthBookClient client = initializedClientWithUrl(CLIENT_URL + "?checkout-exp=0");
+        try {
+            UserScopedGrowthBook scoped = client.createScopedInstance(
+                    UserContext.builder().attributesJson("{\"id\":\"1\"}").build());
+            scoped.setURL(USER_URL + "?checkout-exp=1");
+
+            // When
+            ExperimentResult<String> result = scoped.run(inlineExperiment());
+
+            // Then
+            assertEquals(Integer.valueOf(1), result.getVariationId());
+            assertFalse(result.getHashUsed());
+        } finally {
+            client.shutdown();
+        }
+    }
+
+    @Test
+    @DisplayName("Verify: a query-string variation falls back to the client-level URL when no per-user URL is set")
+    void urlVariationFallsBackToClientUrl() throws IOException {
+        // Given
+        GrowthBookClient client = initializedClientWithUrl(CLIENT_URL + "?checkout-exp=1");
+        try {
+            UserScopedGrowthBook scoped = client.createScopedInstance(
+                    UserContext.builder().attributesJson("{\"id\":\"1\"}").build());
+
+            // When
+            ExperimentResult<String> result = scoped.run(inlineExperiment());
+
+            // Then
+            assertEquals(Integer.valueOf(1), result.getVariationId());
+            assertFalse(result.getHashUsed());
+        } finally {
+            client.shutdown();
+        }
+    }
+
+    @ParameterizedTest(name = "per-user url = \"{0}\"")
+    @ValueSource(strings = {"", "not a url", "://missing-scheme?checkout-exp=1"})
+    @DisplayName("Verify: an empty or malformed per-user URL forces no variation and does not fall back to the client URL")
+    void emptyOrMalformedPerUserUrlForcesNoVariation(String userUrl) throws IOException {
+        // Given
+        GrowthBookClient client = initializedClientWithUrl(CLIENT_URL + "?checkout-exp=1");
+        try {
+            UserScopedGrowthBook scoped = client.createScopedInstance(
+                    UserContext.builder().attributesJson("{\"id\":\"1\"}").build());
+            scoped.setURL(userUrl);
+
+            // When
+            ExperimentResult<String> result = scoped.run(inlineExperiment());
+
+            // Then
+            assertTrue(result.getHashUsed());
+        } finally {
+            client.shutdown();
+        }
+    }
+
     private static Experiment<String> inlineExperiment() {
         return Experiment.<String>builder()
                 .key("checkout-exp")
@@ -355,11 +481,18 @@ class UserScopedGrowthBookTest {
     }
 
     private GrowthBookClient initializedClient(TrackingCallbackWithUser trackingCallback) {
-        Options options = Options.builder()
+        return initializedClientFrom(Options.builder().trackingCallBackWithUser(trackingCallback));
+    }
+
+    private GrowthBookClient initializedClientWithUrl(String clientUrl) {
+        return initializedClientFrom(Options.builder().allowUrlOverrides(true).url(clientUrl));
+    }
+
+    private GrowthBookClient initializedClientFrom(Options.OptionsBuilder builder) {
+        Options options = builder
                 .apiHost("http://localhost:" + wireMock.port())
                 .clientKey(TEST_CLIENT_KEY)
                 .isCacheDisabled(true)
-                .trackingCallBackWithUser(trackingCallback)
                 .featureRefreshListenerExecutor(Runnable::run)
                 .build();
         GrowthBookClient client = new GrowthBookClient(options);
