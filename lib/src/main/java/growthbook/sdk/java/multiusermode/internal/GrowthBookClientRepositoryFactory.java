@@ -40,6 +40,7 @@ final class GrowthBookClientRepositoryFactory {
                 .requestBodyForRemoteEval(configurePayloadForRemoteEval(options))
                 .backgroundFetchInterval(options.getBackgroundFetchInterval())
                 .retryPolicy(options.getRetryPolicy())
+                .initialPayload(options.getInitialPayload())
                 .build();
     }
 
