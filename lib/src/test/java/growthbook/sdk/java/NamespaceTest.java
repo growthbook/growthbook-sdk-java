@@ -13,8 +13,8 @@ class NamespaceTest {
         Namespace subject = Namespace
                 .builder()
                 .id("pricing")
-                .rangeStart(0.0f)
-                .rangeEnd(0.6f)
+                .rangeStart(0.0)
+                .rangeEnd(0.6)
                 .build();
 
         GsonBuilder gsonBuilder = new GsonBuilder();
@@ -35,7 +35,7 @@ class NamespaceTest {
         Namespace subject = customGson.fromJson("[\"pricing\",0.0,0.6]", Namespace.class);
 
         assertEquals(subject.getId(), "pricing");
-        assertEquals(subject.getRangeStart(), 0.0f);
-        assertEquals(subject.getRangeEnd(), 0.6f);
+        assertEquals(subject.getRangeStart(), 0.0);
+        assertEquals(subject.getRangeEnd(), 0.6);
     }
 }
