@@ -24,15 +24,33 @@ public class GlobalContext {
             @Nullable Boolean enabled,
             @Nullable Boolean qaMode,
             @Nullable Map<String, ?> forcedVariations,
-            @Nullable Map<String, Object> forcedFeatureValues
+            @Nullable Map<String, Object> forcedFeatureValues,
+            @Nullable JsonObject contextualBandits
     ) {
         this.features = features;
         this.savedGroups = savedGroups;
+        this.contextualBandits = contextualBandits;
         this.experiments = experiments;
         this.enabled = enabled;
         this.qaMode = qaMode;
         this.forcedVariations = ForcedVariationsUtils.normalize(forcedVariations);
         this.forcedFeatureValues = forcedFeatureValues;
+    }
+
+    /**
+     * Delegating constructor preserving the pre-contextual-bandit positional signature. Passes a
+     * {@code null} (empty) contextual bandit map.
+     */
+    public GlobalContext(
+            @Nullable Map<String, Feature<?>> features,
+            @Nullable JsonObject savedGroups,
+            @Nullable List<Experiment> experiments,
+            @Nullable Boolean enabled,
+            @Nullable Boolean qaMode,
+            @Nullable Map<String, ?> forcedVariations,
+            @Nullable Map<String, Object> forcedFeatureValues
+    ) {
+        this(features, savedGroups, experiments, enabled, qaMode, forcedVariations, forcedFeatureValues, null);
     }
 
 
@@ -46,6 +64,13 @@ public class GlobalContext {
 
     @Nullable
     private JsonObject savedGroups;
+
+    /**
+     * Contextual bandit definitions from the feature payload, keyed by bandit ref. Read during
+     * evaluation to resolve contextual bandit feature rules. May be {@code null}/empty.
+     */
+    @Nullable
+    private JsonObject contextualBandits;
 
     @Getter
     @Nullable

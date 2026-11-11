@@ -182,6 +182,7 @@ public class GrowthBook implements IGrowthBook {
         GlobalContext globalContext = GlobalContext.builder()
                 .features(features)
                 .savedGroups(savedGroups)
+                .contextualBandits(this.context.getContextualBandits())
                 .forcedFeatureValues(this.forcedFeatureValues)
                 .forcedVariations(this.context.getForcedVariationsMap())
                 .enabled(this.context.getEnabled())
