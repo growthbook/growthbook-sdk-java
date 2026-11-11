@@ -596,6 +596,10 @@ public class Options {
      * Non-blocking sticky bucket service for the multi-user client. Mutually
      * exclusive with {@link #stickyBucketService} — configure exactly one.
      * See {@link AsyncStickyBucketService} for the contract.
+     *
+     * <p>A failed read from this service fails the evaluation. A failed read from a
+     * blocking {@link #stickyBucketService} is logged and evaluation continues
+     * with normal bucketing.
      */
     @Nullable
     private AsyncStickyBucketService asyncStickyBucketService;
