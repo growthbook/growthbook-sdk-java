@@ -1,5 +1,6 @@
 package growthbook.sdk.java.repository;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
@@ -50,12 +51,16 @@ class GBFeaturesRepositoryRefreshingTest {
         ManualScheduledExecutorService scheduler = new ManualScheduledExecutorService();
         GBFeaturesRepository subject = newRepository(client, scheduler);
         subject.initialize();
+        long successesAfterInit = subject.getRefreshSuccessCount();
+        long failuresAfterInit = subject.getRefreshFailureCount();
 
         // When one polling interval elapses
         scheduler.tick();
 
-        // Then the initial fetch and exactly one background refresh have been issued
+        // Then the initial fetch and exactly one successful background refresh have been issued
         verify(client, times(2)).newCall(any());
+        assertEquals(successesAfterInit + 1, subject.getRefreshSuccessCount());
+        assertEquals(failuresAfterInit, subject.getRefreshFailureCount());
     }
 
     @Test
@@ -81,14 +86,35 @@ class GBFeaturesRepositoryRefreshingTest {
         ManualScheduledExecutorService scheduler = new ManualScheduledExecutorService();
         GBFeaturesRepository subject = newRepository(client, scheduler);
         subject.initialize();
+        long successesAfterInit = subject.getRefreshSuccessCount();
+        long failuresAfterInit = subject.getRefreshFailureCount();
 
         // When three polling intervals elapse
-        scheduler.tick();
-        scheduler.tick();
-        scheduler.tick();
+        for (int tick = 1; tick <= 3; tick++) {
+            scheduler.tick();
 
-        // Then the initial fetch and one background refresh per interval have been issued
+            // Then each interval adds one successful background refresh and no failure
+            assertEquals(successesAfterInit + tick, subject.getRefreshSuccessCount());
+            assertEquals(failuresAfterInit, subject.getRefreshFailureCount());
+        }
         verify(client, times(4)).newCall(any());
+    }
+
+    @Test
+    @DisplayName("Verify: polling is scheduled with the TTL in seconds as both the initial and the repeat delay")
+    void pollingIsScheduledWithTheTtlAsBothDelays() throws IOException, FeatureFetchException {
+        // Given an SWR repository whose background polling is driven manually
+        OkHttpClient client = mockHttpClient(FAKE_RESPONSE_JSON);
+        ManualScheduledExecutorService scheduler = new ManualScheduledExecutorService();
+        GBFeaturesRepository subject = newRepository(client, scheduler);
+
+        // When the repository is initialized
+        subject.initialize();
+
+        // Then polling waits one TTL before the first refresh and one TTL between refreshes
+        assertEquals(TTL_SECONDS, scheduler.initialDelay);
+        assertEquals(TTL_SECONDS, scheduler.delay);
+        assertEquals(TimeUnit.SECONDS, scheduler.unit);
     }
 
     private static GBFeaturesRepository newRepository(OkHttpClient client, ScheduledExecutorService scheduler) {
@@ -113,7 +139,14 @@ class GBFeaturesRepositoryRefreshingTest {
 
         Call remoteCall = mock(Call.class);
 
-        Response response = new Response.Builder()
+        when(remoteCall.execute()).thenAnswer(invocation -> newResponse(serializedBody));
+        when(okHttpClient.newCall(any())).thenReturn(remoteCall);
+
+        return okHttpClient;
+    }
+
+    private static Response newResponse(String serializedBody) {
+        return new Response.Builder()
                 .request(new Request.Builder().url("http://url.com").build())
                 .protocol(Protocol.HTTP_1_1)
                 .code(200).message("").body(
@@ -122,21 +155,20 @@ class GBFeaturesRepositoryRefreshingTest {
                                 MediaType.parse("application/json")
                         ))
                 .build();
-
-        when(remoteCall.execute()).thenReturn(response);
-        when(okHttpClient.newCall(any())).thenReturn(remoteCall);
-
-        return okHttpClient;
     }
 
     /**
      * A {@link ScheduledExecutorService} that never runs anything on its own: it captures the task
-     * submitted via {@link #scheduleWithFixedDelay} and runs it once per explicit {@link #tick()},
-     * turning "one polling interval elapsed" into a deterministic call. Every other operation is
-     * unsupported because the repository only ever uses fixed-delay scheduling.
+     * submitted via {@link #scheduleWithFixedDelay}, together with its delays, and runs it once per
+     * explicit {@link #tick()}, turning "one polling interval elapsed" into a deterministic call.
+     * Every other operation is unsupported because the repository only ever uses fixed-delay
+     * scheduling.
      */
     private static final class ManualScheduledExecutorService implements ScheduledExecutorService {
         private Runnable command;
+        private long initialDelay;
+        private long delay;
+        private TimeUnit unit;
         private volatile boolean shutdown;
 
         void tick() {
@@ -148,6 +180,9 @@ class GBFeaturesRepositoryRefreshingTest {
         @Override
         public ScheduledFuture<?> scheduleWithFixedDelay(Runnable command, long initialDelay, long delay, TimeUnit unit) {
             this.command = command;
+            this.initialDelay = initialDelay;
+            this.delay = delay;
+            this.unit = unit;
             return null;
         }
 
