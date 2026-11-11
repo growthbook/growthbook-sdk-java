@@ -219,6 +219,15 @@ final class StickyBucketManager {
         return merged;
     }
 
+    /**
+     * This process's own documents for these identifier attributes, without a store read. Used
+     * when a store read failed and evaluation continues anyway, so in-process assignments still
+     * hold. Returns a fresh, mutable, concurrency-safe map, like {@link #fetchAssignments}.
+     */
+    Map<String, StickyAssignmentsDocument> localAssignments(Map<String, String> attributes) {
+        return overlay(attributes, Collections.<String, StickyAssignmentsDocument>emptyMap());
+    }
+
     /** Defensive per-caller copy of an already-overlaid snapshot; coalesced waiters must not share one map. */
     private static Map<String, StickyAssignmentsDocument> copyDocs(Map<String, StickyAssignmentsDocument> docs) {
         return new ConcurrentHashMap<>(docs);
@@ -243,10 +252,11 @@ final class StickyBucketManager {
      * Record a newly assigned document in the authoritative map and persist it,
      * fire-and-forget. The document actually written to the store is re-read
      * from the authoritative map at save time, so a trailing save always writes
-     * the latest merged state. Store failures are logged, not retried (JS/Python
-     * parity); an executor rejection leaves the key dirty so the next write or
-     * {@link #flush()} re-attempts it — nothing is lost either way, the
-     * authoritative map still holds the document.
+     * the latest merged state. A failed or rejected save is logged and leaves the
+     * key dirty: the document stays in the authoritative map, is never evicted
+     * while dirty, and the next write to the key or {@link #flush()} re-attempts it.
+     * Failed saves are not retried on their own, so a dirty key is held in memory
+     * until a later attempt succeeds.
      */
     CompletableFuture<Void> recordAndSave(StickyAssignmentsDocument doc) {
         String key = doc.getAttributeName() + "||" + doc.getAttributeValue();
@@ -301,11 +311,12 @@ final class StickyBucketManager {
             saveFuture = CompletableFuture.completedFuture(null);
         }
 
-        final boolean keepDirty = rejected;
+        final boolean wasRejected = rejected;
         saveFuture.whenComplete((ignored, error) -> {
             if (error != null) {
-                log.warn("Sticky bucket save failed for {}", key, error);
+                log.warn("Sticky bucket save failed for {}; will retry on next write or flush", key, error);
             }
+            boolean keepDirty = wasRejected || error != null;
             boolean again;
             CompletableFuture<Void> quiescent = null;
             state.lock.lock();
@@ -337,15 +348,15 @@ final class StickyBucketManager {
 
     /**
      * Completes when every pending or dirty save has been <em>attempted</em> — not a durability
-     * guarantee: a write the store rejects is logged and not retried. Loops because a trailing save
-     * can be scheduled while a round is awaited; bounded so a persistently rejecting executor cannot
-     * spin it forever.
+     * guarantee: each dirty key is re-attempted at most once per flush, and a write that fails again
+     * stays dirty for a later flush. Loops because a trailing save can be scheduled while a round is
+     * awaited; bounded so a steady stream of writes cannot spin it forever.
      */
     CompletableFuture<Void> flush() {
-        return flush(20);
+        return flush(20, new HashSet<String>());
     }
 
-    private CompletableFuture<Void> flush(int roundsLeft) {
+    private CompletableFuture<Void> flush(int roundsLeft, Set<String> reattempted) {
         if (roundsLeft <= 0) {
             log.warn("Sticky bucket flush gave up after repeated rounds; some saves may remain unflushed");
             return CompletableFuture.completedFuture(null);
@@ -359,7 +370,7 @@ final class StickyBucketManager {
             try {
                 if (state.inFlight) {
                     waiter = state.quiescent;
-                } else if (state.dirty) {
+                } else if (state.dirty && reattempted.add(entry.getKey())) {
                     state.dirty = false;
                     state.inFlight = true;
                     state.quiescent = new CompletableFuture<>();
@@ -380,7 +391,7 @@ final class StickyBucketManager {
             return CompletableFuture.completedFuture(null);
         }
         return CompletableFuture.allOf(pending.toArray(new CompletableFuture[0]))
-                .thenCompose(ignored -> flush(roundsLeft - 1));
+                .thenCompose(ignored -> flush(roundsLeft - 1, reattempted));
     }
 
     /** Stop accepting new fetches; writes still merge into the authoritative map. */
