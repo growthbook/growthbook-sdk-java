@@ -769,7 +769,8 @@ public class GrowthBookClient {
         if (this.stickyBucketManager != null && safeUserContext.getStickyBucketAssignmentDocs() == null) {
             // Scoped async read: fetch the user's sticky docs through the manager (coalesced, cached,
             // overlaid with this process's own writes) and populate the context so the managers' own
-            // synchronous preload skips. A read failure propagates out of eval (JS/Python parity).
+            // synchronous preload skips. A read failure propagates out of eval for an async service
+            // (JS/Python parity); a blocking service keeps its log-and-continue behaviour.
             JsonObject mergedAttributes = mergeGlobalAttributes(safeUserContext.getAttributes());
             Map<String, String> identifiers =
                     stickyIdentifierAttributesFor(mergedAttributes, snapshot, inlineIdentifierAttributes);
@@ -825,8 +826,9 @@ public class GrowthBookClient {
 
     /**
      * Completes when every pending sticky bucket save has been <em>attempted</em>. This is not a
-     * durability guarantee: a save the store rejects is logged and not retried, so a completed flush
-     * future means "no save is still outstanding", not "every assignment reached the store".
+     * durability guarantee: a save the store rejects is logged and kept for the next write or flush,
+     * so a completed flush future means "no save is still outstanding", not "every assignment
+     * reached the store".
      * Fire-and-forget writes do not need this; short-lived processes should await it (or call
      * {@link #shutdown()}, which flushes automatically) before exiting to drain in-flight saves.
      *
@@ -902,12 +904,28 @@ public class GrowthBookClient {
             Thread.currentThread().interrupt();
             throw new RuntimeException("Interrupted while fetching sticky bucket assignments", e);
         } catch (ExecutionException e) {
-            Throwable cause = e.getCause() == null ? e : e.getCause();
-            if (cause instanceof RuntimeException) {
-                throw (RuntimeException) cause;
-            }
-            throw new RuntimeException("Failed to fetch sticky bucket assignments", cause);
+            return recoverFailedStickyRead(attributes, e.getCause() == null ? e : e.getCause());
         }
+    }
+
+    /**
+     * Applies the sticky read failure policy. A blocking {@code StickyBucketService} keeps its
+     * log-and-continue behaviour: evaluation proceeds with only this process's own assignments. An
+     * {@link AsyncStickyBucketService} failure is rethrown so evaluation fails (JS/Python parity).
+     *
+     * @return this process's own documents for {@code attributes}, when the failure is recovered
+     * @throws RuntimeException the failure itself, when it is not recovered
+     */
+    private Map<String, StickyAssignmentsDocument> recoverFailedStickyRead(Map<String, String> attributes,
+                                                                          Throwable cause) {
+        if (this.options.getAsyncStickyBucketService() == null) {
+            log.warn("Sticky bucket service failed to load assignments; continuing with normal bucketing.", cause);
+            return this.stickyBucketManager.localAssignments(attributes);
+        }
+        if (cause instanceof RuntimeException) {
+            throw (RuntimeException) cause;
+        }
+        throw new RuntimeException("Failed to fetch sticky bucket assignments", cause);
     }
 
     /** Attaches this client's own plugin registry so events never route through another client's plugins. */
