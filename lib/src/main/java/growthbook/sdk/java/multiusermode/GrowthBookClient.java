@@ -6,6 +6,7 @@ import growthbook.sdk.java.diagnostics.provider.DiagnosticsProvider;
 import growthbook.sdk.java.diagnostics.provider.GrowthBookClientDiagnosticsProvider;
 import growthbook.sdk.java.evaluators.ExperimentEvaluator;
 import growthbook.sdk.java.evaluators.FeatureEvaluator;
+import growthbook.sdk.java.evaluators.PayloadReducer;
 import growthbook.sdk.java.exception.FeatureFetchException;
 import growthbook.sdk.java.exception.InvalidOptionsException;
 import growthbook.sdk.java.listener.FeatureRefreshListener;
@@ -15,6 +16,7 @@ import growthbook.sdk.java.model.ExperimentResult;
 import growthbook.sdk.java.model.FeatureKey;
 import growthbook.sdk.java.model.FeatureRefreshEvent;
 import growthbook.sdk.java.model.FeatureResult;
+import growthbook.sdk.java.model.ReducePayloadOptions;
 import growthbook.sdk.java.model.RequestBodyForRemoteEval;
 import growthbook.sdk.java.multiusermode.configurations.EvaluationContext;
 import growthbook.sdk.java.multiusermode.configurations.Options;
@@ -27,9 +29,12 @@ import growthbook.sdk.java.multiusermode.internal.GlobalContextManager;
 import growthbook.sdk.java.multiusermode.internal.ManagedListenerExecutor;
 import growthbook.sdk.java.multiusermode.internal.RemoteEvalCoordinator;
 import growthbook.sdk.java.plugin.PluginRegistry;
+import growthbook.sdk.java.repository.FeatureSnapshot;
 import growthbook.sdk.java.repository.GBFeaturesRepository;
 import growthbook.sdk.java.repository.RefreshMode;
 import growthbook.sdk.java.util.GrowthBookJsonUtils;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
 import lombok.extern.slf4j.Slf4j;
 
 import javax.annotation.Nullable;
@@ -531,6 +536,58 @@ public class GrowthBookClient {
         experimentSubscriptions.publishIfChanged(experiment, result);
 
         return result;
+    }
+
+    /**
+     * Shrinks the current features payload for one user, e.g. to bootstrap a client SDK during
+     * server-side rendering. The result evaluates the same as the full payload for anyone who
+     * agrees with the known attributes: this client's global attributes overlaid by the user's.
+     *
+     * <p>The payload is the one held by this client's feature repository: its features and saved
+     * groups. The repository doesn't keep auto experiments or contextual bandits, so the result's
+     * {@code experiments} list is empty. To reduce a whole payload, use
+     * {@link PayloadReducer#reducePayload}. Safe for concurrent use.
+     *
+     * @param userContext the attributes known for the user; {@code null} for none
+     * @param options     filters and prerequisite handling; {@code null} for defaults
+     * @return a new payload JSON object with {@code features}, {@code experiments} and {@code savedGroups}
+     */
+    public JsonObject reducePayload(@Nullable UserContext userContext, @Nullable ReducePayloadOptions options) {
+        JsonObject attributes = new JsonObject();
+        JsonObject globalAttributes = this.options.getGlobalAttributes();
+        if (globalAttributes != null) {
+            for (Map.Entry<String, JsonElement> entry : globalAttributes.entrySet()) {
+                attributes.add(entry.getKey(), entry.getValue());
+            }
+        }
+        if (userContext != null && userContext.getAttributes() != null) {
+            for (Map.Entry<String, JsonElement> entry : userContext.getAttributes().entrySet()) {
+                attributes.add(entry.getKey(), entry.getValue());
+            }
+        }
+
+        JsonObject payload = new JsonObject();
+        GBFeaturesRepository repository = currentRepository();
+        if (repository != null) {
+            FeatureSnapshot snapshot = repository.getFeatureSnapshot();
+            JsonElement features = GrowthBookJsonUtils.getInstance().gson.fromJson(snapshot.getFeaturesJson(), JsonElement.class);
+            if (features != null && features.isJsonObject()) {
+                payload.add("features", features);
+            }
+            payload.add("savedGroups", snapshot.getParsedSavedGroups());
+        }
+        return PayloadReducer.reducePayload(payload, attributes, options);
+    }
+
+    /**
+     * Shrinks the current features payload for one user with the default options.
+     *
+     * @param userContext the attributes known for the user; {@code null} for none
+     * @return a new payload JSON object
+     * @see #reducePayload(UserContext, ReducePayloadOptions)
+     */
+    public JsonObject reducePayload(@Nullable UserContext userContext) {
+        return reducePayload(userContext, null);
     }
 
     /**
