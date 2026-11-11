@@ -47,6 +47,7 @@ class StickyBucketManagerTest {
         volatile boolean completeSavesImmediately = false;
         volatile RuntimeException throwOnFetch = null;
         volatile RuntimeException throwOnSave = null;
+        volatile boolean failSaves = false;
 
         @Override
         public CompletionStage<StickyAssignmentsDocument> getAssignments(String attributeName, String attributeValue) {
@@ -61,6 +62,11 @@ class StickyBucketManagerTest {
                 throw toThrow;
             }
             savedDocs.add(doc);
+            if (failSaves) {
+                CompletableFuture<Void> failed = new CompletableFuture<>();
+                failed.completeExceptionally(new RuntimeException("store down"));
+                return failed;
+            }
             store.put(getKey(doc.getAttributeName(), doc.getAttributeValue()), doc);
             if (completeSavesImmediately) {
                 return CompletableFuture.completedFuture(null);
@@ -237,13 +243,13 @@ class StickyBucketManagerTest {
 
     @Test
     @Timeout(10)
-    void failedSaveIsLoggedNotRetriedButDocRemainsAuthoritative() throws Exception {
+    void failedSaveStaysDirtyAndFlushRetriesIt() throws Exception {
         ScriptedService service = new ScriptedService();
         StickyBucketManager manager = new StickyBucketManager(service, null, null);
 
         CompletableFuture<Void> waiter = manager.recordAndSave(doc("u1", "exp__0", "v"));
         service.pendingSaves.get(0).completeExceptionally(new RuntimeException("store down"));
-        waiter.get(5, TimeUnit.SECONDS); // quiesces without retry (JS/Python parity)
+        waiter.get(5, TimeUnit.SECONDS); // quiesces without an immediate retry
         assertEquals(1, service.savedDocs.size());
 
         // The overlay still serves the local write.
@@ -251,6 +257,28 @@ class StickyBucketManagerTest {
         Map<String, StickyAssignmentsDocument> result =
                 manager.fetchAssignments(attrs("u1")).get(5, TimeUnit.SECONDS);
         assertEquals("v", result.get("id||u1").getAssignments().get("exp__0"));
+
+        service.completeSavesImmediately = true;
+        manager.flush().get(5, TimeUnit.SECONDS);
+        assertEquals(2, service.savedDocs.size(), "flush must re-attempt a failed save");
+        assertEquals("v", service.store.get("id||u1").getAssignments().get("exp__0"));
+    }
+
+    @Test
+    @Timeout(10)
+    void flushReattemptsAPersistentlyFailingSaveOnlyOnce() throws Exception {
+        ScriptedService service = new ScriptedService();
+        service.failSaves = true;
+        StickyBucketManager manager = new StickyBucketManager(service, null, null);
+
+        manager.recordAndSave(doc("u1", "exp__0", "v")).get(5, TimeUnit.SECONDS);
+        assertEquals(1, service.savedDocs.size());
+
+        manager.flush().get(5, TimeUnit.SECONDS);
+        assertEquals(2, service.savedDocs.size(), "one flush must re-attempt a failing save exactly once");
+
+        manager.flush().get(5, TimeUnit.SECONDS);
+        assertEquals(3, service.savedDocs.size(), "the save must stay dirty for the next flush");
     }
 
     @Test
@@ -321,6 +349,26 @@ class StickyBucketManagerTest {
                 "a document with an in-flight (unsaved) save must never be evicted");
 
         service.pendingSaves.get(0).complete(null);
+    }
+
+    @Test
+    @Timeout(30)
+    void evictionNeverDropsADocumentWhoseSaveFailed() throws Exception {
+        ScriptedService service = new ScriptedService();
+        service.failSaves = true;
+        StickyBucketManager manager = new StickyBucketManager(service, null, null);
+        manager.recordAndSave(doc("failed-user", "exp__0", "keep-me")).get(5, TimeUnit.SECONDS);
+
+        service.failSaves = false;
+        service.completeSavesImmediately = true;
+        for (int i = 0; i < StickyBucketManager.STICKY_DOCS_MAX + 200; i++) {
+            manager.recordAndSave(doc("user-" + i, "exp__0", "v")).get(5, TimeUnit.SECONDS);
+        }
+
+        assertTrue(manager.authoritativeDocCount() <= StickyBucketManager.STICKY_DOCS_MAX + 1,
+                "authoritative doc map must be bounded, was " + manager.authoritativeDocCount());
+        assertNotNull(manager.authoritativeDoc("id||failed-user"),
+                "a document whose save failed must never be evicted");
     }
 
     @Test

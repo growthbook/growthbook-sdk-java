@@ -8,6 +8,7 @@ import growthbook.sdk.java.multiusermode.configurations.Options;
 import growthbook.sdk.java.multiusermode.configurations.UserContext;
 import growthbook.sdk.java.multiusermode.usage.TrackingCallbackWithUser;
 import growthbook.sdk.java.stickyBucketing.AsyncStickyBucketService;
+import growthbook.sdk.java.stickyBucketing.StickyBucketService;
 import com.github.tomakehurst.wiremock.WireMockServer;
 import com.github.tomakehurst.wiremock.core.WireMockConfiguration;
 import org.junit.jupiter.api.Test;
@@ -195,6 +196,23 @@ class GrowthBookClientAsyncApiTest {
 
     @Test
     @Timeout(30)
+    void syncServiceFetchFailureIsLoggedAndAsyncEvaluationContinues() throws Exception {
+        GrowthBookClient client = new GrowthBookClient(Options.builder()
+                .stickyBucketService(new FailingSyncStickyService())
+                .stickyBucketIdentifierAttributes(Collections.singletonList("id"))
+                .build());
+        try {
+            ExperimentResult<String> result = client.runAsync(experiment("exp-sync-fail"), user("u1"))
+                    .get(10, TimeUnit.SECONDS);
+
+            assertNotNull(result.getValue(), "a failing blocking service must fall back to normal bucketing");
+        } finally {
+            client.shutdown();
+        }
+    }
+
+    @Test
+    @Timeout(30)
     void getFeatureValueAsyncReturnsDefaultWhenTheStickyStoreFails() throws Exception {
         // Parity with synchronous getFeatureValue: a failed sticky read falls back to the default
         // instead of surfacing the failure to the caller.
@@ -329,6 +347,23 @@ class GrowthBookClientAsyncApiTest {
             completer.setDaemon(true);
             completer.start();
             return pending;
+        }
+    }
+
+    /** Blocking service whose reads always fail, as during a store outage. */
+    private static final class FailingSyncStickyService implements StickyBucketService {
+        @Override
+        public StickyAssignmentsDocument getAssignments(String attributeName, String attributeValue) {
+            throw new IllegalStateException("store unavailable");
+        }
+
+        @Override
+        public void saveAssignments(StickyAssignmentsDocument doc) {
+        }
+
+        @Override
+        public Map<String, StickyAssignmentsDocument> getAllAssignments(Map<String, String> attributes) {
+            throw new IllegalStateException("store unavailable");
         }
     }
 }

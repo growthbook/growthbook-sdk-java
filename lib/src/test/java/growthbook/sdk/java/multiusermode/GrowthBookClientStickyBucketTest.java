@@ -22,6 +22,8 @@ import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Executor;
+import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -105,6 +107,7 @@ class GrowthBookClientStickyBucketTest {
         final InMemoryStickyBucketServiceImpl delegate = new InMemoryStickyBucketServiceImpl();
         final List<String> fetchThreads = new CopyOnWriteArrayList<>();
         final AtomicInteger batchedFetchCalls = new AtomicInteger();
+        volatile boolean failFetches = false;
 
         @Override
         public StickyAssignmentsDocument getAssignments(String attributeName, String attributeValue) {
@@ -120,6 +123,9 @@ class GrowthBookClientStickyBucketTest {
         public Map<String, StickyAssignmentsDocument> getAllAssignments(Map<String, String> attributes) {
             batchedFetchCalls.incrementAndGet();
             fetchThreads.add(Thread.currentThread().getName());
+            if (failFetches) {
+                throw new IllegalStateException("store unavailable");
+            }
             return delegate.getAllAssignments(attributes);
         }
     }
@@ -264,7 +270,7 @@ class GrowthBookClientStickyBucketTest {
 
     @Test
     @Timeout(30)
-    void fetchFailurePropagatesOnTheSyncPath() {
+    void fetchFailureFromAsyncServicePropagates() {
         GatedAsyncStickyService service = new GatedAsyncStickyService();
         service.failFetches = true;
         GrowthBookClient client = new GrowthBookClient(stickyOptions(service));
@@ -272,6 +278,65 @@ class GrowthBookClientStickyBucketTest {
             assertThrows(RuntimeException.class,
                     () -> client.run(experiment("exp-fail"), user("u1", "country")),
                     "a failing sticky store must not silently produce non-sticky assignments");
+        } finally {
+            client.shutdown();
+        }
+    }
+
+    @Test
+    @Timeout(30)
+    void fetchFailureFromSyncServiceIsLoggedAndEvaluationContinues() {
+        RecordingSyncStickyService service = new RecordingSyncStickyService();
+        service.failFetches = true;
+        GrowthBookClient client = new GrowthBookClient(Options.builder()
+                .stickyBucketService(service)
+                .stickyBucketIdentifierAttributes(Collections.singletonList("id"))
+                .build());
+        try {
+            ExperimentResult<String> result = client.run(experiment("exp-sync-fail"), user("u1", "country"));
+
+            assertNotNull(result.getValue(), "a failing blocking service must fall back to normal bucketing");
+            assertEquals(1, service.batchedFetchCalls.get());
+        } finally {
+            client.shutdown();
+        }
+    }
+
+    @Test
+    @Timeout(30)
+    void syncServiceReadFailureStillServesThisProcessesOwnAssignments() {
+        RecordingSyncStickyService service = new RecordingSyncStickyService();
+        service.failFetches = true;
+        GrowthBookClient client = new GrowthBookClient(Options.builder()
+                .stickyBucketService(service)
+                .stickyBucketIdentifierAttributes(Collections.singletonList("id"))
+                .build());
+        try {
+            ExperimentResult<String> first = client.run(experiment("exp-sync-ryw"), user("u1", "country"));
+            ExperimentResult<String> second = client.run(experiment("exp-sync-ryw"), user("u1", "country"));
+
+            assertEquals(first.getVariationId(), second.getVariationId());
+            assertTrue(Boolean.TRUE.equals(second.getStickyBucketUsed()),
+                    "the fallback must still overlay this process's own assignment");
+        } finally {
+            client.shutdown();
+        }
+    }
+
+    @Test
+    @Timeout(30)
+    void saturatedOffloadPoolDoesNotFailEvaluationForSyncService() {
+        RecordingSyncStickyService service = new RecordingSyncStickyService();
+        GrowthBookClient client = new GrowthBookClient(Options.builder()
+                .stickyBucketService(service)
+                .stickyBucketIdentifierAttributes(Collections.singletonList("id"))
+                .asyncExecutor(new RejectingExecutor())
+                .build());
+        try {
+            ExperimentResult<String> result = client.run(experiment("exp-saturated"), user("u1", "country"));
+
+            assertNotNull(result.getValue(), "a rejected offload must fall back to normal bucketing");
+            assertEquals(0, service.batchedFetchCalls.get(), "the rejected read never reached the service");
         } finally {
             client.shutdown();
         }
@@ -378,5 +443,13 @@ class GrowthBookClientStickyBucketTest {
         List<String> violations = OptionsValidator.findViolations(options);
         assertTrue(violations.stream().anyMatch(v -> v.contains("not both")),
                 "expected mutual-exclusion violation, got: " + violations);
+    }
+
+    /** Executor at saturation: rejects every task, as a bounded pool with a full queue would. */
+    private static final class RejectingExecutor implements Executor {
+        @Override
+        public void execute(Runnable command) {
+            throw new RejectedExecutionException("pool saturated");
+        }
     }
 }
