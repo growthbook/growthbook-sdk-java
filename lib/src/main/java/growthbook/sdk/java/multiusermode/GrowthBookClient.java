@@ -976,10 +976,12 @@ public class GrowthBookClient {
         return this.stickyBucketManager.fetchAssignments(identifiers)
                 .handleAsync((docs, error) -> {
                     if (error != null) {
-                        throw error instanceof CompletionException
-                                ? (CompletionException) error : new CompletionException(error);
+                        Throwable cause = error instanceof CompletionException && error.getCause() != null
+                                ? error.getCause() : error;
+                        scoped.setStickyBucketAssignmentDocs(recoverFailedStickyRead(identifiers, cause));
+                    } else {
+                        scoped.setStickyBucketAssignmentDocs(docs);
                     }
-                    scoped.setStickyBucketAssignmentDocs(docs);
                     return buildEvalContext(scoped, snapshot);
                 }, this.asyncExecutor);
     }
