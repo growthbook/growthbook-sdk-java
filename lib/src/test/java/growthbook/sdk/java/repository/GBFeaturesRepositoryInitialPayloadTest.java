@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -13,6 +14,7 @@ import growthbook.sdk.java.listener.FeatureRefreshListener;
 import growthbook.sdk.java.model.FeatureRefreshEvent;
 import growthbook.sdk.java.model.FeatureRefreshSource;
 import growthbook.sdk.java.retry.FeatureFetchRetryPolicy;
+import growthbook.sdk.java.sandbox.GbCacheManager;
 import okhttp3.Call;
 import okhttp3.MediaType;
 import okhttp3.OkHttpClient;
@@ -41,6 +43,9 @@ class GBFeaturesRepositoryInitialPayloadTest {
 
     private static final String PAYLOAD_FLAG_ON =
             "{\"features\":{\"my-flag\":{\"defaultValue\":true}},\"savedGroups\":{}}";
+
+    private static final String PAYLOAD_FLAG_OFF =
+            "{\"features\":{\"my-flag\":{\"defaultValue\":false}},\"savedGroups\":{}}";
 
     @Test
     @DisplayName("Offline start: seeds features from the inline payload without a network call")
@@ -199,6 +204,68 @@ class GBFeaturesRepositoryInitialPayloadTest {
         subject.shutdown();
     }
 
+    @Test
+    @DisplayName("Seed never borrows cache freshness: after the forced initial fetch fails, a default "
+            + "refresh loads the fresh cached payload instead of keeping the seed")
+    void failedInitialFetch_defaultRefreshLoadsFreshCachedPayloadOverSeed() throws Exception {
+        // Given
+        OkHttpClient httpClient = failingHttpClient();
+        GBFeaturesRepository subject = seededRepositoryWithFreshCache(httpClient, PAYLOAD_FLAG_OFF);
+        awaitFailedInitialFetch(subject);
+        assertEquals("{\"my-flag\":{\"defaultValue\":true}}", subject.getFeaturesJson());
+
+        // When
+        subject.refreshFeatures(RefreshMode.DEFAULT);
+
+        // Then
+        assertEquals("{\"my-flag\":{\"defaultValue\":false}}", subject.getFeaturesJson());
+        verify(httpClient, times(1)).newCall(any());
+
+        subject.shutdown();
+    }
+
+    @Test
+    @DisplayName("Seed never borrows cache freshness: with a fresh cache timestamp but no cached payload, "
+            + "a default refresh after the failed initial fetch retries the network")
+    void failedInitialFetch_freshTimestampWithoutCachedPayload_defaultRefreshRetriesNetwork() throws Exception {
+        // Given
+        OkHttpClient httpClient = failingHttpClient();
+        GBFeaturesRepository subject = seededRepositoryWithFreshCache(httpClient, null);
+        awaitFailedInitialFetch(subject);
+
+        // When
+        subject.refreshFeatures(RefreshMode.DEFAULT);
+
+        // Then
+        verify(httpClient, times(2)).newCall(any());
+        assertEquals("{\"my-flag\":{\"defaultValue\":true}}", subject.getFeaturesJson());
+
+        subject.shutdown();
+    }
+
+    private static GBFeaturesRepository seededRepositoryWithFreshCache(OkHttpClient httpClient, String cachedPayload) {
+        return GBFeaturesRepository.builder()
+                .apiHost("http://localhost:80")
+                .clientKey("sdk-abc123")
+                .okHttpClient(httpClient)
+                .retryPolicy(NO_DELAY_RETRY_POLICY)
+                .cacheManager(new FreshTimestampCacheManager(cachedPayload))
+                .backgroundFetchInterval(Duration.ofHours(1))
+                .initialPayload(PAYLOAD_FLAG_ON)
+                .build();
+    }
+
+    private static void awaitFailedInitialFetch(GBFeaturesRepository subject) throws Exception {
+        CountDownLatch initialFetchFailed = new CountDownLatch(1);
+        subject.addFeatureRefreshListener(event -> {
+            if (event.getSource() == FeatureRefreshSource.INITIALIZATION && !event.isSuccessful()) {
+                initialFetchFailed.countDown();
+            }
+        });
+        subject.initialize();
+        assertTrue(initialFetchFailed.await(5, TimeUnit.SECONDS), "forced initial fetch did not fail");
+    }
+
     /**
      * Mock client that always fails the network call, simulating an unreachable API.
      */
@@ -226,5 +293,34 @@ class GBFeaturesRepositoryInitialPayloadTest {
         when(remoteCall.execute()).thenReturn(response);
         when(okHttpClient.newCall(any())).thenReturn(remoteCall);
         return okHttpClient;
+    }
+
+    /**
+     * Cache whose timestamp is always "just written", so freshness alone would suppress a refresh.
+     */
+    private static final class FreshTimestampCacheManager implements GbCacheManager {
+        private final String payload;
+
+        FreshTimestampCacheManager(String payload) {
+            this.payload = payload;
+        }
+
+        @Override
+        public void saveContent(String key, String data) {
+        }
+
+        @Override
+        public String loadCache(String key) {
+            return payload;
+        }
+
+        @Override
+        public void clearCache() {
+        }
+
+        @Override
+        public Long getLastUpdatedMillis(String key) {
+            return System.currentTimeMillis();
+        }
     }
 }

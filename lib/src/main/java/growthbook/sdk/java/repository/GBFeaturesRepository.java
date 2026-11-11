@@ -187,6 +187,13 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
     private final AtomicBoolean hasFeatureData = new AtomicBoolean(false);
 
     /**
+     * Whether the held snapshot is still the inline bootstrap payload. The seed carries no freshness
+     * of its own, so while this is {@code true} a fresh persisted-cache timestamp must not let a
+     * refresh skip both the network and loading that cached payload.
+     */
+    private final AtomicBoolean servingInitialPayloadOnly = new AtomicBoolean(false);
+
+    /**
      * Seconds after that cache is expired.
      *
      * <p>Kept private and read through {@link #getExpiresAt()}: a Lombok getter here would expose
@@ -1051,7 +1058,7 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
                 this.backgroundFetchInterval,
                 this.lastSuccessfulFetchAtMillis::get,
                 () -> FeatureRefreshCacheFreshness.timestampMillisOrUnknown(readCacheLastUpdatedMillis()),
-                this.hasFeatureData::get,
+                () -> this.hasFeatureData.get() && !this.servingInitialPayloadOnly.get(),
                 this::loadCachedFeaturesIfAvailable
         );
     }
@@ -1278,6 +1285,7 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
         }
         long startedAtNanos = System.nanoTime();
         boolean featuresChanged = onResponseJson(this.initialPayload, true);
+        this.servingInitialPayloadOnly.set(true);
         this.featureRefreshNotifier.notifySuccess(
                 FeatureRefreshSource.INITIAL_PAYLOAD,
                 featuresChanged,
@@ -1467,6 +1475,7 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
                 newSaved == null ? new JsonObject() : newSaved
         ));
         this.hasFeatureData.set(true);
+        this.servingInitialPayloadOnly.set(false);
 
         if (!isFromCache) {
             this.lastSuccessfulFetchAtMillis.set(System.currentTimeMillis());
