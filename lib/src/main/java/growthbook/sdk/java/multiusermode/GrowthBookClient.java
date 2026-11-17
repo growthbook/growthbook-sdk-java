@@ -149,7 +149,8 @@ public class GrowthBookClient {
                     asyncService,
                     callerThreadService,
                     this.options.getStickyBucketCacheTtlSeconds(),
-                    this.options.getStickyBucketCacheSize());
+                    this.options.getStickyBucketCacheSize(),
+                    this.options.getStickyBucketTimeout().toMillis());
         } else {
             this.ownedAsyncExecutor = null;
             this.stickyBucketManager = null;

@@ -3,6 +3,7 @@ package growthbook.sdk.java.multiusermode;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import growthbook.sdk.java.model.StickyAssignmentsDocument;
+import growthbook.sdk.java.multiusermode.configurations.Options;
 import growthbook.sdk.java.stickyBucketing.AsyncStickyBucketService;
 import lombok.extern.slf4j.Slf4j;
 
@@ -19,6 +20,9 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.RejectedExecutionException;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicLong;
@@ -67,6 +71,14 @@ import java.util.concurrent.locks.ReentrantLock;
  * same object. For a blocking {@code StickyBucketService} the first offloads
  * to an executor and the second runs the call on the calling thread, so a
  * synchronous evaluation never queues behind a pool it does not need.
+ *
+ * <p>Timeout: a store call that has not completed within the configured timeout
+ * fails with a {@link TimeoutException}, so a store that never answers cannot
+ * hold an evaluation, a coalesced fetch or a key's save slot forever. The call
+ * itself is not cancelled and a result that arrives later is ignored, so a save
+ * re-attempted after a timeout can overlap the abandoned one. A blocking store
+ * called on the calling thread returns before it can be timed and is bounded by
+ * its own client's timeout instead.
  */
 @Slf4j
 final class StickyBucketManager {
@@ -92,6 +104,12 @@ final class StickyBucketManager {
     @Nullable
     private final Cache<Map<String, String>, Map<String, StickyAssignmentsDocument>> readCache;
 
+    private final long timeoutMillis;
+
+    /** Fails store calls that outlive {@link #timeoutMillis}; null when the timeout is disabled. */
+    @Nullable
+    private final ScheduledThreadPoolExecutor timeoutScheduler;
+
     private volatile boolean draining = false;
 
     StickyBucketManager(AsyncStickyBucketService service,
@@ -100,16 +118,28 @@ final class StickyBucketManager {
         this(service, service, cacheTtlSeconds, cacheSize);
     }
 
-    /**
-     * @param service             non-blocking view of the store, used by the asynchronous entry points
-     * @param callerThreadService view used by the synchronous evaluation API; may block its caller
-     */
     StickyBucketManager(AsyncStickyBucketService service,
                         AsyncStickyBucketService callerThreadService,
                         @Nullable Long cacheTtlSeconds,
                         @Nullable Integer cacheSize) {
+        this(service, callerThreadService, cacheTtlSeconds, cacheSize,
+                Options.DEFAULT_STICKY_BUCKET_TIMEOUT.toMillis());
+    }
+
+    /**
+     * @param service             non-blocking view of the store, used by the asynchronous entry points
+     * @param callerThreadService view used by the synchronous evaluation API; may block its caller
+     * @param timeoutMillis       how long a store call may take before it is failed; zero disables the timeout
+     */
+    StickyBucketManager(AsyncStickyBucketService service,
+                        AsyncStickyBucketService callerThreadService,
+                        @Nullable Long cacheTtlSeconds,
+                        @Nullable Integer cacheSize,
+                        long timeoutMillis) {
         this.service = service;
         this.callerThreadService = callerThreadService;
+        this.timeoutMillis = timeoutMillis;
+        this.timeoutScheduler = timeoutMillis > 0 ? newTimeoutScheduler() : null;
         boolean cacheEnabled = cacheTtlSeconds != null && cacheTtlSeconds > 0
                 && (cacheSize == null || cacheSize > 0);
         this.readCache = cacheEnabled
@@ -118,6 +148,46 @@ final class StickyBucketManager {
                 .expireAfterWrite(cacheTtlSeconds, TimeUnit.SECONDS)
                 .build()
                 : null;
+    }
+
+    /** One daemon thread, started by the first call that has to be timed. */
+    private static ScheduledThreadPoolExecutor newTimeoutScheduler() {
+        ScheduledThreadPoolExecutor scheduler = new ScheduledThreadPoolExecutor(1, runnable -> {
+            Thread thread = new Thread(runnable, "growthbook-sticky-timeout");
+            thread.setDaemon(true);
+            return thread;
+        });
+        scheduler.setRemoveOnCancelPolicy(true); // a completed call must not leave its timer queued
+        return scheduler;
+    }
+
+    /**
+     * The outcome of a store call, or a {@link TimeoutException} if it is still pending when the
+     * timeout elapses. A call that is already complete is never timed.
+     */
+    private <T> CompletableFuture<T> withTimeout(CompletionStage<T> storeCall, String operation) {
+        CompletableFuture<T> outcome = new CompletableFuture<>();
+        storeCall.whenComplete((value, error) -> {
+            if (error != null) {
+                outcome.completeExceptionally(error);
+            } else {
+                outcome.complete(value);
+            }
+        });
+        if (timeoutScheduler == null || outcome.isDone()) {
+            return outcome;
+        }
+        ScheduledFuture<?> timer;
+        try {
+            timer = timeoutScheduler.schedule(() -> {
+                outcome.completeExceptionally(new TimeoutException(
+                        "Sticky bucket " + operation + " did not complete within " + timeoutMillis + "ms"));
+            }, timeoutMillis, TimeUnit.MILLISECONDS);
+        } catch (RejectedExecutionException e) {
+            return outcome; // the client has shut down; nothing is left to time the call with
+        }
+        outcome.whenComplete((value, error) -> timer.cancel(false));
+        return outcome;
     }
 
     private static final class FetchEntry {
@@ -196,9 +266,9 @@ final class StickyBucketManager {
             entry.future.completeExceptionally(new IllegalStateException("client is shutting down"));
             return;
         }
-        CompletionStage<Map<String, StickyAssignmentsDocument>> stage;
+        CompletionStage<Map<String, StickyAssignmentsDocument>> storeCall;
         try {
-            stage = via.getAllAssignments(key);
+            storeCall = via.getAllAssignments(key);
         } catch (RuntimeException e) {
             // Includes RejectedExecutionException from an offload executor at
             // saturation: surface it, don't silently evaluate without sticky data.
@@ -206,12 +276,12 @@ final class StickyBucketManager {
             entry.future.completeExceptionally(e);
             return;
         }
-        if (stage == null) {
+        if (storeCall == null) {
             entry.future.complete(overlay(key, Collections.emptyMap()));
             inflightFetches.remove(key, entry);
             return;
         }
-        stage.whenComplete((fetched, error) -> {
+        withTimeout(storeCall, "read").whenComplete((fetched, error) -> {
             if (error != null) {
                 inflightFetches.remove(key, entry);
                 entry.future.completeExceptionally(error);
@@ -350,10 +420,10 @@ final class StickyBucketManager {
         CompletableFuture<Void> saveFuture;
         boolean rejected = false;
         try {
-            CompletionStage<Void> stage = snapshot == null ? null : via.saveAssignments(snapshot);
-            saveFuture = stage == null
+            CompletionStage<Void> storeCall = snapshot == null ? null : via.saveAssignments(snapshot);
+            saveFuture = storeCall == null
                     ? CompletableFuture.completedFuture(null)
-                    : stage.toCompletableFuture();
+                    : withTimeout(storeCall, "save");
         } catch (RuntimeException e) {
             // Typically RejectedExecutionException from an offload executor at
             // saturation or during drain: keep the key dirty for a later re-kick.
@@ -465,6 +535,9 @@ final class StickyBucketManager {
             // Unblock readers before the offload executor is torn down: a queued fetch task discarded
             // by shutdownNow() would otherwise never complete its future, hanging fetchAssignments().get().
             failInflightFetches();
+            if (timeoutScheduler != null) {
+                timeoutScheduler.shutdownNow();
+            }
         }
     }
 

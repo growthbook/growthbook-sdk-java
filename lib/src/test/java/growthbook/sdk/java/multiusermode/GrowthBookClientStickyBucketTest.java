@@ -12,6 +12,7 @@ import growthbook.sdk.java.stickyBucketing.StickyBucketService;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -51,6 +52,7 @@ class GrowthBookClientStickyBucketTest {
         final AtomicInteger saveCalls = new AtomicInteger();
         volatile CountDownLatch saveGate = null; // when set, saves complete only after the gate opens
         volatile boolean failFetches = false;
+        volatile boolean hangFetches = false; // when set, reads never complete
 
         @Override
         public CompletionStage<StickyAssignmentsDocument> getAssignments(String attributeName, String attributeValue) {
@@ -86,6 +88,9 @@ class GrowthBookClientStickyBucketTest {
         @Override
         public CompletionStage<Map<String, StickyAssignmentsDocument>> getAllAssignments(Map<String, String> attributes) {
             fetchCalls.add(attributes);
+            if (hangFetches) {
+                return new CompletableFuture<>();
+            }
             if (failFetches) {
                 CompletableFuture<Map<String, StickyAssignmentsDocument>> failed = new CompletableFuture<>();
                 failed.completeExceptionally(new IllegalStateException("store unavailable"));
@@ -348,6 +353,32 @@ class GrowthBookClientStickyBucketTest {
             assertEquals(stored, recovered.getKey(),
                     "once the store is readable again the user must get the stored variation back");
             assertTrue(Boolean.TRUE.equals(recovered.getStickyBucketUsed()));
+        } finally {
+            client.shutdown();
+        }
+    }
+
+    @Test
+    @Timeout(30)
+    void aStoreThatNeverAnswersDoesNotHangEvaluationOrReplaceTheStoredAssignment() {
+        Experiment<String> experiment = experiment("exp-hang");
+        UserContext user = user("u1", "country");
+        String stored = variationKeyOtherThanHashed(experiment, user);
+        GatedAsyncStickyService service = new GatedAsyncStickyService();
+        service.store.put("id||u1", storedAssignment("u1", "exp-hang", stored));
+        GrowthBookClient client = new GrowthBookClient(Options.builder()
+                .asyncStickyBucketService(service)
+                .stickyBucketIdentifierAttributes(Collections.singletonList("id"))
+                .stickyBucketTimeout(Duration.ofMillis(50))
+                .build());
+        try {
+            service.hangFetches = true;
+
+            ExperimentResult<String> result = client.run(experiment, user);
+
+            assertNotNull(result, "evaluation must return once the read times out");
+            assertEquals(0, service.saveCalls.get(), "a timed-out read is a failed read: nothing is saved");
+            assertEquals(stored, service.store.get("id||u1").getAssignments().get("exp-hang__0"));
         } finally {
             client.shutdown();
         }
