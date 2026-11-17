@@ -15,6 +15,7 @@ import com.github.tomakehurst.wiremock.core.WireMockConfiguration;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -243,6 +244,30 @@ class GrowthBookClientAsyncApiTest {
 
             assertEquals(stored, recovered.getKey(),
                     "once the store is readable again the user must get the stored variation back");
+        } finally {
+            client.shutdown();
+        }
+    }
+
+    @Test
+    @Timeout(30)
+    void aStoreThatDoesNotAnswerInTimeCompletesTheAsyncEvaluationWithoutSaving() throws Exception {
+        Experiment<String> experiment = experiment("exp-async-slow");
+        String stored = variationKeyOtherThanHashed(experiment, user("u1"));
+        ForeignThreadStickyService service = new ForeignThreadStickyService();
+        service.store.put("id||u1", storedAssignment("u1", "exp-async-slow", stored));
+        service.fetchGate = new CountDownLatch(1); // never opened: the read outlives the timeout
+        GrowthBookClient client = new GrowthBookClient(Options.builder()
+                .asyncStickyBucketService(service)
+                .stickyBucketIdentifierAttributes(Collections.singletonList("id"))
+                .stickyBucketTimeout(Duration.ofMillis(50))
+                .build());
+        try {
+            ExperimentResult<String> result = client.runAsync(experiment, user("u1")).get(5, TimeUnit.SECONDS);
+
+            assertNotNull(result.getValue(), "a timed-out read falls back to normal bucketing");
+            assertEquals(0, service.saveCalls.get(), "a timed-out read is a failed read: nothing is saved");
+            assertEquals(stored, service.store.get("id||u1").getAssignments().get("exp-async-slow__0"));
         } finally {
             client.shutdown();
         }
