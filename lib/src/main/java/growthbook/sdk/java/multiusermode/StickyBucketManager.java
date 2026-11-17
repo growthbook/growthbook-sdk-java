@@ -47,10 +47,13 @@ import java.util.concurrent.locks.ReentrantLock;
  *       the shared fetch (reserve-then-start: waiters only ever see dependent
  *       stages of the reserved future).</li>
  *   <li><b>Bounded memory:</b> the authoritative map is pruned to
- *       {@value #STICKY_DOCS_MAX} entries (least-recently-saved first); dirty or
- *       in-flight documents are never evicted, nor is any document whose save
- *       completed after the oldest currently in-flight fetch started (an
- *       overlay against that fetch's result still needs it).</li>
+ *       {@value #STICKY_DOCS_MAX} entries. Saved documents go first
+ *       (least-recently-saved first), except one whose save completed after the
+ *       oldest currently in-flight fetch started (an overlay against that
+ *       fetch's result still needs it). If that is not enough, documents whose
+ *       save failed are dropped oldest first, with a warning: a store that
+ *       stays unwritable must not grow the map without limit. A document with
+ *       a save in flight is never evicted.</li>
  * </ul>
  *
  * <p>Threading: no {@code synchronized} (virtual-thread friendly) and no side
@@ -288,10 +291,10 @@ final class StickyBucketManager {
      * fire-and-forget. The document actually written to the store is re-read
      * from the authoritative map at save time, so a trailing save always writes
      * the latest merged state. A failed or rejected save is logged and leaves the
-     * key dirty: the document stays in the authoritative map, is never evicted
-     * while dirty, and the next write to the key or {@link #flush()} re-attempts it.
-     * Failed saves are not retried on their own, so a dirty key is held in memory
-     * until a later attempt succeeds.
+     * key dirty: the document stays in the authoritative map and the next write to
+     * the key or {@link #flush()} re-attempts it. Failed saves are not retried on
+     * their own, so a dirty key is held in memory until a later attempt succeeds
+     * or the map outgrows {@value #STICKY_DOCS_MAX} entries and it is dropped.
      */
     CompletableFuture<Void> recordAndSave(StickyAssignmentsDocument doc) {
         return recordAndSave(doc, this.service);
@@ -476,6 +479,21 @@ final class StickyBucketManager {
 
     // -------------------------------------------------------------- eviction
 
+    /** A document that may be evicted, as seen under its state lock during the scan. */
+    private static final class EvictionCandidate {
+        final String key;
+        final SaveState state;
+        final boolean unsaved;
+        final long sequence;
+
+        EvictionCandidate(String key, SaveState state) {
+            this.key = key;
+            this.state = state;
+            this.unsaved = state.dirty;
+            this.sequence = state.lastSaveCompletedSequence;
+        }
+    }
+
     private void pruneAuthoritativeDocs() {
         if (authoritativeDocs.size() <= STICKY_DOCS_MAX) {
             return;
@@ -485,41 +503,54 @@ final class StickyBucketManager {
             oldestInflightFetchStart = Math.min(oldestInflightFetchStart, entry.startSequence);
         }
 
-        List<Map.Entry<String, SaveState>> candidates = new ArrayList<>();
+        List<EvictionCandidate> candidates = new ArrayList<>();
         for (Map.Entry<String, SaveState> entry : saveStates.entrySet()) {
             SaveState state = entry.getValue();
             state.lock.lock();
             try {
-                if (!state.inFlight && !state.dirty
-                        && state.lastSaveCompletedSequence < oldestInflightFetchStart) {
-                    candidates.add(entry);
+                // dirty and not in flight: the last save failed, so the store never got this document.
+                boolean evictable = !state.inFlight
+                        && (state.dirty || state.lastSaveCompletedSequence < oldestInflightFetchStart);
+                if (evictable) {
+                    candidates.add(new EvictionCandidate(entry.getKey(), state));
                 }
             } finally {
                 state.lock.unlock();
             }
         }
-        candidates.sort(Comparator.comparingLong(e -> e.getValue().lastSaveCompletedSequence));
+        // Saved documents first: evicting one loses nothing. Unsaved ones only if that is not enough.
+        candidates.sort(Comparator.<EvictionCandidate, Boolean>comparing(c -> c.unsaved)
+                .thenComparingLong(c -> c.sequence));
 
         int excess = authoritativeDocs.size() - STICKY_DOCS_MAX;
+        int unsavedDropped = 0;
         List<String> evictedDocKeys = new ArrayList<>();
-        for (Map.Entry<String, SaveState> entry : candidates) {
+        for (EvictionCandidate candidate : candidates) {
             if (excess <= 0) {
                 break;
             }
-            SaveState state = entry.getValue();
+            SaveState state = candidate.state;
             state.lock.lock();
             try {
-                if (state.inFlight || state.dirty) {
-                    continue; // became active since the scan — never evict unsaved local truth
+                if (state.inFlight || state.dirty != candidate.unsaved) {
+                    continue; // written or saved since the scan
                 }
-                if (authoritativeDocs.remove(entry.getKey()) != null) {
+                if (authoritativeDocs.remove(candidate.key) != null) {
                     excess--;
-                    evictedDocKeys.add(entry.getKey());
+                    evictedDocKeys.add(candidate.key);
+                    if (candidate.unsaved) {
+                        unsavedDropped++;
+                    }
                 }
-                saveStates.remove(entry.getKey(), state);
+                saveStates.remove(candidate.key, state);
             } finally {
                 state.lock.unlock();
             }
+        }
+        if (unsavedDropped > 0) {
+            log.warn("Dropped {} sticky bucket document(s) whose save failed: more than {} documents are held"
+                            + " in memory. Their assignments were never stored, so those users are bucketed"
+                            + " again on their next evaluation.", unsavedDropped, STICKY_DOCS_MAX);
         }
         invalidateCachedReadsFor(evictedDocKeys);
     }

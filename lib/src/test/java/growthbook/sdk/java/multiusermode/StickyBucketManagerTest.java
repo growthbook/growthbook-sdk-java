@@ -400,7 +400,7 @@ class StickyBucketManagerTest {
 
     @Test
     @Timeout(30)
-    void evictionNeverDropsADocumentWhoseSaveFailed() throws Exception {
+    void evictionDropsSavedDocumentsBeforeOneWhoseSaveFailed() throws Exception {
         ScriptedService service = new ScriptedService();
         service.failSaves = true;
         StickyBucketManager manager = new StickyBucketManager(service, null, null);
@@ -415,7 +415,45 @@ class StickyBucketManagerTest {
         assertTrue(manager.authoritativeDocCount() <= StickyBucketManager.STICKY_DOCS_MAX + 1,
                 "authoritative doc map must be bounded, was " + manager.authoritativeDocCount());
         assertNotNull(manager.authoritativeDoc("id||failed-user"),
-                "a document whose save failed must never be evicted");
+                "a document whose save failed must outlive documents the store already has");
+    }
+
+    @Test
+    @Timeout(30)
+    void failedSavesBeyondTheBoundAreDroppedOldestFirst() throws Exception {
+        ScriptedService service = new ScriptedService();
+        service.failSaves = true;
+        StickyBucketManager manager = new StickyBucketManager(service, null, null);
+
+        int written = StickyBucketManager.STICKY_DOCS_MAX + 200;
+        for (int i = 0; i < written; i++) {
+            manager.recordAndSave(doc("user-" + i, "exp__0", "v")).get(5, TimeUnit.SECONDS);
+        }
+
+        assertEquals(StickyBucketManager.STICKY_DOCS_MAX, manager.authoritativeDocCount(),
+                "a store that stays unwritable must not grow the doc map without limit");
+        assertNull(manager.authoritativeDoc("id||user-0"), "the oldest failed save is dropped first");
+        assertNotNull(manager.authoritativeDoc("id||user-" + (written - 1)), "the newest failed save is kept");
+    }
+
+    @Test
+    @Timeout(30)
+    void aDroppedFailedSaveIsNotWrittenByALaterFlush() throws Exception {
+        ScriptedService service = new ScriptedService();
+        service.failSaves = true;
+        StickyBucketManager manager = new StickyBucketManager(service, null, null);
+        for (int i = 0; i < StickyBucketManager.STICKY_DOCS_MAX + 1; i++) {
+            manager.recordAndSave(doc("user-" + i, "exp__0", "v")).get(5, TimeUnit.SECONDS);
+        }
+        service.savedDocs.clear();
+        service.failSaves = false;
+        service.completeSavesImmediately = true;
+
+        manager.flush().get(5, TimeUnit.SECONDS);
+
+        assertEquals(StickyBucketManager.STICKY_DOCS_MAX, service.savedDocs.size(),
+                "flush re-attempts exactly the documents still held");
+        assertNull(service.store.get("id||user-0"), "a dropped document must not reach the store");
     }
 
     @Test
