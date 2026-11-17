@@ -158,6 +158,10 @@ class GrowthBookClientAsyncApiTest {
         // Netty event loop).
         ForeignThreadStickyService service = new ForeignThreadStickyService();
         service.failFetches = true;
+        // Hold the failure until the continuation is attached; a future that has already completed
+        // would run it on this thread and hide a missing executor hop.
+        CountDownLatch fetchGate = new CountDownLatch(1);
+        service.fetchGate = fetchGate;
         GrowthBookClient client = new GrowthBookClient(stickyOptions(service, null));
         try {
             List<String> handlerThreads = new CopyOnWriteArrayList<>();
@@ -166,6 +170,7 @@ class GrowthBookClientAsyncApiTest {
                 handlerThreads.add(Thread.currentThread().getName());
                 handled.countDown();
             });
+            fetchGate.countDown();
 
             assertTrue(handled.await(10, TimeUnit.SECONDS), "the caller's continuation never ran");
             for (String threadName : handlerThreads) {
