@@ -135,11 +135,18 @@ public class GrowthBookClient {
             } else {
                 this.ownedAsyncExecutor = null;
             }
-            AsyncStickyBucketService asyncService = this.options.getAsyncStickyBucketService() != null
-                    ? this.options.getAsyncStickyBucketService()
-                    : new SyncOffloadStickyBucketAdapter(this.options.getStickyBucketService(), executor);
+            AsyncStickyBucketService asyncService = this.options.getAsyncStickyBucketService();
+            AsyncStickyBucketService callerThreadService = asyncService;
+            if (asyncService == null) {
+                // A blocking store can only be made non-blocking by spending a thread on it. The
+                // synchronous evaluation API already has one (the caller's), so only the
+                // asynchronous entry points go through the executor.
+                asyncService = new SyncOffloadStickyBucketAdapter(this.options.getStickyBucketService(), executor);
+                callerThreadService = new CallerThreadStickyBucketAdapter(this.options.getStickyBucketService());
+            }
             this.stickyBucketManager = new StickyBucketManager(
                     asyncService,
+                    callerThreadService,
                     this.options.getStickyBucketCacheTtlSeconds(),
                     this.options.getStickyBucketCacheSize());
         } else {
@@ -152,9 +159,10 @@ public class GrowthBookClient {
     }
 
     /**
-     * Bounded daemon pool for blocking I/O offload — sized for I/O, not CPU. Fixed core==max with
-     * idle timeout so a quiet client holds zero threads. Default AbortPolicy: a saturated pool
-     * surfaces the rejection rather than running blocking store I/O on the request thread.
+     * Bounded daemon pool for the asynchronous entry points' blocking I/O offload — sized for I/O,
+     * not CPU. Fixed core==max with idle timeout so a quiet client holds zero threads. Default
+     * AbortPolicy: a saturated pool rejects the task instead of running blocking store I/O on the
+     * thread that asked not to be blocked. The synchronous evaluation API never uses this pool.
      */
     private static ExecutorService newOwnedAsyncExecutor() {
         int threads = Math.max(8, 2 * Runtime.getRuntime().availableProcessors());
@@ -767,10 +775,11 @@ public class GrowthBookClient {
         // landing mid-read cannot pair new rules with documents fetched for the old identifiers.
         GlobalContext snapshot = this.globalContextManager.getCurrentGlobalContext();
         if (this.stickyBucketManager != null && safeUserContext.getStickyBucketAssignmentDocs() == null) {
-            // Scoped async read: fetch the user's sticky docs through the manager (coalesced, cached,
+            // Scoped read: fetch the user's sticky docs through the manager (coalesced, cached,
             // overlaid with this process's own writes) and populate the context so the managers' own
-            // synchronous preload skips. A read failure propagates out of eval for an async service
-            // (JS/Python parity); a blocking service keeps its log-and-continue behaviour.
+            // synchronous preload skips. A blocking service is read on this thread. A read failure
+            // propagates out of eval for an async service (JS/Python parity); a blocking service keeps
+            // its log-and-continue behaviour.
             JsonObject mergedAttributes = mergeGlobalAttributes(safeUserContext.getAttributes());
             Map<String, String> identifiers =
                     stickyIdentifierAttributesFor(mergedAttributes, snapshot, inlineIdentifierAttributes);
@@ -782,7 +791,7 @@ public class GrowthBookClient {
                 ? this.remoteEvalCoordinator.createEvaluationContext(safeUserContext)
                 : this.globalContextManager.createEvaluationContext(safeUserContext, snapshot);
         if (this.stickyBucketManager != null) {
-            context.setStickyBucketDocWriter(this.stickyBucketManager::recordAndSave);
+            context.setStickyBucketDocWriter(this.stickyBucketManager::recordAndSaveOnCallerThread);
         }
         return withPluginRegistry(context);
     }
@@ -899,7 +908,7 @@ public class GrowthBookClient {
 
     private Map<String, StickyAssignmentsDocument> fetchStickyDocsBlocking(Map<String, String> attributes) {
         try {
-            return this.stickyBucketManager.fetchAssignments(attributes).get();
+            return this.stickyBucketManager.fetchAssignmentsOnCallerThread(attributes).get();
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
             throw new RuntimeException("Interrupted while fetching sticky bucket assignments", e);

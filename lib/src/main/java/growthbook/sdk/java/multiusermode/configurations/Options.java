@@ -605,12 +605,14 @@ public class Options {
     private AsyncStickyBucketService asyncStickyBucketService;
 
     /**
-     * Executor for the client's asynchronous work: offloading blocking
-     * {@link StickyBucketService} calls and composing async evaluations. When
-     * null, the client creates its own bounded daemon pool and shuts it down in
-     * {@code shutdown()}; a caller-supplied executor is never shut down by the
-     * SDK. On JDK 21+, pass {@code Executors.newVirtualThreadPerTaskExecutor()}
-     * so blocking offloads scale with the store instead of a fixed pool.
+     * Executor for the client's asynchronous entry points: offloading blocking
+     * {@link StickyBucketService} calls and composing async evaluations. The
+     * synchronous evaluation API never uses it; it calls a blocking service on
+     * the calling thread. When null, the client creates its own bounded daemon
+     * pool and shuts it down in {@code shutdown()}; a caller-supplied executor
+     * is never shut down by the SDK. On JDK 21+, pass
+     * {@code Executors.newVirtualThreadPerTaskExecutor()} so blocking offloads
+     * scale with the store instead of a fixed pool.
      */
     @Nullable
     private Executor asyncExecutor;

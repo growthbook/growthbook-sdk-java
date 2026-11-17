@@ -106,6 +106,7 @@ class GrowthBookClientStickyBucketTest {
     private static final class RecordingSyncStickyService implements StickyBucketService {
         final InMemoryStickyBucketServiceImpl delegate = new InMemoryStickyBucketServiceImpl();
         final List<String> fetchThreads = new CopyOnWriteArrayList<>();
+        final List<String> saveThreads = new CopyOnWriteArrayList<>();
         final AtomicInteger batchedFetchCalls = new AtomicInteger();
         volatile boolean failFetches = false;
 
@@ -116,6 +117,7 @@ class GrowthBookClientStickyBucketTest {
 
         @Override
         public void saveAssignments(StickyAssignmentsDocument doc) {
+            saveThreads.add(Thread.currentThread().getName());
             delegate.saveAssignments(doc);
         }
 
@@ -209,21 +211,42 @@ class GrowthBookClientStickyBucketTest {
 
     @Test
     @Timeout(30)
-    void syncServiceIsOffloadedAndBatched() {
+    void synchronousEvaluationCallsABlockingServiceOnTheCallingThread() {
         RecordingSyncStickyService service = new RecordingSyncStickyService();
         GrowthBookClient client = new GrowthBookClient(Options.builder()
                 .stickyBucketService(service)
                 .stickyBucketIdentifierAttributes(Collections.singletonList("id"))
                 .build());
         try {
-            client.run(experiment("exp-offload"), user("u1", "country"));
+            client.run(experiment("exp-inline"), user("u1", "country"));
 
             assertEquals(1, service.batchedFetchCalls.get(),
-                    "sync service must be offloaded as ONE batched getAllAssignments call");
-            for (String threadName : service.fetchThreads) {
-                assertTrue(threadName.startsWith("growthbook-async-"),
-                        "blocking sync service must run on the SDK pool, ran on: " + threadName);
-            }
+                    "a blocking service must be read with ONE batched getAllAssignments call");
+            String caller = Thread.currentThread().getName();
+            assertEquals(Collections.singletonList(caller), service.fetchThreads,
+                    "a synchronous evaluation must read a blocking service on its own thread");
+            assertEquals(Collections.singletonList(caller), service.saveThreads,
+                    "a synchronous evaluation must write a blocking service on its own thread");
+        } finally {
+            client.shutdown();
+        }
+    }
+
+    @Test
+    @Timeout(30)
+    void prefetchOffloadsABlockingServiceToTheExecutor() throws Exception {
+        RecordingSyncStickyService service = new RecordingSyncStickyService();
+        GrowthBookClient client = new GrowthBookClient(Options.builder()
+                .stickyBucketService(service)
+                .stickyBucketIdentifierAttributes(Collections.singletonList("id"))
+                .build());
+        try {
+            client.prefetchStickyBuckets(user("u1", "country")).get(GATE_TIMEOUT_SECONDS, TimeUnit.SECONDS);
+
+            assertEquals(1, service.fetchThreads.size());
+            assertTrue(service.fetchThreads.get(0).startsWith("growthbook-async-"),
+                    "an asynchronous entry point must not block its caller on a blocking service, ran on: "
+                            + service.fetchThreads.get(0));
         } finally {
             client.shutdown();
         }
@@ -325,7 +348,7 @@ class GrowthBookClientStickyBucketTest {
 
     @Test
     @Timeout(30)
-    void saturatedOffloadPoolDoesNotFailEvaluationForSyncService() {
+    void synchronousEvaluationIsUnaffectedByASaturatedExecutor() {
         RecordingSyncStickyService service = new RecordingSyncStickyService();
         GrowthBookClient client = new GrowthBookClient(Options.builder()
                 .stickyBucketService(service)
@@ -333,10 +356,14 @@ class GrowthBookClientStickyBucketTest {
                 .asyncExecutor(new RejectingExecutor())
                 .build());
         try {
-            ExperimentResult<String> result = client.run(experiment("exp-saturated"), user("u1", "country"));
+            ExperimentResult<String> first = client.run(experiment("exp-saturated"), user("u1", "country"));
+            ExperimentResult<String> second = client.run(experiment("exp-saturated"), user("u1", "country"));
 
-            assertNotNull(result.getValue(), "a rejected offload must fall back to normal bucketing");
-            assertEquals(0, service.batchedFetchCalls.get(), "the rejected read never reached the service");
+            assertEquals(2, service.batchedFetchCalls.get(), "each synchronous read must reach the service");
+            assertNotNull(service.delegate.getAssignments("id", "u1"), "the assignment must reach the store");
+            assertEquals(first.getVariationId(), second.getVariationId());
+            assertTrue(Boolean.TRUE.equals(second.getStickyBucketUsed()),
+                    "the second evaluation must be served from the stored assignment");
         } finally {
             client.shutdown();
         }
