@@ -597,20 +597,22 @@ public class Options {
      * exclusive with {@link #stickyBucketService} — configure exactly one.
      * See {@link AsyncStickyBucketService} for the contract.
      *
-     * <p>A failed read from this service fails the evaluation. A failed read from a
-     * blocking {@link #stickyBucketService} is logged and evaluation continues
-     * with normal bucketing.
+     * <p>A failed read from either kind of service is logged and that evaluation
+     * continues with normal bucketing, but none of its assignments are saved: a
+     * variation bucketed without the stored assignment must not replace it.
      */
     @Nullable
     private AsyncStickyBucketService asyncStickyBucketService;
 
     /**
-     * Executor for the client's asynchronous work: offloading blocking
-     * {@link StickyBucketService} calls and composing async evaluations. When
-     * null, the client creates its own bounded daemon pool and shuts it down in
-     * {@code shutdown()}; a caller-supplied executor is never shut down by the
-     * SDK. On JDK 21+, pass {@code Executors.newVirtualThreadPerTaskExecutor()}
-     * so blocking offloads scale with the store instead of a fixed pool.
+     * Executor for the client's asynchronous entry points: offloading blocking
+     * {@link StickyBucketService} calls and composing async evaluations. The
+     * synchronous evaluation API never uses it; it calls a blocking service on
+     * the calling thread. When null, the client creates its own bounded daemon
+     * pool and shuts it down in {@code shutdown()}; a caller-supplied executor
+     * is never shut down by the SDK. On JDK 21+, pass
+     * {@code Executors.newVirtualThreadPerTaskExecutor()} so blocking offloads
+     * scale with the store instead of a fixed pool.
      */
     @Nullable
     private Executor asyncExecutor;

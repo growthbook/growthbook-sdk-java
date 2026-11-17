@@ -561,10 +561,27 @@ public class GrowthBookUtils {
     public static void refreshStickyBuckets(GBContext context,
                                             String featuresDataModel,
                                             JsonObject attributeOverrides) {
+        loadStickyBuckets(context, featuresDataModel, attributeOverrides);
+    }
+
+    /**
+     * {@link #refreshStickyBuckets} that reports whether the stored assignments were read.
+     *
+     * @param context            {@link GBContext} that contains sticky bucketing attributes and sticky bucket service
+     * @param featuresDataModel  A string representing the features data model.
+     * @param attributeOverrides {@link JsonObject} containing attribute overrides.
+     * @return {@code false} when the service failed to load assignments. The context then holds no
+     * documents and evaluation buckets normally; the caller must not save those assignments, because
+     * they could replace the variation the store already holds. {@code true} otherwise, including
+     * when no service is configured.
+     */
+    public static boolean loadStickyBuckets(GBContext context,
+                                            String featuresDataModel,
+                                            JsonObject attributeOverrides) {
         StickyBucketService stickyBucketService = context.getStickyBucketService();
         if (stickyBucketService == null) {
             log.debug("refreshStickyBuckets: sticky bucket service not configured, skipping refresh.");
-            return;
+            return true;
         }
         Map<String, String> stickyBucketAttributes =
                 getStickyBucketAttributes(
@@ -573,14 +590,15 @@ public class GrowthBookUtils {
                         attributeOverrides
                 );
 
-        Map<String, StickyAssignmentsDocument> docs;
         try {
-            docs = stickyBucketService.getAllAssignments(stickyBucketAttributes);
+            context.setStickyBucketAssignmentDocs(stickyBucketService.getAllAssignments(stickyBucketAttributes));
+            return true;
         } catch (RuntimeException e) {
-            log.warn("Sticky bucket service failed to load assignments; continuing with normal bucketing.", e);
-            docs = new HashMap<>();
+            log.warn("Sticky bucket service failed to load assignments; continuing with normal bucketing"
+                    + " and not saving assignments until they load.", e);
+            context.setStickyBucketAssignmentDocs(new HashMap<>());
+            return false;
         }
-        context.setStickyBucketAssignmentDocs(docs);
     }
 
     /**

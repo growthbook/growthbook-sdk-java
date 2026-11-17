@@ -57,6 +57,13 @@ import java.util.concurrent.locks.ReentrantLock;
  * effects inside {@code ConcurrentHashMap} compute lambdas (bin locks are
  * hidden monitors; a synchronously-completing service would otherwise re-enter
  * them). Store calls are launched outside all locks.
+ *
+ * <p>Two views of the store: {@code service} never blocks its caller and backs
+ * the asynchronous entry points; {@code callerThreadService} backs the
+ * synchronous evaluation API. For a natively asynchronous store they are the
+ * same object. For a blocking {@code StickyBucketService} the first offloads
+ * to an executor and the second runs the call on the calling thread, so a
+ * synchronous evaluation never queues behind a pool it does not need.
  */
 @Slf4j
 final class StickyBucketManager {
@@ -64,6 +71,7 @@ final class StickyBucketManager {
     static final int STICKY_DOCS_MAX = 1000;
 
     private final AsyncStickyBucketService service;
+    private final AsyncStickyBucketService callerThreadService;
 
     /** Authoritative record of every document this process has written, keyed attributeName||attributeValue. */
     private final ConcurrentHashMap<String, StickyAssignmentsDocument> authoritativeDocs = new ConcurrentHashMap<>();
@@ -86,7 +94,19 @@ final class StickyBucketManager {
     StickyBucketManager(AsyncStickyBucketService service,
                         @Nullable Long cacheTtlSeconds,
                         @Nullable Integer cacheSize) {
+        this(service, service, cacheTtlSeconds, cacheSize);
+    }
+
+    /**
+     * @param service             non-blocking view of the store, used by the asynchronous entry points
+     * @param callerThreadService view used by the synchronous evaluation API; may block its caller
+     */
+    StickyBucketManager(AsyncStickyBucketService service,
+                        AsyncStickyBucketService callerThreadService,
+                        @Nullable Long cacheTtlSeconds,
+                        @Nullable Integer cacheSize) {
         this.service = service;
+        this.callerThreadService = callerThreadService;
         boolean cacheEnabled = cacheTtlSeconds != null && cacheTtlSeconds > 0
                 && (cacheSize == null || cacheSize > 0);
         this.readCache = cacheEnabled
@@ -118,11 +138,26 @@ final class StickyBucketManager {
 
     /**
      * Fetch the sticky bucket documents for these identifier attributes, with
-     * this process's own writes overlaid. Failures propagate (a rejecting
-     * store completes the future exceptionally — matching the JS and Python
-     * SDKs, which never silently evaluate without sticky data).
+     * this process's own writes overlaid. A failing or rejecting store
+     * completes the future exceptionally; the caller decides what to evaluate
+     * with, and must not persist assignments bucketed without the stored ones.
      */
     CompletableFuture<Map<String, StickyAssignmentsDocument>> fetchAssignments(Map<String, String> attributes) {
+        return fetchAssignments(attributes, this.service);
+    }
+
+    /**
+     * {@link #fetchAssignments} for the synchronous evaluation API: a blocking store is read on the
+     * calling thread, so the returned future is already complete for the caller that started the
+     * read. Concurrent callers for the same attributes still share that one store call.
+     */
+    CompletableFuture<Map<String, StickyAssignmentsDocument>> fetchAssignmentsOnCallerThread(
+            Map<String, String> attributes) {
+        return fetchAssignments(attributes, this.callerThreadService);
+    }
+
+    private CompletableFuture<Map<String, StickyAssignmentsDocument>> fetchAssignments(
+            Map<String, String> attributes, AsyncStickyBucketService via) {
         if (attributes.isEmpty()) {
             return CompletableFuture.completedFuture(overlay(attributes, Collections.emptyMap()));
         }
@@ -146,13 +181,13 @@ final class StickyBucketManager {
             }
             FetchEntry created = new FetchEntry(sequence.incrementAndGet());
             if (inflightFetches.putIfAbsent(key, created) == null) {
-                startFetch(key, created);
+                startFetch(key, created, via);
                 return created.future.thenApply(StickyBucketManager::copyDocs);
             }
         }
     }
 
-    private void startFetch(Map<String, String> key, FetchEntry entry) {
+    private void startFetch(Map<String, String> key, FetchEntry entry, AsyncStickyBucketService via) {
         if (draining) {
             inflightFetches.remove(key, entry);
             entry.future.completeExceptionally(new IllegalStateException("client is shutting down"));
@@ -160,7 +195,7 @@ final class StickyBucketManager {
         }
         CompletionStage<Map<String, StickyAssignmentsDocument>> stage;
         try {
-            stage = service.getAllAssignments(key);
+            stage = via.getAllAssignments(key);
         } catch (RuntimeException e) {
             // Includes RejectedExecutionException from an offload executor at
             // saturation: surface it, don't silently evaluate without sticky data.
@@ -221,8 +256,8 @@ final class StickyBucketManager {
 
     /**
      * This process's own documents for these identifier attributes, without a store read. Used
-     * when a store read failed and evaluation continues anyway, so in-process assignments still
-     * hold. Returns a fresh, mutable, concurrency-safe map, like {@link #fetchAssignments}.
+     * when a store read failed and evaluation continues anyway, so assignments this process made
+     * while the store was readable still hold. Returns a fresh, mutable, concurrency-safe map, like {@link #fetchAssignments}.
      */
     Map<String, StickyAssignmentsDocument> localAssignments(Map<String, String> attributes) {
         return overlay(attributes, Collections.<String, StickyAssignmentsDocument>emptyMap());
@@ -259,6 +294,19 @@ final class StickyBucketManager {
      * until a later attempt succeeds.
      */
     CompletableFuture<Void> recordAndSave(StickyAssignmentsDocument doc) {
+        return recordAndSave(doc, this.service);
+    }
+
+    /**
+     * {@link #recordAndSave} for the synchronous evaluation API: a blocking store is written on the
+     * calling thread unless a save for the same key is already in flight, in which case that save
+     * re-writes the merged document when it completes.
+     */
+    CompletableFuture<Void> recordAndSaveOnCallerThread(StickyAssignmentsDocument doc) {
+        return recordAndSave(doc, this.callerThreadService);
+    }
+
+    private CompletableFuture<Void> recordAndSave(StickyAssignmentsDocument doc, AsyncStickyBucketService via) {
         String key = doc.getAttributeName() + "||" + doc.getAttributeValue();
         while (true) {
             SaveState state = saveStates.computeIfAbsent(key, k -> new SaveState()); // pure creation only
@@ -288,18 +336,18 @@ final class StickyBucketManager {
                 state.lock.unlock();
             }
             if (start) {
-                driveSave(key, state); // outside the map AND the state lock
+                driveSave(key, state, via); // outside the map AND the state lock
             }
             return waiter.thenApply(v -> v); // dependent copy: caller cancel() can't detach other writers
         }
     }
 
-    private void driveSave(String key, SaveState state) {
+    private void driveSave(String key, SaveState state, AsyncStickyBucketService via) {
         StickyAssignmentsDocument snapshot = authoritativeDocs.get(key);
         CompletableFuture<Void> saveFuture;
         boolean rejected = false;
         try {
-            CompletionStage<Void> stage = snapshot == null ? null : service.saveAssignments(snapshot);
+            CompletionStage<Void> stage = snapshot == null ? null : via.saveAssignments(snapshot);
             saveFuture = stage == null
                     ? CompletableFuture.completedFuture(null)
                     : stage.toCompletableFuture();
@@ -336,7 +384,7 @@ final class StickyBucketManager {
                 state.lock.unlock();
             }
             if (again) {
-                driveSave(key, state);
+                driveSave(key, state, via);
             } else {
                 quiescent.complete(null);
                 pruneAuthoritativeDocs();
@@ -381,7 +429,7 @@ final class StickyBucketManager {
                 state.lock.unlock();
             }
             if (kick) {
-                driveSave(entry.getKey(), state);
+                driveSave(entry.getKey(), state, this.service);
             }
             if (waiter != null) {
                 pending.add(waiter);

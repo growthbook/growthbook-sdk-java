@@ -35,9 +35,12 @@ import java.util.concurrent.CompletionStage;
  * </ul>
  *
  * <p>Existing synchronous {@link StickyBucketService} implementations do not
- * need porting — pass them as {@code Options.stickyBucketService} and the
- * client offloads their blocking calls to its executor (see
- * {@link SyncOffloadStickyBucketAdapter}).
+ * need porting — pass them as {@code Options.stickyBucketService}. The
+ * synchronous evaluation API calls them on the calling thread; the
+ * asynchronous entry points offload their blocking calls to the client's
+ * executor (see {@link SyncOffloadStickyBucketAdapter}), which costs a thread
+ * per in-flight call. Only an implementation of this interface on a natively
+ * asynchronous client avoids that.
  */
 public interface AsyncStickyBucketService {
 

@@ -131,6 +131,53 @@ class StickyBucketManagerTest {
 
     @Test
     @Timeout(10)
+    void eachEntryPointReadsAndWritesThroughItsOwnViewOfTheStore() throws Exception {
+        ScriptedService nonBlocking = new ScriptedService();
+        ScriptedService callerThread = new ScriptedService();
+        nonBlocking.completeFetchesImmediately = true;
+        nonBlocking.completeSavesImmediately = true;
+        callerThread.completeFetchesImmediately = true;
+        callerThread.completeSavesImmediately = true;
+        StickyBucketManager manager = new StickyBucketManager(nonBlocking, callerThread, null, null);
+
+        manager.fetchAssignmentsOnCallerThread(attrs("u1")).get(5, TimeUnit.SECONDS);
+        manager.recordAndSaveOnCallerThread(doc("u1", "exp__0", "1")).get(5, TimeUnit.SECONDS);
+        assertEquals(1, callerThread.fetchCalls.size());
+        assertEquals(1, callerThread.savedDocs.size());
+        assertEquals(0, nonBlocking.fetchCalls.size(), "the synchronous API must not touch the offloading view");
+        assertEquals(0, nonBlocking.savedDocs.size(), "the synchronous API must not touch the offloading view");
+
+        manager.fetchAssignments(attrs("u2")).get(5, TimeUnit.SECONDS);
+        manager.recordAndSave(doc("u2", "exp__0", "1")).get(5, TimeUnit.SECONDS);
+        assertEquals(1, nonBlocking.fetchCalls.size());
+        assertEquals(1, nonBlocking.savedDocs.size());
+        assertEquals(1, callerThread.fetchCalls.size(), "the asynchronous API must not block on the caller-thread view");
+        assertEquals(1, callerThread.savedDocs.size(), "the asynchronous API must not block on the caller-thread view");
+    }
+
+    @Test
+    @Timeout(10)
+    void aFetchInFlightOnOneViewIsSharedByCallersOfTheOther() throws Exception {
+        ScriptedService nonBlocking = new ScriptedService();
+        ScriptedService callerThread = new ScriptedService();
+        StickyBucketManager manager = new StickyBucketManager(nonBlocking, callerThread, null, null);
+
+        CompletableFuture<Map<String, StickyAssignmentsDocument>> first = manager.fetchAssignmentsOnCallerThread(attrs("u1"));
+        CompletableFuture<Map<String, StickyAssignmentsDocument>> second = manager.fetchAssignments(attrs("u1"));
+
+        assertEquals(1, callerThread.fetchCalls.size());
+        assertEquals(0, nonBlocking.fetchCalls.size(), "an identical fetch already in flight must be shared, not repeated");
+
+        Map<String, StickyAssignmentsDocument> fetched = new HashMap<>();
+        fetched.put("id||u1", doc("u1", "exp__0", "1"));
+        callerThread.pendingFetches.get(0).complete(fetched);
+
+        assertEquals("1", first.get(5, TimeUnit.SECONDS).get("id||u1").getAssignments().get("exp__0"));
+        assertEquals("1", second.get(5, TimeUnit.SECONDS).get("id||u1").getAssignments().get("exp__0"));
+    }
+
+    @Test
+    @Timeout(10)
     void distinctAttributesFetchIndependently() {
         ScriptedService service = new ScriptedService();
         StickyBucketManager manager = new StickyBucketManager(service, null, null);
