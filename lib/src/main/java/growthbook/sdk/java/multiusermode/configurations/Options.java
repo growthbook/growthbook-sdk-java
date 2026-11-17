@@ -597,9 +597,9 @@ public class Options {
      * exclusive with {@link #stickyBucketService} — configure exactly one.
      * See {@link AsyncStickyBucketService} for the contract.
      *
-     * <p>A failed read from this service fails the evaluation. A failed read from a
-     * blocking {@link #stickyBucketService} is logged and evaluation continues
-     * with normal bucketing.
+     * <p>A failed read from either kind of service is logged and that evaluation
+     * continues with normal bucketing, but none of its assignments are saved: a
+     * variation bucketed without the stored assignment must not replace it.
      */
     @Nullable
     private AsyncStickyBucketService asyncStickyBucketService;

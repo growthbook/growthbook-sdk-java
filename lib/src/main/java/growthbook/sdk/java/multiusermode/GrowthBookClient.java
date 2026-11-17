@@ -40,6 +40,7 @@ import growthbook.sdk.java.repository.FeatureSnapshot;
 import growthbook.sdk.java.repository.GBFeaturesRepository;
 import growthbook.sdk.java.repository.RefreshMode;
 import growthbook.sdk.java.stickyBucketing.AsyncStickyBucketService;
+import growthbook.sdk.java.stickyBucketing.StickyBucketDocWriter;
 import growthbook.sdk.java.stickyBucketing.SyncOffloadStickyBucketAdapter;
 import growthbook.sdk.java.util.GrowthBookJsonUtils;
 import com.google.gson.JsonElement;
@@ -774,24 +775,28 @@ public class GrowthBookClient {
         // Capture ONE feature snapshot for both identifier derivation and evaluation, so a refresh
         // landing mid-read cannot pair new rules with documents fetched for the old identifiers.
         GlobalContext snapshot = this.globalContextManager.getCurrentGlobalContext();
+        boolean stickyReadFailed = false;
         if (this.stickyBucketManager != null && safeUserContext.getStickyBucketAssignmentDocs() == null) {
             // Scoped read: fetch the user's sticky docs through the manager (coalesced, cached,
             // overlaid with this process's own writes) and populate the context so the managers' own
-            // synchronous preload skips. A blocking service is read on this thread. A read failure
-            // propagates out of eval for an async service (JS/Python parity); a blocking service keeps
-            // its log-and-continue behaviour.
+            // synchronous preload skips. A blocking service is read on this thread.
             JsonObject mergedAttributes = mergeGlobalAttributes(safeUserContext.getAttributes());
             Map<String, String> identifiers =
                     stickyIdentifierAttributesFor(mergedAttributes, snapshot, inlineIdentifierAttributes);
+            Map<String, StickyAssignmentsDocument> docs = fetchStickyDocsBlocking(identifiers);
+            stickyReadFailed = docs == null;
             UserContext scoped = safeUserContext.withAttributes(safeUserContext.getAttributes());
-            scoped.setStickyBucketAssignmentDocs(fetchStickyDocsBlocking(identifiers));
+            scoped.setStickyBucketAssignmentDocs(
+                    stickyReadFailed ? this.stickyBucketManager.localAssignments(identifiers) : docs);
             safeUserContext = scoped;
         }
         EvaluationContext context = this.options.isRemoteEvalEnabled()
                 ? this.remoteEvalCoordinator.createEvaluationContext(safeUserContext)
                 : this.globalContextManager.createEvaluationContext(safeUserContext, snapshot);
         if (this.stickyBucketManager != null) {
-            context.setStickyBucketDocWriter(this.stickyBucketManager::recordAndSaveOnCallerThread);
+            context.setStickyBucketDocWriter(stickyReadFailed
+                    ? StickyBucketDocWriter.DISCARDING
+                    : this.stickyBucketManager::recordAndSaveOnCallerThread);
         }
         return withPluginRegistry(context);
     }
@@ -906,6 +911,14 @@ public class GrowthBookClient {
         return attributes;
     }
 
+    /**
+     * Reads the user's sticky bucket documents, blocking the calling thread until they arrive.
+     *
+     * @return the documents, or {@code null} when the store could not be read. The caller then
+     * evaluates with this process's own assignments only and must not persist the result: a
+     * variation bucketed without the stored assignment could replace it in the store.
+     */
+    @Nullable
     private Map<String, StickyAssignmentsDocument> fetchStickyDocsBlocking(Map<String, String> attributes) {
         try {
             return this.stickyBucketManager.fetchAssignmentsOnCallerThread(attributes).get();
@@ -913,28 +926,10 @@ public class GrowthBookClient {
             Thread.currentThread().interrupt();
             throw new RuntimeException("Interrupted while fetching sticky bucket assignments", e);
         } catch (ExecutionException e) {
-            return recoverFailedStickyRead(attributes, e.getCause() == null ? e : e.getCause());
+            log.warn("Sticky bucket service failed to load assignments; continuing with normal bucketing"
+                    + " and not saving this evaluation's assignments.", e.getCause() == null ? e : e.getCause());
+            return null;
         }
-    }
-
-    /**
-     * Applies the sticky read failure policy. A blocking {@code StickyBucketService} keeps its
-     * log-and-continue behaviour: evaluation proceeds with only this process's own assignments. An
-     * {@link AsyncStickyBucketService} failure is rethrown so evaluation fails (JS/Python parity).
-     *
-     * @return this process's own documents for {@code attributes}, when the failure is recovered
-     * @throws RuntimeException the failure itself, when it is not recovered
-     */
-    private Map<String, StickyAssignmentsDocument> recoverFailedStickyRead(Map<String, String> attributes,
-                                                                          Throwable cause) {
-        if (this.options.getAsyncStickyBucketService() == null) {
-            log.warn("Sticky bucket service failed to load assignments; continuing with normal bucketing.", cause);
-            return this.stickyBucketManager.localAssignments(attributes);
-        }
-        if (cause instanceof RuntimeException) {
-            throw (RuntimeException) cause;
-        }
-        throw new RuntimeException("Failed to fetch sticky bucket assignments", cause);
     }
 
     /** Attaches this client's own plugin registry so events never route through another client's plugins. */

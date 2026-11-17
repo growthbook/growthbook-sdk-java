@@ -138,9 +138,9 @@ final class StickyBucketManager {
 
     /**
      * Fetch the sticky bucket documents for these identifier attributes, with
-     * this process's own writes overlaid. Failures propagate (a rejecting
-     * store completes the future exceptionally — matching the JS and Python
-     * SDKs, which never silently evaluate without sticky data).
+     * this process's own writes overlaid. A failing or rejecting store
+     * completes the future exceptionally; the caller decides what to evaluate
+     * with, and must not persist assignments bucketed without the stored ones.
      */
     CompletableFuture<Map<String, StickyAssignmentsDocument>> fetchAssignments(Map<String, String> attributes) {
         return fetchAssignments(attributes, this.service);
@@ -256,8 +256,8 @@ final class StickyBucketManager {
 
     /**
      * This process's own documents for these identifier attributes, without a store read. Used
-     * when a store read failed and evaluation continues anyway, so in-process assignments still
-     * hold. Returns a fresh, mutable, concurrency-safe map, like {@link #fetchAssignments}.
+     * when a store read failed and evaluation continues anyway, so assignments this process made
+     * while the store was readable still hold. Returns a fresh, mutable, concurrency-safe map, like {@link #fetchAssignments}.
      */
     Map<String, StickyAssignmentsDocument> localAssignments(Map<String, String> attributes) {
         return overlay(attributes, Collections.<String, StickyAssignmentsDocument>emptyMap());
