@@ -40,7 +40,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * Exposure-tracking hardening on the multi-user client: a throwing callback
  * never fails the assignment and its exposure is retried (the dedup key is
  * un-marked); dedup holds across many users (no 30-entry LRU thrash); the
- * legacy single-user propagation contract is unchanged.
+ * single-user path is unchanged (the exception propagates, no retry).
  */
 class GrowthBookClientTrackingTest {
 
@@ -239,6 +239,7 @@ class GrowthBookClientTrackingTest {
                 user("u1"),
                 new EvaluationContext.StackContext(),
                 Options.builder().trackingCallBackWithUser(failsOnce).build());
+        context.setSuppressTrackingErrors(true); // as GrowthBookClient builds it
         ExperimentResult<String> result = ExperimentResult.<String>builder()
                 .hashAttribute("id")
                 .hashValue("u1")
@@ -260,25 +261,63 @@ class GrowthBookClientTrackingTest {
 
     @Test
     @Timeout(30)
-    void legacyContextsKeepPropagatingCallbackExceptions() {
+    void singleUserContextsPropagateCallbackExceptionsAndDoNotRetry() {
+        AtomicInteger attempts = new AtomicInteger();
         TrackingCallbackWithUser throwing = new TrackingCallbackWithUser() {
             @Override
             public <ValueType> void onTrack(Experiment<ValueType> experiment,
                                             ExperimentResult<ValueType> result,
                                             UserContext userContext) {
+                attempts.incrementAndGet();
                 throw new IllegalStateException("analytics backend down");
             }
         };
         Options options = Options.builder().trackingCallBackWithUser(throwing).build();
-        // A context WITHOUT the multi-user client's suppress flag — the legacy
-        // documented contract: the exception propagates out of evaluation.
-        EvaluationContext legacyContext = new EvaluationContext(
+        // A context WITHOUT the multi-user client's flag, as the single-user
+        // GrowthBook class builds it.
+        EvaluationContext singleUserContext = new EvaluationContext(
                 GlobalContext.builder().enabled(true).build(),
                 user("u1"),
                 new EvaluationContext.StackContext(),
                 options);
+        ExperimentEvaluator evaluator = new ExperimentEvaluator();
 
         assertThrows(IllegalStateException.class,
-                () -> new ExperimentEvaluator().evaluateExperiment(experiment("exp-legacy"), legacyContext, null));
+                () -> evaluator.evaluateExperiment(experiment("exp-legacy"), singleUserContext, null));
+        assertNotNull(evaluator.evaluateExperiment(experiment("exp-legacy"), singleUserContext, null));
+        assertEquals(1, attempts.get(), "the single-user path must not retry a failed exposure");
+    }
+
+    @Test
+    @Timeout(30)
+    void singleUserContextsDoNotRetryFailedRemoteEvalExposures() {
+        AtomicInteger attempts = new AtomicInteger();
+        TrackingCallbackWithUser throwing = new TrackingCallbackWithUser() {
+            @Override
+            public <ValueType> void onTrack(Experiment<ValueType> experiment,
+                                            ExperimentResult<ValueType> result,
+                                            UserContext userContext) {
+                attempts.incrementAndGet();
+                throw new IllegalStateException("analytics backend down");
+            }
+        };
+        EvaluationContext singleUserContext = new EvaluationContext(
+                GlobalContext.builder().enabled(true).build(),
+                user("u1"),
+                new EvaluationContext.StackContext(),
+                Options.builder().trackingCallBackWithUser(throwing).build());
+        ExperimentResult<String> result = ExperimentResult.<String>builder()
+                .hashAttribute("id")
+                .hashValue("u1")
+                .variationId(1)
+                .build();
+        List<TrackData<String>> tracks = Collections.singletonList(
+                new TrackData<>(experiment("exp-remote"), result));
+        ExperimentEvaluator evaluator = new ExperimentEvaluator();
+
+        evaluator.fireRemoteEvaluationTracks(tracks, singleUserContext);
+        evaluator.fireRemoteEvaluationTracks(tracks, singleUserContext);
+
+        assertEquals(1, attempts.get(), "the single-user path must not retry a failed exposure");
     }
 }

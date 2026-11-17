@@ -46,7 +46,8 @@ public class EvaluationContext {
      * When true (set by the multi-user client), a throwing tracking callback is
      * logged and its exposure retried instead of propagating out of evaluation —
      * an analytics failure must not fail the assignment (JS/Python parity).
-     * False preserves the legacy single-user contract: the exception propagates.
+     * False keeps the single-user {@code GrowthBook} behavior: the exception
+     * propagates and the exposure is not retried.
      */
     private boolean suppressTrackingErrors;
 
