@@ -106,6 +106,17 @@ class OptionsValidatorTest {
     }
 
     @Test
+    @DisplayName("Verify: negative stickyBucketTimeout is rejected, zero (disabled) is accepted")
+    void rejectsNegativeStickyBucketTimeout() {
+        InvalidOptionsException ex = assertThrows(InvalidOptionsException.class,
+                () -> OptionsValidator.validate(validOptions().stickyBucketTimeout(Duration.ofMillis(-1)).build()));
+        assertTrue(ex.getMessage().contains("stickyBucketTimeout must not be negative"));
+
+        assertTrue(OptionsValidator.findViolations(
+                validOptions().stickyBucketTimeout(Duration.ZERO).build()).isEmpty());
+    }
+
+    @Test
     @DisplayName("Verify: rejects a non-positive remoteEvalCacheTtlSeconds")
     void rejectsNonPositiveRemoteEvalCacheTtl() {
         assertThrows(IllegalArgumentException.class,
