@@ -16,6 +16,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -195,7 +197,7 @@ class ExperimentTrackerTest {
         for (int i = 0; i < threads; i++) {
             futures.add(executor.submit(() -> {
                 barrier.await();
-                if (tracker.markIfFirst("hot")) {
+                if (tracker.markIfFirst("hot") != null) {
                     claims.incrementAndGet();
                 }
                 return null;
@@ -218,13 +220,33 @@ class ExperimentTrackerTest {
     void untrackReleasesOnlyTheClaimItOwnsAndAllowsASingleRetry() {
         ExperimentTracker tracker = new ExperimentTracker();
 
-        assertTrue(tracker.markIfFirst("exp"), "first caller claims the exposure");
-        assertFalse(tracker.markIfFirst("exp"), "a concurrent loser must not also dispatch");
+        Object claim = tracker.markIfFirst("exp");
+        assertNotNull(claim, "first caller claims the exposure");
+        assertNull(tracker.markIfFirst("exp"), "a concurrent loser must not also dispatch");
 
-        tracker.untrack("exp");
+        tracker.untrack("exp", claim);
 
-        assertTrue(tracker.markIfFirst("exp"), "a failed delivery frees the key for retry");
-        assertFalse(tracker.markIfFirst("exp"), "the retried exposure is claimed only once");
+        assertNotNull(tracker.markIfFirst("exp"), "a failed delivery frees the key for retry");
+        assertNull(tracker.markIfFirst("exp"), "the retried exposure is claimed only once");
+    }
+
+    /**
+     * Test 7b: A claim that outlived its entry cannot release a newer one. A slow delivery's
+     * key can be evicted and claimed again before the slow delivery fails.
+     */
+    @Test
+    void untrackWithAStaleClaimLeavesANewerClaimInPlace() {
+        ExperimentTracker tracker = new ExperimentTracker();
+
+        Object stale = tracker.markIfFirst("exp");
+        tracker.clearTrackedExperiments(); // stands in for LRU eviction while the delivery runs
+        Object newer = tracker.markIfFirst("exp");
+        assertNotNull(newer, "an evicted key can be claimed again");
+
+        tracker.untrack("exp", stale);
+
+        assertTrue(tracker.isExperimentTracked("exp"), "the newer, delivered exposure must stay marked");
+        assertNull(tracker.markIfFirst("exp"));
     }
 
     /**
@@ -242,8 +264,8 @@ class ExperimentTrackerTest {
     void smallCacheDedupesTheHotKeyAndStaysWithinItsBound() {
         ExperimentTracker tracker = new ExperimentTracker(2);
 
-        assertTrue(tracker.markIfFirst("a"), "first claim of a key wins");
-        assertFalse(tracker.markIfFirst("a"), "the just-claimed key is deduped");
+        assertNotNull(tracker.markIfFirst("a"), "first claim of a key wins");
+        assertNull(tracker.markIfFirst("a"), "the just-claimed key is deduped");
 
         for (int i = 0; i < 50; i++) {
             tracker.markIfFirst("k-" + i);

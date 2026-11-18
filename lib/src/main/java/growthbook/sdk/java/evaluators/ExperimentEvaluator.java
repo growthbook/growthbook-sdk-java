@@ -454,7 +454,8 @@ public class ExperimentEvaluator implements IExperimentEvaluator {
                                            boolean suppressErrors) {
         ExperimentTracker tracker = trackerFor(context);
         String key = trackingKey(experiment, result);
-        if (!tracker.markIfFirst(key)) {
+        Object claim = tracker.markIfFirst(key);
+        if (claim == null) {
             return;
         }
         try {
@@ -462,7 +463,7 @@ public class ExperimentEvaluator implements IExperimentEvaluator {
         } catch (RuntimeException e) {
             boolean retry = context.isSuppressTrackingErrors();
             if (retry) {
-                tracker.untrack(key);
+                tracker.untrack(key, claim);
             }
             if (!suppressErrors) {
                 throw e;

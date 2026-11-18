@@ -261,6 +261,42 @@ class GrowthBookClientTrackingTest {
 
     @Test
     @Timeout(30)
+    void aFailedDeliveryDoesNotUnmarkANewerDeliveryOfTheSameExposure() {
+        ExperimentTracker tracker = new ExperimentTracker(10_000);
+        ExperimentEvaluator evaluator = new ExperimentEvaluator();
+        AtomicInteger attempts = new AtomicInteger();
+        EvaluationContext[] context = new EvaluationContext[1];
+        TrackingCallbackWithUser slowThenFails = new TrackingCallbackWithUser() {
+            @Override
+            public <ValueType> void onTrack(Experiment<ValueType> experiment,
+                                            ExperimentResult<ValueType> result,
+                                            UserContext userContext) {
+                if (attempts.incrementAndGet() == 1) {
+                    // While this delivery is still running, its key is evicted and another
+                    // evaluation claims and delivers the same exposure. Only then does this one fail.
+                    tracker.clearTrackedExperiments();
+                    evaluator.evaluateExperiment(experiment("exp-stale"), context[0], null);
+                    throw new IllegalStateException("analytics backend down");
+                }
+            }
+        };
+        context[0] = new EvaluationContext(
+                GlobalContext.builder().enabled(true).build(),
+                user("u1"),
+                new EvaluationContext.StackContext(),
+                Options.builder().trackingCallBackWithUser(slowThenFails).build());
+        context[0].setSuppressTrackingErrors(true); // as GrowthBookClient builds it
+        context[0].setSharedExperimentTracker(tracker);
+
+        evaluator.evaluateExperiment(experiment("exp-stale"), context[0], null);
+        assertEquals(2, attempts.get(), "the first delivery failed and the newer one succeeded");
+
+        evaluator.evaluateExperiment(experiment("exp-stale"), context[0], null);
+        assertEquals(2, attempts.get(), "the late failure must not un-mark the newer, delivered exposure");
+    }
+
+    @Test
+    @Timeout(30)
     void singleUserContextsPropagateCallbackExceptionsAndDoNotRetry() {
         AtomicInteger attempts = new AtomicInteger();
         TrackingCallbackWithUser throwing = new TrackingCallbackWithUser() {
