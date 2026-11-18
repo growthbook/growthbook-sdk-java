@@ -606,6 +606,24 @@ class StickyBucketManagerTest {
 
     @Test
     @Timeout(30)
+    void afterShutdownOnlyTheCallerThreadViewIsStillRead() throws Exception {
+        ScriptedService nonBlocking = new ScriptedService();
+        ScriptedService callerThread = new ScriptedService();
+        callerThread.completeFetchesImmediately = true;
+        StickyBucketManager manager = new StickyBucketManager(nonBlocking, callerThread, null, null);
+        manager.startDraining();
+        manager.close(1_000);
+
+        assertThrows(ExecutionException.class,
+                () -> manager.fetchAssignments(attrs("u1")).get(5, TimeUnit.SECONDS));
+        assertTrue(nonBlocking.fetchCalls.isEmpty(), "a read that needs the client's pool or timer is refused");
+
+        assertNotNull(manager.fetchAssignmentsOnCallerThread(attrs("u1")).get(5, TimeUnit.SECONDS));
+        assertEquals(1, callerThread.fetchCalls.size(), "a blocking store is still read on the calling thread");
+    }
+
+    @Test
+    @Timeout(30)
     void closeUnblocksAnInFlightReadInsteadOfHangingForever() throws Exception {
         // A service whose fetch never completes — mimics a store call whose offloaded task is
         // discarded by the executor during shutdown, which would otherwise hang fetchAssignments().get().

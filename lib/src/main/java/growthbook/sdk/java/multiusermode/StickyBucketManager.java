@@ -263,7 +263,10 @@ final class StickyBucketManager {
     private void startFetch(Map<String, String> key, FetchEntry entry, AsyncStickyBucketService via) {
         CompletionStage<Map<String, StickyAssignmentsDocument>> storeCall;
         try {
-            if (draining) {
+            // After shutdown the client's own resources are gone: the pool that offloads a blocking
+            // store, and the timer that bounds a read of an asynchronous one. Only a blocking store
+            // read on the calling thread needs neither, so only that read is still served.
+            if (draining && via == service) {
                 throw new IllegalStateException("client is shutting down");
             }
             storeCall = via.getAllAssignments(key);
@@ -535,7 +538,10 @@ final class StickyBucketManager {
                 .thenCompose(ignored -> flush(roundsLeft - 1, reattempted));
     }
 
-    /** Stop accepting new fetches; writes still merge into the authoritative map. */
+    /**
+     * Called at shutdown. From here on a read is served only for a blocking store on the calling
+     * thread; every other read fails at once. Writes still merge into the authoritative map.
+     */
     void startDraining() {
         this.draining = true;
     }

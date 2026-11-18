@@ -636,6 +636,28 @@ class GrowthBookClientStickyBucketTest {
 
     @Test
     @Timeout(30)
+    void anEvaluationAfterShutdownStillReadsABlockingStore() {
+        // A request still in flight when the application shuts the client down must get the
+        // user's stored variation, as it did before the manager existed.
+        Experiment<String> experiment = experiment("exp-after-shutdown");
+        UserContext user = user("u1", "country");
+        String stored = variationKeyOtherThanHashed(experiment, user);
+        RecordingSyncStickyService service = new RecordingSyncStickyService();
+        service.delegate.saveAssignments(storedAssignment("u1", "exp-after-shutdown", stored));
+        GrowthBookClient client = new GrowthBookClient(Options.builder()
+                .stickyBucketService(service)
+                .stickyBucketIdentifierAttributes(Collections.singletonList("id"))
+                .build());
+        client.shutdown();
+
+        ExperimentResult<String> result = client.run(experiment, user);
+
+        assertEquals(stored, result.getKey());
+        assertTrue(Boolean.TRUE.equals(result.getStickyBucketUsed()));
+    }
+
+    @Test
+    @Timeout(30)
     void callerSuppliedExecutorIsNeverShutDown() throws Exception {
         RecordingSyncStickyService service = new RecordingSyncStickyService();
         java.util.concurrent.ExecutorService callerPool = java.util.concurrent.Executors.newSingleThreadExecutor(r -> {
