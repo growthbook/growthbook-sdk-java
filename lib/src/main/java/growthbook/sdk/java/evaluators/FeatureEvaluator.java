@@ -308,7 +308,7 @@ public class FeatureEvaluator implements IFeatureEvaluator {
             return null;
         }
 
-        boolean stickyBucketingEnabled = context.getOptions().getStickyBucketService() != null
+        boolean stickyBucketingEnabled = context.getOptions().isStickyBucketingConfigured()
                 && !Boolean.TRUE.equals(rule.getDisableStickyBucketing());
         String fallback = stickyBucketingEnabled ? rule.getFallbackAttribute() : null;
 
