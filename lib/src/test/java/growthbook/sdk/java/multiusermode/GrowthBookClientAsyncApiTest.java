@@ -186,9 +186,15 @@ class GrowthBookClientAsyncApiTest {
                 trackingThreads.add(Thread.currentThread().getName());
             }
         };
+        // Hold the read until the evaluation is attached; a read that had already completed would
+        // let the evaluation run on this thread, which is allowed but is not what this test checks.
+        CountDownLatch fetchGate = new CountDownLatch(1);
+        service.fetchGate = fetchGate;
         GrowthBookClient client = new GrowthBookClient(stickyOptions(service, tracking));
         try {
-            client.runAsync(experiment("exp-hop"), user("u1")).get(10, TimeUnit.SECONDS);
+            CompletableFuture<ExperimentResult<String>> evaluation = client.runAsync(experiment("exp-hop"), user("u1"));
+            fetchGate.countDown();
+            evaluation.get(10, TimeUnit.SECONDS);
 
             assertFalse(trackingThreads.isEmpty(), "tracking callback did not fire");
             for (String threadName : trackingThreads) {
