@@ -408,7 +408,14 @@ public class FeatureEvaluator implements IFeatureEvaluator {
     private <T> void dispatchFeatureUsage(EvaluationContext context, String key, FeatureResult<T> result) {
         FeatureUsageCallbackWithUser featureUsageCallbackWithUser = context.getOptions().getFeatureUsageCallbackWithUser();
         if (featureUsageCallbackWithUser != null) {
-            featureUsageCallbackWithUser.onFeatureUsage(key, result, context.getUser());
+            try {
+                featureUsageCallbackWithUser.onFeatureUsage(key, result, context.getUser());
+            } catch (RuntimeException e) {
+                if (!context.isSuppressTrackingErrors()) {
+                    throw e;
+                }
+                log.error("Feature usage callback failed for key {}", key, e);
+            }
         }
         PluginRegistry registry = context.getPluginRegistry();
         if (registry != null) {
