@@ -78,8 +78,14 @@ loadScripts(document, 'script');</script>
 <hr>
 <div class="type-signature"><span class="modifiers">public class </span><span class="element-name type-name-label">ExperimentTracker</span>
 <span class="extends-implements">extends <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html" title="class or interface in java.lang" class="external-link">Object</a></span></div>
-<div class="block">A thread-safe LRU Cache implementation to keep track of the most recent experiments.
- Uses Guava cache with a maximum size of 30 entries.</div>
+<div class="block">A thread-safe LRU cache deduplicating experiment-exposure events by
+ <code>hashAttribute + hashValue + experimentKey + variationId</code> (the same
+ key composition as the JavaScript and Python SDKs).
+
+ <p>Sizing matters: the multi-user client shares ONE tracker across all users,
+ so the bound must comfortably exceed the number of concurrently active unique
+ exposures — an undersized LRU evicts and re-fires exposures under load. Past
+ the bound, an evicted exposure may legitimately fire again.</div>
 </section>
 <section class="summary">
 <ul class="summary-list">
@@ -92,7 +98,11 @@ loadScripts(document, 'script');</script>
 <div class="table-header col-first">Constructor</div>
 <div class="table-header col-last">Description</div>
 <div class="col-constructor-name even-row-color"><code><a href="#%3Cinit%3E()" class="member-name-link">ExperimentTracker</a>()</code></div>
-<div class="col-last even-row-color">&nbsp;</div>
+<div class="col-last even-row-color">
+<div class="block">Evaluator-local tracker with the legacy 30-entry bound (single-user scope).</div>
+</div>
+<div class="col-constructor-name odd-row-color"><code><a href="#%3Cinit%3E(int)" class="member-name-link">ExperimentTracker</a><wbr>(int&nbsp;maxSize)</code></div>
+<div class="col-last odd-row-color">&nbsp;</div>
 </div>
 </section>
 </li>
@@ -113,9 +123,22 @@ loadScripts(document, 'script');</script>
 <div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>boolean</code></div>
 <div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#isExperimentTracked(java.lang.String)" class="member-name-link">isExperimentTracked</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;experimentId)</code></div>
 <div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">&nbsp;</div>
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html" title="class or interface in java.lang" class="external-link">Object</a></code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#markIfFirst(java.lang.String)" class="member-name-link">markIfFirst</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;experimentId)</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="block">Atomically claims an exposure for delivery: marks it tracked and reports
+ whether this caller was the first to do so.</div>
+</div>
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>void</code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#trackExperiment(java.lang.String)" class="member-name-link">trackExperiment</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;experimentId)</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">&nbsp;</div>
 <div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>void</code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#trackExperiment(java.lang.String)" class="member-name-link">trackExperiment</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;experimentId)</code></div>
-<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">&nbsp;</div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#untrack(java.lang.String,java.lang.Object)" class="member-name-link">untrack</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;experimentId,
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html" title="class or interface in java.lang" class="external-link">Object</a>&nbsp;claim)</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="block">Un-marks an exposure whose delivery failed, so it is retried on the next
+ evaluation instead of being silently lost.</div>
+</div>
 </div>
 </div>
 </div>
@@ -137,6 +160,19 @@ loadScripts(document, 'script');</script>
 <section class="detail" id="&lt;init&gt;()">
 <h3>ExperimentTracker</h3>
 <div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="element-name">ExperimentTracker</span>()</div>
+<div class="block">Evaluator-local tracker with the legacy 30-entry bound (single-user scope).</div>
+</section>
+</li>
+<li>
+<section class="detail" id="&lt;init&gt;(int)">
+<h3>ExperimentTracker</h3>
+<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="element-name">ExperimentTracker</span><wbr><span class="parameters">(int&nbsp;maxSize)</span></div>
+<dl class="notes">
+<dt>Parameters:</dt>
+<dd><code>maxSize</code> - maximum tracked exposures before least-recently-used eviction; must be at least 1</dd>
+<dt>Throws:</dt>
+<dd><code><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/IllegalArgumentException.html" title="class or interface in java.lang" class="external-link">IllegalArgumentException</a></code> - if <code>maxSize</code> is less than 1</dd>
+</dl>
 </section>
 </li>
 </ul>
@@ -157,6 +193,40 @@ loadScripts(document, 'script');</script>
 <section class="detail" id="isExperimentTracked(java.lang.String)">
 <h3>isExperimentTracked</h3>
 <div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type">boolean</span>&nbsp;<span class="element-name">isExperimentTracked</span><wbr><span class="parameters">(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;experimentId)</span></div>
+</section>
+</li>
+<li>
+<section class="detail" id="markIfFirst(java.lang.String)">
+<h3>markIfFirst</h3>
+<div class="member-signature"><span class="annotations">@Nullable
+</span><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html" title="class or interface in java.lang" class="external-link">Object</a></span>&nbsp;<span class="element-name">markIfFirst</span><wbr><span class="parameters">(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;experimentId)</span></div>
+<div class="block">Atomically claims an exposure for delivery: marks it tracked and reports
+ whether this caller was the first to do so. Concurrent first evaluations of
+ the same key on a shared tracker see exactly one claim, so the exposure is
+ dispatched once rather than racing a separate check-then-mark.</div>
+<dl class="notes">
+<dt>Parameters:</dt>
+<dd><code>experimentId</code> - the dedup key to claim</dd>
+<dt>Returns:</dt>
+<dd>this caller's claim, to hand to <a href="#untrack(java.lang.String,java.lang.Object)"><code>untrack(java.lang.String, java.lang.Object)</code></a> if delivery fails,
+         or <code>null</code> if the key was already tracked</dd>
+</dl>
+</section>
+</li>
+<li>
+<section class="detail" id="untrack(java.lang.String,java.lang.Object)">
+<h3>untrack</h3>
+<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type">void</span>&nbsp;<span class="element-name">untrack</span><wbr><span class="parameters">(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;experimentId,
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html" title="class or interface in java.lang" class="external-link">Object</a>&nbsp;claim)</span></div>
+<div class="block">Un-marks an exposure whose delivery failed, so it is retried on the next
+ evaluation instead of being silently lost. Only the mark made by
+ <code>claim</code> is removed: if the key was evicted and claimed again while
+ the failed delivery was still running, the newer mark stays.</div>
+<dl class="notes">
+<dt>Parameters:</dt>
+<dd><code>experimentId</code> - the dedup key to un-mark</dd>
+<dd><code>claim</code> - the value <a href="#markIfFirst(java.lang.String)"><code>markIfFirst(java.lang.String)</code></a> returned for this delivery</dd>
+</dl>
 </section>
 </li>
 <li>

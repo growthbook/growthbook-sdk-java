@@ -89,7 +89,9 @@ loadScripts(document, 'script');</script>
 <div class="table-header col-last">Description</div>
 <div class="col-first even-row-color class-summary class-summary-tab2"><a href="ExperimentTracker.html" title="class in growthbook.sdk.java.multiusermode">ExperimentTracker</a></div>
 <div class="col-last even-row-color class-summary class-summary-tab2">
-<div class="block">A thread-safe LRU Cache implementation to keep track of the most recent experiments.</div>
+<div class="block">A thread-safe LRU cache deduplicating experiment-exposure events by
+ <code>hashAttribute + hashValue + experimentKey + variationId</code> (the same
+ key composition as the JavaScript and Python SDKs).</div>
 </div>
 <div class="col-first odd-row-color class-summary class-summary-tab2"><a href="GrowthBookClient.html" title="class in growthbook.sdk.java.multiusermode">GrowthBookClient</a></div>
 <div class="col-last odd-row-color class-summary class-summary-tab2">

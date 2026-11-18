@@ -137,15 +137,29 @@ loadScripts(document, 'script');</script>
 <div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">Plugins registered with the owning GrowthBook instance.</div>
 </div>
-<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="EvaluationContext.StackContext.html" title="class in growthbook.sdk.java.multiusermode.configurations">EvaluationContext.StackContext</a></code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#getStack()" class="member-name-link">getStack</a>()</code></div>
-<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">&nbsp;</div>
-<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="UserContext.html" title="class in growthbook.sdk.java.multiusermode.configurations">UserContext</a></code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#getUser()" class="member-name-link">getUser</a>()</code></div>
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="../ExperimentTracker.html" title="class in growthbook.sdk.java.multiusermode">ExperimentTracker</a></code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#getSharedExperimentTracker()" class="member-name-link">getSharedExperimentTracker</a>()</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="block">Exposure-dedup tracker shared by the owning multi-user client across all
+ of its evaluations (including prerequisite evaluations, which allocate
+ fresh evaluator instances).</div>
+</div>
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="EvaluationContext.StackContext.html" title="class in growthbook.sdk.java.multiusermode.configurations">EvaluationContext.StackContext</a></code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#getStack()" class="member-name-link">getStack</a>()</code></div>
 <div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">&nbsp;</div>
-<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>int</code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#hashCode()" class="member-name-link">hashCode</a>()</code></div>
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="UserContext.html" title="class in growthbook.sdk.java.multiusermode.configurations">UserContext</a></code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#getUser()" class="member-name-link">getUser</a>()</code></div>
 <div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">&nbsp;</div>
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>int</code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#hashCode()" class="member-name-link">hashCode</a>()</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">&nbsp;</div>
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>boolean</code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#isSuppressTrackingErrors()" class="member-name-link">isSuppressTrackingErrors</a>()</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="block">When true (set by the multi-user client), a throwing tracking callback is
+ logged and its exposure retried instead of propagating out of evaluation —
+ an analytics failure must not fail the assignment (JS/Python parity).</div>
+</div>
 <div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>void</code></div>
 <div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#setGlobal(growthbook.sdk.java.multiusermode.configurations.GlobalContext)" class="member-name-link">setGlobal</a><wbr>(<a href="GlobalContext.html" title="class in growthbook.sdk.java.multiusermode.configurations">GlobalContext</a>&nbsp;global)</code></div>
 <div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">&nbsp;</div>
@@ -158,8 +172,22 @@ loadScripts(document, 'script');</script>
 <div class="block">Plugins registered with the owning GrowthBook instance.</div>
 </div>
 <div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>void</code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#setStack(growthbook.sdk.java.multiusermode.configurations.EvaluationContext.StackContext)" class="member-name-link">setStack</a><wbr>(<a href="EvaluationContext.StackContext.html" title="class in growthbook.sdk.java.multiusermode.configurations">EvaluationContext.StackContext</a>&nbsp;stack)</code></div>
-<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">&nbsp;</div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#setSharedExperimentTracker(growthbook.sdk.java.multiusermode.ExperimentTracker)" class="member-name-link">setSharedExperimentTracker</a><wbr>(<a href="../ExperimentTracker.html" title="class in growthbook.sdk.java.multiusermode">ExperimentTracker</a>&nbsp;sharedExperimentTracker)</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="block">Exposure-dedup tracker shared by the owning multi-user client across all
+ of its evaluations (including prerequisite evaluations, which allocate
+ fresh evaluator instances).</div>
+</div>
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>void</code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#setStack(growthbook.sdk.java.multiusermode.configurations.EvaluationContext.StackContext)" class="member-name-link">setStack</a><wbr>(<a href="EvaluationContext.StackContext.html" title="class in growthbook.sdk.java.multiusermode.configurations">EvaluationContext.StackContext</a>&nbsp;stack)</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">&nbsp;</div>
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>void</code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#setSuppressTrackingErrors(boolean)" class="member-name-link">setSuppressTrackingErrors</a><wbr>(boolean&nbsp;suppressTrackingErrors)</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="block">When true (set by the multi-user client), a throwing tracking callback is
+ logged and its exposure retried instead of propagating out of evaluation —
+ an analytics failure must not fail the assignment (JS/Python parity).</div>
+</div>
 <div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>void</code></div>
 <div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#setUser(growthbook.sdk.java.multiusermode.configurations.UserContext)" class="member-name-link">setUser</a><wbr>(<a href="UserContext.html" title="class in growthbook.sdk.java.multiusermode.configurations">UserContext</a>&nbsp;user)</code></div>
 <div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">&nbsp;</div>
@@ -235,6 +263,28 @@ loadScripts(document, 'script');</script>
 </section>
 </li>
 <li>
+<section class="detail" id="getSharedExperimentTracker()">
+<h3>getSharedExperimentTracker</h3>
+<div class="member-signature"><span class="annotations">@Nullable
+</span><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="../ExperimentTracker.html" title="class in growthbook.sdk.java.multiusermode">ExperimentTracker</a></span>&nbsp;<span class="element-name">getSharedExperimentTracker</span>()</div>
+<div class="block">Exposure-dedup tracker shared by the owning multi-user client across all
+ of its evaluations (including prerequisite evaluations, which allocate
+ fresh evaluator instances). Null → the evaluator's own local tracker
+ (legacy single-user path).</div>
+</section>
+</li>
+<li>
+<section class="detail" id="isSuppressTrackingErrors()">
+<h3>isSuppressTrackingErrors</h3>
+<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type">boolean</span>&nbsp;<span class="element-name">isSuppressTrackingErrors</span>()</div>
+<div class="block">When true (set by the multi-user client), a throwing tracking callback is
+ logged and its exposure retried instead of propagating out of evaluation —
+ an analytics failure must not fail the assignment (JS/Python parity).
+ False keeps the single-user <code>GrowthBook</code> behavior: the exception
+ propagates and the exposure is not retried.</div>
+</section>
+</li>
+<li>
 <section class="detail" id="setGlobal(growthbook.sdk.java.multiusermode.configurations.GlobalContext)">
 <h3>setGlobal</h3>
 <div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type">void</span>&nbsp;<span class="element-name">setGlobal</span><wbr><span class="parameters">(<a href="GlobalContext.html" title="class in growthbook.sdk.java.multiusermode.configurations">GlobalContext</a>&nbsp;global)</span></div>
@@ -266,6 +316,28 @@ loadScripts(document, 'script');</script>
 <div class="block">Plugins registered with the owning GrowthBook instance. Carried per
  evaluation context (not on the shared <a href="Options.html" title="class in growthbook.sdk.java.multiusermode.configurations"><code>Options</code></a>) so that separate
  SDK instances built from the same <code>Options</code> stay isolated.</div>
+</section>
+</li>
+<li>
+<section class="detail" id="setSharedExperimentTracker(growthbook.sdk.java.multiusermode.ExperimentTracker)">
+<h3>setSharedExperimentTracker</h3>
+<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type">void</span>&nbsp;<span class="element-name">setSharedExperimentTracker</span><wbr><span class="parameters">(@Nullable
+ <a href="../ExperimentTracker.html" title="class in growthbook.sdk.java.multiusermode">ExperimentTracker</a>&nbsp;sharedExperimentTracker)</span></div>
+<div class="block">Exposure-dedup tracker shared by the owning multi-user client across all
+ of its evaluations (including prerequisite evaluations, which allocate
+ fresh evaluator instances). Null → the evaluator's own local tracker
+ (legacy single-user path).</div>
+</section>
+</li>
+<li>
+<section class="detail" id="setSuppressTrackingErrors(boolean)">
+<h3>setSuppressTrackingErrors</h3>
+<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type">void</span>&nbsp;<span class="element-name">setSuppressTrackingErrors</span><wbr><span class="parameters">(boolean&nbsp;suppressTrackingErrors)</span></div>
+<div class="block">When true (set by the multi-user client), a throwing tracking callback is
+ logged and its exposure retried instead of propagating out of evaluation —
+ an analytics failure must not fail the assignment (JS/Python parity).
+ False keeps the single-user <code>GrowthBook</code> behavior: the exception
+ propagates and the exposure is not retried.</div>
 </section>
 </li>
 <li>

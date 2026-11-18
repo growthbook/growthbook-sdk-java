@@ -1037,9 +1037,15 @@ loadScripts(document, 'script');</script>
 <dd>&nbsp;</dd>
 <dt><a href="growthbook/sdk/java/multiusermode/ExperimentTracker.html" class="type-name-link" title="class in growthbook.sdk.java.multiusermode">ExperimentTracker</a> - Class in <a href="growthbook/sdk/java/multiusermode/package-summary.html">growthbook.sdk.java.multiusermode</a></dt>
 <dd>
-<div class="block">A thread-safe LRU Cache implementation to keep track of the most recent experiments.</div>
+<div class="block">A thread-safe LRU cache deduplicating experiment-exposure events by
+ <code>hashAttribute + hashValue + experimentKey + variationId</code> (the same
+ key composition as the JavaScript and Python SDKs).</div>
 </dd>
 <dt><a href="growthbook/sdk/java/multiusermode/ExperimentTracker.html#%3Cinit%3E()" class="member-name-link">ExperimentTracker()</a> - Constructor for class growthbook.sdk.java.multiusermode.<a href="growthbook/sdk/java/multiusermode/ExperimentTracker.html" title="class in growthbook.sdk.java.multiusermode">ExperimentTracker</a></dt>
+<dd>
+<div class="block">Evaluator-local tracker with the legacy 30-entry bound (single-user scope).</div>
+</dd>
+<dt><a href="growthbook/sdk/java/multiusermode/ExperimentTracker.html#%3Cinit%3E(int)" class="member-name-link">ExperimentTracker(int)</a> - Constructor for class growthbook.sdk.java.multiusermode.<a href="growthbook/sdk/java/multiusermode/ExperimentTracker.html" title="class in growthbook.sdk.java.multiusermode">ExperimentTracker</a></dt>
 <dd>&nbsp;</dd>
 </dl>
 <h2 class="title" id="I:F">F</h2>
@@ -2688,6 +2694,12 @@ loadScripts(document, 'script');</script>
 <dd>
 <div class="block">SHA-256 hash of the sorted feature keys, or <code>null</code> when keys are unavailable.</div>
 </dd>
+<dt><a href="growthbook/sdk/java/multiusermode/configurations/EvaluationContext.html#getSharedExperimentTracker()" class="member-name-link">getSharedExperimentTracker()</a> - Method in class growthbook.sdk.java.multiusermode.configurations.<a href="growthbook/sdk/java/multiusermode/configurations/EvaluationContext.html" title="class in growthbook.sdk.java.multiusermode.configurations">EvaluationContext</a></dt>
+<dd>
+<div class="block">Exposure-dedup tracker shared by the owning multi-user client across all
+ of its evaluations (including prerequisite evaluations, which allocate
+ fresh evaluator instances).</div>
+</dd>
 <dt><a href="growthbook/sdk/java/diagnostics/model/FeatureDiagnostics.html#getSource()" class="member-name-link">getSource()</a> - Method in class growthbook.sdk.java.diagnostics.model.<a href="growthbook/sdk/java/diagnostics/model/FeatureDiagnostics.html" title="class in growthbook.sdk.java.diagnostics.model">FeatureDiagnostics</a></dt>
 <dd>
 <div class="block">Source used to report feature diagnostics.</div>
@@ -3571,6 +3583,12 @@ loadScripts(document, 'script');</script>
 <dd>
 <div class="block">Actionable issues detected in the current snapshot.</div>
 </dd>
+<dt><a href="growthbook/sdk/java/multiusermode/configurations/EvaluationContext.html#isSuppressTrackingErrors()" class="member-name-link">isSuppressTrackingErrors()</a> - Method in class growthbook.sdk.java.multiusermode.configurations.<a href="growthbook/sdk/java/multiusermode/configurations/EvaluationContext.html" title="class in growthbook.sdk.java.multiusermode.configurations">EvaluationContext</a></dt>
+<dd>
+<div class="block">When true (set by the multi-user client), a throwing tracking callback is
+ logged and its exposure retried instead of propagating out of evaluation —
+ an analytics failure must not fail the assignment (JS/Python parity).</div>
+</dd>
 <dt><a href="growthbook/sdk/java/util/ExperimentHelper.html#isTracked(growthbook.sdk.java.model.Experiment,growthbook.sdk.java.model.ExperimentResult)" class="member-name-link">isTracked(Experiment&lt;ValueType&gt;, ExperimentResult&lt;ValueType&gt;)</a> - Method in class growthbook.sdk.java.util.<a href="growthbook/sdk/java/util/ExperimentHelper.html" title="class in growthbook.sdk.java.util">ExperimentHelper</a></dt>
 <dd>
 <div class="deprecation-block"><span class="deprecated-label">Deprecated.</span></div>
@@ -3703,6 +3721,11 @@ loadScripts(document, 'script');</script>
 <dd>&nbsp;</dd>
 <dt><a href="growthbook/sdk/java/diagnostics/provider/helper/ErrorDiagnosticsMapper.html#map(java.lang.Throwable,long,growthbook.sdk.java.diagnostics.provider.helper.DiagnosticsSecretMasker)" class="member-name-link">map(Throwable, long, DiagnosticsSecretMasker)</a> - Method in class growthbook.sdk.java.diagnostics.provider.helper.<a href="growthbook/sdk/java/diagnostics/provider/helper/ErrorDiagnosticsMapper.html" title="class in growthbook.sdk.java.diagnostics.provider.helper">ErrorDiagnosticsMapper</a></dt>
 <dd>&nbsp;</dd>
+<dt><a href="growthbook/sdk/java/multiusermode/ExperimentTracker.html#markIfFirst(java.lang.String)" class="member-name-link">markIfFirst(String)</a> - Method in class growthbook.sdk.java.multiusermode.<a href="growthbook/sdk/java/multiusermode/ExperimentTracker.html" title="class in growthbook.sdk.java.multiusermode">ExperimentTracker</a></dt>
+<dd>
+<div class="block">Atomically claims an exposure for delivery: marks it tracked and reports
+ whether this caller was the first to do so.</div>
+</dd>
 <dt><a href="growthbook/sdk/java/diagnostics/provider/helper/DiagnosticsSecretMasker.html#mask(java.lang.String)" class="member-name-link">mask(String)</a> - Method in class growthbook.sdk.java.diagnostics.provider.helper.<a href="growthbook/sdk/java/diagnostics/provider/helper/DiagnosticsSecretMasker.html" title="class in growthbook.sdk.java.diagnostics.provider.helper">DiagnosticsSecretMasker</a></dt>
 <dd>&nbsp;</dd>
 <dt><a href="growthbook/sdk/java/diagnostics/provider/helper/DiagnosticsSecretMasker.html#maskClientKey(java.lang.String)" class="member-name-link">maskClientKey(String)</a> - Method in class growthbook.sdk.java.diagnostics.provider.helper.<a href="growthbook/sdk/java/diagnostics/provider/helper/DiagnosticsSecretMasker.html" title="class in growthbook.sdk.java.diagnostics.provider.helper">DiagnosticsSecretMasker</a></dt>
@@ -5117,6 +5140,12 @@ loadScripts(document, 'script');</script>
 <dd>
 <div class="block">Seed to use for hashing</div>
 </dd>
+<dt><a href="growthbook/sdk/java/multiusermode/configurations/EvaluationContext.html#setSharedExperimentTracker(growthbook.sdk.java.multiusermode.ExperimentTracker)" class="member-name-link">setSharedExperimentTracker(ExperimentTracker)</a> - Method in class growthbook.sdk.java.multiusermode.configurations.<a href="growthbook/sdk/java/multiusermode/configurations/EvaluationContext.html" title="class in growthbook.sdk.java.multiusermode.configurations">EvaluationContext</a></dt>
+<dd>
+<div class="block">Exposure-dedup tracker shared by the owning multi-user client across all
+ of its evaluations (including prerequisite evaluations, which allocate
+ fresh evaluator instances).</div>
+</dd>
 <dt><a href="growthbook/sdk/java/model/FeatureResult.html#setSource(growthbook.sdk.java.model.FeatureResultSource)" class="member-name-link">setSource(FeatureResultSource)</a> - Method in class growthbook.sdk.java.model.<a href="growthbook/sdk/java/model/FeatureResult.html" title="class in growthbook.sdk.java.model">FeatureResult</a></dt>
 <dd>
 <div class="block">One of "unknownFeature", "defaultValue", "force", "experiment",
@@ -5163,6 +5192,12 @@ loadScripts(document, 'script');</script>
 <dt><a href="growthbook/sdk/java/model/ExperimentResult.html#setStickyBucketUsed(java.lang.Boolean)" class="member-name-link">setStickyBucketUsed(Boolean)</a> - Method in class growthbook.sdk.java.model.<a href="growthbook/sdk/java/model/ExperimentResult.html" title="class in growthbook.sdk.java.model">ExperimentResult</a></dt>
 <dd>
 <div class="block">If sticky bucketing was used to assign a variation</div>
+</dd>
+<dt><a href="growthbook/sdk/java/multiusermode/configurations/EvaluationContext.html#setSuppressTrackingErrors(boolean)" class="member-name-link">setSuppressTrackingErrors(boolean)</a> - Method in class growthbook.sdk.java.multiusermode.configurations.<a href="growthbook/sdk/java/multiusermode/configurations/EvaluationContext.html" title="class in growthbook.sdk.java.multiusermode.configurations">EvaluationContext</a></dt>
+<dd>
+<div class="block">When true (set by the multi-user client), a throwing tracking callback is
+ logged and its exposure retried instead of propagating out of evaluation —
+ an analytics failure must not fail the assignment (JS/Python parity).</div>
 </dd>
 <dt><a href="growthbook/sdk/java/multiusermode/configurations/Options.html#setSwrTtlSeconds(java.lang.Integer)" class="member-name-link">setSwrTtlSeconds(Integer)</a> - Method in class growthbook.sdk.java.multiusermode.configurations.<a href="growthbook/sdk/java/multiusermode/configurations/Options.html" title="class in growthbook.sdk.java.multiusermode.configurations">Options</a></dt>
 <dd>
@@ -5779,6 +5814,11 @@ loadScripts(document, 'script');</script>
 <dt><a href="growthbook/sdk/java/diagnostics/model/enums/StreamingState.html#UNSUPPORTED" class="member-name-link">UNSUPPORTED</a> - Enum constant in enum class growthbook.sdk.java.diagnostics.model.enums.<a href="growthbook/sdk/java/diagnostics/model/enums/StreamingState.html" title="enum class in growthbook.sdk.java.diagnostics.model.enums">StreamingState</a></dt>
 <dd>
 <div class="block">Streaming is configured but the server did not allow SSE.</div>
+</dd>
+<dt><a href="growthbook/sdk/java/multiusermode/ExperimentTracker.html#untrack(java.lang.String,java.lang.Object)" class="member-name-link">untrack(String, Object)</a> - Method in class growthbook.sdk.java.multiusermode.<a href="growthbook/sdk/java/multiusermode/ExperimentTracker.html" title="class in growthbook.sdk.java.multiusermode">ExperimentTracker</a></dt>
+<dd>
+<div class="block">Un-marks an exposure whose delivery failed, so it is retried on the next
+ evaluation instead of being silently lost.</div>
 </dd>
 <dt><a href="growthbook/sdk/java/util/GrowthBookJsonUtils.html#unwrap(java.lang.Object)" class="member-name-link">unwrap(Object)</a> - Static method in class growthbook.sdk.java.util.<a href="growthbook/sdk/java/util/GrowthBookJsonUtils.html" title="class in growthbook.sdk.java.util">GrowthBookJsonUtils</a></dt>
 <dd>
