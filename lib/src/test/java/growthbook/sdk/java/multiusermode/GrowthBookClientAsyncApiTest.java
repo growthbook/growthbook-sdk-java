@@ -1,7 +1,9 @@
 package growthbook.sdk.java.multiusermode;
 
+import growthbook.sdk.java.callback.ExperimentRunCallback;
 import growthbook.sdk.java.model.Experiment;
 import growthbook.sdk.java.model.ExperimentResult;
+import growthbook.sdk.java.model.FeatureKey;
 import growthbook.sdk.java.model.StickyAssignmentsDocument;
 import growthbook.sdk.java.model.TypedKey;
 import growthbook.sdk.java.model.VariationMeta;
@@ -47,6 +49,7 @@ import static com.github.tomakehurst.wiremock.client.WireMock.urlPathMatching;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -616,6 +619,164 @@ class GrowthBookClientAsyncApiTest {
         }
     }
 
+    // ------------------------------------------------- parity with the sync API
+
+    @Test
+    @Timeout(30)
+    void everyAsyncMethodMatchesItsSyncTwinForLoadedFeatures() throws Exception {
+        WireMockServer wireMock = featuresServer();
+        GrowthBookClient client = new GrowthBookClient(Options.builder()
+                .apiHost("http://localhost:" + wireMock.port())
+                .clientKey(CLIENT_KEY)
+                .asyncStickyBucketService(new ForeignThreadStickyService())
+                .build());
+        try {
+            assertTrue(client.initialize());
+            UserContext user = user("u1");
+            FeatureKey<String> experimentFeature = TypedKey.ofString("exp-feature");
+            // Assign once first, so both twins below read the same stored assignment.
+            client.evalFeature("exp-feature", String.class, user);
+            client.flushStickyBucketSaves().get(10, TimeUnit.SECONDS);
+
+            assertEquals(client.evalFeature("exp-feature", String.class, user),
+                    client.evalFeatureAsync("exp-feature", String.class, user).get(10, TimeUnit.SECONDS));
+            assertEquals(client.getFeature(experimentFeature, user),
+                    client.getFeatureAsync(experimentFeature, user).get(10, TimeUnit.SECONDS));
+            assertEquals(client.getFeatureValue(experimentFeature, "none", user),
+                    client.getFeatureValueAsync(experimentFeature, "none", user).get(10, TimeUnit.SECONDS));
+            assertEquals(client.getFeatureValue("exp-feature", "none", String.class, user),
+                    client.getFeatureValueAsync("exp-feature", "none", String.class, user).get(10, TimeUnit.SECONDS));
+            assertEquals(client.isOn("new-home", user), client.isOnAsync("new-home", user).get(10, TimeUnit.SECONDS));
+            assertEquals(client.isOff("new-home", user), client.isOffAsync("new-home", user).get(10, TimeUnit.SECONDS));
+            assertTrue(client.isOnAsync("new-home", user).get(10, TimeUnit.SECONDS));
+            assertFalse(client.isOffAsync("new-home", user).get(10, TimeUnit.SECONDS));
+        } finally {
+            client.shutdown();
+            wireMock.stop();
+        }
+    }
+
+    // ------------------------------------------------------------- runAsync
+
+    @Test
+    @Timeout(30)
+    void runAsyncReadsTheInlineExperimentsOwnHashAttribute() throws Exception {
+        // "deviceId" is neither configured nor derived from loaded features: only the inline
+        // experiment names it, and its stored assignment must still be honoured.
+        Experiment<String> experiment = Experiment.<String>builder()
+                .key("exp-inline-async")
+                .hashAttribute("deviceId")
+                .variations(new ArrayList<>(Arrays.asList("control", "treatment")))
+                .meta(new ArrayList<>(Arrays.asList(
+                        VariationMeta.builder().key("control").build(),
+                        VariationMeta.builder().key("treatment").build())))
+                .build();
+        UserContext user = UserContext.builder().attributesJson("{\"deviceId\":\"d1\"}").build();
+        String stored = variationKeyOtherThanHashed(experiment, user);
+        ForeignThreadStickyService service = new ForeignThreadStickyService();
+        Map<String, String> assignments = new HashMap<>();
+        assignments.put("exp-inline-async__0", stored);
+        service.store.put("deviceId||d1", new StickyAssignmentsDocument("deviceId", "d1", assignments));
+        GrowthBookClient client = new GrowthBookClient(Options.builder().asyncStickyBucketService(service).build());
+        try {
+            ExperimentResult<String> result = client.runAsync(experiment, user).get(10, TimeUnit.SECONDS);
+
+            assertEquals(stored, result.getKey());
+            assertTrue(service.fetchCalls.stream().anyMatch(call -> call.containsKey("deviceId")),
+                    "calls=" + service.fetchCalls);
+        } finally {
+            client.shutdown();
+        }
+    }
+
+    @Test
+    @Timeout(30)
+    void runAsyncNotifiesExperimentSubscribers() throws Exception {
+        GrowthBookClient client = new GrowthBookClient(stickyOptions(new ForeignThreadStickyService(), null));
+        List<String> notified = new CopyOnWriteArrayList<>();
+        client.subscribe(new ExperimentRunCallback() {
+            @Override
+            public <T> void onRun(Experiment<T> experiment, ExperimentResult<T> experimentResult) {
+                notified.add(experiment.getKey());
+            }
+        });
+        try {
+            client.runAsync(experiment("exp-subscribed"), user("u1")).get(10, TimeUnit.SECONDS);
+
+            assertEquals(Collections.singletonList("exp-subscribed"), notified);
+        } finally {
+            client.shutdown();
+        }
+    }
+
+    @Test
+    @Timeout(30)
+    void failedReadOnTheAsyncApiStillServesAssignmentsThisProcessMade() throws Exception {
+        ForeignThreadStickyService service = new ForeignThreadStickyService();
+        GrowthBookClient client = new GrowthBookClient(stickyOptions(service, null));
+        try {
+            ExperimentResult<String> first = client.runAsync(experiment("exp-local"), user("u1"))
+                    .get(10, TimeUnit.SECONDS);
+            client.flushStickyBucketSaves().get(10, TimeUnit.SECONDS);
+
+            service.failFetches = true;
+            ExperimentResult<String> duringOutage = client.runAsync(experiment("exp-local"), user("u1"))
+                    .get(10, TimeUnit.SECONDS);
+
+            assertEquals(first.getKey(), duringOutage.getKey());
+            assertTrue(Boolean.TRUE.equals(duringOutage.getStickyBucketUsed()),
+                    "the assignment this process made must still be served while the store is unreadable");
+        } finally {
+            client.shutdown();
+        }
+    }
+
+    @Test
+    @Timeout(30)
+    void asyncEvaluationDoesNotWaitForABlockingStoresSave() throws Exception {
+        CountDownLatch releaseSave = new CountDownLatch(1);
+        InMemoryStickyBucketServiceImpl delegate = new InMemoryStickyBucketServiceImpl();
+        StickyBucketService slowSave = new StickyBucketService() {
+            @Override
+            public StickyAssignmentsDocument getAssignments(String attributeName, String attributeValue) {
+                return delegate.getAssignments(attributeName, attributeValue);
+            }
+
+            @Override
+            public void saveAssignments(StickyAssignmentsDocument doc) {
+                try {
+                    releaseSave.await();
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                }
+                delegate.saveAssignments(doc);
+            }
+
+            @Override
+            public Map<String, StickyAssignmentsDocument> getAllAssignments(Map<String, String> attributes) {
+                return delegate.getAllAssignments(attributes);
+            }
+        };
+        GrowthBookClient client = new GrowthBookClient(Options.builder()
+                .stickyBucketService(slowSave)
+                .stickyBucketIdentifierAttributes(Collections.singletonList("id"))
+                .build());
+        try {
+            ExperimentResult<String> result = client.runAsync(experiment("exp-slow-save"), user("u1"))
+                    .get(10, TimeUnit.SECONDS);
+
+            assertNotNull(result.getValue(), "the evaluation completes while the save is still blocked");
+            assertNull(delegate.getAssignments("id", "u1"));
+
+            releaseSave.countDown();
+            client.flushStickyBucketSaves().get(10, TimeUnit.SECONDS);
+            assertNotNull(delegate.getAssignments("id", "u1"));
+        } finally {
+            releaseSave.countDown();
+            client.shutdown();
+        }
+    }
+
     @Test
     @Timeout(30)
     void shutdownIsIdempotent() {
@@ -627,6 +788,7 @@ class GrowthBookClientAsyncApiTest {
     /** Async service completing fetches on its own named thread. */
     private static final class ForeignThreadStickyService implements AsyncStickyBucketService {
         final Map<String, StickyAssignmentsDocument> store = new ConcurrentHashMap<>();
+        final List<Map<String, String>> fetchCalls = new CopyOnWriteArrayList<>();
         final AtomicInteger saveCalls = new AtomicInteger();
         volatile CountDownLatch fetchGate = null;
         volatile boolean failFetches = false;
@@ -645,6 +807,7 @@ class GrowthBookClientAsyncApiTest {
 
         @Override
         public CompletionStage<Map<String, StickyAssignmentsDocument>> getAllAssignments(Map<String, String> attributes) {
+            fetchCalls.add(attributes);
             CompletableFuture<Map<String, StickyAssignmentsDocument>> pending = new CompletableFuture<>();
             CountDownLatch gate = fetchGate;
             Thread completer = new Thread(() -> {
