@@ -113,6 +113,9 @@ public class GrowthBookClient {
 
     private static final AtomicLong ASYNC_THREAD_COUNTER = new AtomicLong();
 
+    /** Exposure dedup shared across all of this client's evaluations; sized for multi-user traffic. */
+    private final ExperimentTracker exposureTracker = new ExperimentTracker(10_000);
+
     /**
      * Creates a client with default options.
      */
@@ -1234,6 +1237,8 @@ public class GrowthBookClient {
     /** Attaches this client's own plugin registry so events never route through another client's plugins. */
     private EvaluationContext withPluginRegistry(EvaluationContext context) {
         context.setPluginRegistry(this.pluginRegistry);
+        context.setSharedExperimentTracker(this.exposureTracker);
+        context.setSuppressTrackingErrors(true);
         return context;
     }
 
