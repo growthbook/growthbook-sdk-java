@@ -29,9 +29,11 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Queue;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
@@ -39,8 +41,10 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Supplier;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -319,6 +323,102 @@ class LettuceAsyncStickyBucketServiceTest {
     }
 
     @Test
+    @Timeout(30)
+    @DisplayName("Verify: getAssignments returns before Redis replies and completes when the reply arrives")
+    void getAssignmentsReturnsBeforeRedisReplies() throws Exception {
+        // Given
+        StickyAssignmentsDocument doc = document("id", "123", "exp__0", "control");
+        redis.data.put("id||123", json(doc));
+        redis.holdReplies = true;
+        LettuceAsyncStickyBucketService service = new LettuceAsyncStickyBucketService(connection);
+
+        // When
+        CompletionStage<StickyAssignmentsDocument> stage = service.getAssignments("id", "123");
+
+        // Then
+        assertFalse(stage.toCompletableFuture().isDone(), "the read must not wait for Redis");
+        redis.reply();
+        assertEquals(doc, await(stage));
+    }
+
+    @Test
+    @Timeout(30)
+    @DisplayName("Verify: getAllAssignments returns before Redis replies and completes when the reply arrives")
+    void getAllAssignmentsReturnsBeforeRedisReplies() throws Exception {
+        // Given
+        StickyAssignmentsDocument doc = document("id", "123", "exp__0", "control");
+        redis.data.put("id||123", json(doc));
+        redis.holdReplies = true;
+        LettuceAsyncStickyBucketService service = new LettuceAsyncStickyBucketService(connection);
+
+        // When
+        CompletionStage<Map<String, StickyAssignmentsDocument>> stage =
+                service.getAllAssignments(Collections.singletonMap("id", "123"));
+
+        // Then
+        assertFalse(stage.toCompletableFuture().isDone(), "the read must not wait for Redis");
+        redis.reply();
+        assertEquals(doc, await(stage).get("id||123"));
+    }
+
+    @Test
+    @Timeout(30)
+    @DisplayName("Verify: saveAssignments returns before Redis replies and stays pending until the compare-and-set replies")
+    void saveAssignmentsStaysPendingUntilTheCompareAndSetReplies() throws Exception {
+        // Given
+        redis.holdReplies = true;
+        LettuceAsyncStickyBucketService service = new LettuceAsyncStickyBucketService(connection);
+
+        // When
+        CompletionStage<Void> stage = service.saveAssignments(document("id", "123", "exp__0", "control"));
+
+        // Then
+        assertFalse(stage.toCompletableFuture().isDone(), "the save must not wait for Redis");
+        redis.reply(); // GET
+        assertFalse(stage.toCompletableFuture().isDone(), "the save is not done until the write is confirmed");
+        assertTrue(redis.data.isEmpty(), "nothing is written before the compare-and-set runs");
+        redis.reply(); // EVAL
+        await(stage);
+        assertEquals("control", parse(redis.data.get("id||123")).getAssignments().get("exp__0"));
+    }
+
+    @Test
+    @Timeout(30)
+    @DisplayName("Verify: a read failure that arrives after the call returned fails the stage with StickyBucketServiceException")
+    void aDelayedReadFailureFailsTheStage() {
+        // Given
+        redis.holdReplies = true;
+        LettuceAsyncStickyBucketService service = new LettuceAsyncStickyBucketService(connection);
+        CompletionStage<StickyAssignmentsDocument> stage = service.getAssignments("id", "123");
+
+        // When
+        redis.failCommandsWith = new RedisException("connection reset");
+        redis.reply();
+
+        // Then
+        assertFailsWithStickyBucketServiceException(stage);
+    }
+
+    @Test
+    @Timeout(30)
+    @DisplayName("Verify: a compare-and-set failure that arrives after the call returned fails the save with StickyBucketServiceException")
+    void aDelayedCompareAndSetFailureFailsTheSave() {
+        // Given
+        redis.holdReplies = true;
+        LettuceAsyncStickyBucketService service = new LettuceAsyncStickyBucketService(connection);
+        CompletionStage<Void> stage = service.saveAssignments(document("id", "123", "exp__0", "control"));
+        redis.reply(); // GET succeeds
+
+        // When
+        redis.failCommandsWith = new RedisException("connection reset");
+        redis.reply(); // EVAL fails
+
+        // Then
+        assertFailsWithStickyBucketServiceException(stage);
+        assertTrue(redis.data.isEmpty());
+    }
+
+    @Test
     @DisplayName("Verify: the constructor rejects a null connection and a zero, negative or sub-millisecond TTL")
     void constructorRejectsInvalidArguments() {
         assertThrows(NullPointerException.class, () -> new LettuceAsyncStickyBucketService(null));
@@ -448,6 +548,9 @@ class LettuceAsyncStickyBucketServiceTest {
         final List<List<String>> bulkReads = Collections.synchronizedList(new ArrayList<List<String>>());
         final AtomicInteger singleReads = new AtomicInteger();
         final AtomicInteger compareAndSets = new AtomicInteger();
+        /** When set, a command's reply is queued instead of delivered; the test delivers it with {@link #reply()}. */
+        volatile boolean holdReplies;
+        final Queue<Runnable> heldReplies = new ConcurrentLinkedQueue<>();
         volatile RuntimeException failCommandsWith;
         volatile RuntimeException throwOnIssue;
         volatile CompareAndSetHook beforeCompareAndSet;
@@ -463,18 +566,22 @@ class LettuceAsyncStickyBucketServiceTest {
             switch (invocation.getMethod().getName()) {
                 case "get":
                     singleReads.incrementAndGet();
-                    return future(data.get((String) arguments[0]));
+                    return future(() -> data.get((String) arguments[0]));
                 case "mget":
                     List<String> keys = new ArrayList<>();
-                    List<KeyValue<String, String>> values = new ArrayList<>();
                     for (Object key : arguments) {
                         keys.add((String) key);
-                        values.add(KeyValue.fromNullable((String) key, data.get((String) key)));
                     }
                     bulkReads.add(keys);
-                    return future(values);
+                    return future(() -> {
+                        List<KeyValue<String, String>> values = new ArrayList<>();
+                        for (String key : keys) {
+                            values.add(KeyValue.fromNullable(key, data.get(key)));
+                        }
+                        return values;
+                    });
                 case "eval":
-                    return future(compareAndSet(((String[]) arguments[2])[0],
+                    return future(() -> compareAndSet(((String[]) arguments[2])[0],
                             (String) arguments[3], (String) arguments[4], (String) arguments[5], (String) arguments[6]));
                 default:
                     throw new UnsupportedOperationException(invocation.getMethod().getName());
@@ -495,18 +602,35 @@ class LettuceAsyncStickyBucketServiceTest {
             return written ? 1L : 0L;
         }
 
-        private <T> RedisFuture<T> future(T value) {
-            CompletedRedisFuture<T> future = new CompletedRedisFuture<>();
-            if (failCommandsWith != null) {
-                future.completeExceptionally(failCommandsWith);
+        /** Delivers the oldest held reply, as Redis answering that command. */
+        void reply() {
+            Runnable held = heldReplies.poll();
+            if (held == null) {
+                throw new IllegalStateException("no command is waiting for a reply");
+            }
+            held.run();
+        }
+
+        /** The command runs against {@link #data} when its reply is delivered, not when it is issued. */
+        private <T> RedisFuture<T> future(Supplier<T> command) {
+            FakeRedisFuture<T> future = new FakeRedisFuture<>();
+            Runnable deliver = () -> {
+                if (failCommandsWith != null) {
+                    future.completeExceptionally(failCommandsWith);
+                } else {
+                    future.complete(command.get());
+                }
+            };
+            if (holdReplies) {
+                heldReplies.add(deliver);
             } else {
-                future.complete(value);
+                deliver.run();
             }
             return future;
         }
     }
 
-    private static final class CompletedRedisFuture<T> extends CompletableFuture<T> implements RedisFuture<T> {
+    private static final class FakeRedisFuture<T> extends CompletableFuture<T> implements RedisFuture<T> {
         @Override
         public String getError() {
             return null;
