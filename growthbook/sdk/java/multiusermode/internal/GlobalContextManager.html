@@ -117,9 +117,23 @@ loadScripts(document, 'script');</script>
 <div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">Creates an evaluation context for a specific user by overlaying user attributes on global attributes.</div>
 </div>
-<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>int</code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#featureCount()" class="member-name-link">featureCount</a>()</code></div>
-<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">&nbsp;</div>
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="../configurations/EvaluationContext.html" title="class in growthbook.sdk.java.multiusermode.configurations">EvaluationContext</a></code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#createEvaluationContext(growthbook.sdk.java.multiusermode.configurations.UserContext,growthbook.sdk.java.multiusermode.configurations.GlobalContext)" class="member-name-link">createEvaluationContext</a><wbr>(<a href="../configurations/UserContext.html" title="class in growthbook.sdk.java.multiusermode.configurations">UserContext</a>&nbsp;userContext,
+ <a href="../configurations/GlobalContext.html" title="class in growthbook.sdk.java.multiusermode.configurations">GlobalContext</a>&nbsp;globalContext)</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="block">Creates an evaluation context against a caller-provided feature snapshot, so a feature refresh
+ landing mid-request cannot pair sticky identifiers derived from one snapshot with evaluation
+ against another.</div>
+</div>
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>int</code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#featureCount()" class="member-name-link">featureCount</a>()</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">&nbsp;</div>
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="../configurations/GlobalContext.html" title="class in growthbook.sdk.java.multiusermode.configurations">GlobalContext</a></code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#getCurrentGlobalContext()" class="member-name-link">getCurrentGlobalContext</a>()</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="block">The current managed global context (or an empty fallback), exposed so the client can derive
+ the sticky-bucket identifier attributes from the loaded feature snapshot.</div>
+</div>
 <div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>void</code></div>
 <div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#initialize(growthbook.sdk.java.repository.GBFeaturesRepository)" class="member-name-link">initialize</a><wbr>(<a href="../../repository/GBFeaturesRepository.html" title="class in growthbook.sdk.java.repository">GBFeaturesRepository</a>&nbsp;repository)</code></div>
 <div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
@@ -199,6 +213,31 @@ loadScripts(document, 'script');</script>
 <dt>Returns:</dt>
 <dd>evaluation context used by feature and experiment evaluators</dd>
 </dl>
+</section>
+</li>
+<li>
+<section class="detail" id="createEvaluationContext(growthbook.sdk.java.multiusermode.configurations.UserContext,growthbook.sdk.java.multiusermode.configurations.GlobalContext)">
+<h3>createEvaluationContext</h3>
+<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="../configurations/EvaluationContext.html" title="class in growthbook.sdk.java.multiusermode.configurations">EvaluationContext</a></span>&nbsp;<span class="element-name">createEvaluationContext</span><wbr><span class="parameters">(<a href="../configurations/UserContext.html" title="class in growthbook.sdk.java.multiusermode.configurations">UserContext</a>&nbsp;userContext,
+ <a href="../configurations/GlobalContext.html" title="class in growthbook.sdk.java.multiusermode.configurations">GlobalContext</a>&nbsp;globalContext)</span></div>
+<div class="block">Creates an evaluation context against a caller-provided feature snapshot, so a feature refresh
+ landing mid-request cannot pair sticky identifiers derived from one snapshot with evaluation
+ against another.</div>
+<dl class="notes">
+<dt>Parameters:</dt>
+<dd><code>userContext</code> - per-user evaluation context</dd>
+<dd><code>globalContext</code> - the feature snapshot to evaluate against</dd>
+<dt>Returns:</dt>
+<dd>evaluation context used by feature and experiment evaluators</dd>
+</dl>
+</section>
+</li>
+<li>
+<section class="detail" id="getCurrentGlobalContext()">
+<h3>getCurrentGlobalContext</h3>
+<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="../configurations/GlobalContext.html" title="class in growthbook.sdk.java.multiusermode.configurations">GlobalContext</a></span>&nbsp;<span class="element-name">getCurrentGlobalContext</span>()</div>
+<div class="block">The current managed global context (or an empty fallback), exposed so the client can derive
+ the sticky-bucket identifier attributes from the loaded feature snapshot.</div>
 </section>
 </li>
 <li>

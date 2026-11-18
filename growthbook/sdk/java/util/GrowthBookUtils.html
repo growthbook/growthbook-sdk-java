@@ -262,20 +262,27 @@ loadScripts(document, 'script');</script>
 <div class="col-last even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4">
 <div class="block">Determines if the user is part of a gradual feature rollout.</div>
 </div>
-<div class="col-first odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code>static &lt;K,<wbr>
-V&gt;&nbsp;<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/Map.html" title="class or interface in java.util" class="external-link">Map</a>&lt;K,<wbr>V&gt;</code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code><a href="#mergeMaps(java.util.List)" class="member-name-link">mergeMaps</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/List.html" title="class or interface in java.util" class="external-link">List</a>&lt;<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/Map.html" title="class or interface in java.util" class="external-link">Map</a>&lt;K,<wbr>V&gt;&gt;&nbsp;maps)</code></div>
-<div class="col-last odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4">&nbsp;</div>
-<div class="col-first even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code>static &lt;K,<wbr>
-V&gt;&nbsp;<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/Map.html" title="class or interface in java.util" class="external-link">Map</a>&lt;K,<wbr>V&gt;</code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code><a href="#mergeMaps(java.util.Map,java.util.Map)" class="member-name-link">mergeMaps</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/Map.html" title="class or interface in java.util" class="external-link">Map</a>&lt;K,<wbr>V&gt;&nbsp;base,
- <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/Map.html" title="class or interface in java.util" class="external-link">Map</a>&lt;K,<wbr>V&gt;&nbsp;overrides)</code></div>
-<div class="col-last even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4">&nbsp;</div>
-<div class="col-first odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code>static void</code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code><a href="#refreshStickyBuckets(growthbook.sdk.java.model.GBContext,java.lang.String,com.google.gson.JsonObject)" class="member-name-link">refreshStickyBuckets</a><wbr>(<a href="../model/GBContext.html" title="class in growthbook.sdk.java.model">GBContext</a>&nbsp;context,
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code>static boolean</code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code><a href="#loadStickyBuckets(growthbook.sdk.java.model.GBContext,java.lang.String,com.google.gson.JsonObject)" class="member-name-link">loadStickyBuckets</a><wbr>(<a href="../model/GBContext.html" title="class in growthbook.sdk.java.model">GBContext</a>&nbsp;context,
  <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;featuresDataModel,
  com.google.gson.JsonObject&nbsp;attributeOverrides)</code></div>
 <div class="col-last odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4">
+<div class="block"><a href="#refreshStickyBuckets(growthbook.sdk.java.model.GBContext,java.lang.String,com.google.gson.JsonObject)"><code>refreshStickyBuckets(growthbook.sdk.java.model.GBContext, java.lang.String, com.google.gson.JsonObject)</code></a> that reports whether the stored assignments were read.</div>
+</div>
+<div class="col-first even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code>static &lt;K,<wbr>
+V&gt;&nbsp;<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/Map.html" title="class or interface in java.util" class="external-link">Map</a>&lt;K,<wbr>V&gt;</code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code><a href="#mergeMaps(java.util.List)" class="member-name-link">mergeMaps</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/List.html" title="class or interface in java.util" class="external-link">List</a>&lt;<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/Map.html" title="class or interface in java.util" class="external-link">Map</a>&lt;K,<wbr>V&gt;&gt;&nbsp;maps)</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4">&nbsp;</div>
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code>static &lt;K,<wbr>
+V&gt;&nbsp;<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/Map.html" title="class or interface in java.util" class="external-link">Map</a>&lt;K,<wbr>V&gt;</code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code><a href="#mergeMaps(java.util.Map,java.util.Map)" class="member-name-link">mergeMaps</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/Map.html" title="class or interface in java.util" class="external-link">Map</a>&lt;K,<wbr>V&gt;&nbsp;base,
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/Map.html" title="class or interface in java.util" class="external-link">Map</a>&lt;K,<wbr>V&gt;&nbsp;overrides)</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4">&nbsp;</div>
+<div class="col-first even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code>static void</code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code><a href="#refreshStickyBuckets(growthbook.sdk.java.model.GBContext,java.lang.String,com.google.gson.JsonObject)" class="member-name-link">refreshStickyBuckets</a><wbr>(<a href="../model/GBContext.html" title="class in growthbook.sdk.java.model">GBContext</a>&nbsp;context,
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;featuresDataModel,
+ com.google.gson.JsonObject&nbsp;attributeOverrides)</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4">
 <div class="block">Retrieves cached assignments and sets them in the context's Sticky Bucket Assignments documents.</div>
 </div>
 </div>
@@ -636,6 +643,26 @@ V&gt;&nbsp;<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base
 <dd><code>context</code> - <a href="../model/GBContext.html" title="class in growthbook.sdk.java.model"><code>GBContext</code></a> that contains sticky bucketing attributes and sticky bucket service</dd>
 <dd><code>featuresDataModel</code> - A string representing the features data model.</dd>
 <dd><code>attributeOverrides</code> - <code>JsonObject</code> containing attribute overrides.</dd>
+</dl>
+</section>
+</li>
+<li>
+<section class="detail" id="loadStickyBuckets(growthbook.sdk.java.model.GBContext,java.lang.String,com.google.gson.JsonObject)">
+<h3>loadStickyBuckets</h3>
+<div class="member-signature"><span class="modifiers">public static</span>&nbsp;<span class="return-type">boolean</span>&nbsp;<span class="element-name">loadStickyBuckets</span><wbr><span class="parameters">(<a href="../model/GBContext.html" title="class in growthbook.sdk.java.model">GBContext</a>&nbsp;context,
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;featuresDataModel,
+ com.google.gson.JsonObject&nbsp;attributeOverrides)</span></div>
+<div class="block"><a href="#refreshStickyBuckets(growthbook.sdk.java.model.GBContext,java.lang.String,com.google.gson.JsonObject)"><code>refreshStickyBuckets(growthbook.sdk.java.model.GBContext, java.lang.String, com.google.gson.JsonObject)</code></a> that reports whether the stored assignments were read.</div>
+<dl class="notes">
+<dt>Parameters:</dt>
+<dd><code>context</code> - <a href="../model/GBContext.html" title="class in growthbook.sdk.java.model"><code>GBContext</code></a> that contains sticky bucketing attributes and sticky bucket service</dd>
+<dd><code>featuresDataModel</code> - A string representing the features data model.</dd>
+<dd><code>attributeOverrides</code> - <code>JsonObject</code> containing attribute overrides.</dd>
+<dt>Returns:</dt>
+<dd><code>false</code> when the service failed to load assignments. The context then holds no
+ documents and evaluation buckets normally; the caller must not save those assignments, because
+ they could replace the variation the store already holds. <code>true</code> otherwise, including
+ when no service is configured.</dd>
 </dl>
 </section>
 </li>

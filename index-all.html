@@ -129,6 +129,16 @@ loadScripts(document, 'script');</script>
 <dd>&nbsp;</dd>
 <dt><a href="growthbook/sdk/java/model/AssignedExperiment.html#%3Cinit%3E(java.lang.String,java.lang.Boolean,java.lang.Integer)" class="member-name-link">AssignedExperiment(String, Boolean, Integer)</a> - Constructor for class growthbook.sdk.java.model.<a href="growthbook/sdk/java/model/AssignedExperiment.html" title="class in growthbook.sdk.java.model">AssignedExperiment</a></dt>
 <dd>&nbsp;</dd>
+<dt><a href="growthbook/sdk/java/multiusermode/configurations/Options.OptionsBuilder.html#asyncExecutor(java.util.concurrent.Executor)" class="member-name-link">asyncExecutor(Executor)</a> - Method in class growthbook.sdk.java.multiusermode.configurations.<a href="growthbook/sdk/java/multiusermode/configurations/Options.OptionsBuilder.html" title="class in growthbook.sdk.java.multiusermode.configurations">Options.OptionsBuilder</a></dt>
+<dd>&nbsp;</dd>
+<dt><a href="growthbook/sdk/java/multiusermode/configurations/Options.OptionsBuilder.html#asyncStickyBucketService(growthbook.sdk.java.stickyBucketing.AsyncStickyBucketService)" class="member-name-link">asyncStickyBucketService(AsyncStickyBucketService)</a> - Method in class growthbook.sdk.java.multiusermode.configurations.<a href="growthbook/sdk/java/multiusermode/configurations/Options.OptionsBuilder.html" title="class in growthbook.sdk.java.multiusermode.configurations">Options.OptionsBuilder</a></dt>
+<dd>&nbsp;</dd>
+<dt><a href="growthbook/sdk/java/stickyBucketing/AsyncStickyBucketService.html" class="type-name-link" title="interface in growthbook.sdk.java.stickyBucketing">AsyncStickyBucketService</a> - Interface in <a href="growthbook/sdk/java/stickyBucketing/package-summary.html">growthbook.sdk.java.stickyBucketing</a></dt>
+<dd>
+<div class="block">Non-blocking sticky bucket persistence for the multi-user
+ <a href="growthbook/sdk/java/multiusermode/GrowthBookClient.html" title="class in growthbook.sdk.java.multiusermode"><code>GrowthBookClient</code></a>: reads and writes
+ never run on the evaluating thread's time.</div>
+</dd>
 <dt><a href="growthbook/sdk/java/model/Filter.FilterBuilder.html#attribute(java.lang.String)" class="member-name-link">attribute(String)</a> - Method in class growthbook.sdk.java.model.<a href="growthbook/sdk/java/model/Filter.FilterBuilder.html" title="class in growthbook.sdk.java.model">Filter.FilterBuilder</a></dt>
 <dd>&nbsp;</dd>
 <dt><a href="growthbook/sdk/java/model/GBContext.GBContextBuilder.html#attributes(com.google.gson.JsonObject)" class="member-name-link">attributes(JsonObject)</a> - Method in class growthbook.sdk.java.model.<a href="growthbook/sdk/java/model/GBContext.GBContextBuilder.html" title="class in growthbook.sdk.java.model">GBContext.GBContextBuilder</a></dt>
@@ -593,6 +603,12 @@ loadScripts(document, 'script');</script>
 <dd>
 <div class="block">Creates an evaluation context for a user by fetching (or reusing a cached) remote response.</div>
 </dd>
+<dt><a href="growthbook/sdk/java/multiusermode/internal/GlobalContextManager.html#createEvaluationContext(growthbook.sdk.java.multiusermode.configurations.UserContext,growthbook.sdk.java.multiusermode.configurations.GlobalContext)" class="member-name-link">createEvaluationContext(UserContext, GlobalContext)</a> - Method in class growthbook.sdk.java.multiusermode.internal.<a href="growthbook/sdk/java/multiusermode/internal/GlobalContextManager.html" title="class in growthbook.sdk.java.multiusermode.internal">GlobalContextManager</a></dt>
+<dd>
+<div class="block">Creates an evaluation context against a caller-provided feature snapshot, so a feature refresh
+ landing mid-request cannot pair sticky identifiers derived from one snapshot with evaluation
+ against another.</div>
+</dd>
 <dt><a href="growthbook/sdk/java/diagnostics/provider/GrowthBookClientDiagnosticsProvider.ClientState.html#currentRepository()" class="member-name-link">currentRepository()</a> - Method in interface growthbook.sdk.java.diagnostics.provider.<a href="growthbook/sdk/java/diagnostics/provider/GrowthBookClientDiagnosticsProvider.ClientState.html" title="interface in growthbook.sdk.java.diagnostics.provider">GrowthBookClientDiagnosticsProvider.ClientState</a></dt>
 <dd>&nbsp;</dd>
 <dt><a href="growthbook/sdk/java/multiusermode/internal/FeatureRepositoryProvider.html#currentRepository()" class="member-name-link">currentRepository()</a> - Method in class growthbook.sdk.java.multiusermode.internal.<a href="growthbook/sdk/java/multiusermode/internal/FeatureRepositoryProvider.html" title="class in growthbook.sdk.java.multiusermode.internal">FeatureRepositoryProvider</a></dt>
@@ -662,6 +678,10 @@ loadScripts(document, 'script');</script>
 <dd>&nbsp;</dd>
 <dt><a href="growthbook/sdk/java/retry/FeatureFetchRetryPolicy.html#DEFAULT_MAX_DELAY" class="member-name-link">DEFAULT_MAX_DELAY</a> - Static variable in class growthbook.sdk.java.retry.<a href="growthbook/sdk/java/retry/FeatureFetchRetryPolicy.html" title="class in growthbook.sdk.java.retry">FeatureFetchRetryPolicy</a></dt>
 <dd>&nbsp;</dd>
+<dt><a href="growthbook/sdk/java/multiusermode/configurations/Options.html#DEFAULT_STICKY_BUCKET_TIMEOUT" class="member-name-link">DEFAULT_STICKY_BUCKET_TIMEOUT</a> - Static variable in class growthbook.sdk.java.multiusermode.configurations.<a href="growthbook/sdk/java/multiusermode/configurations/Options.html" title="class in growthbook.sdk.java.multiusermode.configurations">Options</a></dt>
+<dd>
+<div class="block">Default for <code>Options.stickyBucketTimeout</code>.</div>
+</dd>
 <dt><a href="growthbook/sdk/java/constants/SDKConstants.html#DEFAULT_SWR_TTL_SECONDS" class="member-name-link">DEFAULT_SWR_TTL_SECONDS</a> - Static variable in class growthbook.sdk.java.constants.<a href="growthbook/sdk/java/constants/SDKConstants.html" title="class in growthbook.sdk.java.constants">SDKConstants</a></dt>
 <dd>&nbsp;</dd>
 <dt><a href="growthbook/sdk/java/model/FeatureResultSource.html#DEFAULT_VALUE" class="member-name-link">DEFAULT_VALUE</a> - Enum constant in enum class growthbook.sdk.java.model.<a href="growthbook/sdk/java/model/FeatureResultSource.html" title="enum class in growthbook.sdk.java.model">FeatureResultSource</a></dt>
@@ -743,6 +763,10 @@ loadScripts(document, 'script');</script>
 <dt><a href="growthbook/sdk/java/model/FeatureRule.FeatureRuleBuilder.html#disableStickyBucketing(java.lang.Boolean)" class="member-name-link">disableStickyBucketing(Boolean)</a> - Method in class growthbook.sdk.java.model.<a href="growthbook/sdk/java/model/FeatureRule.FeatureRuleBuilder.html" title="class in growthbook.sdk.java.model">FeatureRule.FeatureRuleBuilder</a></dt>
 <dd>
 <div class="block">If true, sticky bucketing will be disabled for this experiment.</div>
+</dd>
+<dt><a href="growthbook/sdk/java/stickyBucketing/StickyBucketDocWriter.html#DISCARDING" class="member-name-link">DISCARDING</a> - Static variable in interface growthbook.sdk.java.stickyBucketing.<a href="growthbook/sdk/java/stickyBucketing/StickyBucketDocWriter.html" title="interface in growthbook.sdk.java.stickyBucketing">StickyBucketDocWriter</a></dt>
+<dd>
+<div class="block">Drops every document.</div>
 </dd>
 </dl>
 <h2 class="title" id="I:E">E</h2>
@@ -1419,6 +1443,10 @@ loadScripts(document, 'script');</script>
 <dd>
 <div class="block">Optional executor used to POST batches off the caller thread.</div>
 </dd>
+<dt><a href="growthbook/sdk/java/multiusermode/GrowthBookClient.html#flushStickyBucketSaves()" class="member-name-link">flushStickyBucketSaves()</a> - Method in class growthbook.sdk.java.multiusermode.<a href="growthbook/sdk/java/multiusermode/GrowthBookClient.html" title="class in growthbook.sdk.java.multiusermode">GrowthBookClient</a></dt>
+<dd>
+<div class="block">Completes when every pending sticky bucket save has been <em>attempted</em>.</div>
+</dd>
 <dt><a href="growthbook/sdk/java/util/MathUtils.html#fnv1a_32(byte%5B%5D)" class="member-name-link">fnv1a_32(byte[])</a> - Static method in class growthbook.sdk.java.util.<a href="growthbook/sdk/java/util/MathUtils.html" title="class in growthbook.sdk.java.util">MathUtils</a></dt>
 <dd>
 <div class="block">Fowler-Noll-Vo algorithm
@@ -1570,6 +1598,10 @@ loadScripts(document, 'script');</script>
 <dd>
 <div class="block">Age in milliseconds since the last cache update.</div>
 </dd>
+<dt><a href="growthbook/sdk/java/stickyBucketing/AsyncStickyBucketService.html#getAllAssignments(java.util.Map)" class="member-name-link">getAllAssignments(Map&lt;String, String&gt;)</a> - Method in interface growthbook.sdk.java.stickyBucketing.<a href="growthbook/sdk/java/stickyBucketing/AsyncStickyBucketService.html" title="interface in growthbook.sdk.java.stickyBucketing">AsyncStickyBucketService</a></dt>
+<dd>
+<div class="block">Look up the documents for all of a user's identifier attributes.</div>
+</dd>
 <dt><a href="growthbook/sdk/java/stickyBucketing/InMemoryStickyBucketServiceImpl.html#getAllAssignments(java.util.Map)" class="member-name-link">getAllAssignments(Map&lt;String, String&gt;)</a> - Method in class growthbook.sdk.java.stickyBucketing.<a href="growthbook/sdk/java/stickyBucketing/InMemoryStickyBucketServiceImpl.html" title="class in growthbook.sdk.java.stickyBucketing">InMemoryStickyBucketServiceImpl</a></dt>
 <dd>
 <div class="block">Method for getting sticky bucket assignments from cache (in memory: hashmap) by attributes of context</div>
@@ -1578,6 +1610,8 @@ loadScripts(document, 'script');</script>
 <dd>
 <div class="block">Method for getting all Assignments by attributes from GBContext</div>
 </dd>
+<dt><a href="growthbook/sdk/java/stickyBucketing/SyncOffloadStickyBucketAdapter.html#getAllAssignments(java.util.Map)" class="member-name-link">getAllAssignments(Map&lt;String, String&gt;)</a> - Method in class growthbook.sdk.java.stickyBucketing.<a href="growthbook/sdk/java/stickyBucketing/SyncOffloadStickyBucketAdapter.html" title="class in growthbook.sdk.java.stickyBucketing">SyncOffloadStickyBucketAdapter</a></dt>
+<dd>&nbsp;</dd>
 <dt><a href="growthbook/sdk/java/model/GBContext.html#getAllowUrlOverride()" class="member-name-link">getAllowUrlOverride()</a> - Method in class growthbook.sdk.java.model.<a href="growthbook/sdk/java/model/GBContext.html" title="class in growthbook.sdk.java.model">GBContext</a></dt>
 <dd>
 <div class="block">Boolean flag to allow URL overrides (default: false)</div>
@@ -1598,6 +1632,10 @@ loadScripts(document, 'script');</script>
 <dd>
 <div class="block">A dictionary of persisted experiment assignments.</div>
 </dd>
+<dt><a href="growthbook/sdk/java/stickyBucketing/AsyncStickyBucketService.html#getAssignments(java.lang.String,java.lang.String)" class="member-name-link">getAssignments(String, String)</a> - Method in interface growthbook.sdk.java.stickyBucketing.<a href="growthbook/sdk/java/stickyBucketing/AsyncStickyBucketService.html" title="interface in growthbook.sdk.java.stickyBucketing">AsyncStickyBucketService</a></dt>
+<dd>
+<div class="block">Look up one sticky bucket document.</div>
+</dd>
 <dt><a href="growthbook/sdk/java/stickyBucketing/InMemoryStickyBucketServiceImpl.html#getAssignments(java.lang.String,java.lang.String)" class="member-name-link">getAssignments(String, String)</a> - Method in class growthbook.sdk.java.stickyBucketing.<a href="growthbook/sdk/java/stickyBucketing/InMemoryStickyBucketServiceImpl.html" title="class in growthbook.sdk.java.stickyBucketing">InMemoryStickyBucketServiceImpl</a></dt>
 <dd>
 <div class="block">Method for getting all assignments document from cache (in memory: hashmap)</div>
@@ -1605,6 +1643,17 @@ loadScripts(document, 'script');</script>
 <dt><a href="growthbook/sdk/java/stickyBucketing/StickyBucketService.html#getAssignments(java.lang.String,java.lang.String)" class="member-name-link">getAssignments(String, String)</a> - Method in interface growthbook.sdk.java.stickyBucketing.<a href="growthbook/sdk/java/stickyBucketing/StickyBucketService.html" title="interface in growthbook.sdk.java.stickyBucketing">StickyBucketService</a></dt>
 <dd>
 <div class="block">Lookup a sticky bucket document</div>
+</dd>
+<dt><a href="growthbook/sdk/java/stickyBucketing/SyncOffloadStickyBucketAdapter.html#getAssignments(java.lang.String,java.lang.String)" class="member-name-link">getAssignments(String, String)</a> - Method in class growthbook.sdk.java.stickyBucketing.<a href="growthbook/sdk/java/stickyBucketing/SyncOffloadStickyBucketAdapter.html" title="class in growthbook.sdk.java.stickyBucketing">SyncOffloadStickyBucketAdapter</a></dt>
+<dd>&nbsp;</dd>
+<dt><a href="growthbook/sdk/java/multiusermode/configurations/Options.html#getAsyncExecutor()" class="member-name-link">getAsyncExecutor()</a> - Method in class growthbook.sdk.java.multiusermode.configurations.<a href="growthbook/sdk/java/multiusermode/configurations/Options.html" title="class in growthbook.sdk.java.multiusermode.configurations">Options</a></dt>
+<dd>
+<div class="block">Executor for the client's asynchronous entry points: offloading blocking
+ <a href="growthbook/sdk/java/stickyBucketing/StickyBucketService.html" title="interface in growthbook.sdk.java.stickyBucketing"><code>StickyBucketService</code></a> calls and composing async evaluations.</div>
+</dd>
+<dt><a href="growthbook/sdk/java/multiusermode/configurations/Options.html#getAsyncStickyBucketService()" class="member-name-link">getAsyncStickyBucketService()</a> - Method in class growthbook.sdk.java.multiusermode.configurations.<a href="growthbook/sdk/java/multiusermode/configurations/Options.html" title="class in growthbook.sdk.java.multiusermode.configurations">Options</a></dt>
+<dd>
+<div class="block">Non-blocking sticky bucket service for the multi-user client.</div>
 </dd>
 <dt><a href="growthbook/sdk/java/model/Filter.html#getAttribute()" class="member-name-link">getAttribute()</a> - Method in class growthbook.sdk.java.model.<a href="growthbook/sdk/java/model/Filter.html" title="class in growthbook.sdk.java.model">Filter</a></dt>
 <dd>
@@ -1769,6 +1818,11 @@ loadScripts(document, 'script');</script>
 <dd>
 <div class="block">What percent of users should be included in the experiment (between 0 and 1, inclusive)</div>
 </dd>
+<dt><a href="growthbook/sdk/java/multiusermode/internal/GlobalContextManager.html#getCurrentGlobalContext()" class="member-name-link">getCurrentGlobalContext()</a> - Method in class growthbook.sdk.java.multiusermode.internal.<a href="growthbook/sdk/java/multiusermode/internal/GlobalContextManager.html" title="class in growthbook.sdk.java.multiusermode.internal">GlobalContextManager</a></dt>
+<dd>
+<div class="block">The current managed global context (or an empty fallback), exposed so the client can derive
+ the sticky-bucket identifier attributes from the loaded feature snapshot.</div>
+</dd>
 <dt><a href="growthbook/sdk/java/model/Experiment.html#getCustomField(java.lang.String)" class="member-name-link">getCustomField(String)</a> - Method in class growthbook.sdk.java.model.<a href="growthbook/sdk/java/model/Experiment.html" title="class in growthbook.sdk.java.model">Experiment</a></dt>
 <dd>&nbsp;</dd>
 <dt><a href="growthbook/sdk/java/model/Experiment.html#getCustomField(java.lang.String,java.lang.Class)" class="member-name-link">getCustomField(String, Class&lt;FieldType&gt;)</a> - Method in class growthbook.sdk.java.model.<a href="growthbook/sdk/java/model/Experiment.html" title="class in growthbook.sdk.java.model">Experiment</a></dt>
@@ -1796,6 +1850,11 @@ loadScripts(document, 'script');</script>
 <dt><a href="growthbook/sdk/java/retry/FeatureFetchRetryPolicy.html#getDelayMillisBeforeAttempt(int)" class="member-name-link">getDelayMillisBeforeAttempt(int)</a> - Method in class growthbook.sdk.java.retry.<a href="growthbook/sdk/java/retry/FeatureFetchRetryPolicy.html" title="class in growthbook.sdk.java.retry">FeatureFetchRetryPolicy</a></dt>
 <dd>
 <div class="block">Returns the delay before the requested attempt number.</div>
+</dd>
+<dt><a href="growthbook/sdk/java/multiusermode/configurations/GlobalContext.html#getDerivedStickyIdentifierAttributes()" class="member-name-link">getDerivedStickyIdentifierAttributes()</a> - Method in class growthbook.sdk.java.multiusermode.configurations.<a href="growthbook/sdk/java/multiusermode/configurations/GlobalContext.html" title="class in growthbook.sdk.java.multiusermode.configurations">GlobalContext</a></dt>
+<dd>
+<div class="block">Lazily derived sticky-bucket identifier attributes for this feature
+ snapshot (hashAttribute/fallbackAttribute across experiment rules).</div>
 </dd>
 <dt><a href="growthbook/sdk/java/model/BucketRange.html#getDeserializer()" class="member-name-link">getDeserializer()</a> - Static method in class growthbook.sdk.java.model.<a href="growthbook/sdk/java/model/BucketRange.html" title="class in growthbook.sdk.java.model">BucketRange</a></dt>
 <dd>&nbsp;</dd>
@@ -2297,6 +2356,10 @@ loadScripts(document, 'script');</script>
 <dd>
 <div class="block">A unique key for this variation</div>
 </dd>
+<dt><a href="growthbook/sdk/java/stickyBucketing/AsyncStickyBucketService.html#getKey(java.lang.String,java.lang.String)" class="member-name-link">getKey(String, String)</a> - Method in interface growthbook.sdk.java.stickyBucketing.<a href="growthbook/sdk/java/stickyBucketing/AsyncStickyBucketService.html" title="interface in growthbook.sdk.java.stickyBucketing">AsyncStickyBucketService</a></dt>
+<dd>
+<div class="block">The store key for a document.</div>
+</dd>
 <dt><a href="growthbook/sdk/java/diagnostics/model/FeatureDiagnostics.html#getKeys()" class="member-name-link">getKeys()</a> - Method in class growthbook.sdk.java.diagnostics.model.<a href="growthbook/sdk/java/diagnostics/model/FeatureDiagnostics.html" title="class in growthbook.sdk.java.diagnostics.model">FeatureDiagnostics</a></dt>
 <dd>
 <div class="block">Feature key metadata for the current snapshot.</div>
@@ -2755,6 +2818,20 @@ loadScripts(document, 'script');</script>
 <dd>
 <div class="block">Supportive method to get attribute values from the context.</div>
 </dd>
+<dt><a href="growthbook/sdk/java/multiusermode/configurations/Options.html#getStickyBucketCacheSize()" class="member-name-link">getStickyBucketCacheSize()</a> - Method in class growthbook.sdk.java.multiusermode.configurations.<a href="growthbook/sdk/java/multiusermode/configurations/Options.html" title="class in growthbook.sdk.java.multiusermode.configurations">Options</a></dt>
+<dd>
+<div class="block">Maximum entries in the opt-in sticky bucket read cache (default 1000).</div>
+</dd>
+<dt><a href="growthbook/sdk/java/multiusermode/configurations/Options.html#getStickyBucketCacheTtlSeconds()" class="member-name-link">getStickyBucketCacheTtlSeconds()</a> - Method in class growthbook.sdk.java.multiusermode.configurations.<a href="growthbook/sdk/java/multiusermode/configurations/Options.html" title="class in growthbook.sdk.java.multiusermode.configurations">Options</a></dt>
+<dd>
+<div class="block">Opt-in TTL, in seconds, for caching sticky bucket reads per user
+ attributes.</div>
+</dd>
+<dt><a href="growthbook/sdk/java/multiusermode/configurations/EvaluationContext.html#getStickyBucketDocWriter()" class="member-name-link">getStickyBucketDocWriter()</a> - Method in class growthbook.sdk.java.multiusermode.configurations.<a href="growthbook/sdk/java/multiusermode/configurations/EvaluationContext.html" title="class in growthbook.sdk.java.multiusermode.configurations">EvaluationContext</a></dt>
+<dd>
+<div class="block">Persistence seam for newly assigned sticky bucket documents, set by the
+ owning multi-user client.</div>
+</dd>
 <dt><a href="growthbook/sdk/java/util/GrowthBookUtils.html#getStickyBucketExperimentKey(java.lang.String,java.lang.Integer)" class="member-name-link">getStickyBucketExperimentKey(String, Integer)</a> - Static method in class growthbook.sdk.java.util.<a href="growthbook/sdk/java/util/GrowthBookUtils.html" title="class in growthbook.sdk.java.util">GrowthBookUtils</a></dt>
 <dd>
 <div class="block">Method to get Experiment key from cache</div>
@@ -2765,7 +2842,8 @@ loadScripts(document, 'script');</script>
 </dd>
 <dt><a href="growthbook/sdk/java/multiusermode/configurations/Options.html#getStickyBucketIdentifierAttributes()" class="member-name-link">getStickyBucketIdentifierAttributes()</a> - Method in class growthbook.sdk.java.multiusermode.configurations.<a href="growthbook/sdk/java/multiusermode/configurations/Options.html" title="class in growthbook.sdk.java.multiusermode.configurations">Options</a></dt>
 <dd>
-<div class="block">List of user's attributes keys.</div>
+<div class="block">Attribute keys whose sticky bucket documents are read for every user, in addition to the
+ attributes the loaded features' experiments hash on (those are always read).</div>
 </dd>
 <dt><a href="growthbook/sdk/java/model/GBContext.html#getStickyBucketIdentifierAttributesSignature()" class="member-name-link">getStickyBucketIdentifierAttributesSignature()</a> - Method in class growthbook.sdk.java.model.<a href="growthbook/sdk/java/model/GBContext.html" title="class in growthbook.sdk.java.model">GBContext</a></dt>
 <dd>
@@ -2776,6 +2854,8 @@ loadScripts(document, 'script');</script>
 <div class="block">Service that provide functionality of Sticky Bucketing</div>
 </dd>
 <dt><a href="growthbook/sdk/java/multiusermode/configurations/Options.html#getStickyBucketService()" class="member-name-link">getStickyBucketService()</a> - Method in class growthbook.sdk.java.multiusermode.configurations.<a href="growthbook/sdk/java/multiusermode/configurations/Options.html" title="class in growthbook.sdk.java.multiusermode.configurations">Options</a></dt>
+<dd>&nbsp;</dd>
+<dt><a href="growthbook/sdk/java/multiusermode/configurations/Options.html#getStickyBucketTimeout()" class="member-name-link">getStickyBucketTimeout()</a> - Method in class growthbook.sdk.java.multiusermode.configurations.<a href="growthbook/sdk/java/multiusermode/configurations/Options.html" title="class in growthbook.sdk.java.multiusermode.configurations">Options</a></dt>
 <dd>&nbsp;</dd>
 <dt><a href="growthbook/sdk/java/model/ExperimentResult.html#getStickyBucketUsed()" class="member-name-link">getStickyBucketUsed()</a> - Method in class growthbook.sdk.java.model.<a href="growthbook/sdk/java/model/ExperimentResult.html" title="class in growthbook.sdk.java.model">ExperimentResult</a></dt>
 <dd>
@@ -3197,6 +3277,10 @@ loadScripts(document, 'script');</script>
 <dd>&nbsp;</dd>
 <dt><a href="growthbook/sdk/java/model/ExperimentResult.ExperimentResultBuilder.html#hashUsed(java.lang.Boolean)" class="member-name-link">hashUsed(Boolean)</a> - Method in class growthbook.sdk.java.model.<a href="growthbook/sdk/java/model/ExperimentResult.ExperimentResultBuilder.html" title="class in growthbook.sdk.java.model">ExperimentResult.ExperimentResultBuilder</a></dt>
 <dd>&nbsp;</dd>
+<dt><a href="growthbook/sdk/java/multiusermode/internal/StickyAttributeValues.html#hashValue(com.google.gson.JsonElement)" class="member-name-link">hashValue(JsonElement)</a> - Static method in class growthbook.sdk.java.multiusermode.internal.<a href="growthbook/sdk/java/multiusermode/internal/StickyAttributeValues.html" title="class in growthbook.sdk.java.multiusermode.internal">StickyAttributeValues</a></dt>
+<dd>
+<div class="block">One attribute value as a hash value, or an empty string when it counts as missing.</div>
+</dd>
 <dt><a href="growthbook/sdk/java/model/ExperimentResult.ExperimentResultBuilder.html#hashValue(java.lang.String)" class="member-name-link">hashValue(String)</a> - Method in class growthbook.sdk.java.model.<a href="growthbook/sdk/java/model/ExperimentResult.ExperimentResultBuilder.html" title="class in growthbook.sdk.java.model">ExperimentResult.ExperimentResultBuilder</a></dt>
 <dd>&nbsp;</dd>
 <dt><a href="growthbook/sdk/java/model/Experiment.ExperimentBuilder.html#hashVersion(java.lang.Integer)" class="member-name-link">hashVersion(Integer)</a> - Method in class growthbook.sdk.java.model.<a href="growthbook/sdk/java/model/Experiment.ExperimentBuilder.html" title="class in growthbook.sdk.java.model">Experiment.ExperimentBuilder</a></dt>
@@ -3573,6 +3657,10 @@ loadScripts(document, 'script');</script>
 <dd>
 <div class="block">Whether the current feature data is past its cache expiry.</div>
 </dd>
+<dt><a href="growthbook/sdk/java/multiusermode/configurations/Options.html#isStickyBucketingConfigured()" class="member-name-link">isStickyBucketingConfigured()</a> - Method in class growthbook.sdk.java.multiusermode.configurations.<a href="growthbook/sdk/java/multiusermode/configurations/Options.html" title="class in growthbook.sdk.java.multiusermode.configurations">Options</a></dt>
+<dd>
+<div class="block">Whether either flavor of sticky bucket service is configured.</div>
+</dd>
 <dt><a href="growthbook/sdk/java/diagnostics/model/ConfigDiagnostics.html#isStickyBucketingEnabled()" class="member-name-link">isStickyBucketingEnabled()</a> - Method in class growthbook.sdk.java.diagnostics.model.<a href="growthbook/sdk/java/diagnostics/model/ConfigDiagnostics.html" title="class in growthbook.sdk.java.diagnostics.model">ConfigDiagnostics</a></dt>
 <dd>
 <div class="block">Whether a sticky bucketing service is configured.</div>
@@ -3683,6 +3771,10 @@ loadScripts(document, 'script');</script>
 <dt><a href="growthbook/sdk/java/diagnostics/model/enums/FeatureState.html#LOADED_EMPTY" class="member-name-link">LOADED_EMPTY</a> - Enum constant in enum class growthbook.sdk.java.diagnostics.model.enums.<a href="growthbook/sdk/java/diagnostics/model/enums/FeatureState.html" title="enum class in growthbook.sdk.java.diagnostics.model.enums">FeatureState</a></dt>
 <dd>
 <div class="block">Feature data has been loaded, but it contains no feature definitions.</div>
+</dd>
+<dt><a href="growthbook/sdk/java/util/GrowthBookUtils.html#loadStickyBuckets(growthbook.sdk.java.model.GBContext,java.lang.String,com.google.gson.JsonObject)" class="member-name-link">loadStickyBuckets(GBContext, String, JsonObject)</a> - Static method in class growthbook.sdk.java.util.<a href="growthbook/sdk/java/util/GrowthBookUtils.html" title="class in growthbook.sdk.java.util">GrowthBookUtils</a></dt>
+<dd>
+<div class="block"><a href="growthbook/sdk/java/util/GrowthBookUtils.html#refreshStickyBuckets(growthbook.sdk.java.model.GBContext,java.lang.String,com.google.gson.JsonObject)"><code>GrowthBookUtils.refreshStickyBuckets(growthbook.sdk.java.model.GBContext, java.lang.String, com.google.gson.JsonObject)</code></a> that reports whether the stored assignments were read.</div>
 </dd>
 <dt><a href="growthbook/sdk/java/diagnostics/model/enums/FeatureDataSource.html#LOCAL_REPOSITORY" class="member-name-link">LOCAL_REPOSITORY</a> - Enum constant in enum class growthbook.sdk.java.diagnostics.model.enums.<a href="growthbook/sdk/java/diagnostics/model/enums/FeatureDataSource.html" title="enum class in growthbook.sdk.java.diagnostics.model.enums">FeatureDataSource</a></dt>
 <dd>
@@ -3926,6 +4018,10 @@ loadScripts(document, 'script');</script>
 <dd>
 <div class="block">when the type is an object</div>
 </dd>
+<dt><a href="growthbook/sdk/java/multiusermode/internal/StickyAttributeValues.html#of(com.google.gson.JsonObject,java.util.Collection)" class="member-name-link">of(JsonObject, Collection&lt;String&gt;)</a> - Static method in class growthbook.sdk.java.multiusermode.internal.<a href="growthbook/sdk/java/multiusermode/internal/StickyAttributeValues.html" title="class in growthbook.sdk.java.multiusermode.internal">StickyAttributeValues</a></dt>
+<dd>
+<div class="block">The hash-value form of each named attribute that has one.</div>
+</dd>
 <dt><a href="growthbook/sdk/java/plugin/tracking/GrowthBookTrackingPlugin.html#of(growthbook.sdk.java.plugin.tracking.TrackingPluginConfig)" class="member-name-link">of(TrackingPluginConfig)</a> - Static method in class growthbook.sdk.java.plugin.tracking.<a href="growthbook/sdk/java/plugin/tracking/GrowthBookTrackingPlugin.html" title="class in growthbook.sdk.java.plugin.tracking">GrowthBookTrackingPlugin</a></dt>
 <dd>&nbsp;</dd>
 <dt><a href="growthbook/sdk/java/model/TypedKey.html#of(java.lang.String,java.lang.Class)" class="member-name-link">of(String, Class&lt;T&gt;)</a> - Static method in class growthbook.sdk.java.model.<a href="growthbook/sdk/java/model/TypedKey.html" title="class in growthbook.sdk.java.model">TypedKey</a></dt>
@@ -4062,8 +4158,18 @@ loadScripts(document, 'script');</script>
  <code>Options.featureRefreshListenerExecutor</code> was introduced.</div>
 </dd>
 <dt><a href="growthbook/sdk/java/multiusermode/configurations/Options.html#%3Cinit%3E(java.lang.Boolean,java.lang.Boolean,java.lang.Boolean,java.lang.Boolean,java.lang.String,java.lang.String,java.lang.String,java.lang.String,java.util.List,growthbook.sdk.java.stickyBucketing.StickyBucketService,growthbook.sdk.java.multiusermode.usage.TrackingCallbackWithUser,growthbook.sdk.java.multiusermode.usage.FeatureUsageCallbackWithUser,growthbook.sdk.java.repository.FeatureRefreshStrategy,java.lang.Integer,growthbook.sdk.java.callback.FeatureRefreshCallback,com.google.gson.JsonObject,java.util.Map,java.util.Map,growthbook.sdk.java.sandbox.GbCacheManager,growthbook.sdk.java.sandbox.CacheMode,java.lang.String,java.lang.Boolean,java.util.List,java.lang.Integer,java.lang.Integer,java.time.Duration,growthbook.sdk.java.retry.FeatureFetchRetryPolicy,java.util.concurrent.Executor,java.lang.Boolean,java.util.List)" class="member-name-link">Options(Boolean, Boolean, Boolean, Boolean, String, String, String, String, List&lt;String&gt;, StickyBucketService, TrackingCallbackWithUser, FeatureUsageCallbackWithUser, FeatureRefreshStrategy, Integer, FeatureRefreshCallback, JsonObject, Map&lt;String, Object&gt;, Map&lt;String, ?&gt;, GbCacheManager, CacheMode, String, Boolean, List&lt;String&gt;, Integer, Integer, Duration, FeatureFetchRetryPolicy, Executor, Boolean, List&lt;GrowthBookPlugin&gt;)</a> - Constructor for class growthbook.sdk.java.multiusermode.configurations.<a href="growthbook/sdk/java/multiusermode/configurations/Options.html" title="class in growthbook.sdk.java.multiusermode.configurations">Options</a></dt>
+<dd>
+<div class="block">Full positional signature on <code>main</code> before the async sticky-bucket options were
+ introduced.</div>
+</dd>
+<dt><a href="growthbook/sdk/java/multiusermode/configurations/Options.html#%3Cinit%3E(java.lang.Boolean,java.lang.Boolean,java.lang.Boolean,java.lang.Boolean,java.lang.String,java.lang.String,java.lang.String,java.lang.String,java.util.List,growthbook.sdk.java.stickyBucketing.StickyBucketService,growthbook.sdk.java.multiusermode.usage.TrackingCallbackWithUser,growthbook.sdk.java.multiusermode.usage.FeatureUsageCallbackWithUser,growthbook.sdk.java.repository.FeatureRefreshStrategy,java.lang.Integer,growthbook.sdk.java.callback.FeatureRefreshCallback,com.google.gson.JsonObject,java.util.Map,java.util.Map,growthbook.sdk.java.sandbox.GbCacheManager,growthbook.sdk.java.sandbox.CacheMode,java.lang.String,java.lang.Boolean,java.util.List,java.lang.Integer,java.lang.Integer,java.time.Duration,growthbook.sdk.java.retry.FeatureFetchRetryPolicy,java.util.concurrent.Executor,java.lang.Boolean,java.util.List,growthbook.sdk.java.stickyBucketing.AsyncStickyBucketService,java.util.concurrent.Executor,java.lang.Long,java.lang.Integer,java.time.Duration)" class="member-name-link">Options(Boolean, Boolean, Boolean, Boolean, String, String, String, String, List&lt;String&gt;, StickyBucketService, TrackingCallbackWithUser, FeatureUsageCallbackWithUser, FeatureRefreshStrategy, Integer, FeatureRefreshCallback, JsonObject, Map&lt;String, Object&gt;, Map&lt;String, ?&gt;, GbCacheManager, CacheMode, String, Boolean, List&lt;String&gt;, Integer, Integer, Duration, FeatureFetchRetryPolicy, Executor, Boolean, List&lt;GrowthBookPlugin&gt;, AsyncStickyBucketService, Executor, Long, Integer, Duration)</a> - Constructor for class growthbook.sdk.java.multiusermode.configurations.<a href="growthbook/sdk/java/multiusermode/configurations/Options.html" title="class in growthbook.sdk.java.multiusermode.configurations">Options</a></dt>
 <dd>&nbsp;</dd>
 <dt><a href="growthbook/sdk/java/multiusermode/configurations/Options.html#%3Cinit%3E(java.lang.Boolean,java.lang.Boolean,java.lang.Boolean,java.lang.Boolean,java.lang.String,java.lang.String,java.lang.String,java.lang.String,java.util.List,growthbook.sdk.java.stickyBucketing.StickyBucketService,growthbook.sdk.java.multiusermode.usage.TrackingCallbackWithUser,growthbook.sdk.java.multiusermode.usage.FeatureUsageCallbackWithUser,growthbook.sdk.java.repository.FeatureRefreshStrategy,java.lang.Integer,growthbook.sdk.java.callback.FeatureRefreshCallback,com.google.gson.JsonObject,java.util.Map,java.util.Map,growthbook.sdk.java.sandbox.GbCacheManager,growthbook.sdk.java.sandbox.CacheMode,java.lang.String,java.lang.Boolean,java.util.List,java.lang.Integer,java.lang.Integer,java.time.Duration,growthbook.sdk.java.retry.FeatureFetchRetryPolicy,java.util.List)" class="member-name-link">Options(Boolean, Boolean, Boolean, Boolean, String, String, String, String, List&lt;String&gt;, StickyBucketService, TrackingCallbackWithUser, FeatureUsageCallbackWithUser, FeatureRefreshStrategy, Integer, FeatureRefreshCallback, JsonObject, Map&lt;String, Object&gt;, Map&lt;String, ?&gt;, GbCacheManager, CacheMode, String, Boolean, List&lt;String&gt;, Integer, Integer, Duration, FeatureFetchRetryPolicy, List&lt;GrowthBookPlugin&gt;)</a> - Constructor for class growthbook.sdk.java.multiusermode.configurations.<a href="growthbook/sdk/java/multiusermode/configurations/Options.html" title="class in growthbook.sdk.java.multiusermode.configurations">Options</a></dt>
+<dd>
+<div class="block">Backward-compatible constructor matching <code>main</code>'s 0.11.x positional signature, before
+ <code>Options.featureRefreshListenerExecutor</code> and <code>Options.sseReconnectOnFailure</code> were introduced.</div>
+</dd>
+<dt><a href="growthbook/sdk/java/multiusermode/configurations/Options.html#%3Cinit%3E(java.lang.Boolean,java.lang.Boolean,java.lang.Boolean,java.lang.Boolean,java.lang.String,java.lang.String,java.lang.String,java.lang.String,java.util.List,growthbook.sdk.java.stickyBucketing.StickyBucketService,growthbook.sdk.java.multiusermode.usage.TrackingCallbackWithUser,growthbook.sdk.java.multiusermode.usage.FeatureUsageCallbackWithUser,growthbook.sdk.java.repository.FeatureRefreshStrategy,java.lang.Integer,growthbook.sdk.java.callback.FeatureRefreshCallback,com.google.gson.JsonObject,java.util.Map,java.util.Map,growthbook.sdk.java.sandbox.GbCacheManager,growthbook.sdk.java.sandbox.CacheMode,java.lang.String,java.lang.Boolean,java.util.List,java.lang.Integer,java.lang.Integer,java.time.Duration,growthbook.sdk.java.retry.FeatureFetchRetryPolicy,java.util.List,growthbook.sdk.java.stickyBucketing.AsyncStickyBucketService,java.util.concurrent.Executor,java.lang.Long,java.lang.Integer)" class="member-name-link">Options(Boolean, Boolean, Boolean, Boolean, String, String, String, String, List&lt;String&gt;, StickyBucketService, TrackingCallbackWithUser, FeatureUsageCallbackWithUser, FeatureRefreshStrategy, Integer, FeatureRefreshCallback, JsonObject, Map&lt;String, Object&gt;, Map&lt;String, ?&gt;, GbCacheManager, CacheMode, String, Boolean, List&lt;String&gt;, Integer, Integer, Duration, FeatureFetchRetryPolicy, List&lt;GrowthBookPlugin&gt;, AsyncStickyBucketService, Executor, Long, Integer)</a> - Constructor for class growthbook.sdk.java.multiusermode.configurations.<a href="growthbook/sdk/java/multiusermode/configurations/Options.html" title="class in growthbook.sdk.java.multiusermode.configurations">Options</a></dt>
 <dd>
 <div class="block">Backward-compatible constructor matching the 0.11.0 positional signature, before
  <code>Options.featureRefreshListenerExecutor</code> and <code>Options.sseReconnectOnFailure</code> were introduced.</div>
@@ -4156,6 +4262,11 @@ loadScripts(document, 'script');</script>
 <dd>&nbsp;</dd>
 <dt><a href="growthbook/sdk/java/model/FeatureRefreshSource.html#POLLING" class="member-name-link">POLLING</a> - Enum constant in enum class growthbook.sdk.java.model.<a href="growthbook/sdk/java/model/FeatureRefreshSource.html" title="enum class in growthbook.sdk.java.model">FeatureRefreshSource</a></dt>
 <dd>&nbsp;</dd>
+<dt><a href="growthbook/sdk/java/multiusermode/GrowthBookClient.html#prefetchStickyBuckets(growthbook.sdk.java.multiusermode.configurations.UserContext)" class="member-name-link">prefetchStickyBuckets(UserContext)</a> - Method in class growthbook.sdk.java.multiusermode.<a href="growthbook/sdk/java/multiusermode/GrowthBookClient.html" title="class in growthbook.sdk.java.multiusermode">GrowthBookClient</a></dt>
+<dd>
+<div class="block">Prefetch sticky bucket assignments for a user context, so later evaluations with the same
+ context perform no sticky bucket I/O.</div>
+</dd>
 <dt><a href="growthbook/sdk/java/multiusermode/internal/RemoteEvalCoordinator.html#preload(growthbook.sdk.java.multiusermode.configurations.UserContext)" class="member-name-link">preload(UserContext)</a> - Method in class growthbook.sdk.java.multiusermode.internal.<a href="growthbook/sdk/java/multiusermode/internal/RemoteEvalCoordinator.html" title="class in growthbook.sdk.java.multiusermode.internal">RemoteEvalCoordinator</a></dt>
 <dd>
 <div class="block">Warms the cache for a user context without producing an evaluation context.</div>
@@ -4548,6 +4659,11 @@ loadScripts(document, 'script');</script>
 <dd>
 <div class="block">Maximum number of keys included in <code>FeatureKeyDiagnostics.FeatureKeyDiagnosticsBuilder.sample</code>.</div>
 </dd>
+<dt><a href="growthbook/sdk/java/stickyBucketing/AsyncStickyBucketService.html#saveAssignments(growthbook.sdk.java.model.StickyAssignmentsDocument)" class="member-name-link">saveAssignments(StickyAssignmentsDocument)</a> - Method in interface growthbook.sdk.java.stickyBucketing.<a href="growthbook/sdk/java/stickyBucketing/AsyncStickyBucketService.html" title="interface in growthbook.sdk.java.stickyBucketing">AsyncStickyBucketService</a></dt>
+<dd>
+<div class="block">Persist one sticky bucket document (upsert by
+ <code>attributeName + "||" + attributeValue</code>).</div>
+</dd>
 <dt><a href="growthbook/sdk/java/stickyBucketing/InMemoryStickyBucketServiceImpl.html#saveAssignments(growthbook.sdk.java.model.StickyAssignmentsDocument)" class="member-name-link">saveAssignments(StickyAssignmentsDocument)</a> - Method in class growthbook.sdk.java.stickyBucketing.<a href="growthbook/sdk/java/stickyBucketing/InMemoryStickyBucketServiceImpl.html" title="class in growthbook.sdk.java.stickyBucketing">InMemoryStickyBucketServiceImpl</a></dt>
 <dd>
 <div class="block">Method for saving assignments document to cache (in memory: hashmap)</div>
@@ -4556,6 +4672,8 @@ loadScripts(document, 'script');</script>
 <dd>
 <div class="block">Insert new record if not exists, otherwise update</div>
 </dd>
+<dt><a href="growthbook/sdk/java/stickyBucketing/SyncOffloadStickyBucketAdapter.html#saveAssignments(growthbook.sdk.java.model.StickyAssignmentsDocument)" class="member-name-link">saveAssignments(StickyAssignmentsDocument)</a> - Method in class growthbook.sdk.java.stickyBucketing.<a href="growthbook/sdk/java/stickyBucketing/SyncOffloadStickyBucketAdapter.html" title="class in growthbook.sdk.java.stickyBucketing">SyncOffloadStickyBucketAdapter</a></dt>
+<dd>&nbsp;</dd>
 <dt><a href="growthbook/sdk/java/sandbox/FileCachingManagerImpl.html#saveContent(java.lang.String,java.lang.String)" class="member-name-link">saveContent(String, String)</a> - Method in class growthbook.sdk.java.sandbox.<a href="growthbook/sdk/java/sandbox/FileCachingManagerImpl.html" title="class in growthbook.sdk.java.sandbox">FileCachingManagerImpl</a></dt>
 <dd>
 <div class="block">Method that saves feature JSON as String to a cache file</div>
@@ -4630,6 +4748,15 @@ loadScripts(document, 'script');</script>
 <dt><a href="growthbook/sdk/java/model/StickyAssignmentsDocument.html#setAssignments(java.util.Map)" class="member-name-link">setAssignments(Map&lt;String, String&gt;)</a> - Method in class growthbook.sdk.java.model.<a href="growthbook/sdk/java/model/StickyAssignmentsDocument.html" title="class in growthbook.sdk.java.model">StickyAssignmentsDocument</a></dt>
 <dd>
 <div class="block">A dictionary of persisted experiment assignments.</div>
+</dd>
+<dt><a href="growthbook/sdk/java/multiusermode/configurations/Options.html#setAsyncExecutor(java.util.concurrent.Executor)" class="member-name-link">setAsyncExecutor(Executor)</a> - Method in class growthbook.sdk.java.multiusermode.configurations.<a href="growthbook/sdk/java/multiusermode/configurations/Options.html" title="class in growthbook.sdk.java.multiusermode.configurations">Options</a></dt>
+<dd>
+<div class="block">Executor for the client's asynchronous entry points: offloading blocking
+ <a href="growthbook/sdk/java/stickyBucketing/StickyBucketService.html" title="interface in growthbook.sdk.java.stickyBucketing"><code>StickyBucketService</code></a> calls and composing async evaluations.</div>
+</dd>
+<dt><a href="growthbook/sdk/java/multiusermode/configurations/Options.html#setAsyncStickyBucketService(growthbook.sdk.java.stickyBucketing.AsyncStickyBucketService)" class="member-name-link">setAsyncStickyBucketService(AsyncStickyBucketService)</a> - Method in class growthbook.sdk.java.multiusermode.configurations.<a href="growthbook/sdk/java/multiusermode/configurations/Options.html" title="class in growthbook.sdk.java.multiusermode.configurations">Options</a></dt>
+<dd>
+<div class="block">Non-blocking sticky bucket service for the multi-user client.</div>
 </dd>
 <dt><a href="growthbook/sdk/java/model/StickyAssignmentsDocument.html#setAttributeName(java.lang.String)" class="member-name-link">setAttributeName(String)</a> - Method in class growthbook.sdk.java.model.<a href="growthbook/sdk/java/model/StickyAssignmentsDocument.html" title="class in growthbook.sdk.java.model">StickyAssignmentsDocument</a></dt>
 <dd>
@@ -4727,6 +4854,11 @@ loadScripts(document, 'script');</script>
 <dt><a href="growthbook/sdk/java/multiusermode/configurations/Options.html#setDecryptionKey(java.lang.String)" class="member-name-link">setDecryptionKey(String)</a> - Method in class growthbook.sdk.java.multiusermode.configurations.<a href="growthbook/sdk/java/multiusermode/configurations/Options.html" title="class in growthbook.sdk.java.multiusermode.configurations">Options</a></dt>
 <dd>
 <div class="block">Optional decryption Key.</div>
+</dd>
+<dt><a href="growthbook/sdk/java/multiusermode/configurations/GlobalContext.html#setDerivedStickyIdentifierAttributes(java.util.Set)" class="member-name-link">setDerivedStickyIdentifierAttributes(Set&lt;String&gt;)</a> - Method in class growthbook.sdk.java.multiusermode.configurations.<a href="growthbook/sdk/java/multiusermode/configurations/GlobalContext.html" title="class in growthbook.sdk.java.multiusermode.configurations">GlobalContext</a></dt>
+<dd>
+<div class="block">Lazily derived sticky-bucket identifier attributes for this feature
+ snapshot (hashAttribute/fallbackAttribute across experiment rules).</div>
 </dd>
 <dt><a href="growthbook/sdk/java/model/Experiment.html#setDisableStickyBucketing(java.lang.Boolean)" class="member-name-link">setDisableStickyBucketing(Boolean)</a> - Method in class growthbook.sdk.java.model.<a href="growthbook/sdk/java/model/Experiment.html" title="class in growthbook.sdk.java.model">Experiment</a></dt>
 <dd>
@@ -5169,13 +5301,28 @@ loadScripts(document, 'script');</script>
 </dd>
 <dt><a href="growthbook/sdk/java/multiusermode/configurations/UserContext.html#setStickyBucketAssignmentDocs(java.util.Map)" class="member-name-link">setStickyBucketAssignmentDocs(Map&lt;String, StickyAssignmentsDocument&gt;)</a> - Method in class growthbook.sdk.java.multiusermode.configurations.<a href="growthbook/sdk/java/multiusermode/configurations/UserContext.html" title="class in growthbook.sdk.java.multiusermode.configurations">UserContext</a></dt>
 <dd>&nbsp;</dd>
+<dt><a href="growthbook/sdk/java/multiusermode/configurations/Options.html#setStickyBucketCacheSize(java.lang.Integer)" class="member-name-link">setStickyBucketCacheSize(Integer)</a> - Method in class growthbook.sdk.java.multiusermode.configurations.<a href="growthbook/sdk/java/multiusermode/configurations/Options.html" title="class in growthbook.sdk.java.multiusermode.configurations">Options</a></dt>
+<dd>
+<div class="block">Maximum entries in the opt-in sticky bucket read cache (default 1000).</div>
+</dd>
+<dt><a href="growthbook/sdk/java/multiusermode/configurations/Options.html#setStickyBucketCacheTtlSeconds(java.lang.Long)" class="member-name-link">setStickyBucketCacheTtlSeconds(Long)</a> - Method in class growthbook.sdk.java.multiusermode.configurations.<a href="growthbook/sdk/java/multiusermode/configurations/Options.html" title="class in growthbook.sdk.java.multiusermode.configurations">Options</a></dt>
+<dd>
+<div class="block">Opt-in TTL, in seconds, for caching sticky bucket reads per user
+ attributes.</div>
+</dd>
+<dt><a href="growthbook/sdk/java/multiusermode/configurations/EvaluationContext.html#setStickyBucketDocWriter(growthbook.sdk.java.stickyBucketing.StickyBucketDocWriter)" class="member-name-link">setStickyBucketDocWriter(StickyBucketDocWriter)</a> - Method in class growthbook.sdk.java.multiusermode.configurations.<a href="growthbook/sdk/java/multiusermode/configurations/EvaluationContext.html" title="class in growthbook.sdk.java.multiusermode.configurations">EvaluationContext</a></dt>
+<dd>
+<div class="block">Persistence seam for newly assigned sticky bucket documents, set by the
+ owning multi-user client.</div>
+</dd>
 <dt><a href="growthbook/sdk/java/model/GBContext.html#setStickyBucketIdentifierAttributes(java.util.List)" class="member-name-link">setStickyBucketIdentifierAttributes(List&lt;String&gt;)</a> - Method in class growthbook.sdk.java.model.<a href="growthbook/sdk/java/model/GBContext.html" title="class in growthbook.sdk.java.model">GBContext</a></dt>
 <dd>
 <div class="block">List of user's attributes keys</div>
 </dd>
 <dt><a href="growthbook/sdk/java/multiusermode/configurations/Options.html#setStickyBucketIdentifierAttributes(java.util.List)" class="member-name-link">setStickyBucketIdentifierAttributes(List&lt;String&gt;)</a> - Method in class growthbook.sdk.java.multiusermode.configurations.<a href="growthbook/sdk/java/multiusermode/configurations/Options.html" title="class in growthbook.sdk.java.multiusermode.configurations">Options</a></dt>
 <dd>
-<div class="block">List of user's attributes keys.</div>
+<div class="block">Attribute keys whose sticky bucket documents are read for every user, in addition to the
+ attributes the loaded features' experiments hash on (those are always read).</div>
 </dd>
 <dt><a href="growthbook/sdk/java/model/GBContext.html#setStickyBucketIdentifierAttributesSignature(java.lang.String)" class="member-name-link">setStickyBucketIdentifierAttributesSignature(String)</a> - Method in class growthbook.sdk.java.model.<a href="growthbook/sdk/java/model/GBContext.html" title="class in growthbook.sdk.java.model">GBContext</a></dt>
 <dd>
@@ -5188,6 +5335,11 @@ loadScripts(document, 'script');</script>
 <dt><a href="growthbook/sdk/java/multiusermode/configurations/Options.html#setStickyBucketService(growthbook.sdk.java.stickyBucketing.StickyBucketService)" class="member-name-link">setStickyBucketService(StickyBucketService)</a> - Method in class growthbook.sdk.java.multiusermode.configurations.<a href="growthbook/sdk/java/multiusermode/configurations/Options.html" title="class in growthbook.sdk.java.multiusermode.configurations">Options</a></dt>
 <dd>
 <div class="block">Service that provide functionality of Sticky Bucketing</div>
+</dd>
+<dt><a href="growthbook/sdk/java/multiusermode/configurations/Options.html#setStickyBucketTimeout(java.time.Duration)" class="member-name-link">setStickyBucketTimeout(Duration)</a> - Method in class growthbook.sdk.java.multiusermode.configurations.<a href="growthbook/sdk/java/multiusermode/configurations/Options.html" title="class in growthbook.sdk.java.multiusermode.configurations">Options</a></dt>
+<dd>
+<div class="block">How long the multi-user client waits for one sticky bucket store call, read or save
+ (default <a href="growthbook/sdk/java/multiusermode/configurations/Options.html#DEFAULT_STICKY_BUCKET_TIMEOUT"><code>Options.DEFAULT_STICKY_BUCKET_TIMEOUT</code></a>, 5 seconds).</div>
 </dd>
 <dt><a href="growthbook/sdk/java/model/ExperimentResult.html#setStickyBucketUsed(java.lang.Boolean)" class="member-name-link">setStickyBucketUsed(Boolean)</a> - Method in class growthbook.sdk.java.model.<a href="growthbook/sdk/java/model/ExperimentResult.html" title="class in growthbook.sdk.java.model">ExperimentResult</a></dt>
 <dd>
@@ -5377,10 +5529,23 @@ loadScripts(document, 'script');</script>
 <dd>&nbsp;</dd>
 <dt><a href="growthbook/sdk/java/model/StickyAssignmentsDocument.html#%3Cinit%3E(java.lang.String,java.lang.String,java.util.Map)" class="member-name-link">StickyAssignmentsDocument(String, String, Map&lt;String, String&gt;)</a> - Constructor for class growthbook.sdk.java.model.<a href="growthbook/sdk/java/model/StickyAssignmentsDocument.html" title="class in growthbook.sdk.java.model">StickyAssignmentsDocument</a></dt>
 <dd>&nbsp;</dd>
+<dt><a href="growthbook/sdk/java/multiusermode/internal/StickyAttributeValues.html" class="type-name-link" title="class in growthbook.sdk.java.multiusermode.internal">StickyAttributeValues</a> - Class in <a href="growthbook/sdk/java/multiusermode/internal/package-summary.html">growthbook.sdk.java.multiusermode.internal</a></dt>
+<dd>
+<div class="block"><b>INTERNAL</b>: not part of the supported API.</div>
+</dd>
 <dt><a href="growthbook/sdk/java/model/GBContext.GBContextBuilder.html#stickyBucketAssignmentDocs(java.util.Map)" class="member-name-link">stickyBucketAssignmentDocs(Map&lt;String, StickyAssignmentsDocument&gt;)</a> - Method in class growthbook.sdk.java.model.<a href="growthbook/sdk/java/model/GBContext.GBContextBuilder.html" title="class in growthbook.sdk.java.model">GBContext.GBContextBuilder</a></dt>
 <dd>&nbsp;</dd>
 <dt><a href="growthbook/sdk/java/multiusermode/configurations/UserContext.UserContextBuilder.html#stickyBucketAssignmentDocs(java.util.Map)" class="member-name-link">stickyBucketAssignmentDocs(Map&lt;String, StickyAssignmentsDocument&gt;)</a> - Method in class growthbook.sdk.java.multiusermode.configurations.<a href="growthbook/sdk/java/multiusermode/configurations/UserContext.UserContextBuilder.html" title="class in growthbook.sdk.java.multiusermode.configurations">UserContext.UserContextBuilder</a></dt>
 <dd>&nbsp;</dd>
+<dt><a href="growthbook/sdk/java/multiusermode/configurations/Options.OptionsBuilder.html#stickyBucketCacheSize(java.lang.Integer)" class="member-name-link">stickyBucketCacheSize(Integer)</a> - Method in class growthbook.sdk.java.multiusermode.configurations.<a href="growthbook/sdk/java/multiusermode/configurations/Options.OptionsBuilder.html" title="class in growthbook.sdk.java.multiusermode.configurations">Options.OptionsBuilder</a></dt>
+<dd>&nbsp;</dd>
+<dt><a href="growthbook/sdk/java/multiusermode/configurations/Options.OptionsBuilder.html#stickyBucketCacheTtlSeconds(java.lang.Long)" class="member-name-link">stickyBucketCacheTtlSeconds(Long)</a> - Method in class growthbook.sdk.java.multiusermode.configurations.<a href="growthbook/sdk/java/multiusermode/configurations/Options.OptionsBuilder.html" title="class in growthbook.sdk.java.multiusermode.configurations">Options.OptionsBuilder</a></dt>
+<dd>&nbsp;</dd>
+<dt><a href="growthbook/sdk/java/stickyBucketing/StickyBucketDocWriter.html" class="type-name-link" title="interface in growthbook.sdk.java.stickyBucketing">StickyBucketDocWriter</a> - Interface in <a href="growthbook/sdk/java/stickyBucketing/package-summary.html">growthbook.sdk.java.stickyBucketing</a></dt>
+<dd>
+<div class="block">Seam through which evaluation hands newly assigned sticky bucket documents to
+ the owning client for persistence.</div>
+</dd>
 <dt><a href="growthbook/sdk/java/model/GBContext.GBContextBuilder.html#stickyBucketIdentifierAttributes(java.util.List)" class="member-name-link">stickyBucketIdentifierAttributes(List&lt;String&gt;)</a> - Method in class growthbook.sdk.java.model.<a href="growthbook/sdk/java/model/GBContext.GBContextBuilder.html" title="class in growthbook.sdk.java.model">GBContext.GBContextBuilder</a></dt>
 <dd>&nbsp;</dd>
 <dt><a href="growthbook/sdk/java/multiusermode/configurations/Options.OptionsBuilder.html#stickyBucketIdentifierAttributes(java.util.List)" class="member-name-link">stickyBucketIdentifierAttributes(List&lt;String&gt;)</a> - Method in class growthbook.sdk.java.multiusermode.configurations.<a href="growthbook/sdk/java/multiusermode/configurations/Options.OptionsBuilder.html" title="class in growthbook.sdk.java.multiusermode.configurations">Options.OptionsBuilder</a></dt>
@@ -5406,6 +5571,8 @@ loadScripts(document, 'script');</script>
 <dt><a href="growthbook/sdk/java/exception/StickyBucketServiceException.html#%3Cinit%3E(java.lang.String)" class="member-name-link">StickyBucketServiceException(String)</a> - Constructor for exception growthbook.sdk.java.exception.<a href="growthbook/sdk/java/exception/StickyBucketServiceException.html" title="class in growthbook.sdk.java.exception">StickyBucketServiceException</a></dt>
 <dd>&nbsp;</dd>
 <dt><a href="growthbook/sdk/java/exception/StickyBucketServiceException.html#%3Cinit%3E(java.lang.String,java.lang.Throwable)" class="member-name-link">StickyBucketServiceException(String, Throwable)</a> - Constructor for exception growthbook.sdk.java.exception.<a href="growthbook/sdk/java/exception/StickyBucketServiceException.html" title="class in growthbook.sdk.java.exception">StickyBucketServiceException</a></dt>
+<dd>&nbsp;</dd>
+<dt><a href="growthbook/sdk/java/multiusermode/configurations/Options.OptionsBuilder.html#stickyBucketTimeout(java.time.Duration)" class="member-name-link">stickyBucketTimeout(Duration)</a> - Method in class growthbook.sdk.java.multiusermode.configurations.<a href="growthbook/sdk/java/multiusermode/configurations/Options.OptionsBuilder.html" title="class in growthbook.sdk.java.multiusermode.configurations">Options.OptionsBuilder</a></dt>
 <dd>&nbsp;</dd>
 <dt><a href="growthbook/sdk/java/model/ExperimentResult.ExperimentResultBuilder.html#stickyBucketUsed(java.lang.Boolean)" class="member-name-link">stickyBucketUsed(Boolean)</a> - Method in class growthbook.sdk.java.model.<a href="growthbook/sdk/java/model/ExperimentResult.ExperimentResultBuilder.html" title="class in growthbook.sdk.java.model">ExperimentResult.ExperimentResultBuilder</a></dt>
 <dd>&nbsp;</dd>
@@ -5514,6 +5681,14 @@ loadScripts(document, 'script');</script>
 <dt><a href="growthbook/sdk/java/repository/GBFeaturesRepository.GBFeaturesRepositoryBuilder.html#swrTtlSeconds(java.lang.Integer)" class="member-name-link">swrTtlSeconds(Integer)</a> - Method in class growthbook.sdk.java.repository.<a href="growthbook/sdk/java/repository/GBFeaturesRepository.GBFeaturesRepositoryBuilder.html" title="class in growthbook.sdk.java.repository">GBFeaturesRepository.GBFeaturesRepositoryBuilder</a></dt>
 <dd>&nbsp;</dd>
 <dt><a href="growthbook/sdk/java/repository/NativeJavaGbFeatureRepository.NativeJavaGbFeatureRepositoryBuilder.html#swrTtlSeconds(java.lang.Integer)" class="member-name-link">swrTtlSeconds(Integer)</a> - Method in class growthbook.sdk.java.repository.<a href="growthbook/sdk/java/repository/NativeJavaGbFeatureRepository.NativeJavaGbFeatureRepositoryBuilder.html" title="class in growthbook.sdk.java.repository">NativeJavaGbFeatureRepository.NativeJavaGbFeatureRepositoryBuilder</a></dt>
+<dd>&nbsp;</dd>
+<dt><a href="growthbook/sdk/java/stickyBucketing/SyncOffloadStickyBucketAdapter.html" class="type-name-link" title="class in growthbook.sdk.java.stickyBucketing">SyncOffloadStickyBucketAdapter</a> - Class in <a href="growthbook/sdk/java/stickyBucketing/package-summary.html">growthbook.sdk.java.stickyBucketing</a></dt>
+<dd>
+<div class="block">Presents a blocking <a href="growthbook/sdk/java/stickyBucketing/StickyBucketService.html" title="interface in growthbook.sdk.java.stickyBucketing"><code>StickyBucketService</code></a> as an
+ <a href="growthbook/sdk/java/stickyBucketing/AsyncStickyBucketService.html" title="interface in growthbook.sdk.java.stickyBucketing"><code>AsyncStickyBucketService</code></a> by running each call on the supplied
+ executor.</div>
+</dd>
+<dt><a href="growthbook/sdk/java/stickyBucketing/SyncOffloadStickyBucketAdapter.html#%3Cinit%3E(growthbook.sdk.java.stickyBucketing.StickyBucketService,java.util.concurrent.Executor)" class="member-name-link">SyncOffloadStickyBucketAdapter(StickyBucketService, Executor)</a> - Constructor for class growthbook.sdk.java.stickyBucketing.<a href="growthbook/sdk/java/stickyBucketing/SyncOffloadStickyBucketAdapter.html" title="class in growthbook.sdk.java.stickyBucketing">SyncOffloadStickyBucketAdapter</a></dt>
 <dd>&nbsp;</dd>
 </dl>
 <h2 class="title" id="I:T">T</h2>
@@ -6131,6 +6306,10 @@ the order they are declared.</div>
 <dd>&nbsp;</dd>
 <dt><a href="growthbook/sdk/java/multiusermode/configurations/UserContext.html#withAttributes(com.google.gson.JsonObject)" class="member-name-link">withAttributes(JsonObject)</a> - Method in class growthbook.sdk.java.multiusermode.configurations.<a href="growthbook/sdk/java/multiusermode/configurations/UserContext.html" title="class in growthbook.sdk.java.multiusermode.configurations">UserContext</a></dt>
 <dd>&nbsp;</dd>
+<dt><a href="growthbook/sdk/java/stickyBucketing/StickyBucketDocWriter.html#write(growthbook.sdk.java.model.StickyAssignmentsDocument)" class="member-name-link">write(StickyAssignmentsDocument)</a> - Method in interface growthbook.sdk.java.stickyBucketing.<a href="growthbook/sdk/java/stickyBucketing/StickyBucketDocWriter.html" title="interface in growthbook.sdk.java.stickyBucketing">StickyBucketDocWriter</a></dt>
+<dd>
+<div class="block">Persist a newly assigned document.</div>
+</dd>
 </dl>
 <h2 class="title" id="I:X">X</h2>
 <dl class="index">

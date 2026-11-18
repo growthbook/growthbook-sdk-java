@@ -84,14 +84,31 @@ loadScripts(document, 'script');</script>
 <div class="summary-table two-column-summary">
 <div class="table-header col-first">Class</div>
 <div class="table-header col-last">Description</div>
-<div class="col-first even-row-color class-summary class-summary-tab2"><a href="InMemoryStickyBucketServiceImpl.html" title="class in growthbook.sdk.java.stickyBucketing">InMemoryStickyBucketServiceImpl</a></div>
-<div class="col-last even-row-color class-summary class-summary-tab2">
+<div class="col-first even-row-color class-summary class-summary-tab1"><a href="AsyncStickyBucketService.html" title="interface in growthbook.sdk.java.stickyBucketing">AsyncStickyBucketService</a></div>
+<div class="col-last even-row-color class-summary class-summary-tab1">
+<div class="block">Non-blocking sticky bucket persistence for the multi-user
+ <a href="../multiusermode/GrowthBookClient.html" title="class in growthbook.sdk.java.multiusermode"><code>GrowthBookClient</code></a>: reads and writes
+ never run on the evaluating thread's time.</div>
+</div>
+<div class="col-first odd-row-color class-summary class-summary-tab2"><a href="InMemoryStickyBucketServiceImpl.html" title="class in growthbook.sdk.java.stickyBucketing">InMemoryStickyBucketServiceImpl</a></div>
+<div class="col-last odd-row-color class-summary class-summary-tab2">
 <div class="block">For simple bucket persistence using the in memory's storage(Map) (can be polyfilled for other environments)</div>
+</div>
+<div class="col-first even-row-color class-summary class-summary-tab1"><a href="StickyBucketDocWriter.html" title="interface in growthbook.sdk.java.stickyBucketing">StickyBucketDocWriter</a></div>
+<div class="col-last even-row-color class-summary class-summary-tab1">
+<div class="block">Seam through which evaluation hands newly assigned sticky bucket documents to
+ the owning client for persistence.</div>
 </div>
 <div class="col-first odd-row-color class-summary class-summary-tab1"><a href="StickyBucketService.html" title="interface in growthbook.sdk.java.stickyBucketing">StickyBucketService</a></div>
 <div class="col-last odd-row-color class-summary class-summary-tab1">
 <div class="block">Sticky Bucket Service is responsible for persisting previously seen
  variations and ensure that the user experience remains consistent for your users.</div>
+</div>
+<div class="col-first even-row-color class-summary class-summary-tab2"><a href="SyncOffloadStickyBucketAdapter.html" title="class in growthbook.sdk.java.stickyBucketing">SyncOffloadStickyBucketAdapter</a></div>
+<div class="col-last even-row-color class-summary class-summary-tab2">
+<div class="block">Presents a blocking <a href="StickyBucketService.html" title="interface in growthbook.sdk.java.stickyBucketing"><code>StickyBucketService</code></a> as an
+ <a href="AsyncStickyBucketService.html" title="interface in growthbook.sdk.java.stickyBucketing"><code>AsyncStickyBucketService</code></a> by running each call on the supplied
+ executor.</div>
 </div>
 </div>
 </div>

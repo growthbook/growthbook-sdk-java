@@ -45,13 +45,13 @@ loadScripts(document, 'script');</script>
 <ul class="sub-nav-list">
 <li>Summary:&nbsp;</li>
 <li><a href="#nested-class-summary">Nested</a>&nbsp;|&nbsp;</li>
-<li>Field&nbsp;|&nbsp;</li>
+<li><a href="#field-summary">Field</a>&nbsp;|&nbsp;</li>
 <li><a href="#constructor-summary">Constr</a>&nbsp;|&nbsp;</li>
 <li><a href="#method-summary">Method</a></li>
 </ul>
 <ul class="sub-nav-list">
 <li>Detail:&nbsp;</li>
-<li>Field&nbsp;|&nbsp;</li>
+<li><a href="#field-detail">Field</a>&nbsp;|&nbsp;</li>
 <li><a href="#constructor-detail">Constr</a>&nbsp;|&nbsp;</li>
 <li><a href="#method-detail">Method</a></li>
 </ul>
@@ -93,6 +93,23 @@ loadScripts(document, 'script');</script>
 <div class="col-first even-row-color"><code>static class&nbsp;</code></div>
 <div class="col-second even-row-color"><code><a href="Options.OptionsBuilder.html" class="type-name-link" title="class in growthbook.sdk.java.multiusermode.configurations">Options.OptionsBuilder</a></code></div>
 <div class="col-last even-row-color">&nbsp;</div>
+</div>
+</section>
+</li>
+<!-- =========== FIELD SUMMARY =========== -->
+<li>
+<section class="field-summary" id="field-summary">
+<h2>Field Summary</h2>
+<div class="caption"><span>Fields</span></div>
+<div class="summary-table three-column-summary">
+<div class="table-header col-first">Modifier and Type</div>
+<div class="table-header col-second">Field</div>
+<div class="table-header col-last">Description</div>
+<div class="col-first even-row-color"><code>static final <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/time/Duration.html" title="class or interface in java.time" class="external-link">Duration</a></code></div>
+<div class="col-second even-row-color"><code><a href="#DEFAULT_STICKY_BUCKET_TIMEOUT" class="member-name-link">DEFAULT_STICKY_BUCKET_TIMEOUT</a></code></div>
+<div class="col-last even-row-color">
+<div class="block">Default for <code>stickyBucketTimeout</code>.</div>
+</div>
 </div>
 </section>
 </li>
@@ -167,8 +184,47 @@ loadScripts(document, 'script');</script>
  <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/concurrent/Executor.html" title="class or interface in java.util.concurrent" class="external-link">Executor</a>&nbsp;featureRefreshListenerExecutor,
  <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Boolean.html" title="class or interface in java.lang" class="external-link">Boolean</a>&nbsp;sseReconnectOnFailure,
  <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/List.html" title="class or interface in java.util" class="external-link">List</a>&lt;<a href="../../plugin/GrowthBookPlugin.html" title="interface in growthbook.sdk.java.plugin">GrowthBookPlugin</a>&gt;&nbsp;plugins)</code></div>
-<div class="col-last odd-row-color">&nbsp;</div>
-<div class="col-constructor-name even-row-color"><code><a href="#%3Cinit%3E(java.lang.Boolean,java.lang.Boolean,java.lang.Boolean,java.lang.Boolean,java.lang.String,java.lang.String,java.lang.String,java.lang.String,java.util.List,growthbook.sdk.java.stickyBucketing.StickyBucketService,growthbook.sdk.java.multiusermode.usage.TrackingCallbackWithUser,growthbook.sdk.java.multiusermode.usage.FeatureUsageCallbackWithUser,growthbook.sdk.java.repository.FeatureRefreshStrategy,java.lang.Integer,growthbook.sdk.java.callback.FeatureRefreshCallback,com.google.gson.JsonObject,java.util.Map,java.util.Map,growthbook.sdk.java.sandbox.GbCacheManager,growthbook.sdk.java.sandbox.CacheMode,java.lang.String,java.lang.Boolean,java.util.List,java.lang.Integer,java.lang.Integer,java.time.Duration,growthbook.sdk.java.retry.FeatureFetchRetryPolicy,java.util.List)" class="member-name-link">Options</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Boolean.html" title="class or interface in java.lang" class="external-link">Boolean</a>&nbsp;enabled,
+<div class="col-last odd-row-color">
+<div class="block">Full positional signature on <code>main</code> before the async sticky-bucket options were
+ introduced.</div>
+</div>
+<div class="col-constructor-name even-row-color"><code><a href="#%3Cinit%3E(java.lang.Boolean,java.lang.Boolean,java.lang.Boolean,java.lang.Boolean,java.lang.String,java.lang.String,java.lang.String,java.lang.String,java.util.List,growthbook.sdk.java.stickyBucketing.StickyBucketService,growthbook.sdk.java.multiusermode.usage.TrackingCallbackWithUser,growthbook.sdk.java.multiusermode.usage.FeatureUsageCallbackWithUser,growthbook.sdk.java.repository.FeatureRefreshStrategy,java.lang.Integer,growthbook.sdk.java.callback.FeatureRefreshCallback,com.google.gson.JsonObject,java.util.Map,java.util.Map,growthbook.sdk.java.sandbox.GbCacheManager,growthbook.sdk.java.sandbox.CacheMode,java.lang.String,java.lang.Boolean,java.util.List,java.lang.Integer,java.lang.Integer,java.time.Duration,growthbook.sdk.java.retry.FeatureFetchRetryPolicy,java.util.concurrent.Executor,java.lang.Boolean,java.util.List,growthbook.sdk.java.stickyBucketing.AsyncStickyBucketService,java.util.concurrent.Executor,java.lang.Long,java.lang.Integer,java.time.Duration)" class="member-name-link">Options</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Boolean.html" title="class or interface in java.lang" class="external-link">Boolean</a>&nbsp;enabled,
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Boolean.html" title="class or interface in java.lang" class="external-link">Boolean</a>&nbsp;isQaMode,
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Boolean.html" title="class or interface in java.lang" class="external-link">Boolean</a>&nbsp;isCacheDisabled,
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Boolean.html" title="class or interface in java.lang" class="external-link">Boolean</a>&nbsp;allowUrlOverrides,
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;url,
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;apiHost,
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;clientKey,
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;decryptionKey,
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/List.html" title="class or interface in java.util" class="external-link">List</a>&lt;<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&gt;&nbsp;stickyBucketIdentifierAttributes,
+ <a href="../../stickyBucketing/StickyBucketService.html" title="interface in growthbook.sdk.java.stickyBucketing">StickyBucketService</a>&nbsp;stickyBucketService,
+ <a href="../usage/TrackingCallbackWithUser.html" title="interface in growthbook.sdk.java.multiusermode.usage">TrackingCallbackWithUser</a>&nbsp;trackingCallBackWithUser,
+ <a href="../usage/FeatureUsageCallbackWithUser.html" title="interface in growthbook.sdk.java.multiusermode.usage">FeatureUsageCallbackWithUser</a>&nbsp;featureUsageCallbackWithUser,
+ <a href="../../repository/FeatureRefreshStrategy.html" title="enum class in growthbook.sdk.java.repository">FeatureRefreshStrategy</a>&nbsp;refreshStrategy,
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Integer.html" title="class or interface in java.lang" class="external-link">Integer</a>&nbsp;swrTtlSeconds,
+ <a href="../../callback/FeatureRefreshCallback.html" title="interface in growthbook.sdk.java.callback">FeatureRefreshCallback</a>&nbsp;featureRefreshCallback,
+ com.google.gson.JsonObject&nbsp;globalAttributes,
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/Map.html" title="class or interface in java.util" class="external-link">Map</a>&lt;<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>,<wbr><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html" title="class or interface in java.lang" class="external-link">Object</a>&gt;&nbsp;globalForcedFeatureValues,
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/Map.html" title="class or interface in java.util" class="external-link">Map</a>&lt;<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>,<wbr>?&gt;&nbsp;globalForcedVariationsMap,
+ <a href="../../sandbox/GbCacheManager.html" title="interface in growthbook.sdk.java.sandbox">GbCacheManager</a>&nbsp;cacheManager,
+ <a href="../../sandbox/CacheMode.html" title="enum class in growthbook.sdk.java.sandbox">CacheMode</a>&nbsp;cacheMode,
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;cacheDirectory,
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Boolean.html" title="class or interface in java.lang" class="external-link">Boolean</a>&nbsp;remoteEval,
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/List.html" title="class or interface in java.util" class="external-link">List</a>&lt;<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&gt;&nbsp;cacheKeyAttributes,
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Integer.html" title="class or interface in java.lang" class="external-link">Integer</a>&nbsp;remoteEvalCacheSize,
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Integer.html" title="class or interface in java.lang" class="external-link">Integer</a>&nbsp;remoteEvalCacheTtlSeconds,
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/time/Duration.html" title="class or interface in java.time" class="external-link">Duration</a>&nbsp;backgroundFetchInterval,
+ <a href="../../retry/FeatureFetchRetryPolicy.html" title="class in growthbook.sdk.java.retry">FeatureFetchRetryPolicy</a>&nbsp;retryPolicy,
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/concurrent/Executor.html" title="class or interface in java.util.concurrent" class="external-link">Executor</a>&nbsp;featureRefreshListenerExecutor,
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Boolean.html" title="class or interface in java.lang" class="external-link">Boolean</a>&nbsp;sseReconnectOnFailure,
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/List.html" title="class or interface in java.util" class="external-link">List</a>&lt;<a href="../../plugin/GrowthBookPlugin.html" title="interface in growthbook.sdk.java.plugin">GrowthBookPlugin</a>&gt;&nbsp;plugins,
+ <a href="../../stickyBucketing/AsyncStickyBucketService.html" title="interface in growthbook.sdk.java.stickyBucketing">AsyncStickyBucketService</a>&nbsp;asyncStickyBucketService,
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/concurrent/Executor.html" title="class or interface in java.util.concurrent" class="external-link">Executor</a>&nbsp;asyncExecutor,
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Long.html" title="class or interface in java.lang" class="external-link">Long</a>&nbsp;stickyBucketCacheTtlSeconds,
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Integer.html" title="class or interface in java.lang" class="external-link">Integer</a>&nbsp;stickyBucketCacheSize,
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/time/Duration.html" title="class or interface in java.time" class="external-link">Duration</a>&nbsp;stickyBucketTimeout)</code></div>
+<div class="col-last even-row-color">&nbsp;</div>
+<div class="col-constructor-name odd-row-color"><code><a href="#%3Cinit%3E(java.lang.Boolean,java.lang.Boolean,java.lang.Boolean,java.lang.Boolean,java.lang.String,java.lang.String,java.lang.String,java.lang.String,java.util.List,growthbook.sdk.java.stickyBucketing.StickyBucketService,growthbook.sdk.java.multiusermode.usage.TrackingCallbackWithUser,growthbook.sdk.java.multiusermode.usage.FeatureUsageCallbackWithUser,growthbook.sdk.java.repository.FeatureRefreshStrategy,java.lang.Integer,growthbook.sdk.java.callback.FeatureRefreshCallback,com.google.gson.JsonObject,java.util.Map,java.util.Map,growthbook.sdk.java.sandbox.GbCacheManager,growthbook.sdk.java.sandbox.CacheMode,java.lang.String,java.lang.Boolean,java.util.List,java.lang.Integer,java.lang.Integer,java.time.Duration,growthbook.sdk.java.retry.FeatureFetchRetryPolicy,java.util.List)" class="member-name-link">Options</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Boolean.html" title="class or interface in java.lang" class="external-link">Boolean</a>&nbsp;enabled,
  <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Boolean.html" title="class or interface in java.lang" class="external-link">Boolean</a>&nbsp;isQaMode,
  <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Boolean.html" title="class or interface in java.lang" class="external-link">Boolean</a>&nbsp;isCacheDisabled,
  <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Boolean.html" title="class or interface in java.lang" class="external-link">Boolean</a>&nbsp;allowUrlOverrides,
@@ -196,6 +252,42 @@ loadScripts(document, 'script');</script>
  <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/time/Duration.html" title="class or interface in java.time" class="external-link">Duration</a>&nbsp;backgroundFetchInterval,
  <a href="../../retry/FeatureFetchRetryPolicy.html" title="class in growthbook.sdk.java.retry">FeatureFetchRetryPolicy</a>&nbsp;retryPolicy,
  <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/List.html" title="class or interface in java.util" class="external-link">List</a>&lt;<a href="../../plugin/GrowthBookPlugin.html" title="interface in growthbook.sdk.java.plugin">GrowthBookPlugin</a>&gt;&nbsp;plugins)</code></div>
+<div class="col-last odd-row-color">
+<div class="block">Backward-compatible constructor matching <code>main</code>'s 0.11.x positional signature, before
+ <code>featureRefreshListenerExecutor</code> and <code>sseReconnectOnFailure</code> were introduced.</div>
+</div>
+<div class="col-constructor-name even-row-color"><code><a href="#%3Cinit%3E(java.lang.Boolean,java.lang.Boolean,java.lang.Boolean,java.lang.Boolean,java.lang.String,java.lang.String,java.lang.String,java.lang.String,java.util.List,growthbook.sdk.java.stickyBucketing.StickyBucketService,growthbook.sdk.java.multiusermode.usage.TrackingCallbackWithUser,growthbook.sdk.java.multiusermode.usage.FeatureUsageCallbackWithUser,growthbook.sdk.java.repository.FeatureRefreshStrategy,java.lang.Integer,growthbook.sdk.java.callback.FeatureRefreshCallback,com.google.gson.JsonObject,java.util.Map,java.util.Map,growthbook.sdk.java.sandbox.GbCacheManager,growthbook.sdk.java.sandbox.CacheMode,java.lang.String,java.lang.Boolean,java.util.List,java.lang.Integer,java.lang.Integer,java.time.Duration,growthbook.sdk.java.retry.FeatureFetchRetryPolicy,java.util.List,growthbook.sdk.java.stickyBucketing.AsyncStickyBucketService,java.util.concurrent.Executor,java.lang.Long,java.lang.Integer)" class="member-name-link">Options</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Boolean.html" title="class or interface in java.lang" class="external-link">Boolean</a>&nbsp;enabled,
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Boolean.html" title="class or interface in java.lang" class="external-link">Boolean</a>&nbsp;isQaMode,
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Boolean.html" title="class or interface in java.lang" class="external-link">Boolean</a>&nbsp;isCacheDisabled,
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Boolean.html" title="class or interface in java.lang" class="external-link">Boolean</a>&nbsp;allowUrlOverrides,
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;url,
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;apiHost,
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;clientKey,
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;decryptionKey,
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/List.html" title="class or interface in java.util" class="external-link">List</a>&lt;<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&gt;&nbsp;stickyBucketIdentifierAttributes,
+ <a href="../../stickyBucketing/StickyBucketService.html" title="interface in growthbook.sdk.java.stickyBucketing">StickyBucketService</a>&nbsp;stickyBucketService,
+ <a href="../usage/TrackingCallbackWithUser.html" title="interface in growthbook.sdk.java.multiusermode.usage">TrackingCallbackWithUser</a>&nbsp;trackingCallBackWithUser,
+ <a href="../usage/FeatureUsageCallbackWithUser.html" title="interface in growthbook.sdk.java.multiusermode.usage">FeatureUsageCallbackWithUser</a>&nbsp;featureUsageCallbackWithUser,
+ <a href="../../repository/FeatureRefreshStrategy.html" title="enum class in growthbook.sdk.java.repository">FeatureRefreshStrategy</a>&nbsp;refreshStrategy,
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Integer.html" title="class or interface in java.lang" class="external-link">Integer</a>&nbsp;swrTtlSeconds,
+ <a href="../../callback/FeatureRefreshCallback.html" title="interface in growthbook.sdk.java.callback">FeatureRefreshCallback</a>&nbsp;featureRefreshCallback,
+ com.google.gson.JsonObject&nbsp;globalAttributes,
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/Map.html" title="class or interface in java.util" class="external-link">Map</a>&lt;<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>,<wbr><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html" title="class or interface in java.lang" class="external-link">Object</a>&gt;&nbsp;globalForcedFeatureValues,
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/Map.html" title="class or interface in java.util" class="external-link">Map</a>&lt;<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>,<wbr>?&gt;&nbsp;globalForcedVariationsMap,
+ <a href="../../sandbox/GbCacheManager.html" title="interface in growthbook.sdk.java.sandbox">GbCacheManager</a>&nbsp;cacheManager,
+ <a href="../../sandbox/CacheMode.html" title="enum class in growthbook.sdk.java.sandbox">CacheMode</a>&nbsp;cacheMode,
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;cacheDirectory,
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Boolean.html" title="class or interface in java.lang" class="external-link">Boolean</a>&nbsp;remoteEval,
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/List.html" title="class or interface in java.util" class="external-link">List</a>&lt;<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&gt;&nbsp;cacheKeyAttributes,
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Integer.html" title="class or interface in java.lang" class="external-link">Integer</a>&nbsp;remoteEvalCacheSize,
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Integer.html" title="class or interface in java.lang" class="external-link">Integer</a>&nbsp;remoteEvalCacheTtlSeconds,
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/time/Duration.html" title="class or interface in java.time" class="external-link">Duration</a>&nbsp;backgroundFetchInterval,
+ <a href="../../retry/FeatureFetchRetryPolicy.html" title="class in growthbook.sdk.java.retry">FeatureFetchRetryPolicy</a>&nbsp;retryPolicy,
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/List.html" title="class or interface in java.util" class="external-link">List</a>&lt;<a href="../../plugin/GrowthBookPlugin.html" title="interface in growthbook.sdk.java.plugin">GrowthBookPlugin</a>&gt;&nbsp;plugins,
+ <a href="../../stickyBucketing/AsyncStickyBucketService.html" title="interface in growthbook.sdk.java.stickyBucketing">AsyncStickyBucketService</a>&nbsp;asyncStickyBucketService,
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/concurrent/Executor.html" title="class or interface in java.util.concurrent" class="external-link">Executor</a>&nbsp;asyncExecutor,
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Long.html" title="class or interface in java.lang" class="external-link">Long</a>&nbsp;stickyBucketCacheTtlSeconds,
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Integer.html" title="class or interface in java.lang" class="external-link">Integer</a>&nbsp;stickyBucketCacheSize)</code></div>
 <div class="col-last even-row-color">
 <div class="block">Backward-compatible constructor matching the 0.11.0 positional signature, before
  <code>featureRefreshListenerExecutor</code> and <code>sseReconnectOnFailure</code> were introduced.</div>
@@ -250,6 +342,17 @@ loadScripts(document, 'script');</script>
 <div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a></code></div>
 <div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#getApiHost()" class="member-name-link">getApiHost</a>()</code></div>
 <div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">&nbsp;</div>
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/concurrent/Executor.html" title="class or interface in java.util.concurrent" class="external-link">Executor</a></code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#getAsyncExecutor()" class="member-name-link">getAsyncExecutor</a>()</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="block">Executor for the client's asynchronous entry points: offloading blocking
+ <a href="../../stickyBucketing/StickyBucketService.html" title="interface in growthbook.sdk.java.stickyBucketing"><code>StickyBucketService</code></a> calls and composing async evaluations.</div>
+</div>
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="../../stickyBucketing/AsyncStickyBucketService.html" title="interface in growthbook.sdk.java.stickyBucketing">AsyncStickyBucketService</a></code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#getAsyncStickyBucketService()" class="member-name-link">getAsyncStickyBucketService</a>()</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="block">Non-blocking sticky bucket service for the multi-user client.</div>
+</div>
 <div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a></code></div>
 <div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#getAttributesJson()" class="member-name-link">getAttributesJson</a>()</code></div>
 <div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
@@ -362,36 +465,56 @@ loadScripts(document, 'script');</script>
 <div class="block">Whether the multi-user client reconnects the SSE stream after an abnormal failure or a
  server close.</div>
 </div>
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Integer.html" title="class or interface in java.lang" class="external-link">Integer</a></code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#getStickyBucketCacheSize()" class="member-name-link">getStickyBucketCacheSize</a>()</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="block">Maximum entries in the opt-in sticky bucket read cache (default 1000).</div>
+</div>
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Long.html" title="class or interface in java.lang" class="external-link">Long</a></code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#getStickyBucketCacheTtlSeconds()" class="member-name-link">getStickyBucketCacheTtlSeconds</a>()</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="block">Opt-in TTL, in seconds, for caching sticky bucket reads per user
+ attributes.</div>
+</div>
 <div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/List.html" title="class or interface in java.util" class="external-link">List</a>&lt;<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&gt;</code></div>
 <div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#getStickyBucketIdentifierAttributes()" class="member-name-link">getStickyBucketIdentifierAttributes</a>()</code></div>
 <div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
-<div class="block">List of user's attributes keys.</div>
+<div class="block">Attribute keys whose sticky bucket documents are read for every user, in addition to the
+ attributes the loaded features' experiments hash on (those are always read).</div>
 </div>
 <div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="../../stickyBucketing/StickyBucketService.html" title="interface in growthbook.sdk.java.stickyBucketing">StickyBucketService</a></code></div>
 <div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#getStickyBucketService()" class="member-name-link">getStickyBucketService</a>()</code></div>
 <div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">&nbsp;</div>
-<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Integer.html" title="class or interface in java.lang" class="external-link">Integer</a></code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#getSwrTtlSeconds()" class="member-name-link">getSwrTtlSeconds</a>()</code></div>
-<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/time/Duration.html" title="class or interface in java.time" class="external-link">Duration</a></code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#getStickyBucketTimeout()" class="member-name-link">getStickyBucketTimeout</a>()</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">&nbsp;</div>
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Integer.html" title="class or interface in java.lang" class="external-link">Integer</a></code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#getSwrTtlSeconds()" class="member-name-link">getSwrTtlSeconds</a>()</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">The standard cache TTL to use.</div>
 </div>
-<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="../usage/TrackingCallbackWithUser.html" title="interface in growthbook.sdk.java.multiusermode.usage">TrackingCallbackWithUser</a></code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#getTrackingCallBackWithUser()" class="member-name-link">getTrackingCallBackWithUser</a>()</code></div>
-<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="../usage/TrackingCallbackWithUser.html" title="interface in growthbook.sdk.java.multiusermode.usage">TrackingCallbackWithUser</a></code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#getTrackingCallBackWithUser()" class="member-name-link">getTrackingCallBackWithUser</a>()</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">A function that takes <a href="../../model/Experiment.html" title="class in growthbook.sdk.java.model"><code>Experiment</code></a> and <a href="../../model/ExperimentResult.html" title="class in growthbook.sdk.java.model"><code>ExperimentResult</code></a> as arguments.</div>
 </div>
-<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a></code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#getUrl()" class="member-name-link">getUrl</a>()</code></div>
-<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">&nbsp;</div>
-<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>int</code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#hashCode()" class="member-name-link">hashCode</a>()</code></div>
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a></code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#getUrl()" class="member-name-link">getUrl</a>()</code></div>
 <div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">&nbsp;</div>
-<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>boolean</code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#isRemoteEvalEnabled()" class="member-name-link">isRemoteEvalEnabled</a>()</code></div>
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>int</code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#hashCode()" class="member-name-link">hashCode</a>()</code></div>
 <div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">&nbsp;</div>
 <div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>boolean</code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#isSseReconnectOnFailure()" class="member-name-link">isSseReconnectOnFailure</a>()</code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#isRemoteEvalEnabled()" class="member-name-link">isRemoteEvalEnabled</a>()</code></div>
 <div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">&nbsp;</div>
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>boolean</code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#isSseReconnectOnFailure()" class="member-name-link">isSseReconnectOnFailure</a>()</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">&nbsp;</div>
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>boolean</code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#isStickyBucketingConfigured()" class="member-name-link">isStickyBucketingConfigured</a>()</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="block">Whether either flavor of sticky bucket service is configured.</div>
+</div>
 <div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>void</code></div>
 <div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#setAllowUrlOverrides(java.lang.Boolean)" class="member-name-link">setAllowUrlOverrides</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Boolean.html" title="class or interface in java.lang" class="external-link">Boolean</a>&nbsp;allowUrlOverrides)</code></div>
 <div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
@@ -400,6 +523,17 @@ loadScripts(document, 'script');</script>
 <div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>void</code></div>
 <div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#setApiHost(java.lang.String)" class="member-name-link">setApiHost</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;apiHost)</code></div>
 <div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">&nbsp;</div>
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>void</code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#setAsyncExecutor(java.util.concurrent.Executor)" class="member-name-link">setAsyncExecutor</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/concurrent/Executor.html" title="class or interface in java.util.concurrent" class="external-link">Executor</a>&nbsp;asyncExecutor)</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="block">Executor for the client's asynchronous entry points: offloading blocking
+ <a href="../../stickyBucketing/StickyBucketService.html" title="interface in growthbook.sdk.java.stickyBucketing"><code>StickyBucketService</code></a> calls and composing async evaluations.</div>
+</div>
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>void</code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#setAsyncStickyBucketService(growthbook.sdk.java.stickyBucketing.AsyncStickyBucketService)" class="member-name-link">setAsyncStickyBucketService</a><wbr>(<a href="../../stickyBucketing/AsyncStickyBucketService.html" title="interface in growthbook.sdk.java.stickyBucketing">AsyncStickyBucketService</a>&nbsp;asyncStickyBucketService)</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="block">Non-blocking sticky bucket service for the multi-user client.</div>
+</div>
 <div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>void</code></div>
 <div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#setAttributesJson(java.lang.String)" class="member-name-link">setAttributesJson</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;attributesJson)</code></div>
 <div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
@@ -509,9 +643,21 @@ loadScripts(document, 'script');</script>
  server close.</div>
 </div>
 <div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>void</code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#setStickyBucketCacheSize(java.lang.Integer)" class="member-name-link">setStickyBucketCacheSize</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Integer.html" title="class or interface in java.lang" class="external-link">Integer</a>&nbsp;stickyBucketCacheSize)</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="block">Maximum entries in the opt-in sticky bucket read cache (default 1000).</div>
+</div>
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>void</code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#setStickyBucketCacheTtlSeconds(java.lang.Long)" class="member-name-link">setStickyBucketCacheTtlSeconds</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Long.html" title="class or interface in java.lang" class="external-link">Long</a>&nbsp;stickyBucketCacheTtlSeconds)</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="block">Opt-in TTL, in seconds, for caching sticky bucket reads per user
+ attributes.</div>
+</div>
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>void</code></div>
 <div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#setStickyBucketIdentifierAttributes(java.util.List)" class="member-name-link">setStickyBucketIdentifierAttributes</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/List.html" title="class or interface in java.util" class="external-link">List</a>&lt;<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&gt;&nbsp;stickyBucketIdentifierAttributes)</code></div>
 <div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
-<div class="block">List of user's attributes keys.</div>
+<div class="block">Attribute keys whose sticky bucket documents are read for every user, in addition to the
+ attributes the loaded features' experiments hash on (those are always read).</div>
 </div>
 <div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>void</code></div>
 <div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#setStickyBucketService(growthbook.sdk.java.stickyBucketing.StickyBucketService)" class="member-name-link">setStickyBucketService</a><wbr>(<a href="../../stickyBucketing/StickyBucketService.html" title="interface in growthbook.sdk.java.stickyBucketing">StickyBucketService</a>&nbsp;stickyBucketService)</code></div>
@@ -519,21 +665,27 @@ loadScripts(document, 'script');</script>
 <div class="block">Service that provide functionality of Sticky Bucketing</div>
 </div>
 <div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>void</code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#setSwrTtlSeconds(java.lang.Integer)" class="member-name-link">setSwrTtlSeconds</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Integer.html" title="class or interface in java.lang" class="external-link">Integer</a>&nbsp;swrTtlSeconds)</code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#setStickyBucketTimeout(java.time.Duration)" class="member-name-link">setStickyBucketTimeout</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/time/Duration.html" title="class or interface in java.time" class="external-link">Duration</a>&nbsp;stickyBucketTimeout)</code></div>
 <div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
-<div class="block">The standard cache TTL to use.</div>
+<div class="block">How long the multi-user client waits for one sticky bucket store call, read or save
+ (default <a href="#DEFAULT_STICKY_BUCKET_TIMEOUT"><code>DEFAULT_STICKY_BUCKET_TIMEOUT</code></a>, 5 seconds).</div>
 </div>
 <div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>void</code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#setTrackingCallBackWithUser(growthbook.sdk.java.multiusermode.usage.TrackingCallbackWithUser)" class="member-name-link">setTrackingCallBackWithUser</a><wbr>(<a href="../usage/TrackingCallbackWithUser.html" title="interface in growthbook.sdk.java.multiusermode.usage">TrackingCallbackWithUser</a>&nbsp;trackingCallBackWithUser)</code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#setSwrTtlSeconds(java.lang.Integer)" class="member-name-link">setSwrTtlSeconds</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Integer.html" title="class or interface in java.lang" class="external-link">Integer</a>&nbsp;swrTtlSeconds)</code></div>
 <div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
-<div class="block">A function that takes <a href="../../model/Experiment.html" title="class in growthbook.sdk.java.model"><code>Experiment</code></a> and <a href="../../model/ExperimentResult.html" title="class in growthbook.sdk.java.model"><code>ExperimentResult</code></a> as arguments.</div>
+<div class="block">The standard cache TTL to use.</div>
 </div>
 <div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>void</code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#setUrl(java.lang.String)" class="member-name-link">setUrl</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;url)</code></div>
-<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">&nbsp;</div>
-<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a></code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#toString()" class="member-name-link">toString</a>()</code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#setTrackingCallBackWithUser(growthbook.sdk.java.multiusermode.usage.TrackingCallbackWithUser)" class="member-name-link">setTrackingCallBackWithUser</a><wbr>(<a href="../usage/TrackingCallbackWithUser.html" title="interface in growthbook.sdk.java.multiusermode.usage">TrackingCallbackWithUser</a>&nbsp;trackingCallBackWithUser)</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="block">A function that takes <a href="../../model/Experiment.html" title="class in growthbook.sdk.java.model"><code>Experiment</code></a> and <a href="../../model/ExperimentResult.html" title="class in growthbook.sdk.java.model"><code>ExperimentResult</code></a> as arguments.</div>
+</div>
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>void</code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#setUrl(java.lang.String)" class="member-name-link">setUrl</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;url)</code></div>
 <div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">&nbsp;</div>
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a></code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#toString()" class="member-name-link">toString</a>()</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">&nbsp;</div>
 </div>
 </div>
 </div>
@@ -546,6 +698,21 @@ loadScripts(document, 'script');</script>
 </section>
 <section class="details">
 <ul class="details-list">
+<!-- ============ FIELD DETAIL =========== -->
+<li>
+<section class="field-details" id="field-detail">
+<h2>Field Details</h2>
+<ul class="member-list">
+<li>
+<section class="detail" id="DEFAULT_STICKY_BUCKET_TIMEOUT">
+<h3>DEFAULT_STICKY_BUCKET_TIMEOUT</h3>
+<div class="member-signature"><span class="modifiers">public static final</span>&nbsp;<span class="return-type"><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/time/Duration.html" title="class or interface in java.time" class="external-link">Duration</a></span>&nbsp;<span class="element-name">DEFAULT_STICKY_BUCKET_TIMEOUT</span></div>
+<div class="block">Default for <code>stickyBucketTimeout</code>.</div>
+</section>
+</li>
+</ul>
+</section>
+</li>
 <!-- ========= CONSTRUCTOR DETAIL ======== -->
 <li>
 <section class="constructor-details" id="constructor-detail">
@@ -597,7 +764,7 @@ loadScripts(document, 'script');</script>
 </section>
 </li>
 <li>
-<section class="detail" id="&lt;init&gt;(java.lang.Boolean,java.lang.Boolean,java.lang.Boolean,java.lang.Boolean,java.lang.String,java.lang.String,java.lang.String,java.lang.String,java.util.List,growthbook.sdk.java.stickyBucketing.StickyBucketService,growthbook.sdk.java.multiusermode.usage.TrackingCallbackWithUser,growthbook.sdk.java.multiusermode.usage.FeatureUsageCallbackWithUser,growthbook.sdk.java.repository.FeatureRefreshStrategy,java.lang.Integer,growthbook.sdk.java.callback.FeatureRefreshCallback,com.google.gson.JsonObject,java.util.Map,java.util.Map,growthbook.sdk.java.sandbox.GbCacheManager,growthbook.sdk.java.sandbox.CacheMode,java.lang.String,java.lang.Boolean,java.util.List,java.lang.Integer,java.lang.Integer,java.time.Duration,growthbook.sdk.java.retry.FeatureFetchRetryPolicy,java.util.List)">
+<section class="detail" id="&lt;init&gt;(java.lang.Boolean,java.lang.Boolean,java.lang.Boolean,java.lang.Boolean,java.lang.String,java.lang.String,java.lang.String,java.lang.String,java.util.List,growthbook.sdk.java.stickyBucketing.StickyBucketService,growthbook.sdk.java.multiusermode.usage.TrackingCallbackWithUser,growthbook.sdk.java.multiusermode.usage.FeatureUsageCallbackWithUser,growthbook.sdk.java.repository.FeatureRefreshStrategy,java.lang.Integer,growthbook.sdk.java.callback.FeatureRefreshCallback,com.google.gson.JsonObject,java.util.Map,java.util.Map,growthbook.sdk.java.sandbox.GbCacheManager,growthbook.sdk.java.sandbox.CacheMode,java.lang.String,java.lang.Boolean,java.util.List,java.lang.Integer,java.lang.Integer,java.time.Duration,growthbook.sdk.java.retry.FeatureFetchRetryPolicy,java.util.List,growthbook.sdk.java.stickyBucketing.AsyncStickyBucketService,java.util.concurrent.Executor,java.lang.Long,java.lang.Integer)">
 <h3>Options</h3>
 <div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="element-name">Options</span><wbr><span class="parameters">(@Nullable
  <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Boolean.html" title="class or interface in java.lang" class="external-link">Boolean</a>&nbsp;enabled,
@@ -652,7 +819,15 @@ loadScripts(document, 'script');</script>
  @Nullable
  <a href="../../retry/FeatureFetchRetryPolicy.html" title="class in growthbook.sdk.java.retry">FeatureFetchRetryPolicy</a>&nbsp;retryPolicy,
  @Nullable
- <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/List.html" title="class or interface in java.util" class="external-link">List</a>&lt;<a href="../../plugin/GrowthBookPlugin.html" title="interface in growthbook.sdk.java.plugin">GrowthBookPlugin</a>&gt;&nbsp;plugins)</span></div>
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/List.html" title="class or interface in java.util" class="external-link">List</a>&lt;<a href="../../plugin/GrowthBookPlugin.html" title="interface in growthbook.sdk.java.plugin">GrowthBookPlugin</a>&gt;&nbsp;plugins,
+ @Nullable
+ <a href="../../stickyBucketing/AsyncStickyBucketService.html" title="interface in growthbook.sdk.java.stickyBucketing">AsyncStickyBucketService</a>&nbsp;asyncStickyBucketService,
+ @Nullable
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/concurrent/Executor.html" title="class or interface in java.util.concurrent" class="external-link">Executor</a>&nbsp;asyncExecutor,
+ @Nullable
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Long.html" title="class or interface in java.lang" class="external-link">Long</a>&nbsp;stickyBucketCacheTtlSeconds,
+ @Nullable
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Integer.html" title="class or interface in java.lang" class="external-link">Integer</a>&nbsp;stickyBucketCacheSize)</span></div>
 <div class="block">Backward-compatible constructor matching the 0.11.0 positional signature, before
  <code>featureRefreshListenerExecutor</code> and <code>sseReconnectOnFailure</code> were introduced.</div>
 </section>
@@ -725,7 +900,133 @@ loadScripts(document, 'script');</script>
 </section>
 </li>
 <li>
+<section class="detail" id="&lt;init&gt;(java.lang.Boolean,java.lang.Boolean,java.lang.Boolean,java.lang.Boolean,java.lang.String,java.lang.String,java.lang.String,java.lang.String,java.util.List,growthbook.sdk.java.stickyBucketing.StickyBucketService,growthbook.sdk.java.multiusermode.usage.TrackingCallbackWithUser,growthbook.sdk.java.multiusermode.usage.FeatureUsageCallbackWithUser,growthbook.sdk.java.repository.FeatureRefreshStrategy,java.lang.Integer,growthbook.sdk.java.callback.FeatureRefreshCallback,com.google.gson.JsonObject,java.util.Map,java.util.Map,growthbook.sdk.java.sandbox.GbCacheManager,growthbook.sdk.java.sandbox.CacheMode,java.lang.String,java.lang.Boolean,java.util.List,java.lang.Integer,java.lang.Integer,java.time.Duration,growthbook.sdk.java.retry.FeatureFetchRetryPolicy,java.util.List)">
+<h3>Options</h3>
+<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="element-name">Options</span><wbr><span class="parameters">(@Nullable
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Boolean.html" title="class or interface in java.lang" class="external-link">Boolean</a>&nbsp;enabled,
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Boolean.html" title="class or interface in java.lang" class="external-link">Boolean</a>&nbsp;isQaMode,
+ @Nullable
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Boolean.html" title="class or interface in java.lang" class="external-link">Boolean</a>&nbsp;isCacheDisabled,
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Boolean.html" title="class or interface in java.lang" class="external-link">Boolean</a>&nbsp;allowUrlOverrides,
+ @Nullable
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;url,
+ @Nullable
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;apiHost,
+ @Nullable
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;clientKey,
+ @Nullable
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;decryptionKey,
+ @Nullable
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/List.html" title="class or interface in java.util" class="external-link">List</a>&lt;<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&gt;&nbsp;stickyBucketIdentifierAttributes,
+ @Nullable
+ <a href="../../stickyBucketing/StickyBucketService.html" title="interface in growthbook.sdk.java.stickyBucketing">StickyBucketService</a>&nbsp;stickyBucketService,
+ @Nullable
+ <a href="../usage/TrackingCallbackWithUser.html" title="interface in growthbook.sdk.java.multiusermode.usage">TrackingCallbackWithUser</a>&nbsp;trackingCallBackWithUser,
+ @Nullable
+ <a href="../usage/FeatureUsageCallbackWithUser.html" title="interface in growthbook.sdk.java.multiusermode.usage">FeatureUsageCallbackWithUser</a>&nbsp;featureUsageCallbackWithUser,
+ @Nullable
+ <a href="../../repository/FeatureRefreshStrategy.html" title="enum class in growthbook.sdk.java.repository">FeatureRefreshStrategy</a>&nbsp;refreshStrategy,
+ @Nullable
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Integer.html" title="class or interface in java.lang" class="external-link">Integer</a>&nbsp;swrTtlSeconds,
+ @Nullable
+ <a href="../../callback/FeatureRefreshCallback.html" title="interface in growthbook.sdk.java.callback">FeatureRefreshCallback</a>&nbsp;featureRefreshCallback,
+ @Nullable
+ com.google.gson.JsonObject&nbsp;globalAttributes,
+ @Nullable
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/Map.html" title="class or interface in java.util" class="external-link">Map</a>&lt;<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>,<wbr><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html" title="class or interface in java.lang" class="external-link">Object</a>&gt;&nbsp;globalForcedFeatureValues,
+ @Nullable
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/Map.html" title="class or interface in java.util" class="external-link">Map</a>&lt;<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>,<wbr>?&gt;&nbsp;globalForcedVariationsMap,
+ @Nullable
+ <a href="../../sandbox/GbCacheManager.html" title="interface in growthbook.sdk.java.sandbox">GbCacheManager</a>&nbsp;cacheManager,
+ @Nullable
+ <a href="../../sandbox/CacheMode.html" title="enum class in growthbook.sdk.java.sandbox">CacheMode</a>&nbsp;cacheMode,
+ @Nullable
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;cacheDirectory,
+ @Nullable
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Boolean.html" title="class or interface in java.lang" class="external-link">Boolean</a>&nbsp;remoteEval,
+ @Nullable
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/List.html" title="class or interface in java.util" class="external-link">List</a>&lt;<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&gt;&nbsp;cacheKeyAttributes,
+ @Nullable
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Integer.html" title="class or interface in java.lang" class="external-link">Integer</a>&nbsp;remoteEvalCacheSize,
+ @Nullable
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Integer.html" title="class or interface in java.lang" class="external-link">Integer</a>&nbsp;remoteEvalCacheTtlSeconds,
+ @Nullable
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/time/Duration.html" title="class or interface in java.time" class="external-link">Duration</a>&nbsp;backgroundFetchInterval,
+ @Nullable
+ <a href="../../retry/FeatureFetchRetryPolicy.html" title="class in growthbook.sdk.java.retry">FeatureFetchRetryPolicy</a>&nbsp;retryPolicy,
+ @Nullable
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/List.html" title="class or interface in java.util" class="external-link">List</a>&lt;<a href="../../plugin/GrowthBookPlugin.html" title="interface in growthbook.sdk.java.plugin">GrowthBookPlugin</a>&gt;&nbsp;plugins)</span></div>
+<div class="block">Backward-compatible constructor matching <code>main</code>'s 0.11.x positional signature, before
+ <code>featureRefreshListenerExecutor</code> and <code>sseReconnectOnFailure</code> were introduced.</div>
+</section>
+</li>
+<li>
 <section class="detail" id="&lt;init&gt;(java.lang.Boolean,java.lang.Boolean,java.lang.Boolean,java.lang.Boolean,java.lang.String,java.lang.String,java.lang.String,java.lang.String,java.util.List,growthbook.sdk.java.stickyBucketing.StickyBucketService,growthbook.sdk.java.multiusermode.usage.TrackingCallbackWithUser,growthbook.sdk.java.multiusermode.usage.FeatureUsageCallbackWithUser,growthbook.sdk.java.repository.FeatureRefreshStrategy,java.lang.Integer,growthbook.sdk.java.callback.FeatureRefreshCallback,com.google.gson.JsonObject,java.util.Map,java.util.Map,growthbook.sdk.java.sandbox.GbCacheManager,growthbook.sdk.java.sandbox.CacheMode,java.lang.String,java.lang.Boolean,java.util.List,java.lang.Integer,java.lang.Integer,java.time.Duration,growthbook.sdk.java.retry.FeatureFetchRetryPolicy,java.util.concurrent.Executor,java.lang.Boolean,java.util.List)">
+<h3>Options</h3>
+<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="element-name">Options</span><wbr><span class="parameters">(@Nullable
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Boolean.html" title="class or interface in java.lang" class="external-link">Boolean</a>&nbsp;enabled,
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Boolean.html" title="class or interface in java.lang" class="external-link">Boolean</a>&nbsp;isQaMode,
+ @Nullable
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Boolean.html" title="class or interface in java.lang" class="external-link">Boolean</a>&nbsp;isCacheDisabled,
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Boolean.html" title="class or interface in java.lang" class="external-link">Boolean</a>&nbsp;allowUrlOverrides,
+ @Nullable
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;url,
+ @Nullable
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;apiHost,
+ @Nullable
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;clientKey,
+ @Nullable
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;decryptionKey,
+ @Nullable
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/List.html" title="class or interface in java.util" class="external-link">List</a>&lt;<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&gt;&nbsp;stickyBucketIdentifierAttributes,
+ @Nullable
+ <a href="../../stickyBucketing/StickyBucketService.html" title="interface in growthbook.sdk.java.stickyBucketing">StickyBucketService</a>&nbsp;stickyBucketService,
+ @Nullable
+ <a href="../usage/TrackingCallbackWithUser.html" title="interface in growthbook.sdk.java.multiusermode.usage">TrackingCallbackWithUser</a>&nbsp;trackingCallBackWithUser,
+ @Nullable
+ <a href="../usage/FeatureUsageCallbackWithUser.html" title="interface in growthbook.sdk.java.multiusermode.usage">FeatureUsageCallbackWithUser</a>&nbsp;featureUsageCallbackWithUser,
+ @Nullable
+ <a href="../../repository/FeatureRefreshStrategy.html" title="enum class in growthbook.sdk.java.repository">FeatureRefreshStrategy</a>&nbsp;refreshStrategy,
+ @Nullable
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Integer.html" title="class or interface in java.lang" class="external-link">Integer</a>&nbsp;swrTtlSeconds,
+ @Nullable
+ <a href="../../callback/FeatureRefreshCallback.html" title="interface in growthbook.sdk.java.callback">FeatureRefreshCallback</a>&nbsp;featureRefreshCallback,
+ @Nullable
+ com.google.gson.JsonObject&nbsp;globalAttributes,
+ @Nullable
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/Map.html" title="class or interface in java.util" class="external-link">Map</a>&lt;<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>,<wbr><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html" title="class or interface in java.lang" class="external-link">Object</a>&gt;&nbsp;globalForcedFeatureValues,
+ @Nullable
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/Map.html" title="class or interface in java.util" class="external-link">Map</a>&lt;<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>,<wbr>?&gt;&nbsp;globalForcedVariationsMap,
+ @Nullable
+ <a href="../../sandbox/GbCacheManager.html" title="interface in growthbook.sdk.java.sandbox">GbCacheManager</a>&nbsp;cacheManager,
+ @Nullable
+ <a href="../../sandbox/CacheMode.html" title="enum class in growthbook.sdk.java.sandbox">CacheMode</a>&nbsp;cacheMode,
+ @Nullable
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;cacheDirectory,
+ @Nullable
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Boolean.html" title="class or interface in java.lang" class="external-link">Boolean</a>&nbsp;remoteEval,
+ @Nullable
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/List.html" title="class or interface in java.util" class="external-link">List</a>&lt;<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&gt;&nbsp;cacheKeyAttributes,
+ @Nullable
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Integer.html" title="class or interface in java.lang" class="external-link">Integer</a>&nbsp;remoteEvalCacheSize,
+ @Nullable
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Integer.html" title="class or interface in java.lang" class="external-link">Integer</a>&nbsp;remoteEvalCacheTtlSeconds,
+ @Nullable
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/time/Duration.html" title="class or interface in java.time" class="external-link">Duration</a>&nbsp;backgroundFetchInterval,
+ @Nullable
+ <a href="../../retry/FeatureFetchRetryPolicy.html" title="class in growthbook.sdk.java.retry">FeatureFetchRetryPolicy</a>&nbsp;retryPolicy,
+ @Nullable
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/concurrent/Executor.html" title="class or interface in java.util.concurrent" class="external-link">Executor</a>&nbsp;featureRefreshListenerExecutor,
+ @Nullable
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Boolean.html" title="class or interface in java.lang" class="external-link">Boolean</a>&nbsp;sseReconnectOnFailure,
+ @Nullable
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/List.html" title="class or interface in java.util" class="external-link">List</a>&lt;<a href="../../plugin/GrowthBookPlugin.html" title="interface in growthbook.sdk.java.plugin">GrowthBookPlugin</a>&gt;&nbsp;plugins)</span></div>
+<div class="block">Full positional signature on <code>main</code> before the async sticky-bucket options were
+ introduced. Kept as a delegating overload so the published 30-argument arity is preserved.</div>
+</section>
+</li>
+<li>
+<section class="detail" id="&lt;init&gt;(java.lang.Boolean,java.lang.Boolean,java.lang.Boolean,java.lang.Boolean,java.lang.String,java.lang.String,java.lang.String,java.lang.String,java.util.List,growthbook.sdk.java.stickyBucketing.StickyBucketService,growthbook.sdk.java.multiusermode.usage.TrackingCallbackWithUser,growthbook.sdk.java.multiusermode.usage.FeatureUsageCallbackWithUser,growthbook.sdk.java.repository.FeatureRefreshStrategy,java.lang.Integer,growthbook.sdk.java.callback.FeatureRefreshCallback,com.google.gson.JsonObject,java.util.Map,java.util.Map,growthbook.sdk.java.sandbox.GbCacheManager,growthbook.sdk.java.sandbox.CacheMode,java.lang.String,java.lang.Boolean,java.util.List,java.lang.Integer,java.lang.Integer,java.time.Duration,growthbook.sdk.java.retry.FeatureFetchRetryPolicy,java.util.concurrent.Executor,java.lang.Boolean,java.util.List,growthbook.sdk.java.stickyBucketing.AsyncStickyBucketService,java.util.concurrent.Executor,java.lang.Long,java.lang.Integer,java.time.Duration)">
 <h3>Options</h3>
 <div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="element-name">Options</span><wbr><span class="parameters">(@Nullable
  <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Boolean.html" title="class or interface in java.lang" class="external-link">Boolean</a>&nbsp;enabled,
@@ -784,7 +1085,17 @@ loadScripts(document, 'script');</script>
  @Nullable
  <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Boolean.html" title="class or interface in java.lang" class="external-link">Boolean</a>&nbsp;sseReconnectOnFailure,
  @Nullable
- <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/List.html" title="class or interface in java.util" class="external-link">List</a>&lt;<a href="../../plugin/GrowthBookPlugin.html" title="interface in growthbook.sdk.java.plugin">GrowthBookPlugin</a>&gt;&nbsp;plugins)</span></div>
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/List.html" title="class or interface in java.util" class="external-link">List</a>&lt;<a href="../../plugin/GrowthBookPlugin.html" title="interface in growthbook.sdk.java.plugin">GrowthBookPlugin</a>&gt;&nbsp;plugins,
+ @Nullable
+ <a href="../../stickyBucketing/AsyncStickyBucketService.html" title="interface in growthbook.sdk.java.stickyBucketing">AsyncStickyBucketService</a>&nbsp;asyncStickyBucketService,
+ @Nullable
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/concurrent/Executor.html" title="class or interface in java.util.concurrent" class="external-link">Executor</a>&nbsp;asyncExecutor,
+ @Nullable
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Long.html" title="class or interface in java.lang" class="external-link">Long</a>&nbsp;stickyBucketCacheTtlSeconds,
+ @Nullable
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Integer.html" title="class or interface in java.lang" class="external-link">Integer</a>&nbsp;stickyBucketCacheSize,
+ @Nullable
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/time/Duration.html" title="class or interface in java.time" class="external-link">Duration</a>&nbsp;stickyBucketTimeout)</span></div>
 </section>
 </li>
 </ul>
@@ -821,6 +1132,12 @@ loadScripts(document, 'script');</script>
 </section>
 </li>
 <li>
+<section class="detail" id="getStickyBucketTimeout()">
+<h3>getStickyBucketTimeout</h3>
+<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/time/Duration.html" title="class or interface in java.time" class="external-link">Duration</a></span>&nbsp;<span class="element-name">getStickyBucketTimeout</span>()</div>
+</section>
+</li>
+<li>
 <section class="detail" id="isSseReconnectOnFailure()">
 <h3>isSseReconnectOnFailure</h3>
 <div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type">boolean</span>&nbsp;<span class="element-name">isSseReconnectOnFailure</span>()</div>
@@ -837,6 +1154,17 @@ loadScripts(document, 'script');</script>
 <section class="detail" id="setInMemoryStickyBucketService()">
 <h3>setInMemoryStickyBucketService</h3>
 <div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type">void</span>&nbsp;<span class="element-name">setInMemoryStickyBucketService</span>()</div>
+</section>
+</li>
+<li>
+<section class="detail" id="isStickyBucketingConfigured()">
+<h3>isStickyBucketingConfigured</h3>
+<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type">boolean</span>&nbsp;<span class="element-name">isStickyBucketingConfigured</span>()</div>
+<div class="block">Whether either flavor of sticky bucket service is configured.</div>
+<dl class="notes">
+<dt>Returns:</dt>
+<dd>true when a sync or async sticky bucket service is set</dd>
+</dl>
 </section>
 </li>
 <li>
@@ -921,7 +1249,9 @@ loadScripts(document, 'script');</script>
 <h3>getStickyBucketIdentifierAttributes</h3>
 <div class="member-signature"><span class="annotations">@Nullable
 </span><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/List.html" title="class or interface in java.util" class="external-link">List</a>&lt;<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&gt;</span>&nbsp;<span class="element-name">getStickyBucketIdentifierAttributes</span>()</div>
-<div class="block">List of user's attributes keys.</div>
+<div class="block">Attribute keys whose sticky bucket documents are read for every user, in addition to the
+ attributes the loaded features' experiments hash on (those are always read). Needed only for
+ attributes the SDK cannot derive, such as the hash attribute of an inline experiment.</div>
 </section>
 </li>
 <li>
@@ -1084,6 +1414,56 @@ loadScripts(document, 'script');</script>
 </section>
 </li>
 <li>
+<section class="detail" id="getAsyncStickyBucketService()">
+<h3>getAsyncStickyBucketService</h3>
+<div class="member-signature"><span class="annotations">@Nullable
+</span><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="../../stickyBucketing/AsyncStickyBucketService.html" title="interface in growthbook.sdk.java.stickyBucketing">AsyncStickyBucketService</a></span>&nbsp;<span class="element-name">getAsyncStickyBucketService</span>()</div>
+<div class="block">Non-blocking sticky bucket service for the multi-user client. Mutually
+ exclusive with <code>stickyBucketService</code> — configure exactly one.
+ See <a href="../../stickyBucketing/AsyncStickyBucketService.html" title="interface in growthbook.sdk.java.stickyBucketing"><code>AsyncStickyBucketService</code></a> for the contract.
+
+ <p>A failed read from either kind of service is logged and that evaluation
+ continues with normal bucketing, but none of its assignments are saved: a
+ variation bucketed without the stored assignment must not replace it.</div>
+</section>
+</li>
+<li>
+<section class="detail" id="getAsyncExecutor()">
+<h3>getAsyncExecutor</h3>
+<div class="member-signature"><span class="annotations">@Nullable
+</span><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/concurrent/Executor.html" title="class or interface in java.util.concurrent" class="external-link">Executor</a></span>&nbsp;<span class="element-name">getAsyncExecutor</span>()</div>
+<div class="block">Executor for the client's asynchronous entry points: offloading blocking
+ <a href="../../stickyBucketing/StickyBucketService.html" title="interface in growthbook.sdk.java.stickyBucketing"><code>StickyBucketService</code></a> calls and composing async evaluations. The
+ synchronous evaluation API never uses it; it calls a blocking service on
+ the calling thread. When null, the client creates its own bounded daemon
+ pool and shuts it down in <code>shutdown()</code>; a caller-supplied executor
+ is never shut down by the SDK. On JDK 21+, pass
+ <code>Executors.newVirtualThreadPerTaskExecutor()</code> so blocking offloads
+ scale with the store instead of a fixed pool.</div>
+</section>
+</li>
+<li>
+<section class="detail" id="getStickyBucketCacheTtlSeconds()">
+<h3>getStickyBucketCacheTtlSeconds</h3>
+<div class="member-signature"><span class="annotations">@Nullable
+</span><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Long.html" title="class or interface in java.lang" class="external-link">Long</a></span>&nbsp;<span class="element-name">getStickyBucketCacheTtlSeconds</span>()</div>
+<div class="block">Opt-in TTL, in seconds, for caching sticky bucket reads per user
+ attributes. Null or non-positive (the default) disables caching:
+ assignments are fetched per evaluation, so assignment changes made by
+ other processes are picked up promptly. Enabling trades that freshness
+ for fewer store lookups on hot users.</div>
+</section>
+</li>
+<li>
+<section class="detail" id="getStickyBucketCacheSize()">
+<h3>getStickyBucketCacheSize</h3>
+<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Integer.html" title="class or interface in java.lang" class="external-link">Integer</a></span>&nbsp;<span class="element-name">getStickyBucketCacheSize</span>()</div>
+<div class="block">Maximum entries in the opt-in sticky bucket read cache (default 1000).
+ Non-positive disables caching. Only meaningful when
+ <code>stickyBucketCacheTtlSeconds</code> is set.</div>
+</section>
+</li>
+<li>
 <section class="detail" id="setEnabled(java.lang.Boolean)">
 <h3>setEnabled</h3>
 <div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type">void</span>&nbsp;<span class="element-name">setEnabled</span><wbr><span class="parameters">(@Nullable
@@ -1146,7 +1526,9 @@ loadScripts(document, 'script');</script>
 <h3>setStickyBucketIdentifierAttributes</h3>
 <div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type">void</span>&nbsp;<span class="element-name">setStickyBucketIdentifierAttributes</span><wbr><span class="parameters">(@Nullable
  <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/List.html" title="class or interface in java.util" class="external-link">List</a>&lt;<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&gt;&nbsp;stickyBucketIdentifierAttributes)</span></div>
-<div class="block">List of user's attributes keys.</div>
+<div class="block">Attribute keys whose sticky bucket documents are read for every user, in addition to the
+ attributes the loaded features' experiments hash on (those are always read). Needed only for
+ attributes the SDK cannot derive, such as the hash attribute of an inline experiment.</div>
 </section>
 </li>
 <li>
@@ -1311,6 +1693,72 @@ loadScripts(document, 'script');</script>
  <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Boolean.html" title="class or interface in java.lang" class="external-link">Boolean</a>&nbsp;sseReconnectOnFailure)</span></div>
 <div class="block">Whether the multi-user client reconnects the SSE stream after an abnormal failure or a
  server close. Reconnect attempts are bounded by <code>retryPolicy</code>. Defaults to <code>true</code>.</div>
+</section>
+</li>
+<li>
+<section class="detail" id="setAsyncStickyBucketService(growthbook.sdk.java.stickyBucketing.AsyncStickyBucketService)">
+<h3>setAsyncStickyBucketService</h3>
+<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type">void</span>&nbsp;<span class="element-name">setAsyncStickyBucketService</span><wbr><span class="parameters">(@Nullable
+ <a href="../../stickyBucketing/AsyncStickyBucketService.html" title="interface in growthbook.sdk.java.stickyBucketing">AsyncStickyBucketService</a>&nbsp;asyncStickyBucketService)</span></div>
+<div class="block">Non-blocking sticky bucket service for the multi-user client. Mutually
+ exclusive with <code>stickyBucketService</code> — configure exactly one.
+ See <a href="../../stickyBucketing/AsyncStickyBucketService.html" title="interface in growthbook.sdk.java.stickyBucketing"><code>AsyncStickyBucketService</code></a> for the contract.
+
+ <p>A failed read from either kind of service is logged and that evaluation
+ continues with normal bucketing, but none of its assignments are saved: a
+ variation bucketed without the stored assignment must not replace it.</div>
+</section>
+</li>
+<li>
+<section class="detail" id="setAsyncExecutor(java.util.concurrent.Executor)">
+<h3>setAsyncExecutor</h3>
+<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type">void</span>&nbsp;<span class="element-name">setAsyncExecutor</span><wbr><span class="parameters">(@Nullable
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/concurrent/Executor.html" title="class or interface in java.util.concurrent" class="external-link">Executor</a>&nbsp;asyncExecutor)</span></div>
+<div class="block">Executor for the client's asynchronous entry points: offloading blocking
+ <a href="../../stickyBucketing/StickyBucketService.html" title="interface in growthbook.sdk.java.stickyBucketing"><code>StickyBucketService</code></a> calls and composing async evaluations. The
+ synchronous evaluation API never uses it; it calls a blocking service on
+ the calling thread. When null, the client creates its own bounded daemon
+ pool and shuts it down in <code>shutdown()</code>; a caller-supplied executor
+ is never shut down by the SDK. On JDK 21+, pass
+ <code>Executors.newVirtualThreadPerTaskExecutor()</code> so blocking offloads
+ scale with the store instead of a fixed pool.</div>
+</section>
+</li>
+<li>
+<section class="detail" id="setStickyBucketCacheTtlSeconds(java.lang.Long)">
+<h3>setStickyBucketCacheTtlSeconds</h3>
+<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type">void</span>&nbsp;<span class="element-name">setStickyBucketCacheTtlSeconds</span><wbr><span class="parameters">(@Nullable
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Long.html" title="class or interface in java.lang" class="external-link">Long</a>&nbsp;stickyBucketCacheTtlSeconds)</span></div>
+<div class="block">Opt-in TTL, in seconds, for caching sticky bucket reads per user
+ attributes. Null or non-positive (the default) disables caching:
+ assignments are fetched per evaluation, so assignment changes made by
+ other processes are picked up promptly. Enabling trades that freshness
+ for fewer store lookups on hot users.</div>
+</section>
+</li>
+<li>
+<section class="detail" id="setStickyBucketCacheSize(java.lang.Integer)">
+<h3>setStickyBucketCacheSize</h3>
+<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type">void</span>&nbsp;<span class="element-name">setStickyBucketCacheSize</span><wbr><span class="parameters">(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Integer.html" title="class or interface in java.lang" class="external-link">Integer</a>&nbsp;stickyBucketCacheSize)</span></div>
+<div class="block">Maximum entries in the opt-in sticky bucket read cache (default 1000).
+ Non-positive disables caching. Only meaningful when
+ <code>stickyBucketCacheTtlSeconds</code> is set.</div>
+</section>
+</li>
+<li>
+<section class="detail" id="setStickyBucketTimeout(java.time.Duration)">
+<h3>setStickyBucketTimeout</h3>
+<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type">void</span>&nbsp;<span class="element-name">setStickyBucketTimeout</span><wbr><span class="parameters">(@Nullable
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/time/Duration.html" title="class or interface in java.time" class="external-link">Duration</a>&nbsp;stickyBucketTimeout)</span></div>
+<div class="block">How long the multi-user client waits for one sticky bucket store call, read or save
+ (default <a href="#DEFAULT_STICKY_BUCKET_TIMEOUT"><code>DEFAULT_STICKY_BUCKET_TIMEOUT</code></a>, 5 seconds). A read that takes longer is handled
+ like any failed read: that evaluation continues with normal bucketing and saves
+ nothing. A save that takes longer is handled like any failed save. <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/time/Duration.html#ZERO" title="class or interface in java.time" class="external-link"><code>Duration.ZERO</code></a>
+ disables the timeout.
+
+ <p>The store call itself is not cancelled. A blocking <a href="../../stickyBucketing/StickyBucketService.html" title="interface in growthbook.sdk.java.stickyBucketing"><code>StickyBucketService</code></a> called
+ by the synchronous evaluation API runs on the calling thread and is bounded by its own
+ client's timeout, not by this one.</div>
 </section>
 </li>
 <li>

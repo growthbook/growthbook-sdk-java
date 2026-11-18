@@ -91,6 +91,8 @@ loadScripts(document, 'script');</script>
      <li><code>swrTtlSeconds</code> (refresh interval) is positive when set.</li>
      <li><code>backgroundFetchInterval</code> is non-negative when set.</li>
      <li><code>remoteEvalCacheTtlSeconds</code> is positive when set.</li>
+     <li><code>stickyBucketService</code> and <code>asyncStickyBucketService</code> are not both set, and
+     <code>stickyBucketTimeout</code> is non-negative.</li>
      <li>No contradictory cache configuration (e.g. a <code>cacheManager</code> supplied while caching
      is disabled, or <a href="../../sandbox/CacheMode.html#CUSTOM"><code>CacheMode.CUSTOM</code></a> without a <code>cacheManager</code>).</li>
      <li>Remote-eval incompatibilities, delegated to
