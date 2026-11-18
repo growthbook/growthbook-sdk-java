@@ -765,7 +765,8 @@ public class GrowthBook implements IGrowthBook {
     }
 
     private void refreshStickyBucketService(@Nullable String featuresDataModel) {
-        this.stickyBucketReadFailed = false;
+        // The flag changes only when a load ran: a refresh that throws before reaching the store
+        // must not re-enable saving after an earlier failed load.
         if (context.getStickyBucketService() != null) {
             this.stickyBucketReadFailed =
                     !GrowthBookUtils.loadStickyBuckets(context, featuresDataModel, attributeOverrides);
