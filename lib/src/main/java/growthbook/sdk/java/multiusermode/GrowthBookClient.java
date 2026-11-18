@@ -1108,6 +1108,11 @@ public class GrowthBookClient {
      * populated and the same instance is returned. The populated map is concurrency-safe, so the
      * returned context may be reused across concurrent evaluations.
      *
+     * <p>The read covers the attributes the loaded features' experiments hash on, plus
+     * {@code Options.stickyBucketIdentifierAttributes}. An inline experiment later passed to
+     * {@code run} with this context is covered only if its hash attribute is one of those; list it
+     * in {@code stickyBucketIdentifierAttributes} otherwise, or its stored assignment is not read.
+     *
      * @param userContext the request-scoped user context to prefetch for
      * @return a future completing with the same context, docs populated
      */
@@ -1164,17 +1169,24 @@ public class GrowthBookClient {
         return StickyAttributeValues.of(mergedAttributes, identifiers);
     }
 
+    /**
+     * Every attribute a loaded feature's experiment can hash on, plus the configured ones. The
+     * configured list only adds to the derived set: an experiment whose hash attribute were left
+     * unread would be bucketed again and its stored assignment replaced.
+     */
     private Set<String> resolveStickyIdentifierAttributes(GlobalContext snapshot) {
-        List<String> configured = this.options.getStickyBucketIdentifierAttributes();
-        if (configured != null && !configured.isEmpty()) {
-            return new HashSet<>(configured);
-        }
         Set<String> derived = snapshot.getDerivedStickyIdentifierAttributes();
         if (derived == null) {
             derived = deriveStickyIdentifierAttributes(snapshot.getFeatures());
             snapshot.setDerivedStickyIdentifierAttributes(derived);
         }
-        return derived;
+        List<String> configured = this.options.getStickyBucketIdentifierAttributes();
+        if (configured == null || configured.isEmpty()) {
+            return derived;
+        }
+        Set<String> identifiers = new HashSet<>(derived);
+        identifiers.addAll(configured);
+        return identifiers;
     }
 
     @SuppressWarnings({"unchecked", "rawtypes"})

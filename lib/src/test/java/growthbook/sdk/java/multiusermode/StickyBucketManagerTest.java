@@ -48,6 +48,8 @@ class StickyBucketManagerTest {
         volatile boolean completeSavesImmediately = false;
         volatile RuntimeException throwOnFetch = null;
         volatile RuntimeException throwOnSave = null;
+        volatile Error errorOnFetch = null; // thrown once
+        volatile Error errorOnSave = null; // thrown once
         volatile boolean failSaves = false;
 
         @Override
@@ -57,6 +59,11 @@ class StickyBucketManagerTest {
 
         @Override
         public CompletionStage<Void> saveAssignments(StickyAssignmentsDocument doc) {
+            Error error = errorOnSave;
+            if (error != null) {
+                errorOnSave = null;
+                throw error;
+            }
             RuntimeException toThrow = throwOnSave;
             if (toThrow != null) {
                 throwOnSave = null; // throw once
@@ -79,6 +86,11 @@ class StickyBucketManagerTest {
 
         @Override
         public CompletionStage<Map<String, StickyAssignmentsDocument>> getAllAssignments(Map<String, String> attributes) {
+            Error error = errorOnFetch;
+            if (error != null) {
+                errorOnFetch = null;
+                throw error;
+            }
             if (throwOnFetch != null) {
                 throw throwOnFetch;
             }
@@ -358,6 +370,53 @@ class StickyBucketManagerTest {
     }
 
     @Test
+    @Timeout(30)
+    void aStoreAnswerTheManagerCannotUseFailsTheFetchInsteadOfLeavingItPending() throws Exception {
+        ScriptedService service = new ScriptedService();
+        StickyBucketManager manager = new StickyBucketManager(service, null, null);
+        CompletableFuture<Map<String, StickyAssignmentsDocument>> fetch = manager.fetchAssignments(attrs("u1"));
+
+        // A null key cannot be merged; the store is user-supplied code and may return anything.
+        Map<String, StickyAssignmentsDocument> unusable = new HashMap<>();
+        unusable.put(null, doc("u1", "exp__0", "1"));
+        service.pendingFetches.get(0).complete(unusable);
+
+        assertThrows(ExecutionException.class, () -> fetch.get(5, TimeUnit.SECONDS));
+        assertTrue(manager.inflightFetchKeys().isEmpty(), "the failed fetch must not stay registered");
+    }
+
+    @Test
+    @Timeout(30)
+    void anErrorFromTheStoreReadDoesNotLeaveTheFetchRegistered() throws Exception {
+        ScriptedService service = new ScriptedService();
+        service.completeFetchesImmediately = true;
+        service.errorOnFetch = new NoClassDefFoundError("redis/clients/jedis/Jedis");
+        StickyBucketManager manager = new StickyBucketManager(service, null, null);
+
+        assertThrows(NoClassDefFoundError.class, () -> manager.fetchAssignments(attrs("u1")));
+
+        assertTrue(manager.inflightFetchKeys().isEmpty(), "later reads for this user would wait on it forever");
+        assertNotNull(manager.fetchAssignments(attrs("u1")).get(5, TimeUnit.SECONDS));
+    }
+
+    @Test
+    @Timeout(30)
+    void anErrorFromTheStoreSaveReleasesTheKeysSaveSlot() throws Exception {
+        ScriptedService service = new ScriptedService();
+        service.completeSavesImmediately = true;
+        service.errorOnSave = new NoClassDefFoundError("redis/clients/jedis/Jedis");
+        StickyBucketManager manager = new StickyBucketManager(service, null, null);
+
+        assertThrows(NoClassDefFoundError.class, () -> manager.recordAndSave(doc("u1", "exp__0", "1")));
+
+        manager.recordAndSave(doc("u1", "exp2__0", "0")).get(5, TimeUnit.SECONDS);
+        manager.flush().get(5, TimeUnit.SECONDS);
+        assertEquals("1", service.store.get("id||u1").getAssignments().get("exp__0"),
+                "the key must be saved again after the failed attempt");
+        assertEquals("0", service.store.get("id||u1").getAssignments().get("exp2__0"));
+    }
+
+    @Test
     @Timeout(10)
     void fetchRejectionDoesNotWedgeSubsequentFetches() throws Exception {
         ScriptedService service = new ScriptedService();
@@ -544,6 +603,24 @@ class StickyBucketManagerTest {
     }
 
     // ------------------------------------------------------------- shutdown
+
+    @Test
+    @Timeout(30)
+    void afterShutdownOnlyTheCallerThreadViewIsStillRead() throws Exception {
+        ScriptedService nonBlocking = new ScriptedService();
+        ScriptedService callerThread = new ScriptedService();
+        callerThread.completeFetchesImmediately = true;
+        StickyBucketManager manager = new StickyBucketManager(nonBlocking, callerThread, null, null);
+        manager.startDraining();
+        manager.close(1_000);
+
+        assertThrows(ExecutionException.class,
+                () -> manager.fetchAssignments(attrs("u1")).get(5, TimeUnit.SECONDS));
+        assertTrue(nonBlocking.fetchCalls.isEmpty(), "a read that needs the client's pool or timer is refused");
+
+        assertNotNull(manager.fetchAssignmentsOnCallerThread(attrs("u1")).get(5, TimeUnit.SECONDS));
+        assertEquals(1, callerThread.fetchCalls.size(), "a blocking store is still read on the calling thread");
+    }
 
     @Test
     @Timeout(30)

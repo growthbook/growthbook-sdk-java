@@ -457,7 +457,9 @@ public class Options {
     private String decryptionKey;
 
     /**
-     * List of user's attributes keys.
+     * Attribute keys whose sticky bucket documents are read for every user, in addition to the
+     * attributes the loaded features' experiments hash on (those are always read). Needed only for
+     * attributes the SDK cannot derive, such as the hash attribute of an inline experiment.
      */
     @Nullable
     private List<String> stickyBucketIdentifierAttributes;
