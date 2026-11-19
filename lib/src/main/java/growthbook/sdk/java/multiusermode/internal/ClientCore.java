@@ -27,7 +27,7 @@ import java.util.Map;
 public final class ClientCore {
 
     private final PluginRegistry plugins;
-    private final ExperimentTracker tracker = new ExperimentTracker();
+    private final ExperimentTracker tracker;
     private final ExperimentSubscriptionManager subscriptions = new ExperimentSubscriptionManager();
     private final FeatureEvaluator featureEvaluator;
     private final ExperimentEvaluator experimentEvaluator;
@@ -36,7 +36,15 @@ public final class ClientCore {
      * @param plugins the instance's plugins, initialized here
      */
     public ClientCore(@Nullable List<GrowthBookPlugin> plugins) {
-        this(plugins, new FeatureEvaluator(), new ExperimentEvaluator());
+        this(plugins, new ExperimentTracker());
+    }
+
+    /**
+     * @param plugins the instance's plugins, initialized here
+     * @param tracker the exposure tracker shared by every evaluation of the instance
+     */
+    public ClientCore(@Nullable List<GrowthBookPlugin> plugins, ExperimentTracker tracker) {
+        this(plugins, tracker, new FeatureEvaluator(), new ExperimentEvaluator());
     }
 
     /**
@@ -45,7 +53,13 @@ public final class ClientCore {
      * @param experimentEvaluator the experiment evaluator, replaceable for tests
      */
     public ClientCore(@Nullable List<GrowthBookPlugin> plugins, FeatureEvaluator featureEvaluator, ExperimentEvaluator experimentEvaluator) {
+        this(plugins, new ExperimentTracker(), featureEvaluator, experimentEvaluator);
+    }
+
+    private ClientCore(@Nullable List<GrowthBookPlugin> plugins, ExperimentTracker tracker,
+                       FeatureEvaluator featureEvaluator, ExperimentEvaluator experimentEvaluator) {
         this.plugins = new PluginRegistry(plugins);
+        this.tracker = tracker;
         this.featureEvaluator = featureEvaluator;
         this.experimentEvaluator = experimentEvaluator;
         this.plugins.initAll();

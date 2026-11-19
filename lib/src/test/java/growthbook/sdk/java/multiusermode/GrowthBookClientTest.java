@@ -823,6 +823,7 @@ class GrowthBookClientTest {
         globalAttributes.addProperty("country", "US");
         Options options = optionsBuilder()
                 .stickyBucketService(stickyBucketService)
+                .stickyBucketIdentifierAttributes(Arrays.asList("country", "id"))
                 .globalAttributes(globalAttributes)
                 .build();
         GrowthBookClient client = new GrowthBookClient(options);
@@ -844,7 +845,10 @@ class GrowthBookClientTest {
         // Given
         serve(stubRepository());
         RecordingStickyBucketService stickyBucketService = new RecordingStickyBucketService();
-        GrowthBookClient client = new GrowthBookClient(optionsBuilder().stickyBucketService(stickyBucketService).build());
+        GrowthBookClient client = new GrowthBookClient(optionsBuilder()
+                .stickyBucketService(stickyBucketService)
+                .stickyBucketIdentifierAttributes(Arrays.asList("id", "deviceId", "loggedIn", "company"))
+                .build());
         client.initialize();
         UserContext user = user("{\"id\":1.0,\"deviceId\":1.5,\"loggedIn\":true,\"company\":\"\"}");
 

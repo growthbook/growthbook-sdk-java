@@ -50,6 +50,19 @@ class OptionsValidatorTest {
     }
 
     @Test
+    @DisplayName("Accepts a zero sticky bucket timeout, which disables the timeout")
+    void acceptsZeroStickyBucketTimeout() {
+        // Given
+        Options options = validOptions().stickyBucketTimeout(Duration.ZERO).build();
+
+        // When
+        List<String> violations = OptionsValidator.findViolations(options);
+
+        // Then
+        assertEquals(Collections.<String>emptyList(), violations);
+    }
+
+    @Test
     @DisplayName("Validating null options does not throw")
     void validatingNullOptionsDoesNotThrow() {
         // When / Then
@@ -102,6 +115,9 @@ class OptionsValidatorTest {
                 Arguments.of("negative background fetch interval",
                         validOptions().backgroundFetchInterval(Duration.ofSeconds(-1)).build(),
                         "backgroundFetchInterval must not be negative, but was PT-1S"),
+                Arguments.of("negative sticky bucket timeout",
+                        validOptions().stickyBucketTimeout(Duration.ofMillis(-1)).build(),
+                        "stickyBucketTimeout must not be negative, was PT-0.001S"),
                 Arguments.of("zero remote-eval cache TTL",
                         validOptions().remoteEvalCacheTtlSeconds(0).build(),
                         "remoteEvalCacheTtlSeconds must be greater than 0 when set, but was 0"),

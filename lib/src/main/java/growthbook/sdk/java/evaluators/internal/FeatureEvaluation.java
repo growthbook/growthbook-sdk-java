@@ -198,7 +198,7 @@ final class FeatureEvaluation {
             return null;
         }
 
-        boolean stickyBucketingEnabled = context.getOptions().getStickyBucketService() != null
+        boolean stickyBucketingEnabled = context.getOptions().isStickyBucketingConfigured()
                 && !Boolean.TRUE.equals(rule.getDisableStickyBucketing());
         boolean included = Bucketing.isIncludedInRollout(
                 context.getUser().getAttributes(),

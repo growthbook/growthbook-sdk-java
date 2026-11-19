@@ -275,6 +275,44 @@ class ConditionEvaluatorTest {
 
     @ParameterizedTest(name = "{1} for {0} -> {3}")
     @CsvSource(delimiter = '|', value = {
+            "{\"id\": \"u1\"} | {\"id\": {\"$inGroup\": \"admins\"}}     | {\"admins\": [\"u1\", \"u2\"]} | true",
+            "{\"id\": \"u9\"} | {\"id\": {\"$inGroup\": \"admins\"}}     | {\"admins\": [\"u1\", \"u2\"]} | false",
+            "{}             | {\"id\": {\"$inGroup\": \"admins\"}}     | {\"admins\": [\"u1\", \"u2\"]} | false",
+            "{\"id\": \"u1\"} | {\"id\": {\"$inGroup\": \"unknown\"}}    | {\"admins\": [\"u1\", \"u2\"]} | false",
+            "{\"id\": \"u1\"} | {\"id\": {\"$notInGroup\": \"admins\"}}  | {\"admins\": [\"u1\", \"u2\"]} | false",
+            "{\"id\": \"u9\"} | {\"id\": {\"$notInGroup\": \"admins\"}}  | {\"admins\": [\"u1\", \"u2\"]} | true",
+            "{}             | {\"id\": {\"$notInGroup\": \"admins\"}}  | {\"admins\": [\"u1\", \"u2\"]} | true",
+            "{\"id\": \"u1\"} | {\"id\": {\"$notInGroup\": \"unknown\"}} | {\"admins\": [\"u1\", \"u2\"]} | true"
+    })
+    @DisplayName("Matches $inGroup and $notInGroup like the JS SDK, including for an absent attribute")
+    void matchesSavedGroupOperatorsLikeReference(String attributes, String condition, String savedGroups, boolean expected) {
+        // Given
+        // When
+        boolean result = evaluate(attributes, condition, savedGroups);
+
+        // Then
+        assertEquals(expected, result);
+    }
+
+    @ParameterizedTest(name = "{1} -> false")
+    @CsvSource(delimiter = '|', value = {
+            "{\"id\": {\"$inGroup\": \"admins\"}}",
+            "{\"id\": {\"$notInGroup\": \"admins\"}}"
+    })
+    @DisplayName("Matches nobody when a saved group value is not an array, like the JS SDK")
+    void matchesNobodyForNonArraySavedGroupValue(String condition) {
+        // Given
+        String savedGroups = "{\"admins\": 42}";
+
+        // When
+        boolean result = evaluate("{\"id\": \"u1\"}", condition, savedGroups);
+
+        // Then
+        assertFalse(result);
+    }
+
+    @ParameterizedTest(name = "{1} for {0} -> {3}")
+    @CsvSource(delimiter = '|', value = {
             "{\"x\": [[1]]} | {\"x\": {\"$elemMatch\": {\"$or\": [{\"0\": 1}]}}}       |  | true",
             "{\"x\": [[1]]} | {\"x\": {\"$elemMatch\": {\"$and\": [{\"length\": 1}]}}} |  | true",
             "{\"x\": [[1]]} | {\"x\": {\"$elemMatch\": {\"$or\": [{\"0\": 2}]}}}       |  | false",

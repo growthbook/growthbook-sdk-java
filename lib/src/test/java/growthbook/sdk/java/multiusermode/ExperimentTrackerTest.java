@@ -2,6 +2,9 @@ package growthbook.sdk.java.multiusermode;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.ArrayList;
@@ -17,6 +20,8 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.RepeatedTest;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 class ExperimentTrackerTest {
 
@@ -195,6 +200,101 @@ class ExperimentTrackerTest {
         // Then
         assertEquals(Collections.<Throwable>emptyList(), failures);
         assertTrue(trackedAmong(tracker, 0, keys).size() <= 30);
+    }
+
+    @RepeatedTest(5)
+    @DisplayName("Claims an exposure key for exactly one of many concurrent callers")
+    void claimsKeyForExactlyOneConcurrentCaller() throws Exception {
+        // Given
+        ExperimentTracker tracker = new ExperimentTracker();
+        int threads = 64;
+        CyclicBarrier barrier = new CyclicBarrier(threads);
+        ExecutorService executor = Executors.newFixedThreadPool(threads);
+        List<Future<Boolean>> results = new ArrayList<>();
+        int claims = 0;
+
+        try {
+            // When
+            for (int i = 0; i < threads; i++) {
+                results.add(executor.submit(() -> {
+                    barrier.await();
+                    return tracker.markIfFirst("hot") != null;
+                }));
+            }
+            for (Future<Boolean> result : results) {
+                if (result.get(10, TimeUnit.SECONDS)) {
+                    claims++;
+                }
+            }
+        } finally {
+            executor.shutdownNow();
+        }
+
+        // Then
+        assertEquals(1, claims);
+    }
+
+    @Test
+    @DisplayName("Releasing a claim after a failed delivery frees the key for exactly one retry")
+    void releasingClaimAllowsSingleRetry() {
+        // Given
+        ExperimentTracker tracker = new ExperimentTracker();
+        Object claim = tracker.markIfFirst("exp");
+        Object concurrentClaim = tracker.markIfFirst("exp");
+
+        // When
+        tracker.untrack("exp", claim);
+
+        // Then
+        assertNotNull(claim);
+        assertNull(concurrentClaim);
+        assertNotNull(tracker.markIfFirst("exp"));
+        assertNull(tracker.markIfFirst("exp"));
+    }
+
+    @Test
+    @DisplayName("Releasing a stale claim leaves a newer claim of the same key in place")
+    void releasingStaleClaimLeavesNewerClaim() {
+        // Given
+        ExperimentTracker tracker = new ExperimentTracker();
+        Object stale = tracker.markIfFirst("exp");
+        tracker.clearTrackedExperiments();
+        Object newer = tracker.markIfFirst("exp");
+
+        // When
+        tracker.untrack("exp", stale);
+
+        // Then
+        assertNotNull(newer);
+        assertTrue(tracker.isExperimentTracked("exp"));
+        assertNull(tracker.markIfFirst("exp"));
+    }
+
+    @ParameterizedTest(name = "maxSize {0}")
+    @ValueSource(ints = {-1, 0})
+    @DisplayName("Rejects a non-positive maximum size")
+    void rejectsNonPositiveMaxSize(int maxSize) {
+        // When / Then
+        assertThrows(IllegalArgumentException.class, () -> new ExperimentTracker(maxSize));
+    }
+
+    @Test
+    @DisplayName("A tracker of size two still de-duplicates the hot key and keeps at most two keys")
+    void smallTrackerDedupesHotKeyWithinItsBound() {
+        // Given
+        ExperimentTracker tracker = new ExperimentTracker(2);
+        Object first = tracker.markIfFirst("a");
+        Object repeat = tracker.markIfFirst("a");
+
+        // When
+        for (int i = 0; i < 50; i++) {
+            tracker.markIfFirst("exp-" + i);
+        }
+
+        // Then
+        assertNotNull(first);
+        assertNull(repeat);
+        assertTrue(trackedAmong(tracker, 0, 50).size() <= 2);
     }
 
     private static List<String> trackedAmong(ExperimentTracker tracker, int fromInclusive, int toExclusive) {
