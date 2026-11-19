@@ -29,6 +29,7 @@ import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class EvaluationTest {
@@ -102,12 +103,28 @@ class EvaluationTest {
     }
 
     @Test
-    @DisplayName("Returns the same feature result when the tracking callback throws")
-    void keepsFeatureResultWhenTrackingCallbackThrows() {
+    @DisplayName("Treats the feature as unknown when the tracking callback throws and errors are not suppressed")
+    void treatsFeatureAsUnknownWhenTrackingCallbackThrows() {
+        // Given
+        EvaluationContext context = context(EXPERIMENT_FEATURE,
+                Options.builder().trackingCallBackWithUser(new ThrowingTrackingCallback()).build(), null);
+
+        // When
+        FeatureResult<Object> result = new Evaluation(context).evaluateFeature("checkout-button", Object.class);
+
+        // Then
+        assertEquals(FeatureResultSource.UNKNOWN_FEATURE, result.getSource());
+        assertNull(result.getValue());
+    }
+
+    @Test
+    @DisplayName("Returns the same feature result when the tracking callback throws and errors are suppressed")
+    void keepsFeatureResultWhenTrackingCallbackThrowsAndErrorsAreSuppressed() {
         // Given
         EvaluationContext reference = context(EXPERIMENT_FEATURE, Options.builder().build(), null);
         EvaluationContext throwing = context(EXPERIMENT_FEATURE,
-                Options.builder().trackingCallBackWithUser(new ThrowingTrackingCallback()).build(), null);
+                Options.builder().trackingCallBackWithUser(new ThrowingTrackingCallback()).build(), new ExperimentTracker());
+        throwing.setSuppressTrackingErrors(true);
         FeatureResult<Object> expected = new Evaluation(reference).evaluateFeature("checkout-button", Object.class);
 
         // When
@@ -120,12 +137,28 @@ class EvaluationTest {
     }
 
     @Test
-    @DisplayName("Returns the same experiment result when the tracking callback throws")
-    void keepsExperimentResultWhenTrackingCallbackThrows() {
+    @DisplayName("Propagates a tracking callback failure from runExperiment when errors are not suppressed")
+    void propagatesTrackingCallbackFailureFromRunExperiment() {
+        // Given
+        EvaluationContext context = context(EXPERIMENT_FEATURE,
+                Options.builder().trackingCallBackWithUser(new ThrowingTrackingCallback()).build(), null);
+
+        // When
+        IllegalStateException thrown = assertThrows(IllegalStateException.class,
+                () -> new Evaluation(context).runExperiment(twoVariationExperiment(), null));
+
+        // Then
+        assertEquals("tracking failed", thrown.getMessage());
+    }
+
+    @Test
+    @DisplayName("Returns the same experiment result when the tracking callback throws and errors are suppressed")
+    void keepsExperimentResultWhenTrackingCallbackThrowsAndErrorsAreSuppressed() {
         // Given
         EvaluationContext reference = context(EXPERIMENT_FEATURE, Options.builder().build(), null);
         EvaluationContext throwing = context(EXPERIMENT_FEATURE,
-                Options.builder().trackingCallBackWithUser(new ThrowingTrackingCallback()).build(), null);
+                Options.builder().trackingCallBackWithUser(new ThrowingTrackingCallback()).build(), new ExperimentTracker());
+        throwing.setSuppressTrackingErrors(true);
         ExperimentResult<String> expected = new Evaluation(reference).runExperiment(twoVariationExperiment(), null);
 
         // When
@@ -136,11 +169,27 @@ class EvaluationTest {
     }
 
     @Test
-    @DisplayName("Returns the same feature result when the feature usage callback throws")
-    void keepsFeatureResultWhenFeatureUsageCallbackThrows() {
+    @DisplayName("Treats the feature as unknown when the feature usage callback throws and errors are not suppressed")
+    void treatsFeatureAsUnknownWhenFeatureUsageCallbackThrows() {
         // Given
         EvaluationContext context = context("{'dark-mode': {'defaultValue': true}}",
                 Options.builder().featureUsageCallbackWithUser(new ThrowingFeatureUsageCallback()).build(), null);
+
+        // When
+        FeatureResult<Boolean> result = new Evaluation(context).evaluateFeature("dark-mode", Boolean.class);
+
+        // Then
+        assertEquals(FeatureResultSource.UNKNOWN_FEATURE, result.getSource());
+        assertNull(result.getValue());
+    }
+
+    @Test
+    @DisplayName("Returns the same feature result when the feature usage callback throws and errors are suppressed")
+    void keepsFeatureResultWhenFeatureUsageCallbackThrowsAndErrorsAreSuppressed() {
+        // Given
+        EvaluationContext context = context("{'dark-mode': {'defaultValue': true}}",
+                Options.builder().featureUsageCallbackWithUser(new ThrowingFeatureUsageCallback()).build(), null);
+        context.setSuppressTrackingErrors(true);
 
         // When
         FeatureResult<Boolean> result = new Evaluation(context).evaluateFeature("dark-mode", Boolean.class);

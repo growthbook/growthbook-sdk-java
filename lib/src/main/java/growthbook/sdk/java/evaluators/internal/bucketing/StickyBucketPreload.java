@@ -5,7 +5,6 @@ import com.google.gson.JsonObject;
 import growthbook.sdk.java.model.Feature;
 import growthbook.sdk.java.model.FeatureRule;
 import growthbook.sdk.java.model.GBContext;
-import growthbook.sdk.java.model.StickyAssignmentsDocument;
 import growthbook.sdk.java.multiusermode.util.TransformationUtil;
 import growthbook.sdk.java.stickyBucketing.StickyBucketService;
 import growthbook.sdk.java.util.GrowthBookJsonUtils;
@@ -22,7 +21,8 @@ import java.util.Set;
 /**
  * Loads a user's sticky bucket documents before evaluation, for the single-user
  * {@link growthbook.sdk.java.GrowthBook}: one document per identifier attribute the features
- * bucket by. A failing {@link StickyBucketService} is logged and treated as having no documents.
+ * bucket by. A failing {@link StickyBucketService} is logged and treated as having no documents;
+ * {@link #loadStickyBuckets} reports the failure so the caller can stop saving assignments.
  */
 @Slf4j
 public final class StickyBucketPreload {
@@ -44,21 +44,39 @@ public final class StickyBucketPreload {
     public static void refreshStickyBuckets(GBContext context,
                                             @Nullable String featuresDataModel,
                                             JsonObject attributeOverrides) {
+        loadStickyBuckets(context, featuresDataModel, attributeOverrides);
+    }
+
+    /**
+     * {@link #refreshStickyBuckets} that reports whether the stored assignments were read.
+     *
+     * @param context            the context with the sticky bucket service; skipped without one
+     * @param featuresDataModel  a features payload whose features replace the context's, or {@code null}
+     * @param attributeOverrides the user attributes
+     * @return {@code false} when the service failed to load assignments. The context then holds no
+     * documents and evaluation buckets normally; the caller must not save those assignments, because
+     * they could replace the variation the store already holds. {@code true} otherwise, including
+     * when no service is configured.
+     */
+    public static boolean loadStickyBuckets(GBContext context,
+                                            @Nullable String featuresDataModel,
+                                            JsonObject attributeOverrides) {
         StickyBucketService stickyBucketService = context.getStickyBucketService();
         if (stickyBucketService == null) {
             log.debug("refreshStickyBuckets: sticky bucket service not configured, skipping refresh.");
-            return;
+            return true;
         }
         Map<String, String> stickyBucketAttributes = getStickyBucketAttributes(context, featuresDataModel, attributeOverrides);
 
-        Map<String, StickyAssignmentsDocument> docs;
         try {
-            docs = stickyBucketService.getAllAssignments(stickyBucketAttributes);
+            context.setStickyBucketAssignmentDocs(stickyBucketService.getAllAssignments(stickyBucketAttributes));
+            return true;
         } catch (RuntimeException e) {
-            log.warn("Sticky bucket service failed to load assignments; continuing with normal bucketing.", e);
-            docs = new HashMap<>();
+            log.warn("Sticky bucket service failed to load assignments; continuing with normal bucketing"
+                    + " and not saving assignments until they load.", e);
+            context.setStickyBucketAssignmentDocs(new HashMap<>());
+            return false;
         }
-        context.setStickyBucketAssignmentDocs(docs);
     }
 
     /**

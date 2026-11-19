@@ -13,6 +13,7 @@ import growthbook.sdk.java.model.ParentCondition;
 import growthbook.sdk.java.model.StickyBucketVariation;
 import growthbook.sdk.java.model.VariationMeta;
 import growthbook.sdk.java.multiusermode.configurations.EvaluationContext;
+import growthbook.sdk.java.stickyBucketing.StickyBucketDocWriter;
 import growthbook.sdk.java.stickyBucketing.StickyBucketService;
 import lombok.extern.slf4j.Slf4j;
 
@@ -211,8 +212,9 @@ final class ExperimentEvaluation {
 
     /**
      * Records the assignment in the user's documents, so later evaluations for this user see it,
-     * and saves the changed document. A failing {@link StickyBucketService} is logged and the
-     * assignment is kept for this user context only.
+     * and saves the changed document through the context's {@link StickyBucketDocWriter} when one is
+     * set, otherwise through the synchronous {@link StickyBucketService}. A failing service is logged
+     * and the assignment is kept for this user context only.
      */
     private <T> void persistStickyBucket(Experiment<T> experiment, HashAttributeAndHashValue hashAttribute, ExperimentResult<T> result) {
         EvaluationContext context = evaluation.context();
@@ -236,8 +238,11 @@ final class ExperimentEvaluation {
         }
         context.getUser().getStickyBucketAssignmentDocs().put(docModel.getKey(), docModel.getStickyAssignmentsDocument());
 
+        StickyBucketDocWriter docWriter = context.getStickyBucketDocWriter();
         StickyBucketService stickyBucketService = context.getOptions().getStickyBucketService();
-        if (stickyBucketService != null) {
+        if (docWriter != null) {
+            docWriter.write(docModel.getStickyAssignmentsDocument());
+        } else if (stickyBucketService != null) {
             try {
                 stickyBucketService.saveAssignments(docModel.getStickyAssignmentsDocument());
             } catch (RuntimeException e) {
@@ -293,7 +298,7 @@ final class ExperimentEvaluation {
     }
 
     private <T> boolean isStickyBucketingEnabled(Experiment<T> experiment) {
-        return evaluation.context().getOptions().getStickyBucketService() != null
+        return evaluation.context().getOptions().isStickyBucketingConfigured()
                 && !Boolean.TRUE.equals(experiment.getDisableStickyBucketing());
     }
 
