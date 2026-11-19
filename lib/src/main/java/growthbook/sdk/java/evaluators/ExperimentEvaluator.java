@@ -20,6 +20,7 @@ import growthbook.sdk.java.model.VariationMeta;
 import growthbook.sdk.java.multiusermode.configurations.EvaluationContext;
 import growthbook.sdk.java.multiusermode.usage.TrackingCallbackWithUser;
 import growthbook.sdk.java.plugin.PluginRegistry;
+import growthbook.sdk.java.stickyBucketing.StickyBucketDocWriter;
 import lombok.extern.slf4j.Slf4j;
 
 import javax.annotation.Nullable;
@@ -299,8 +300,10 @@ public class ExperimentEvaluator implements IExperimentEvaluator {
                         docModel.getStickyAssignmentsDocument()
                 );
 
-                // save doc
-                if (context.getOptions().getStickyBucketService() != null) {
+                StickyBucketDocWriter docWriter = context.getStickyBucketDocWriter();
+                if (docWriter != null) {
+                    docWriter.write(docModel.getStickyAssignmentsDocument());
+                } else if (context.getOptions().getStickyBucketService() != null) {
                     try {
                         context.getOptions().getStickyBucketService().saveAssignments(docModel.getStickyAssignmentsDocument());
                     } catch (RuntimeException e) {
@@ -311,9 +314,7 @@ public class ExperimentEvaluator implements IExperimentEvaluator {
         }
 
         // Fire once per unique (hashAttribute, hashValue, experiment.key, variationId).
-        if (!alreadyTracked(experiment, result)) {
-            dispatchExperimentViewed(context, experiment, result);
-        }
+        trackExposure(context, experiment, result, context.isSuppressTrackingErrors());
 
         return result;
     }
@@ -416,21 +417,15 @@ public class ExperimentEvaluator implements IExperimentEvaluator {
                 log.debug("Skipping malformed remote evaluation tracking payload.");
                 continue;
             }
-            if (alreadyTracked(track.getExperiment(), track.getResult())) {
-                continue;
-            }
-            try {
-                dispatchExperimentViewed(context, track.getExperiment(), track.getResult());
-            } catch (RuntimeException e) {
-                log.warn("Tracking callback failed for remote evaluation payload.", e);
-            }
+            // Remote-eval track payloads never propagate a callback failure.
+            trackExposure(context, track.getExperiment(), track.getResult(), true);
         }
     }
 
     /**
      * Fires the user tracking callback and any registered plugins for a single exposure.
      * Plugin failures are isolated by {@link PluginRegistry}; a throwing user callback
-     * propagates to the caller.
+     * propagates to {@code trackExposure}, which decides whether to retry, log or rethrow.
      */
     private <ValueType> void dispatchExperimentViewed(
             EvaluationContext context,
@@ -448,13 +443,49 @@ public class ExperimentEvaluator implements IExperimentEvaluator {
         }
     }
 
-    private <ValueType> boolean alreadyTracked(Experiment<ValueType> experiment, ExperimentResult<ValueType> result) {
+    /**
+     * Deduped exposure delivery. On the multi-user client a throwing callback
+     * un-marks the dedup key, so the exposure is retried on a later evaluation
+     * instead of being lost. The single-user {@code GrowthBook} class keeps its
+     * existing behavior: the key stays marked and the exposure is not retried.
+     *
+     * @param suppressErrors log the callback failure instead of rethrowing it
+     */
+    private <ValueType> void trackExposure(EvaluationContext context,
+                                           Experiment<ValueType> experiment,
+                                           ExperimentResult<ValueType> result,
+                                           boolean suppressErrors) {
+        ExperimentTracker tracker = trackerFor(context);
         String key = trackingKey(experiment, result);
-        if (experimentTracker.isExperimentTracked(key)) {
-            return true;
+        Object claim = tracker.markIfFirst(key);
+        if (claim == null) {
+            return;
         }
-        experimentTracker.trackExperiment(key);
-        return false;
+        try {
+            dispatchExperimentViewed(context, experiment, result);
+        } catch (RuntimeException e) {
+            boolean retry = context.isSuppressTrackingErrors();
+            if (retry) {
+                tracker.untrack(key, claim);
+            }
+            if (!suppressErrors) {
+                throw e;
+            }
+            log.error(retry
+                    ? "Tracking callback failed; the exposure will be retried on the next evaluation."
+                    : "Tracking callback failed.", e);
+        }
+    }
+
+    /**
+     * The multi-user client shares one right-sized tracker across evaluations
+     * (carried on the context); without it, each evaluator instance — including
+     * the fresh one allocated per prerequisite evaluation — dedupes against its
+     * own small local cache.
+     */
+    private ExperimentTracker trackerFor(EvaluationContext context) {
+        ExperimentTracker shared = context.getSharedExperimentTracker();
+        return shared != null ? shared : this.experimentTracker;
     }
 
     private <ValueType> String trackingKey(Experiment<ValueType> experiment, ExperimentResult<ValueType> result) {
@@ -465,7 +496,7 @@ public class ExperimentEvaluator implements IExperimentEvaluator {
 
     private <ValueType> boolean isStickyBucketingEnabledForExperiment(EvaluationContext context,
                                                                       Experiment<ValueType> experiment) {
-        return context.getOptions().getStickyBucketService() != null
+        return context.getOptions().isStickyBucketingConfigured()
                 && !Boolean.TRUE.equals(experiment.getDisableStickyBucketing());
     }
 
