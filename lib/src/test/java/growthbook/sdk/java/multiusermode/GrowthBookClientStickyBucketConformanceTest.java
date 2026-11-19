@@ -16,7 +16,6 @@ import growthbook.sdk.java.repository.FeatureSnapshot;
 import growthbook.sdk.java.repository.GBFeaturesRepository;
 import growthbook.sdk.java.stickyBucketing.AsyncStickyBucketService;
 import growthbook.sdk.java.stickyBucketing.InMemoryStickyBucketServiceImpl;
-import growthbook.sdk.java.stickyBucketing.SyncOffloadStickyBucketAdapter;
 import growthbook.sdk.java.testhelpers.TestCasesJsonHelper;
 import growthbook.sdk.java.util.GrowthBookJsonUtils;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -29,6 +28,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
@@ -45,32 +45,34 @@ import static org.mockito.Mockito.when;
 
 /**
  * Runs the shared cases.json {@code stickyBucket} corpus against the
- * multi-user {@code GrowthBookClient} as a cross-product of service flavor
- * (offloaded sync / async-native) and API (sync / {@code evalFeatureAsync}),
- * with per-case test names. The legacy single-user runner
- * ({@code EvaluateFeatureWithStickyBucketingFeatureTest}) keeps covering the
- * {@code GrowthBook} class.
+ * multi-user {@code GrowthBookClient} as a cross-product of store kind
+ * (blocking / asynchronous) and API (sync / {@code evalFeatureAsync}), with
+ * per-case test names. A blocking store is called on the calling thread by the
+ * sync API and on the client's executor by the async API, so the four
+ * combinations cover every path a sticky read and save can take. The
+ * single-user runner ({@code EvaluateFeatureWithStickyBucketingFeatureTest})
+ * keeps covering the {@code GrowthBook} class.
  */
 class GrowthBookClientStickyBucketConformanceTest {
 
-    private enum ServiceFlavor { SYNC_OFFLOADED, ASYNC_NATIVE }
+    private enum Store { BLOCKING_STORE, ASYNC_STORE }
 
-    private enum Api { SYNC, ASYNC }
+    private enum Api { SYNC_API, ASYNC_API }
 
-    /** Minimal async-native in-memory store, mirroring InMemoryStickyBucketServiceImpl. */
+    /** Minimal asynchronous in-memory store, mirroring InMemoryStickyBucketServiceImpl. */
     private static final class AsyncInMemoryStickyService implements AsyncStickyBucketService {
         private final Map<String, StickyAssignmentsDocument> backing = new ConcurrentHashMap<>();
         private final InMemoryStickyBucketServiceImpl delegate = new InMemoryStickyBucketServiceImpl(backing);
 
         @Override
         public CompletionStage<StickyAssignmentsDocument> getAssignments(String attributeName, String attributeValue) {
-            return java.util.concurrent.CompletableFuture.completedFuture(delegate.getAssignments(attributeName, attributeValue));
+            return CompletableFuture.completedFuture(delegate.getAssignments(attributeName, attributeValue));
         }
 
         @Override
         public CompletionStage<Void> saveAssignments(StickyAssignmentsDocument doc) {
             delegate.saveAssignments(doc);
-            return java.util.concurrent.CompletableFuture.completedFuture(null);
+            return CompletableFuture.completedFuture(null);
         }
 
         Map<String, StickyAssignmentsDocument> backingStore() {
@@ -84,9 +86,9 @@ class GrowthBookClientStickyBucketConformanceTest {
         for (int i = 0; i < cases.size(); i++) {
             JsonArray testCase = cases.get(i).getAsJsonArray();
             String description = testCase.get(0).getAsString();
-            for (ServiceFlavor flavor : ServiceFlavor.values()) {
+            for (Store store : Store.values()) {
                 for (Api api : Api.values()) {
-                    arguments.add(Arguments.of(description + " [" + flavor + "/" + api + "]", i, flavor, api));
+                    arguments.add(Arguments.of(description + " [" + store + "/" + api + "]", i, store, api));
                 }
             }
         }
@@ -95,7 +97,7 @@ class GrowthBookClientStickyBucketConformanceTest {
 
     @ParameterizedTest(name = "{0}")
     @MethodSource("stickyBucketCases")
-    void conformance(String name, int caseIndex, ServiceFlavor flavor, Api api) throws Exception {
+    void conformance(String name, int caseIndex, Store store, Api api) throws Exception {
         GrowthBookJsonUtils utils = GrowthBookJsonUtils.getInstance();
         JsonArray testCase = TestCasesJsonHelper.getInstance()
                 .getStickyBucketTestCases().get(caseIndex).getAsJsonArray();
@@ -120,7 +122,7 @@ class GrowthBookClientStickyBucketConformanceTest {
         Options.OptionsBuilder optionsBuilder = Options.builder()
                 .apiHost("https://cdn.growthbook.io")
                 .clientKey("conformance-key");
-        if (flavor == ServiceFlavor.SYNC_OFFLOADED) {
+        if (store == Store.BLOCKING_STORE) {
             optionsBuilder.stickyBucketService(syncService);
         } else {
             optionsBuilder.asyncStickyBucketService(asyncService);
@@ -145,7 +147,7 @@ class GrowthBookClientStickyBucketConformanceTest {
                     .build();
 
             FeatureResult<Object> actualFeatureResult;
-            if (api == Api.SYNC) {
+            if (api == Api.SYNC_API) {
                 actualFeatureResult = client.evalFeature(featureKey, Object.class, user);
             } else {
                 actualFeatureResult = client.evalFeatureAsync(featureKey, Object.class, user)
@@ -169,7 +171,7 @@ class GrowthBookClientStickyBucketConformanceTest {
             Map<String, StickyAssignmentsDocument> expectedStore = new HashMap<>(seeded);
             expectedStore.putAll(expectedDocs);
 
-            Map<String, StickyAssignmentsDocument> actualStore = flavor == ServiceFlavor.SYNC_OFFLOADED
+            Map<String, StickyAssignmentsDocument> actualStore = store == Store.BLOCKING_STORE
                     ? syncBacking
                     : asyncService.backingStore();
 
