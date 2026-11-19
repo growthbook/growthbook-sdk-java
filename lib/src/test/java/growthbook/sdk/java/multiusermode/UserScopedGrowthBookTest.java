@@ -13,6 +13,7 @@ import growthbook.sdk.java.multiusermode.util.TransformationUtil;
 import growthbook.sdk.java.repository.FeatureRefreshStrategy;
 import growthbook.sdk.java.repository.FeatureSnapshot;
 import growthbook.sdk.java.repository.GBFeaturesRepository;
+import growthbook.sdk.java.stickyBucketing.StickyBucketService;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.mockito.MockedStatic;
@@ -26,12 +27,16 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import static growthbook.sdk.java.multiusermode.GrowthBookClientTestFixtures.createMockBuilder;
 import static growthbook.sdk.java.multiusermode.GrowthBookClientTestFixtures.createMockRepository;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Mockito.clearInvocations;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockStatic;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 class UserScopedGrowthBookTest {
@@ -105,6 +110,83 @@ class UserScopedGrowthBookTest {
             // Then
             assertEquals("upgrade_clicked", eventName.get());
             assertEquals("pro", eventProps.get().get("plan"));
+        }
+    }
+
+    @Test
+    @DisplayName("A scoped logEvent with null properties delivers an empty property map")
+    void scopedLogEventWithNullPropertiesDeliversEmptyMap() {
+        AtomicReference<Map<String, Object>> eventProps = new AtomicReference<>();
+        GBFeaturesRepository.GBFeaturesRepositoryBuilder builder = createMockBuilder(createMockRepository());
+        try (MockedStatic<GBFeaturesRepository> mocked = mockStatic(GBFeaturesRepository.class)) {
+            // Given
+            mocked.when(GBFeaturesRepository::builder).thenReturn(builder);
+            GrowthBookClient client = new GrowthBookClient(optionsWith(null,
+                    (name, props, user) -> eventProps.set(props)));
+            assertTrue(client.initialize());
+
+            // When
+            client.forUser(userContext()).logEvent("upgrade_clicked", null);
+
+            // Then
+            assertNotNull(eventProps.get());
+            assertTrue(eventProps.get().isEmpty());
+        }
+    }
+
+    @Test
+    @DisplayName("A scoped logEvent without a configured event logger does nothing and does not throw")
+    void scopedLogEventWithoutEventLoggerIsNoOp() {
+        GBFeaturesRepository repository = createMockRepository();
+        GBFeaturesRepository.GBFeaturesRepositoryBuilder builder = createMockBuilder(repository);
+        try (MockedStatic<GBFeaturesRepository> mocked = mockStatic(GBFeaturesRepository.class)) {
+            // Given
+            mocked.when(GBFeaturesRepository::builder).thenReturn(builder);
+            GrowthBookClient client = new GrowthBookClient(optionsWith(null, null));
+            assertTrue(client.initialize());
+            clearInvocations(repository);
+
+            // When
+            assertDoesNotThrow(() -> client.forUser(userContext()).logEvent("upgrade_clicked", new HashMap<>()));
+
+            // Then
+            verifyNoInteractions(repository);
+        }
+    }
+
+    @Test
+    @DisplayName("Client logEvent merges global attributes without reading features or loading sticky assignments")
+    void clientLogEventMergesGlobalAttributesWithoutEvaluationData() {
+        AtomicReference<UserContext> eventUser = new AtomicReference<>();
+        StickyBucketService stickyBucketService = mock(StickyBucketService.class);
+        GBFeaturesRepository repository = createMockRepository();
+        GBFeaturesRepository.GBFeaturesRepositoryBuilder builder = createMockBuilder(repository);
+        try (MockedStatic<GBFeaturesRepository> mocked = mockStatic(GBFeaturesRepository.class)) {
+            // Given
+            mocked.when(GBFeaturesRepository::builder).thenReturn(builder);
+            JsonObject globalAttributes = new JsonObject();
+            globalAttributes.addProperty("tenant", "tenant-a");
+            Options options = Options.builder()
+                    .apiHost("https://custom.growthbook.io")
+                    .clientKey("custom_key")
+                    .decryptionKey("test_key")
+                    .refreshStrategy(FeatureRefreshStrategy.STALE_WHILE_REVALIDATE)
+                    .featureRefreshListenerExecutor(Runnable::run)
+                    .eventLogger((name, props, user) -> eventUser.set(user))
+                    .globalAttributes(globalAttributes)
+                    .stickyBucketService(stickyBucketService)
+                    .build();
+            GrowthBookClient client = new GrowthBookClient(options);
+            assertTrue(client.initialize());
+            clearInvocations(repository, stickyBucketService);
+
+            // When
+            client.logEvent("upgrade_clicked", new HashMap<>(), userContext());
+
+            // Then
+            assertEquals("tenant-a", eventUser.get().getAttributes().get("tenant").getAsString());
+            assertEquals("user-1", eventUser.get().getAttributes().get("id").getAsString());
+            verifyNoInteractions(repository, stickyBucketService);
         }
     }
 
