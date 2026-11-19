@@ -568,6 +568,55 @@ class GrowthBookClientAsyncApiTest {
         }
     }
 
+    @Test
+    @Timeout(30)
+    void initializeAsyncCompletesFalseWhenTheExecutorThrows() throws Exception {
+        GrowthBookClient client = new GrowthBookClient(Options.builder()
+                .asyncExecutor(command -> {
+                    throw new IllegalStateException("executor is closed");
+                })
+                .build());
+        try {
+            CompletableFuture<Boolean> initializing = client.initializeAsync(); // must not throw
+
+            assertFalse(initializing.get(10, TimeUnit.SECONDS));
+        } finally {
+            client.shutdown();
+        }
+    }
+
+    // ------------------------------------------- failures before the store read
+
+    @Test
+    @Timeout(30)
+    void aFailureBeforeTheStoreReadIsReportedThroughTheFuture() throws Exception {
+        // A rule the client cannot read makes identifier derivation throw before any future exists.
+        WireMockServer wireMock = new WireMockServer(WireMockConfiguration.options().dynamicPort());
+        wireMock.start();
+        wireMock.stubFor(get(urlPathMatching("/api/features/.*"))
+                .willReturn(aResponse().withStatus(200).withHeader("Content-Type", "application/json")
+                        .withBody("{\"features\":{\"broken\":{\"defaultValue\":\"x\",\"rules\":[null]}}}")));
+        GrowthBookClient client = new GrowthBookClient(Options.builder()
+                .apiHost("http://localhost:" + wireMock.port())
+                .clientKey(CLIENT_KEY)
+                .asyncStickyBucketService(new ForeignThreadStickyService())
+                .build());
+        try {
+            assertTrue(client.initialize());
+            assertEquals("fallback", client.getFeatureValue("broken", "fallback", String.class, user("u1")),
+                    "the sync twin returns the default");
+
+            CompletableFuture<String> value = client.getFeatureValueAsync("broken", "fallback", String.class, user("u1"));
+            CompletableFuture<Boolean> isOn = client.isOnAsync("broken", user("u1")); // must not throw
+
+            assertEquals("fallback", value.get(10, TimeUnit.SECONDS));
+            assertThrows(ExecutionException.class, () -> isOn.get(10, TimeUnit.SECONDS));
+        } finally {
+            client.shutdown();
+            wireMock.stop();
+        }
+    }
+
     // ---------------------------------------------------------- remote eval
 
     @Test

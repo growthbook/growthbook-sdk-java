@@ -315,17 +315,22 @@ public class GrowthBookClient {
     }
 
     /**
-     * {@code supplyAsync} on the client's executor that reports a rejected task through the returned
-     * future instead of throwing, so an asynchronous method never fails on the calling thread.
+     * {@code supplyAsync} on the client's executor that reports an executor which will not take the
+     * task (typically a {@link RejectedExecutionException}) through the returned future instead of
+     * throwing, so an asynchronous method never fails on the calling thread.
      */
     private <T> CompletableFuture<T> supplyOnExecutor(Supplier<T> supplier) {
         try {
             return CompletableFuture.supplyAsync(supplier, this.asyncExecutor);
-        } catch (RejectedExecutionException e) {
-            CompletableFuture<T> rejected = new CompletableFuture<>();
-            rejected.completeExceptionally(e);
-            return rejected;
+        } catch (RuntimeException e) {
+            return failedFuture(e);
         }
+    }
+
+    private static <T> CompletableFuture<T> failedFuture(Throwable error) {
+        CompletableFuture<T> failed = new CompletableFuture<>();
+        failed.completeExceptionally(error);
+        return failed;
     }
 
     /**
@@ -700,11 +705,17 @@ public class GrowthBookClient {
      * <p>These rules apply to every {@code ...Async} evaluation method:
      * <ul>
      *   <li>Evaluation, tracking callbacks and the caller's continuations run on the client's
-     *       executor or on the calling thread, never on the sticky bucket store's completion thread.</li>
-     *   <li>A sticky bucket read that fails, is rejected or times out does not fail the future: the
-     *       evaluation continues with normal bucketing and saves nothing.</li>
-     *   <li>The future completes exceptionally when the executor rejects the work or when
-     *       {@link #shutdown()} comes first. Nothing is thrown on the calling thread.</li>
+     *       executor or on the calling thread, not on the sticky bucket store's completion thread.
+     *       The one exception: when the executor rejects the continuation, no other thread is left,
+     *       so the future fails on the thread that completed the read.</li>
+     *   <li>A sticky bucket read that fails or times out does not fail the future: the evaluation
+     *       continues with normal bucketing and saves nothing. That includes a read cut short by
+     *       {@link #shutdown()}.</li>
+     *   <li>The future completes exceptionally when the executor rejects the work, when building
+     *       the evaluation fails, or when {@link #shutdown()} finds it still pending. Nothing is
+     *       thrown on the calling thread, except a {@code NullPointerException} for a null
+     *       {@code FeatureKey}, as in the synchronous methods.</li>
+     *   <li>The user context and its attributes must not be modified until the future completes.</li>
      *   <li>Only an {@link AsyncStickyBucketService} keeps the wait free of threads. A blocking
      *       {@code StickyBucketService} holds one executor thread per store call, and remote
      *       evaluation holds one per evaluation. The continuation runs on the same executor, so while
@@ -1023,8 +1034,21 @@ public class GrowthBookClient {
         return getEvalContextAsync(userContext, Collections.<String>emptySet());
     }
 
+    /**
+     * The evaluation context for an async evaluation. Every failure is reported through the returned
+     * future, including one that happens before there is anything to wait for.
+     */
     private CompletableFuture<EvaluationContext> getEvalContextAsync(UserContext userContext,
                                                                      Set<String> inlineIdentifierAttributes) {
+        try {
+            return startEvalContextAsync(userContext, inlineIdentifierAttributes);
+        } catch (RuntimeException e) {
+            return failedFuture(e);
+        }
+    }
+
+    private CompletableFuture<EvaluationContext> startEvalContextAsync(UserContext userContext,
+                                                                       Set<String> inlineIdentifierAttributes) {
         UserContext safeUserContext = userContext == null ? UserContext.builder().build() : userContext;
         GlobalContext snapshot = this.globalContextManager.getCurrentGlobalContext();
         if (this.options.isRemoteEvalEnabled()) {
