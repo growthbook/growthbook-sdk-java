@@ -38,6 +38,7 @@ import growthbook.sdk.java.multiusermode.internal.FeatureValues;
 import growthbook.sdk.java.multiusermode.usage.FeatureUsageCallbackAdapter;
 import growthbook.sdk.java.multiusermode.usage.TrackingCallbackAdapter;
 import growthbook.sdk.java.stickyBucketing.InMemoryStickyBucketServiceImpl;
+import growthbook.sdk.java.stickyBucketing.StickyBucketDocWriter;
 import growthbook.sdk.java.stickyBucketing.StickyBucketService;
 
 /**
@@ -68,6 +69,8 @@ public class GrowthBook implements IGrowthBook {
      */
     @Deprecated
     public EvaluationContext evaluationContext = null;
+    /** True while the last sticky bucket load failed; assignments made meanwhile are not saved. */
+    private boolean stickyBucketReadFailed;
     private RemoteEvalService remoteEvalService;
     private RemoteEvalCache remoteEvalCache;
 
@@ -223,6 +226,8 @@ public class GrowthBook implements IGrowthBook {
     }
 
     private EvaluationContext getEvaluationContext() {
+        this.evaluationContext.setStickyBucketDocWriter(
+                this.stickyBucketReadFailed ? StickyBucketDocWriter.DISCARDING : null);
         return this.evaluationContext;
     }
 
@@ -643,8 +648,11 @@ public class GrowthBook implements IGrowthBook {
     }
 
     private void refreshStickyBucketService(@Nullable String featuresDataModel) {
+        // The flag changes only when a load ran: a refresh that throws before reaching the store
+        // must not re-enable saving after an earlier failed load.
         if (context.getStickyBucketService() != null) {
-            GrowthBookUtils.refreshStickyBuckets(context, featuresDataModel, attributeOverrides);
+            this.stickyBucketReadFailed =
+                    !GrowthBookUtils.loadStickyBuckets(context, featuresDataModel, attributeOverrides);
             // Sync updated docs into the evaluation context so the next evalFeature call sees them.
             if (evaluationContext != null && evaluationContext.getUser() != null) {
                 evaluationContext.getUser().setStickyBucketAssignmentDocs(context.getStickyBucketAssignmentDocs());

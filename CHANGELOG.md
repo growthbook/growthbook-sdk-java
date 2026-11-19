@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.12.0](https://github.com/growthbook/growthbook-sdk-java/compare/0.11.3...0.12.0) (2026-10-30)
+
+
+### ⚠ BREAKING CHANGES
+
+* Targeting conditions are strict about types: values are no longer converted between types, negated operators always give the opposite result of their positive form, booleans are not ordered, and version operators need two strings or two numbers. Conditions that use an operator or saved group type the SDK does not support always fail, even under $not or $nor. Only strings and numbers can be hash attributes; other values (booleans, arrays, objects, 0 and "") count as missing. Percentage rollouts no longer include one extra hash bucket. Hashing uses UTF-16 code units, like the JavaScript SDK, which changes bucketing only for ids and experiment or feature keys that contain non-ASCII characters (such as é, CJK or emoji); ASCII ids and keys are unaffected. Bucketing uses double precision, so a user whose hash lands on or next to a range end can change variation, matching the other SDKs. StringUtils.paddedVersionString now pads with spaces, like the JavaScript SDK.
+
+### Features
+
+* add PayloadReducer.reducePayload and PayloadReducer.pruneCondition to shrink a payload to what one user needs ([531a42a](https://github.com/growthbook/growthbook-sdk-java/commit/531a42a768c5c706d78083c4b5dadc94c8fee89a))
+* Add Redis cache adapter ([#222](https://github.com/growthbook/growthbook-sdk-java/issues/222)) ([05cc5bc](https://github.com/growthbook/growthbook-sdk-java/commit/05cc5bc312ab03acf2b4dbe9c1637380efd3440b))
+* align with spec 0.12.0 (strict types, condition edge cases, bucketing, payload reduction) ([#284](https://github.com/growthbook/growthbook-sdk-java/issues/284)) ([531a42a](https://github.com/growthbook/growthbook-sdk-java/commit/531a42a768c5c706d78083c4b5dadc94c8fee89a))
+* Redis-backed StickyBucketService (Jedis & Lettuce) ([#264](https://github.com/growthbook/growthbook-sdk-java/issues/264)) ([823a540](https://github.com/growthbook/growthbook-sdk-java/commit/823a540a71998bbc8a4ce5eb4effe0f8410a67a3))
+
 ## [0.11.3](https://github.com/growthbook/growthbook-sdk-java/compare/0.11.2...0.11.3) (2026-10-20)
 
 

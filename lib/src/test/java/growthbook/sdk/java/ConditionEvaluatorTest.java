@@ -380,6 +380,35 @@ class ConditionEvaluatorTest {
     }
 
     @Test
+    @DisplayName("$inGroup/$notInGroup agree with the JS SDK, including for an absent attribute")
+    void test_savedGroupOperatorsMatchReferenceTruthTable() {
+        ConditionEvaluator evaluator = new ConditionEvaluator();
+        JsonObject savedGroups = condition("{\"admins\":[\"u1\",\"u2\"]}");
+        JsonObject inGroup = condition("{\"id\":{\"$inGroup\":\"admins\"}}");
+        JsonObject notInGroup = condition("{\"id\":{\"$notInGroup\":\"admins\"}}");
+
+        assertTrue(evaluator.evaluateCondition(condition("{\"id\":\"u1\"}"), inGroup, savedGroups));
+        assertFalse(evaluator.evaluateCondition(condition("{\"id\":\"u9\"}"), inGroup, savedGroups));
+        assertFalse(evaluator.evaluateCondition(condition("{}"), inGroup, savedGroups));
+        assertFalse(evaluator.evaluateCondition(condition("{\"id\":\"u1\"}"), condition("{\"id\":{\"$inGroup\":\"unknown\"}}"), savedGroups));
+
+        assertFalse(evaluator.evaluateCondition(condition("{\"id\":\"u1\"}"), notInGroup, savedGroups));
+        assertTrue(evaluator.evaluateCondition(condition("{\"id\":\"u9\"}"), notInGroup, savedGroups));
+        assertTrue(evaluator.evaluateCondition(condition("{}"), notInGroup, savedGroups));
+        assertTrue(evaluator.evaluateCondition(condition("{\"id\":\"u1\"}"), condition("{\"id\":{\"$notInGroup\":\"unknown\"}}"), savedGroups));
+    }
+
+    @Test
+    @DisplayName("a malformed saved-group value matches nobody under either operator, like the JS SDK")
+    void test_savedGroupOperatorsTolerateNonArrayGroupValue() {
+        ConditionEvaluator evaluator = new ConditionEvaluator();
+        JsonObject savedGroups = condition("{\"admins\":42}");
+
+        assertFalse(evaluator.evaluateCondition(condition("{\"id\":\"u1\"}"), condition("{\"id\":{\"$inGroup\":\"admins\"}}"), savedGroups));
+        assertFalse(evaluator.evaluateCondition(condition("{\"id\":\"u1\"}"), condition("{\"id\":{\"$notInGroup\":\"admins\"}}"), savedGroups));
+    }
+
+    @Test
     @DisplayName("$eq and $ne never match an array or object operand, like JS ===")
     void test_equalityWithArrayOrObjectOperand() {
         ConditionEvaluator evaluator = new ConditionEvaluator();

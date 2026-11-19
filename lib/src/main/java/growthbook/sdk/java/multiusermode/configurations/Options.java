@@ -15,6 +15,7 @@ import growthbook.sdk.java.repository.FeatureRefreshStrategy;
 import growthbook.sdk.java.retry.FeatureFetchRetryPolicy;
 import growthbook.sdk.java.sandbox.GbCacheManager;
 import growthbook.sdk.java.sandbox.CacheMode;
+import growthbook.sdk.java.stickyBucketing.AsyncStickyBucketService;
 import growthbook.sdk.java.stickyBucketing.InMemoryStickyBucketServiceImpl;
 import growthbook.sdk.java.stickyBucketing.StickyBucketService;
 import growthbook.sdk.java.util.ForcedVariationsUtils;
@@ -32,6 +33,9 @@ import java.util.concurrent.Executor;
 @Data
 @Slf4j
 public class Options {
+
+    /** Default for {@link #stickyBucketTimeout}. */
+    public static final Duration DEFAULT_STICKY_BUCKET_TIMEOUT = Duration.ofSeconds(5);
 
     public Options(@Nullable Boolean enabled,
                    Boolean isQaMode,
@@ -84,6 +88,8 @@ public class Options {
                 null,
                 null,
                 null,
+                null,
+                null,
                 null
         );
     }
@@ -119,7 +125,11 @@ public class Options {
                    @Nullable Integer remoteEvalCacheTtlSeconds,
                    @Nullable Duration backgroundFetchInterval,
                    @Nullable FeatureFetchRetryPolicy retryPolicy,
-                   @Nullable List<GrowthBookPlugin> plugins
+                   @Nullable List<GrowthBookPlugin> plugins,
+                   @Nullable AsyncStickyBucketService asyncStickyBucketService,
+                   @Nullable Executor asyncExecutor,
+                   @Nullable Long stickyBucketCacheTtlSeconds,
+                   @Nullable Integer stickyBucketCacheSize
     ) {
         this(
                 enabled,
@@ -151,7 +161,12 @@ public class Options {
                 retryPolicy,
                 null,
                 null,
-                plugins
+                plugins,
+                asyncStickyBucketService,
+                asyncExecutor,
+                stickyBucketCacheTtlSeconds,
+                stickyBucketCacheSize,
+                null
         );
     }
 
@@ -223,7 +238,103 @@ public class Options {
                 retryPolicy,
                 null,
                 sseReconnectOnFailure,
-                plugins
+                plugins,
+                null,
+                null,
+                null,
+                null,
+                null
+        );
+    }
+
+    /**
+     * Backward-compatible constructor matching {@code main}'s 0.11.x positional signature, before
+     * {@link #featureRefreshListenerExecutor} and {@link #sseReconnectOnFailure} were introduced.
+     */
+    public Options(@Nullable Boolean enabled,
+                   Boolean isQaMode,
+                   @Nullable Boolean isCacheDisabled,
+                   Boolean allowUrlOverrides,
+                   @Nullable String url,
+                   @Nullable String apiHost,
+                   @Nullable String clientKey,
+                   @Nullable String decryptionKey,
+                   @Nullable List<String> stickyBucketIdentifierAttributes,
+                   @Nullable StickyBucketService stickyBucketService,
+                   @Nullable TrackingCallbackWithUser trackingCallBackWithUser,
+                   @Nullable FeatureUsageCallbackWithUser featureUsageCallbackWithUser,
+                   @Nullable FeatureRefreshStrategy refreshStrategy,
+                   @Nullable Integer swrTtlSeconds,
+                   @Nullable FeatureRefreshCallback featureRefreshCallback,
+                   @Nullable JsonObject globalAttributes,
+                   @Nullable Map<String, Object> globalForcedFeatureValues,
+                   @Nullable Map<String, ?> globalForcedVariationsMap,
+                   @Nullable GbCacheManager cacheManager,
+                   @Nullable CacheMode cacheMode,
+                   @Nullable String cacheDirectory,
+                   @Nullable Boolean remoteEval,
+                   @Nullable List<String> cacheKeyAttributes,
+                   @Nullable Integer remoteEvalCacheSize,
+                   @Nullable Integer remoteEvalCacheTtlSeconds,
+                   @Nullable Duration backgroundFetchInterval,
+                   @Nullable FeatureFetchRetryPolicy retryPolicy,
+                   @Nullable List<GrowthBookPlugin> plugins
+    ) {
+        this(
+                enabled, isQaMode, isCacheDisabled, allowUrlOverrides, url, apiHost, clientKey,
+                decryptionKey, stickyBucketIdentifierAttributes, stickyBucketService,
+                trackingCallBackWithUser, featureUsageCallbackWithUser, refreshStrategy, swrTtlSeconds,
+                featureRefreshCallback, globalAttributes, globalForcedFeatureValues,
+                globalForcedVariationsMap, cacheManager, cacheMode, cacheDirectory, remoteEval,
+                cacheKeyAttributes, remoteEvalCacheSize, remoteEvalCacheTtlSeconds,
+                backgroundFetchInterval, retryPolicy, null, null, plugins, null, null, null, null, null
+        );
+    }
+
+    /**
+     * Full positional signature on {@code main} before the async sticky-bucket options were
+     * introduced. Kept as a delegating overload so the published 30-argument arity is preserved.
+     */
+    public Options(@Nullable Boolean enabled,
+                   Boolean isQaMode,
+                   @Nullable Boolean isCacheDisabled,
+                   Boolean allowUrlOverrides,
+                   @Nullable String url,
+                   @Nullable String apiHost,
+                   @Nullable String clientKey,
+                   @Nullable String decryptionKey,
+                   @Nullable List<String> stickyBucketIdentifierAttributes,
+                   @Nullable StickyBucketService stickyBucketService,
+                   @Nullable TrackingCallbackWithUser trackingCallBackWithUser,
+                   @Nullable FeatureUsageCallbackWithUser featureUsageCallbackWithUser,
+                   @Nullable FeatureRefreshStrategy refreshStrategy,
+                   @Nullable Integer swrTtlSeconds,
+                   @Nullable FeatureRefreshCallback featureRefreshCallback,
+                   @Nullable JsonObject globalAttributes,
+                   @Nullable Map<String, Object> globalForcedFeatureValues,
+                   @Nullable Map<String, ?> globalForcedVariationsMap,
+                   @Nullable GbCacheManager cacheManager,
+                   @Nullable CacheMode cacheMode,
+                   @Nullable String cacheDirectory,
+                   @Nullable Boolean remoteEval,
+                   @Nullable List<String> cacheKeyAttributes,
+                   @Nullable Integer remoteEvalCacheSize,
+                   @Nullable Integer remoteEvalCacheTtlSeconds,
+                   @Nullable Duration backgroundFetchInterval,
+                   @Nullable FeatureFetchRetryPolicy retryPolicy,
+                   @Nullable Executor featureRefreshListenerExecutor,
+                   @Nullable Boolean sseReconnectOnFailure,
+                   @Nullable List<GrowthBookPlugin> plugins
+    ) {
+        this(
+                enabled, isQaMode, isCacheDisabled, allowUrlOverrides, url, apiHost, clientKey,
+                decryptionKey, stickyBucketIdentifierAttributes, stickyBucketService,
+                trackingCallBackWithUser, featureUsageCallbackWithUser, refreshStrategy, swrTtlSeconds,
+                featureRefreshCallback, globalAttributes, globalForcedFeatureValues,
+                globalForcedVariationsMap, cacheManager, cacheMode, cacheDirectory, remoteEval,
+                cacheKeyAttributes, remoteEvalCacheSize, remoteEvalCacheTtlSeconds,
+                backgroundFetchInterval, retryPolicy, featureRefreshListenerExecutor,
+                sseReconnectOnFailure, plugins, null, null, null, null, null
         );
     }
 
@@ -257,7 +368,12 @@ public class Options {
                    @Nullable FeatureFetchRetryPolicy retryPolicy,
                    @Nullable Executor featureRefreshListenerExecutor,
                    @Nullable Boolean sseReconnectOnFailure,
-                   @Nullable List<GrowthBookPlugin> plugins
+                   @Nullable List<GrowthBookPlugin> plugins,
+                   @Nullable AsyncStickyBucketService asyncStickyBucketService,
+                   @Nullable Executor asyncExecutor,
+                   @Nullable Long stickyBucketCacheTtlSeconds,
+                   @Nullable Integer stickyBucketCacheSize,
+                   @Nullable Duration stickyBucketTimeout
     ) {
         this.enabled = enabled == null || enabled;
         this.isQaMode = isQaMode != null && isQaMode;
@@ -289,6 +405,11 @@ public class Options {
         this.featureRefreshListenerExecutor = featureRefreshListenerExecutor;
         this.sseReconnectOnFailure = sseReconnectOnFailure;
         this.plugins = plugins;
+        this.asyncStickyBucketService = asyncStickyBucketService;
+        this.asyncExecutor = asyncExecutor;
+        this.stickyBucketCacheTtlSeconds = stickyBucketCacheTtlSeconds;
+        this.stickyBucketCacheSize = stickyBucketCacheSize == null ? 1000 : stickyBucketCacheSize;
+        this.stickyBucketTimeout = stickyBucketTimeout;
     }
 
     /**
@@ -336,7 +457,9 @@ public class Options {
     private String decryptionKey;
 
     /**
-     * List of user's attributes keys.
+     * Attribute keys whose sticky bucket documents are read for every user, in addition to the
+     * attributes the loaded features' experiments hash on (those are always read). Needed only for
+     * attributes the SDK cannot derive, such as the hash attribute of an inline experiment.
      */
     @Nullable
     private List<String> stickyBucketIdentifierAttributes;
@@ -478,6 +601,66 @@ public class Options {
     @Nullable
     private Boolean sseReconnectOnFailure;
 
+    /**
+     * Non-blocking sticky bucket service for the multi-user client. Mutually
+     * exclusive with {@link #stickyBucketService} — configure exactly one.
+     * See {@link AsyncStickyBucketService} for the contract.
+     *
+     * <p>A failed read from either kind of service is logged and that evaluation
+     * continues with normal bucketing, but none of its assignments are saved: a
+     * variation bucketed without the stored assignment must not replace it.
+     */
+    @Nullable
+    private AsyncStickyBucketService asyncStickyBucketService;
+
+    /**
+     * Executor for the client's asynchronous entry points: offloading blocking
+     * {@link StickyBucketService} calls and composing async evaluations. The
+     * synchronous evaluation API never uses it; it calls a blocking service on
+     * the calling thread. When null, the client creates its own bounded daemon
+     * pool and shuts it down in {@code shutdown()}; a caller-supplied executor
+     * is never shut down by the SDK. On JDK 21+, pass
+     * {@code Executors.newVirtualThreadPerTaskExecutor()} so blocking offloads
+     * scale with the store instead of a fixed pool.
+     */
+    @Nullable
+    private Executor asyncExecutor;
+
+    /**
+     * Opt-in TTL, in seconds, for caching sticky bucket reads per user
+     * attributes. Null or non-positive (the default) disables caching:
+     * assignments are fetched per evaluation, so assignment changes made by
+     * other processes are picked up promptly. Enabling trades that freshness
+     * for fewer store lookups on hot users.
+     */
+    @Nullable
+    private Long stickyBucketCacheTtlSeconds;
+
+    /**
+     * Maximum entries in the opt-in sticky bucket read cache (default 1000).
+     * Non-positive disables caching. Only meaningful when
+     * {@link #stickyBucketCacheTtlSeconds} is set.
+     */
+    private Integer stickyBucketCacheSize;
+
+    /**
+     * How long the multi-user client waits for one sticky bucket store call, read or save
+     * (default {@link #DEFAULT_STICKY_BUCKET_TIMEOUT}, 5 seconds). A read that takes longer is handled
+     * like any failed read: that evaluation continues with normal bucketing and saves
+     * nothing. A save that takes longer is handled like any failed save. {@link Duration#ZERO}
+     * disables the timeout.
+     *
+     * <p>The store call itself is not cancelled. A blocking {@link StickyBucketService} called
+     * by the synchronous evaluation API runs on the calling thread and is bounded by its own
+     * client's timeout, not by this one.
+     */
+    @Nullable
+    private Duration stickyBucketTimeout;
+
+    public Duration getStickyBucketTimeout() {
+        return stickyBucketTimeout == null ? DEFAULT_STICKY_BUCKET_TIMEOUT : stickyBucketTimeout;
+    }
+
     public boolean isSseReconnectOnFailure() {
         return sseReconnectOnFailure == null || sseReconnectOnFailure;
     }
@@ -491,6 +674,15 @@ public class Options {
         // Thread-safe backing map: this Options instance configures the multi-user
         // GrowthBookClient, which evaluates (and therefore saves assignments) concurrently.
         this.setStickyBucketService(new InMemoryStickyBucketServiceImpl());
+    }
+
+    /**
+     * Whether either flavor of sticky bucket service is configured.
+     *
+     * @return true when a sync or async sticky bucket service is set
+     */
+    public boolean isStickyBucketingConfigured() {
+        return this.stickyBucketService != null || this.asyncStickyBucketService != null;
     }
 
     public void setGlobalAttributes(@Nullable String attributesJson) {

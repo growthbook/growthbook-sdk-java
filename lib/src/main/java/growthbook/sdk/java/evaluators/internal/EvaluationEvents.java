@@ -20,8 +20,11 @@ import java.util.List;
  *
  * <p>Exposures are de-duplicated per {@code (hashAttribute, hashValue, experimentKey, variationId)}
  * through the context's {@link ExperimentTracker}; without a tracker every exposure is reported.
- * User callbacks are untrusted: one that throws is logged and the evaluation goes on with the
- * same result. Plugin failures are isolated by {@link PluginRegistry}.
+ * A user callback that throws skips the plugins of that delivery. When the context suppresses
+ * tracking errors (the multi-user client) the failure is logged and a failed exposure is released
+ * from the tracker, so it is retried on a later evaluation instead of being lost; otherwise the
+ * failure propagates to the caller and the exposure stays marked. Remote-evaluation track payloads
+ * never propagate a callback failure. Plugin failures are isolated by {@link PluginRegistry}.
  */
 @Slf4j
 final class EvaluationEvents {
@@ -38,7 +41,10 @@ final class EvaluationEvents {
             try {
                 callback.onFeatureUsage(key, result, context.getUser());
             } catch (RuntimeException e) {
-                log.warn("Feature usage callback failed for feature '{}'; continuing.", key, e);
+                if (!context.isSuppressTrackingErrors()) {
+                    throw e;
+                }
+                log.error("Feature usage callback failed for feature '{}'.", key, e);
             }
         }
         PluginRegistry registry = context.getPluginRegistry();
@@ -49,9 +55,7 @@ final class EvaluationEvents {
     }
 
     <T> void experimentViewed(Experiment<T> experiment, ExperimentResult<T> result) {
-        if (markTracked(experiment, result)) {
-            dispatchExperimentViewed(experiment, result);
-        }
+        trackExposure(experiment, result, context.isSuppressTrackingErrors());
     }
 
     <T> void remoteEvaluationTracks(@Nullable List<TrackData<T>> tracks) {
@@ -66,8 +70,8 @@ final class EvaluationEvents {
         for (TrackData<T> track : tracks) {
             if (!isWellFormed(track)) {
                 log.debug("Skipping malformed remote evaluation tracking payload.");
-            } else if (markTracked(track.getExperiment(), track.getResult())) {
-                dispatchExperimentViewed(track.getExperiment(), track.getResult());
+            } else {
+                trackExposure(track.getExperiment(), track.getResult(), true);
             }
         }
     }
@@ -80,25 +84,39 @@ final class EvaluationEvents {
                 && track.getExperiment().getVariations() != null;
     }
 
+    private <T> void trackExposure(Experiment<T> experiment, ExperimentResult<T> result, boolean suppressErrors) {
+        ExperimentTracker tracker = context.getExperimentTracker();
+        String key = trackingKey(experiment, result);
+        Object claim = tracker != null ? tracker.markIfFirst(key) : null;
+        if (tracker != null && claim == null) {
+            return;
+        }
+        try {
+            dispatchExperimentViewed(experiment, result);
+        } catch (RuntimeException e) {
+            boolean retry = claim != null && context.isSuppressTrackingErrors();
+            if (retry) {
+                tracker.untrack(key, claim);
+            }
+            if (!suppressErrors) {
+                throw e;
+            }
+            log.error(retry
+                    ? "Tracking callback failed for experiment '{}'; the exposure will be retried on the next evaluation."
+                    : "Tracking callback failed for experiment '{}'.", experiment.getKey(), e);
+        }
+    }
+
     private <T> void dispatchExperimentViewed(Experiment<T> experiment, ExperimentResult<T> result) {
         TrackingCallbackWithUser callback = context.getOptions().getTrackingCallBackWithUser();
         if (callback != null) {
-            try {
-                callback.onTrack(experiment, result, context.getUser());
-            } catch (RuntimeException e) {
-                log.warn("Tracking callback failed for experiment '{}'; continuing.", experiment.getKey(), e);
-            }
+            callback.onTrack(experiment, result, context.getUser());
         }
         PluginRegistry pluginRegistry = context.getPluginRegistry();
         if (pluginRegistry != null) {
             pluginRegistry.fireExperimentViewed(experiment, result,
                     context.getUser() != null ? context.getUser().getAttributes() : null);
         }
-    }
-
-    private <T> boolean markTracked(Experiment<T> experiment, ExperimentResult<T> result) {
-        ExperimentTracker tracker = context.getExperimentTracker();
-        return tracker == null || tracker.markTracked(trackingKey(experiment, result));
     }
 
     private static <T> String trackingKey(Experiment<T> experiment, ExperimentResult<T> result) {
