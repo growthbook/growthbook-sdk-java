@@ -4,7 +4,9 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -27,10 +29,13 @@ import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
 import java.io.IOException;
+import java.lang.reflect.Field;
 import java.time.Duration;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * Bootstrapping the repository from an inline payload (offline cold start), mirroring the TS
@@ -243,6 +248,33 @@ class GBFeaturesRepositoryInitialPayloadTest {
         subject.shutdown();
     }
 
+    @Test
+    @DisplayName("Seeded startup refresh queued before shutdown makes no network request once it runs")
+    void queuedSeededStartupRefresh_skipsNetworkAfterShutdown() throws Exception {
+        // Given
+        OkHttpClient httpClient = failingHttpClient();
+        GBFeaturesRepository subject = GBFeaturesRepository.builder()
+                .apiHost("http://localhost:80")
+                .clientKey("sdk-abc123")
+                .okHttpClient(httpClient)
+                .retryPolicy(NO_DELAY_RETRY_POLICY)
+                .isCacheDisabled(true)
+                .initialPayload(PAYLOAD_FLAG_ON)
+                .build();
+        ScheduledExecutorService scheduler = mock(ScheduledExecutorService.class);
+        installScheduler(subject, scheduler);
+        subject.initialize();
+        ArgumentCaptor<Runnable> startupTask = ArgumentCaptor.forClass(Runnable.class);
+        verify(scheduler).schedule(startupTask.capture(), eq(0L), eq(TimeUnit.MILLISECONDS));
+
+        // When
+        subject.shutdown();
+        startupTask.getValue().run();
+
+        // Then
+        verify(httpClient, never()).newCall(any());
+    }
+
     private static GBFeaturesRepository seededRepositoryWithFreshCache(OkHttpClient httpClient, String cachedPayload) {
         return GBFeaturesRepository.builder()
                 .apiHost("http://localhost:80")
@@ -253,6 +285,16 @@ class GBFeaturesRepositoryInitialPayloadTest {
                 .backgroundFetchInterval(Duration.ofHours(1))
                 .initialPayload(PAYLOAD_FLAG_ON)
                 .build();
+    }
+
+    private static void installScheduler(GBFeaturesRepository repository, ScheduledExecutorService scheduler)
+            throws ReflectiveOperationException {
+        Field field = GBFeaturesRepository.class.getDeclaredField("pollScheduler");
+        field.setAccessible(true);
+        @SuppressWarnings("unchecked")
+        AtomicReference<ScheduledExecutorService> schedulerRef =
+                (AtomicReference<ScheduledExecutorService>) field.get(repository);
+        schedulerRef.set(scheduler);
     }
 
     private static void awaitFailedInitialFetch(GBFeaturesRepository subject) throws Exception {

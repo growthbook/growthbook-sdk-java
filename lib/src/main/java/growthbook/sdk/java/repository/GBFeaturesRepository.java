@@ -765,6 +765,9 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
      */
     private void scheduleImmediateBackgroundRefresh() {
         backgroundScheduler().schedule(() -> {
+            if (this.shuttingDown.get()) {
+                return;
+            }
             try {
                 refreshFeatures(RefreshMode.FORCE, FeatureRefreshSource.INITIALIZATION);
             } catch (Exception e) {
