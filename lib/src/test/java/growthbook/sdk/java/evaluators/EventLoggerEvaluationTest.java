@@ -264,6 +264,7 @@ class EventLoggerEvaluationTest {
                 })
                 .build();
         EvaluationContext context = context(options, null);
+        context.setSuppressTrackingErrors(true);
 
         // When & Then evaluation still completes
         ExperimentResult<String> result = experimentEvaluator.evaluateExperiment(experiment(), context, null);

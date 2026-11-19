@@ -60,6 +60,22 @@ public final class EventLoggerDispatch {
             }
         }
 
+        fireExperimentViewedEvent(options, experiment, result, userContext);
+    }
+
+    /**
+     * Fires only the {@link EventLogger} {@link GrowthBookEvent#EXPERIMENT_VIEWED} event (if set),
+     * guarded. Used by the evaluator, which invokes the tracking callback itself so a throwing
+     * callback can drive exposure retry.
+     */
+    public static <T> void fireExperimentViewedEvent(Options options,
+                                                     Experiment<T> experiment,
+                                                     ExperimentResult<T> result,
+                                                     UserContext userContext) {
+        if (options == null) {
+            return;
+        }
+
         EventLogger eventLogger = options.getEventLogger();
         if (eventLogger != null) {
             Map<String, Object> properties = new HashMap<>();
