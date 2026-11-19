@@ -1,5 +1,7 @@
 package growthbook.sdk.java.multiusermode;
 
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
 import growthbook.sdk.java.callback.ExperimentRunCallback;
 import growthbook.sdk.java.diagnostics.model.Diagnostics;
 import growthbook.sdk.java.diagnostics.provider.DiagnosticsProvider;
@@ -13,12 +15,16 @@ import growthbook.sdk.java.listener.FeatureRefreshListener;
 import growthbook.sdk.java.listener.FeatureRefreshSubscription;
 import growthbook.sdk.java.model.Experiment;
 import growthbook.sdk.java.model.ExperimentResult;
+import growthbook.sdk.java.model.Feature;
 import growthbook.sdk.java.model.FeatureKey;
 import growthbook.sdk.java.model.FeatureRefreshEvent;
 import growthbook.sdk.java.model.FeatureResult;
+import growthbook.sdk.java.model.FeatureRule;
 import growthbook.sdk.java.model.ReducePayloadOptions;
 import growthbook.sdk.java.model.RequestBodyForRemoteEval;
+import growthbook.sdk.java.model.StickyAssignmentsDocument;
 import growthbook.sdk.java.multiusermode.configurations.EvaluationContext;
+import growthbook.sdk.java.multiusermode.configurations.GlobalContext;
 import growthbook.sdk.java.multiusermode.configurations.Options;
 import growthbook.sdk.java.multiusermode.configurations.OptionsValidator;
 import growthbook.sdk.java.multiusermode.configurations.UserContext;
@@ -28,18 +34,33 @@ import growthbook.sdk.java.multiusermode.internal.FeatureRepositoryProvider;
 import growthbook.sdk.java.multiusermode.internal.GlobalContextManager;
 import growthbook.sdk.java.multiusermode.internal.ManagedListenerExecutor;
 import growthbook.sdk.java.multiusermode.internal.RemoteEvalCoordinator;
+import growthbook.sdk.java.multiusermode.internal.StickyAttributeValues;
 import growthbook.sdk.java.plugin.PluginRegistry;
 import growthbook.sdk.java.repository.FeatureSnapshot;
 import growthbook.sdk.java.repository.GBFeaturesRepository;
 import growthbook.sdk.java.repository.RefreshMode;
+import growthbook.sdk.java.stickyBucketing.AsyncStickyBucketService;
+import growthbook.sdk.java.stickyBucketing.StickyBucketDocWriter;
+import growthbook.sdk.java.stickyBucketing.SyncOffloadStickyBucketAdapter;
 import growthbook.sdk.java.util.GrowthBookJsonUtils;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import lombok.extern.slf4j.Slf4j;
 
 import javax.annotation.Nullable;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Executor;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
@@ -68,6 +89,18 @@ public class GrowthBookClient {
     private final AtomicReference<Throwable> lastInitializationError = new AtomicReference<>();
     private final AtomicLong lastInitializationErrorAtMillis = new AtomicLong(0);
     private final AtomicBoolean clientShutdown = new AtomicBoolean(false);
+
+    /** Owns all sticky bucket I/O; null when no sticky bucket service is configured. */
+    @Nullable
+    private final StickyBucketManager stickyBucketManager;
+    /** The pool this client created for itself (and must shut down); null when the caller supplied one. */
+    @Nullable
+    private final ExecutorService ownedAsyncExecutor;
+
+    private static final AtomicLong ASYNC_THREAD_COUNTER = new AtomicLong();
+
+    /** Exposure dedup shared across all of this client's evaluations; sized for multi-user traffic. */
+    private final ExperimentTracker exposureTracker = new ExperimentTracker(10_000);
 
     /**
      * Creates a client with default options.
@@ -98,8 +131,57 @@ public class GrowthBookClient {
         );
         this.diagnosticsProvider = new GrowthBookClientDiagnosticsProvider(this.options, clientStateView());
 
+        if (this.options.isStickyBucketingConfigured()) {
+            Executor executor = this.options.getAsyncExecutor();
+            if (executor == null) {
+                this.ownedAsyncExecutor = newOwnedAsyncExecutor();
+                executor = this.ownedAsyncExecutor;
+            } else {
+                this.ownedAsyncExecutor = null;
+            }
+            AsyncStickyBucketService asyncService = this.options.getAsyncStickyBucketService();
+            AsyncStickyBucketService callerThreadService = asyncService;
+            if (asyncService == null) {
+                // A blocking store can only be made non-blocking by spending a thread on it. The
+                // synchronous evaluation API already has one (the caller's), so only the
+                // asynchronous entry points go through the executor.
+                asyncService = new SyncOffloadStickyBucketAdapter(this.options.getStickyBucketService(), executor);
+                callerThreadService = new CallerThreadStickyBucketAdapter(this.options.getStickyBucketService());
+            }
+            this.stickyBucketManager = new StickyBucketManager(
+                    asyncService,
+                    callerThreadService,
+                    this.options.getStickyBucketCacheTtlSeconds(),
+                    this.options.getStickyBucketCacheSize(),
+                    this.options.getStickyBucketTimeout().toMillis());
+        } else {
+            this.ownedAsyncExecutor = null;
+            this.stickyBucketManager = null;
+        }
+
         this.pluginRegistry = new PluginRegistry(this.options.getPlugins());
         this.pluginRegistry.initAll();
+    }
+
+    /**
+     * Bounded daemon pool for the asynchronous entry points' blocking I/O offload — sized for I/O,
+     * not CPU. Fixed core==max with idle timeout so a quiet client holds zero threads. Default
+     * AbortPolicy: a saturated pool rejects the task instead of running blocking store I/O on the
+     * thread that asked not to be blocked. The synchronous evaluation API never uses this pool.
+     */
+    private static ExecutorService newOwnedAsyncExecutor() {
+        int threads = Math.max(8, 2 * Runtime.getRuntime().availableProcessors());
+        ThreadPoolExecutor pool = new ThreadPoolExecutor(
+                threads, threads,
+                60L, TimeUnit.SECONDS,
+                new LinkedBlockingQueue<>(1024),
+                runnable -> {
+                    Thread thread = new Thread(runnable, "growthbook-async-" + ASYNC_THREAD_COUNTER.incrementAndGet());
+                    thread.setDaemon(true);
+                    return thread;
+                });
+        pool.allowCoreThreadTimeOut(true);
+        return pool;
     }
 
     private GrowthBookClientDiagnosticsProvider.ClientState clientStateView() {
@@ -545,7 +627,7 @@ public class GrowthBookClient {
      */
     public <T> ExperimentResult<T> run(Experiment<T> experiment, UserContext userContext) {
         ExperimentResult<T> result = experimentEvaluator
-                .evaluateExperiment(experiment, getEvalContext(userContext), null);
+                .evaluateExperiment(experiment, getEvalContext(userContext, inlineIdentifierAttributes(experiment)), null);
 
         experimentSubscriptions.publishIfChanged(experiment, result);
 
@@ -657,6 +739,23 @@ public class GrowthBookClient {
      */
     public synchronized void shutdown() {
         this.clientShutdown.set(true);
+        // Drain sticky bucket saves while the offload executor is still alive — shutting it down
+        // first would discard trailing saves and leave the flush waiting on futures nobody completes.
+        if (this.stickyBucketManager != null) {
+            this.stickyBucketManager.startDraining();
+            this.stickyBucketManager.close(5_000);
+        }
+        if (this.ownedAsyncExecutor != null) {
+            this.ownedAsyncExecutor.shutdown();
+            try {
+                if (!this.ownedAsyncExecutor.awaitTermination(1, TimeUnit.SECONDS)) {
+                    this.ownedAsyncExecutor.shutdownNow();
+                }
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                this.ownedAsyncExecutor.shutdownNow();
+            }
+        }
         featureRepositoryProvider.shutdown();
         this.remoteEvalCoordinator.shutdown();
         listenerExecutor.shutdown();
@@ -686,16 +785,188 @@ public class GrowthBookClient {
     }
 
     private EvaluationContext getEvalContext(UserContext userContext) {
+        return getEvalContext(userContext, Collections.<String>emptySet());
+    }
+
+    private EvaluationContext getEvalContext(UserContext userContext, Set<String> inlineIdentifierAttributes) {
         UserContext safeUserContext = userContext == null ? UserContext.builder().build() : userContext;
-        if (this.options.isRemoteEvalEnabled()) {
-            return withPluginRegistry(this.remoteEvalCoordinator.createEvaluationContext(safeUserContext));
+        // Capture ONE feature snapshot for both identifier derivation and evaluation, so a refresh
+        // landing mid-read cannot pair new rules with documents fetched for the old identifiers.
+        GlobalContext snapshot = this.globalContextManager.getCurrentGlobalContext();
+        boolean stickyReadFailed = false;
+        if (this.stickyBucketManager != null && safeUserContext.getStickyBucketAssignmentDocs() == null) {
+            // Scoped read: fetch the user's sticky docs through the manager (coalesced, cached,
+            // overlaid with this process's own writes) and populate the context so the managers' own
+            // synchronous preload skips. A blocking service is read on this thread.
+            JsonObject mergedAttributes = mergeGlobalAttributes(safeUserContext.getAttributes());
+            Map<String, String> identifiers =
+                    stickyIdentifierAttributesFor(mergedAttributes, snapshot, inlineIdentifierAttributes);
+            Map<String, StickyAssignmentsDocument> docs = fetchStickyDocsBlocking(identifiers);
+            stickyReadFailed = docs == null;
+            UserContext scoped = safeUserContext.withAttributes(safeUserContext.getAttributes());
+            scoped.setStickyBucketAssignmentDocs(
+                    stickyReadFailed ? this.stickyBucketManager.localAssignments(identifiers) : docs);
+            safeUserContext = scoped;
         }
-        return withPluginRegistry(this.globalContextManager.createEvaluationContext(safeUserContext));
+        EvaluationContext context = this.options.isRemoteEvalEnabled()
+                ? this.remoteEvalCoordinator.createEvaluationContext(safeUserContext)
+                : this.globalContextManager.createEvaluationContext(safeUserContext, snapshot);
+        if (this.stickyBucketManager != null) {
+            context.setStickyBucketDocWriter(stickyReadFailed
+                    ? StickyBucketDocWriter.DISCARDING
+                    : this.stickyBucketManager::recordAndSaveOnCallerThread);
+        }
+        return withPluginRegistry(context);
+    }
+
+    /** The sticky identifier attributes an inline experiment reads, so its persisted assignment is loaded. */
+    private static Set<String> inlineIdentifierAttributes(@Nullable Experiment<?> experiment) {
+        if (experiment == null) {
+            return Collections.emptySet();
+        }
+        Set<String> identifiers = new HashSet<>();
+        identifiers.add(experiment.getHashAttribute() != null ? experiment.getHashAttribute() : "id");
+        if (experiment.getFallbackAttribute() != null) {
+            identifiers.add(experiment.getFallbackAttribute());
+        }
+        return identifiers;
+    }
+
+    /**
+     * Prefetch sticky bucket assignments for a user context, so later evaluations with the same
+     * context perform no sticky bucket I/O. The context's {@code stickyBucketAssignmentDocs} is
+     * populated and the same instance is returned. The populated map is concurrency-safe, so the
+     * returned context may be reused across concurrent evaluations.
+     *
+     * <p>The read covers the attributes the loaded features' experiments hash on, plus
+     * {@code Options.stickyBucketIdentifierAttributes}. An inline experiment later passed to
+     * {@code run} with this context is covered only if its hash attribute is one of those; list it
+     * in {@code stickyBucketIdentifierAttributes} otherwise, or its stored assignment is not read.
+     *
+     * @param userContext the request-scoped user context to prefetch for
+     * @return a future completing with the same context, docs populated
+     */
+    public CompletableFuture<UserContext> prefetchStickyBuckets(UserContext userContext) {
+        UserContext context = userContext == null ? UserContext.builder().build() : userContext;
+        if (this.stickyBucketManager == null || context.getStickyBucketAssignmentDocs() != null) {
+            return CompletableFuture.completedFuture(context);
+        }
+        GlobalContext snapshot = this.globalContextManager.getCurrentGlobalContext();
+        Map<String, String> identifiers = stickyIdentifierAttributesFor(
+                mergeGlobalAttributes(context.getAttributes()), snapshot, Collections.<String>emptySet());
+        return this.stickyBucketManager.fetchAssignments(identifiers)
+                .thenApply(docs -> {
+                    context.setStickyBucketAssignmentDocs(docs);
+                    return context;
+                });
+    }
+
+    /**
+     * Completes when every pending sticky bucket save has been <em>attempted</em>. This is not a
+     * durability guarantee: a save the store rejects is logged and kept for the next write or flush,
+     * so a completed flush future means "no save is still outstanding", not "every assignment
+     * reached the store".
+     * Fire-and-forget writes do not need this; short-lived processes should await it (or call
+     * {@link #shutdown()}, which flushes automatically) before exiting to drain in-flight saves.
+     *
+     * @return a future completing when all pending saves have been attempted
+     */
+    public CompletableFuture<Void> flushStickyBucketSaves() {
+        if (this.stickyBucketManager == null) {
+            return CompletableFuture.completedFuture(null);
+        }
+        return this.stickyBucketManager.flush();
+    }
+
+    private JsonObject mergeGlobalAttributes(@Nullable JsonObject userAttributes) {
+        JsonObject merged = this.options.getGlobalAttributes() == null
+                ? new JsonObject() : this.options.getGlobalAttributes().deepCopy();
+        if (userAttributes != null) {
+            for (Map.Entry<String, JsonElement> entry : userAttributes.entrySet()) {
+                merged.add(entry.getKey(), entry.getValue());
+            }
+        }
+        return merged;
+    }
+
+    private Map<String, String> stickyIdentifierAttributesFor(JsonObject mergedAttributes,
+                                                              GlobalContext snapshot,
+                                                              Set<String> extraIdentifiers) {
+        Set<String> identifiers = new HashSet<>(resolveStickyIdentifierAttributes(snapshot));
+        if (extraIdentifiers != null) {
+            identifiers.addAll(extraIdentifiers);
+        }
+        return StickyAttributeValues.of(mergedAttributes, identifiers);
+    }
+
+    /**
+     * Every attribute a loaded feature's experiment can hash on, plus the configured ones. The
+     * configured list only adds to the derived set: an experiment whose hash attribute were left
+     * unread would be bucketed again and its stored assignment replaced.
+     */
+    private Set<String> resolveStickyIdentifierAttributes(GlobalContext snapshot) {
+        Set<String> derived = snapshot.getDerivedStickyIdentifierAttributes();
+        if (derived == null) {
+            derived = deriveStickyIdentifierAttributes(snapshot.getFeatures());
+            snapshot.setDerivedStickyIdentifierAttributes(derived);
+        }
+        List<String> configured = this.options.getStickyBucketIdentifierAttributes();
+        if (configured == null || configured.isEmpty()) {
+            return derived;
+        }
+        Set<String> identifiers = new HashSet<>(derived);
+        identifiers.addAll(configured);
+        return identifiers;
+    }
+
+    @SuppressWarnings({"unchecked", "rawtypes"})
+    private static Set<String> deriveStickyIdentifierAttributes(@Nullable Map<String, Feature<?>> features) {
+        Set<String> attributes = new HashSet<>();
+        if (features == null) {
+            return attributes;
+        }
+        for (Feature<?> feature : features.values()) {
+            if (feature == null || feature.getRules() == null) {
+                continue;
+            }
+            for (FeatureRule rule : (List<FeatureRule>) (List) feature.getRules()) {
+                if (rule.getVariations() != null && !rule.getVariations().isEmpty()) {
+                    attributes.add(rule.getHashAttribute() != null ? rule.getHashAttribute() : "id");
+                    if (rule.getFallbackAttribute() != null) {
+                        attributes.add(rule.getFallbackAttribute());
+                    }
+                }
+            }
+        }
+        return attributes;
+    }
+
+    /**
+     * Reads the user's sticky bucket documents, blocking the calling thread until they arrive.
+     *
+     * @return the documents, or {@code null} when the store could not be read. The caller then
+     * evaluates with this process's own assignments only and must not persist the result: a
+     * variation bucketed without the stored assignment could replace it in the store.
+     */
+    @Nullable
+    private Map<String, StickyAssignmentsDocument> fetchStickyDocsBlocking(Map<String, String> attributes) {
+        try {
+            return this.stickyBucketManager.fetchAssignmentsOnCallerThread(attributes).get();
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new RuntimeException("Interrupted while fetching sticky bucket assignments", e);
+        } catch (ExecutionException e) {
+            log.warn("Sticky bucket service failed to load assignments; continuing with normal bucketing"
+                    + " and not saving this evaluation's assignments.", e.getCause() == null ? e : e.getCause());
+            return null;
+        }
     }
 
     /** Attaches this client's own plugin registry so events never route through another client's plugins. */
     private EvaluationContext withPluginRegistry(EvaluationContext context) {
         context.setPluginRegistry(this.pluginRegistry);
+        context.setSharedExperimentTracker(this.exposureTracker);
+        context.setSuppressTrackingErrors(true);
         return context;
     }
 

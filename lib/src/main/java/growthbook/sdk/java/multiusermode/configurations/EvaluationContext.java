@@ -1,8 +1,12 @@
 package growthbook.sdk.java.multiusermode.configurations;
 
 import growthbook.sdk.java.model.FeatureResult;
+import growthbook.sdk.java.multiusermode.ExperimentTracker;
 import growthbook.sdk.java.plugin.PluginRegistry;
+import growthbook.sdk.java.stickyBucketing.StickyBucketDocWriter;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
+import lombok.ToString;
 import lombok.extern.slf4j.Slf4j;
 
 import javax.annotation.Nullable;
@@ -24,9 +28,44 @@ public class EvaluationContext {
      * Plugins registered with the owning GrowthBook instance. Carried per
      * evaluation context (not on the shared {@link Options}) so that separate
      * SDK instances built from the same {@code Options} stay isolated.
+     * Excluded from equals/hashCode/toString: identity-equality object, and its
+     * toString is noise in debug logs.
      */
     @Nullable
+    @EqualsAndHashCode.Exclude
+    @ToString.Exclude
     private PluginRegistry pluginRegistry;
+
+    /**
+     * Persistence seam for newly assigned sticky bucket documents, set by the
+     * owning multi-user client. When null the evaluator calls the configured
+     * synchronous service directly (legacy path, unchanged). Excluded from
+     * equals/hashCode/toString: lambdas have identity equality.
+     */
+    @Nullable
+    @EqualsAndHashCode.Exclude
+    @ToString.Exclude
+    private StickyBucketDocWriter stickyBucketDocWriter;
+
+    /**
+     * Exposure-dedup tracker shared by the owning multi-user client across all
+     * of its evaluations (including prerequisite evaluations, which allocate
+     * fresh evaluator instances). Null → the evaluator's own local tracker
+     * (legacy single-user path).
+     */
+    @Nullable
+    @EqualsAndHashCode.Exclude
+    @ToString.Exclude
+    private ExperimentTracker sharedExperimentTracker;
+
+    /**
+     * When true (set by the multi-user client), a throwing tracking callback is
+     * logged and its exposure retried instead of propagating out of evaluation —
+     * an analytics failure must not fail the assignment (JS/Python parity).
+     * False keeps the single-user {@code GrowthBook} behavior: the exception
+     * propagates and the exposure is not retried.
+     */
+    private boolean suppressTrackingErrors;
 
     public EvaluationContext(GlobalContext global, UserContext user, StackContext stack, Options options) {
         this.global = global;
