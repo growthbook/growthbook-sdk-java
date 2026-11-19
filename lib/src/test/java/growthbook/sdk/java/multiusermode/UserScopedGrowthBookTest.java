@@ -152,6 +152,31 @@ class UserScopedGrowthBookTest {
     }
 
     @Test
+    @DisplayName("A throwing per-user tracking callback does not break the experiment run and is retried")
+    void throwingPerUserTrackingCallbackDoesNotBreakRun() throws IOException {
+        // Given
+        ThrowingTrackingCallback userCallback = new ThrowingTrackingCallback();
+
+        GrowthBookClient client = initializedClient();
+        try {
+            UserScopedGrowthBook scoped = client.createScopedInstance(
+                    UserContext.builder().attributesJson("{\"id\":\"1\"}").build());
+            scoped.setTrackingCallback(userCallback);
+
+            // When
+            ExperimentResult<String> first = scoped.run(inlineExperiment());
+            ExperimentResult<String> second = scoped.run(inlineExperiment());
+
+            // Then
+            assertTrue(first.getInExperiment());
+            assertEquals(first.getValue(), second.getValue());
+            assertEquals(2, userCallback.calls.get());
+        } finally {
+            client.shutdown();
+        }
+    }
+
+    @Test
     @DisplayName("Verify: evaluations fall back to the client-level tracking callback when no per-user callback is set")
     void fallsBackToClientTrackingCallbackWhenNoPerUserCallback() throws IOException {
         // Given
@@ -508,6 +533,18 @@ class UserScopedGrowthBookTest {
                                         ExperimentResult<ValueType> experimentResult,
                                         UserContext userContext) {
             calls.incrementAndGet();
+        }
+    }
+
+    private static final class ThrowingTrackingCallback implements TrackingCallbackWithUser {
+        private final AtomicInteger calls = new AtomicInteger();
+
+        @Override
+        public <ValueType> void onTrack(Experiment<ValueType> experiment,
+                                        ExperimentResult<ValueType> experimentResult,
+                                        UserContext userContext) {
+            calls.incrementAndGet();
+            throw new IllegalStateException("tracking failed");
         }
     }
 
