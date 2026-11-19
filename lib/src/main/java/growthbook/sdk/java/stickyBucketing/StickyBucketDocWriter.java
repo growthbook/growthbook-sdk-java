@@ -15,6 +15,14 @@ import growthbook.sdk.java.model.StickyAssignmentsDocument;
  */
 @FunctionalInterface
 public interface StickyBucketDocWriter {
+
+    /**
+     * Drops every document. Set on the evaluation context when the user's stored assignments could
+     * not be read: that evaluation buckets normally, and persisting its result could replace the
+     * variation the store already holds for the user.
+     */
+    StickyBucketDocWriter DISCARDING = doc -> { };
+
     /**
      * Persist a newly assigned document. Must not throw into evaluation.
      *

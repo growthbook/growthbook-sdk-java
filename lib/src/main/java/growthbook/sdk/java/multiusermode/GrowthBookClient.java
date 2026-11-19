@@ -40,6 +40,7 @@ import growthbook.sdk.java.repository.FeatureSnapshot;
 import growthbook.sdk.java.repository.GBFeaturesRepository;
 import growthbook.sdk.java.repository.RefreshMode;
 import growthbook.sdk.java.stickyBucketing.AsyncStickyBucketService;
+import growthbook.sdk.java.stickyBucketing.StickyBucketDocWriter;
 import growthbook.sdk.java.stickyBucketing.SyncOffloadStickyBucketAdapter;
 import growthbook.sdk.java.util.GrowthBookJsonUtils;
 import com.google.gson.JsonElement;
@@ -47,6 +48,7 @@ import com.google.gson.JsonObject;
 import lombok.extern.slf4j.Slf4j;
 
 import javax.annotation.Nullable;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -61,11 +63,13 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Supplier;
 
 /**
  * Multi-user GrowthBook SDK facade.
@@ -92,9 +96,6 @@ public class GrowthBookClient {
     private final AtomicLong lastInitializationErrorAtMillis = new AtomicLong(0);
     private final AtomicBoolean clientShutdown = new AtomicBoolean(false);
 
-    /** Exposure dedup shared across all of this client's evaluations; sized for multi-user traffic. */
-    private final ExperimentTracker exposureTracker = new ExperimentTracker(10_000);
-
     /** Owns all sticky bucket I/O; null when no sticky bucket service is configured. */
     @Nullable
     private final StickyBucketManager stickyBucketManager;
@@ -104,12 +105,16 @@ public class GrowthBookClient {
     /** Resolved offload executor for async APIs; the owned pool unless the caller supplied one. */
     private final Executor asyncExecutor;
 
-    /** In-flight {@link #initializeAsync()} futures; completed with {@code false} if shutdown discards their task. */
-    private final Set<CompletableFuture<Boolean>> pendingInitializations = ConcurrentHashMap.newKeySet();
-    /** In-flight async evaluation futures; completed exceptionally if shutdown discards their task. */
-    private final Set<CompletableFuture<?>> pendingAsyncEvaluations = ConcurrentHashMap.newKeySet();
+    /**
+     * Futures returned by the asynchronous methods that are still pending, each with what
+     * {@link #shutdown()} completes it with, so no caller is left waiting on a discarded task.
+     */
+    private final Map<CompletableFuture<?>, Runnable> pendingAsync = new ConcurrentHashMap<>();
 
     private static final AtomicLong ASYNC_THREAD_COUNTER = new AtomicLong();
+
+    /** Exposure dedup shared across all of this client's evaluations; sized for multi-user traffic. */
+    private final ExperimentTracker exposureTracker = new ExperimentTracker(10_000);
 
     /**
      * Creates a client with default options.
@@ -150,13 +155,22 @@ public class GrowthBookClient {
         }
 
         if (this.options.isStickyBucketingConfigured()) {
-            AsyncStickyBucketService asyncService = this.options.getAsyncStickyBucketService() != null
-                    ? this.options.getAsyncStickyBucketService()
-                    : new SyncOffloadStickyBucketAdapter(this.options.getStickyBucketService(), this.asyncExecutor);
+            AsyncStickyBucketService asyncService = this.options.getAsyncStickyBucketService();
+            AsyncStickyBucketService callerThreadService = asyncService;
+            if (asyncService == null) {
+                // A blocking store can only be made non-blocking by spending a thread on it. The
+                // synchronous evaluation API already has one (the caller's), so only the
+                // asynchronous entry points go through the executor.
+                asyncService = new SyncOffloadStickyBucketAdapter(
+                        this.options.getStickyBucketService(), this.asyncExecutor);
+                callerThreadService = new CallerThreadStickyBucketAdapter(this.options.getStickyBucketService());
+            }
             this.stickyBucketManager = new StickyBucketManager(
                     asyncService,
+                    callerThreadService,
                     this.options.getStickyBucketCacheTtlSeconds(),
-                    this.options.getStickyBucketCacheSize());
+                    this.options.getStickyBucketCacheSize(),
+                    this.options.getStickyBucketTimeout().toMillis());
         } else {
             this.stickyBucketManager = null;
         }
@@ -166,9 +180,10 @@ public class GrowthBookClient {
     }
 
     /**
-     * Bounded daemon pool for blocking I/O offload — sized for I/O, not CPU. Fixed core==max with
-     * idle timeout so a quiet client holds zero threads. Default AbortPolicy: a saturated pool
-     * surfaces the rejection rather than running blocking store I/O on the request thread.
+     * Bounded daemon pool for the asynchronous entry points' blocking I/O offload — sized for I/O,
+     * not CPU. Fixed core==max with idle timeout so a quiet client holds zero threads. Default
+     * AbortPolicy: a saturated pool rejects the task instead of running blocking store I/O on the
+     * thread that asked not to be blocked. The synchronous evaluation API never uses this pool.
      */
     private static ExecutorService newOwnedAsyncExecutor() {
         int threads = Math.max(8, 2 * Runtime.getRuntime().availableProcessors());
@@ -281,25 +296,59 @@ public class GrowthBookClient {
     }
 
     /**
-     * Async twin of {@link #initialize()}: loads features without blocking the caller. Validation and
-     * fetching run on the client's offload executor, so the returned future completes with {@code false}
-     * on invalid options or a failed fetch rather than throwing. A concurrent {@link #shutdown()} never
-     * leaves the future hanging — the underlying {@link #initialize()} call always completes.
+     * Async twin of {@link #initialize()}: loads features without blocking the caller. It runs
+     * {@link #initialize()} on the client's executor and holds one of its threads for the fetch.
+     * The returned future never completes exceptionally: it completes with {@code false} on invalid
+     * options, a failed fetch, an executor that rejects the task, or a {@link #shutdown()} that
+     * comes first.
      *
      * @return a future completing with whether the client is ready for evaluation
      */
     public CompletableFuture<Boolean> initializeAsync() {
-        CompletableFuture<Boolean> future = CompletableFuture.supplyAsync(this::initialize, this.asyncExecutor);
-        pendingInitializations.add(future);
-        future.whenComplete((ready, error) -> pendingInitializations.remove(future));
+        // A task still queued when shutdown() runs must not start a repository on a closed client.
+        Supplier<Boolean> initializeUnlessShutDown = () -> !clientShutdown.get() && initialize();
+        CompletableFuture<Boolean> future = supplyOnExecutor(initializeUnlessShutDown).exceptionally(error -> {
+            log.error("Failed to initialize growthbook instance", error);
+            return false;
+        });
+        return completeOnShutdown(future, () -> future.complete(false));
+    }
+
+    /**
+     * {@code supplyAsync} on the client's executor that reports a rejected task through the returned
+     * future instead of throwing, so an asynchronous method never fails on the calling thread.
+     */
+    private <T> CompletableFuture<T> supplyOnExecutor(Supplier<T> supplier) {
+        try {
+            return CompletableFuture.supplyAsync(supplier, this.asyncExecutor);
+        } catch (RejectedExecutionException e) {
+            CompletableFuture<T> rejected = new CompletableFuture<>();
+            rejected.completeExceptionally(e);
+            return rejected;
+        }
+    }
+
+    /**
+     * Registers a pending future with what {@link #shutdown()} must complete it with. A future
+     * registered after shutdown has already swept is completed here, so the race between the two
+     * cannot leave it pending.
+     */
+    private <T> CompletableFuture<T> completeOnShutdown(CompletableFuture<T> future, Runnable onShutdown) {
+        if (future.isDone()) {
+            return future;
+        }
+        pendingAsync.put(future, onShutdown);
+        future.whenComplete((result, error) -> pendingAsync.remove(future));
+        if (clientShutdown.get()) {
+            onShutdown.run();
+        }
         return future;
     }
 
-    /** Registers an async evaluation future so shutdown can complete it rather than leave it hanging. */
+    /** An async evaluation that {@link #shutdown()} completes exceptionally if it is still pending. */
     private <T> CompletableFuture<T> trackAsyncEvaluation(CompletableFuture<T> future) {
-        pendingAsyncEvaluations.add(future);
-        future.whenComplete((result, error) -> pendingAsyncEvaluations.remove(future));
-        return future;
+        return completeOnShutdown(future, () -> future.completeExceptionally(
+                new IllegalStateException("GrowthBookClient has been shut down")));
     }
 
     private void recordInitializationFailure(Throwable error) {
@@ -648,12 +697,26 @@ public class GrowthBookClient {
      * caller on sticky bucket or remote-eval I/O. With no sticky bucket service configured and local
      * evaluation, the returned future is already complete.
      *
+     * <p>These rules apply to every {@code ...Async} evaluation method:
+     * <ul>
+     *   <li>Evaluation, tracking callbacks and the caller's continuations run on the client's
+     *       executor or on the calling thread, never on the sticky bucket store's completion thread.</li>
+     *   <li>A sticky bucket read that fails, is rejected or times out does not fail the future: the
+     *       evaluation continues with normal bucketing and saves nothing.</li>
+     *   <li>The future completes exceptionally when the executor rejects the work or when
+     *       {@link #shutdown()} comes first. Nothing is thrown on the calling thread.</li>
+     *   <li>Only an {@link AsyncStickyBucketService} keeps the wait free of threads. A blocking
+     *       {@code StickyBucketService} holds one executor thread per store call, and remote
+     *       evaluation holds one per evaluation. The continuation runs on the same executor, so while
+     *       every one of its threads is waiting on a blocking store,
+     *       {@link Options#getStickyBucketTimeout()} cannot release an evaluation until one is free.</li>
+     * </ul>
+     *
      * @param key            feature key
      * @param valueTypeClass expected value class
      * @param userContext    user context
      * @param <ValueType>    feature value type
-     * @return a future completing with the feature result; completes exceptionally when a configured
-     *         sticky bucket store fails
+     * @return a future completing with the feature result
      */
     public <ValueType> CompletableFuture<FeatureResult<ValueType>> evalFeatureAsync(String key,
                                                                                     Class<ValueType> valueTypeClass,
@@ -688,7 +751,8 @@ public class GrowthBookClient {
 
     /**
      * Async twin of {@link #getFeatureValue(String, Object, Class, UserContext)}: same deserialization
-     * and default-value semantics.
+     * and default-value semantics. Unlike the other async methods, the returned future never completes
+     * exceptionally: a rejecting executor or a {@link #shutdown()} that comes first gives the default.
      *
      * @param featureKey              feature key
      * @param defaultValue            value when the feature is missing or evaluation fails
@@ -701,7 +765,12 @@ public class GrowthBookClient {
                                                                          ValueType defaultValue,
                                                                          Class<ValueType> gsonDeserializableClass,
                                                                          UserContext userContext) {
-        return trackAsyncEvaluation(getEvalContextAsync(userContext).thenApply(evalContext -> {
+        // One stage, so cancelling the returned future skips the evaluation like the other async methods.
+        CompletableFuture<ValueType> future = getEvalContextAsync(userContext).handle((evalContext, error) -> {
+            if (error != null) {
+                log.warn("Async feature value evaluation failed for {}; returning default", featureKey, error);
+                return defaultValue;
+            }
             try {
                 Object evaluatedValue = featureEvaluator
                         .evaluateFeature(featureKey, evalContext, gsonDeserializableClass).getValue();
@@ -714,12 +783,8 @@ public class GrowthBookClient {
                 log.error(e.getMessage(), e);
                 return defaultValue;
             }
-        }).exceptionally(throwable -> {
-            // A failed sticky read (or any context-build failure) falls back to the default, matching
-            // the synchronous getFeatureValue contract instead of surfacing the failure to the caller.
-            log.warn("Async feature value evaluation failed for {}; returning default", featureKey, throwable);
-            return defaultValue;
-        }));
+        });
+        return completeOnShutdown(future, () -> future.complete(defaultValue));
     }
 
     /**
@@ -893,17 +958,12 @@ public class GrowthBookClient {
                 this.ownedAsyncExecutor.shutdownNow();
             }
         }
-        // Complete any async operation whose queued task shutdownNow() discarded, so a caller is never
-        // left waiting forever: initialize futures resolve to "not ready", evaluations complete
-        // exceptionally. Still-live futures remove themselves and ignore these no-op completions.
-        for (CompletableFuture<Boolean> pending : pendingInitializations) {
-            pending.complete(false);
+        // Resolve every async operation that is still pending, so a caller is never left waiting on a
+        // task shutdownNow() discarded. A continuation that runs later finds its future complete and
+        // skips the evaluation.
+        for (Runnable onShutdown : new ArrayList<>(pendingAsync.values())) {
+            onShutdown.run();
         }
-        pendingInitializations.clear();
-        for (CompletableFuture<?> pending : pendingAsyncEvaluations) {
-            pending.completeExceptionally(new IllegalStateException("GrowthBookClient has been shut down"));
-        }
-        pendingAsyncEvaluations.clear();
         featureRepositoryProvider.shutdown();
         this.remoteEvalCoordinator.shutdown();
         listenerExecutor.shutdown();
@@ -941,19 +1001,22 @@ public class GrowthBookClient {
         // Capture ONE feature snapshot for both identifier derivation and evaluation, so a refresh
         // landing mid-read cannot pair new rules with documents fetched for the old identifiers.
         GlobalContext snapshot = this.globalContextManager.getCurrentGlobalContext();
+        boolean stickyReadFailed = false;
         if (this.stickyBucketManager != null && safeUserContext.getStickyBucketAssignmentDocs() == null) {
-            // Scoped async read: fetch the user's sticky docs through the manager (coalesced, cached,
+            // Scoped read: fetch the user's sticky docs through the manager (coalesced, cached,
             // overlaid with this process's own writes) and populate the context so the managers' own
-            // synchronous preload skips. A read failure propagates out of eval for an async service
-            // (JS/Python parity); a blocking service keeps its log-and-continue behaviour.
+            // synchronous preload skips. A blocking service is read on this thread.
             JsonObject mergedAttributes = mergeGlobalAttributes(safeUserContext.getAttributes());
             Map<String, String> identifiers =
                     stickyIdentifierAttributesFor(mergedAttributes, snapshot, inlineIdentifierAttributes);
+            Map<String, StickyAssignmentsDocument> docs = fetchStickyDocsBlocking(identifiers);
+            stickyReadFailed = docs == null;
             UserContext scoped = safeUserContext.withAttributes(safeUserContext.getAttributes());
-            scoped.setStickyBucketAssignmentDocs(fetchStickyDocsBlocking(identifiers));
+            scoped.setStickyBucketAssignmentDocs(
+                    stickyReadFailed ? this.stickyBucketManager.localAssignments(identifiers) : docs);
             safeUserContext = scoped;
         }
-        return buildEvalContext(safeUserContext, snapshot);
+        return buildEvalContext(safeUserContext, snapshot, stickyWriter(stickyReadFailed, true));
     }
 
     private CompletableFuture<EvaluationContext> getEvalContextAsync(UserContext userContext) {
@@ -965,38 +1028,68 @@ public class GrowthBookClient {
         UserContext safeUserContext = userContext == null ? UserContext.builder().build() : userContext;
         GlobalContext snapshot = this.globalContextManager.getCurrentGlobalContext();
         if (this.options.isRemoteEvalEnabled()) {
-            return CompletableFuture.supplyAsync(() -> buildEvalContext(safeUserContext, snapshot), this.asyncExecutor);
+            return supplyOnExecutor(() -> buildEvalContext(safeUserContext, snapshot, stickyWriter(false, false)));
         }
         if (this.stickyBucketManager == null || safeUserContext.getStickyBucketAssignmentDocs() != null) {
-            return CompletableFuture.completedFuture(buildEvalContext(safeUserContext, snapshot));
+            return CompletableFuture.completedFuture(
+                    buildEvalContext(safeUserContext, snapshot, stickyWriter(false, false)));
         }
         Map<String, String> identifiers = stickyIdentifierAttributesFor(
                 mergeGlobalAttributes(safeUserContext.getAttributes()), snapshot, inlineIdentifierAttributes);
         UserContext scoped = safeUserContext.withAttributes(safeUserContext.getAttributes());
         // handleAsync (not thenApplyAsync) so BOTH success and failure hop to the offload executor: a
-        // rejecting store must never run caller continuations (whenComplete/exceptionally) on its own
-        // completion thread — e.g. a Netty event loop during an outage.
+        // rejecting store must never run evaluation or caller continuations on its own completion
+        // thread — e.g. a Netty event loop during an outage.
         return this.stickyBucketManager.fetchAssignments(identifiers)
                 .handleAsync((docs, error) -> {
-                    if (error != null) {
-                        Throwable cause = error instanceof CompletionException && error.getCause() != null
-                                ? error.getCause() : error;
-                        scoped.setStickyBucketAssignmentDocs(recoverFailedStickyRead(identifiers, cause));
-                    } else {
-                        scoped.setStickyBucketAssignmentDocs(docs);
+                    boolean stickyReadFailed = error != null;
+                    if (stickyReadFailed) {
+                        logFailedStickyRead(error instanceof CompletionException && error.getCause() != null
+                                ? error.getCause() : error);
                     }
-                    return buildEvalContext(scoped, snapshot);
+                    scoped.setStickyBucketAssignmentDocs(
+                            stickyReadFailed ? this.stickyBucketManager.localAssignments(identifiers) : docs);
+                    return buildEvalContext(scoped, snapshot, stickyWriter(stickyReadFailed, false));
                 }, this.asyncExecutor);
     }
 
-    private EvaluationContext buildEvalContext(UserContext safeUserContext, GlobalContext snapshot) {
+    private EvaluationContext buildEvalContext(UserContext safeUserContext, GlobalContext snapshot,
+                                               @Nullable StickyBucketDocWriter stickyWriter) {
         EvaluationContext context = this.options.isRemoteEvalEnabled()
                 ? this.remoteEvalCoordinator.createEvaluationContext(safeUserContext)
                 : this.globalContextManager.createEvaluationContext(safeUserContext, snapshot);
-        if (this.stickyBucketManager != null) {
-            context.setStickyBucketDocWriter(this.stickyBucketManager::recordAndSave);
+        if (stickyWriter != null) {
+            context.setStickyBucketDocWriter(stickyWriter);
         }
         return withPluginRegistry(context);
+    }
+
+    /**
+     * The sticky bucket document writer for one evaluation.
+     *
+     * @param stickyReadFailed whether the user's stored documents could not be read; the evaluation
+     *                         then buckets normally and its assignments are dropped, because saving
+     *                         them could replace the variation the store already holds
+     * @param callerMayBlock   true for the synchronous API, which writes a blocking service on the
+     *                         calling thread; false for the asynchronous API, which never blocks
+     * @return the writer, or {@code null} when sticky bucketing is not configured
+     */
+    @Nullable
+    private StickyBucketDocWriter stickyWriter(boolean stickyReadFailed, boolean callerMayBlock) {
+        if (this.stickyBucketManager == null) {
+            return null;
+        }
+        if (stickyReadFailed) {
+            return StickyBucketDocWriter.DISCARDING;
+        }
+        return callerMayBlock
+                ? this.stickyBucketManager::recordAndSaveOnCallerThread
+                : this.stickyBucketManager::recordAndSave;
+    }
+
+    private static void logFailedStickyRead(Throwable cause) {
+        log.warn("Sticky bucket service failed to load assignments; continuing with normal bucketing"
+                + " and not saving this evaluation's assignments.", cause);
     }
 
     /** The sticky identifier attributes an inline experiment reads, so its persisted assignment is loaded. */
@@ -1017,6 +1110,11 @@ public class GrowthBookClient {
      * context perform no sticky bucket I/O. The context's {@code stickyBucketAssignmentDocs} is
      * populated and the same instance is returned. The populated map is concurrency-safe, so the
      * returned context may be reused across concurrent evaluations.
+     *
+     * <p>The read covers the attributes the loaded features' experiments hash on, plus
+     * {@code Options.stickyBucketIdentifierAttributes}. An inline experiment later passed to
+     * {@code run} with this context is covered only if its hash attribute is one of those; list it
+     * in {@code stickyBucketIdentifierAttributes} otherwise, or its stored assignment is not read.
      *
      * @param userContext the request-scoped user context to prefetch for
      * @return a future completing with the same context, docs populated
@@ -1074,17 +1172,24 @@ public class GrowthBookClient {
         return StickyAttributeValues.of(mergedAttributes, identifiers);
     }
 
+    /**
+     * Every attribute a loaded feature's experiment can hash on, plus the configured ones. The
+     * configured list only adds to the derived set: an experiment whose hash attribute were left
+     * unread would be bucketed again and its stored assignment replaced.
+     */
     private Set<String> resolveStickyIdentifierAttributes(GlobalContext snapshot) {
-        List<String> configured = this.options.getStickyBucketIdentifierAttributes();
-        if (configured != null && !configured.isEmpty()) {
-            return new HashSet<>(configured);
-        }
         Set<String> derived = snapshot.getDerivedStickyIdentifierAttributes();
         if (derived == null) {
             derived = deriveStickyIdentifierAttributes(snapshot.getFeatures());
             snapshot.setDerivedStickyIdentifierAttributes(derived);
         }
-        return derived;
+        List<String> configured = this.options.getStickyBucketIdentifierAttributes();
+        if (configured == null || configured.isEmpty()) {
+            return derived;
+        }
+        Set<String> identifiers = new HashSet<>(derived);
+        identifiers.addAll(configured);
+        return identifiers;
     }
 
     @SuppressWarnings({"unchecked", "rawtypes"})
@@ -1109,35 +1214,24 @@ public class GrowthBookClient {
         return attributes;
     }
 
+    /**
+     * Reads the user's sticky bucket documents, blocking the calling thread until they arrive.
+     *
+     * @return the documents, or {@code null} when the store could not be read. The caller then
+     * evaluates with this process's own assignments only and must not persist the result: a
+     * variation bucketed without the stored assignment could replace it in the store.
+     */
+    @Nullable
     private Map<String, StickyAssignmentsDocument> fetchStickyDocsBlocking(Map<String, String> attributes) {
         try {
-            return this.stickyBucketManager.fetchAssignments(attributes).get();
+            return this.stickyBucketManager.fetchAssignmentsOnCallerThread(attributes).get();
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
             throw new RuntimeException("Interrupted while fetching sticky bucket assignments", e);
         } catch (ExecutionException e) {
-            return recoverFailedStickyRead(attributes, e.getCause() == null ? e : e.getCause());
+            logFailedStickyRead(e.getCause() == null ? e : e.getCause());
+            return null;
         }
-    }
-
-    /**
-     * Applies the sticky read failure policy. A blocking {@code StickyBucketService} keeps its
-     * log-and-continue behaviour: evaluation proceeds with only this process's own assignments. An
-     * {@link AsyncStickyBucketService} failure is rethrown so evaluation fails (JS/Python parity).
-     *
-     * @return this process's own documents for {@code attributes}, when the failure is recovered
-     * @throws RuntimeException the failure itself, when it is not recovered
-     */
-    private Map<String, StickyAssignmentsDocument> recoverFailedStickyRead(Map<String, String> attributes,
-                                                                          Throwable cause) {
-        if (this.options.getAsyncStickyBucketService() == null) {
-            log.warn("Sticky bucket service failed to load assignments; continuing with normal bucketing.", cause);
-            return this.stickyBucketManager.localAssignments(attributes);
-        }
-        if (cause instanceof RuntimeException) {
-            throw (RuntimeException) cause;
-        }
-        throw new RuntimeException("Failed to fetch sticky bucket assignments", cause);
     }
 
     /** Attaches this client's own plugin registry so events never route through another client's plugins. */

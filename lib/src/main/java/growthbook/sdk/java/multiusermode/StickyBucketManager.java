@@ -3,6 +3,7 @@ package growthbook.sdk.java.multiusermode;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import growthbook.sdk.java.model.StickyAssignmentsDocument;
+import growthbook.sdk.java.multiusermode.configurations.Options;
 import growthbook.sdk.java.stickyBucketing.AsyncStickyBucketService;
 import lombok.extern.slf4j.Slf4j;
 
@@ -19,6 +20,9 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.RejectedExecutionException;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicLong;
@@ -47,16 +51,34 @@ import java.util.concurrent.locks.ReentrantLock;
  *       the shared fetch (reserve-then-start: waiters only ever see dependent
  *       stages of the reserved future).</li>
  *   <li><b>Bounded memory:</b> the authoritative map is pruned to
- *       {@value #STICKY_DOCS_MAX} entries (least-recently-saved first); dirty or
- *       in-flight documents are never evicted, nor is any document whose save
- *       completed after the oldest currently in-flight fetch started (an
- *       overlay against that fetch's result still needs it).</li>
+ *       {@value #STICKY_DOCS_MAX} entries. Saved documents go first
+ *       (least-recently-saved first), except one whose save completed after the
+ *       oldest currently in-flight fetch started (an overlay against that
+ *       fetch's result still needs it). If that is not enough, documents whose
+ *       save failed are dropped oldest first, with a warning: a store that
+ *       stays unwritable must not grow the map without limit. A document with
+ *       a save in flight is never evicted.</li>
  * </ul>
  *
  * <p>Threading: no {@code synchronized} (virtual-thread friendly) and no side
  * effects inside {@code ConcurrentHashMap} compute lambdas (bin locks are
  * hidden monitors; a synchronously-completing service would otherwise re-enter
  * them). Store calls are launched outside all locks.
+ *
+ * <p>Two views of the store: {@code service} never blocks its caller and backs
+ * the asynchronous entry points; {@code callerThreadService} backs the
+ * synchronous evaluation API. For a natively asynchronous store they are the
+ * same object. For a blocking {@code StickyBucketService} the first offloads
+ * to an executor and the second runs the call on the calling thread, so a
+ * synchronous evaluation never queues behind a pool it does not need.
+ *
+ * <p>Timeout: a store call that has not completed within the configured timeout
+ * fails with a {@link TimeoutException}, so a store that never answers cannot
+ * hold an evaluation, a coalesced fetch or a key's save slot forever. The call
+ * itself is not cancelled and a result that arrives later is ignored, so a save
+ * re-attempted after a timeout can overlap the abandoned one. A blocking store
+ * called on the calling thread returns before it can be timed and is bounded by
+ * its own client's timeout instead.
  */
 @Slf4j
 final class StickyBucketManager {
@@ -64,6 +86,7 @@ final class StickyBucketManager {
     static final int STICKY_DOCS_MAX = 1000;
 
     private final AsyncStickyBucketService service;
+    private final AsyncStickyBucketService callerThreadService;
 
     /** Authoritative record of every document this process has written, keyed attributeName||attributeValue. */
     private final ConcurrentHashMap<String, StickyAssignmentsDocument> authoritativeDocs = new ConcurrentHashMap<>();
@@ -81,12 +104,42 @@ final class StickyBucketManager {
     @Nullable
     private final Cache<Map<String, String>, Map<String, StickyAssignmentsDocument>> readCache;
 
+    private final long timeoutMillis;
+
+    /** Fails store calls that outlive {@link #timeoutMillis}; null when the timeout is disabled. */
+    @Nullable
+    private final ScheduledThreadPoolExecutor timeoutScheduler;
+
     private volatile boolean draining = false;
 
     StickyBucketManager(AsyncStickyBucketService service,
                         @Nullable Long cacheTtlSeconds,
                         @Nullable Integer cacheSize) {
+        this(service, service, cacheTtlSeconds, cacheSize);
+    }
+
+    StickyBucketManager(AsyncStickyBucketService service,
+                        AsyncStickyBucketService callerThreadService,
+                        @Nullable Long cacheTtlSeconds,
+                        @Nullable Integer cacheSize) {
+        this(service, callerThreadService, cacheTtlSeconds, cacheSize,
+                Options.DEFAULT_STICKY_BUCKET_TIMEOUT.toMillis());
+    }
+
+    /**
+     * @param service             non-blocking view of the store, used by the asynchronous entry points
+     * @param callerThreadService view used by the synchronous evaluation API; may block its caller
+     * @param timeoutMillis       how long a store call may take before it is failed; zero disables the timeout
+     */
+    StickyBucketManager(AsyncStickyBucketService service,
+                        AsyncStickyBucketService callerThreadService,
+                        @Nullable Long cacheTtlSeconds,
+                        @Nullable Integer cacheSize,
+                        long timeoutMillis) {
         this.service = service;
+        this.callerThreadService = callerThreadService;
+        this.timeoutMillis = timeoutMillis;
+        this.timeoutScheduler = timeoutMillis > 0 ? newTimeoutScheduler() : null;
         boolean cacheEnabled = cacheTtlSeconds != null && cacheTtlSeconds > 0
                 && (cacheSize == null || cacheSize > 0);
         this.readCache = cacheEnabled
@@ -95,6 +148,46 @@ final class StickyBucketManager {
                 .expireAfterWrite(cacheTtlSeconds, TimeUnit.SECONDS)
                 .build()
                 : null;
+    }
+
+    /** One daemon thread, started by the first call that has to be timed. */
+    private static ScheduledThreadPoolExecutor newTimeoutScheduler() {
+        ScheduledThreadPoolExecutor scheduler = new ScheduledThreadPoolExecutor(1, runnable -> {
+            Thread thread = new Thread(runnable, "growthbook-sticky-timeout");
+            thread.setDaemon(true);
+            return thread;
+        });
+        scheduler.setRemoveOnCancelPolicy(true); // a completed call must not leave its timer queued
+        return scheduler;
+    }
+
+    /**
+     * The outcome of a store call, or a {@link TimeoutException} if it is still pending when the
+     * timeout elapses. A call that is already complete is never timed.
+     */
+    private <T> CompletableFuture<T> withTimeout(CompletionStage<T> storeCall, String operation) {
+        CompletableFuture<T> outcome = new CompletableFuture<>();
+        storeCall.whenComplete((value, error) -> {
+            if (error != null) {
+                outcome.completeExceptionally(error);
+            } else {
+                outcome.complete(value);
+            }
+        });
+        if (timeoutScheduler == null || outcome.isDone()) {
+            return outcome;
+        }
+        ScheduledFuture<?> timer;
+        try {
+            timer = timeoutScheduler.schedule(() -> {
+                outcome.completeExceptionally(new TimeoutException(
+                        "Sticky bucket " + operation + " did not complete within " + timeoutMillis + "ms"));
+            }, timeoutMillis, TimeUnit.MILLISECONDS);
+        } catch (RejectedExecutionException e) {
+            return outcome; // the client has shut down; nothing is left to time the call with
+        }
+        outcome.whenComplete((value, error) -> timer.cancel(false));
+        return outcome;
     }
 
     private static final class FetchEntry {
@@ -118,11 +211,26 @@ final class StickyBucketManager {
 
     /**
      * Fetch the sticky bucket documents for these identifier attributes, with
-     * this process's own writes overlaid. Failures propagate (a rejecting
-     * store completes the future exceptionally — matching the JS and Python
-     * SDKs, which never silently evaluate without sticky data).
+     * this process's own writes overlaid. A failing or rejecting store
+     * completes the future exceptionally; the caller decides what to evaluate
+     * with, and must not persist assignments bucketed without the stored ones.
      */
     CompletableFuture<Map<String, StickyAssignmentsDocument>> fetchAssignments(Map<String, String> attributes) {
+        return fetchAssignments(attributes, this.service);
+    }
+
+    /**
+     * {@link #fetchAssignments} for the synchronous evaluation API: a blocking store is read on the
+     * calling thread, so the returned future is already complete for the caller that started the
+     * read. Concurrent callers for the same attributes still share that one store call.
+     */
+    CompletableFuture<Map<String, StickyAssignmentsDocument>> fetchAssignmentsOnCallerThread(
+            Map<String, String> attributes) {
+        return fetchAssignments(attributes, this.callerThreadService);
+    }
+
+    private CompletableFuture<Map<String, StickyAssignmentsDocument>> fetchAssignments(
+            Map<String, String> attributes, AsyncStickyBucketService via) {
         if (attributes.isEmpty()) {
             return CompletableFuture.completedFuture(overlay(attributes, Collections.emptyMap()));
         }
@@ -146,51 +254,68 @@ final class StickyBucketManager {
             }
             FetchEntry created = new FetchEntry(sequence.incrementAndGet());
             if (inflightFetches.putIfAbsent(key, created) == null) {
-                startFetch(key, created);
+                startFetch(key, created, via);
                 return created.future.thenApply(StickyBucketManager::copyDocs);
             }
         }
     }
 
-    private void startFetch(Map<String, String> key, FetchEntry entry) {
-        if (draining) {
-            inflightFetches.remove(key, entry);
-            entry.future.completeExceptionally(new IllegalStateException("client is shutting down"));
-            return;
-        }
-        CompletionStage<Map<String, StickyAssignmentsDocument>> stage;
+    private void startFetch(Map<String, String> key, FetchEntry entry, AsyncStickyBucketService via) {
+        CompletionStage<Map<String, StickyAssignmentsDocument>> storeCall;
         try {
-            stage = service.getAllAssignments(key);
-        } catch (RuntimeException e) {
+            // After shutdown the client's own resources are gone: the pool that offloads a blocking
+            // store, and the timer that bounds a read of an asynchronous one. Only a blocking store
+            // read on the calling thread needs neither, so only that read is still served.
+            if (draining && via == service) {
+                throw new IllegalStateException("client is shutting down");
+            }
+            storeCall = via.getAllAssignments(key);
+        } catch (RuntimeException | Error e) {
             // Includes RejectedExecutionException from an offload executor at
             // saturation: surface it, don't silently evaluate without sticky data.
-            inflightFetches.remove(key, entry);
-            entry.future.completeExceptionally(e);
+            finishFetch(key, entry, null, e);
+            if (e instanceof Error) {
+                throw (Error) e;
+            }
             return;
         }
-        if (stage == null) {
-            entry.future.complete(overlay(key, Collections.emptyMap()));
-            inflightFetches.remove(key, entry);
+        if (storeCall == null) {
+            finishFetch(key, entry, null, null);
             return;
         }
-        stage.whenComplete((fetched, error) -> {
+        withTimeout(storeCall, "read").whenComplete((fetched, error) -> finishFetch(key, entry, fetched, error));
+    }
+
+    /**
+     * The single exit of a fetch: completes its future, with the overlaid documents or with the
+     * failure, and deregisters it. Whatever the store did, the fetch is never left pending, or later
+     * reads for the same user would wait on it forever.
+     */
+    private void finishFetch(Map<String, String> key,
+                             FetchEntry entry,
+                             @Nullable Map<String, StickyAssignmentsDocument> fetched,
+                             @Nullable Throwable error) {
+        try {
             if (error != null) {
-                inflightFetches.remove(key, entry);
                 entry.future.completeExceptionally(error);
                 return;
             }
             Map<String, StickyAssignmentsDocument> result =
                     fetched == null ? Collections.emptyMap() : fetched;
+            // Overlay this process's writes while the fetch is still registered: its startSequence
+            // keeps eviction from pruning a document a waiter still needs until the merge is done.
+            Map<String, StickyAssignmentsDocument> overlaid = overlay(key, result);
             if (readCache != null) {
                 readCache.put(key, result); // successful raw fetches only
             }
-            // Overlay this process's writes while the fetch is still registered: its startSequence
-            // keeps eviction from pruning a document a waiter still needs until the merge is done.
-            // Only then drop the entry (a later re-fetch starts a fresh store call).
-            Map<String, StickyAssignmentsDocument> overlaid = overlay(key, result);
             entry.future.complete(overlaid);
-            inflightFetches.remove(key, entry);
-        });
+        } catch (RuntimeException e) {
+            // The store is user-supplied code: an answer that cannot be used (a null key, for one)
+            // is a failed read.
+            entry.future.completeExceptionally(e);
+        } finally {
+            inflightFetches.remove(key, entry); // a later read starts a fresh store call
+        }
     }
 
     /**
@@ -221,8 +346,8 @@ final class StickyBucketManager {
 
     /**
      * This process's own documents for these identifier attributes, without a store read. Used
-     * when a store read failed and evaluation continues anyway, so in-process assignments still
-     * hold. Returns a fresh, mutable, concurrency-safe map, like {@link #fetchAssignments}.
+     * when a store read failed and evaluation continues anyway, so assignments this process made
+     * while the store was readable still hold. Returns a fresh, mutable, concurrency-safe map, like {@link #fetchAssignments}.
      */
     Map<String, StickyAssignmentsDocument> localAssignments(Map<String, String> attributes) {
         return overlay(attributes, Collections.<String, StickyAssignmentsDocument>emptyMap());
@@ -253,12 +378,25 @@ final class StickyBucketManager {
      * fire-and-forget. The document actually written to the store is re-read
      * from the authoritative map at save time, so a trailing save always writes
      * the latest merged state. A failed or rejected save is logged and leaves the
-     * key dirty: the document stays in the authoritative map, is never evicted
-     * while dirty, and the next write to the key or {@link #flush()} re-attempts it.
-     * Failed saves are not retried on their own, so a dirty key is held in memory
-     * until a later attempt succeeds.
+     * key dirty: the document stays in the authoritative map and the next write to
+     * the key or {@link #flush()} re-attempts it. Failed saves are not retried on
+     * their own, so a dirty key is held in memory until a later attempt succeeds
+     * or the map outgrows {@value #STICKY_DOCS_MAX} entries and it is dropped.
      */
     CompletableFuture<Void> recordAndSave(StickyAssignmentsDocument doc) {
+        return recordAndSave(doc, this.service);
+    }
+
+    /**
+     * {@link #recordAndSave} for the synchronous evaluation API: a blocking store is written on the
+     * calling thread unless a save for the same key is already in flight, in which case that save
+     * re-writes the merged document when it completes.
+     */
+    CompletableFuture<Void> recordAndSaveOnCallerThread(StickyAssignmentsDocument doc) {
+        return recordAndSave(doc, this.callerThreadService);
+    }
+
+    private CompletableFuture<Void> recordAndSave(StickyAssignmentsDocument doc, AsyncStickyBucketService via) {
         String key = doc.getAttributeName() + "||" + doc.getAttributeValue();
         while (true) {
             SaveState state = saveStates.computeIfAbsent(key, k -> new SaveState()); // pure creation only
@@ -288,26 +426,29 @@ final class StickyBucketManager {
                 state.lock.unlock();
             }
             if (start) {
-                driveSave(key, state); // outside the map AND the state lock
+                driveSave(key, state, via); // outside the map AND the state lock
             }
             return waiter.thenApply(v -> v); // dependent copy: caller cancel() can't detach other writers
         }
     }
 
-    private void driveSave(String key, SaveState state) {
+    private void driveSave(String key, SaveState state, AsyncStickyBucketService via) {
         StickyAssignmentsDocument snapshot = authoritativeDocs.get(key);
         CompletableFuture<Void> saveFuture;
         boolean rejected = false;
+        Error fatal = null;
         try {
-            CompletionStage<Void> stage = snapshot == null ? null : service.saveAssignments(snapshot);
-            saveFuture = stage == null
+            CompletionStage<Void> storeCall = snapshot == null ? null : via.saveAssignments(snapshot);
+            saveFuture = storeCall == null
                     ? CompletableFuture.completedFuture(null)
-                    : stage.toCompletableFuture();
-        } catch (RuntimeException e) {
+                    : withTimeout(storeCall, "save");
+        } catch (RuntimeException | Error e) {
             // Typically RejectedExecutionException from an offload executor at
             // saturation or during drain: keep the key dirty for a later re-kick.
+            // An Error is rethrown below, after the key's save slot has been released.
             log.warn("Sticky bucket save could not be scheduled for {}; will retry on next write or flush", key, e);
             rejected = true;
+            fatal = e instanceof Error ? (Error) e : null;
             saveFuture = CompletableFuture.completedFuture(null);
         }
 
@@ -336,12 +477,15 @@ final class StickyBucketManager {
                 state.lock.unlock();
             }
             if (again) {
-                driveSave(key, state);
+                driveSave(key, state, via);
             } else {
                 quiescent.complete(null);
                 pruneAuthoritativeDocs();
             }
         });
+        if (fatal != null) {
+            throw fatal;
+        }
     }
 
     // ------------------------------------------------------------- lifecycle
@@ -381,7 +525,7 @@ final class StickyBucketManager {
                 state.lock.unlock();
             }
             if (kick) {
-                driveSave(entry.getKey(), state);
+                driveSave(entry.getKey(), state, this.service);
             }
             if (waiter != null) {
                 pending.add(waiter);
@@ -394,7 +538,10 @@ final class StickyBucketManager {
                 .thenCompose(ignored -> flush(roundsLeft - 1, reattempted));
     }
 
-    /** Stop accepting new fetches; writes still merge into the authoritative map. */
+    /**
+     * Called at shutdown. From here on a read is served only for a blocking store on the calling
+     * thread; every other read fails at once. Writes still merge into the authoritative map.
+     */
     void startDraining() {
         this.draining = true;
     }
@@ -414,6 +561,9 @@ final class StickyBucketManager {
             // Unblock readers before the offload executor is torn down: a queued fetch task discarded
             // by shutdownNow() would otherwise never complete its future, hanging fetchAssignments().get().
             failInflightFetches();
+            if (timeoutScheduler != null) {
+                timeoutScheduler.shutdownNow();
+            }
         }
     }
 
@@ -428,6 +578,21 @@ final class StickyBucketManager {
 
     // -------------------------------------------------------------- eviction
 
+    /** A document that may be evicted, as seen under its state lock during the scan. */
+    private static final class EvictionCandidate {
+        final String key;
+        final SaveState state;
+        final boolean unsaved;
+        final long sequence;
+
+        EvictionCandidate(String key, SaveState state) {
+            this.key = key;
+            this.state = state;
+            this.unsaved = state.dirty;
+            this.sequence = state.lastSaveCompletedSequence;
+        }
+    }
+
     private void pruneAuthoritativeDocs() {
         if (authoritativeDocs.size() <= STICKY_DOCS_MAX) {
             return;
@@ -437,41 +602,54 @@ final class StickyBucketManager {
             oldestInflightFetchStart = Math.min(oldestInflightFetchStart, entry.startSequence);
         }
 
-        List<Map.Entry<String, SaveState>> candidates = new ArrayList<>();
+        List<EvictionCandidate> candidates = new ArrayList<>();
         for (Map.Entry<String, SaveState> entry : saveStates.entrySet()) {
             SaveState state = entry.getValue();
             state.lock.lock();
             try {
-                if (!state.inFlight && !state.dirty
-                        && state.lastSaveCompletedSequence < oldestInflightFetchStart) {
-                    candidates.add(entry);
+                // dirty and not in flight: the last save failed, so the store never got this document.
+                boolean evictable = !state.inFlight
+                        && (state.dirty || state.lastSaveCompletedSequence < oldestInflightFetchStart);
+                if (evictable) {
+                    candidates.add(new EvictionCandidate(entry.getKey(), state));
                 }
             } finally {
                 state.lock.unlock();
             }
         }
-        candidates.sort(Comparator.comparingLong(e -> e.getValue().lastSaveCompletedSequence));
+        // Saved documents first: evicting one loses nothing. Unsaved ones only if that is not enough.
+        candidates.sort(Comparator.<EvictionCandidate, Boolean>comparing(c -> c.unsaved)
+                .thenComparingLong(c -> c.sequence));
 
         int excess = authoritativeDocs.size() - STICKY_DOCS_MAX;
+        int unsavedDropped = 0;
         List<String> evictedDocKeys = new ArrayList<>();
-        for (Map.Entry<String, SaveState> entry : candidates) {
+        for (EvictionCandidate candidate : candidates) {
             if (excess <= 0) {
                 break;
             }
-            SaveState state = entry.getValue();
+            SaveState state = candidate.state;
             state.lock.lock();
             try {
-                if (state.inFlight || state.dirty) {
-                    continue; // became active since the scan — never evict unsaved local truth
+                if (state.inFlight || state.dirty != candidate.unsaved) {
+                    continue; // written or saved since the scan
                 }
-                if (authoritativeDocs.remove(entry.getKey()) != null) {
+                if (authoritativeDocs.remove(candidate.key) != null) {
                     excess--;
-                    evictedDocKeys.add(entry.getKey());
+                    evictedDocKeys.add(candidate.key);
+                    if (candidate.unsaved) {
+                        unsavedDropped++;
+                    }
                 }
-                saveStates.remove(entry.getKey(), state);
+                saveStates.remove(candidate.key, state);
             } finally {
                 state.lock.unlock();
             }
+        }
+        if (unsavedDropped > 0) {
+            log.warn("Dropped {} sticky bucket document(s) whose save failed: more than {} documents are held"
+                            + " in memory. Their assignments were never stored, so those users are bucketed"
+                            + " again on their next evaluation.", unsavedDropped, STICKY_DOCS_MAX);
         }
         invalidateCachedReadsFor(evictedDocKeys);
     }

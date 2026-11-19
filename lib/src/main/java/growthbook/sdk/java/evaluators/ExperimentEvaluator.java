@@ -417,9 +417,7 @@ public class ExperimentEvaluator implements IExperimentEvaluator {
                 log.debug("Skipping malformed remote evaluation tracking payload.");
                 continue;
             }
-            // Remote-eval track payloads always suppress callback failures
-            // (pre-existing behavior); the failed exposure is now also un-marked
-            // so it retries instead of being lost.
+            // Remote-eval track payloads never propagate a callback failure.
             trackExposure(context, track.getExperiment(), track.getResult(), true);
         }
     }
@@ -427,8 +425,7 @@ public class ExperimentEvaluator implements IExperimentEvaluator {
     /**
      * Fires the user tracking callback and any registered plugins for a single exposure.
      * Plugin failures are isolated by {@link PluginRegistry}; a throwing user callback
-     * propagates to {@code trackExposure}, which un-marks the dedup key and either
-     * logs (multi-user client) or rethrows (legacy single-user contract).
+     * propagates to {@code trackExposure}, which decides whether to retry, log or rethrow.
      */
     private <ValueType> void dispatchExperimentViewed(
             EvaluationContext context,
@@ -447,12 +444,12 @@ public class ExperimentEvaluator implements IExperimentEvaluator {
     }
 
     /**
-     * Deduped exposure delivery. When the callback throws, the dedup key is
-     * un-marked so the exposure is retried on a later evaluation instead of
-     * being lost forever (the tracker used to mark before dispatch and never
-     * un-mark). {@code suppressErrors} controls whether the exception is then
-     * logged (multi-user client — an analytics failure must not fail the
-     * assignment) or rethrown (legacy single-user contract).
+     * Deduped exposure delivery. On the multi-user client a throwing callback
+     * un-marks the dedup key, so the exposure is retried on a later evaluation
+     * instead of being lost. The single-user {@code GrowthBook} class keeps its
+     * existing behavior: the key stays marked and the exposure is not retried.
+     *
+     * @param suppressErrors log the callback failure instead of rethrowing it
      */
     private <ValueType> void trackExposure(EvaluationContext context,
                                            Experiment<ValueType> experiment,
@@ -460,18 +457,23 @@ public class ExperimentEvaluator implements IExperimentEvaluator {
                                            boolean suppressErrors) {
         ExperimentTracker tracker = trackerFor(context);
         String key = trackingKey(experiment, result);
-        if (!tracker.markIfFirst(key)) {
+        Object claim = tracker.markIfFirst(key);
+        if (claim == null) {
             return;
         }
         try {
             dispatchExperimentViewed(context, experiment, result);
         } catch (RuntimeException e) {
-            tracker.untrack(key);
-            if (suppressErrors) {
-                log.error("Tracking callback failed; the exposure will be retried on the next evaluation.", e);
-            } else {
+            boolean retry = context.isSuppressTrackingErrors();
+            if (retry) {
+                tracker.untrack(key, claim);
+            }
+            if (!suppressErrors) {
                 throw e;
             }
+            log.error(retry
+                    ? "Tracking callback failed; the exposure will be retried on the next evaluation."
+                    : "Tracking callback failed.", e);
         }
     }
 

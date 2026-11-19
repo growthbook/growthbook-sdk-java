@@ -11,9 +11,10 @@ import java.util.concurrent.Executor;
 /**
  * Presents a blocking {@link StickyBucketService} as an
  * {@link AsyncStickyBucketService} by running each call on the supplied
- * executor. This is how the multi-user client keeps legacy synchronous
- * services working without blocking the evaluating thread; it is public so
- * applications composing their own pipelines can reuse it.
+ * executor. The multi-user client uses it for its asynchronous entry points,
+ * which must not block their caller; its synchronous evaluation API calls the
+ * blocking service on the calling thread instead. It is public so applications
+ * composing their own pipelines can reuse it.
  *
  * <p>{@link #getAllAssignments} is offloaded as ONE task wrapping the
  * delegate's own {@code getAllAssignments}, preserving batched implementations

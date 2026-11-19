@@ -34,6 +34,9 @@ import java.util.concurrent.Executor;
 @Slf4j
 public class Options {
 
+    /** Default for {@link #stickyBucketTimeout}. */
+    public static final Duration DEFAULT_STICKY_BUCKET_TIMEOUT = Duration.ofSeconds(5);
+
     public Options(@Nullable Boolean enabled,
                    Boolean isQaMode,
                    @Nullable Boolean isCacheDisabled,
@@ -162,7 +165,8 @@ public class Options {
                 asyncStickyBucketService,
                 asyncExecutor,
                 stickyBucketCacheTtlSeconds,
-                stickyBucketCacheSize
+                stickyBucketCacheSize,
+                null
         );
     }
 
@@ -238,6 +242,7 @@ public class Options {
                 null,
                 null,
                 null,
+                null,
                 null
         );
     }
@@ -282,7 +287,7 @@ public class Options {
                 featureRefreshCallback, globalAttributes, globalForcedFeatureValues,
                 globalForcedVariationsMap, cacheManager, cacheMode, cacheDirectory, remoteEval,
                 cacheKeyAttributes, remoteEvalCacheSize, remoteEvalCacheTtlSeconds,
-                backgroundFetchInterval, retryPolicy, null, null, plugins, null, null, null, null
+                backgroundFetchInterval, retryPolicy, null, null, plugins, null, null, null, null, null
         );
     }
 
@@ -329,7 +334,7 @@ public class Options {
                 globalForcedVariationsMap, cacheManager, cacheMode, cacheDirectory, remoteEval,
                 cacheKeyAttributes, remoteEvalCacheSize, remoteEvalCacheTtlSeconds,
                 backgroundFetchInterval, retryPolicy, featureRefreshListenerExecutor,
-                sseReconnectOnFailure, plugins, null, null, null, null
+                sseReconnectOnFailure, plugins, null, null, null, null, null
         );
     }
 
@@ -367,7 +372,8 @@ public class Options {
                    @Nullable AsyncStickyBucketService asyncStickyBucketService,
                    @Nullable Executor asyncExecutor,
                    @Nullable Long stickyBucketCacheTtlSeconds,
-                   @Nullable Integer stickyBucketCacheSize
+                   @Nullable Integer stickyBucketCacheSize,
+                   @Nullable Duration stickyBucketTimeout
     ) {
         this.enabled = enabled == null || enabled;
         this.isQaMode = isQaMode != null && isQaMode;
@@ -403,6 +409,7 @@ public class Options {
         this.asyncExecutor = asyncExecutor;
         this.stickyBucketCacheTtlSeconds = stickyBucketCacheTtlSeconds;
         this.stickyBucketCacheSize = stickyBucketCacheSize == null ? 1000 : stickyBucketCacheSize;
+        this.stickyBucketTimeout = stickyBucketTimeout;
     }
 
     /**
@@ -450,7 +457,9 @@ public class Options {
     private String decryptionKey;
 
     /**
-     * List of user's attributes keys.
+     * Attribute keys whose sticky bucket documents are read for every user, in addition to the
+     * attributes the loaded features' experiments hash on (those are always read). Needed only for
+     * attributes the SDK cannot derive, such as the hash attribute of an inline experiment.
      */
     @Nullable
     private List<String> stickyBucketIdentifierAttributes;
@@ -597,20 +606,22 @@ public class Options {
      * exclusive with {@link #stickyBucketService} — configure exactly one.
      * See {@link AsyncStickyBucketService} for the contract.
      *
-     * <p>A failed read from this service fails the evaluation. A failed read from a
-     * blocking {@link #stickyBucketService} is logged and evaluation continues
-     * with normal bucketing.
+     * <p>A failed read from either kind of service is logged and that evaluation
+     * continues with normal bucketing, but none of its assignments are saved: a
+     * variation bucketed without the stored assignment must not replace it.
      */
     @Nullable
     private AsyncStickyBucketService asyncStickyBucketService;
 
     /**
-     * Executor for the client's asynchronous work: offloading blocking
-     * {@link StickyBucketService} calls and composing async evaluations. When
-     * null, the client creates its own bounded daemon pool and shuts it down in
-     * {@code shutdown()}; a caller-supplied executor is never shut down by the
-     * SDK. On JDK 21+, pass {@code Executors.newVirtualThreadPerTaskExecutor()}
-     * so blocking offloads scale with the store instead of a fixed pool.
+     * Executor for the client's asynchronous entry points: offloading blocking
+     * {@link StickyBucketService} calls and composing async evaluations. The
+     * synchronous evaluation API never uses it; it calls a blocking service on
+     * the calling thread. When null, the client creates its own bounded daemon
+     * pool and shuts it down in {@code shutdown()}; a caller-supplied executor
+     * is never shut down by the SDK. On JDK 21+, pass
+     * {@code Executors.newVirtualThreadPerTaskExecutor()} so blocking offloads
+     * scale with the store instead of a fixed pool.
      */
     @Nullable
     private Executor asyncExecutor;
@@ -631,6 +642,24 @@ public class Options {
      * {@link #stickyBucketCacheTtlSeconds} is set.
      */
     private Integer stickyBucketCacheSize;
+
+    /**
+     * How long the multi-user client waits for one sticky bucket store call, read or save
+     * (default {@link #DEFAULT_STICKY_BUCKET_TIMEOUT}, 5 seconds). A read that takes longer is handled
+     * like any failed read: that evaluation continues with normal bucketing and saves
+     * nothing. A save that takes longer is handled like any failed save. {@link Duration#ZERO}
+     * disables the timeout.
+     *
+     * <p>The store call itself is not cancelled. A blocking {@link StickyBucketService} called
+     * by the synchronous evaluation API runs on the calling thread and is bounded by its own
+     * client's timeout, not by this one.
+     */
+    @Nullable
+    private Duration stickyBucketTimeout;
+
+    public Duration getStickyBucketTimeout() {
+        return stickyBucketTimeout == null ? DEFAULT_STICKY_BUCKET_TIMEOUT : stickyBucketTimeout;
+    }
 
     public boolean isSseReconnectOnFailure() {
         return sseReconnectOnFailure == null || sseReconnectOnFailure;

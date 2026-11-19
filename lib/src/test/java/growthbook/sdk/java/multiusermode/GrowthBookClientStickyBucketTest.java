@@ -1,7 +1,10 @@
 package growthbook.sdk.java.multiusermode;
 
+import com.github.tomakehurst.wiremock.WireMockServer;
+import com.github.tomakehurst.wiremock.core.WireMockConfiguration;
 import growthbook.sdk.java.model.Experiment;
 import growthbook.sdk.java.model.ExperimentResult;
+import growthbook.sdk.java.model.FeatureResult;
 import growthbook.sdk.java.model.StickyAssignmentsDocument;
 import growthbook.sdk.java.multiusermode.configurations.Options;
 import growthbook.sdk.java.multiusermode.configurations.OptionsValidator;
@@ -12,9 +15,11 @@ import growthbook.sdk.java.stickyBucketing.StickyBucketService;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
@@ -27,10 +32,12 @@ import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
+import static com.github.tomakehurst.wiremock.client.WireMock.get;
+import static com.github.tomakehurst.wiremock.client.WireMock.urlPathMatching;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
@@ -51,6 +58,7 @@ class GrowthBookClientStickyBucketTest {
         final AtomicInteger saveCalls = new AtomicInteger();
         volatile CountDownLatch saveGate = null; // when set, saves complete only after the gate opens
         volatile boolean failFetches = false;
+        volatile boolean hangFetches = false; // when set, reads never complete
 
         @Override
         public CompletionStage<StickyAssignmentsDocument> getAssignments(String attributeName, String attributeValue) {
@@ -86,6 +94,9 @@ class GrowthBookClientStickyBucketTest {
         @Override
         public CompletionStage<Map<String, StickyAssignmentsDocument>> getAllAssignments(Map<String, String> attributes) {
             fetchCalls.add(attributes);
+            if (hangFetches) {
+                return new CompletableFuture<>();
+            }
             if (failFetches) {
                 CompletableFuture<Map<String, StickyAssignmentsDocument>> failed = new CompletableFuture<>();
                 failed.completeExceptionally(new IllegalStateException("store unavailable"));
@@ -106,6 +117,7 @@ class GrowthBookClientStickyBucketTest {
     private static final class RecordingSyncStickyService implements StickyBucketService {
         final InMemoryStickyBucketServiceImpl delegate = new InMemoryStickyBucketServiceImpl();
         final List<String> fetchThreads = new CopyOnWriteArrayList<>();
+        final List<String> saveThreads = new CopyOnWriteArrayList<>();
         final AtomicInteger batchedFetchCalls = new AtomicInteger();
         volatile boolean failFetches = false;
 
@@ -116,6 +128,7 @@ class GrowthBookClientStickyBucketTest {
 
         @Override
         public void saveAssignments(StickyAssignmentsDocument doc) {
+            saveThreads.add(Thread.currentThread().getName());
             delegate.saveAssignments(doc);
         }
 
@@ -147,6 +160,22 @@ class GrowthBookClientStickyBucketTest {
         return UserContext.builder()
                 .attributesJson("{\"id\":\"" + id + "\",\"" + extraAttr + "\":\"x\",\"premium\":true}")
                 .build();
+    }
+
+    /** The variation key the user is NOT hashed into, so a stored assignment differs from normal bucketing. */
+    private static String variationKeyOtherThanHashed(Experiment<String> experiment, UserContext user) {
+        GrowthBookClient plain = new GrowthBookClient(Options.builder().build());
+        try {
+            return plain.run(experiment, user).getVariationId() == 0 ? "treatment" : "control";
+        } finally {
+            plain.shutdown();
+        }
+    }
+
+    private static StickyAssignmentsDocument storedAssignment(String userId, String experimentKey, String variationKey) {
+        Map<String, String> assignments = new HashMap<>();
+        assignments.put(experimentKey + "__0", variationKey);
+        return new StickyAssignmentsDocument("id", userId, assignments);
     }
 
     private static Options stickyOptions(GatedAsyncStickyService service) {
@@ -189,6 +218,93 @@ class GrowthBookClientStickyBucketTest {
         }
     }
 
+    /** A client whose loaded feature runs an experiment hashed on {@code deviceId}. */
+    private static GrowthBookClient clientWithDeviceIdExperiment(WireMockServer wireMock,
+                                                                 GatedAsyncStickyService service,
+                                                                 List<String> configuredIdentifiers) {
+        wireMock.stubFor(get(urlPathMatching("/api/features/.*")).willReturn(aResponse().withStatus(200)
+                .withHeader("Content-Type", "application/json")
+                .withBody("{\"features\":{\"exp-flag\":{\"defaultValue\":\"off\",\"rules\":[{\"key\":\"exp-flag\","
+                        + "\"hashAttribute\":\"deviceId\",\"variations\":[\"control\",\"treatment\"],"
+                        + "\"meta\":[{\"key\":\"0\"},{\"key\":\"1\"}]}]}}}")));
+        GrowthBookClient client = new GrowthBookClient(Options.builder()
+                .apiHost("http://localhost:" + wireMock.port())
+                .clientKey("sticky-identifiers")
+                .isCacheDisabled(true)
+                .asyncStickyBucketService(service)
+                .stickyBucketIdentifierAttributes(configuredIdentifiers)
+                .build());
+        assertTrue(client.initialize());
+        return client;
+    }
+
+    /** Stores, for {@code deviceId||d1}, the variation the user is NOT hashed into; returns its value. */
+    private static String storeTheOtherVariation(WireMockServer wireMock, GatedAsyncStickyService service) {
+        GrowthBookClient plain = clientWithDeviceIdExperiment(wireMock, new GatedAsyncStickyService(), null);
+        String hashed;
+        try {
+            hashed = String.valueOf(plain.evalFeature("exp-flag", String.class, deviceUser()).getValue());
+        } finally {
+            plain.shutdown();
+        }
+        Map<String, String> assignments = new HashMap<>();
+        assignments.put("exp-flag__0", "control".equals(hashed) ? "1" : "0");
+        assignments.put("other-exp__0", "1");
+        service.store.put("deviceId||d1", new StickyAssignmentsDocument("deviceId", "d1", assignments));
+        return "control".equals(hashed) ? "treatment" : "control";
+    }
+
+    private static UserContext deviceUser() {
+        return UserContext.builder().attributesJson("{\"id\":\"u1\",\"deviceId\":\"d1\"}").build();
+    }
+
+    @Test
+    @Timeout(30)
+    void aStoredAssignmentOnAnAttributeOutsideTheConfiguredListIsHonoured() {
+        WireMockServer wireMock = new WireMockServer(WireMockConfiguration.options().dynamicPort());
+        wireMock.start();
+        GatedAsyncStickyService service = new GatedAsyncStickyService();
+        String stored = storeTheOtherVariation(wireMock, service);
+        // The configured list names only "id"; the experiment hashes on "deviceId".
+        GrowthBookClient client = clientWithDeviceIdExperiment(wireMock, service, Collections.singletonList("id"));
+        try {
+            FeatureResult<String> result = client.evalFeature("exp-flag", String.class, deviceUser());
+            client.flushStickyBucketSaves().join();
+
+            assertEquals(stored, String.valueOf(result.getValue()), "the stored variation must win over normal bucketing");
+            assertEquals(0, service.saveCalls.get(), "nothing new was assigned, so nothing is saved");
+            assertEquals("1", service.store.get("deviceId||d1").getAssignments().get("other-exp__0"),
+                    "the rest of the stored document must be untouched");
+            assertTrue(service.fetchCalls.get(service.fetchCalls.size() - 1).keySet()
+                            .containsAll(Arrays.asList("id", "deviceId")),
+                    "configured and derived identifiers are both read; calls=" + service.fetchCalls);
+        } finally {
+            client.shutdown();
+            wireMock.stop();
+        }
+    }
+
+    @Test
+    @Timeout(30)
+    void withoutAConfiguredListTheLoadedFeaturesHashAttributesAreRead() {
+        WireMockServer wireMock = new WireMockServer(WireMockConfiguration.options().dynamicPort());
+        wireMock.start();
+        GatedAsyncStickyService service = new GatedAsyncStickyService();
+        String stored = storeTheOtherVariation(wireMock, service);
+        GrowthBookClient client = clientWithDeviceIdExperiment(wireMock, service, null);
+        try {
+            FeatureResult<String> result = client.evalFeature("exp-flag", String.class, deviceUser());
+
+            assertEquals(stored, String.valueOf(result.getValue()));
+            assertEquals(Collections.singleton("deviceId"),
+                    service.fetchCalls.get(service.fetchCalls.size() - 1).keySet(),
+                    "only the attribute the loaded experiment hashes on is read");
+        } finally {
+            client.shutdown();
+            wireMock.stop();
+        }
+    }
+
     @Test
     @Timeout(30)
     void fetchesAreScopedToIdentifierAttributes() {
@@ -209,21 +325,42 @@ class GrowthBookClientStickyBucketTest {
 
     @Test
     @Timeout(30)
-    void syncServiceIsOffloadedAndBatched() {
+    void synchronousEvaluationCallsABlockingServiceOnTheCallingThread() {
         RecordingSyncStickyService service = new RecordingSyncStickyService();
         GrowthBookClient client = new GrowthBookClient(Options.builder()
                 .stickyBucketService(service)
                 .stickyBucketIdentifierAttributes(Collections.singletonList("id"))
                 .build());
         try {
-            client.run(experiment("exp-offload"), user("u1", "country"));
+            client.run(experiment("exp-inline"), user("u1", "country"));
 
             assertEquals(1, service.batchedFetchCalls.get(),
-                    "sync service must be offloaded as ONE batched getAllAssignments call");
-            for (String threadName : service.fetchThreads) {
-                assertTrue(threadName.startsWith("growthbook-async-"),
-                        "blocking sync service must run on the SDK pool, ran on: " + threadName);
-            }
+                    "a blocking service must be read with ONE batched getAllAssignments call");
+            String caller = Thread.currentThread().getName();
+            assertEquals(Collections.singletonList(caller), service.fetchThreads,
+                    "a synchronous evaluation must read a blocking service on its own thread");
+            assertEquals(Collections.singletonList(caller), service.saveThreads,
+                    "a synchronous evaluation must write a blocking service on its own thread");
+        } finally {
+            client.shutdown();
+        }
+    }
+
+    @Test
+    @Timeout(30)
+    void prefetchOffloadsABlockingServiceToTheExecutor() throws Exception {
+        RecordingSyncStickyService service = new RecordingSyncStickyService();
+        GrowthBookClient client = new GrowthBookClient(Options.builder()
+                .stickyBucketService(service)
+                .stickyBucketIdentifierAttributes(Collections.singletonList("id"))
+                .build());
+        try {
+            client.prefetchStickyBuckets(user("u1", "country")).get(GATE_TIMEOUT_SECONDS, TimeUnit.SECONDS);
+
+            assertEquals(1, service.fetchThreads.size());
+            assertTrue(service.fetchThreads.get(0).startsWith("growthbook-async-"),
+                    "an asynchronous entry point must not block its caller on a blocking service, ran on: "
+                            + service.fetchThreads.get(0));
         } finally {
             client.shutdown();
         }
@@ -270,14 +407,71 @@ class GrowthBookClientStickyBucketTest {
 
     @Test
     @Timeout(30)
-    void fetchFailureFromAsyncServicePropagates() {
+    void fetchFailureFromAsyncServiceContinuesWithoutSaving() {
         GatedAsyncStickyService service = new GatedAsyncStickyService();
         service.failFetches = true;
         GrowthBookClient client = new GrowthBookClient(stickyOptions(service));
         try {
-            assertThrows(RuntimeException.class,
-                    () -> client.run(experiment("exp-fail"), user("u1", "country")),
-                    "a failing sticky store must not silently produce non-sticky assignments");
+            ExperimentResult<String> result = client.run(experiment("exp-fail"), user("u1", "country"));
+
+            assertNotNull(result.getValue(), "a failing store must fall back to normal bucketing");
+            client.flushStickyBucketSaves().join();
+            assertEquals(0, service.saveCalls.get(),
+                    "an assignment bucketed without the stored documents must not be saved");
+        } finally {
+            client.shutdown();
+        }
+    }
+
+    @Test
+    @Timeout(30)
+    void failedReadNeverReplacesTheStoredAssignmentInAnAsyncStore() {
+        Experiment<String> experiment = experiment("exp-keep-async");
+        UserContext user = user("u1", "country");
+        String stored = variationKeyOtherThanHashed(experiment, user);
+        GatedAsyncStickyService service = new GatedAsyncStickyService();
+        service.store.put("id||u1", storedAssignment("u1", "exp-keep-async", stored));
+        GrowthBookClient client = new GrowthBookClient(stickyOptions(service));
+        try {
+            service.failFetches = true;
+            client.run(experiment, user);
+            client.flushStickyBucketSaves().join();
+
+            assertEquals(stored, service.store.get("id||u1").getAssignments().get("exp-keep-async__0"),
+                    "a failed read must leave the stored variation untouched");
+
+            service.failFetches = false;
+            ExperimentResult<String> recovered = client.run(experiment, user);
+
+            assertEquals(stored, recovered.getKey(),
+                    "once the store is readable again the user must get the stored variation back");
+            assertTrue(Boolean.TRUE.equals(recovered.getStickyBucketUsed()));
+        } finally {
+            client.shutdown();
+        }
+    }
+
+    @Test
+    @Timeout(30)
+    void aStoreThatNeverAnswersDoesNotHangEvaluationOrReplaceTheStoredAssignment() {
+        Experiment<String> experiment = experiment("exp-hang");
+        UserContext user = user("u1", "country");
+        String stored = variationKeyOtherThanHashed(experiment, user);
+        GatedAsyncStickyService service = new GatedAsyncStickyService();
+        service.store.put("id||u1", storedAssignment("u1", "exp-hang", stored));
+        GrowthBookClient client = new GrowthBookClient(Options.builder()
+                .asyncStickyBucketService(service)
+                .stickyBucketIdentifierAttributes(Collections.singletonList("id"))
+                .stickyBucketTimeout(Duration.ofMillis(50))
+                .build());
+        try {
+            service.hangFetches = true;
+
+            ExperimentResult<String> result = client.run(experiment, user);
+
+            assertNotNull(result, "evaluation must return once the read times out");
+            assertEquals(0, service.saveCalls.get(), "a timed-out read is a failed read: nothing is saved");
+            assertEquals(stored, service.store.get("id||u1").getAssignments().get("exp-hang__0"));
         } finally {
             client.shutdown();
         }
@@ -297,6 +491,8 @@ class GrowthBookClientStickyBucketTest {
 
             assertNotNull(result.getValue(), "a failing blocking service must fall back to normal bucketing");
             assertEquals(1, service.batchedFetchCalls.get());
+            assertTrue(service.saveThreads.isEmpty(),
+                    "an assignment bucketed without the stored documents must not be saved");
         } finally {
             client.shutdown();
         }
@@ -304,15 +500,45 @@ class GrowthBookClientStickyBucketTest {
 
     @Test
     @Timeout(30)
-    void syncServiceReadFailureStillServesThisProcessesOwnAssignments() {
+    void failedReadNeverReplacesTheStoredAssignmentInABlockingStore() {
+        Experiment<String> experiment = experiment("exp-keep-sync");
+        UserContext user = user("u1", "country");
+        String stored = variationKeyOtherThanHashed(experiment, user);
         RecordingSyncStickyService service = new RecordingSyncStickyService();
-        service.failFetches = true;
+        service.delegate.saveAssignments(storedAssignment("u1", "exp-keep-sync", stored));
+        GrowthBookClient client = new GrowthBookClient(Options.builder()
+                .stickyBucketService(service)
+                .stickyBucketIdentifierAttributes(Collections.singletonList("id"))
+                .build());
+        try {
+            service.failFetches = true;
+            client.run(experiment, user);
+
+            assertEquals(stored, service.delegate.getAssignments("id", "u1").getAssignments().get("exp-keep-sync__0"),
+                    "a failed read must leave the stored variation untouched");
+
+            service.failFetches = false;
+            ExperimentResult<String> recovered = client.run(experiment, user);
+
+            assertEquals(stored, recovered.getKey(),
+                    "once the store is readable again the user must get the stored variation back");
+            assertTrue(Boolean.TRUE.equals(recovered.getStickyBucketUsed()));
+        } finally {
+            client.shutdown();
+        }
+    }
+
+    @Test
+    @Timeout(30)
+    void readFailureStillServesAssignmentsThisProcessMadeWhileTheStoreWasReadable() {
+        RecordingSyncStickyService service = new RecordingSyncStickyService();
         GrowthBookClient client = new GrowthBookClient(Options.builder()
                 .stickyBucketService(service)
                 .stickyBucketIdentifierAttributes(Collections.singletonList("id"))
                 .build());
         try {
             ExperimentResult<String> first = client.run(experiment("exp-sync-ryw"), user("u1", "country"));
+            service.failFetches = true;
             ExperimentResult<String> second = client.run(experiment("exp-sync-ryw"), user("u1", "country"));
 
             assertEquals(first.getVariationId(), second.getVariationId());
@@ -325,7 +551,7 @@ class GrowthBookClientStickyBucketTest {
 
     @Test
     @Timeout(30)
-    void saturatedOffloadPoolDoesNotFailEvaluationForSyncService() {
+    void synchronousEvaluationIsUnaffectedByASaturatedExecutor() {
         RecordingSyncStickyService service = new RecordingSyncStickyService();
         GrowthBookClient client = new GrowthBookClient(Options.builder()
                 .stickyBucketService(service)
@@ -333,10 +559,14 @@ class GrowthBookClientStickyBucketTest {
                 .asyncExecutor(new RejectingExecutor())
                 .build());
         try {
-            ExperimentResult<String> result = client.run(experiment("exp-saturated"), user("u1", "country"));
+            ExperimentResult<String> first = client.run(experiment("exp-saturated"), user("u1", "country"));
+            ExperimentResult<String> second = client.run(experiment("exp-saturated"), user("u1", "country"));
 
-            assertNotNull(result.getValue(), "a rejected offload must fall back to normal bucketing");
-            assertEquals(0, service.batchedFetchCalls.get(), "the rejected read never reached the service");
+            assertEquals(2, service.batchedFetchCalls.get(), "each synchronous read must reach the service");
+            assertNotNull(service.delegate.getAssignments("id", "u1"), "the assignment must reach the store");
+            assertEquals(first.getVariationId(), second.getVariationId());
+            assertTrue(Boolean.TRUE.equals(second.getStickyBucketUsed()),
+                    "the second evaluation must be served from the stored assignment");
         } finally {
             client.shutdown();
         }
@@ -402,6 +632,28 @@ class GrowthBookClientStickyBucketTest {
         client.run(experiment("exp-shutdown"), user("u1", "country"));
         client.shutdown();
         assertNotNull(service.store.get("id||u1"), "shutdown must flush pending saves");
+    }
+
+    @Test
+    @Timeout(30)
+    void anEvaluationAfterShutdownStillReadsABlockingStore() {
+        // A request still in flight when the application shuts the client down must get the
+        // user's stored variation, as it did before the manager existed.
+        Experiment<String> experiment = experiment("exp-after-shutdown");
+        UserContext user = user("u1", "country");
+        String stored = variationKeyOtherThanHashed(experiment, user);
+        RecordingSyncStickyService service = new RecordingSyncStickyService();
+        service.delegate.saveAssignments(storedAssignment("u1", "exp-after-shutdown", stored));
+        GrowthBookClient client = new GrowthBookClient(Options.builder()
+                .stickyBucketService(service)
+                .stickyBucketIdentifierAttributes(Collections.singletonList("id"))
+                .build());
+        client.shutdown();
+
+        ExperimentResult<String> result = client.run(experiment, user);
+
+        assertEquals(stored, result.getKey());
+        assertTrue(Boolean.TRUE.equals(result.getStickyBucketUsed()));
     }
 
     @Test

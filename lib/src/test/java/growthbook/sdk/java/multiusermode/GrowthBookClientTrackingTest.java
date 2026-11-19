@@ -2,11 +2,15 @@ package growthbook.sdk.java.multiusermode;
 
 import com.github.tomakehurst.wiremock.WireMockServer;
 import com.github.tomakehurst.wiremock.core.WireMockConfiguration;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 import growthbook.sdk.java.evaluators.ExperimentEvaluator;
 import growthbook.sdk.java.model.Experiment;
 import growthbook.sdk.java.model.ExperimentResult;
 import growthbook.sdk.java.model.FeatureResult;
 import growthbook.sdk.java.model.FeatureResultSource;
+import growthbook.sdk.java.model.ParentCondition;
+import growthbook.sdk.java.model.TrackData;
 import growthbook.sdk.java.multiusermode.configurations.EvaluationContext;
 import growthbook.sdk.java.multiusermode.configurations.GlobalContext;
 import growthbook.sdk.java.multiusermode.configurations.Options;
@@ -18,6 +22,8 @@ import org.junit.jupiter.api.Timeout;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -34,7 +40,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * Exposure-tracking hardening on the multi-user client: a throwing callback
  * never fails the assignment and its exposure is retried (the dedup key is
  * un-marked); dedup holds across many users (no 30-entry LRU thrash); the
- * legacy single-user propagation contract is unchanged.
+ * single-user path is unchanged (the exception propagates, no retry).
  */
 class GrowthBookClientTrackingTest {
 
@@ -162,25 +168,192 @@ class GrowthBookClientTrackingTest {
 
     @Test
     @Timeout(30)
-    void legacyContextsKeepPropagatingCallbackExceptions() {
+    void prerequisiteExposureIsNotRefiredOnLaterEvaluations() {
+        Map<String, AtomicInteger> tracksByExperiment = new ConcurrentHashMap<>();
+        TrackingCallbackWithUser counting = new TrackingCallbackWithUser() {
+            @Override
+            public <ValueType> void onTrack(Experiment<ValueType> experiment,
+                                            ExperimentResult<ValueType> result,
+                                            UserContext userContext) {
+                tracksByExperiment.computeIfAbsent(experiment.getKey(), k -> new AtomicInteger()).incrementAndGet();
+            }
+        };
+        WireMockServer wireMock = new WireMockServer(WireMockConfiguration.options().dynamicPort());
+        wireMock.start();
+        GrowthBookClient client = null;
+        try {
+            wireMock.stubFor(get(urlPathMatching("/api/features/.*"))
+                    .willReturn(aResponse()
+                            .withStatus(200)
+                            .withHeader("Content-Type", "application/json")
+                            .withBody("{\"features\":{\"parent\":{\"defaultValue\":\"off\",\"rules\":[{"
+                                    + "\"key\":\"parent-exp\",\"variations\":[\"a\",\"b\"],\"hashAttribute\":\"id\"}]}}}")));
+
+            client = new GrowthBookClient(Options.builder()
+                    .apiHost("http://localhost:" + wireMock.port())
+                    .clientKey("sdk-tracking-test")
+                    .isCacheDisabled(true)
+                    .trackingCallBackWithUser(counting)
+                    .build());
+            assertTrue(client.initialize(), "client failed to initialize");
+
+            JsonObject parentIsDefined = JsonParser.parseString("{\"value\":{\"$exists\":true}}").getAsJsonObject();
+            Experiment<String> child = Experiment.<String>builder()
+                    .key("child-exp")
+                    .variations(new ArrayList<>(Arrays.asList("control", "treatment")))
+                    .parentConditions(new ArrayList<>(Collections.singletonList(
+                            new ParentCondition("parent", parentIsDefined, null))))
+                    .build();
+
+            for (int i = 0; i < 3; i++) {
+                client.run(child, user("u1"));
+            }
+
+            assertEquals(1, tracksByExperiment.get("parent-exp").get(),
+                    "a prerequisite's exposure must be deduped across evaluations, not re-fired by each sub-evaluation");
+            assertEquals(1, tracksByExperiment.get("child-exp").get());
+        } finally {
+            if (client != null) {
+                client.shutdown();
+            }
+            wireMock.stop();
+        }
+    }
+
+    @Test
+    @Timeout(30)
+    void failedRemoteEvalExposureIsRetriedWithoutFailingEvaluation() {
+        AtomicInteger attempts = new AtomicInteger();
+        TrackingCallbackWithUser failsOnce = new TrackingCallbackWithUser() {
+            @Override
+            public <ValueType> void onTrack(Experiment<ValueType> experiment,
+                                            ExperimentResult<ValueType> result,
+                                            UserContext userContext) {
+                if (attempts.incrementAndGet() == 1) {
+                    throw new IllegalStateException("analytics backend down");
+                }
+            }
+        };
+        EvaluationContext context = new EvaluationContext(
+                GlobalContext.builder().enabled(true).build(),
+                user("u1"),
+                new EvaluationContext.StackContext(),
+                Options.builder().trackingCallBackWithUser(failsOnce).build());
+        context.setSuppressTrackingErrors(true); // as GrowthBookClient builds it
+        ExperimentResult<String> result = ExperimentResult.<String>builder()
+                .hashAttribute("id")
+                .hashValue("u1")
+                .variationId(1)
+                .build();
+        List<TrackData<String>> tracks = Collections.singletonList(
+                new TrackData<>(experiment("exp-remote"), result));
+        ExperimentEvaluator evaluator = new ExperimentEvaluator();
+
+        evaluator.fireRemoteEvaluationTracks(tracks, context);
+        assertEquals(1, attempts.get(), "a throwing callback must not propagate out of remote-eval tracking");
+
+        evaluator.fireRemoteEvaluationTracks(tracks, context);
+        assertEquals(2, attempts.get(), "failed remote-eval exposure must be retried, not lost");
+
+        evaluator.fireRemoteEvaluationTracks(tracks, context);
+        assertEquals(2, attempts.get(), "delivered remote-eval exposure must not re-fire");
+    }
+
+    @Test
+    @Timeout(30)
+    void aFailedDeliveryDoesNotUnmarkANewerDeliveryOfTheSameExposure() {
+        ExperimentTracker tracker = new ExperimentTracker(10_000);
+        ExperimentEvaluator evaluator = new ExperimentEvaluator();
+        AtomicInteger attempts = new AtomicInteger();
+        EvaluationContext[] context = new EvaluationContext[1];
+        TrackingCallbackWithUser slowThenFails = new TrackingCallbackWithUser() {
+            @Override
+            public <ValueType> void onTrack(Experiment<ValueType> experiment,
+                                            ExperimentResult<ValueType> result,
+                                            UserContext userContext) {
+                if (attempts.incrementAndGet() == 1) {
+                    // While this delivery is still running, its key is evicted and another
+                    // evaluation claims and delivers the same exposure. Only then does this one fail.
+                    tracker.clearTrackedExperiments();
+                    evaluator.evaluateExperiment(experiment("exp-stale"), context[0], null);
+                    throw new IllegalStateException("analytics backend down");
+                }
+            }
+        };
+        context[0] = new EvaluationContext(
+                GlobalContext.builder().enabled(true).build(),
+                user("u1"),
+                new EvaluationContext.StackContext(),
+                Options.builder().trackingCallBackWithUser(slowThenFails).build());
+        context[0].setSuppressTrackingErrors(true); // as GrowthBookClient builds it
+        context[0].setSharedExperimentTracker(tracker);
+
+        evaluator.evaluateExperiment(experiment("exp-stale"), context[0], null);
+        assertEquals(2, attempts.get(), "the first delivery failed and the newer one succeeded");
+
+        evaluator.evaluateExperiment(experiment("exp-stale"), context[0], null);
+        assertEquals(2, attempts.get(), "the late failure must not un-mark the newer, delivered exposure");
+    }
+
+    @Test
+    @Timeout(30)
+    void singleUserContextsPropagateCallbackExceptionsAndDoNotRetry() {
+        AtomicInteger attempts = new AtomicInteger();
         TrackingCallbackWithUser throwing = new TrackingCallbackWithUser() {
             @Override
             public <ValueType> void onTrack(Experiment<ValueType> experiment,
                                             ExperimentResult<ValueType> result,
                                             UserContext userContext) {
+                attempts.incrementAndGet();
                 throw new IllegalStateException("analytics backend down");
             }
         };
         Options options = Options.builder().trackingCallBackWithUser(throwing).build();
-        // A context WITHOUT the multi-user client's suppress flag — the legacy
-        // documented contract: the exception propagates out of evaluation.
-        EvaluationContext legacyContext = new EvaluationContext(
+        // A context WITHOUT the multi-user client's flag, as the single-user
+        // GrowthBook class builds it.
+        EvaluationContext singleUserContext = new EvaluationContext(
                 GlobalContext.builder().enabled(true).build(),
                 user("u1"),
                 new EvaluationContext.StackContext(),
                 options);
+        ExperimentEvaluator evaluator = new ExperimentEvaluator();
 
         assertThrows(IllegalStateException.class,
-                () -> new ExperimentEvaluator().evaluateExperiment(experiment("exp-legacy"), legacyContext, null));
+                () -> evaluator.evaluateExperiment(experiment("exp-legacy"), singleUserContext, null));
+        assertNotNull(evaluator.evaluateExperiment(experiment("exp-legacy"), singleUserContext, null));
+        assertEquals(1, attempts.get(), "the single-user path must not retry a failed exposure");
+    }
+
+    @Test
+    @Timeout(30)
+    void singleUserContextsDoNotRetryFailedRemoteEvalExposures() {
+        AtomicInteger attempts = new AtomicInteger();
+        TrackingCallbackWithUser throwing = new TrackingCallbackWithUser() {
+            @Override
+            public <ValueType> void onTrack(Experiment<ValueType> experiment,
+                                            ExperimentResult<ValueType> result,
+                                            UserContext userContext) {
+                attempts.incrementAndGet();
+                throw new IllegalStateException("analytics backend down");
+            }
+        };
+        EvaluationContext singleUserContext = new EvaluationContext(
+                GlobalContext.builder().enabled(true).build(),
+                user("u1"),
+                new EvaluationContext.StackContext(),
+                Options.builder().trackingCallBackWithUser(throwing).build());
+        ExperimentResult<String> result = ExperimentResult.<String>builder()
+                .hashAttribute("id")
+                .hashValue("u1")
+                .variationId(1)
+                .build();
+        List<TrackData<String>> tracks = Collections.singletonList(
+                new TrackData<>(experiment("exp-remote"), result));
+        ExperimentEvaluator evaluator = new ExperimentEvaluator();
+
+        evaluator.fireRemoteEvaluationTracks(tracks, singleUserContext);
+        evaluator.fireRemoteEvaluationTracks(tracks, singleUserContext);
+
+        assertEquals(1, attempts.get(), "the single-user path must not retry a failed exposure");
     }
 }

@@ -3,6 +3,8 @@ package growthbook.sdk.java.multiusermode;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 
+import javax.annotation.Nullable;
+
 /**
  * A thread-safe LRU cache deduplicating experiment-exposure events by
  * {@code hashAttribute + hashValue + experimentKey + variationId} (the same
@@ -16,7 +18,8 @@ import com.google.common.cache.CacheBuilder;
 public class ExperimentTracker {
     private static final int MAX_EXPERIMENTS = 30;
 
-    private final Cache<String, Boolean> trackedExperiments;
+    /** Each entry's value is the claim of the caller that marked it; see {@link #markIfFirst}. */
+    private final Cache<String, Object> trackedExperiments;
 
     /** Evaluator-local tracker with the legacy 30-entry bound (single-user scope). */
     public ExperimentTracker() {
@@ -47,24 +50,33 @@ public class ExperimentTracker {
     /**
      * Atomically claims an exposure for delivery: marks it tracked and reports
      * whether this caller was the first to do so. Concurrent first evaluations of
-     * the same key on a shared tracker see exactly one {@code true}, so the
-     * exposure is dispatched once rather than racing a separate check-then-mark.
+     * the same key on a shared tracker see exactly one claim, so the exposure is
+     * dispatched once rather than racing a separate check-then-mark.
      *
      * @param experimentId the dedup key to claim
-     * @return {@code true} if this call marked the key, {@code false} if it was already tracked
+     * @return this caller's claim, to hand to {@link #untrack} if delivery fails,
+     *         or {@code null} if the key was already tracked
      */
-    public boolean markIfFirst(String experimentId) {
-        return trackedExperiments.asMap().putIfAbsent(experimentId, Boolean.TRUE) == null;
+    @Nullable
+    public Object markIfFirst(String experimentId) {
+        if (trackedExperiments.getIfPresent(experimentId) != null) {
+            return null;
+        }
+        Object claim = new Object();
+        return trackedExperiments.asMap().putIfAbsent(experimentId, claim) == null ? claim : null;
     }
 
     /**
      * Un-marks an exposure whose delivery failed, so it is retried on the next
-     * evaluation instead of being silently lost.
+     * evaluation instead of being silently lost. Only the mark made by
+     * {@code claim} is removed: if the key was evicted and claimed again while
+     * the failed delivery was still running, the newer mark stays.
      *
      * @param experimentId the dedup key to un-mark
+     * @param claim        the value {@link #markIfFirst} returned for this delivery
      */
-    public void untrack(String experimentId) {
-        trackedExperiments.invalidate(experimentId);
+    public void untrack(String experimentId, Object claim) {
+        trackedExperiments.asMap().remove(experimentId, claim);
     }
 
     public void clearTrackedExperiments() {

@@ -17,6 +17,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -47,6 +48,8 @@ class StickyBucketManagerTest {
         volatile boolean completeSavesImmediately = false;
         volatile RuntimeException throwOnFetch = null;
         volatile RuntimeException throwOnSave = null;
+        volatile Error errorOnFetch = null; // thrown once
+        volatile Error errorOnSave = null; // thrown once
         volatile boolean failSaves = false;
 
         @Override
@@ -56,6 +59,11 @@ class StickyBucketManagerTest {
 
         @Override
         public CompletionStage<Void> saveAssignments(StickyAssignmentsDocument doc) {
+            Error error = errorOnSave;
+            if (error != null) {
+                errorOnSave = null;
+                throw error;
+            }
             RuntimeException toThrow = throwOnSave;
             if (toThrow != null) {
                 throwOnSave = null; // throw once
@@ -78,6 +86,11 @@ class StickyBucketManagerTest {
 
         @Override
         public CompletionStage<Map<String, StickyAssignmentsDocument>> getAllAssignments(Map<String, String> attributes) {
+            Error error = errorOnFetch;
+            if (error != null) {
+                errorOnFetch = null;
+                throw error;
+            }
             if (throwOnFetch != null) {
                 throw throwOnFetch;
             }
@@ -124,6 +137,53 @@ class StickyBucketManagerTest {
         Map<String, StickyAssignmentsDocument> fetched = new HashMap<>();
         fetched.put("id||u1", doc("u1", "exp__0", "1"));
         service.pendingFetches.get(0).complete(fetched);
+
+        assertEquals("1", first.get(5, TimeUnit.SECONDS).get("id||u1").getAssignments().get("exp__0"));
+        assertEquals("1", second.get(5, TimeUnit.SECONDS).get("id||u1").getAssignments().get("exp__0"));
+    }
+
+    @Test
+    @Timeout(10)
+    void eachEntryPointReadsAndWritesThroughItsOwnViewOfTheStore() throws Exception {
+        ScriptedService nonBlocking = new ScriptedService();
+        ScriptedService callerThread = new ScriptedService();
+        nonBlocking.completeFetchesImmediately = true;
+        nonBlocking.completeSavesImmediately = true;
+        callerThread.completeFetchesImmediately = true;
+        callerThread.completeSavesImmediately = true;
+        StickyBucketManager manager = new StickyBucketManager(nonBlocking, callerThread, null, null);
+
+        manager.fetchAssignmentsOnCallerThread(attrs("u1")).get(5, TimeUnit.SECONDS);
+        manager.recordAndSaveOnCallerThread(doc("u1", "exp__0", "1")).get(5, TimeUnit.SECONDS);
+        assertEquals(1, callerThread.fetchCalls.size());
+        assertEquals(1, callerThread.savedDocs.size());
+        assertEquals(0, nonBlocking.fetchCalls.size(), "the synchronous API must not touch the offloading view");
+        assertEquals(0, nonBlocking.savedDocs.size(), "the synchronous API must not touch the offloading view");
+
+        manager.fetchAssignments(attrs("u2")).get(5, TimeUnit.SECONDS);
+        manager.recordAndSave(doc("u2", "exp__0", "1")).get(5, TimeUnit.SECONDS);
+        assertEquals(1, nonBlocking.fetchCalls.size());
+        assertEquals(1, nonBlocking.savedDocs.size());
+        assertEquals(1, callerThread.fetchCalls.size(), "the asynchronous API must not block on the caller-thread view");
+        assertEquals(1, callerThread.savedDocs.size(), "the asynchronous API must not block on the caller-thread view");
+    }
+
+    @Test
+    @Timeout(10)
+    void aFetchInFlightOnOneViewIsSharedByCallersOfTheOther() throws Exception {
+        ScriptedService nonBlocking = new ScriptedService();
+        ScriptedService callerThread = new ScriptedService();
+        StickyBucketManager manager = new StickyBucketManager(nonBlocking, callerThread, null, null);
+
+        CompletableFuture<Map<String, StickyAssignmentsDocument>> first = manager.fetchAssignmentsOnCallerThread(attrs("u1"));
+        CompletableFuture<Map<String, StickyAssignmentsDocument>> second = manager.fetchAssignments(attrs("u1"));
+
+        assertEquals(1, callerThread.fetchCalls.size());
+        assertEquals(0, nonBlocking.fetchCalls.size(), "an identical fetch already in flight must be shared, not repeated");
+
+        Map<String, StickyAssignmentsDocument> fetched = new HashMap<>();
+        fetched.put("id||u1", doc("u1", "exp__0", "1"));
+        callerThread.pendingFetches.get(0).complete(fetched);
 
         assertEquals("1", first.get(5, TimeUnit.SECONDS).get("id||u1").getAssignments().get("exp__0"));
         assertEquals("1", second.get(5, TimeUnit.SECONDS).get("id||u1").getAssignments().get("exp__0"));
@@ -310,6 +370,53 @@ class StickyBucketManagerTest {
     }
 
     @Test
+    @Timeout(30)
+    void aStoreAnswerTheManagerCannotUseFailsTheFetchInsteadOfLeavingItPending() throws Exception {
+        ScriptedService service = new ScriptedService();
+        StickyBucketManager manager = new StickyBucketManager(service, null, null);
+        CompletableFuture<Map<String, StickyAssignmentsDocument>> fetch = manager.fetchAssignments(attrs("u1"));
+
+        // A null key cannot be merged; the store is user-supplied code and may return anything.
+        Map<String, StickyAssignmentsDocument> unusable = new HashMap<>();
+        unusable.put(null, doc("u1", "exp__0", "1"));
+        service.pendingFetches.get(0).complete(unusable);
+
+        assertThrows(ExecutionException.class, () -> fetch.get(5, TimeUnit.SECONDS));
+        assertTrue(manager.inflightFetchKeys().isEmpty(), "the failed fetch must not stay registered");
+    }
+
+    @Test
+    @Timeout(30)
+    void anErrorFromTheStoreReadDoesNotLeaveTheFetchRegistered() throws Exception {
+        ScriptedService service = new ScriptedService();
+        service.completeFetchesImmediately = true;
+        service.errorOnFetch = new NoClassDefFoundError("redis/clients/jedis/Jedis");
+        StickyBucketManager manager = new StickyBucketManager(service, null, null);
+
+        assertThrows(NoClassDefFoundError.class, () -> manager.fetchAssignments(attrs("u1")));
+
+        assertTrue(manager.inflightFetchKeys().isEmpty(), "later reads for this user would wait on it forever");
+        assertNotNull(manager.fetchAssignments(attrs("u1")).get(5, TimeUnit.SECONDS));
+    }
+
+    @Test
+    @Timeout(30)
+    void anErrorFromTheStoreSaveReleasesTheKeysSaveSlot() throws Exception {
+        ScriptedService service = new ScriptedService();
+        service.completeSavesImmediately = true;
+        service.errorOnSave = new NoClassDefFoundError("redis/clients/jedis/Jedis");
+        StickyBucketManager manager = new StickyBucketManager(service, null, null);
+
+        assertThrows(NoClassDefFoundError.class, () -> manager.recordAndSave(doc("u1", "exp__0", "1")));
+
+        manager.recordAndSave(doc("u1", "exp2__0", "0")).get(5, TimeUnit.SECONDS);
+        manager.flush().get(5, TimeUnit.SECONDS);
+        assertEquals("1", service.store.get("id||u1").getAssignments().get("exp__0"),
+                "the key must be saved again after the failed attempt");
+        assertEquals("0", service.store.get("id||u1").getAssignments().get("exp2__0"));
+    }
+
+    @Test
     @Timeout(10)
     void fetchRejectionDoesNotWedgeSubsequentFetches() throws Exception {
         ScriptedService service = new ScriptedService();
@@ -353,7 +460,7 @@ class StickyBucketManagerTest {
 
     @Test
     @Timeout(30)
-    void evictionNeverDropsADocumentWhoseSaveFailed() throws Exception {
+    void evictionDropsSavedDocumentsBeforeOneWhoseSaveFailed() throws Exception {
         ScriptedService service = new ScriptedService();
         service.failSaves = true;
         StickyBucketManager manager = new StickyBucketManager(service, null, null);
@@ -368,7 +475,45 @@ class StickyBucketManagerTest {
         assertTrue(manager.authoritativeDocCount() <= StickyBucketManager.STICKY_DOCS_MAX + 1,
                 "authoritative doc map must be bounded, was " + manager.authoritativeDocCount());
         assertNotNull(manager.authoritativeDoc("id||failed-user"),
-                "a document whose save failed must never be evicted");
+                "a document whose save failed must outlive documents the store already has");
+    }
+
+    @Test
+    @Timeout(30)
+    void failedSavesBeyondTheBoundAreDroppedOldestFirst() throws Exception {
+        ScriptedService service = new ScriptedService();
+        service.failSaves = true;
+        StickyBucketManager manager = new StickyBucketManager(service, null, null);
+
+        int written = StickyBucketManager.STICKY_DOCS_MAX + 200;
+        for (int i = 0; i < written; i++) {
+            manager.recordAndSave(doc("user-" + i, "exp__0", "v")).get(5, TimeUnit.SECONDS);
+        }
+
+        assertEquals(StickyBucketManager.STICKY_DOCS_MAX, manager.authoritativeDocCount(),
+                "a store that stays unwritable must not grow the doc map without limit");
+        assertNull(manager.authoritativeDoc("id||user-0"), "the oldest failed save is dropped first");
+        assertNotNull(manager.authoritativeDoc("id||user-" + (written - 1)), "the newest failed save is kept");
+    }
+
+    @Test
+    @Timeout(30)
+    void aDroppedFailedSaveIsNotWrittenByALaterFlush() throws Exception {
+        ScriptedService service = new ScriptedService();
+        service.failSaves = true;
+        StickyBucketManager manager = new StickyBucketManager(service, null, null);
+        for (int i = 0; i < StickyBucketManager.STICKY_DOCS_MAX + 1; i++) {
+            manager.recordAndSave(doc("user-" + i, "exp__0", "v")).get(5, TimeUnit.SECONDS);
+        }
+        service.savedDocs.clear();
+        service.failSaves = false;
+        service.completeSavesImmediately = true;
+
+        manager.flush().get(5, TimeUnit.SECONDS);
+
+        assertEquals(StickyBucketManager.STICKY_DOCS_MAX, service.savedDocs.size(),
+                "flush re-attempts exactly the documents still held");
+        assertNull(service.store.get("id||user-0"), "a dropped document must not reach the store");
     }
 
     @Test
@@ -401,7 +546,81 @@ class StickyBucketManagerTest {
         assertEquals("v", result.get("id||u-keep").getAssignments().get("exp__0"));
     }
 
+    // -------------------------------------------------------------- timeout
+
+    private static final long SHORT_TIMEOUT_MILLIS = 50;
+
+    @Test
+    @Timeout(30)
+    void aReadTheStoreNeverAnswersFailsWithATimeoutAndDoesNotWedgeLaterReads() throws Exception {
+        ScriptedService service = new ScriptedService();
+        StickyBucketManager manager = new StickyBucketManager(service, service, null, null, SHORT_TIMEOUT_MILLIS);
+
+        CompletableFuture<Map<String, StickyAssignmentsDocument>> first = manager.fetchAssignments(attrs("u1"));
+        CompletableFuture<Map<String, StickyAssignmentsDocument>> coalesced = manager.fetchAssignments(attrs("u1"));
+
+        ExecutionException failure = assertThrows(ExecutionException.class, () -> first.get(5, TimeUnit.SECONDS));
+        assertTrue(failure.getCause() instanceof TimeoutException, "expected a timeout, got " + failure.getCause());
+        assertThrows(ExecutionException.class, () -> coalesced.get(5, TimeUnit.SECONDS));
+        assertTrue(manager.inflightFetchKeys().isEmpty(), "a timed-out fetch must not stay registered");
+
+        // The store answers late: nothing to deliver it to, and nothing breaks.
+        service.pendingFetches.get(0).complete(new HashMap<>());
+
+        service.completeFetchesImmediately = true;
+        int callsBefore = service.fetchCalls.size();
+        assertNotNull(manager.fetchAssignments(attrs("u1")).get(5, TimeUnit.SECONDS));
+        assertEquals(callsBefore + 1, service.fetchCalls.size(), "a later read must start a fresh store call");
+    }
+
+    @Test
+    @Timeout(30)
+    void aSaveTheStoreNeverAnswersIsTreatedAsFailedAndRetriedByFlush() throws Exception {
+        ScriptedService service = new ScriptedService();
+        StickyBucketManager manager = new StickyBucketManager(service, service, null, null, SHORT_TIMEOUT_MILLIS);
+
+        manager.recordAndSave(doc("u1", "exp__0", "1")).get(5, TimeUnit.SECONDS);
+        assertFalse(service.pendingSaves.get(0).isDone(), "the store call itself is left alone");
+
+        service.completeSavesImmediately = true;
+        manager.flush().get(5, TimeUnit.SECONDS);
+
+        assertEquals(2, service.savedDocs.size(), "the timed-out save stays dirty and flush re-attempts it");
+    }
+
+    @Test
+    @Timeout(30)
+    void aStoreCallThatAnswersInTimeIsUnaffectedByTheTimeout() throws Exception {
+        ScriptedService service = new ScriptedService();
+        StickyBucketManager manager = new StickyBucketManager(service, service, null, null, 60_000);
+
+        CompletableFuture<Map<String, StickyAssignmentsDocument>> fetch = manager.fetchAssignments(attrs("u1"));
+        Map<String, StickyAssignmentsDocument> fetched = new HashMap<>();
+        fetched.put("id||u1", doc("u1", "exp__0", "1"));
+        service.pendingFetches.get(0).complete(fetched);
+
+        assertEquals("1", fetch.get(5, TimeUnit.SECONDS).get("id||u1").getAssignments().get("exp__0"));
+    }
+
     // ------------------------------------------------------------- shutdown
+
+    @Test
+    @Timeout(30)
+    void afterShutdownOnlyTheCallerThreadViewIsStillRead() throws Exception {
+        ScriptedService nonBlocking = new ScriptedService();
+        ScriptedService callerThread = new ScriptedService();
+        callerThread.completeFetchesImmediately = true;
+        StickyBucketManager manager = new StickyBucketManager(nonBlocking, callerThread, null, null);
+        manager.startDraining();
+        manager.close(1_000);
+
+        assertThrows(ExecutionException.class,
+                () -> manager.fetchAssignments(attrs("u1")).get(5, TimeUnit.SECONDS));
+        assertTrue(nonBlocking.fetchCalls.isEmpty(), "a read that needs the client's pool or timer is refused");
+
+        assertNotNull(manager.fetchAssignmentsOnCallerThread(attrs("u1")).get(5, TimeUnit.SECONDS));
+        assertEquals(1, callerThread.fetchCalls.size(), "a blocking store is still read on the calling thread");
+    }
 
     @Test
     @Timeout(30)
