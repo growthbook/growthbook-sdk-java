@@ -5,31 +5,32 @@ import growthbook.sdk.java.util.GrowthBookJsonUtils;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 
 class BucketRangeTest {
     @Test
     void canBeBuilt() {
         BucketRange subject = BucketRange
                 .builder()
-                .rangeStart(0.3f)
-                .rangeEnd(0.7f)
+                .rangeStart(0.3)
+                .rangeEnd(0.7)
                 .build();
 
-        assertEquals(0.3f, subject.getRangeStart());
-        assertEquals(0.7f, subject.getRangeEnd());
+        assertEquals(0.3, subject.getRangeStart());
+        assertEquals(0.7, subject.getRangeEnd());
     }
 
     @Test
     void canBeConstructed() {
-        BucketRange subject = new BucketRange(0.3f, 0.7f);
+        BucketRange subject = new BucketRange(0.3, 0.7);
 
-        assertEquals(0.3f, subject.getRangeStart());
-        assertEquals(0.7f, subject.getRangeEnd());
+        assertEquals(0.3, subject.getRangeStart());
+        assertEquals(0.7, subject.getRangeEnd());
     }
 
     @Test
     void canBeJsonSerialized() {
-        BucketRange subject = new BucketRange(0.3f, 0.7f);
+        BucketRange subject = new BucketRange(0.3, 0.7);
 
         assertEquals("[0.3,0.7]", GrowthBookJsonUtils.getInstance().gson.toJson(subject));
         assertEquals("[0.3,0.7]", subject.toJson());
@@ -40,7 +41,31 @@ class BucketRangeTest {
     void canBeJsonDeSerialized() {
         BucketRange subject = GrowthBookJsonUtils.getInstance().gson.fromJson("[0.3,0.7]", BucketRange.class);
 
-        assertEquals(subject.getRangeStart(), 0.3f);
-        assertEquals(subject.getRangeEnd(), 0.7f);
+        assertEquals(subject.getRangeStart(), 0.3);
+        assertEquals(subject.getRangeEnd(), 0.7);
+    }
+
+    @Test
+    void jsonRoundTripKeepsFullDoublePrecision() {
+        String json = "[0.020000000000000004,0.6000000000000001]";
+
+        BucketRange subject = GrowthBookJsonUtils.getInstance().gson.fromJson(json, BucketRange.class);
+
+        assertEquals(0.020000000000000004, subject.getRangeStart());
+        assertEquals(0.6000000000000001, subject.getRangeEnd());
+        assertEquals(json, GrowthBookJsonUtils.getInstance().gson.toJson(subject));
+        assertEquals(json, new BucketRange(0.020000000000000004, 0.6000000000000001).toJson());
+        assertEquals(subject, GrowthBookJsonUtils.getInstance().gson.fromJson(subject.toJson(), BucketRange.class));
+    }
+
+    @Test
+    void equalsComparesExactly() {
+        BucketRange a = new BucketRange(0.3, 0.7);
+        BucketRange same = new BucketRange(0.3, 0.7);
+        BucketRange nearby = new BucketRange(0.3 + 1e-9, 0.7);
+
+        assertEquals(a, same);
+        assertEquals(a.hashCode(), same.hashCode());
+        assertNotEquals(a, nearby);
     }
 }

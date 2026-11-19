@@ -7,17 +7,17 @@ GrowthBook Java SDK — a feature-flagging and A/B-testing client library, publi
 
 ## Modules
 
-`settings.gradle` includes exactly three projects:
+`settings.gradle` includes these projects:
 
 | Module | Purpose |
 | --- | --- |
 | `lib` | The SDK itself (`growthbook.sdk.java`). Evaluators, feature repository, models, caching SPI, sticky bucketing, plugins. |
 | `growthbook-cache-jcache` | Cache adapter for any JSR-107 provider. |
 | `growthbook-cache-caffeine` | Cache adapter backed by Caffeine. |
+| `growthbook-cache-redis` | Redis adapters: a `GbCacheManager` (`cache.redis`) and a `StickyBucketService` (`cache.redis.stickybucket`), each in a Jedis and a Lettuce flavour. |
 
-`growthbook-cache-redis/` and `growthbook-codegen/` directories exist in the working tree but are
-**not** in `settings.gradle` — they live on feature branches. `./gradlew :growthbook-codegen:test`
-fails with "Project not found". Scope tasks to the three modules above.
+The `growthbook-codegen/` directory exists in the working tree but is **not** in `settings.gradle` —
+it lives on a feature branch. `./gradlew :growthbook-codegen:test` fails with "Project not found".
 
 ## Commands
 

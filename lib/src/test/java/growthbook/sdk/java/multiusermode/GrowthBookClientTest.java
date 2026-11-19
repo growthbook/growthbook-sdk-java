@@ -18,6 +18,7 @@ import growthbook.sdk.java.model.HttpHeaders;
 import growthbook.sdk.java.model.TypedKey;
 import growthbook.sdk.java.multiusermode.configurations.Options;
 import growthbook.sdk.java.multiusermode.configurations.UserContext;
+import growthbook.sdk.java.multiusermode.util.TransformationUtil;
 import growthbook.sdk.java.repository.FeatureRefreshStrategy;
 import growthbook.sdk.java.repository.FeatureSnapshot;
 import growthbook.sdk.java.repository.GBFeaturesRepository;
@@ -803,6 +804,52 @@ class GrowthBookClientTest {
     }
 
     @Test
+    void run_sameResultMultipleTimes_firesCallbackOnce() {
+        GrowthBookClient subject = new GrowthBookClient();
+        ExperimentRunCallback mockCallback = mock(ExperimentRunCallback.class);
+        Experiment<String> mockExperiment = Experiment.<String>builder().key("my-experiment").build();
+
+        subject.subscribe(mockCallback);
+        subject.run(mockExperiment, UserContext.builder().build());
+        subject.run(mockExperiment, UserContext.builder().build());
+        subject.run(mockExperiment, UserContext.builder().build());
+
+        verify(mockCallback, times(1)).onRun(any(), any());
+    }
+
+    @Test
+    void isOn_enabledFeature_returnsTrueAndIsOffReturnsFalse() {
+        String featureKey = "price";
+        String attributes = "{ \"user\": \"standard\" }";
+        String demoFeaturesJson = TestCasesJsonHelper.getInstance().getDemoFeaturesJson();
+
+        mockRepository = createMockRepository();
+        mockBuilder = createMockBuilder(mockRepository);
+
+        Map<String, Feature<?>> parsedFeatures = TransformationUtil.transformFeatures(demoFeaturesJson);
+        when(mockRepository.getParsedFeatures()).thenReturn(parsedFeatures);
+        when(mockRepository.getFeatureSnapshot()).thenReturn(FeatureSnapshot.of("{}", "{}", parsedFeatures, new JsonObject()));
+
+        try (MockedStatic<GBFeaturesRepository> mockedStatic = mockStatic(GBFeaturesRepository.class)) {
+            mockedStatic.when(GBFeaturesRepository::builder).thenReturn(mockBuilder);
+
+            GrowthBookClient client = new GrowthBookClient(createDefaultOptions(null));
+            client.initialize();
+
+            UserContext userContext = UserContext.builder().attributesJson(attributes).build();
+
+            FeatureResult<Float> floatFeatureResult = client.evalFeature(featureKey, Float.class, userContext);
+
+            Boolean on = client.isOn(featureKey, userContext);
+            Boolean off = client.isOff(featureKey, userContext);
+
+            assertTrue(on);
+            assertFalse(off);
+            assertTrue(floatFeatureResult.isOn());
+        }
+    }
+
+    @Test
     void test_shutdown_withANonInitializedClient() {
         mockRepository = createMockRepository();
         mockBuilder = createMockBuilder(mockRepository);
@@ -934,6 +981,7 @@ class GrowthBookClientTest {
                     .refreshStrategy(FeatureRefreshStrategy.STALE_WHILE_REVALIDATE)
                     .featureRefreshListenerExecutor(Runnable::run)
                     .stickyBucketService(stickyBucketService)
+                    .stickyBucketIdentifierAttributes(Arrays.asList("country", "id"))
                     .globalAttributes(globalAttributes)
                     .build();
 
@@ -950,6 +998,46 @@ class GrowthBookClientTest {
             Map<String, String> capturedAttributes = attributesCaptor.getValue();
             assertEquals("US", capturedAttributes.get("country"));
             assertEquals("1", capturedAttributes.get("id"));
+        }
+    }
+
+    @Test
+    void evalFeature_withStickyBucketService_preloadsAssignmentsUnderHashValueFormat() {
+        mockRepository = createMockRepository();
+        mockBuilder = createMockBuilder(mockRepository);
+
+        StickyBucketService stickyBucketService = mock(StickyBucketService.class);
+        when(stickyBucketService.getAllAssignments(any())).thenReturn(new HashMap<>());
+
+        try (MockedStatic<GBFeaturesRepository> mockedStatic = mockStatic(GBFeaturesRepository.class)) {
+            mockedStatic.when(GBFeaturesRepository::builder).thenReturn(mockBuilder);
+
+            Options options = Options.builder()
+                    .apiHost("https://custom.growthbook.io")
+                    .clientKey("custom_key")
+                    .decryptionKey("test_key")
+                    .refreshStrategy(FeatureRefreshStrategy.STALE_WHILE_REVALIDATE)
+                    .featureRefreshListenerExecutor(Runnable::run)
+                    .stickyBucketService(stickyBucketService)
+                    .stickyBucketIdentifierAttributes(Arrays.asList("id", "deviceId", "loggedIn", "company"))
+                    .build();
+
+            GrowthBookClient client = new GrowthBookClient(options);
+            assertTrue(client.initialize());
+
+            UserContext userContext = UserContext.builder()
+                    .attributesJson("{\"id\":1.0,\"deviceId\":1.5,\"loggedIn\":true,\"company\":\"\"}")
+                    .build();
+            client.evalFeature("test-feature", Boolean.class, userContext);
+
+            @SuppressWarnings("unchecked")
+            ArgumentCaptor<Map<String, String>> attributesCaptor = ArgumentCaptor.forClass(Map.class);
+            verify(stickyBucketService).getAllAssignments(attributesCaptor.capture());
+            Map<String, String> capturedAttributes = attributesCaptor.getValue();
+            assertEquals("1", capturedAttributes.get("id"));
+            assertEquals("1.5", capturedAttributes.get("deviceId"));
+            assertFalse(capturedAttributes.containsKey("loggedIn"));
+            assertFalse(capturedAttributes.containsKey("company"));
         }
     }
 
@@ -1045,6 +1133,48 @@ class GrowthBookClientTest {
             }
             server.stop(0);
         }
+    }
+
+    @Test
+    void reducePayload_reducesTheSnapshotForGlobalAndUserAttributes() {
+        String featuresJson = "{\"f\": {\"defaultValue\": 0, \"rules\": ["
+                + "{\"condition\": {\"env\": \"dev\"}, \"force\": 1},"
+                + "{\"condition\": {\"country\": \"US\", \"plan\": \"pro\"}, \"force\": 2},"
+                + "{\"condition\": {\"id\": {\"$inGroup\": \"grp\"}}, \"force\": 3}]}}";
+        JsonObject savedGroups = jsonUtils.gson.fromJson("{\"grp\": [\"a\"], \"unused\": [\"b\"]}", JsonObject.class);
+
+        mockRepository = createMockRepository();
+        mockBuilder = createMockBuilder(mockRepository);
+        when(mockRepository.getFeatureSnapshot()).thenReturn(
+                FeatureSnapshot.of(featuresJson, savedGroups.toString(), new HashMap<>(), savedGroups));
+
+        try (MockedStatic<GBFeaturesRepository> mockedStatic = mockStatic(GBFeaturesRepository.class)) {
+            mockedStatic.when(GBFeaturesRepository::builder).thenReturn(mockBuilder);
+
+            Options options = createDefaultOptions(null);
+            options.setGlobalAttributes("{\"env\": \"dev\", \"country\": \"US\"}");
+            GrowthBookClient client = new GrowthBookClient(options);
+            client.initialize();
+
+            UserContext userContext = UserContext.builder().attributesJson("{\"env\": \"prod\"}").build();
+            JsonObject reduced = client.reducePayload(userContext);
+
+            JsonObject expected = jsonUtils.gson.fromJson("{\"features\": {\"f\": {\"defaultValue\": 0, \"rules\": ["
+                    + "{\"condition\": {\"$not\": {}}, \"force\": null},"
+                    + "{\"condition\": {\"plan\": \"pro\"}, \"force\": 2},"
+                    + "{\"condition\": {\"id\": {\"$inGroup\": \"grp\"}}, \"force\": 3}]}},"
+                    + "\"experiments\": [], \"savedGroups\": {\"grp\": [\"a\"]}}", JsonObject.class);
+            assertEquals(expected, reduced);
+        }
+    }
+
+    @Test
+    void reducePayload_beforeInitialize_returnsAnEmptyPayload() {
+        GrowthBookClient client = new GrowthBookClient(createDefaultOptions(null));
+
+        JsonObject reduced = client.reducePayload(null, null);
+
+        assertEquals(jsonUtils.gson.fromJson("{\"features\": {}, \"experiments\": [], \"savedGroups\": {}}", JsonObject.class), reduced);
     }
 
     private Options createDefaultOptions(FeatureRefreshCallback callback) {

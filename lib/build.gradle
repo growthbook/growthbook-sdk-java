@@ -36,6 +36,13 @@ tasks.withType(JavaCompile).configureEach {
     if (JavaVersion.current().isJava9Compatible()) {
         options.release = 8
     }
+    // Sources are UTF-8. Without this javac decodes them with the platform charset, so the
+    // Windows CI job turns every non-ASCII literal into mojibake while Linux compiles it fine.
+    options.encoding = 'UTF-8'
+}
+
+tasks.withType(Javadoc).configureEach {
+    options.encoding = 'UTF-8'
 }
 
 group = 'com.github.growthbook'

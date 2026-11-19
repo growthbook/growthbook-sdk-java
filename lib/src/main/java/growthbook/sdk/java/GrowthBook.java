@@ -4,7 +4,6 @@ import java.util.Map;
 import java.util.HashMap;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Objects;
 import javax.annotation.Nullable;
 import java.time.Duration;
 import com.google.gson.JsonObject;
@@ -39,6 +38,7 @@ import growthbook.sdk.java.multiusermode.usage.FeatureUsageCallbackAdapter;
 import growthbook.sdk.java.multiusermode.usage.TrackingCallbackAdapter;
 import growthbook.sdk.java.plugin.PluginRegistry;
 import growthbook.sdk.java.stickyBucketing.InMemoryStickyBucketServiceImpl;
+import growthbook.sdk.java.stickyBucketing.StickyBucketDocWriter;
 import growthbook.sdk.java.stickyBucketing.StickyBucketService;
 
 /**
@@ -69,6 +69,8 @@ public class GrowthBook implements IGrowthBook {
     @Getter @Setter private JsonObject attributeOverrides;
 
     public EvaluationContext evaluationContext = null;
+    /** True while the last sticky bucket load failed; assignments made meanwhile are not saved. */
+    private boolean stickyBucketReadFailed;
     private final Map<String, AssignedExperiment> assigned;
     private final PluginRegistry pluginRegistry;
     private RemoteEvalService remoteEvalService;
@@ -252,6 +254,8 @@ public class GrowthBook implements IGrowthBook {
     private EvaluationContext getEvaluationContext() {
         // Reset the stackContext for every evaluation.
         this.evaluationContext.setStack(new EvaluationContext.StackContext());
+        this.evaluationContext.setStickyBucketDocWriter(
+                this.stickyBucketReadFailed ? StickyBucketDocWriter.DISCARDING : null);
         return this.evaluationContext;
     }
 
@@ -364,7 +368,7 @@ public class GrowthBook implements IGrowthBook {
         ExperimentResult<ValueType> result = experimentEvaluatorEvaluator
                 .evaluateExperiment(experiment, getEvaluationContext(), null);
 
-        fireSubscriptions(experiment, result);
+        GrowthBookUtils.fireSubscriptions(this.assigned, this.callbacks, experiment, result);
 
         return result;
     }
@@ -761,35 +765,14 @@ public class GrowthBook implements IGrowthBook {
     }
 
     private void refreshStickyBucketService(@Nullable String featuresDataModel) {
+        // The flag changes only when a load ran: a refresh that throws before reaching the store
+        // must not re-enable saving after an earlier failed load.
         if (context.getStickyBucketService() != null) {
-            GrowthBookUtils.refreshStickyBuckets(context, featuresDataModel, attributeOverrides);
+            this.stickyBucketReadFailed =
+                    !GrowthBookUtils.loadStickyBuckets(context, featuresDataModel, attributeOverrides);
             // Sync updated docs into the evaluation context so the next evalFeature call sees them.
             if (evaluationContext != null && evaluationContext.getUser() != null) {
                 evaluationContext.getUser().setStickyBucketAssignmentDocs(context.getStickyBucketAssignmentDocs());
-            }
-        }
-    }
-
-    private <ValueType> void fireSubscriptions(Experiment<ValueType> experiment, ExperimentResult<ValueType> result) {
-        String key = experiment.getKey();
-        // If assigned variation has changed, fire subscriptions
-        AssignedExperiment prev = this.assigned.get(key);
-        if (prev == null
-                || !Objects.equals(prev.getInExperiment(), result.getInExperiment())
-                || !Objects.equals(prev.getVariationId(), result.getVariationId())) {
-            AssignedExperiment current = new AssignedExperiment(
-                    experiment.getKey(),
-                    result.getInExperiment(),
-                    result.getVariationId()
-            );
-            this.assigned.put(key, current);
-
-            for (ExperimentRunCallback cb : this.callbacks) {
-                try {
-                    cb.onRun(experiment, result);
-                } catch (Exception e) {
-                    log.error(e.getMessage());
-                }
             }
         }
     }

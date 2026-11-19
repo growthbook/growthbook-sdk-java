@@ -12,8 +12,8 @@ import java.util.concurrent.Executor;
 
 /**
  * Configuration for {@link GrowthBookTrackingPlugin}. Defaults mirror the
- * GrowthBook Go SDK: POST {@code {ingestorHost}/events}, batch size 100,
- * flush every 10 seconds.
+ * GrowthBook JS and Go SDKs: POST {@code {ingestorHost}/track?client_key={clientKey}},
+ * batch size 100, flush every 10 seconds.
  *
  * <p>Settings with defaults are exposed only through their {@code resolved*()}
  * accessors so callers always read the effective value; the raw nullable
@@ -28,7 +28,7 @@ public final class TrackingPluginConfig {
     public static final Duration DEFAULT_BATCH_TIMEOUT = Duration.ofSeconds(10);
     public static final Duration DEFAULT_CLOSE_TIMEOUT = Duration.ofSeconds(5);
 
-    /** Base URL of the ingest endpoint. Events POST to {@code /events}. */
+    /** Base URL of the ingest endpoint. Events POST to {@code /track}. */
     @Getter(AccessLevel.NONE)
     @Nullable
     private final String ingestorHost;

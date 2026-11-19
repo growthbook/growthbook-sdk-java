@@ -9,6 +9,7 @@ import growthbook.sdk.java.multiusermode.internal.GlobalContextManager;
 import growthbook.sdk.java.multiusermode.internal.RemoteEvalCoordinator;
 import growthbook.sdk.java.stickyBucketing.StickyBucketService;
 import lombok.experimental.UtilityClass;
+import lombok.extern.slf4j.Slf4j;
 
 import javax.annotation.Nullable;
 import java.util.HashMap;
@@ -29,6 +30,7 @@ import java.util.Map;
  * without their persisted assignments, changing assignment behaviour and diverging from the
  * sticky-bucketing contract shared across GrowthBook SDKs.
  */
+@Slf4j
 @UtilityClass
 public final class UserContextUtils {
 
@@ -61,19 +63,16 @@ public final class UserContextUtils {
     }
 
     private static JsonObject globalAttributes(Options options) {
-        if (options.getGlobalAttributes() == null) {
-            return new JsonObject();
-        }
-        JsonObject globalAttributes = GrowthBookJsonUtils.getInstance()
-                .gson
-                .fromJson(options.getGlobalAttributes(), JsonObject.class);
-        return globalAttributes == null ? new JsonObject() : globalAttributes;
+        JsonObject globalAttributes = options.getGlobalAttributes();
+        return globalAttributes == null ? new JsonObject() : globalAttributes.deepCopy();
     }
 
     /**
      * Fetches sticky-bucket assignment docs for the user's (string-valued) attributes once per
      * request, unless the caller preloaded them. Mirrors the previous {@code GrowthBookClient}
      * behaviour so a configured {@link StickyBucketService} keeps driving experiment assignments.
+     * Values are formatted the way evaluation formats hash values, so {@code {"id": 1.0}} loads the
+     * {@code id||1} doc, and values that can't be hash values are skipped.
      */
     private static void preloadStickyBucketAssignments(Options options, UserContext userContext, JsonObject attributes) {
         StickyBucketService stickyBucketService = options.getStickyBucketService();
@@ -82,12 +81,18 @@ public final class UserContextUtils {
         }
         Map<String, String> attributeStrings = new HashMap<>();
         for (Map.Entry<String, JsonElement> entry : attributes.entrySet()) {
-            JsonElement value = entry.getValue();
-            if (value != null && value.isJsonPrimitive()) {
-                attributeStrings.put(entry.getKey(), value.getAsString());
+            String value = GrowthBookUtils.toHashValue(entry.getValue());
+            if (!value.isEmpty()) {
+                attributeStrings.put(entry.getKey(), value);
             }
         }
-        Map<String, StickyAssignmentsDocument> docs = stickyBucketService.getAllAssignments(attributeStrings);
+        Map<String, StickyAssignmentsDocument> docs;
+        try {
+            docs = stickyBucketService.getAllAssignments(attributeStrings);
+        } catch (RuntimeException e) {
+            log.warn("Sticky bucket service failed to load assignments; continuing with normal bucketing.", e);
+            return;
+        }
         userContext.setStickyBucketAssignmentDocs(docs);
     }
 }

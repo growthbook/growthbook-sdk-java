@@ -45,6 +45,8 @@ import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Collections;
@@ -71,6 +73,7 @@ public class NativeJavaGbFeatureRepository implements IGBFeaturesRepository {
     private static final String ENABLED = "enabled";
     private static final int QUANTITY_TO_CUT_SSE = 5;
     private static final String FILE_NAME_FOR_CACHE = "FEATURE_CACHE.json";
+    private static final String CACHE_KEY_PREFIX = "FEATURE_CACHE_";
     public static final String FILE_PATH_FOR_CACHE = "src/main/resources";
     public static final String EMPTY_JSON_OBJECT_STRING = "{}";
 
@@ -84,6 +87,12 @@ public class NativeJavaGbFeatureRepository implements IGBFeaturesRepository {
      */
     @Getter
     private final String featuresEndpoint;
+
+    /**
+     * Per-client cache key derived from {@link #featuresEndpoint}, so two SDK instances pointed at
+     * different endpoints never read or overwrite each other's cached payload in a shared cache store.
+     */
+    private final String cacheKey;
 
     /**
      * Endpoint for POST request
@@ -183,7 +192,7 @@ public class NativeJavaGbFeatureRepository implements IGBFeaturesRepository {
     /**
      * CachingManger allows to cache features data to file
      */
-    private AtomicReference<GbCacheManager> cacheManager;
+    private final AtomicReference<GbCacheManager> cacheManager;
     /**
      * Flag that enable CachingManager
      */
@@ -254,6 +263,7 @@ public class NativeJavaGbFeatureRepository implements IGBFeaturesRepository {
         this.featuresEndpoint = apiHost + FEATURES_ENDPOINT_PATH + clientKey;
         this.eventsEndpoint = apiHost + STREAMING_ENDPOINT_PATH + clientKey;
         this.remoteEvalEndPoint = RemoteEvalEndpoints.evalEndpoint(apiHost, clientKey);
+        this.cacheKey = buildCacheKey(this.featuresEndpoint);
         this.requestBodyForRemoteEval = requestBodyForRemoteEval;
 
         this.encryptionKey = encryptionKey;
@@ -265,9 +275,9 @@ public class NativeJavaGbFeatureRepository implements IGBFeaturesRepository {
         this.featureFetchRetryExecutor = new FeatureFetchRetryExecutor(this.retryPolicy);
         this.featureRefreshScheduler = new FeatureRefreshScheduler();
         this.refreshExpiresAt();
-            if (!this.isCacheDisabled.get()) {
-                this.cacheManager = cacheManager != null ? new AtomicReference<>(cacheManager) : new AtomicReference<>(determineCacheManager());
-            }
+        GbCacheManager resolvedManager = this.isCacheDisabled.get() ? null :
+                (cacheManager != null ? cacheManager : determineCacheManager());
+        this.cacheManager = new AtomicReference<>(resolvedManager);
     }
 
     /**
@@ -580,6 +590,27 @@ public class NativeJavaGbFeatureRepository implements IGBFeaturesRepository {
         );
     }
 
+    /**
+     * Derives a stable, per-endpoint cache key: a short SHA-256 prefix of the features endpoint. This
+     * scopes the cached payload to one client so a shared cache store (e.g. Redis) cannot serve one
+     * SDK instance another instance's features. Falls back to the legacy shared
+     * {@link #FILE_NAME_FOR_CACHE} only if SHA-256 is somehow unavailable.
+     */
+    private static String buildCacheKey(String featuresEndpoint) {
+        try {
+            MessageDigest digest = MessageDigest.getInstance("SHA-256");
+            byte[] hash = digest.digest(featuresEndpoint.getBytes(StandardCharsets.UTF_8));
+            StringBuilder hex = new StringBuilder(16);
+            for (int i = 0; i < 8; i++) {
+                hex.append(Character.forDigit((hash[i] >> 4) & 0xF, 16));
+                hex.append(Character.forDigit(hash[i] & 0xF, 16));
+            }
+            return CACHE_KEY_PREFIX + hex + ".json";
+        } catch (NoSuchAlgorithmException e) {
+            return FILE_NAME_FOR_CACHE;
+        }
+    }
+
     @Nullable
     private Long getCacheLastUpdatedMillis() {
         GbCacheManager resolvedCacheManager = this.cacheManager == null ? null : this.cacheManager.get();
@@ -588,7 +619,7 @@ public class NativeJavaGbFeatureRepository implements IGBFeaturesRepository {
         }
 
         try {
-            return resolvedCacheManager.getLastUpdatedMillis(FILE_NAME_FOR_CACHE);
+            return resolvedCacheManager.getLastUpdatedMillis(this.cacheKey);
         } catch (RuntimeException cacheException) {
             log.warn("Failed to read the feature cache timestamp.", cacheException);
             return null;
@@ -602,7 +633,7 @@ public class NativeJavaGbFeatureRepository implements IGBFeaturesRepository {
         }
 
         try {
-            String cachedData = resolvedCacheManager.loadCache(FILE_NAME_FOR_CACHE);
+            String cachedData = resolvedCacheManager.loadCache(this.cacheKey);
             if (cachedData == null || cachedData.trim().isEmpty()) {
                 return false;
             }
@@ -647,7 +678,7 @@ public class NativeJavaGbFeatureRepository implements IGBFeaturesRepository {
             }
 
             if (!isFromCache && !isCacheDisabled.get() && cacheManager.get() != null) {
-                try { cacheManager.get().saveContent(FILE_NAME_FOR_CACHE, responseJsonString); } catch (RuntimeException ignored) {}
+                try { cacheManager.get().saveContent(this.cacheKey, responseJsonString); } catch (RuntimeException ignored) {}
             }
 
             try {
@@ -942,7 +973,7 @@ public class NativeJavaGbFeatureRepository implements IGBFeaturesRepository {
     private String getCachedFeatures() throws FeatureFetchException {
         String cachedData = cacheManager == null || cacheManager.get() == null
                 ? null
-                : cacheManager.get().loadCache(FILE_NAME_FOR_CACHE);
+                : cacheManager.get().loadCache(this.cacheKey);
         if (cachedData == null) {
             log.error("FeatureFetchException: No Features from Cache");
             throw new FeatureFetchException(FeatureFetchException.FeatureFetchErrorCode.NO_RESPONSE_ERROR);
