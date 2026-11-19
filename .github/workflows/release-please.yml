@@ -50,7 +50,7 @@ jobs:
 
       - name: Upload Artifacts to GitHub Release
         if: ${{ steps.release.outputs.release_created }}
-        uses: softprops/action-gh-release@v1
+        uses: softprops/action-gh-release@v3
         with:
           # Attach the jars to release-please's release rather than creating a second, v-prefixed tag and release.
           tag_name: ${{ steps.release.outputs.tag_name }}

@@ -262,6 +262,23 @@ public class GrowthBookUtils {
     }
 
     /**
+     * {@link #refreshStickyBuckets} that reports whether the stored assignments were read.
+     *
+     * @param context            {@link GBContext} that contains sticky bucketing attributes and sticky bucket service
+     * @param featuresDataModel  A string representing the features data model.
+     * @param attributeOverrides {@link JsonObject} containing attribute overrides.
+     * @return {@code false} when the service failed to load assignments. The context then holds no
+     * documents and evaluation buckets normally; the caller must not save those assignments, because
+     * they could replace the variation the store already holds. {@code true} otherwise, including
+     * when no service is configured.
+     */
+    public static boolean loadStickyBuckets(GBContext context,
+                                            String featuresDataModel,
+                                            JsonObject attributeOverrides) {
+        return StickyBucketPreload.loadStickyBuckets(context, featuresDataModel, attributeOverrides);
+    }
+
+    /**
      * Supportive method to get attribute values from the context.
      *
      * @param context            {@link GBContext} The context containing user attributes.
