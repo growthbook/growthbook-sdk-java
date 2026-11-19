@@ -506,8 +506,8 @@ public class FeatureEvaluator implements IFeatureEvaluator {
      *
      * <p>If the reference is missing from the payload the experiment is left untouched (aggregate
      * weights apply). If a definition is present but no leaf matches, a fallback marker
-     * ({@link #CONTEXTUAL_BANDIT_FALLBACK_LEAF_ID}) is recorded and the experiment's existing or
-     * equal weights are used.
+     * ({@link #CONTEXTUAL_BANDIT_FALLBACK_LEAF_ID}) is recorded and the reported weights reflect the
+     * split actually used: the rule's ranges when present, otherwise its existing or equal weights.
      */
     private <T> void buildContextualBanditExperiment(
             Experiment<T> experiment,
@@ -565,9 +565,12 @@ public class FeatureEvaluator implements IFeatureEvaluator {
                     leaf.getLeafId(), variationCount, contextualBanditRef);
         }
 
-        ArrayList<Double> fallbackWeights = isUsableWeights(experiment.getWeights(), variationCount)
-                ? experiment.getWeights()
-                : GrowthBookUtils.getEqualWeights(variationCount);
+        ArrayList<Double> fallbackWeights = rangeImpliedWeights(experiment.getRanges(), variationCount);
+        if (fallbackWeights == null) {
+            fallbackWeights = isUsableWeights(experiment.getWeights(), variationCount)
+                    ? experiment.getWeights()
+                    : GrowthBookUtils.getEqualWeights(variationCount);
+        }
         experiment.setContextualBandit(ContextualBandit.builder()
                 .leafId(CONTEXTUAL_BANDIT_FALLBACK_LEAF_ID)
                 .variationWeights(fallbackWeights)
@@ -608,6 +611,36 @@ public class FeatureEvaluator implements IFeatureEvaluator {
             total += range.getRangeEnd() - range.getRangeStart();
         }
         return Math.max(0.0, Math.min(1.0, total));
+    }
+
+    /**
+     * The variation split encoded by a rule's explicit ranges, normalized to sum to 1, or
+     * {@code null} when there are no ranges, they do not match the variation count, or they
+     * enroll no traffic.
+     */
+    @Nullable
+    private static ArrayList<Double> rangeImpliedWeights(@Nullable ArrayList<BucketRange> ranges, int variationCount) {
+        if (ranges == null || ranges.size() != variationCount) {
+            return null;
+        }
+        ArrayList<Double> widths = new ArrayList<>(variationCount);
+        double total = 0.0;
+        for (BucketRange range : ranges) {
+            if (range == null || range.getRangeStart() == null || range.getRangeEnd() == null) {
+                return null;
+            }
+            double width = Math.max(0.0, range.getRangeEnd() - range.getRangeStart());
+            widths.add(width);
+            total += width;
+        }
+        if (total <= 0.0) {
+            return null;
+        }
+        ArrayList<Double> weights = new ArrayList<>(variationCount);
+        for (Double width : widths) {
+            weights.add(width / total);
+        }
+        return weights;
     }
 
     @Nullable

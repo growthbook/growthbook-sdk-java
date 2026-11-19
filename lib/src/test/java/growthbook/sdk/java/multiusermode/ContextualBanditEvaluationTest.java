@@ -166,6 +166,29 @@ class ContextualBanditEvaluationTest {
                     + "{\"leafId\":0,\"condition\":{\"country\":\"US\"},\"weights\":[0.0,1.0]}"
                     + "]}}}";
 
+    private static final String PAYLOAD_RULE_RANGES_PARTIAL_COVERAGE =
+            "{\"features\":{\"banner\":{\"defaultValue\":\"default\",\"rules\":[{"
+                    + "\"contextualBanditRef\":\"bandit-1\","
+                    + "\"contextualVariations\":[\"control\",\"treatment\"],"
+                    + "\"ranges\":[[0.0,0.25],[0.25,1.0]],"
+                    + "\"weights\":[0.5,0.5],"
+                    + "\"hashAttribute\":\"id\""
+                    + "}]}},"
+                    + "\"contextualBandits\":{\"bandit-1\":{\"banditVersion\":9,\"contexts\":["
+                    + "{\"leafId\":0,\"condition\":{\"country\":\"US\"},\"weights\":[0.0,1.0]}"
+                    + "]}}}";
+
+    private static final String PAYLOAD_RULE_RANGES_LENGTH_MISMATCH =
+            "{\"features\":{\"banner\":{\"defaultValue\":\"default\",\"rules\":[{"
+                    + "\"contextualBanditRef\":\"bandit-1\","
+                    + "\"contextualVariations\":[\"control\",\"treatment\"],"
+                    + "\"ranges\":[[0.0,1.0]],"
+                    + "\"hashAttribute\":\"id\""
+                    + "}]}},"
+                    + "\"contextualBandits\":{\"bandit-1\":{\"banditVersion\":9,\"contexts\":["
+                    + "{\"leafId\":0,\"condition\":{\"country\":\"US\"},\"weights\":[0.0,1.0]}"
+                    + "]}}}";
+
     @Test
     @DisplayName("Verify: a matching leaf applies its weights and records leafId/variationWeights/banditVersion")
     void matchingLeafAppliesWeightsAndRecordsMetadata() {
@@ -352,6 +375,51 @@ class ContextualBanditEvaluationTest {
     void matchedLeafKeepsRuleRangesTrafficLimit() {
         withClient(PAYLOAD_RULE_RANGES_ZERO_COVERAGE, client -> {
             FeatureResult<String> result = client.evalFeature("banner", String.class, userContext("{\"id\":\"u1\",\"country\":\"US\"}"));
+
+            assertEquals("default", result.getValue());
+            assertNull(result.getExperimentResult());
+        });
+    }
+
+    @Test
+    @DisplayName("Verify: with no matching leaf, the reported weights follow the rule's ranges that control assignment")
+    void fallbackReportsWeightsImpliedByRuleRanges() {
+        withClient(PAYLOAD_RULE_RANGES_WITH_LEAF, client -> {
+            FeatureResult<String> result = client.evalFeature("banner", String.class, userContext("{\"id\":\"u1\",\"country\":\"FR\"}"));
+
+            assertEquals("control", result.getValue());
+            assertEquals(Integer.valueOf(-1), result.getExperimentResult().getLeafId());
+            assertEquals(Arrays.asList(1.0, 0.0), result.getExperimentResult().getVariationWeights());
+        });
+    }
+
+    @Test
+    @DisplayName("Verify: with no matching leaf, range-implied weights take precedence over the rule's weights")
+    void fallbackPrefersRuleRangesOverRuleWeights() {
+        withClient(PAYLOAD_RULE_RANGES_PARTIAL_COVERAGE, client -> {
+            FeatureResult<String> result = client.evalFeature("banner", String.class, userContext("{\"id\":\"u1\",\"country\":\"FR\"}"));
+
+            assertEquals(Integer.valueOf(-1), result.getExperimentResult().getLeafId());
+            assertEquals(Arrays.asList(0.25, 0.75), result.getExperimentResult().getVariationWeights());
+        });
+    }
+
+    @Test
+    @DisplayName("Verify: with no matching leaf, ranges that do not match the variation count fall back to equal weights")
+    void fallbackIgnoresRuleRangesWithLengthMismatch() {
+        withClient(PAYLOAD_RULE_RANGES_LENGTH_MISMATCH, client -> {
+            FeatureResult<String> result = client.evalFeature("banner", String.class, userContext("{\"id\":\"u1\",\"country\":\"FR\"}"));
+
+            assertEquals(Integer.valueOf(-1), result.getExperimentResult().getLeafId());
+            assertEquals(Arrays.asList(0.5, 0.5), result.getExperimentResult().getVariationWeights());
+        });
+    }
+
+    @Test
+    @DisplayName("Verify: with no matching leaf, ranges that enroll no traffic leave the user out of the experiment")
+    void fallbackWithZeroCoverageRangesEnrollsNobody() {
+        withClient(PAYLOAD_RULE_RANGES_ZERO_COVERAGE, client -> {
+            FeatureResult<String> result = client.evalFeature("banner", String.class, userContext("{\"id\":\"u1\",\"country\":\"FR\"}"));
 
             assertEquals("default", result.getValue());
             assertNull(result.getExperimentResult());
