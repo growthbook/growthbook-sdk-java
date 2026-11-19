@@ -256,6 +256,7 @@ class GrowthBookClientAsyncApiTest {
 
             assertNotNull(second.get(10, TimeUnit.SECONDS),
                     "cancelling one caller must not poison the shared coalesced fetch");
+            assertEquals(1, service.fetchCalls.size(), "both callers shared one store read");
         } finally {
             client.shutdown();
         }
@@ -349,7 +350,7 @@ class GrowthBookClientAsyncApiTest {
 
             ExecutionException error = assertThrows(ExecutionException.class,
                     () -> future.get(10, TimeUnit.SECONDS),
-                    "a blocking store that cannot be offloaded must fail the async evaluation, not re-bucket");
+                    "an executor that rejects the read and the continuation fails the async evaluation");
             assertTrue(error.getCause() instanceof RejectedExecutionException);
             assertEquals(stored, service.getAssignments("id", "u1").getAssignments().get("exp-async-saturated__0"),
                     "a rejected read must leave the stored variation untouched");
@@ -530,19 +531,65 @@ class GrowthBookClientAsyncApiTest {
                 .asyncExecutor(executor)
                 .build());
         try {
-            CompletableFuture<ExperimentResult<String>> run = client.runAsync(experiment("exp-shutdown"), user("u1"));
+            List<CompletableFuture<?>> failing = Arrays.<CompletableFuture<?>>asList(
+                    client.runAsync(experiment("exp-shutdown"), user("u1")),
+                    client.evalFeatureAsync("missing", String.class, user("u1")),
+                    client.isOnAsync("missing", user("u1")),
+                    client.isOffAsync("missing", user("u1")));
             CompletableFuture<String> value = client.getFeatureValueAsync("missing", "fallback", String.class, user("u1"));
+            assertEquals(5, client.pendingAsyncCount(), "every pending future is registered for shutdown");
 
             client.shutdown();
 
-            ExecutionException error = assertThrows(ExecutionException.class, () -> run.get(10, TimeUnit.SECONDS));
-            assertTrue(error.getCause() instanceof IllegalStateException, "got " + error.getCause());
+            for (CompletableFuture<?> future : failing) {
+                ExecutionException error = assertThrows(ExecutionException.class, () -> future.get(10, TimeUnit.SECONDS));
+                assertTrue(error.getCause() instanceof IllegalStateException, "got " + error.getCause());
+            }
             assertEquals("fallback", value.get(10, TimeUnit.SECONDS),
                     "getFeatureValueAsync keeps its default-value contract across shutdown");
+            assertEquals(0, client.pendingAsyncCount(), "a resolved future leaves the registry");
 
             executor.runAll(); // the continuations that were queued when shutdown ran
             assertEquals(0, exposures.get(), "an evaluation reported as failed must not track an exposure later");
             assertEquals(0, service.saveCalls.get());
+        } finally {
+            client.shutdown();
+        }
+    }
+
+    @Test
+    @Timeout(30)
+    void callsMadeAfterShutdownAreResolvedEvenWhenTheirWorkNeverRuns() throws Exception {
+        ManualExecutor executor = new ManualExecutor(); // never runs what is queued on it
+        GrowthBookClient client = new GrowthBookClient(Options.builder()
+                .asyncStickyBucketService(new ForeignThreadStickyService())
+                .stickyBucketIdentifierAttributes(Collections.singletonList("id"))
+                .asyncExecutor(executor)
+                .build());
+        client.shutdown();
+
+        CompletableFuture<ExperimentResult<String>> run = client.runAsync(experiment("exp-late"), user("u1"));
+        CompletableFuture<Boolean> isOn = client.isOnAsync("missing", user("u1"));
+        CompletableFuture<String> value = client.getFeatureValueAsync("missing", "fallback", String.class, user("u1"));
+        CompletableFuture<Boolean> initializing = client.initializeAsync();
+
+        assertTrue(run.isCompletedExceptionally(), "a call that arrives after the shutdown sweep must not stay pending");
+        assertTrue(isOn.isCompletedExceptionally());
+        assertEquals("fallback", value.getNow(null));
+        assertEquals(Boolean.FALSE, initializing.getNow(null));
+    }
+
+    @Test
+    @Timeout(30)
+    void completedFuturesLeaveTheShutdownRegistry() throws Exception {
+        GrowthBookClient client = new GrowthBookClient(stickyOptions(new ForeignThreadStickyService(), null));
+        try {
+            for (int i = 0; i < 50; i++) {
+                client.runAsync(experiment("exp-registry"), user("u" + i)).get(10, TimeUnit.SECONDS);
+                client.getFeatureValueAsync("missing", "fallback", String.class, user("u" + i)).get(10, TimeUnit.SECONDS);
+            }
+
+            assertEquals(0, client.pendingAsyncCount(), "the registry must not grow with completed calls");
         } finally {
             client.shutdown();
         }
@@ -708,6 +755,58 @@ class GrowthBookClientAsyncApiTest {
         } finally {
             client.shutdown();
             wireMock.stop();
+        }
+    }
+
+    @Test
+    @Timeout(30)
+    void getFeatureValueAsyncReturnsTheDefaultForAValueOfTheWrongTypeLikeItsSyncTwin() throws Exception {
+        WireMockServer wireMock = featuresServer();
+        GrowthBookClient client = new GrowthBookClient(Options.builder()
+                .apiHost("http://localhost:" + wireMock.port())
+                .clientKey(CLIENT_KEY)
+                .build());
+        try {
+            assertTrue(client.initialize());
+            UserContext user = user("u1");
+
+            // "exp-feature" holds a string; asking for an Integer cannot be deserialised.
+            assertEquals(Integer.valueOf(7), client.getFeatureValue("exp-feature", 7, Integer.class, user));
+            assertEquals(Integer.valueOf(7),
+                    client.getFeatureValueAsync("exp-feature", 7, Integer.class, user).get(10, TimeUnit.SECONDS));
+        } finally {
+            client.shutdown();
+            wireMock.stop();
+        }
+    }
+
+    @Test
+    @Timeout(30)
+    void aNullFeatureKeyThrowsNullPointerExceptionLikeTheSyncTwins() {
+        GrowthBookClient client = new GrowthBookClient();
+        try {
+            assertThrows(NullPointerException.class, () -> client.getFeature(null, user("u1")));
+            assertThrows(NullPointerException.class, () -> client.getFeatureAsync(null, user("u1")));
+            assertThrows(NullPointerException.class, () -> client.getFeatureValueAsync(null, "fallback", user("u1")));
+        } finally {
+            client.shutdown();
+        }
+    }
+
+    @Test
+    @Timeout(30)
+    void aPrefetchedContextIsEvaluatedWithoutAnotherStoreRead() throws Exception {
+        ForeignThreadStickyService service = new ForeignThreadStickyService();
+        GrowthBookClient client = new GrowthBookClient(stickyOptions(service, null));
+        try {
+            UserContext prefetched = client.prefetchStickyBuckets(user("u1")).get(10, TimeUnit.SECONDS);
+
+            CompletableFuture<ExperimentResult<String>> run = client.runAsync(experiment("exp-prefetched"), prefetched);
+
+            assertTrue(run.isDone(), "nothing to wait for: the documents are already on the context");
+            assertEquals(1, service.fetchCalls.size(), "only the prefetch reads the store");
+        } finally {
+            client.shutdown();
         }
     }
 

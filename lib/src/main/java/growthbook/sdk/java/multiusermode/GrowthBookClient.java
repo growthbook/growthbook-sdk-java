@@ -350,6 +350,11 @@ public class GrowthBookClient {
         return future;
     }
 
+    /** Test seam: how many async futures are registered for {@link #shutdown()} right now. */
+    int pendingAsyncCount() {
+        return pendingAsync.size();
+    }
+
     /** An async evaluation that {@link #shutdown()} completes exceptionally if it is still pending. */
     private <T> CompletableFuture<T> trackAsyncEvaluation(CompletableFuture<T> future) {
         return completeOnShutdown(future, () -> future.completeExceptionally(
