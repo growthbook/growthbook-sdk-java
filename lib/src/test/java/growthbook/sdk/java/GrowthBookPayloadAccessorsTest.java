@@ -54,6 +54,23 @@ class GrowthBookPayloadAccessorsTest {
     }
 
     @Test
+    @DisplayName("Verify: getFeatures returns a feature whose rules are null in the payload")
+    void getFeaturesToleratesNullRules() {
+        // Given
+        GBContext context = GBContext.builder()
+                .featuresJson("{\"feature-a\":{\"defaultValue\":true,\"rules\":null}}")
+                .build();
+        GrowthBook subject = new GrowthBook(context);
+
+        // When
+        Map<String, Feature<?>> features = subject.getFeatures();
+
+        // Then
+        assertEquals(1, features.size());
+        assertEquals(true, features.get("feature-a").getDefaultValue());
+    }
+
+    @Test
     @DisplayName("Verify: getFeatures returns an unmodifiable snapshot")
     void getFeaturesIsUnmodifiable() {
         // Given

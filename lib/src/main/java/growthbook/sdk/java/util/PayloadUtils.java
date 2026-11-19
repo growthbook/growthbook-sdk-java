@@ -165,8 +165,11 @@ public final class PayloadUtils {
     }
 
     @SuppressWarnings("unchecked")
-    private static void restoreRuleValueTypes(List<? extends FeatureRule<?>> original,
-                                              List<? extends FeatureRule<?>> copy) {
+    private static void restoreRuleValueTypes(@Nullable List<? extends FeatureRule<?>> original,
+                                              @Nullable List<? extends FeatureRule<?>> copy) {
+        if (original == null || copy == null) {
+            return;
+        }
         int shared = Math.min(original.size(), copy.size());
         for (int i = 0; i < shared; i++) {
             FeatureRule<Object> src = (FeatureRule<Object>) original.get(i);
