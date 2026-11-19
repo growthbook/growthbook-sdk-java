@@ -7,7 +7,12 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.github.tomakehurst.wiremock.WireMockServer;
+import com.github.tomakehurst.wiremock.common.FileSource;
 import com.github.tomakehurst.wiremock.core.WireMockConfiguration;
+import com.github.tomakehurst.wiremock.extension.Parameters;
+import com.github.tomakehurst.wiremock.extension.ResponseTransformer;
+import com.github.tomakehurst.wiremock.http.Request;
+import com.github.tomakehurst.wiremock.http.Response;
 import growthbook.sdk.java.multiusermode.configurations.Options;
 import growthbook.sdk.java.multiusermode.configurations.UserContext;
 import growthbook.sdk.java.repository.FeatureRefreshStrategy;
@@ -19,6 +24,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 
 import java.time.Duration;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Client-facing behaviour of the inline bootstrap payload: an offline cold start that still evaluates
@@ -71,17 +78,18 @@ class GrowthBookClientInitialPayloadTest {
     @Timeout(10)
     @DisplayName("Offline SSE: a seeded start does not block initialize() on the network and serves the seed")
     void seededSseClient_initializesWithoutBlocking() {
-        // The features endpoint hangs well past the test timeout: a blocking SSE startup would stall
-        // initialize() and trip @Timeout, so completing quickly proves the seeded startup runs off-thread.
-        wireMock.resetAll();
-        wireMock.stubFor(get(urlPathMatching("/api/features/.*"))
+        // Given
+        GatedResponseTransformer gate = new GatedResponseTransformer();
+        WireMockServer gatedServer = new WireMockServer(WireMockConfiguration.options()
+                .dynamicPort()
+                .extensions(gate));
+        gatedServer.start();
+        gatedServer.stubFor(get(urlPathMatching("/api/features/.*"))
                 .willReturn(aResponse()
                         .withStatus(200)
-                        .withFixedDelay(60_000)
                         .withBody("{\"features\":{\"my-flag\":{\"defaultValue\":true}}}")));
-
         Options options = Options.builder()
-                .apiHost("http://localhost:" + wireMock.port())
+                .apiHost("http://localhost:" + gatedServer.port())
                 .clientKey("sdk-abc123")
                 .isCacheDisabled(true)
                 .refreshStrategy(FeatureRefreshStrategy.SERVER_SENT_EVENTS)
@@ -90,10 +98,18 @@ class GrowthBookClientInitialPayloadTest {
                 .build();
         GrowthBookClient client = new GrowthBookClient(options);
 
-        assertTrue(client.initialize(), "seeded SSE client should be ready from the seed without waiting on the network");
-        assertTrue(client.isOn("my-flag", UserContext.builder().build()));
+        try {
+            // When
+            boolean initialized = client.initialize();
 
-        client.shutdown();
+            // Then
+            assertTrue(initialized, "seeded SSE client should be ready from the seed without waiting on the network");
+            assertTrue(client.isOn("my-flag", UserContext.builder().build()));
+        } finally {
+            gate.release.countDown();
+            client.shutdown();
+            gatedServer.stop();
+        }
     }
 
     @Test
@@ -110,5 +126,24 @@ class GrowthBookClientInitialPayloadTest {
 
         assertFalse(client.initialize());
         client.shutdown();
+    }
+
+    private static final class GatedResponseTransformer extends ResponseTransformer {
+        private final CountDownLatch release = new CountDownLatch(1);
+
+        @Override
+        public Response transform(Request request, Response response, FileSource files, Parameters parameters) {
+            try {
+                release.await(60, TimeUnit.SECONDS);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
+            return response;
+        }
+
+        @Override
+        public String getName() {
+            return "gated-response";
+        }
     }
 }
