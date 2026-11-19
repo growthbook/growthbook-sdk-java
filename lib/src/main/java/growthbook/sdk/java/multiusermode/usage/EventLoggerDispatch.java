@@ -90,7 +90,9 @@ public final class EventLoggerDispatch {
                                                 @Nullable PluginRegistry pluginRegistry) {
         fireExperimentViewed(options, call.getExperiment(), call.getResult(), call.getUserContext());
         if (pluginRegistry != null) {
-            pluginRegistry.fireExperimentViewed(call.getExperiment(), call.getResult());
+            UserContext userContext = call.getUserContext();
+            pluginRegistry.fireExperimentViewed(call.getExperiment(), call.getResult(),
+                    userContext != null ? userContext.getAttributes() : null);
         }
     }
 

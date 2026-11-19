@@ -1,5 +1,6 @@
 package growthbook.sdk.java.multiusermode;
 
+import com.google.gson.JsonObject;
 import growthbook.sdk.java.model.Experiment;
 import growthbook.sdk.java.model.ExperimentResult;
 import growthbook.sdk.java.multiusermode.configurations.Options;
@@ -15,6 +16,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -177,6 +179,32 @@ class DeferredTrackingBufferTest {
         // Then
         assertEquals(2, pluginViews.get());
         assertTrue(buffer.getCalls().isEmpty());
+    }
+
+    @Test
+    @DisplayName("Flush passes the buffered user's attributes to registered plugins")
+    void flushPassesBufferedUserAttributesToPlugins() {
+        // Given
+        AtomicReference<JsonObject> pluginAttributes = new AtomicReference<>();
+        PluginRegistry pluginRegistry = new PluginRegistry(Collections.singletonList(new GrowthBookPlugin() {
+            @Override
+            public <V> void onExperimentViewed(Experiment<V> experiment,
+                                               ExperimentResult<V> result,
+                                               JsonObject userAttributes) {
+                pluginAttributes.set(userAttributes);
+            }
+        }));
+        JsonObject attributes = new JsonObject();
+        attributes.addProperty("id", "user-1");
+        DeferredTrackingBuffer buffer = new DeferredTrackingBuffer();
+        buffer.add(experiment("a"), result(0, "id", "user-1", "v0"),
+                UserContext.builder().attributes(attributes).build());
+
+        // When
+        buffer.flush(Options.builder().build(), pluginRegistry);
+
+        // Then
+        assertEquals(attributes, pluginAttributes.get());
     }
 
     @Test
