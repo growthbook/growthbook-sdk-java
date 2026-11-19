@@ -19,8 +19,8 @@ class GrowthBookJsonUtilsTest {
         Namespace namespace = Namespace
                 .builder()
                 .id("pricing")
-                .rangeStart(0.0f)
-                .rangeEnd(0.6f)
+                .rangeStart(0.0)
+                .rangeEnd(0.6)
                 .build();
 
         assertEquals("[\"pricing\",0.0,0.6]", subject.gson.toJson(namespace));
@@ -31,13 +31,13 @@ class GrowthBookJsonUtilsTest {
         Namespace namespace = subject.gson.fromJson("[\"pricing\",0.0,0.6]", Namespace.class);
 
         assertEquals(namespace.getId(), "pricing");
-        assertEquals(namespace.getRangeStart(), 0.0f);
-        assertEquals(namespace.getRangeEnd(), 0.6f);
+        assertEquals(namespace.getRangeStart(), 0.0);
+        assertEquals(namespace.getRangeEnd(), 0.6);
     }
 
     @Test
     void canSerializeBucketRanges() {
-        BucketRange subject = new BucketRange(0.3f, 0.7f);
+        BucketRange subject = new BucketRange(0.3, 0.7);
 
         assertEquals("[0.3,0.7]", GrowthBookJsonUtils.getInstance().gson.toJson(subject));
     }
@@ -46,8 +46,8 @@ class GrowthBookJsonUtilsTest {
     void canDeserializeBucketRanges() {
         BucketRange subject = GrowthBookJsonUtils.getInstance().gson.fromJson("[0.3,0.7]", BucketRange.class);
 
-        assertEquals(subject.getRangeStart(), 0.3f);
-        assertEquals(subject.getRangeEnd(), 0.7f);
+        assertEquals(subject.getRangeStart(), 0.3);
+        assertEquals(subject.getRangeEnd(), 0.7);
     }
 
 

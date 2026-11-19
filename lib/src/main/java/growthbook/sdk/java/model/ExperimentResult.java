@@ -70,10 +70,10 @@ public class ExperimentResult<ValueType> {
     String name;
 
     /**
-     * The hash value used to assign a variation (float from 0 to 1)
+     * The hash value used to assign a variation (double from 0 to 1)
      */
     @Nullable
-    Float bucket;
+    Double bucket;
 
     /**
      * Used for holdout groups
@@ -100,7 +100,7 @@ public class ExperimentResult<ValueType> {
      * @param hashUsed      If a hash was used to assign a variation
      * @param key           The experiment key, if any
      * @param name          The human-readable name of the assigned variation
-     * @param bucket        The hash value used to assign a variation (float from 0 to 1)
+     * @param bucket        The hash value used to assign a variation (double from 0 to 1)
      * @param passThrough   Used for holdout groups
      */
     @Builder
@@ -114,7 +114,7 @@ public class ExperimentResult<ValueType> {
             Boolean hashUsed,
             @Nullable String key,
             @Nullable String name,
-            @Nullable Float bucket,
+            @Nullable Double bucket,
             @Nullable Boolean passThrough,
             @Nullable Boolean stickyBucketUsed
     ) {

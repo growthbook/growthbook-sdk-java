@@ -28,6 +28,8 @@ import java.util.List;
  *     <li>{@code requestTimeout}, when set, is non-negative and within OkHttp's supported range
  *     ({@code Duration.ZERO} disables the timeout).</li>
  *     <li>{@code remoteEvalCacheTtlSeconds} is positive when set.</li>
+ *     <li>{@code stickyBucketService} and {@code asyncStickyBucketService} are not both set, and
+ *     {@code stickyBucketTimeout} is non-negative.</li>
  *     <li>No contradictory cache configuration (e.g. a {@code cacheManager} supplied while caching
  *     is disabled, or {@link CacheMode#CUSTOM} without a {@code cacheManager}).</li>
  *     <li>Remote-eval incompatibilities, delegated to
@@ -77,8 +79,18 @@ public final class OptionsValidator {
         checkRequestTimeout(options.getRequestTimeout(), violations);
         checkRemoteEvalCacheTtl(options.getRemoteEvalCacheTtlSeconds(), violations);
         checkCacheConfiguration(options, violations);
+        checkStickyBucketConfiguration(options, violations);
         violations.addAll(RemoteEvalOptionsValidator.remoteEvalViolations(options));
         return Collections.unmodifiableList(violations);
+    }
+
+    private static void checkStickyBucketConfiguration(Options options, List<String> violations) {
+        if (options.getStickyBucketService() != null && options.getAsyncStickyBucketService() != null) {
+            violations.add("configure either stickyBucketService or asyncStickyBucketService, not both");
+        }
+        if (options.getStickyBucketTimeout().isNegative()) {
+            violations.add("stickyBucketTimeout must not be negative, was " + options.getStickyBucketTimeout());
+        }
     }
 
     private static void checkApiHost(@Nullable String apiHost, List<String> violations) {

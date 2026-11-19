@@ -9,7 +9,7 @@ public class MathUtils {
 
     /**
      * Fowler-Noll-Vo algorithm
-     * fnv32a returns a long, so we convert that to a float using a modulus
+     * fnv32a returns a long, so we convert that to a double using a modulus
      *
      * @param data byte list
      * @return long
@@ -27,6 +27,25 @@ public class MathUtils {
     }
 
     /**
+     * Fowler-Noll-Vo FNV-1a 32 over the string's UTF-16 code units, like the JS SDK, which XORs
+     * each {@code charCodeAt} value. A character outside the BMP contributes its two surrogates.
+     *
+     * @param value the string to hash
+     * @return the unsigned 32-bit hash
+     */
+    public static long fnv1a_32(String value) {
+        long hash = INIT32;
+
+        for (int i = 0; i < value.length(); i++) {
+            hash ^= value.charAt(i);
+            hash *= PRIME32;
+            hash %= MOD32;
+        }
+
+        return hash;
+    }
+
+    /**
      * Given a value, ensures it's clamped between the range provided
      *
      * @param value      The number you want to make sure is between lowerRange and upperRange
@@ -34,7 +53,7 @@ public class MathUtils {
      * @param upperRange The highest value
      * @return the clamped number
      */
-    public static float clamp(float value, float lowerRange, float upperRange) {
+    public static double clamp(double value, double lowerRange, double upperRange) {
         if (value > upperRange) return upperRange;
         if (value < lowerRange) return lowerRange;
         return value;
@@ -46,10 +65,10 @@ public class MathUtils {
      * @param items Numbers to add
      * @return total
      */
-    public static float sum(List<Float> items) {
-        float total = 0;
+    public static double sum(List<Double> items) {
+        double total = 0;
 
-        for (float item : items) {
+        for (double item : items) {
             total += item;
         }
 
