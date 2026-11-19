@@ -87,14 +87,16 @@ public class UserContext {
      * @return a builder seeded with the current field values
      */
     public UserContextBuilder toBuilder() {
-        return new UserContextBuilder()
-                .attributes(this.attributes)
-                .attributesJson(this.attributesJson)
+        UserContextBuilder builder = new UserContextBuilder()
                 .url(this.url)
                 .stickyBucketAssignmentDocs(this.stickyBucketAssignmentDocs)
                 .forcedVariationsMap(this.forcedVariationsMap)
                 .forcedFeatureValues(this.forcedFeatureValues)
                 .trackingCallback(this.trackingCallback);
+        builder.attributes = this.attributes;
+        builder.attributesJson = this.attributesJson;
+        builder.attributesCopied = true;
+        return builder;
     }
 
     public JsonObject getAttributes() {
@@ -152,6 +154,8 @@ public class UserContext {
         @Nullable
         private TrackingCallbackWithUser trackingCallback;
 
+        private boolean attributesCopied;
+
         public UserContextBuilder trackingCallback(@Nullable TrackingCallbackWithUser trackingCallback) {
             this.trackingCallback = trackingCallback;
             return this;
@@ -160,14 +164,16 @@ public class UserContext {
         public UserContextBuilder attributesJson(String attributesJson) {
             this.attributesJson = attributesJson;
             // Only transform if attributes not explicitly provided
-            if (this.attributes == null) {
+            if (this.attributes == null || this.attributesCopied) {
                 this.attributes = TransformationUtil.transformAttributes(attributesJson);
+                this.attributesCopied = false;
             }
             return this;
         }
 
         public UserContextBuilder attributes(JsonObject attributes) {
             this.attributes = attributes;
+            this.attributesCopied = false;
             return this;
         }
 
@@ -199,6 +205,7 @@ public class UserContext {
             this.attributes = attributes == null
                     ? null
                     : GrowthBookJsonUtils.getInstance().gson.toJsonTree(attributes).getAsJsonObject();
+            this.attributesCopied = false;
             return this;
         }
 
