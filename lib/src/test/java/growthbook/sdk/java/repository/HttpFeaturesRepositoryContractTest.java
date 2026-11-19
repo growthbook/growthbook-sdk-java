@@ -85,14 +85,7 @@ abstract class HttpFeaturesRepositoryContractTest<R extends IGBFeaturesRepositor
     }
 
     @AfterEach
-    void stopServer(org.junit.jupiter.api.TestInfo info) throws Exception {
-        StringBuilder dump = new StringBuilder(getClass().getSimpleName() + " " + info.getDisplayName() + " port=" + wireMock.port() + "\n");
-        for (com.github.tomakehurst.wiremock.stubbing.ServeEvent e : wireMock.getAllServeEvents()) {
-            dump.append(e.getRequest().getLoggedDate().getTime()).append(" ").append(e.getRequest().getMethod()).append(" ").append(e.getRequest().getUrl())
-                .append(" INM=").append(e.getRequest().getHeader("If-None-Match")).append(" UA=").append(e.getRequest().getHeader("User-Agent"))
-                .append(" matched=").append(e.getWasMatched()).append(" status=").append(e.getResponse().getStatus()).append("\n");
-        }
-        java.nio.file.Files.write(java.nio.file.Paths.get("/tmp/gbaudit/wm.log"), dump.toString().getBytes(), java.nio.file.StandardOpenOption.CREATE, java.nio.file.StandardOpenOption.APPEND);
+    void stopServer() {
         wireMock.stop();
     }
 
