@@ -33,11 +33,16 @@ import java.util.concurrent.atomic.AtomicLong;
  * <p>Run with: {@code ./gradlew :lib:runStickyPerfHarness}
  * (properties: -PstickyPerfThreads, -PstickyPerfRequests, -PstickyPerfLatencyMs)
  *
- * <p>Context for the numbers: before the async sticky work, every evaluation
- * performed one BLOCKING getAllAssignments per eval call on the request thread
- * (plus a blocking save per new assignment), so throughput was capped at
- * threads / latency with zero overlap. The scenarios below show the same work
- * with offloaded+coalesced reads, the async API, and per-request prefetch.
+ * <p>How to read the numbers:
+ * <ul>
+ *   <li>A blocking store on the sync API is called on the request thread, one read per evaluation
+ *       and one save per new assignment, so throughput is capped at threads / latency.</li>
+ *   <li>A blocking store on the async API is offloaded to the client's executor, so throughput
+ *       is capped by that pool's size instead.</li>
+ *   <li>An async store holds no thread while it waits; the remaining scenarios show it with the
+ *       sync API, with coalesced reads for one hot user, with the async API and with one
+ *       prefetch per request.</li>
+ * </ul>
  */
 public final class StickyBucketPerfHarness {
 
@@ -88,8 +93,8 @@ public final class StickyBucketPerfHarness {
         }
     }
 
-    /** Blocking store: one Thread.sleep round trip per batched call (offloaded by the client). */
-    private static final class SimulatedSyncStore implements StickyBucketService {
+    /** Blocking store: one Thread.sleep round trip per call, on whichever thread the client calls it from. */
+    private static final class SimulatedBlockingStore implements StickyBucketService {
         private final Map<String, StickyAssignmentsDocument> store = new ConcurrentHashMap<>();
 
         private void roundTrip() {
@@ -150,10 +155,8 @@ public final class StickyBucketPerfHarness {
             return thread;
         });
 
-        runSyncApiScenario("sync store / sync API / distinct users",
-                Options.builder().stickyBucketService(new SimulatedSyncStore())
-                        .stickyBucketIdentifierAttributes(Collections.singletonList("id")).build(),
-                true);
+        runSyncApiScenario("blocking store / sync API / distinct users", blockingOptions(), true);
+        runAsyncApiScenario("blocking store / async API / distinct users", blockingOptions(), timer);
         runSyncApiScenario("async store / sync API / distinct users",
                 asyncOptions(timer), true);
         runSyncApiScenario("async store / sync API / hot user (coalesced)",
@@ -163,6 +166,13 @@ public final class StickyBucketPerfHarness {
                 asyncOptions(timer));
 
         timer.shutdownNow();
+    }
+
+    private static Options blockingOptions() {
+        return Options.builder()
+                .stickyBucketService(new SimulatedBlockingStore())
+                .stickyBucketIdentifierAttributes(Collections.singletonList("id"))
+                .build();
     }
 
     private static Options asyncOptions(ScheduledExecutorService timer) {
