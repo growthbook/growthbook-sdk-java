@@ -178,6 +178,9 @@ public final class SseSession {
 
         @Override
         public void onFailure(@Nullable Throwable error) {
+            if (error != null) {
+                log.error("SSE connection failed: {}", error.getMessage(), error);
+            }
             connectionLost();
         }
     }
