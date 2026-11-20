@@ -2,6 +2,7 @@ package growthbook.sdk.java.plugin.tracking;
 
 import com.github.tomakehurst.wiremock.WireMockServer;
 import com.github.tomakehurst.wiremock.core.WireMockConfiguration;
+import com.github.tomakehurst.wiremock.http.RequestMethod;
 import com.github.tomakehurst.wiremock.verification.LoggedRequest;
 import com.google.common.util.concurrent.Uninterruptibles;
 import com.google.gson.JsonArray;
@@ -19,9 +20,11 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executor;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -29,7 +32,6 @@ import java.util.concurrent.TimeUnit;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
 import static com.github.tomakehurst.wiremock.client.WireMock.post;
-import static com.github.tomakehurst.wiremock.client.WireMock.postRequestedFor;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -44,13 +46,20 @@ class GrowthBookTrackingPluginTest {
     private static final long AWAIT_SECONDS = 5;
 
     private WireMockServer wireMock;
-    private final BlockingQueue<Object> servedRequests = new LinkedBlockingQueue<>();
+    private final BlockingQueue<LoggedRequest> servedRequests = new LinkedBlockingQueue<>();
+    private final List<LoggedRequest> trackRequests = new CopyOnWriteArrayList<>();
 
     @BeforeEach
     void setUp() {
         wireMock = new WireMockServer(WireMockConfiguration.options().dynamicPort());
         wireMock.start();
-        wireMock.addMockServiceRequestListener((request, response) -> servedRequests.add(request));
+        wireMock.addMockServiceRequestListener((request, response) -> {
+            LoggedRequest logged = LoggedRequest.createFrom(request);
+            if (RequestMethod.POST.equals(logged.getMethod()) && logged.getUrl().startsWith("/track")) {
+                trackRequests.add(logged);
+            }
+            servedRequests.add(logged);
+        });
         wireMock.stubFor(post(urlPathEqualTo("/track")).willReturn(aResponse().withStatus(200)));
     }
 
@@ -461,7 +470,7 @@ class GrowthBookTrackingPluginTest {
     }
 
     private List<LoggedRequest> trackRequests() {
-        return wireMock.findAll(postRequestedFor(urlPathEqualTo("/track")));
+        return new ArrayList<>(trackRequests);
     }
 
     private List<LoggedRequest> awaitRequests(int count) throws InterruptedException {
