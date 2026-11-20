@@ -96,6 +96,17 @@ class GrowthBookClientAsyncApiTest {
                 .build();
     }
 
+    private static TrackingCallbackWithUser countingExposures(AtomicInteger exposures) {
+        return new TrackingCallbackWithUser() {
+            @Override
+            public <ValueType> void onTrack(Experiment<ValueType> experiment,
+                                            ExperimentResult<ValueType> result,
+                                            UserContext userContext) {
+                exposures.incrementAndGet();
+            }
+        };
+    }
+
     private static Experiment<String> experiment(String key) {
         return Experiment.<String>builder()
                 .key(key)
@@ -499,14 +510,7 @@ class GrowthBookClientAsyncApiTest {
     void shutdownResolvesPendingEvaluationsAndTheirQueuedWorkNeverRuns() throws Exception {
         ForeignThreadStickyService service = new ForeignThreadStickyService();
         AtomicInteger exposures = new AtomicInteger();
-        TrackingCallbackWithUser tracking = new TrackingCallbackWithUser() {
-            @Override
-            public <ValueType> void onTrack(Experiment<ValueType> experiment,
-                                            ExperimentResult<ValueType> result,
-                                            UserContext userContext) {
-                exposures.incrementAndGet();
-            }
-        };
+        TrackingCallbackWithUser tracking = countingExposures(exposures);
         ManualExecutor executor = new ManualExecutor();
         GrowthBookClient client = new GrowthBookClient(Options.builder()
                 .asyncStickyBucketService(service)
@@ -551,14 +555,7 @@ class GrowthBookClientAsyncApiTest {
         service.store.put("id||u1", storedAssignment("u1", "exp-in-flight", stored));
         service.fetchGate = new CountDownLatch(1); // never opened: the read is still pending at shutdown
         AtomicInteger exposures = new AtomicInteger();
-        TrackingCallbackWithUser tracking = new TrackingCallbackWithUser() {
-            @Override
-            public <ValueType> void onTrack(Experiment<ValueType> experiment,
-                                            ExperimentResult<ValueType> result,
-                                            UserContext userContext) {
-                exposures.incrementAndGet();
-            }
-        };
+        TrackingCallbackWithUser tracking = countingExposures(exposures);
         GrowthBookClient client = new GrowthBookClient(stickyOptions(service, tracking));
         CompletableFuture<ExperimentResult<String>> run = client.runAsync(experiment, user("u1"));
         CompletableFuture<String> value = client.getFeatureValueAsync("missing", "fallback", String.class, user("u1"));
@@ -596,23 +593,54 @@ class GrowthBookClientAsyncApiTest {
 
     @Test
     @Timeout(30)
-    void aCallMadeAfterShutdownFailsEvenWhenThereIsNothingToWaitFor() {
-        // No sticky bucket service: the evaluation could run at once on the calling thread.
+    void noAsyncMethodEvaluatesAfterShutdownWhateverIsConfigured() throws Exception {
+        WireMockServer wireMock = featuresServer();
+        try {
+            assertAClosedClientDoesNotEvaluate(wireMock, null, null);
+            assertAClosedClientDoesNotEvaluate(wireMock, new ForeignThreadStickyService(), null);
+            assertAClosedClientDoesNotEvaluate(wireMock, null, new InMemoryStickyBucketServiceImpl());
+        } finally {
+            wireMock.stop();
+        }
+    }
+
+    /**
+     * Every async evaluation method, for a plain user and for one whose documents were prefetched.
+     * Without a store, or with prefetched documents, there is nothing to wait for, so only the
+     * shutdown check keeps the call from evaluating at once on the calling thread.
+     */
+    private static void assertAClosedClientDoesNotEvaluate(WireMockServer wireMock,
+                                                           AsyncStickyBucketService asyncStore,
+                                                           StickyBucketService blockingStore) throws Exception {
         AtomicInteger exposures = new AtomicInteger();
-        TrackingCallbackWithUser tracking = new TrackingCallbackWithUser() {
-            @Override
-            public <ValueType> void onTrack(Experiment<ValueType> experiment,
-                                            ExperimentResult<ValueType> result,
-                                            UserContext userContext) {
-                exposures.incrementAndGet();
-            }
-        };
-        GrowthBookClient client = new GrowthBookClient(Options.builder().trackingCallBackWithUser(tracking).build());
+        GrowthBookClient client = new GrowthBookClient(Options.builder()
+                .apiHost("http://localhost:" + wireMock.port())
+                .clientKey(CLIENT_KEY)
+                .asyncStickyBucketService(asyncStore)
+                .stickyBucketService(blockingStore)
+                .trackingCallBackWithUser(countingExposures(exposures))
+                .build());
+        assertTrue(client.initialize());
+        UserContext prefetched = client.prefetchStickyBuckets(user("u1")).get(10, TimeUnit.SECONDS);
+        FeatureKey<String> experimentFeature = TypedKey.ofString("exp-feature");
+
         client.shutdown();
 
-        CompletableFuture<ExperimentResult<String>> run = client.runAsync(experiment("exp-closed"), user("u1"));
-
-        assertTrue(run.isCompletedExceptionally(), "a closed client must not evaluate");
+        for (UserContext user : Arrays.asList(user("u1"), prefetched)) {
+            List<CompletableFuture<?>> failing = Arrays.<CompletableFuture<?>>asList(
+                    client.evalFeatureAsync("exp-feature", String.class, user),
+                    client.getFeatureAsync(experimentFeature, user),
+                    client.isOnAsync("new-home", user),
+                    client.isOffAsync("new-home", user),
+                    client.runAsync(experiment("exp-closed"), user));
+            for (CompletableFuture<?> future : failing) {
+                ExecutionException error = assertThrows(ExecutionException.class, () -> future.get(10, TimeUnit.SECONDS));
+                assertTrue(error.getCause() instanceof IllegalStateException, "got " + error.getCause());
+            }
+            assertEquals("none", client.getFeatureValueAsync("exp-feature", "none", String.class, user)
+                    .get(10, TimeUnit.SECONDS), "the default, not the value the loaded feature would give");
+            assertEquals("none", client.getFeatureValueAsync(experimentFeature, "none", user).get(10, TimeUnit.SECONDS));
+        }
         assertEquals(0, exposures.get(), "a closed client must not track an exposure");
     }
 
