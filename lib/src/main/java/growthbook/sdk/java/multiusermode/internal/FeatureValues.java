@@ -1,6 +1,5 @@
 package growthbook.sdk.java.multiusermode.internal;
 
-import com.google.gson.JsonParseException;
 import growthbook.sdk.java.util.GrowthBookJsonUtils;
 import lombok.extern.slf4j.Slf4j;
 
@@ -49,7 +48,7 @@ public final class FeatureValues {
             GrowthBookJsonUtils json = GrowthBookJsonUtils.getInstance();
             T converted = json.gson.fromJson(json.gson.toJsonTree(value), type);
             return converted != null ? converted : defaultValue;
-        } catch (JsonParseException | IllegalArgumentException e) {
+        } catch (RuntimeException e) {
             log.error("Feature value {} does not deserialize into {}: {}", value, type.getName(), e.getMessage());
             return defaultValue;
         }

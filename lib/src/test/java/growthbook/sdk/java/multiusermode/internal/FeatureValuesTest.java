@@ -1,13 +1,16 @@
 package growthbook.sdk.java.multiusermode.internal;
 
+import growthbook.sdk.java.model.BucketRange;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
 
 class FeatureValuesTest {
 
@@ -103,6 +106,22 @@ class FeatureValuesTest {
         assertEquals(defaultValue, converted);
         assertEquals(defaultValue, missing);
         assertNull(defaultValue.title);
+    }
+
+    @Test
+    @DisplayName("Falls back to the default when the SDK's own reader rejects the value's shape")
+    void fallsBackWhenSdkReaderRejectsShape() {
+        // Given
+        BucketRange defaultValue = new BucketRange(0.0, 1.0);
+        Map<String, Object> objectValue = Collections.<String, Object>singletonMap("start", 0.0);
+
+        // When
+        BucketRange fromObject = FeatureValues.convert(objectValue, defaultValue, BucketRange.class);
+        BucketRange fromOneItemArray = FeatureValues.convert(Arrays.asList(0.5), defaultValue, BucketRange.class);
+
+        // Then
+        assertSame(defaultValue, fromObject);
+        assertSame(defaultValue, fromOneItemArray);
     }
 
     private static final class Banner {
