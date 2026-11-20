@@ -596,6 +596,28 @@ class GrowthBookClientAsyncApiTest {
 
     @Test
     @Timeout(30)
+    void aCallMadeAfterShutdownFailsEvenWhenThereIsNothingToWaitFor() {
+        // No sticky bucket service: the evaluation could run at once on the calling thread.
+        AtomicInteger exposures = new AtomicInteger();
+        TrackingCallbackWithUser tracking = new TrackingCallbackWithUser() {
+            @Override
+            public <ValueType> void onTrack(Experiment<ValueType> experiment,
+                                            ExperimentResult<ValueType> result,
+                                            UserContext userContext) {
+                exposures.incrementAndGet();
+            }
+        };
+        GrowthBookClient client = new GrowthBookClient(Options.builder().trackingCallBackWithUser(tracking).build());
+        client.shutdown();
+
+        CompletableFuture<ExperimentResult<String>> run = client.runAsync(experiment("exp-closed"), user("u1"));
+
+        assertTrue(run.isCompletedExceptionally(), "a closed client must not evaluate");
+        assertEquals(0, exposures.get(), "a closed client must not track an exposure");
+    }
+
+    @Test
+    @Timeout(30)
     void completedFuturesLeaveTheShutdownRegistry() throws Exception {
         GrowthBookClient client = new GrowthBookClient(stickyOptions(new ForeignThreadStickyService(), null));
         try {

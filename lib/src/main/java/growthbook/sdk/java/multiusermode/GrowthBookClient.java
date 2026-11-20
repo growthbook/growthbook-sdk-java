@@ -1061,9 +1061,14 @@ public class GrowthBookClient {
 
     private CompletableFuture<EvaluationContext> startEvalContextAsync(UserContext userContext,
                                                                        Set<String> inlineIdentifierAttributes) {
+        if (clientShutdown.get()) {
+            throw shutDownError();
+        }
         UserContext safeUserContext = userContext == null ? UserContext.builder().build() : userContext;
         GlobalContext snapshot = this.globalContextManager.getCurrentGlobalContext();
         if (this.options.isRemoteEvalEnabled()) {
+            // No sticky read here: options validation rejects remote evaluation combined with a
+            // sticky bucket service, so building the context fails before anything is evaluated.
             return supplyOnExecutor(() -> buildEvalContext(safeUserContext, snapshot, stickyWriter(false, false)));
         }
         if (this.stickyBucketManager == null || safeUserContext.getStickyBucketAssignmentDocs() != null) {
