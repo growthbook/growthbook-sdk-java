@@ -130,7 +130,7 @@ public class NativeJavaGbFeatureRepository implements IGBFeaturesRepository {
                 .cache(new FeatureCacheStore(this.endpoints.cacheKey(), Boolean.TRUE.equals(isCacheDisabled), cacheManager))
                 .decryptionKey(encryptionKey)
                 .strategy(refreshStrategy)
-                .swrTtlSeconds(this.swrTtlSeconds.get())
+                .swrTtlSeconds(this.swrTtlSeconds::get)
                 .backgroundFetchInterval(backgroundFetchInterval)
                 .retryPolicy(this.retryPolicy)
                 .swrRefresh(FeatureRefreshEngine.SwrRefresh.ON_READ)

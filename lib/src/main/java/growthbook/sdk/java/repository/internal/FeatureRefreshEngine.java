@@ -38,6 +38,7 @@ import java.util.Optional;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.IntSupplier;
 
 /**
  * The refresh core both feature repositories share: fetching with retries, conditional requests
@@ -82,7 +83,7 @@ public final class FeatureRefreshEngine {
     private final RefreshPoller poller;
     private final SseSession sse;
     private final Clock clock;
-    private final int swrTtlSeconds;
+    private final IntSupplier swrTtlSeconds;
     @Nullable
     private final Duration backgroundFetchInterval;
     private final SwrRefresh swrRefresh;
@@ -104,7 +105,7 @@ public final class FeatureRefreshEngine {
      * @param cache                   the persisted payload
      * @param decryptionKey           the key for encrypted payloads, or {@code null}
      * @param strategy                how features are refreshed, stale-while-revalidate when {@code null}
-     * @param swrTtlSeconds           the stale-while-revalidate TTL
+     * @param swrTtlSeconds           the stale-while-revalidate TTL, read on each use
      * @param backgroundFetchInterval the minimum interval between non-forced refreshes, or {@code null}
      * @param retryPolicy             the retry policy for fetches and SSE reconnects
      * @param swrRefresh              how a stale-while-revalidate refresh is triggered
@@ -118,7 +119,7 @@ public final class FeatureRefreshEngine {
             FeatureCacheStore cache,
             @Nullable String decryptionKey,
             @Nullable FeatureRefreshStrategy strategy,
-            int swrTtlSeconds,
+            IntSupplier swrTtlSeconds,
             @Nullable Duration backgroundFetchInterval,
             FeatureFetchRetryPolicy retryPolicy,
             SwrRefresh swrRefresh,
@@ -162,7 +163,7 @@ public final class FeatureRefreshEngine {
                 case STALE_WHILE_REVALIDATE:
                     refresh(RefreshMode.DEFAULT, FeatureRefreshSource.INITIALIZATION);
                     if (swrRefresh == SwrRefresh.POLLING) {
-                        poller.start(swrTtlSeconds);
+                        poller.start(swrTtlSeconds.getAsInt());
                     }
                     break;
                 case SERVER_SENT_EVENTS:
@@ -388,7 +389,7 @@ public final class FeatureRefreshEngine {
         if (eTag != null) {
             headers.put(HttpHeaders.IF_NONE_MATCH.getHeader(), eTag);
         }
-        headers.put(HttpHeaders.CACHE_CONTROL.getHeader(), "max-age=" + swrTtlSeconds);
+        headers.put(HttpHeaders.CACHE_CONTROL.getHeader(), "max-age=" + swrTtlSeconds.getAsInt());
         return headers;
     }
 
@@ -520,7 +521,7 @@ public final class FeatureRefreshEngine {
         log.info("Falling back to stale-while-revalidate refresh strategy. 'X-Sse-Support: enabled' not present on resource returned at {}", endpoints.features());
         strategy = FeatureRefreshStrategy.STALE_WHILE_REVALIDATE;
         if (swrRefresh == SwrRefresh.POLLING) {
-            poller.start(swrTtlSeconds);
+            poller.start(swrTtlSeconds.getAsInt());
         }
     }
 
@@ -537,7 +538,7 @@ public final class FeatureRefreshEngine {
     }
 
     private void refreshExpiresAt() {
-        expiresAt.set(Instant.now(clock).getEpochSecond() + swrTtlSeconds);
+        expiresAt.set(Instant.now(clock).getEpochSecond() + swrTtlSeconds.getAsInt());
     }
 
     private boolean isExpired() {
