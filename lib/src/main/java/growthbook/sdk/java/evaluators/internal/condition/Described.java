@@ -15,7 +15,6 @@ final class Described {
     }
 
     static Cond cond(Cond cond, JsonElement source) {
-        String description = source.toString();
         return new Cond() {
             @Nullable
             @Override
@@ -25,13 +24,12 @@ final class Described {
 
             @Override
             public String toString() {
-                return description;
+                return source.toString();
             }
         };
     }
 
     static ValueTest value(ValueTest test, JsonElement source) {
-        String description = source.toString();
         return new ValueTest() {
             @Nullable
             @Override
@@ -41,7 +39,7 @@ final class Described {
 
             @Override
             public String toString() {
-                return description;
+                return source.toString();
             }
         };
     }
