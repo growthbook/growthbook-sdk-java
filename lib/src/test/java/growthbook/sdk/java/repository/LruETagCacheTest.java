@@ -253,4 +253,19 @@ class LruETagCacheTest {
             executor.shutdownNow();
         }
     }
+
+    @Test
+    void testNegativeMaxSizeIsRejected() {
+        assertThrows(IllegalArgumentException.class, () -> new LruETagCache(-1));
+    }
+
+    @Test
+    void testZeroMaxSizeKeepsNothing() {
+        LruETagCache empty = new LruETagCache(0);
+
+        empty.put("url1", "etag1");
+
+        assertEquals(0, empty.size());
+        assertNull(empty.get("url1"));
+    }
 }
