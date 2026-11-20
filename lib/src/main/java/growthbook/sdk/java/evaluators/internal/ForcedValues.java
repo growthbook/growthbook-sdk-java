@@ -1,7 +1,6 @@
 package growthbook.sdk.java.evaluators.internal;
 
 import com.google.gson.Gson;
-import com.google.gson.JsonParseException;
 import growthbook.sdk.java.util.GrowthBookJsonUtils;
 import growthbook.sdk.java.util.UrlUtils;
 import lombok.extern.slf4j.Slf4j;
@@ -239,7 +238,7 @@ public final class ForcedValues {
 
         try {
             return gson.fromJson(value, valueTypeClass);
-        } catch (JsonParseException e) {
+        } catch (RuntimeException e) {
             log.error(e.getMessage(), e);
             return null;
         }

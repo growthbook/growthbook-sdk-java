@@ -1,6 +1,7 @@
 package growthbook.sdk.java.evaluators.internal;
 
 import com.google.gson.JsonObject;
+import growthbook.sdk.java.model.BucketRange;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -177,6 +178,32 @@ class ForcedValuesTest {
 
         // When
         Object value = ForcedValues.getForcedValueFromUrl("config", url, JsonObject.class);
+
+        // Then
+        assertNull(value);
+    }
+
+    @Test
+    @DisplayName("Returns null for an empty array that a registered type adapter cannot read")
+    void returnsNullWhenTypeAdapterRejectsEmptyArray() throws MalformedURLException {
+        // Given
+        URL url = new URL("http://localhost/?gb~range=%5B%5D");
+
+        // When
+        Object value = ForcedValues.getForcedValueFromUrl("range", url, BucketRange.class);
+
+        // Then
+        assertNull(value);
+    }
+
+    @Test
+    @DisplayName("Returns null for a JSON shape that a registered type adapter cannot read")
+    void returnsNullWhenTypeAdapterRejectsShape() throws MalformedURLException {
+        // Given
+        URL url = new URL("http://localhost/?gb~range=%7B%22start%22%3A0%7D");
+
+        // When
+        Object value = ForcedValues.getForcedValueFromUrl("range", url, BucketRange.class);
 
         // Then
         assertNull(value);
