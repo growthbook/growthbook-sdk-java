@@ -559,6 +559,37 @@ class GrowthBookClientAsyncApiTest {
 
     @Test
     @Timeout(30)
+    void anEvaluationWaitingOnItsStoreReadAtShutdownFailsInsteadOfBucketingWithoutIt() throws Exception {
+        // Default pool: shutdown cuts the pending read short and the continuation still gets to run.
+        Experiment<String> experiment = experiment("exp-in-flight");
+        String stored = variationKeyOtherThanHashed(experiment, user("u1"));
+        ForeignThreadStickyService service = new ForeignThreadStickyService();
+        service.store.put("id||u1", storedAssignment("u1", "exp-in-flight", stored));
+        service.fetchGate = new CountDownLatch(1); // never opened: the read is still pending at shutdown
+        AtomicInteger exposures = new AtomicInteger();
+        TrackingCallbackWithUser tracking = new TrackingCallbackWithUser() {
+            @Override
+            public <ValueType> void onTrack(Experiment<ValueType> experiment,
+                                            ExperimentResult<ValueType> result,
+                                            UserContext userContext) {
+                exposures.incrementAndGet();
+            }
+        };
+        GrowthBookClient client = new GrowthBookClient(stickyOptions(service, tracking));
+        CompletableFuture<ExperimentResult<String>> run = client.runAsync(experiment, user("u1"));
+        CompletableFuture<String> value = client.getFeatureValueAsync("missing", "fallback", String.class, user("u1"));
+
+        client.shutdown();
+
+        ExecutionException error = assertThrows(ExecutionException.class, () -> run.get(10, TimeUnit.SECONDS));
+        assertTrue(error.getCause() instanceof IllegalStateException, "got " + error.getCause());
+        assertEquals("fallback", value.get(10, TimeUnit.SECONDS));
+        assertEquals(0, exposures.get(), "no exposure for a variation bucketed without the stored assignment");
+        assertEquals(0, service.saveCalls.get());
+    }
+
+    @Test
+    @Timeout(30)
     void callsMadeAfterShutdownAreResolvedEvenWhenTheirWorkNeverRuns() throws Exception {
         ManualExecutor executor = new ManualExecutor(); // never runs what is queued on it
         GrowthBookClient client = new GrowthBookClient(Options.builder()

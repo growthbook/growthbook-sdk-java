@@ -357,8 +357,11 @@ public class GrowthBookClient {
 
     /** An async evaluation that {@link #shutdown()} completes exceptionally if it is still pending. */
     private <T> CompletableFuture<T> trackAsyncEvaluation(CompletableFuture<T> future) {
-        return completeOnShutdown(future, () -> future.completeExceptionally(
-                new IllegalStateException("GrowthBookClient has been shut down")));
+        return completeOnShutdown(future, () -> future.completeExceptionally(shutDownError()));
+    }
+
+    private static IllegalStateException shutDownError() {
+        return new IllegalStateException("GrowthBookClient has been shut down");
     }
 
     private void recordInitializationFailure(Throwable error) {
@@ -714,10 +717,10 @@ public class GrowthBookClient {
      *       The one exception: when the executor rejects the continuation, no other thread is left,
      *       so the future fails on the thread that completed the read.</li>
      *   <li>A sticky bucket read that fails or times out does not fail the future: the evaluation
-     *       continues with normal bucketing and saves nothing. That includes a read cut short by
-     *       {@link #shutdown()}.</li>
+     *       continues with normal bucketing and saves nothing.</li>
      *   <li>The future completes exceptionally when the executor rejects the work, when building
-     *       the evaluation fails, or when {@link #shutdown()} finds it still pending. Nothing is
+     *       the evaluation fails, or when {@link #shutdown()} runs before the evaluation does: an
+     *       evaluation still waiting on its store read is failed, not bucketed without it. Nothing is
      *       thrown on the calling thread, except a {@code NullPointerException} for a null
      *       {@code FeatureKey}, as in the synchronous methods.</li>
      *   <li>The user context and its attributes must not be modified until the future completes.</li>
@@ -1071,6 +1074,11 @@ public class GrowthBookClient {
         // thread — e.g. a Netty event loop during an outage.
         return this.stickyBucketManager.fetchAssignments(identifiers)
                 .handleAsync((docs, error) -> {
+                    if (clientShutdown.get()) {
+                        // shutdown() cut this evaluation's wait short. Fail it: bucketing now would
+                        // serve a variation chosen without the user's stored assignment.
+                        throw shutDownError();
+                    }
                     boolean stickyReadFailed = error != null;
                     if (stickyReadFailed) {
                         logFailedStickyRead(error instanceof CompletionException && error.getCause() != null
