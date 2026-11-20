@@ -177,11 +177,11 @@ class SseSessionTest {
         @Override
         public SseConnection openEvents(String url, SseListener listener) {
             listeners.add(listener);
-            opens.incrementAndGet();
             if (failEveryConnection) {
                 listener.onFailure(new IllegalStateException("refused"));
             }
             synchronized (openWaiters) {
+                opens.incrementAndGet();
                 openWaiters.forEach(CountDownLatch::countDown);
             }
             return () -> {

@@ -132,6 +132,24 @@ class LocalGbFeatureRepositoryBehaviorTest {
                 String.valueOf(repository.getParsedFeatures().get("greeting").getDefaultValue()));
     }
 
+    @Test
+    @DisplayName("Rejects a path the file system cannot represent as a configuration error and reports the failure")
+    void rejectsInvalidPath() {
+        // Given
+        LocalGbFeatureRepository repository = new LocalGbFeatureRepository("invalid\u0000path");
+        RecordingRefreshListener listener = new RecordingRefreshListener();
+        repository.addFeatureRefreshListener(listener);
+
+        // When
+        FeatureFetchException exception = assertThrows(FeatureFetchException.class, () -> repository.initialize());
+
+        // Then
+        assertEquals(FeatureFetchErrorCode.CONFIGURATION_ERROR, exception.getErrorCode());
+        assertEquals(1, listener.events.size());
+        assertSame(exception, listener.events.get(0).getError());
+        assertEquals("{}", repository.getFeaturesJson());
+    }
+
     @ParameterizedTest(name = "content=[{0}]")
     @ValueSource(strings = {"", "   ", "null", "{\"flag-a\":", "[1,2]", "\"text\""})
     @DisplayName("Rejects an empty, null, malformed or non-object file as a configuration error")

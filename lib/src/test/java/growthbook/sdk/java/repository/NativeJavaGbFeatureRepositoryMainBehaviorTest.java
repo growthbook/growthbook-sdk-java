@@ -18,6 +18,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
+import static com.github.tomakehurst.wiremock.client.WireMock.equalTo;
 import static com.github.tomakehurst.wiremock.client.WireMock.get;
 import static com.github.tomakehurst.wiremock.client.WireMock.getRequestedFor;
 import static com.github.tomakehurst.wiremock.client.WireMock.post;
@@ -167,6 +168,25 @@ class NativeJavaGbFeatureRepositoryMainBehaviorTest {
 
         // Then
         wireMock.verify(1, getRequestedFor(urlEqualTo(FEATURES_PATH)));
+    }
+
+    @Test
+    @DisplayName("A TTL updated after construction applies to the next request")
+    void ttlUpdatedAfterConstructionAppliesToNextRequest() throws Exception {
+        // Given
+        stubFeatures(FEATURES_RESPONSE);
+        NativeJavaGbFeatureRepository subject = track(repositoryBuilder()
+                .refreshStrategy(FeatureRefreshStrategy.STALE_WHILE_REVALIDATE)
+                .swrTtlSeconds(60)
+                .build());
+        subject.initialize();
+
+        // When
+        subject.getSwrTtlSeconds().set(5);
+        subject.refreshFeatures();
+
+        // Then
+        wireMock.verify(getRequestedFor(urlEqualTo(FEATURES_PATH)).withHeader("Cache-Control", equalTo("max-age=5")));
     }
 
     private NativeJavaGbFeatureRepository.NativeJavaGbFeatureRepositoryBuilder repositoryBuilder() {

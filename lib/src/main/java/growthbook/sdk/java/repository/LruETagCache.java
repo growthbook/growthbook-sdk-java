@@ -11,7 +11,14 @@ public class LruETagCache {
 
     private final Map<String, String> cache;
 
+    /**
+     * @param maxSize the most entries kept; zero keeps none
+     * @throws IllegalArgumentException when {@code maxSize} is negative
+     */
     public LruETagCache(int maxSize) {
+        if (maxSize < 0) {
+            throw new IllegalArgumentException("maxSize must not be negative: " + maxSize);
+        }
         this.cache = new LinkedHashMap<String, String>(16, 0.75f, true) {
             @Override
             protected boolean removeEldestEntry(Map.Entry<String, String> eldest) {

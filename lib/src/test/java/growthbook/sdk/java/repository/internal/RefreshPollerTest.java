@@ -5,6 +5,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 
 import java.time.Clock;
+import java.time.Instant;
+import java.time.ZoneOffset;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -16,6 +18,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class RefreshPollerTest {
 
+    private static final Clock FIXED_CLOCK = Clock.fixed(Instant.parse("2026-01-01T00:00:00Z"), ZoneOffset.UTC);
+
     @Test
     @DisplayName("Keeps polling when a poll throws")
     void keepsPollingWhenPollThrows() {
@@ -24,7 +28,7 @@ class RefreshPollerTest {
         RefreshPoller poller = new RefreshPoller(() -> {
             polls.incrementAndGet();
             throw new IllegalStateException("network down");
-        }, Clock.systemUTC());
+        }, FIXED_CLOCK);
 
         // When
         poller.pollOnce();
@@ -46,7 +50,7 @@ class RefreshPollerTest {
             polls.incrementAndGet();
             insidePoll.countDown();
             release.await();
-        }, Clock.systemUTC());
+        }, FIXED_CLOCK);
         Thread firstPoll = new Thread(poller::pollOnce);
         firstPoll.start();
         assertTrue(insidePoll.await(5, TimeUnit.SECONDS));
@@ -65,7 +69,7 @@ class RefreshPollerTest {
     void pollsOnNamedDaemonThread() {
         // Given
         RefreshPoller poller = new RefreshPoller(() -> {
-        }, Clock.systemUTC());
+        }, FIXED_CLOCK);
 
         // When
         poller.start(3600);
@@ -89,7 +93,7 @@ class RefreshPollerTest {
     void stopsWithoutStarting() {
         // Given
         RefreshPoller poller = new RefreshPoller(() -> {
-        }, Clock.systemUTC());
+        }, FIXED_CLOCK);
 
         // When / Then
         assertDoesNotThrow(poller::stop);

@@ -14,6 +14,7 @@ import java.util.concurrent.TimeUnit;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class LruETagCacheTest {
@@ -306,5 +307,26 @@ class LruETagCacheTest {
         } finally {
             executor.shutdownNow();
         }
+    }
+
+    @Test
+    @DisplayName("Rejects a negative max size")
+    void rejectsNegativeMaxSize() {
+        // When / Then
+        assertThrows(IllegalArgumentException.class, () -> new LruETagCache(-1));
+    }
+
+    @Test
+    @DisplayName("A zero max size keeps no ETag")
+    void zeroMaxSizeKeepsNothing() {
+        // Given
+        LruETagCache empty = new LruETagCache(0);
+
+        // When
+        empty.put("url1", "etag1");
+
+        // Then
+        assertEquals(0, empty.size());
+        assertNull(empty.get("url1"));
     }
 }
