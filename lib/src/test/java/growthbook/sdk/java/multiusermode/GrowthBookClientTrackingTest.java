@@ -240,6 +240,7 @@ class GrowthBookClientTrackingTest {
                 new EvaluationContext.StackContext(),
                 Options.builder().trackingCallBackWithUser(failsOnce).build());
         context.setSuppressTrackingErrors(true); // as GrowthBookClient builds it
+        context.setExperimentTracker(new ExperimentTracker(10_000));
         ExperimentResult<String> result = ExperimentResult.<String>builder()
                 .hashAttribute("id")
                 .hashValue("u1")
@@ -286,7 +287,7 @@ class GrowthBookClientTrackingTest {
                 new EvaluationContext.StackContext(),
                 Options.builder().trackingCallBackWithUser(slowThenFails).build());
         context[0].setSuppressTrackingErrors(true); // as GrowthBookClient builds it
-        context[0].setSharedExperimentTracker(tracker);
+        context[0].setExperimentTracker(tracker);
 
         evaluator.evaluateExperiment(experiment("exp-stale"), context[0], null);
         assertEquals(2, attempts.get(), "the first delivery failed and the newer one succeeded");
@@ -316,6 +317,7 @@ class GrowthBookClientTrackingTest {
                 user("u1"),
                 new EvaluationContext.StackContext(),
                 options);
+        singleUserContext.setExperimentTracker(new ExperimentTracker());
         ExperimentEvaluator evaluator = new ExperimentEvaluator();
 
         assertThrows(IllegalStateException.class,
@@ -342,6 +344,7 @@ class GrowthBookClientTrackingTest {
                 user("u1"),
                 new EvaluationContext.StackContext(),
                 Options.builder().trackingCallBackWithUser(throwing).build());
+        singleUserContext.setExperimentTracker(new ExperimentTracker());
         ExperimentResult<String> result = ExperimentResult.<String>builder()
                 .hashAttribute("id")
                 .hashValue("u1")

@@ -7,5 +7,8 @@ import growthbook.sdk.java.multiusermode.configurations.EvaluationContext;
 import javax.annotation.Nullable;
 
 interface IExperimentEvaluator {
-    <ValueType> ExperimentResult<ValueType> evaluateExperiment(Experiment<ValueType> experiment, EvaluationContext context, @Nullable String featureId);
+    <T> ExperimentResult<T> evaluateExperiment(
+        Experiment<T> experiment,
+        EvaluationContext context,
+        @Nullable String featureId);
 }

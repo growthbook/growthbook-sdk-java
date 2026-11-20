@@ -12,16 +12,16 @@ import java.util.ArrayList;
  * <li>rules (FeatureRule[]) - Array of FeatureRule objects that determine when and how the defaultValue gets overridden</li>
  * </ul>
  *
- * @param <ValueType> value type for the feature
+ * @param <T> value type for the feature
  */
 @Data
-public class Feature<ValueType> {
+public class Feature<T> {
 
     /**
      * Array of Rule objects that determine when and how the defaultValue gets overridden
      */
     @Nullable
-    private final ArrayList<FeatureRule<ValueType>> rules = new ArrayList<>();
+    private final ArrayList<FeatureRule<T>> rules = new ArrayList<>();
 
     /**
      * The default value (should use null if not specified)

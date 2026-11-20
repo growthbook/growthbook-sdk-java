@@ -17,7 +17,7 @@ public class TrackingCallbackAdapter implements TrackingCallbackWithUser {
     }
 
     @Override
-    public <ValueType> void onTrack(Experiment<ValueType> experiment, ExperimentResult<ValueType> experimentResult, UserContext userContext) {
+    public <T> void onTrack(Experiment<T> experiment, ExperimentResult<T> experimentResult, UserContext userContext) {
         // Delegate call to the old callback, ignoring the new userContext parameter
         if (this.trackingCallback != null) {
             this.trackingCallback.onTrack(experiment, experimentResult);
