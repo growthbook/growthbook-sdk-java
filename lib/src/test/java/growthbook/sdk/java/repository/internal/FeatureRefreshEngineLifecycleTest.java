@@ -406,7 +406,7 @@ class FeatureRefreshEngineLifecycleTest {
                 .endpoints(ENDPOINTS)
                 .transport(transport)
                 .cache(new FeatureCacheStore(ENDPOINTS.cacheKey(), false, cacheManager))
-                .swrTtlSeconds(TTL_SECONDS)
+                .swrTtlSeconds(() -> TTL_SECONDS)
                 .retryPolicy(new FeatureFetchRetryPolicy(1, Duration.ZERO, Duration.ZERO))
                 .swrRefresh(FeatureRefreshEngine.SwrRefresh.ON_READ)
                 .clock(clock);

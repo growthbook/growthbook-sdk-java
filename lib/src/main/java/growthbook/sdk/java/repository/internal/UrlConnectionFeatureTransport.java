@@ -23,7 +23,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * {@link FeatureTransport} over {@link HttpURLConnection}, with no HTTP library. Bodies are read
- * as UTF-8. Each events connection reads on its own daemon thread until it ends or is cancelled.
+ * as UTF-8; the body of an error status is not read, since no read timeout bounds it. Each events connection reads on its own daemon thread until it ends or is cancelled.
  */
 @Slf4j
 public final class UrlConnectionFeatureTransport implements FeatureTransport {
@@ -86,8 +86,7 @@ public final class UrlConnectionFeatureTransport implements FeatureTransport {
 
     private static TransportResponse read(HttpURLConnection connection) throws IOException {
         int code = connection.getResponseCode();
-        InputStream stream = code < HttpURLConnection.HTTP_BAD_REQUEST ? connection.getInputStream() : connection.getErrorStream();
-        String body = stream == null ? null : readFully(stream);
+        String body = code < HttpURLConnection.HTTP_BAD_REQUEST ? readFully(connection.getInputStream()) : null;
         Map<String, String> headers = new HashMap<>();
         for (Map.Entry<String, List<String>> header : connection.getHeaderFields().entrySet()) {
             if (header.getKey() != null && !header.getValue().isEmpty()) {

@@ -100,7 +100,7 @@ public final class CondPruner {
 
     @Nullable
     private static JsonElement pruneField(JsonObject attributes, String path, JsonElement value, CondScope scope) {
-        if (isKnown(attributes, path)) {
+        if (isUnknown(attributes, path)) {
             return null;
         }
         Boolean matched = CondParser.parseValue(value).test(AttrPath.parse(path).resolve(attributes), scope);
@@ -146,7 +146,7 @@ public final class CondPruner {
         return decided != null ? new JsonPrimitive(!decided) : pruned;
     }
 
-    static boolean isKnown(JsonObject attributes, String path) {
+    static boolean isUnknown(JsonObject attributes, String path) {
         return path.contains(".") || !attributes.has(path);
     }
 }

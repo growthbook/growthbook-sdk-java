@@ -245,7 +245,7 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
                 .cache(new FeatureCacheStore(this.endpoints.cacheKey(), Boolean.TRUE.equals(isCacheDisabled), cacheManager))
                 .decryptionKey(decryptionKey)
                 .strategy(refreshStrategy)
-                .swrTtlSeconds(this.swrTtlSeconds)
+                .swrTtlSeconds(this.swrTtlSeconds::intValue)
                 .backgroundFetchInterval(backgroundFetchInterval)
                 .retryPolicy(this.retryPolicy)
                 .swrRefresh(FeatureRefreshEngine.SwrRefresh.POLLING)

@@ -239,6 +239,24 @@ class CondPrunerTest {
         assertNull(pruned);
     }
 
+    @ParameterizedTest(name = "{0} -> {1}")
+    @CsvSource(delimiter = '|', value = {
+            "country      | false",
+            "beta         | true",
+            "address.city | true",
+    })
+    @DisplayName("Treats an absent attribute or any nested path as unknown and a present top-level attribute as known")
+    void classifiesAttributePathsAsUnknown(String path, boolean expected) {
+        // Given
+        JsonObject attributes = json("{\"country\": \"AA\", \"address\": {\"city\": \"X\"}}");
+
+        // When
+        boolean unknown = CondPruner.isUnknown(attributes, path);
+
+        // Then
+        assertEquals(expected, unknown);
+    }
+
     private static JsonObject json(String text) {
         return JsonParser.parseString(text).getAsJsonObject();
     }

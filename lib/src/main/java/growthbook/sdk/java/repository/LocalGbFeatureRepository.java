@@ -19,6 +19,7 @@ import java.io.IOException;
 import java.io.Reader;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.Clock;
@@ -70,9 +71,9 @@ public class LocalGbFeatureRepository implements IGBFeaturesRepository {
     @Override
     public void initialize() throws FeatureFetchException {
         long startedAtNanos = System.nanoTime();
-        Path path = Paths.get(resourceDirectory() + normalized(jsonPath));
+        String location = resourceDirectory() + normalized(jsonPath);
         try {
-            String featuresJson = readFeatures(path);
+            String featuresJson = readFeatures(Paths.get(location));
             boolean featuresChanged = !Objects.equals(snapshot.get().getFeaturesJson(), featuresJson);
             Map<String, Feature<?>> features = TransformationUtil.transformFeatures(featuresJson);
             snapshot.set(FeatureSnapshot.of(
@@ -80,18 +81,18 @@ public class LocalGbFeatureRepository implements IGBFeaturesRepository {
                     "",
                     features != null ? features : Collections.<String, Feature<?>>emptyMap(),
                     new JsonObject()));
-            log.info("LocalGbFeatureRepository load features from {} successfully", path);
+            log.info("LocalGbFeatureRepository load features from {} successfully", location);
             log.debug("Features: {}", featuresJson);
             metrics.recordFetched();
             metrics.recordSuccess(false);
             callbacks.notifyRefresh(featuresJson);
             notifier.notifySuccess(FeatureRefreshSource.INITIALIZATION, featuresChanged, false,
                     FeatureRefreshNotifier.elapsedMillis(startedAtNanos));
-        } catch (IOException | JsonParseException e) {
-            log.error("LocalGbFeatureRepository cannot load features from {}, Exception was: {}", path, e.getMessage(), e);
+        } catch (IOException | JsonParseException | InvalidPathException e) {
+            log.error("LocalGbFeatureRepository cannot load features from {}, Exception was: {}", location, e.getMessage(), e);
             FeatureFetchException failure = new FeatureFetchException(
                     FeatureFetchException.FeatureFetchErrorCode.CONFIGURATION_ERROR,
-                    "Failed to load features from: " + path);
+                    "Failed to load features from: " + location);
             metrics.recordError(failure);
             metrics.recordFailure(false);
             callbacks.notifyError(failure);

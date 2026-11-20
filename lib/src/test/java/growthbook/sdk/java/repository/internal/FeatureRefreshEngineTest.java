@@ -28,6 +28,7 @@ import java.util.Deque;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -165,6 +166,24 @@ class FeatureRefreshEngineTest {
         Map<String, String> headers = transport.requestHeaders.get(0);
         assertEquals("max-age=" + TTL_SECONDS, headers.get("Cache-Control"));
         assertFalse(headers.containsKey("If-None-Match"));
+    }
+
+    @Test
+    @DisplayName("Uses the TTL in effect at each refresh for max-age and expiry")
+    void usesTtlInEffectAtEachRefresh() throws Exception {
+        // Given
+        AtomicInteger ttlSeconds = new AtomicInteger(TTL_SECONDS);
+        FeatureRefreshEngine engine = wire(builder().swrTtlSeconds(ttlSeconds::get).build());
+        transport.respond(ok(BODY, null));
+        engine.refresh(RefreshMode.DEFAULT, FeatureRefreshSource.MANUAL);
+
+        // When
+        ttlSeconds.set(5);
+        engine.refresh(RefreshMode.DEFAULT, FeatureRefreshSource.MANUAL);
+
+        // Then
+        assertEquals("max-age=5", transport.requestHeaders.get(1).get("Cache-Control"));
+        assertEquals(clock.instant().getEpochSecond() + 5, engine.expiresAt().get());
     }
 
     @Test
@@ -510,7 +529,7 @@ class FeatureRefreshEngineTest {
                 .endpoints(ENDPOINTS)
                 .transport(transport)
                 .cache(new FeatureCacheStore(ENDPOINTS.cacheKey(), false, cacheManager))
-                .swrTtlSeconds(TTL_SECONDS)
+                .swrTtlSeconds(() -> TTL_SECONDS)
                 .retryPolicy(new FeatureFetchRetryPolicy(3, Duration.ZERO, Duration.ZERO))
                 .swrRefresh(FeatureRefreshEngine.SwrRefresh.ON_READ)
                 .clock(clock);

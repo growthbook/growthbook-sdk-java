@@ -13,7 +13,6 @@ import org.junit.jupiter.api.Timeout;
 
 import javax.annotation.Nullable;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.ConnectException;
 import java.net.InetSocketAddress;
@@ -42,12 +41,14 @@ import static com.github.tomakehurst.wiremock.client.WireMock.postRequestedFor;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class UrlConnectionFeatureTransportTest {
 
     private static final String USER_AGENT = "growthbook-sdk-java/" + Version.SDK_VERSION;
+    private static final String EVENTS_PATH = "/sub/sdk-test";
 
     private WireMockServer wireMock;
     private UrlConnectionFeatureTransport transport;
@@ -122,8 +123,8 @@ class UrlConnectionFeatureTransportTest {
     }
 
     @Test
-    @DisplayName("Returns the error body of an error status")
-    void returnsErrorBodyOfErrorStatus() throws IOException {
+    @DisplayName("Returns an error status without reading its body")
+    void returnsErrorStatusWithoutBody() throws IOException {
         // Given
         wireMock.stubFor(get(urlEqualTo("/api/features/sdk-test")).willReturn(aResponse()
                 .withStatus(500)
@@ -134,7 +135,7 @@ class UrlConnectionFeatureTransportTest {
 
         // Then
         assertEquals(500, response.code());
-        assertEquals("{\"error\":\"server-error\"}", response.body());
+        assertNull(response.body());
     }
 
     @Test
@@ -209,21 +210,20 @@ class UrlConnectionFeatureTransportTest {
                 + "data:  two-spaces\n"
                 + "\n";
         RecordingListener listener = new RecordingListener(3);
+        stubEvents(200, stream);
 
-        try (EventServer server = new EventServer(200, stream)) {
-            // When
-            transport.openEvents(server.url(), listener);
+        // When
+        transport.openEvents(url(EVENTS_PATH), listener);
 
-            // Then
-            assertTrue(listener.closed.await(5, TimeUnit.SECONDS));
-            assertEquals(1, listener.openCount.get());
-            assertEquals(Arrays.asList(
-                    Arrays.asList("features", "{\"a\":1}\nline-2"),
-                    Arrays.asList(null, "no-space"),
-                    Arrays.asList(null, " two-spaces")), listener.events);
-            assertEquals(0, listener.failureCount.get());
-            assertEquals(USER_AGENT, server.userAgent.get());
-        }
+        // Then
+        assertTrue(listener.closed.await(5, TimeUnit.SECONDS));
+        assertEquals(1, listener.openCount.get());
+        assertEquals(Arrays.asList(
+                Arrays.asList("features", "{\"a\":1}\nline-2"),
+                Arrays.asList(null, "no-space"),
+                Arrays.asList(null, " two-spaces")), listener.events);
+        assertEquals(0, listener.failureCount.get());
+        wireMock.verify(getRequestedFor(urlEqualTo(EVENTS_PATH)).withHeader("User-Agent", equalTo(USER_AGENT)));
     }
 
     @Test
@@ -233,15 +233,14 @@ class UrlConnectionFeatureTransportTest {
         // Given
         String stream = "event: features\n\n";
         RecordingListener listener = new RecordingListener(1);
+        stubEvents(200, stream);
 
-        try (EventServer server = new EventServer(200, stream)) {
-            // When
-            transport.openEvents(server.url(), listener);
+        // When
+        transport.openEvents(url(EVENTS_PATH), listener);
 
-            // Then
-            assertTrue(listener.closed.await(5, TimeUnit.SECONDS));
-            assertTrue(listener.events.isEmpty());
-        }
+        // Then
+        assertTrue(listener.closed.await(5, TimeUnit.SECONDS));
+        assertTrue(listener.events.isEmpty());
     }
 
     @Test
@@ -251,15 +250,14 @@ class UrlConnectionFeatureTransportTest {
         // Given
         String stream = "data: first\n\ndata: unfinished\n";
         RecordingListener listener = new RecordingListener(1);
+        stubEvents(200, stream);
 
-        try (EventServer server = new EventServer(200, stream)) {
-            // When
-            transport.openEvents(server.url(), listener);
+        // When
+        transport.openEvents(url(EVENTS_PATH), listener);
 
-            // Then
-            assertTrue(listener.closed.await(5, TimeUnit.SECONDS));
-            assertEquals(Collections.singletonList(Arrays.asList(null, "first")), listener.events);
-        }
+        // Then
+        assertTrue(listener.closed.await(5, TimeUnit.SECONDS));
+        assertEquals(Collections.singletonList(Arrays.asList(null, "first")), listener.events);
     }
 
     @Test
@@ -268,17 +266,16 @@ class UrlConnectionFeatureTransportTest {
     void reportsFailureOnNon200Status() throws Exception {
         // Given
         RecordingListener listener = new RecordingListener(1);
+        stubEvents(503, "");
 
-        try (EventServer server = new EventServer(503, "")) {
-            // When
-            transport.openEvents(server.url(), listener);
+        // When
+        transport.openEvents(url(EVENTS_PATH), listener);
 
-            // Then
-            assertTrue(listener.failed.await(5, TimeUnit.SECONDS));
-            assertInstanceOf(IOException.class, listener.failure.get());
-            assertEquals(0, listener.openCount.get());
-            assertEquals(0, listener.closedCount.get());
-        }
+        // Then
+        assertTrue(listener.failed.await(5, TimeUnit.SECONDS));
+        assertInstanceOf(IOException.class, listener.failure.get());
+        assertEquals(0, listener.openCount.get());
+        assertEquals(0, listener.closedCount.get());
     }
 
     @Test
@@ -304,15 +301,14 @@ class UrlConnectionFeatureTransportTest {
     void readsEventsOnDaemonThread() throws Exception {
         // Given
         RecordingListener listener = new RecordingListener(1);
+        stubEvents(200, "data: first\n\n");
 
-        try (EventServer server = new EventServer(200, "data: first\n\n")) {
-            // When
-            transport.openEvents(server.url(), listener);
+        // When
+        transport.openEvents(url(EVENTS_PATH), listener);
 
-            // Then
-            assertTrue(listener.closed.await(5, TimeUnit.SECONDS));
-            assertTrue(listener.readerThread.get().isDaemon());
-        }
+        // Then
+        assertTrue(listener.closed.await(5, TimeUnit.SECONDS));
+        assertTrue(listener.readerThread.get().isDaemon());
     }
 
     @Test
@@ -322,7 +318,7 @@ class UrlConnectionFeatureTransportTest {
         // Given
         CountDownLatch release = new CountDownLatch(1);
         RecordingListener listener = new RecordingListener(1);
-        try (EventServer server = new EventServer(200, "data: first\n\n", release)) {
+        try (IdleEventServer server = new IdleEventServer("data: first\n\n", release)) {
             FeatureTransport.SseConnection connection = transport.openEvents(server.url(), listener);
             assertTrue(listener.received.await(5, TimeUnit.SECONDS));
 
@@ -345,7 +341,7 @@ class UrlConnectionFeatureTransportTest {
         // Given
         CountDownLatch release = new CountDownLatch(1);
         RecordingListener listener = new RecordingListener(1);
-        try (EventServer server = new EventServer(200, "data: first\n\n", release)) {
+        try (IdleEventServer server = new IdleEventServer("data: first\n\n", release)) {
             transport.openEvents(server.url(), listener);
             assertTrue(listener.received.await(5, TimeUnit.SECONDS));
 
@@ -362,6 +358,13 @@ class UrlConnectionFeatureTransportTest {
 
     private String url(String path) {
         return "http://localhost:" + wireMock.port() + path;
+    }
+
+    private void stubEvents(int status, String stream) {
+        wireMock.stubFor(get(urlEqualTo(EVENTS_PATH)).willReturn(aResponse()
+                .withStatus(status)
+                .withHeader("Content-Type", "text/event-stream")
+                .withBody(stream)));
     }
 
     private static int unusedPort() throws IOException {
@@ -411,53 +414,32 @@ class UrlConnectionFeatureTransportTest {
         }
     }
 
-    private static final class EventServer implements AutoCloseable {
+    private static final class IdleEventServer implements AutoCloseable {
         private final HttpServer server;
         private final ExecutorService executor = Executors.newCachedThreadPool();
-        private final AtomicReference<String> userAgent = new AtomicReference<>();
-        private final int status;
         private final String stream;
-        @Nullable
         private final CountDownLatch holdOpenUntil;
 
-        EventServer(int status, String stream) throws IOException {
-            this(status, stream, null);
-        }
-
-        EventServer(int status, String stream, @Nullable CountDownLatch holdOpenUntil) throws IOException {
-            this.status = status;
+        IdleEventServer(String stream, CountDownLatch holdOpenUntil) throws IOException {
             this.stream = stream;
             this.holdOpenUntil = holdOpenUntil;
             this.server = HttpServer.create(new InetSocketAddress("127.0.0.1", 0), 0);
-            this.server.createContext("/sub/sdk-test", this::handle);
+            this.server.createContext(EVENTS_PATH, this::handle);
             this.server.setExecutor(executor);
             this.server.start();
         }
 
         String url() {
-            return "http://127.0.0.1:" + server.getAddress().getPort() + "/sub/sdk-test";
+            return "http://127.0.0.1:" + server.getAddress().getPort() + EVENTS_PATH;
         }
 
         private void handle(HttpExchange exchange) throws IOException {
-            try (InputStream in = exchange.getRequestBody()) {
-                byte[] buffer = new byte[1024];
-                while (in.read(buffer) != -1) {
-                }
-            }
-            userAgent.set(exchange.getRequestHeaders().getFirst("User-Agent"));
-            if (status != 200) {
-                exchange.sendResponseHeaders(status, -1);
-                exchange.close();
-                return;
-            }
             exchange.getResponseHeaders().add("Content-Type", "text/event-stream");
             exchange.sendResponseHeaders(200, 0);
             try (OutputStream out = exchange.getResponseBody()) {
                 out.write(stream.getBytes(StandardCharsets.UTF_8));
                 out.flush();
-                if (holdOpenUntil != null) {
-                    holdOpenUntil.await();
-                }
+                holdOpenUntil.await();
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
             } finally {

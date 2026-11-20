@@ -2,8 +2,6 @@ package growthbook.sdk.java.repository.internal;
 
 import com.github.tomakehurst.wiremock.WireMockServer;
 import com.github.tomakehurst.wiremock.core.WireMockConfiguration;
-import com.sun.net.httpserver.HttpExchange;
-import com.sun.net.httpserver.HttpServer;
 import growthbook.sdk.java.Version;
 import okhttp3.OkHttpClient;
 import org.junit.jupiter.api.AfterEach;
@@ -14,10 +12,7 @@ import org.junit.jupiter.api.Timeout;
 
 import javax.annotation.Nullable;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
 import java.net.ConnectException;
-import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
@@ -27,11 +22,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicReference;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
 import static com.github.tomakehurst.wiremock.client.WireMock.binaryEqualTo;
@@ -53,6 +45,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class OkHttpFeatureTransportTest {
 
     private static final String USER_AGENT = "growthbook-sdk-java/" + Version.SDK_VERSION;
+    private static final String EVENTS_PATH = "/sub/sdk-test";
 
     private WireMockServer wireMock;
     private OkHttpFeatureTransport transport;
@@ -249,20 +242,19 @@ class OkHttpFeatureTransportTest {
         // Given
         String stream = "event: features\ndata: {\"a\":1}\ndata: line-2\n\ndata: second\n\n";
         RecordingListener listener = new RecordingListener(2);
+        stubEvents(200, stream);
 
-        try (EventServer server = new EventServer(200, stream, false)) {
-            // When
-            transport.openEvents(server.url(), listener);
+        // When
+        transport.openEvents(url(EVENTS_PATH), listener);
 
-            // Then
-            assertTrue(listener.closed.await(5, TimeUnit.SECONDS));
-            assertEquals(1, listener.openCount.get());
-            assertEquals(Arrays.asList(
-                    Arrays.asList("features", "{\"a\":1}\nline-2"),
-                    Arrays.asList(null, "second")), listener.events);
-            assertEquals(0, listener.failureCount.get());
-            assertEquals(USER_AGENT, server.userAgent.get());
-        }
+        // Then
+        assertTrue(listener.closed.await(5, TimeUnit.SECONDS));
+        assertEquals(1, listener.openCount.get());
+        assertEquals(Arrays.asList(
+                Arrays.asList("features", "{\"a\":1}\nline-2"),
+                Arrays.asList(null, "second")), listener.events);
+        assertEquals(0, listener.failureCount.get());
+        wireMock.verify(getRequestedFor(urlEqualTo(EVENTS_PATH)).withHeader("User-Agent", equalTo(USER_AGENT)));
     }
 
     @Test
@@ -271,16 +263,15 @@ class OkHttpFeatureTransportTest {
     void reportsFailureOnNon200Status() throws Exception {
         // Given
         RecordingListener listener = new RecordingListener(1);
+        stubEvents(503, "");
 
-        try (EventServer server = new EventServer(503, "", false)) {
-            // When
-            transport.openEvents(server.url(), listener);
+        // When
+        transport.openEvents(url(EVENTS_PATH), listener);
 
-            // Then
-            assertTrue(listener.failed.await(5, TimeUnit.SECONDS));
-            assertEquals(0, listener.openCount.get());
-            assertEquals(0, listener.closedCount.get());
-        }
+        // Then
+        assertTrue(listener.failed.await(5, TimeUnit.SECONDS));
+        assertEquals(0, listener.openCount.get());
+        assertEquals(0, listener.closedCount.get());
     }
 
     @Test
@@ -289,20 +280,18 @@ class OkHttpFeatureTransportTest {
     void createsEventsClientOnFirstConnectionAndReleasesItOnClose() throws Exception {
         // Given
         RecordingListener listener = new RecordingListener(1);
+        stubEvents(200, "data: first\n\n");
+        transport.openEvents(url(EVENTS_PATH), listener);
+        OkHttpClient eventsClient = transport.eventsClientIfCreated();
+        assertNotNull(eventsClient);
+        assertTrue(listener.received.await(5, TimeUnit.SECONDS));
 
-        try (EventServer server = new EventServer(200, "data: first\n\n", true)) {
-            transport.openEvents(server.url(), listener);
-            OkHttpClient eventsClient = transport.eventsClientIfCreated();
-            assertNotNull(eventsClient);
-            assertTrue(listener.received.await(5, TimeUnit.SECONDS));
+        // When
+        transport.closeEvents();
 
-            // When
-            transport.closeEvents();
-
-            // Then
-            assertNull(transport.eventsClientIfCreated());
-            assertTrue(eventsClient.dispatcher().executorService().isShutdown());
-        }
+        // Then
+        assertNull(transport.eventsClientIfCreated());
+        assertTrue(eventsClient.dispatcher().executorService().isShutdown());
     }
 
     @Test
@@ -312,17 +301,15 @@ class OkHttpFeatureTransportTest {
         // Given
         RecordingListener first = new RecordingListener(1);
         RecordingListener second = new RecordingListener(1);
+        stubEvents(200, "data: first\n\n");
+        transport.openEvents(url(EVENTS_PATH), first);
+        OkHttpClient eventsClient = transport.eventsClientIfCreated();
 
-        try (EventServer server = new EventServer(200, "data: first\n\n", true)) {
-            transport.openEvents(server.url(), first);
-            OkHttpClient eventsClient = transport.eventsClientIfCreated();
+        // When
+        transport.openEvents(url(EVENTS_PATH), second);
 
-            // When
-            transport.openEvents(server.url(), second);
-
-            // Then
-            assertSame(eventsClient, transport.eventsClientIfCreated());
-        }
+        // Then
+        assertSame(eventsClient, transport.eventsClientIfCreated());
     }
 
     @Test
@@ -340,6 +327,13 @@ class OkHttpFeatureTransportTest {
 
     private String url(String path) {
         return "http://localhost:" + wireMock.port() + path;
+    }
+
+    private void stubEvents(int status, String stream) {
+        wireMock.stubFor(get(urlEqualTo(EVENTS_PATH)).willReturn(aResponse()
+                .withStatus(status)
+                .withHeader("Content-Type", "text/event-stream")
+                .withBody(stream)));
     }
 
     private static int unusedPort() throws IOException {
@@ -382,64 +376,6 @@ class OkHttpFeatureTransportTest {
         public void onFailure(@Nullable Throwable error) {
             failureCount.incrementAndGet();
             failed.countDown();
-        }
-    }
-
-    private static final class EventServer implements AutoCloseable {
-        private final HttpServer server;
-        private final ExecutorService executor = Executors.newCachedThreadPool();
-        private final CountDownLatch released = new CountDownLatch(1);
-        private final AtomicReference<String> userAgent = new AtomicReference<>();
-        private final int status;
-        private final String stream;
-        private final boolean holdOpen;
-
-        EventServer(int status, String stream, boolean holdOpen) throws IOException {
-            this.status = status;
-            this.stream = stream;
-            this.holdOpen = holdOpen;
-            this.server = HttpServer.create(new InetSocketAddress("127.0.0.1", 0), 0);
-            this.server.createContext("/sub/sdk-test", this::handle);
-            this.server.setExecutor(executor);
-            this.server.start();
-        }
-
-        String url() {
-            return "http://127.0.0.1:" + server.getAddress().getPort() + "/sub/sdk-test";
-        }
-
-        private void handle(HttpExchange exchange) throws IOException {
-            try (InputStream in = exchange.getRequestBody()) {
-                byte[] buffer = new byte[1024];
-                while (in.read(buffer) != -1) {
-                }
-            }
-            userAgent.set(exchange.getRequestHeaders().getFirst("User-Agent"));
-            if (status != 200) {
-                exchange.sendResponseHeaders(status, -1);
-                exchange.close();
-                return;
-            }
-            exchange.getResponseHeaders().add("Content-Type", "text/event-stream");
-            exchange.sendResponseHeaders(200, 0);
-            try (OutputStream out = exchange.getResponseBody()) {
-                out.write(stream.getBytes(StandardCharsets.UTF_8));
-                out.flush();
-                if (holdOpen) {
-                    released.await();
-                }
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-            } finally {
-                exchange.close();
-            }
-        }
-
-        @Override
-        public void close() {
-            released.countDown();
-            server.stop(0);
-            executor.shutdownNow();
         }
     }
 }

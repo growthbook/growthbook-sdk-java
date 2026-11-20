@@ -148,7 +148,7 @@ abstract class SavedGroupRef {
         @Nullable
         @Override
         JsonElement prune(JsonObject attributes) {
-            if (CondPruner.isKnown(attributes, attributeKey)) {
+            if (CondPruner.isUnknown(attributes, attributeKey)) {
                 return null;
             }
             return new JsonPrimitive(JsonValues.isIn(AttrPath.parse(attributeKey).resolve(attributes), values, false));

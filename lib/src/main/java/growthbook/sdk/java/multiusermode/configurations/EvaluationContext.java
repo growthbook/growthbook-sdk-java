@@ -42,13 +42,14 @@ public class EvaluationContext {
 
     /**
      * Exposure de-duplication shared by every evaluation of the owning SDK instance, carried
-     * here for the same isolation reason as {@link #pluginRegistry}. When {@code null}, every
-     * exposure is reported. Excluded from equals/hashCode/toString: identity-equality object.
+     * here for the same isolation reason as {@link #pluginRegistry}. Defaults to a tracker owned
+     * by this context; when set to {@code null}, every exposure is reported. Excluded from
+     * equals/hashCode/toString: identity-equality object.
      */
     @Nullable
     @EqualsAndHashCode.Exclude
     @ToString.Exclude
-    private ExperimentTracker experimentTracker;
+    private ExperimentTracker experimentTracker = new ExperimentTracker();
 
     /**
      * Persistence seam for newly assigned sticky bucket documents, set by the
@@ -84,6 +85,25 @@ public class EvaluationContext {
         this.user = user;
         this.stack = stack;
         this.options = options;
+    }
+
+    /**
+     * @return the exposure tracker
+     * @deprecated use {@link #getExperimentTracker()}
+     */
+    @Deprecated
+    @Nullable
+    public ExperimentTracker getSharedExperimentTracker() {
+        return experimentTracker;
+    }
+
+    /**
+     * @param sharedExperimentTracker the exposure tracker
+     * @deprecated use {@link #setExperimentTracker(ExperimentTracker)}
+     */
+    @Deprecated
+    public void setSharedExperimentTracker(@Nullable ExperimentTracker sharedExperimentTracker) {
+        this.experimentTracker = sharedExperimentTracker;
     }
 
     /**
