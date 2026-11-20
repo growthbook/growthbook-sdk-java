@@ -3,9 +3,12 @@ package growthbook.sdk.java.repository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -146,5 +149,123 @@ class LruETagCacheTest {
         executor.shutdownNow();
 
         assertTrue(concurrentCache.size() <= largeMaxSize, "Cache size integrity compromised.");
+    }
+
+    @Test
+    void testUpdateExistingEntryRefreshesLRUPosition() {
+        cache.put("url1", "etag1");
+        cache.put("url2", "etag2");
+        cache.put("url3", "etag3");
+
+        cache.put("url1", "etag1-updated");
+        cache.put("url4", "etag4");
+
+        assertEquals(MAX_SIZE, cache.size());
+        assertEquals("etag1-updated", cache.get("url1"));
+        assertNull(cache.get("url2"), "url2 should be evicted (now LRU)");
+    }
+
+    @Test
+    void testEvictsInLeastRecentlyUsedOrderBeyondMaxSize() {
+        for (int i = 1; i <= 6; i++) {
+            cache.put("url" + i, "etag" + i);
+        }
+
+        assertEquals(MAX_SIZE, cache.size());
+        assertNull(cache.get("url1"));
+        assertNull(cache.get("url2"));
+        assertNull(cache.get("url3"));
+        assertEquals("etag4", cache.get("url4"));
+        assertEquals("etag5", cache.get("url5"));
+        assertEquals("etag6", cache.get("url6"));
+    }
+
+    @Test
+    void testPutNullForUnknownUrlIsNoOp() {
+        cache.put("url1", "etag1");
+
+        cache.put("url2", null);
+
+        assertEquals(1, cache.size());
+        assertEquals("etag1", cache.get("url1"));
+        assertNull(cache.get("url2"));
+    }
+
+    @Test
+    void testPutNullFreesSlotWithoutEvictingOthers() {
+        cache.put("url1", "etag1");
+        cache.put("url2", "etag2");
+        cache.put("url3", "etag3");
+
+        cache.put("url2", null);
+        cache.put("url4", "etag4");
+
+        assertEquals(MAX_SIZE, cache.size());
+        assertEquals("etag1", cache.get("url1"));
+        assertEquals("etag3", cache.get("url3"));
+        assertEquals("etag4", cache.get("url4"));
+    }
+
+    @Test
+    void testGetOfUnknownUrlDoesNotChangeSize() {
+        cache.put("url1", "etag1");
+
+        assertNull(cache.get("missing"));
+
+        assertEquals(1, cache.size());
+    }
+
+    @Test
+    void testConcurrentPutAndGetReturnOnlyWrittenValues() throws Exception {
+        int numThreads = 8;
+        int operationsPerThread = 500;
+        int maxSize = 16;
+        LruETagCache concurrentCache = new LruETagCache(maxSize);
+        ExecutorService executor = Executors.newFixedThreadPool(numThreads);
+        CountDownLatch start = new CountDownLatch(1);
+        List<Future<Integer>> results = new ArrayList<>();
+
+        try {
+            for (int i = 0; i < numThreads; i++) {
+                final int threadId = i;
+                results.add(executor.submit(() -> {
+                    start.await();
+                    int mismatches = 0;
+                    for (int j = 0; j < operationsPerThread; j++) {
+                        String key = "url" + ((threadId * operationsPerThread + j) % (maxSize * 2));
+                        concurrentCache.put(key, "etag-for-" + key);
+                        String read = concurrentCache.get(key);
+                        if (read != null && !read.equals("etag-for-" + key)) {
+                            mismatches++;
+                        }
+                    }
+                    return mismatches;
+                }));
+            }
+
+            start.countDown();
+
+            for (Future<Integer> result : results) {
+                assertEquals(0, result.get(10, TimeUnit.SECONDS));
+            }
+            assertTrue(concurrentCache.size() <= maxSize);
+        } finally {
+            executor.shutdownNow();
+        }
+    }
+
+    @Test
+    void testNegativeMaxSizeIsRejected() {
+        assertThrows(IllegalArgumentException.class, () -> new LruETagCache(-1));
+    }
+
+    @Test
+    void testZeroMaxSizeKeepsNothing() {
+        LruETagCache empty = new LruETagCache(0);
+
+        empty.put("url1", "etag1");
+
+        assertEquals(0, empty.size());
+        assertNull(empty.get("url1"));
     }
 }

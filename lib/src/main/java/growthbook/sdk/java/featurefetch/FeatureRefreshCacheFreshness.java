@@ -22,6 +22,23 @@ public final class FeatureRefreshCacheFreshness {
             BooleanSupplier hasFeatureData,
             BooleanSupplier loadCachedFeatures
     ) {
+        return shouldSkipRefresh(forceRefresh, backgroundFetchInterval, lastSuccessfulFetchAtMillis,
+                cacheLastUpdatedMillis, hasFeatureData, loadCachedFeatures, System::currentTimeMillis);
+    }
+
+    /**
+     * Same as {@link #shouldSkipRefresh(boolean, Duration, LongSupplier, LongSupplier, BooleanSupplier, BooleanSupplier)},
+     * measuring freshness against {@code nowMillis} instead of the system clock.
+     */
+    public static boolean shouldSkipRefresh(
+            boolean forceRefresh,
+            Duration backgroundFetchInterval,
+            LongSupplier lastSuccessfulFetchAtMillis,
+            LongSupplier cacheLastUpdatedMillis,
+            BooleanSupplier hasFeatureData,
+            BooleanSupplier loadCachedFeatures,
+            LongSupplier nowMillis
+    ) {
         if (forceRefresh || backgroundFetchInterval == null) {
             return false;
         }
@@ -38,7 +55,7 @@ public final class FeatureRefreshCacheFreshness {
         }
 
         boolean isFresh = newestFeatureDataAtMillis > 0
-                && System.currentTimeMillis() - newestFeatureDataAtMillis < intervalMillis;
+                && nowMillis.getAsLong() - newestFeatureDataAtMillis < intervalMillis;
         if (!isFresh) {
             return false;
         }

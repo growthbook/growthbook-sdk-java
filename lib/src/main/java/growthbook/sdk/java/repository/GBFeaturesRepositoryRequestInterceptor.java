@@ -12,6 +12,7 @@ import java.io.IOException;
  * Appends User-Agent info to the request headers.
  */
 public class GBFeaturesRepositoryRequestInterceptor implements Interceptor {
+
     @NotNull
     @Override
     public Response intercept(@NotNull Interceptor.Chain chain) throws IOException {
