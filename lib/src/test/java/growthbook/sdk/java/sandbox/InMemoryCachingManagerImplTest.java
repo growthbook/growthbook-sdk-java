@@ -5,9 +5,12 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
+import java.time.Clock;
+import java.time.Instant;
+import java.time.ZoneOffset;
+
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class InMemoryCachingManagerImplTest {
 
@@ -44,16 +47,14 @@ class InMemoryCachingManagerImplTest {
     @DisplayName("Records the save time as the last updated timestamp")
     void recordsSaveTimeAsLastUpdated() {
         // Given
-        long before = System.currentTimeMillis();
+        Instant savedAt = Instant.parse("2026-01-01T00:00:00Z");
+        InMemoryCachingManagerImpl clockedCache = new InMemoryCachingManagerImpl(Clock.fixed(savedAt, ZoneOffset.UTC));
 
         // When
-        cache.saveContent("key-1", "value-1");
-        long after = System.currentTimeMillis();
+        clockedCache.saveContent("key-1", "value-1");
 
         // Then
-        long updatedAt = cache.getLastUpdatedMillis("key-1");
-        assertTrue(updatedAt >= before && updatedAt <= after,
-                "expected " + updatedAt + " within [" + before + ", " + after + "]");
+        assertEquals(Long.valueOf(savedAt.toEpochMilli()), clockedCache.getLastUpdatedMillis("key-1"));
     }
 
     @Test

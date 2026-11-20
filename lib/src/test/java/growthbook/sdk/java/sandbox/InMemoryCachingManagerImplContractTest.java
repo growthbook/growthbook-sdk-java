@@ -4,6 +4,6 @@ class InMemoryCachingManagerImplContractTest extends GbCacheManagerContractTest 
 
     @Override
     protected GbCacheManager createCacheManager() {
-        return new InMemoryCachingManagerImpl();
+        return new InMemoryCachingManagerImpl(clock());
     }
 }

@@ -5,6 +5,11 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
+import java.time.Clock;
+import java.time.Duration;
+import java.time.Instant;
+import java.time.ZoneId;
+import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -32,7 +37,8 @@ import static org.junit.jupiter.api.Assumptions.assumeTrue;
  * {@link #sharedForeignStore()}, so the test can prove {@link GbCacheManager#clearCache()} leaves
  * those entries alone; the case is skipped otherwise. Implementations that can simulate a broken
  * backing store do so in {@link #failStorage()}, so the test can prove real access failures surface
- * as {@link FeatureCacheException}; those cases are skipped otherwise.
+ * as {@link FeatureCacheException}; those cases are skipped otherwise. Implementations that take a
+ * {@link Clock} read write times from {@link #clock()}, which the test advances explicitly.
  */
 public abstract class GbCacheManagerContractTest {
 
@@ -40,7 +46,9 @@ public abstract class GbCacheManagerContractTest {
     private static final int KEYS_PER_THREAD = 25;
     private static final int LARGE_PAYLOAD_BYTES = 1024 * 1024;
     private static final String PAYLOAD = "{\"features\":{\"sample-flag\":{\"defaultValue\":\"ünïcødé\"}}}";
+    private static final Instant START = Instant.parse("2026-01-01T00:00:00Z");
 
+    private final MutableClock clock = new MutableClock(START);
     private GbCacheManager cacheManager;
 
     /**
@@ -57,11 +65,19 @@ public abstract class GbCacheManagerContractTest {
     }
 
     /**
-     * @return how far a reported last-updated timestamp may drift from the wall clock around the
-     * write, for implementations whose timestamps come from a coarser clock such as file mtimes
+     * @return the clock cache managers that take one must read write times from
      */
-    protected long timestampToleranceMillis() {
-        return 0L;
+    protected final Clock clock() {
+        return clock;
+    }
+
+    /**
+     * @param key a key the cache manager has just written
+     * @return the last-updated time the cache manager must report for that write; the current time
+     * of {@link #clock()} unless the implementation takes its timestamps from its storage
+     */
+    protected long expectedLastUpdatedMillis(String key) {
+        return clock.millis();
     }
 
     /**
@@ -132,14 +148,12 @@ public abstract class GbCacheManagerContractTest {
     void savingContentRecordsTheTimeOfTheWrite() {
         // Given
         String key = "features-key";
-        long before = System.currentTimeMillis();
 
         // When
         cacheManager.saveContent(key, PAYLOAD);
-        long after = System.currentTimeMillis();
 
         // Then
-        assertWrittenBetween(before, after, cacheManager.getLastUpdatedMillis(key));
+        assertEquals(expectedLastUpdatedMillis(key), cacheManager.getLastUpdatedMillis(key));
     }
 
     @Test
@@ -148,15 +162,14 @@ public abstract class GbCacheManagerContractTest {
         // Given
         String key = "features-key";
         cacheManager.saveContent(key, "{\"version\":\"first\"}");
-        long before = System.currentTimeMillis();
+        clock.advance(Duration.ofMinutes(1));
 
         // When
         cacheManager.saveContent(key, "{\"version\":\"second\"}");
-        long after = System.currentTimeMillis();
 
         // Then
         assertEquals("{\"version\":\"second\"}", cacheManager.loadCache(key));
-        assertWrittenBetween(before, after, cacheManager.getLastUpdatedMillis(key));
+        assertEquals(expectedLastUpdatedMillis(key), cacheManager.getLastUpdatedMillis(key));
     }
 
     @Test
@@ -219,6 +232,7 @@ public abstract class GbCacheManagerContractTest {
         // Given
         cacheManager.saveContent("features-key", PAYLOAD);
         Long savedAt = cacheManager.getLastUpdatedMillis("features-key");
+        clock.advance(Duration.ofMinutes(1));
 
         // When
         cacheManager.loadCache("features-key");
@@ -281,15 +295,14 @@ public abstract class GbCacheManagerContractTest {
         // Given
         cacheManager.saveContent("features-key", "{\"version\":\"first\"}");
         cacheManager.clearCache();
-        long before = System.currentTimeMillis();
+        clock.advance(Duration.ofMinutes(1));
 
         // When
         cacheManager.saveContent("features-key", "{\"version\":\"second\"}");
-        long after = System.currentTimeMillis();
 
         // Then
         assertEquals("{\"version\":\"second\"}", cacheManager.loadCache("features-key"));
-        assertWrittenBetween(before, after, cacheManager.getLastUpdatedMillis("features-key"));
+        assertEquals(expectedLastUpdatedMillis("features-key"), cacheManager.getLastUpdatedMillis("features-key"));
     }
 
     @Test
@@ -453,14 +466,6 @@ public abstract class GbCacheManagerContractTest {
         };
     }
 
-    private void assertWrittenBetween(long before, long after, Long lastUpdated) {
-        long tolerance = timestampToleranceMillis();
-        assertNotNull(lastUpdated);
-        assertTrue(lastUpdated >= before - tolerance && lastUpdated <= after + tolerance,
-                "expected last-updated time within [" + before + ", " + after + "] ± " + tolerance
-                        + " but was " + lastUpdated);
-    }
-
     private static String largePayload() {
         StringBuilder payload = new StringBuilder(LARGE_PAYLOAD_BYTES + PAYLOAD.length());
         payload.append("{\"padding\":\"");
@@ -476,5 +481,32 @@ public abstract class GbCacheManagerContractTest {
 
     private static String valueFor(int thread, int index) {
         return "{\"thread\":" + thread + ",\"index\":" + index + "}";
+    }
+
+    private static final class MutableClock extends Clock {
+        private volatile Instant now;
+
+        MutableClock(Instant now) {
+            this.now = now;
+        }
+
+        void advance(Duration duration) {
+            now = now.plus(duration);
+        }
+
+        @Override
+        public ZoneId getZone() {
+            return ZoneOffset.UTC;
+        }
+
+        @Override
+        public Clock withZone(ZoneId zone) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public Instant instant() {
+            return now;
+        }
     }
 }

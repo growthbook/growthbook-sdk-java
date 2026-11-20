@@ -23,7 +23,7 @@ class AbstractRedisGbCacheManagerContractTest extends GbCacheManagerContractTest
 
     @Override
     protected GbCacheManager createCacheManager() {
-        cacheManager = new InMemoryRedisGbCacheManager(KEY_PREFIX);
+        cacheManager = new InMemoryRedisGbCacheManager(KEY_PREFIX, clock());
         return cacheManager;
     }
 
@@ -53,8 +53,8 @@ class AbstractRedisGbCacheManagerContractTest extends GbCacheManagerContractTest
         private final Map<String, Map<String, String>> keyspace = new ConcurrentHashMap<>();
         private volatile boolean failing;
 
-        InMemoryRedisGbCacheManager(String keyPrefix) {
-            super(keyPrefix, null, Clock.systemUTC());
+        InMemoryRedisGbCacheManager(String keyPrefix, Clock clock) {
+            super(keyPrefix, null, clock);
         }
 
         @Override

@@ -16,7 +16,10 @@ class JCacheGbCacheManagerContractTest extends GbCacheManagerContractTest {
     @Override
     protected GbCacheManager createCacheManager() {
         cacheManager = Caching.getCachingProvider().getCacheManager();
-        return JCacheGbCacheManager.create(cacheManager);
+        return JCacheGbCacheManager.create(JCacheCacheOptions.builder()
+                .cacheManager(cacheManager)
+                .clock(clock())
+                .build());
     }
 
     @Override

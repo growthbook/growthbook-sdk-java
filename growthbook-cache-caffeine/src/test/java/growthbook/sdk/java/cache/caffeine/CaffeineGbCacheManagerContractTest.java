@@ -7,6 +7,6 @@ class CaffeineGbCacheManagerContractTest extends GbCacheManagerContractTest {
 
     @Override
     protected GbCacheManager createCacheManager() {
-        return CaffeineGbCacheManager.create();
+        return CaffeineGbCacheManager.create(CaffeineCacheOptions.builder().clock(clock()).build());
     }
 }
