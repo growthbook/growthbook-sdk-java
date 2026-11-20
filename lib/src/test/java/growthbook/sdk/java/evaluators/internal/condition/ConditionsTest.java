@@ -63,7 +63,7 @@ class ConditionsTest {
     }
 
     @Test
-    @DisplayName("Matches a negated unknown result as not matching")
+    @DisplayName("Does not match when a negated result is unknown")
     void doesNotMatchNegatedUnknownResult() {
         // Given
         JsonObject condition = json("{\"$not\": {\"country\": {\"$foo\": 1}}}");

@@ -20,7 +20,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class CaffeineGbCacheManagerTest {
 
     @Test
-    @DisplayName("Verify: cached content is saved with a last-updated timestamp and can be loaded")
+    @DisplayName("Cached content is saved with a last-updated timestamp and can be loaded")
     void savesAndLoadsContent() {
         // Given
         CaffeineGbCacheManager cacheManager = CaffeineGbCacheManager.create();
@@ -34,7 +34,7 @@ class CaffeineGbCacheManagerTest {
     }
 
     @Test
-    @DisplayName("Verify: missing cache entries return null content and null last-updated timestamp")
+    @DisplayName("Missing cache entries return null content and null last-updated timestamp")
     void returnsNullForMissingEntry() {
         // Given
         CaffeineGbCacheManager cacheManager = CaffeineGbCacheManager.create();
@@ -45,7 +45,7 @@ class CaffeineGbCacheManagerTest {
     }
 
     @Test
-    @DisplayName("Verify: clearing cache removes stored content and last-updated timestamps")
+    @DisplayName("Clearing cache removes stored content and last-updated timestamps")
     void clearsEntriesAndTimestamps() {
         // Given
         CaffeineGbCacheManager cacheManager = CaffeineGbCacheManager.create();
@@ -60,7 +60,7 @@ class CaffeineGbCacheManagerTest {
     }
 
     @Test
-    @DisplayName("Verify: overwriting content replaces the cached value and timestamp")
+    @DisplayName("Overwriting content replaces the cached value and timestamp")
     void overwritesContentAndLastUpdatedTime() {
         // Given
         MutableClock clock = new MutableClock(1000L);
@@ -79,7 +79,7 @@ class CaffeineGbCacheManagerTest {
     }
 
     @Test
-    @DisplayName("Verify: entries expire when expire-after-write is configured")
+    @DisplayName("Entries expire when expire-after-write is configured")
     void expiresEntriesWhenExpireAfterWriteIsConfigured() {
         // Given
         MutableTicker ticker = new MutableTicker();
@@ -98,7 +98,7 @@ class CaffeineGbCacheManagerTest {
     }
 
     @Test
-    @DisplayName("Verify: invalid Caffeine cache options fail fast")
+    @DisplayName("Invalid Caffeine cache options fail fast")
     void validatesOptions() {
         // Given
         CaffeineCacheOptions.Builder options = CaffeineCacheOptions.builder();
@@ -113,28 +113,32 @@ class CaffeineGbCacheManagerTest {
     }
 
     @Test
-    @DisplayName("Verify: default Caffeine cache options are usable")
+    @DisplayName("Default Caffeine cache options are usable")
     void usesDefaultOptions() {
+        // When
         CaffeineCacheOptions options = CaffeineCacheOptions.defaults();
 
+        // Then
         assertEquals(CaffeineCacheOptions.DEFAULT_MAXIMUM_SIZE, options.getMaximumSize());
         assertNull(options.getExpireAfterWrite());
-        assertNotNull(options.getClock());
+        assertEquals(Clock.systemUTC(), options.getClock());
         assertNull(options.getTicker());
-        assertTrue(options.getClock().millis() > 0);
     }
 
     @Test
-    @DisplayName("Verify: hit/miss statistics are recorded when stats recording is enabled")
+    @DisplayName("Hit/miss statistics are recorded when stats recording is enabled")
     void recordsHitAndMissStatisticsWhenEnabled() {
+        // Given
         CaffeineGbCacheManager cacheManager = CaffeineGbCacheManager.builder()
                 .recordStats(true)
                 .buildManager();
 
+        // When
         cacheManager.saveContent("features", "cached");
         cacheManager.loadCache("features");
         cacheManager.loadCache("absent");
 
+        // Then
         CaffeineCacheStats stats = cacheManager.stats();
         assertTrue(stats.isRecording());
         assertEquals(1L, stats.getHitCount());
@@ -144,14 +148,17 @@ class CaffeineGbCacheManagerTest {
     }
 
     @Test
-    @DisplayName("Verify: statistics are inert (zero, not recording) by default")
+    @DisplayName("Statistics are inert (zero, not recording) by default")
     void statisticsAreInertWhenRecordingDisabled() {
+        // Given
         CaffeineGbCacheManager cacheManager = CaffeineGbCacheManager.create();
 
+        // When
         cacheManager.saveContent("features", "cached");
         cacheManager.loadCache("features");
         cacheManager.loadCache("absent");
 
+        // Then
         CaffeineCacheStats stats = cacheManager.stats();
         assertFalse(stats.isRecording());
         assertEquals(0L, stats.getHitCount());
@@ -161,23 +168,26 @@ class CaffeineGbCacheManagerTest {
     }
 
     @Test
-    @DisplayName("Verify: entries expire when expire-after-access is configured")
+    @DisplayName("Entries expire when expire-after-access is configured")
     void expiresEntriesWhenExpireAfterAccessIsConfigured() {
+        // Given
         MutableTicker ticker = new MutableTicker();
         CaffeineGbCacheManager cacheManager = CaffeineGbCacheManager.builder()
                 .expireAfterAccess(Duration.ofMillis(10))
                 .ticker(ticker)
                 .buildManager();
 
+        // When
         cacheManager.saveContent("features", "cached");
         ticker.advance(Duration.ofMillis(11));
 
+        // Then
         assertNull(cacheManager.loadCache("features"));
         assertNull(cacheManager.getLastUpdatedMillis("features"));
     }
 
     @Test
-    @DisplayName("Verify: new options expose safe defaults and validate input")
+    @DisplayName("New options expose safe defaults and validate input")
     void newOptionsHaveDefaultsAndValidation() {
         // Given
         CaffeineCacheOptions defaults = CaffeineCacheOptions.defaults();
@@ -193,7 +203,7 @@ class CaffeineGbCacheManagerTest {
     }
 
     @Test
-    @DisplayName("Verify: weight-based bounding evicts by total payload size, not entry count")
+    @DisplayName("Weight-based bounding evicts by total payload size, not entry count")
     void evictsByWeightWhenMaximumWeightConfigured() {
         // Given: room for roughly one small payload (10 bytes)
         CaffeineGbCacheManager cacheManager = CaffeineGbCacheManager.builder()

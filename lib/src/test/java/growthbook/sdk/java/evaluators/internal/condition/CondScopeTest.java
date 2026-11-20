@@ -5,10 +5,13 @@ import com.google.gson.JsonParser;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashSet;
+
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class CondScopeTest {
 
@@ -23,7 +26,7 @@ class CondScopeTest {
 
         // Then
         assertEquals(new JsonObject(), scope.savedGroups);
-        assertTrue(scope.visited.isEmpty());
+        assertEquals(Collections.emptySet(), scope.visited);
     }
 
     @Test
@@ -50,10 +53,8 @@ class CondScopeTest {
         CondScope inner = outer.visiting("a").visiting("b");
 
         // Then
-        assertTrue(outer.visited.isEmpty());
-        assertEquals(2, inner.visited.size());
-        assertTrue(inner.visited.contains("a"));
-        assertTrue(inner.visited.contains("b"));
+        assertEquals(Collections.emptySet(), outer.visited);
+        assertEquals(new HashSet<>(Arrays.asList("a", "b")), inner.visited);
         assertSame(savedGroups, inner.savedGroups);
     }
 
@@ -63,10 +64,7 @@ class CondScopeTest {
         // Given
         CondScope scope = new CondScope(null).visiting("a");
 
-        // When
-        Runnable mutation = () -> scope.visited.add("b");
-
-        // Then
-        assertThrows(UnsupportedOperationException.class, mutation::run);
+        // When / Then
+        assertThrows(UnsupportedOperationException.class, () -> scope.visited.add("b"));
     }
 }

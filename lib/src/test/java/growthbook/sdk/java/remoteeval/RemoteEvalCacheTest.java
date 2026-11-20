@@ -3,196 +3,258 @@ package growthbook.sdk.java.remoteeval;
 import com.google.common.base.Ticker;
 import com.google.gson.JsonObject;
 import growthbook.sdk.java.exception.FeatureFetchException;
+import growthbook.sdk.java.exception.FeatureFetchException.FeatureFetchErrorCode;
 import growthbook.sdk.java.model.RequestBodyForRemoteEval;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import java.time.Duration;
 import java.util.Collections;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Semaphore;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.BooleanSupplier;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotSame;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
 class RemoteEvalCacheTest {
 
     private static final String KEY = "host::key||{}";
+    private static final long AWAIT_SECONDS = 5;
 
     @Test
     @DisplayName("Serves the cached response while still within the stale window")
     void servesCachedResponseWithinStaleWindow() throws Exception {
+        // Given
         CountingService service = new CountingService();
         FakeTicker ticker = new FakeTicker();
         RemoteEvalCache cache = new RemoteEvalCache(service, 10, Duration.ofSeconds(30), Duration.ofSeconds(300), ticker);
+        RemoteEvalResponse first = cache.get(KEY, payload());
 
-        cache.get(KEY, payload());
+        // When
         ticker.advance(Duration.ofSeconds(5));
-        cache.get(KEY, payload());
+        RemoteEvalResponse second = cache.get(KEY, payload());
 
+        // Then
+        assertSame(first, second);
         assertEquals(1, service.callCount());
+        cache.shutdown();
     }
 
     @Test
     @DisplayName("Refetches once the hard cache TTL has passed")
-    void hardExpiryRefetchesPastCacheTtl() throws Exception {
+    void refetchesPastHardCacheTtl() throws Exception {
+        // Given
         CountingService service = new CountingService();
         FakeTicker ticker = new FakeTicker();
         RemoteEvalCache cache = new RemoteEvalCache(service, 10, null, Duration.ofSeconds(30), ticker);
+        RemoteEvalResponse first = cache.get(KEY, payload());
 
-        cache.get(KEY, payload());
+        // When
         ticker.advance(Duration.ofSeconds(31));
-        cache.get(KEY, payload());
+        RemoteEvalResponse second = cache.get(KEY, payload());
 
+        // Then
+        assertNotSame(first, second);
+        assertSame(service.lastResponse(), second);
         assertEquals(2, service.callCount());
     }
 
     @Test
     @DisplayName("Past the stale TTL, serves the stale value while refreshing in the background")
     void staleWhileRevalidateServesStaleThenRefreshesInBackground() throws Exception {
+        // Given
         CountingService service = new CountingService();
         FakeTicker ticker = new FakeTicker();
         RemoteEvalCache cache = new RemoteEvalCache(service, 10, Duration.ofSeconds(30), Duration.ofSeconds(300), ticker);
-
         RemoteEvalResponse first = cache.get(KEY, payload());
         ticker.advance(Duration.ofSeconds(31));
-
         CountDownLatch gate = new CountDownLatch(1);
         service.blockFetchesUntil(gate);
+        service.resetFetchCompletions();
 
+        // When
         RemoteEvalResponse stale = cache.get(KEY, payload());
-        assertSame(first, stale);
-        assertEquals(1, service.callCount());
-
+        int callsWhileRefreshing = service.callCount();
         gate.countDown();
-        awaitCallCount(service, 2);
+        service.awaitFetchCompletions(1);
+        RemoteEvalResponse refreshed = awaitValueOtherThan(cache, first);
 
-        RemoteEvalResponse refreshed = awaitRefreshedValue(cache, first);
+        // Then
+        assertSame(first, stale);
+        assertEquals(1, callsWhileRefreshing);
         assertSame(service.lastResponse(), refreshed);
         assertEquals(2, service.callCount());
-
         cache.shutdown();
     }
 
-    @Test
-    @DisplayName("A zero maximum size disables retention and refetches on every read")
-    void zeroSizeDisablesRetentionAndRefetchesEveryRead() throws Exception {
+    @ParameterizedTest(name = "maximumSize = {0}")
+    @ValueSource(ints = {0, -1})
+    @DisplayName("A non-positive maximum size disables retention and refetches on every read")
+    void nonPositiveSizeDisablesRetention(int maximumSize) throws Exception {
+        // Given
         CountingService service = new CountingService();
-        RemoteEvalCache cache = new RemoteEvalCache(service, 0, null, null, new FakeTicker());
+        RemoteEvalCache cache = new RemoteEvalCache(service, maximumSize, null, null, new FakeTicker());
 
+        // When
         cache.get(KEY, payload());
         cache.get(KEY, payload());
 
+        // Then
         assertEquals(2, service.callCount());
     }
 
     @Test
     @DisplayName("A failed load is not cached, so the next read retries and then caches the success")
     void failedLoadIsNotCached() throws Exception {
+        // Given
         CountingService service = new CountingService();
         service.failNextFetches(1);
         RemoteEvalCache cache = new RemoteEvalCache(service, 10, null, Duration.ofSeconds(300), new FakeTicker());
 
-        assertThrows(FeatureFetchException.class, () -> cache.get(KEY, payload()));
-        RemoteEvalResponse ok = cache.get(KEY, payload());
-        assertSame(service.lastResponse(), ok);
-        cache.get(KEY, payload());
+        // When
+        FeatureFetchException error = assertThrows(FeatureFetchException.class, () -> cache.get(KEY, payload()));
+        RemoteEvalResponse retried = cache.get(KEY, payload());
+        RemoteEvalResponse cached = cache.get(KEY, payload());
+
+        // Then
+        assertEquals(FeatureFetchErrorCode.NO_RESPONSE_ERROR, error.getErrorCode());
+        assertSame(service.lastResponse(), retried);
+        assertSame(retried, cached);
         assertEquals(2, service.callCount());
+    }
+
+    @Test
+    @DisplayName("An unexpected loader exception surfaces as an UNKNOWN fetch error carrying its message")
+    void unexpectedLoaderExceptionSurfacesAsUnknownFetchError() {
+        // Given
+        RemoteEvalCache cache = new RemoteEvalCache(new ThrowingService(), 10, null, null, new FakeTicker());
+
+        // When
+        FeatureFetchException error = assertThrows(FeatureFetchException.class, () -> cache.get(KEY, payload()));
+
+        // Then
+        assertEquals(FeatureFetchErrorCode.UNKNOWN, error.getErrorCode());
+        assertEquals("UNKNOWN : loader exploded", error.getMessage());
     }
 
     @Test
     @DisplayName("A failed background refresh keeps serving the stale value")
     void failedBackgroundRefreshKeepsStaleValue() throws Exception {
+        // Given
         CountingService service = new CountingService();
         FakeTicker ticker = new FakeTicker();
         RemoteEvalCache cache = new RemoteEvalCache(service, 10, Duration.ofSeconds(30), Duration.ofSeconds(300), ticker);
-
         RemoteEvalResponse first = cache.get(KEY, payload());
         service.failNextFetches(1);
         ticker.advance(Duration.ofSeconds(31));
+        service.resetFetchCompletions();
 
-        assertSame(first, cache.get(KEY, payload()));
-        awaitCallCount(service, 2);
-
+        // When
+        RemoteEvalResponse servedDuringFailedRefresh = cache.get(KEY, payload());
+        service.awaitFetchCompletions(1);
         CountDownLatch retryGate = new CountDownLatch(1);
         service.blockFetchesUntil(retryGate);
-        assertSame(first, cache.get(KEY, payload()));
+        RemoteEvalResponse servedAfterFailedRefresh = cache.get(KEY, payload());
         retryGate.countDown();
 
+        // Then
+        assertSame(first, servedDuringFailedRefresh);
+        assertSame(first, servedAfterFailedRefresh);
         cache.shutdown();
     }
 
     @Test
-    @DisplayName("A closed cache rejects reads")
+    @DisplayName("A closed cache rejects reads with an UNKNOWN fetch error")
     void closedCacheRejectsReads() throws Exception {
+        // Given
         CountingService service = new CountingService();
         RemoteEvalCache cache = new RemoteEvalCache(service, 10, Duration.ofSeconds(30), Duration.ofSeconds(300), new FakeTicker());
-
         cache.get(KEY, payload());
+
+        // When
         cache.shutdown();
 
-        assertThrows(FeatureFetchException.class, () -> cache.get(KEY, payload()));
+        // Then
+        FeatureFetchException error = assertThrows(FeatureFetchException.class, () -> cache.get(KEY, payload()));
+        assertEquals(FeatureFetchErrorCode.UNKNOWN, error.getErrorCode());
+        assertEquals("UNKNOWN : Remote evaluation cache is closed", error.getMessage());
+        assertEquals(1, service.callCount());
     }
 
     @Test
     @DisplayName("An in-flight load that completes after shutdown is never served from the cache")
     void inFlightLoadAfterShutdownIsNotServedFromCache() throws Exception {
+        // Given
         CountingService service = new CountingService();
         RemoteEvalCache cache = new RemoteEvalCache(service, 10, Duration.ofSeconds(30), Duration.ofSeconds(300), new FakeTicker());
-
         CountDownLatch gate = new CountDownLatch(1);
         service.blockFetchesUntil(gate);
-
+        AtomicReference<Throwable> loaderFailure = new AtomicReference<>();
         Thread loader = new Thread(() -> {
             try {
                 cache.get(KEY, payload());
-            } catch (FeatureFetchException ignored) {
+            } catch (FeatureFetchException e) {
+                loaderFailure.set(e);
             }
-        });
+        }, "remote-eval-loader");
         loader.start();
-        Thread.sleep(50);
+        service.awaitFetchStarted();
 
+        // When
         cache.shutdown();
         gate.countDown();
-        loader.join(2000);
+        loader.join(TimeUnit.SECONDS.toMillis(AWAIT_SECONDS));
 
+        // Then
+        assertFalse(loader.isAlive());
         assertThrows(FeatureFetchException.class, () -> cache.get(KEY, payload()));
+        assertEquals(1, service.callCount());
     }
 
     private static RequestBodyForRemoteEval payload() {
         return new RequestBodyForRemoteEval(new JsonObject(), Collections.emptyList(), Collections.emptyMap(), "");
     }
 
-    private static void awaitCallCount(CountingService service, int expected) throws InterruptedException {
-        long deadline = System.currentTimeMillis() + 2000;
-        while (System.currentTimeMillis() < deadline) {
-            if (service.callCount() >= expected) {
-                return;
+    private static RemoteEvalResponse awaitValueOtherThan(RemoteEvalCache cache, RemoteEvalResponse stale) throws Exception {
+        AtomicReference<RemoteEvalResponse> current = new AtomicReference<>();
+        awaitCondition(() -> {
+            try {
+                current.set(cache.get(KEY, payload()));
+            } catch (FeatureFetchException e) {
+                throw new IllegalStateException(e);
             }
-            Thread.sleep(10);
-        }
-        fail("Expected background refresh to reach " + expected + " calls, but saw " + service.callCount());
+            return current.get() != stale;
+        });
+        return current.get();
     }
 
-    private static RemoteEvalResponse awaitRefreshedValue(RemoteEvalCache cache, RemoteEvalResponse stale) throws Exception {
-        long deadline = System.currentTimeMillis() + 2000;
-        while (System.currentTimeMillis() < deadline) {
-            RemoteEvalResponse current = cache.get(KEY, payload());
-            if (current != stale) {
-                return current;
+    private static void awaitCondition(BooleanSupplier condition) {
+        long deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(AWAIT_SECONDS);
+        while (!condition.getAsBoolean()) {
+            if (System.nanoTime() > deadline) {
+                fail("Condition not met within " + AWAIT_SECONDS + "s");
             }
-            Thread.sleep(10);
+            Thread.yield();
         }
-        return fail("Expected the cache entry to be replaced by the background refresh");
     }
 
-    /** Counts fetch attempts and returns a distinct response each time; an optional gate can hold a fetch open. */
     private static final class CountingService extends RemoteEvalService {
         private final AtomicInteger calls = new AtomicInteger();
         private final AtomicInteger failuresRemaining = new AtomicInteger();
+        private final CountDownLatch fetchStarted = new CountDownLatch(1);
+        private final Semaphore fetchCompletions = new Semaphore(0);
         private volatile RemoteEvalResponse lastResponse;
         private volatile CountDownLatch gate;
 
@@ -202,21 +264,25 @@ class RemoteEvalCacheTest {
 
         @Override
         public RemoteEvalResponse fetch(RequestBodyForRemoteEval requestBodyForRemoteEval) throws FeatureFetchException {
-            CountDownLatch currentGate = this.gate;
-            if (currentGate != null) {
-                try {
-                    currentGate.await();
-                } catch (InterruptedException e) {
-                    Thread.currentThread().interrupt();
+            try {
+                fetchStarted.countDown();
+                CountDownLatch currentGate = this.gate;
+                if (currentGate != null) {
+                    try {
+                        currentGate.await();
+                    } catch (InterruptedException e) {
+                        Thread.currentThread().interrupt();
+                    }
                 }
+                calls.incrementAndGet();
+                if (failuresRemaining.getAndUpdate(n -> Math.max(0, n - 1)) > 0) {
+                    throw new FeatureFetchException(FeatureFetchErrorCode.NO_RESPONSE_ERROR, "remote eval failed");
+                }
+                this.lastResponse = new RemoteEvalResponse(Collections.emptyMap(), new JsonObject());
+                return this.lastResponse;
+            } finally {
+                fetchCompletions.release();
             }
-            calls.incrementAndGet();
-            if (failuresRemaining.getAndUpdate(n -> Math.max(0, n - 1)) > 0) {
-                throw new FeatureFetchException(
-                        FeatureFetchException.FeatureFetchErrorCode.NO_RESPONSE_ERROR, "remote eval failed");
-            }
-            this.lastResponse = new RemoteEvalResponse(Collections.emptyMap(), new JsonObject());
-            return this.lastResponse;
         }
 
         void blockFetchesUntil(CountDownLatch gate) {
@@ -227,12 +293,35 @@ class RemoteEvalCacheTest {
             this.failuresRemaining.set(count);
         }
 
+        void awaitFetchStarted() throws InterruptedException {
+            assertTrue(fetchStarted.await(AWAIT_SECONDS, TimeUnit.SECONDS), "fetch never started");
+        }
+
+        void resetFetchCompletions() {
+            fetchCompletions.drainPermits();
+        }
+
+        void awaitFetchCompletions(int count) throws InterruptedException {
+            assertTrue(fetchCompletions.tryAcquire(count, AWAIT_SECONDS, TimeUnit.SECONDS), "background fetch never completed");
+        }
+
         int callCount() {
             return calls.get();
         }
 
         RemoteEvalResponse lastResponse() {
             return lastResponse;
+        }
+    }
+
+    private static final class ThrowingService extends RemoteEvalService {
+        ThrowingService() {
+            super("http://localhost", "key");
+        }
+
+        @Override
+        public RemoteEvalResponse fetch(RequestBodyForRemoteEval requestBodyForRemoteEval) {
+            throw new IllegalStateException("loader exploded");
         }
     }
 

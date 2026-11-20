@@ -87,7 +87,7 @@ class AttrPathTest {
         JsonElement value = path.resolve(ATTRIBUTES);
 
         // Then
-        assertEquals(3, value.getAsInt());
+        assertEquals(new JsonPrimitive(3), value);
     }
 
     @ParameterizedTest
@@ -213,6 +213,6 @@ class AttrPathTest {
         // Then
         assertEquals(new JsonPrimitive("Testville"), first);
         assertEquals(new JsonPrimitive("Otherville"), second);
-        assertEquals(first, third);
+        assertEquals(new JsonPrimitive("Testville"), third);
     }
 }

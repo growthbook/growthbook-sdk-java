@@ -7,6 +7,8 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -28,7 +30,7 @@ class ExperimentSubscriptionManagerTest {
         manager.publishIfChanged(experiment, result(0));
 
         // Then
-        assertEquals(2, callback.runs.size());
+        assertEquals(Arrays.asList(1, 0), callback.runs);
     }
 
     @Test
@@ -44,7 +46,7 @@ class ExperimentSubscriptionManagerTest {
         manager.publishIfChanged(experiment(""), result(1));
 
         // Then
-        assertEquals(2, callback.runs.size());
+        assertEquals(Arrays.asList(1, 1), callback.runs);
     }
 
     @Test
@@ -63,8 +65,8 @@ class ExperimentSubscriptionManagerTest {
         manager.publishIfChanged(experiment("exp-1"), result(1));
 
         // Then
-        assertEquals(1, cleared.runs.size());
-        assertEquals(0, later.runs.size());
+        assertEquals(Collections.singletonList(1), cleared.runs);
+        assertEquals(Collections.<Integer>emptyList(), later.runs);
     }
 
     @Test
@@ -80,7 +82,7 @@ class ExperimentSubscriptionManagerTest {
         manager.publishIfChanged(experiment("exp-1"), result(1));
 
         // Then
-        assertEquals(1, callback.runs.size());
+        assertEquals(Collections.singletonList(1), callback.runs);
     }
 
     private static Experiment<String> experiment(String key) {

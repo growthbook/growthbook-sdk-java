@@ -1,14 +1,14 @@
 package growthbook.sdk.java.evaluators.internal.payload;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -31,7 +31,7 @@ class SavedGroupReducerTest {
         JsonObject groups = new SavedGroupReducer(new JsonObject(), ATTRIBUTES).reduce(reduced);
 
         // Then
-        assertTrue(groups.isEmpty());
+        assertEquals(new JsonObject(), groups);
     }
 
     @Test
@@ -60,7 +60,7 @@ class SavedGroupReducerTest {
         JsonObject groups = new SavedGroupReducer(savedGroups, ATTRIBUTES).reduce(reduced);
 
         // Then
-        assertTrue(groups.isEmpty());
+        assertEquals(new JsonObject(), groups);
     }
 
     @Test
@@ -213,26 +213,23 @@ class SavedGroupReducerTest {
         assertEquals(before, savedGroups);
     }
 
-    @Test
+    @ParameterizedTest(name = "{0} -> {1}")
+    @CsvSource(delimiter = '|', value = {
+            "{'type': 'condition', 'condition': {'plan': 'pro', 'region': 'r1'}} | true",
+            "{'condition': {}}                                                   | true",
+            "{'type': 'list', 'values': []}                                      | false",
+            "['g1']                                                              | false",
+    })
     @DisplayName("Lets only non-list objects reference other groups")
-    void onlyNonListObjectsCanReference() {
+    void onlyNonListObjectsCanReference(String group, boolean expected) {
         // Given
-        JsonElement condition = json(PRUNABLE);
-        JsonElement untyped = json("{'condition': {}}");
-        JsonElement list = json("{'type': 'list', 'values': []}");
-        JsonElement bareArray = JsonParser.parseString("[\"g1\"]");
+        JsonElement parsed = JsonParser.parseString(group.replace('\'', '"'));
 
         // When
-        boolean conditionCanReference = SavedGroupReducer.canReference(condition);
-        boolean untypedCanReference = SavedGroupReducer.canReference(untyped);
-        boolean listCanReference = SavedGroupReducer.canReference(list);
-        boolean bareArrayCanReference = SavedGroupReducer.canReference(bareArray);
+        boolean canReference = SavedGroupReducer.canReference(parsed);
 
         // Then
-        assertTrue(conditionCanReference);
-        assertTrue(untypedCanReference);
-        assertFalse(listCanReference);
-        assertFalse(bareArrayCanReference);
+        assertEquals(expected, canReference);
     }
 
     @Test

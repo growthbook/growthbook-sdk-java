@@ -1,7 +1,6 @@
 package growthbook.sdk.java.multiusermode;
 
 import com.google.gson.JsonObject;
-import growthbook.sdk.java.callback.FeatureRefreshCallback;
 import growthbook.sdk.java.model.Feature;
 import growthbook.sdk.java.multiusermode.configurations.Options;
 import growthbook.sdk.java.repository.FeatureRefreshStrategy;
@@ -74,13 +73,12 @@ final class GrowthBookClientTestFixtures {
         return builder;
     }
 
-    static Options createDefaultOptions(FeatureRefreshCallback callback) {
+    static Options createDefaultOptions() {
         return Options.builder()
                 .apiHost("https://custom.growthbook.io")
                 .clientKey("custom_key")
                 .decryptionKey("test_key")
                 .refreshStrategy(FeatureRefreshStrategy.STALE_WHILE_REVALIDATE)
-                .featureRefreshCallback(callback)
                 .build();
     }
 }

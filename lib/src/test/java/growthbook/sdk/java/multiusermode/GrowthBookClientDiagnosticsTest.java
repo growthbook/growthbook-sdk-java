@@ -1,5 +1,19 @@
 package growthbook.sdk.java.multiusermode;
 
+import static growthbook.sdk.java.multiusermode.GrowthBookClientTestFixtures.createDefaultOptions;
+import static growthbook.sdk.java.multiusermode.GrowthBookClientTestFixtures.createMockBuilder;
+import static growthbook.sdk.java.multiusermode.GrowthBookClientTestFixtures.createMockRepository;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.anyBoolean;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.mockStatic;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.when;
+
 import growthbook.sdk.java.Version;
 import growthbook.sdk.java.diagnostics.model.Diagnostics;
 import growthbook.sdk.java.diagnostics.model.enums.CacheState;
@@ -13,53 +27,55 @@ import growthbook.sdk.java.multiusermode.configurations.Options;
 import growthbook.sdk.java.repository.FeatureRefreshStrategy;
 import growthbook.sdk.java.repository.GBFeaturesRepository;
 import growthbook.sdk.java.sandbox.CacheMode;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.mockito.MockedStatic;
 
-import java.util.Collections;
-import java.util.concurrent.TimeUnit;
-
-import static growthbook.sdk.java.multiusermode.GrowthBookClientTestFixtures.createDefaultOptions;
-import static growthbook.sdk.java.multiusermode.GrowthBookClientTestFixtures.createMockBuilder;
-import static growthbook.sdk.java.multiusermode.GrowthBookClientTestFixtures.createMockRepository;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.anyBoolean;
-import static org.mockito.Mockito.doThrow;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.mockStatic;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.when;
-
 class GrowthBookClientDiagnosticsTest {
 
-    private GBFeaturesRepository mockRepository;
-    private GBFeaturesRepository.GBFeaturesRepositoryBuilder mockBuilder;
+    private static final String FETCH_ERROR_MESSAGE = "temporary outage for custom_key";
+
+    private MockedStatic<GBFeaturesRepository> repositoryStatics;
+    private GBFeaturesRepository repository;
+    private GBFeaturesRepository.GBFeaturesRepositoryBuilder repositoryBuilder;
+
+    @BeforeEach
+    void setUp() {
+        repository = createMockRepository();
+        repositoryBuilder = createMockBuilder(repository);
+        repositoryStatics = mockStatic(GBFeaturesRepository.class);
+        repositoryStatics.when(GBFeaturesRepository::builder).thenReturn(repositoryBuilder);
+    }
+
+    @AfterEach
+    void tearDown() {
+        repositoryStatics.close();
+    }
 
     @Test
-    void test_getDiagnostics_beforeInitializeReportsDefaultState() {
-        GrowthBookClient client = new GrowthBookClient(createDefaultOptions(null));
+    @DisplayName("Reports a not-ready client with masked configuration before initialization")
+    void reportsNotReadyClientBeforeInitialization() {
+        // Given
+        GrowthBookClient client = new GrowthBookClient(createDefaultOptions());
 
+        // When
         Diagnostics diagnostics = client.getDiagnostics();
 
-        assertNotNull(diagnostics);
+        // Then
         assertTrue(diagnostics.getGeneratedAtMillis() > 0);
         assertEquals(Version.SDK_VERSION, diagnostics.getSdk().getVersion());
         assertEquals(DiagnosticsHealthState.NOT_READY, diagnostics.getHealth().getState());
-        assertEquals(1, diagnostics.getHealth().getIssues().size());
-        assertEquals(
-                DiagnosticsIssueCode.CLIENT_NOT_INITIALIZED,
-                diagnostics.getHealth().getIssues().get(0).getCode()
-        );
+        assertEquals(Collections.singletonList(DiagnosticsIssueCode.CLIENT_NOT_INITIALIZED), issueCodes(diagnostics));
         assertEquals("https://custom.growthbook.io", diagnostics.getConfig().getApiHost());
         assertEquals("cust..._key", diagnostics.getConfig().getClientKeyMasked());
-        assertEquals(
-                "https://custom.growthbook.io/api/features/cust..._key",
-                diagnostics.getConfig().getFeaturesEndpoint()
-        );
+        assertEquals("https://custom.growthbook.io/api/features/cust..._key", diagnostics.getConfig().getFeaturesEndpoint());
         assertEquals("https://custom.growthbook.io/sub/cust..._key", diagnostics.getConfig().getEventsEndpoint());
         assertTrue(diagnostics.getConfig().isEncryptionConfigured());
         assertEquals(60, diagnostics.getConfig().getSwrTtlSeconds());
@@ -99,279 +115,247 @@ class GrowthBookClientDiagnosticsTest {
         assertEquals(StreamingState.DISABLED, diagnostics.getStreaming().getState());
         assertFalse(diagnostics.getRemoteEval().isEnabled());
         assertFalse(diagnostics.getRemoteEval().isReady());
-
-        String diagnosticsJson = diagnostics.toJson();
-        assertTrue(diagnosticsJson.contains("\"config\""));
-        assertTrue(diagnosticsJson.contains("cust..._key"));
-        assertFalse(diagnosticsJson.contains("custom_key"));
-        assertFalse(diagnosticsJson.contains("test_key"));
     }
 
     @Test
-    void test_getDiagnostics_afterInitializeReportsRepositoryState() {
-        mockRepository = createMockRepository();
-        mockBuilder = createMockBuilder(mockRepository);
+    @DisplayName("Serializes diagnostics with the masked client key and without any key in clear")
+    void serializesDiagnosticsWithoutKeysInClear() {
+        // Given
+        GrowthBookClient client = new GrowthBookClient(createDefaultOptions());
 
-        try (MockedStatic<GBFeaturesRepository> mockedStatic = mockStatic(GBFeaturesRepository.class)) {
-            mockedStatic.when(GBFeaturesRepository::builder).thenReturn(mockBuilder);
+        // When
+        String json = client.getDiagnostics().toJson();
 
-            GrowthBookClient client = new GrowthBookClient(createDefaultOptions(null));
-            assertTrue(client.initialize());
-
-            Diagnostics diagnostics = client.getDiagnostics();
-
-            assertEquals(DiagnosticsHealthState.READY, diagnostics.getHealth().getState());
-            assertTrue(diagnostics.getHealth().getIssues().isEmpty());
-            assertEquals("https://custom.growthbook.io", diagnostics.getConfig().getApiHost());
-            assertEquals("cust..._key", diagnostics.getConfig().getClientKeyMasked());
-            assertEquals(
-                    "https://custom.growthbook.io/api/features/cust..._key",
-                    diagnostics.getConfig().getFeaturesEndpoint()
-            );
-            assertEquals("https://custom.growthbook.io/sub/cust..._key", diagnostics.getConfig().getEventsEndpoint());
-            assertTrue(diagnostics.getConfig().isEncryptionConfigured());
-            assertEquals(60, diagnostics.getConfig().getSwrTtlSeconds());
-            assertEquals(5, diagnostics.getConfig().getRetryMaxAttempts());
-            assertTrue(diagnostics.getClient().isInitialized());
-            assertFalse(diagnostics.getClient().isShutdown());
-            assertEquals(FeatureState.LOADED, diagnostics.getFeatures().getState());
-            assertEquals(FeatureDataSource.LOCAL_REPOSITORY, diagnostics.getFeatures().getSource());
-            assertTrue(diagnostics.getFeatures().isAvailable());
-            assertEquals(1, diagnostics.getFeatures().getActiveFeatureCount());
-            assertEquals(1, diagnostics.getFeatures().getTotalFeatureCount());
-            assertTrue(diagnostics.getFeatures().getKeys().isAvailable());
-            assertEquals(1, diagnostics.getFeatures().getKeys().getTotalCount());
-            assertEquals(20, diagnostics.getFeatures().getKeys().getSampleLimit());
-            assertEquals(Collections.singletonList("test-feature"), diagnostics.getFeatures().getKeys().getSample());
-            assertFalse(diagnostics.getFeatures().getKeys().isTruncated());
-            assertEquals(
-                    "283ea234b7cfc1f14d1965e98fbef70dec5524ce5cbc38d946846648572501f6",
-                    diagnostics.getFeatures().getKeys().getSha256()
-            );
-            assertEquals(FeatureRefreshStrategy.STALE_WHILE_REVALIDATE, diagnostics.getRefresh().getStrategy());
-            assertNotNull(diagnostics.getRefresh().getLastSuccessfulRefreshAtMillis());
-            assertNotNull(diagnostics.getRefresh().getLastSuccessfulRefreshAgeMillis());
-            assertTrue(diagnostics.getRefresh().getLastSuccessfulRefreshAgeMillis() >= 0);
-            assertTrue(diagnostics.getRefresh().getLastSuccessfulRefreshAgeMillis() < TimeUnit.SECONDS.toMillis(10));
-            assertNotNull(diagnostics.getRefresh().getNextCacheExpiresAtMillis());
-            assertNotNull(diagnostics.getRefresh().getMillisUntilCacheExpiry());
-            assertTrue(diagnostics.getRefresh().getMillisUntilCacheExpiry() > 0);
-            assertFalse(diagnostics.getRefresh().isStale());
-            assertEquals(1L, diagnostics.getRefresh().getSuccessCount());
-            assertEquals(0L, diagnostics.getRefresh().getFailureCount());
-            assertEquals(0L, diagnostics.getRefresh().getConsecutiveFailures());
-            assertNull(diagnostics.getRefresh().getLastFailureAtMillis());
-            assertEquals(Boolean.FALSE, diagnostics.getRefresh().getLastLoadedFromCache());
-            assertNull(diagnostics.getRefresh().getLastError());
-            assertTrue(diagnostics.getCache().isEnabled());
-            assertEquals(CacheState.AVAILABLE, diagnostics.getCache().getState());
-            assertTrue(diagnostics.getCache().getLastUpdatedMillis() > 0);
-            assertNotNull(diagnostics.getCache().getAgeMillis());
-            assertTrue(diagnostics.getCache().getAgeMillis() >= 0);
-            assertTrue(diagnostics.getCache().getAgeMillis() < TimeUnit.SECONDS.toMillis(10));
-            assertEquals(StreamingState.DISABLED, diagnostics.getStreaming().getState());
-            assertEquals(0, diagnostics.getStreaming().getReconnectAttempts());
-
-            String diagnosticsJson = diagnostics.toJson();
-            assertTrue(diagnosticsJson.contains("cust..._key"));
-            assertFalse(diagnosticsJson.contains("custom_key"));
-            assertFalse(diagnosticsJson.contains("test_key"));
-        }
+        // Then
+        assertTrue(json.contains("\"config\""));
+        assertTrue(json.contains("cust..._key"));
+        assertFalse(json.contains("custom_key"));
+        assertFalse(json.contains("test_key"));
     }
 
     @Test
-    void test_getDiagnostics_reportsStaleFeatureData() {
-        mockRepository = createMockRepository();
+    @DisplayName("Reports the repository's feature, refresh, cache and streaming state after initialization")
+    void reportsRepositoryStateAfterInitialization() {
+        // Given
         long nowMillis = System.currentTimeMillis();
-        when(mockRepository.getLastSuccessfulFetchAtMillis()).thenReturn(nowMillis - TimeUnit.MINUTES.toMillis(5));
-        when(mockRepository.getExpiresAt()).thenReturn(TimeUnit.MILLISECONDS.toSeconds(nowMillis - TimeUnit.SECONDS.toMillis(1)));
-        mockBuilder = createMockBuilder(mockRepository);
+        long lastFetchMillis = nowMillis - TimeUnit.SECONDS.toMillis(1);
+        long expiresAtSeconds = TimeUnit.MILLISECONDS.toSeconds(nowMillis + TimeUnit.SECONDS.toMillis(60));
+        long cacheUpdatedMillis = nowMillis - 500L;
+        when(repository.getLastSuccessfulFetchAtMillis()).thenReturn(lastFetchMillis);
+        when(repository.getExpiresAt()).thenReturn(expiresAtSeconds);
+        when(repository.getCacheLastUpdatedMillis()).thenReturn(cacheUpdatedMillis);
+        GrowthBookClient client = initializedClient(createDefaultOptions());
 
-        try (MockedStatic<GBFeaturesRepository> mockedStatic = mockStatic(GBFeaturesRepository.class)) {
-            mockedStatic.when(GBFeaturesRepository::builder).thenReturn(mockBuilder);
+        // When
+        Diagnostics diagnostics = client.getDiagnostics();
 
-            GrowthBookClient client = new GrowthBookClient(createDefaultOptions(null));
-            assertTrue(client.initialize());
-
-            Diagnostics diagnostics = client.getDiagnostics();
-
-            assertTrue(diagnostics.getRefresh().isStale());
-            assertNotNull(diagnostics.getRefresh().getMillisUntilCacheExpiry());
-            assertTrue(diagnostics.getRefresh().getMillisUntilCacheExpiry() < 0);
-            assertEquals(DiagnosticsHealthState.DEGRADED, diagnostics.getHealth().getState());
-            assertTrue(diagnostics.getHealth().getIssues().stream()
-                    .anyMatch(issue -> issue.getCode() == DiagnosticsIssueCode.FEATURES_STALE));
-        }
+        // Then
+        long generatedAt = diagnostics.getGeneratedAtMillis();
+        assertEquals(DiagnosticsHealthState.READY, diagnostics.getHealth().getState());
+        assertEquals(Collections.<DiagnosticsIssueCode>emptyList(), issueCodes(diagnostics));
+        assertEquals("https://custom.growthbook.io", diagnostics.getConfig().getApiHost());
+        assertEquals("cust..._key", diagnostics.getConfig().getClientKeyMasked());
+        assertEquals("https://custom.growthbook.io/api/features/cust..._key", diagnostics.getConfig().getFeaturesEndpoint());
+        assertEquals("https://custom.growthbook.io/sub/cust..._key", diagnostics.getConfig().getEventsEndpoint());
+        assertTrue(diagnostics.getConfig().isEncryptionConfigured());
+        assertEquals(60, diagnostics.getConfig().getSwrTtlSeconds());
+        assertEquals(5, diagnostics.getConfig().getRetryMaxAttempts());
+        assertTrue(diagnostics.getClient().isInitialized());
+        assertFalse(diagnostics.getClient().isShutdown());
+        assertEquals(FeatureState.LOADED, diagnostics.getFeatures().getState());
+        assertEquals(FeatureDataSource.LOCAL_REPOSITORY, diagnostics.getFeatures().getSource());
+        assertTrue(diagnostics.getFeatures().isAvailable());
+        assertEquals(1, diagnostics.getFeatures().getActiveFeatureCount());
+        assertEquals(1, diagnostics.getFeatures().getTotalFeatureCount());
+        assertTrue(diagnostics.getFeatures().getKeys().isAvailable());
+        assertEquals(1, diagnostics.getFeatures().getKeys().getTotalCount());
+        assertEquals(20, diagnostics.getFeatures().getKeys().getSampleLimit());
+        assertEquals(Collections.singletonList("test-feature"), diagnostics.getFeatures().getKeys().getSample());
+        assertFalse(diagnostics.getFeatures().getKeys().isTruncated());
+        assertEquals("283ea234b7cfc1f14d1965e98fbef70dec5524ce5cbc38d946846648572501f6",
+                diagnostics.getFeatures().getKeys().getSha256());
+        assertEquals(FeatureRefreshStrategy.STALE_WHILE_REVALIDATE, diagnostics.getRefresh().getStrategy());
+        assertEquals(Long.valueOf(lastFetchMillis), diagnostics.getRefresh().getLastSuccessfulRefreshAtMillis());
+        assertEquals(Long.valueOf(generatedAt - lastFetchMillis), diagnostics.getRefresh().getLastSuccessfulRefreshAgeMillis());
+        assertEquals(Long.valueOf(expiresAtSeconds * 1000L), diagnostics.getRefresh().getNextCacheExpiresAtMillis());
+        assertEquals(Long.valueOf(expiresAtSeconds * 1000L - generatedAt), diagnostics.getRefresh().getMillisUntilCacheExpiry());
+        assertFalse(diagnostics.getRefresh().isStale());
+        assertEquals(1L, diagnostics.getRefresh().getSuccessCount());
+        assertEquals(0L, diagnostics.getRefresh().getFailureCount());
+        assertEquals(0L, diagnostics.getRefresh().getConsecutiveFailures());
+        assertNull(diagnostics.getRefresh().getLastFailureAtMillis());
+        assertEquals(Boolean.FALSE, diagnostics.getRefresh().getLastLoadedFromCache());
+        assertNull(diagnostics.getRefresh().getLastError());
+        assertTrue(diagnostics.getCache().isEnabled());
+        assertEquals(CacheState.AVAILABLE, diagnostics.getCache().getState());
+        assertEquals(cacheUpdatedMillis, diagnostics.getCache().getLastUpdatedMillis());
+        assertEquals(Long.valueOf(generatedAt - cacheUpdatedMillis), diagnostics.getCache().getAgeMillis());
+        assertEquals(StreamingState.DISABLED, diagnostics.getStreaming().getState());
+        assertEquals(0, diagnostics.getStreaming().getReconnectAttempts());
     }
 
     @Test
-    void test_getDiagnostics_reportsStaleFeatureDataWhenOldCacheFallbackWasLoaded() {
-        mockRepository = createMockRepository();
+    @DisplayName("Serializes diagnostics of an initialized client without any key in clear")
+    void serializesInitializedDiagnosticsWithoutKeysInClear() {
+        // Given
+        GrowthBookClient client = initializedClient(createDefaultOptions());
+
+        // When
+        String json = client.getDiagnostics().toJson();
+
+        // Then
+        assertTrue(json.contains("cust..._key"));
+        assertFalse(json.contains("custom_key"));
+        assertFalse(json.contains("test_key"));
+    }
+
+    @Test
+    @DisplayName("Reports degraded health when the feature data has expired")
+    void reportsDegradedHealthForExpiredFeatureData() {
+        // Given
+        long nowMillis = System.currentTimeMillis();
+        long expiresAtSeconds = TimeUnit.MILLISECONDS.toSeconds(nowMillis - TimeUnit.SECONDS.toMillis(1));
+        when(repository.getLastSuccessfulFetchAtMillis()).thenReturn(nowMillis - TimeUnit.MINUTES.toMillis(5));
+        when(repository.getExpiresAt()).thenReturn(expiresAtSeconds);
+        GrowthBookClient client = initializedClient(createDefaultOptions());
+
+        // When
+        Diagnostics diagnostics = client.getDiagnostics();
+
+        // Then
+        assertTrue(diagnostics.getRefresh().isStale());
+        assertEquals(Long.valueOf(expiresAtSeconds * 1000L - diagnostics.getGeneratedAtMillis()),
+                diagnostics.getRefresh().getMillisUntilCacheExpiry());
+        assertEquals(DiagnosticsHealthState.DEGRADED, diagnostics.getHealth().getState());
+        assertEquals(Collections.singletonList(DiagnosticsIssueCode.FEATURES_STALE), issueCodes(diagnostics));
+    }
+
+    @Test
+    @DisplayName("Reports degraded health when the features came from an old cache entry")
+    void reportsDegradedHealthForOldCacheFallback() {
+        // Given
         long nowMillis = System.currentTimeMillis();
         long cacheUpdatedMillis = nowMillis - TimeUnit.MINUTES.toMillis(5);
-        when(mockRepository.getLastSuccessfulFetchAtMillis()).thenReturn(0L);
-        when(mockRepository.getLastRefreshLoadedFromCache()).thenReturn(true);
-        when(mockRepository.getCacheLastUpdatedMillis()).thenReturn(cacheUpdatedMillis);
-        when(mockRepository.getExpiresAt()).thenReturn(TimeUnit.MILLISECONDS.toSeconds(nowMillis + TimeUnit.MINUTES.toMillis(5)));
-        mockBuilder = createMockBuilder(mockRepository);
+        when(repository.getLastSuccessfulFetchAtMillis()).thenReturn(0L);
+        when(repository.getLastRefreshLoadedFromCache()).thenReturn(true);
+        when(repository.getCacheLastUpdatedMillis()).thenReturn(cacheUpdatedMillis);
+        when(repository.getExpiresAt()).thenReturn(TimeUnit.MILLISECONDS.toSeconds(nowMillis + TimeUnit.MINUTES.toMillis(5)));
+        GrowthBookClient client = initializedClient(createDefaultOptions());
 
-        try (MockedStatic<GBFeaturesRepository> mockedStatic = mockStatic(GBFeaturesRepository.class)) {
-            mockedStatic.when(GBFeaturesRepository::builder).thenReturn(mockBuilder);
+        // When
+        Diagnostics diagnostics = client.getDiagnostics();
 
-            GrowthBookClient client = new GrowthBookClient(createDefaultOptions(null));
-            assertTrue(client.initialize());
-
-            Diagnostics diagnostics = client.getDiagnostics();
-
-            assertEquals(cacheUpdatedMillis + TimeUnit.SECONDS.toMillis(60), diagnostics.getRefresh().getNextCacheExpiresAtMillis());
-            assertTrue(diagnostics.getRefresh().isStale());
-            assertTrue(diagnostics.getRefresh().getMillisUntilCacheExpiry() < 0);
-            assertEquals(DiagnosticsHealthState.DEGRADED, diagnostics.getHealth().getState());
-            assertTrue(diagnostics.getHealth().getIssues().stream()
-                    .anyMatch(issue -> issue.getCode() == DiagnosticsIssueCode.FEATURES_STALE));
-        }
+        // Then
+        long expectedExpiry = cacheUpdatedMillis + TimeUnit.SECONDS.toMillis(60);
+        assertEquals(Long.valueOf(expectedExpiry), diagnostics.getRefresh().getNextCacheExpiresAtMillis());
+        assertEquals(Long.valueOf(expectedExpiry - diagnostics.getGeneratedAtMillis()), diagnostics.getRefresh().getMillisUntilCacheExpiry());
+        assertTrue(diagnostics.getRefresh().isStale());
+        assertEquals(DiagnosticsHealthState.DEGRADED, diagnostics.getHealth().getState());
+        assertEquals(Collections.singletonList(DiagnosticsIssueCode.FEATURES_STALE), issueCodes(diagnostics));
     }
 
     @Test
-    void test_getDiagnostics_keepsHistoricalErrorWithoutDegradingHealthAfterRecovery() {
-        mockRepository = createMockRepository();
+    @DisplayName("Keeps a recovered refresh error for inspection without degrading health")
+    void keepsRecoveredRefreshErrorWithoutDegradingHealth() {
+        // Given
         long nowMillis = System.currentTimeMillis();
-        when(mockRepository.getLastSuccessfulFetchAtMillis()).thenReturn(nowMillis);
-        when(mockRepository.getRefreshFailureCount()).thenReturn(1L);
-        when(mockRepository.getRefreshConsecutiveFailureCount()).thenReturn(0L);
-        when(mockRepository.getLastRefreshFailureAtMillis()).thenReturn(nowMillis - TimeUnit.SECONDS.toMillis(1));
-        when(mockRepository.getLastRefreshErrorAtMillis()).thenReturn(nowMillis - TimeUnit.SECONDS.toMillis(1));
-        when(mockRepository.getLastRefreshError()).thenReturn(new FeatureFetchException(
-                FeatureFetchException.FeatureFetchErrorCode.NO_RESPONSE_ERROR,
-                "temporary outage for custom_key"
-        ));
-        mockBuilder = createMockBuilder(mockRepository);
+        when(repository.getLastSuccessfulFetchAtMillis()).thenReturn(nowMillis);
+        stubRefreshFailure(nowMillis - TimeUnit.SECONDS.toMillis(1), 0L);
+        GrowthBookClient client = initializedClient(createDefaultOptions());
 
-        try (MockedStatic<GBFeaturesRepository> mockedStatic = mockStatic(GBFeaturesRepository.class)) {
-            mockedStatic.when(GBFeaturesRepository::builder).thenReturn(mockBuilder);
+        // When
+        Diagnostics diagnostics = client.getDiagnostics();
 
-            GrowthBookClient client = new GrowthBookClient(createDefaultOptions(null));
-            assertTrue(client.initialize());
-
-            Diagnostics diagnostics = client.getDiagnostics();
-
-            assertNotNull(diagnostics.getRefresh().getLastError());
-            assertEquals(DiagnosticsHealthState.READY, diagnostics.getHealth().getState());
-            assertFalse(diagnostics.getHealth().getIssues().stream()
-                    .anyMatch(issue -> issue.getCode() == DiagnosticsIssueCode.REFRESH_FAILED));
-        }
+        // Then
+        assertEquals("FeatureFetchException", diagnostics.getRefresh().getLastError().getType());
+        assertEquals(FeatureFetchException.FeatureFetchErrorCode.NO_RESPONSE_ERROR.name(),
+                diagnostics.getRefresh().getLastError().getCode());
+        assertEquals(DiagnosticsHealthState.READY, diagnostics.getHealth().getState());
+        assertEquals(Collections.<DiagnosticsIssueCode>emptyList(), issueCodes(diagnostics));
     }
 
     @Test
-    void test_getDiagnostics_reportsUnresolvedRefreshFailureAfterPriorSuccess() {
-        mockRepository = createMockRepository();
+    @DisplayName("Reports degraded health for a refresh failure after an earlier success")
+    void reportsDegradedHealthForUnresolvedRefreshFailure() {
+        // Given
         long nowMillis = System.currentTimeMillis();
-        when(mockRepository.getLastSuccessfulFetchAtMillis()).thenReturn(nowMillis - TimeUnit.SECONDS.toMillis(2));
-        when(mockRepository.getRefreshFailureCount()).thenReturn(1L);
-        when(mockRepository.getRefreshConsecutiveFailureCount()).thenReturn(1L);
-        when(mockRepository.getLastRefreshFailureAtMillis()).thenReturn(nowMillis - TimeUnit.SECONDS.toMillis(1));
-        when(mockRepository.getLastRefreshErrorAtMillis()).thenReturn(nowMillis - TimeUnit.SECONDS.toMillis(1));
-        when(mockRepository.getLastRefreshError()).thenReturn(new FeatureFetchException(
-                FeatureFetchException.FeatureFetchErrorCode.NO_RESPONSE_ERROR,
-                "temporary outage for custom_key"
-        ));
-        mockBuilder = createMockBuilder(mockRepository);
+        when(repository.getLastSuccessfulFetchAtMillis()).thenReturn(nowMillis - TimeUnit.SECONDS.toMillis(2));
+        stubRefreshFailure(nowMillis - TimeUnit.SECONDS.toMillis(1), 1L);
+        GrowthBookClient client = initializedClient(createDefaultOptions());
 
-        try (MockedStatic<GBFeaturesRepository> mockedStatic = mockStatic(GBFeaturesRepository.class)) {
-            mockedStatic.when(GBFeaturesRepository::builder).thenReturn(mockBuilder);
+        // When
+        Diagnostics diagnostics = client.getDiagnostics();
 
-            GrowthBookClient client = new GrowthBookClient(createDefaultOptions(null));
-            assertTrue(client.initialize());
-
-            Diagnostics diagnostics = client.getDiagnostics();
-
-            assertEquals(DiagnosticsHealthState.DEGRADED, diagnostics.getHealth().getState());
-            assertTrue(diagnostics.getHealth().getIssues().stream()
-                    .anyMatch(issue -> issue.getCode() == DiagnosticsIssueCode.REFRESH_FAILED));
-        }
+        // Then
+        assertEquals(DiagnosticsHealthState.DEGRADED, diagnostics.getHealth().getState());
+        assertEquals(Collections.singletonList(DiagnosticsIssueCode.REFRESH_FAILED), issueCodes(diagnostics));
     }
 
     @Test
-    void test_getDiagnostics_afterShutdownDoesNotReportStaleFeatureCount() {
-        mockRepository = createMockRepository();
-        mockBuilder = createMockBuilder(mockRepository);
+    @DisplayName("Reports a shut-down client without the feature count it had before")
+    void reportsShutDownClientWithoutFeatureCount() {
+        // Given
+        GrowthBookClient client = initializedClient(createDefaultOptions());
+        client.shutdown();
 
-        try (MockedStatic<GBFeaturesRepository> mockedStatic = mockStatic(GBFeaturesRepository.class)) {
-            mockedStatic.when(GBFeaturesRepository::builder).thenReturn(mockBuilder);
+        // When
+        Diagnostics diagnostics = client.getDiagnostics();
 
-            GrowthBookClient client = new GrowthBookClient(createDefaultOptions(null));
-            assertTrue(client.initialize());
-
-            client.shutdown();
-            Diagnostics diagnostics = client.getDiagnostics();
-
-            assertEquals(DiagnosticsHealthState.SHUTDOWN, diagnostics.getHealth().getState());
-            assertEquals(1, diagnostics.getHealth().getIssues().size());
-            assertEquals(
-                    DiagnosticsIssueCode.CLIENT_SHUTDOWN,
-                    diagnostics.getHealth().getIssues().get(0).getCode()
-            );
-            assertTrue(diagnostics.getClient().isShutdown());
-            assertFalse(diagnostics.getFeatures().isAvailable());
-            assertEquals(0, diagnostics.getFeatures().getActiveFeatureCount());
-        }
+        // Then
+        assertEquals(DiagnosticsHealthState.SHUTDOWN, diagnostics.getHealth().getState());
+        assertEquals(Collections.singletonList(DiagnosticsIssueCode.CLIENT_SHUTDOWN), issueCodes(diagnostics));
+        assertTrue(diagnostics.getClient().isShutdown());
+        assertFalse(diagnostics.getFeatures().isAvailable());
+        assertEquals(0, diagnostics.getFeatures().getActiveFeatureCount());
     }
 
     @Test
-    void test_getDiagnostics_reportsFailedInitializationError() throws FeatureFetchException {
-        mockRepository = mock(GBFeaturesRepository.class);
-        when(mockRepository.getInitialized()).thenReturn(false);
+    @DisplayName("Reports a failed initialization with its error, redacting credentials and keys")
+    void reportsFailedInitializationWithRedactedError() throws FeatureFetchException {
+        // Given
+        GBFeaturesRepository failingRepository = mock(GBFeaturesRepository.class);
+        when(failingRepository.getInitialized()).thenReturn(false);
         String unsafeErrorMessage = "network unavailable for "
                 + "https://user:pass@custom.growthbook.io/api/features/custom_key?token=secret using test_key";
         doThrow(new FeatureFetchException(FeatureFetchException.FeatureFetchErrorCode.NO_RESPONSE_ERROR, unsafeErrorMessage))
-                .when(mockRepository).initialize(anyBoolean());
-        mockBuilder = createMockBuilder(mockRepository);
+                .when(failingRepository).initialize(anyBoolean());
+        when(repositoryBuilder.build()).thenReturn(failingRepository);
+        GrowthBookClient client = new GrowthBookClient(createDefaultOptions());
+        boolean initialized = client.initialize();
 
-        try (MockedStatic<GBFeaturesRepository> mockedStatic = mockStatic(GBFeaturesRepository.class)) {
-            mockedStatic.when(GBFeaturesRepository::builder).thenReturn(mockBuilder);
+        // When
+        Diagnostics diagnostics = client.getDiagnostics();
 
-            GrowthBookClient client = new GrowthBookClient(createDefaultOptions(null));
-            assertFalse(client.initialize());
-
-            Diagnostics diagnostics = client.getDiagnostics();
-
-            assertFalse(diagnostics.getClient().isInitialized());
-            assertEquals(DiagnosticsHealthState.ERROR, diagnostics.getHealth().getState());
-            assertTrue(diagnostics.getHealth().getIssues().stream()
-                    .anyMatch(issue -> issue.getCode() == DiagnosticsIssueCode.REFRESH_FAILED));
-            assertNotNull(diagnostics.getRefresh().getLastError());
-            assertEquals("FeatureFetchException", diagnostics.getRefresh().getLastError().getType());
-            assertEquals(
-                    FeatureFetchException.FeatureFetchErrorCode.NO_RESPONSE_ERROR.name(),
-                    diagnostics.getRefresh().getLastError().getCode()
-            );
-            assertTrue(diagnostics.getRefresh().getLastError().getMessage().contains("network unavailable"));
-            assertTrue(diagnostics.getRefresh().getLastError().getMessage().contains("cust..._key"));
-            assertFalse(diagnostics.getRefresh().getLastError().getMessage().contains("custom_key"));
-            assertFalse(diagnostics.getRefresh().getLastError().getMessage().contains("user:pass"));
-            assertFalse(diagnostics.getRefresh().getLastError().getMessage().contains("token=secret"));
-            assertFalse(diagnostics.getRefresh().getLastError().getMessage().contains("test_key"));
-            assertTrue(diagnostics.getRefresh().getLastError().getTimestampMillis() > 0);
-
-            String diagnosticsJson = diagnostics.toJson();
-            assertTrue(diagnosticsJson.contains("cust..._key"));
-            assertFalse(diagnosticsJson.contains("custom_key"));
-            assertFalse(diagnosticsJson.contains("user:pass"));
-            assertFalse(diagnosticsJson.contains("token=secret"));
-            assertFalse(diagnosticsJson.contains("test_key"));
-        }
+        // Then
+        assertFalse(initialized);
+        assertFalse(diagnostics.getClient().isInitialized());
+        assertEquals(DiagnosticsHealthState.ERROR, diagnostics.getHealth().getState());
+        assertTrue(issueCodes(diagnostics).contains(DiagnosticsIssueCode.REFRESH_FAILED));
+        assertEquals("FeatureFetchException", diagnostics.getRefresh().getLastError().getType());
+        assertEquals(FeatureFetchException.FeatureFetchErrorCode.NO_RESPONSE_ERROR.name(),
+                diagnostics.getRefresh().getLastError().getCode());
+        String message = diagnostics.getRefresh().getLastError().getMessage();
+        assertTrue(message.contains("network unavailable"));
+        assertTrue(message.contains("cust..._key"));
+        assertTrue(diagnostics.getRefresh().getLastError().getTimestampMillis() > 0);
+        assertNoSecrets(message);
+        assertNoSecrets(diagnostics.toJson());
     }
 
     @Test
-    void test_getDiagnostics_masksShortClientKeys() {
+    @DisplayName("Masks a short client key entirely")
+    void masksShortClientKeyEntirely() {
+        // Given
         Options options = Options.builder()
                 .apiHost("https://custom.growthbook.io")
                 .clientKey("abc")
                 .build();
-
         GrowthBookClient client = new GrowthBookClient(options);
+
+        // When
         Diagnostics diagnostics = client.getDiagnostics();
 
+        // Then
         assertEquals("***", diagnostics.getConfig().getClientKeyMasked());
         assertEquals("https://custom.growthbook.io/api/features/***", diagnostics.getConfig().getFeaturesEndpoint());
         assertEquals("https://custom.growthbook.io/sub/***", diagnostics.getConfig().getEventsEndpoint());
@@ -379,138 +363,107 @@ class GrowthBookClientDiagnosticsTest {
     }
 
     @Test
-    void test_getDiagnostics_redactsUrlUserInfoAndQueryParams() {
+    @DisplayName("Redacts URL user info, query parameters and keys from the reported configuration")
+    void redactsUrlUserInfoQueryAndKeys() {
+        // Given
         Options options = Options.builder()
                 .apiHost("https://user:pass@custom.growthbook.io?token=secret")
                 .clientKey("custom_key")
                 .decryptionKey("super-secret")
                 .build();
-
         GrowthBookClient client = new GrowthBookClient(options);
+
+        // When
         Diagnostics diagnostics = client.getDiagnostics();
-        String diagnosticsJson = diagnostics.toJson();
 
-        assertFalse(diagnostics.getConfig().getApiHost().contains("user:pass"));
-        assertFalse(diagnostics.getConfig().getApiHost().contains("token=secret"));
-        assertFalse(diagnosticsJson.contains("user:pass"));
-        assertFalse(diagnosticsJson.contains("token=secret"));
-        assertFalse(diagnosticsJson.contains("custom_key"));
-        assertFalse(diagnosticsJson.contains("super-secret"));
+        // Then
+        String apiHost = diagnostics.getConfig().getApiHost();
+        assertFalse(apiHost.contains("user:pass"));
+        assertFalse(apiHost.contains("token=secret"));
+        String json = diagnostics.toJson();
+        assertFalse(json.contains("user:pass"));
+        assertFalse(json.contains("token=secret"));
+        assertFalse(json.contains("custom_key"));
+        assertFalse(json.contains("super-secret"));
     }
 
     @Test
-    void test_getDiagnostics_beforeInitializeDoesNotCreateRepository() {
-        try (MockedStatic<GBFeaturesRepository> mockedStatic = mockStatic(GBFeaturesRepository.class)) {
-            GrowthBookClient client = new GrowthBookClient(createDefaultOptions(null));
+    @DisplayName("Reading diagnostics before initialization does not create a repository")
+    void readingDiagnosticsBeforeInitializationDoesNotCreateRepository() {
+        // Given
+        GrowthBookClient client = new GrowthBookClient(createDefaultOptions());
 
-            client.getDiagnostics();
+        // When
+        client.getDiagnostics();
 
-            mockedStatic.verify(GBFeaturesRepository::builder, never());
-        }
+        // Then
+        repositoryStatics.verify(GBFeaturesRepository::builder, never());
     }
 
     @Test
-    void test_getDiagnostics_reportsDerivedStreamingState() {
-        mockRepository = createMockRepository();
-        when(mockRepository.getRefreshStrategy()).thenReturn(FeatureRefreshStrategy.SERVER_SENT_EVENTS);
-        when(mockRepository.isSseAllowed()).thenReturn(true);
-        when(mockRepository.isSseConnected()).thenReturn(true);
-        mockBuilder = createMockBuilder(mockRepository);
+    @DisplayName("Reports a connected stream as ready")
+    void reportsConnectedStreamAsReady() {
+        // Given
+        stubStreaming(true, true, 0);
+        GrowthBookClient client = initializedClient(sseOptions());
 
-        try (MockedStatic<GBFeaturesRepository> mockedStatic = mockStatic(GBFeaturesRepository.class)) {
-            mockedStatic.when(GBFeaturesRepository::builder).thenReturn(mockBuilder);
+        // When
+        Diagnostics diagnostics = client.getDiagnostics();
 
-            Options options = Options.builder()
-                    .apiHost("https://custom.growthbook.io")
-                    .clientKey("custom_key")
-                    .decryptionKey("test_key")
-                    .refreshStrategy(FeatureRefreshStrategy.SERVER_SENT_EVENTS)
-                        .build();
-
-            GrowthBookClient client = new GrowthBookClient(options);
-            assertTrue(client.initialize());
-
-            Diagnostics diagnostics = client.getDiagnostics();
-
-            assertEquals(StreamingState.CONNECTED, diagnostics.getStreaming().getState());
-            assertEquals(DiagnosticsHealthState.READY, diagnostics.getHealth().getState());
-        }
+        // Then
+        assertEquals(StreamingState.CONNECTED, diagnostics.getStreaming().getState());
+        assertEquals(DiagnosticsHealthState.READY, diagnostics.getHealth().getState());
     }
 
     @Test
-    void test_getDiagnostics_reportsUnsupportedStreamingStateWhenServerDoesNotAllowSse() {
-        mockRepository = createMockRepository();
-        when(mockRepository.getRefreshStrategy()).thenReturn(FeatureRefreshStrategy.SERVER_SENT_EVENTS);
-        when(mockRepository.isSseAllowed()).thenReturn(false);
-        when(mockRepository.isSseConnected()).thenReturn(false);
-        mockBuilder = createMockBuilder(mockRepository);
+    @DisplayName("Reports unsupported streaming with degraded health when the server does not allow SSE")
+    void reportsUnsupportedStreamingWhenServerDisallowsSse() {
+        // Given
+        stubStreaming(false, false, 0);
+        GrowthBookClient client = initializedClient(sseOptions());
 
-        try (MockedStatic<GBFeaturesRepository> mockedStatic = mockStatic(GBFeaturesRepository.class)) {
-            mockedStatic.when(GBFeaturesRepository::builder).thenReturn(mockBuilder);
+        // When
+        Diagnostics diagnostics = client.getDiagnostics();
 
-            Options options = Options.builder()
-                    .apiHost("https://custom.growthbook.io")
-                    .clientKey("custom_key")
-                    .decryptionKey("test_key")
-                    .refreshStrategy(FeatureRefreshStrategy.SERVER_SENT_EVENTS)
-                        .build();
-
-            GrowthBookClient client = new GrowthBookClient(options);
-            assertTrue(client.initialize());
-
-            Diagnostics diagnostics = client.getDiagnostics();
-
-            assertEquals(StreamingState.UNSUPPORTED, diagnostics.getStreaming().getState());
-            assertEquals(DiagnosticsHealthState.DEGRADED, diagnostics.getHealth().getState());
-            assertTrue(diagnostics.getHealth().getIssues().stream()
-                    .anyMatch(issue -> issue.getCode() == DiagnosticsIssueCode.STREAMING_UNSUPPORTED));
-        }
+        // Then
+        assertEquals(StreamingState.UNSUPPORTED, diagnostics.getStreaming().getState());
+        assertEquals(DiagnosticsHealthState.DEGRADED, diagnostics.getHealth().getState());
+        assertEquals(Collections.singletonList(DiagnosticsIssueCode.STREAMING_UNSUPPORTED), issueCodes(diagnostics));
     }
 
     @Test
-    void test_getDiagnostics_reportsInterruptedStreamingStateWhileReconnecting() {
-        mockRepository = createMockRepository();
-        when(mockRepository.getRefreshStrategy()).thenReturn(FeatureRefreshStrategy.SERVER_SENT_EVENTS);
-        when(mockRepository.isSseAllowed()).thenReturn(true);
-        when(mockRepository.isSseConnected()).thenReturn(false);
-        when(mockRepository.getSseRetryAttempts()).thenReturn(3);
-        mockBuilder = createMockBuilder(mockRepository);
+    @DisplayName("Reports an interrupted stream with its reconnect attempts while reconnecting")
+    void reportsInterruptedStreamWhileReconnecting() {
+        // Given
+        stubStreaming(true, false, 3);
+        GrowthBookClient client = initializedClient(sseOptions());
 
-        try (MockedStatic<GBFeaturesRepository> mockedStatic = mockStatic(GBFeaturesRepository.class)) {
-            mockedStatic.when(GBFeaturesRepository::builder).thenReturn(mockBuilder);
+        // When
+        Diagnostics diagnostics = client.getDiagnostics();
 
-            Options options = Options.builder()
-                    .apiHost("https://custom.growthbook.io")
-                    .clientKey("custom_key")
-                    .decryptionKey("test_key")
-                    .refreshStrategy(FeatureRefreshStrategy.SERVER_SENT_EVENTS)
-                        .build();
-
-            GrowthBookClient client = new GrowthBookClient(options);
-            assertTrue(client.initialize());
-
-            Diagnostics diagnostics = client.getDiagnostics();
-
-            assertEquals(StreamingState.INTERRUPTED, diagnostics.getStreaming().getState());
-            assertEquals(3, diagnostics.getStreaming().getReconnectAttempts());
-            assertEquals(DiagnosticsHealthState.DEGRADED, diagnostics.getHealth().getState());
-            assertTrue(diagnostics.getHealth().getIssues().stream()
-                    .anyMatch(issue -> issue.getCode() == DiagnosticsIssueCode.STREAMING_INTERRUPTED));
-        }
+        // Then
+        assertEquals(StreamingState.INTERRUPTED, diagnostics.getStreaming().getState());
+        assertEquals(3, diagnostics.getStreaming().getReconnectAttempts());
+        assertEquals(DiagnosticsHealthState.DEGRADED, diagnostics.getHealth().getState());
+        assertEquals(Collections.singletonList(DiagnosticsIssueCode.STREAMING_INTERRUPTED), issueCodes(diagnostics));
     }
 
     @Test
-    void test_getDiagnostics_remoteEvalBeforeInitializeReportsRemoteEvalConfiguration() {
+    @DisplayName("Reports the remote-eval configuration before initialization")
+    void reportsRemoteEvalConfigurationBeforeInitialization() {
+        // Given
         Options options = Options.builder()
                 .apiHost("https://custom.growthbook.io")
                 .clientKey("custom_key")
                 .remoteEval(true)
                 .remoteEvalCacheSize(42)
                 .build();
-
         GrowthBookClient client = new GrowthBookClient(options);
+
+        // When
         Diagnostics diagnostics = client.getDiagnostics();
 
+        // Then
         assertTrue(diagnostics.getClient().isRemoteEvalEnabled());
         assertFalse(diagnostics.getClient().isInitialized());
         assertEquals(DiagnosticsHealthState.NOT_READY, diagnostics.getHealth().getState());
@@ -523,5 +476,49 @@ class GrowthBookClientDiagnosticsTest {
         assertEquals(FeatureState.NOT_LOADED, diagnostics.getFeatures().getState());
         assertEquals(0, diagnostics.getFeatures().getActiveFeatureCount());
         assertFalse(diagnostics.getFeatures().getKeys().isAvailable());
+    }
+
+    private GrowthBookClient initializedClient(Options options) {
+        GrowthBookClient client = new GrowthBookClient(options);
+        assertTrue(client.initialize());
+        return client;
+    }
+
+    private void stubRefreshFailure(long failedAtMillis, long consecutiveFailures) {
+        when(repository.getRefreshFailureCount()).thenReturn(1L);
+        when(repository.getRefreshConsecutiveFailureCount()).thenReturn(consecutiveFailures);
+        when(repository.getLastRefreshFailureAtMillis()).thenReturn(failedAtMillis);
+        when(repository.getLastRefreshErrorAtMillis()).thenReturn(failedAtMillis);
+        when(repository.getLastRefreshError()).thenReturn(new FeatureFetchException(
+                FeatureFetchException.FeatureFetchErrorCode.NO_RESPONSE_ERROR, FETCH_ERROR_MESSAGE));
+    }
+
+    private void stubStreaming(boolean sseAllowed, boolean sseConnected, int retryAttempts) {
+        when(repository.getRefreshStrategy()).thenReturn(FeatureRefreshStrategy.SERVER_SENT_EVENTS);
+        when(repository.isSseAllowed()).thenReturn(sseAllowed);
+        when(repository.isSseConnected()).thenReturn(sseConnected);
+        when(repository.getSseRetryAttempts()).thenReturn(retryAttempts);
+    }
+
+    private static Options sseOptions() {
+        return Options.builder()
+                .apiHost("https://custom.growthbook.io")
+                .clientKey("custom_key")
+                .decryptionKey("test_key")
+                .refreshStrategy(FeatureRefreshStrategy.SERVER_SENT_EVENTS)
+                .build();
+    }
+
+    private static List<DiagnosticsIssueCode> issueCodes(Diagnostics diagnostics) {
+        return new ArrayList<>(diagnostics.getHealth().getIssues().stream()
+                .map(issue -> issue.getCode())
+                .collect(Collectors.toList()));
+    }
+
+    private static void assertNoSecrets(String text) {
+        assertFalse(text.contains("custom_key"));
+        assertFalse(text.contains("user:pass"));
+        assertFalse(text.contains("token=secret"));
+        assertFalse(text.contains("test_key"));
     }
 }

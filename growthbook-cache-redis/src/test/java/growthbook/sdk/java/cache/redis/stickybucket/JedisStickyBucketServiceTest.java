@@ -47,7 +47,7 @@ class JedisStickyBucketServiceTest {
     }
 
     @Test
-    @DisplayName("Verify: getAssignments deserializes the stored document for a present key")
+    @DisplayName("GetAssignments deserializes the stored document for a present key")
     void getAssignmentsReturnsStoredDocument() {
         // Given
         StickyAssignmentsDocument doc = document("id", "123", "exp__0", "control");
@@ -62,7 +62,7 @@ class JedisStickyBucketServiceTest {
     }
 
     @Test
-    @DisplayName("Verify: getAssignments returns null for a missing key")
+    @DisplayName("GetAssignments returns null for a missing key")
     void returnsNullForMissingKey() {
         // Given
         when(jedis.get(anyString())).thenReturn(null);
@@ -73,7 +73,7 @@ class JedisStickyBucketServiceTest {
     }
 
     @Test
-    @DisplayName("Verify: getAssignments returns null for null attribute inputs without touching Redis")
+    @DisplayName("GetAssignments returns null for null attribute inputs without touching Redis")
     void returnsNullForNullAttributeInputs() {
         // Given
         JedisStickyBucketService service = new JedisStickyBucketService(pool);
@@ -85,7 +85,7 @@ class JedisStickyBucketServiceTest {
     }
 
     @Test
-    @DisplayName("Verify: getAssignments surfaces a StickyBucketServiceException when Redis fails")
+    @DisplayName("GetAssignments surfaces a StickyBucketServiceException when Redis fails")
     void getAssignmentsThrowsWhenRedisFails() {
         // Given
         when(jedis.get(anyString())).thenThrow(new JedisException("boom"));
@@ -96,7 +96,7 @@ class JedisStickyBucketServiceTest {
     }
 
     @Test
-    @DisplayName("Verify: getAssignments surfaces a StickyBucketServiceException for a malformed payload")
+    @DisplayName("GetAssignments surfaces a StickyBucketServiceException for a malformed payload")
     void throwsOnMalformedPayload() {
         // Given
         when(jedis.get("id||123")).thenReturn("}not-json{");
@@ -107,7 +107,7 @@ class JedisStickyBucketServiceTest {
     }
 
     @Test
-    @DisplayName("Verify: saveAssignments installs the JSON-encoded document under the user key via an atomic compare-and-set")
+    @DisplayName("SaveAssignments installs the JSON-encoded document under the user key via an atomic compare-and-set")
     void saveAssignmentsWritesJsonUnderKey() {
         // Given
         StickyAssignmentsDocument doc = document("id", "123", "exp__0", "control");
@@ -127,7 +127,7 @@ class JedisStickyBucketServiceTest {
     }
 
     @Test
-    @DisplayName("Verify: saveAssignments ignores a null document or missing key attributes")
+    @DisplayName("SaveAssignments ignores a null document or missing key attributes")
     void saveAssignmentsIgnoresNullDocumentOrAttributes() {
         // Given
         JedisStickyBucketService service = new JedisStickyBucketService(pool);
@@ -142,7 +142,7 @@ class JedisStickyBucketServiceTest {
     }
 
     @Test
-    @DisplayName("Verify: saveAssignments surfaces a StickyBucketServiceException when Redis fails")
+    @DisplayName("SaveAssignments surfaces a StickyBucketServiceException when Redis fails")
     void saveAssignmentsThrowsWhenRedisFails() {
         // Given
         when(jedis.get(anyString())).thenReturn(null);
@@ -156,7 +156,7 @@ class JedisStickyBucketServiceTest {
     }
 
     @Test
-    @DisplayName("Verify: getAllAssignments reads keys in bulk and maps hits by their logical key")
+    @DisplayName("GetAllAssignments reads keys in bulk and maps hits by their logical key")
     void getAllAssignmentsReadsInBulkKeyedByLogicalKey() {
         // Given
         StickyAssignmentsDocument idDoc = document("id", "123", "exp__0", "control");
@@ -180,7 +180,7 @@ class JedisStickyBucketServiceTest {
     }
 
     @Test
-    @DisplayName("Verify: getAllAssignments returns an empty map for null or empty attributes")
+    @DisplayName("GetAllAssignments returns an empty map for null or empty attributes")
     void getAllAssignmentsReturnsEmptyForNullOrEmptyAttributes() {
         // Given
         JedisStickyBucketService service = new JedisStickyBucketService(pool);
@@ -192,7 +192,7 @@ class JedisStickyBucketServiceTest {
     }
 
     @Test
-    @DisplayName("Verify: getAllAssignments surfaces a StickyBucketServiceException when Redis fails")
+    @DisplayName("GetAllAssignments surfaces a StickyBucketServiceException when Redis fails")
     void getAllAssignmentsThrowsWhenRedisFails() {
         // Given
         when(jedis.mget("id||123")).thenThrow(new JedisException("boom"));
@@ -204,7 +204,7 @@ class JedisStickyBucketServiceTest {
     }
 
     @Test
-    @DisplayName("Verify: a configured key prefix namespaces every Redis key")
+    @DisplayName("A configured key prefix namespaces every Redis key")
     void appliesKeyPrefix() {
         // Given
         when(jedis.get("gb:sticky:id||123")).thenReturn(json(document("id", "123", "exp__0", "control")));
@@ -223,14 +223,14 @@ class JedisStickyBucketServiceTest {
     }
 
     @Test
-    @DisplayName("Verify: the constructor rejects a null Jedis pool")
+    @DisplayName("The constructor rejects a null Jedis pool")
     void constructorRejectsNullPool() {
         // When & Then
         assertThrows(NullPointerException.class, () -> new JedisStickyBucketService(null));
     }
 
     @Test
-    @DisplayName("Verify: with no TTL configured, the compare-and-set carries a 0 TTL (no expiry)")
+    @DisplayName("With no TTL configured, the compare-and-set carries a 0 TTL (no expiry)")
     void saveWithoutTtlPassesZeroTtlArg() {
         // Given
         when(jedis.get("id||123")).thenReturn(null);
@@ -246,7 +246,7 @@ class JedisStickyBucketServiceTest {
     }
 
     @Test
-    @DisplayName("Verify: a configured TTL is carried to the compare-and-set as milliseconds")
+    @DisplayName("A configured TTL is carried to the compare-and-set as milliseconds")
     void saveWithTtlPassesTtlMillisArg() {
         // Given
         when(jedis.get("id||123")).thenReturn(null);
@@ -262,7 +262,7 @@ class JedisStickyBucketServiceTest {
     }
 
     @Test
-    @DisplayName("Verify: the constructor rejects a zero or negative TTL")
+    @DisplayName("The constructor rejects a zero or negative TTL")
     void constructorRejectsNonPositiveTtl() {
         // When & Then
         assertThrows(IllegalArgumentException.class, () -> new JedisStickyBucketService(pool, Duration.ZERO));

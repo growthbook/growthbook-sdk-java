@@ -139,7 +139,7 @@ public class EvaluationPerfHarness {
     }
 
     private static EvaluationContext createEvaluationContext(GlobalContext global, UserContext user) {
-        return new EvaluationContext(global, user, new EvaluationContext.StackContext(), OPTIONS);
+        return new EvaluationContext(global, user, OPTIONS);
     }
 
     @SuppressWarnings("unchecked")

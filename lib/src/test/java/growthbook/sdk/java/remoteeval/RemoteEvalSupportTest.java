@@ -1,9 +1,18 @@
 package growthbook.sdk.java.remoteeval;
 
+import com.github.tomakehurst.wiremock.WireMockServer;
+import com.github.tomakehurst.wiremock.client.ResponseDefinitionBuilder;
+import com.github.tomakehurst.wiremock.common.FileSource;
+import com.github.tomakehurst.wiremock.core.WireMockConfiguration;
+import com.github.tomakehurst.wiremock.extension.Parameters;
+import com.github.tomakehurst.wiremock.extension.ResponseDefinitionTransformer;
+import com.github.tomakehurst.wiremock.http.Request;
+import com.github.tomakehurst.wiremock.http.ResponseDefinition;
+import com.github.tomakehurst.wiremock.stubbing.Scenario;
+import com.github.tomakehurst.wiremock.verification.LoggedRequest;
+import com.google.common.util.concurrent.Uninterruptibles;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
-import com.sun.net.httpserver.HttpExchange;
-import com.sun.net.httpserver.HttpServer;
 import growthbook.sdk.java.GrowthBook;
 import growthbook.sdk.java.model.Experiment;
 import growthbook.sdk.java.model.ExperimentResult;
@@ -16,643 +25,549 @@ import growthbook.sdk.java.multiusermode.usage.TrackingCallbackWithUser;
 import growthbook.sdk.java.repository.FeatureRefreshStrategy;
 import growthbook.sdk.java.stickyBucketing.InMemoryStickyBucketServiceImpl;
 import growthbook.sdk.java.util.GrowthBookJsonUtils;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.jupiter.params.provider.ValueSource;
+import org.mockito.MockedConstruction;
+import org.mockito.Mockito;
 
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.net.InetSocketAddress;
-import java.nio.charset.StandardCharsets;
-import java.util.HashMap;
+import java.time.Duration;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.FutureTask;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Stream;
 
+import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
+import static com.github.tomakehurst.wiremock.client.WireMock.okJson;
+import static com.github.tomakehurst.wiremock.client.WireMock.post;
+import static com.github.tomakehurst.wiremock.client.WireMock.postRequestedFor;
+import static com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 class RemoteEvalSupportTest {
+
+    private static final String EVAL_PATH = "/api/eval/sdk-test";
+    private static final long AWAIT_SECONDS = 5;
+
     private final GrowthBookJsonUtils jsonUtils = GrowthBookJsonUtils.getInstance();
+    private final ResponseGate gate = new ResponseGate();
+    private WireMockServer wireMock;
+
+    @BeforeEach
+    void setUp() {
+        wireMock = new WireMockServer(WireMockConfiguration.options().dynamicPort().extensions(gate));
+        wireMock.start();
+        respondWith(featureResponse(true));
+    }
+
+    @AfterEach
+    void tearDown() {
+        gate.release();
+        wireMock.stop();
+    }
 
     @Test
     @DisplayName("Posts the user context to the remote eval endpoint and evaluates the response")
-    void growthBookClient_remoteEvalPostsUserContextAndEvaluatesResponse() throws Exception {
-        try (RemoteEvalTestServer server = new RemoteEvalTestServer(featureResponse(true))) {
-            GrowthBookClient client = new GrowthBookClient(Options.builder()
-                    .apiHost(server.apiHost())
-                    .clientKey("sdk-test")
-                    .remoteEval(true)
-                    .globalForcedVariationsMap(Collections.singletonMap("global-exp", 1))
-                    .build());
+    void postsUserContextAndEvaluatesResponse() {
+        // Given
+        GrowthBookClient client = new GrowthBookClient(Options.builder()
+                .apiHost(wireMock.baseUrl())
+                .clientKey("sdk-test")
+                .remoteEval(true)
+                .globalForcedVariationsMap(Collections.singletonMap("global-exp", 1))
+                .build());
+        assertTrue(client.initialize());
+        UserContext userContext = UserContext.builder()
+                .attributes(jsonObject("{\"id\":\"user-1\"}"))
+                .forcedVariationsMap(Collections.singletonMap("user-exp", 2))
+                .build();
 
-            assertTrue(client.initialize());
+        // When
+        boolean on = client.isOn("remote-feature", userContext);
 
-            UserContext userContext = UserContext.builder()
-                    .attributes(jsonObject("{\"id\":\"user-1\"}"))
-                    .forcedVariationsMap(Collections.singletonMap("user-exp", 2))
-                    .build();
-
-            assertTrue(client.isOn("remote-feature", userContext));
-            assertEquals(1, server.callCount());
-
-            JsonObject requestBody = jsonObject(server.lastBody());
-            assertEquals("user-1", requestBody.getAsJsonObject("attributes").get("id").getAsString());
-            assertEquals(1, requestBody.getAsJsonObject("forcedVariations").get("global-exp").getAsInt());
-            assertEquals(2, requestBody.getAsJsonObject("forcedVariations").get("user-exp").getAsInt());
-            assertEquals(0, requestBody.getAsJsonArray("forcedFeatures").size());
-            assertEquals("", requestBody.get("url").getAsString());
-        }
+        // Then
+        assertTrue(on);
+        List<LoggedRequest> requests = evalRequests();
+        assertEquals(1, requests.size());
+        JsonObject requestBody = jsonObject(requests.get(0).getBodyAsString());
+        assertEquals(jsonObject("{\"id\":\"user-1\"}"), requestBody.getAsJsonObject("attributes"));
+        assertEquals(jsonObject("{\"global-exp\":1,\"user-exp\":2}"), requestBody.getAsJsonObject("forcedVariations"));
+        assertEquals(new JsonArray(), requestBody.getAsJsonArray("forcedFeatures"));
+        assertEquals("", requestBody.get("url").getAsString());
     }
 
     @Test
     @DisplayName("Reuses the cached response for the same cache key")
-    void growthBookClient_remoteEvalReusesCachedResponseForSameCacheKey() throws Exception {
-        try (RemoteEvalTestServer server = new RemoteEvalTestServer(featureResponse(true))) {
-            GrowthBookClient client = new GrowthBookClient(remoteEvalOptions(server));
-            assertTrue(client.initialize());
+    void reusesCachedResponseForSameCacheKey() {
+        // Given
+        GrowthBookClient client = initializedClient();
+        UserContext user = user("user-1");
 
-            UserContext userContext = UserContext.builder()
-                    .attributes(jsonObject("{\"id\":\"user-1\"}"))
-                    .build();
+        // When
+        boolean first = client.isOn("remote-feature", user);
+        boolean second = client.isOn("remote-feature", user);
 
-            assertTrue(client.isOn("remote-feature", userContext));
-            assertTrue(client.isOn("remote-feature", userContext));
-
-            assertEquals(1, server.callCount());
-        }
+        // Then
+        assertTrue(first);
+        assertTrue(second);
+        assertEquals(1, evalRequests().size());
     }
 
     @Test
     @DisplayName("cacheKeyAttributes narrows the cache key to the listed attributes")
-    void growthBookClient_cacheKeyAttributesCanNarrowRemoteEvalCacheKey() throws Exception {
-        try (RemoteEvalTestServer server = new RemoteEvalTestServer(featureResponse(true))) {
-            GrowthBookClient client = new GrowthBookClient(Options.builder()
-                    .apiHost(server.apiHost())
-                    .clientKey("sdk-test")
-                    .remoteEval(true)
-                    .cacheKeyAttributes(Collections.singletonList("id"))
-                    .build());
-            assertTrue(client.initialize());
+    void cacheKeyAttributesNarrowTheCacheKey() {
+        // Given
+        GrowthBookClient client = new GrowthBookClient(remoteEvalOptionsBuilder()
+                .cacheKeyAttributes(Collections.singletonList("id"))
+                .build());
+        assertTrue(client.initialize());
 
-            client.isOn("remote-feature", UserContext.builder()
-                    .attributes(jsonObject("{\"id\":\"user-1\",\"plan\":\"free\"}"))
-                    .build());
-            client.isOn("remote-feature", UserContext.builder()
-                    .attributes(jsonObject("{\"id\":\"user-1\",\"plan\":\"enterprise\"}"))
-                    .build());
+        // When
+        client.isOn("remote-feature", userWithAttributes("{\"id\":\"user-1\",\"plan\":\"free\"}"));
+        client.isOn("remote-feature", userWithAttributes("{\"id\":\"user-1\",\"plan\":\"enterprise\"}"));
 
-            assertEquals(1, server.callCount());
-        }
+        // Then
+        assertEquals(1, evalRequests().size());
     }
 
     @Test
     @DisplayName("An empty cacheKeyAttributes list excludes all attributes from the cache key")
-    void growthBookClient_emptyCacheKeyAttributesExcludeAllAttributesFromCacheKey() throws Exception {
-        try (RemoteEvalTestServer server = new RemoteEvalTestServer(featureResponse(true))) {
-            GrowthBookClient client = new GrowthBookClient(Options.builder()
-                    .apiHost(server.apiHost())
-                    .clientKey("sdk-test")
-                    .remoteEval(true)
-                    .cacheKeyAttributes(Collections.emptyList())
-                    .build());
-            assertTrue(client.initialize());
+    void emptyCacheKeyAttributesExcludeAllAttributesFromCacheKey() {
+        // Given
+        GrowthBookClient client = new GrowthBookClient(remoteEvalOptionsBuilder()
+                .cacheKeyAttributes(Collections.emptyList())
+                .build());
+        assertTrue(client.initialize());
 
-            client.isOn("remote-feature", UserContext.builder()
-                    .attributes(jsonObject("{\"id\":\"user-1\"}"))
-                    .build());
-            client.isOn("remote-feature", UserContext.builder()
-                    .attributes(jsonObject("{\"id\":\"user-2\"}"))
-                    .build());
+        // When
+        client.isOn("remote-feature", user("user-1"));
+        client.isOn("remote-feature", user("user-2"));
 
-            assertEquals(1, server.callCount());
-        }
+        // Then
+        assertEquals(1, evalRequests().size());
     }
 
     @Test
     @DisplayName("Fetches again when the default cache key changes")
-    void growthBookClient_remoteEvalFetchesAgainWhenDefaultCacheKeyChanges() throws Exception {
-        try (RemoteEvalTestServer server = new RemoteEvalTestServer(featureResponse(true))) {
-            GrowthBookClient client = new GrowthBookClient(remoteEvalOptions(server));
-            assertTrue(client.initialize());
+    void fetchesAgainWhenDefaultCacheKeyChanges() {
+        // Given
+        GrowthBookClient client = initializedClient();
 
-            client.isOn("remote-feature", UserContext.builder()
-                    .attributes(jsonObject("{\"id\":\"user-1\"}"))
-                    .build());
-            client.isOn("remote-feature", UserContext.builder()
-                    .attributes(jsonObject("{\"id\":\"user-2\"}"))
-                    .build());
+        // When
+        client.isOn("remote-feature", user("user-1"));
+        client.isOn("remote-feature", user("user-2"));
 
-            assertEquals(2, server.callCount());
-        }
+        // Then
+        assertEquals(2, evalRequests().size());
     }
 
     @Test
     @DisplayName("Coalesces concurrent identical requests into a single network call")
-    void growthBookClient_remoteEvalCoalescesConcurrentIdenticalRequests() throws Exception {
-        try (RemoteEvalTestServer server = new RemoteEvalTestServer(featureResponse(true), 200)) {
-            GrowthBookClient client = new GrowthBookClient(remoteEvalOptions(server));
-            assertTrue(client.initialize());
+    void coalescesConcurrentIdenticalRequests() throws Exception {
+        // Given
+        respondGatedWith(featureResponse(true));
+        GrowthBookClient client = initializedClient();
+        UserContext user = user("user-1");
+        List<Boolean> results = new CopyOnWriteArrayList<>();
+        Thread first = preloadThread(client, user, results);
+        Thread second = preloadThread(client, user, results);
+        Thread third = preloadThread(client, user, results);
 
-            UserContext userContext = UserContext.builder()
-                    .attributes(jsonObject("{\"id\":\"user-1\"}"))
-                    .build();
+        // When
+        first.start();
+        gate.awaitArrival();
+        second.start();
+        third.start();
+        awaitState(second, Thread.State.WAITING);
+        awaitState(third, Thread.State.WAITING);
+        gate.release();
+        joinAll(first, second, third);
 
-            ExecutorService executor = Executors.newFixedThreadPool(4);
-            try {
-                Future<Boolean> first = executor.submit(() -> client.preloadRemoteEval(userContext));
-                Future<Boolean> second = executor.submit(() -> client.preloadRemoteEval(userContext));
-                Future<Boolean> third = executor.submit(() -> client.preloadRemoteEval(userContext));
-
-                assertTrue(first.get());
-                assertTrue(second.get());
-                assertTrue(third.get());
-            } finally {
-                executor.shutdownNow();
-            }
-
-            assertEquals(1, server.callCount());
-        }
+        // Then
+        assertEquals(Arrays.asList(true, true, true), results);
+        assertEquals(1, evalRequests().size());
     }
 
     @Test
     @DisplayName("preloadRemoteEval(null) warms the default response without throwing")
-    void growthBookClient_preloadRemoteEvalWithNullContextWarmsDefaultResponse() throws Exception {
-        // Regression: preloadRemoteEval(null) must warm the default/global response rather than
-        // throwing NPE. Callers previously relied on null being treated as an empty user context.
-        try (RemoteEvalTestServer server = new RemoteEvalTestServer(featureResponse(true))) {
-            GrowthBookClient client = new GrowthBookClient(remoteEvalOptions(server));
-            assertTrue(client.initialize());
+    void preloadWithNullContextWarmsDefaultResponse() {
+        // Given
+        GrowthBookClient client = initializedClient();
 
-            assertTrue(client.preloadRemoteEval(null));
-            assertEquals(1, server.callCount());
-        }
+        // When
+        boolean preloaded = client.preloadRemoteEval(null);
+
+        // Then
+        assertTrue(preloaded);
+        assertEquals(1, evalRequests().size());
     }
 
     @Test
-    @DisplayName("refreshFeature clears the remote eval cache")
-    void growthBookClient_refreshFeatureClearsRemoteEvalCache() throws Exception {
-        try (RemoteEvalTestServer server = new RemoteEvalTestServer(featureResponse(true))) {
-            GrowthBookClient client = new GrowthBookClient(remoteEvalOptions(server));
-            assertTrue(client.initialize());
+    @DisplayName("Refreshing features clears the remote eval cache")
+    void refreshingFeaturesClearsRemoteEvalCache() {
+        // Given
+        GrowthBookClient client = initializedClient();
+        UserContext user = user("user-1");
+        client.isOn("remote-feature", user);
 
-            UserContext userContext = UserContext.builder()
-                    .attributes(jsonObject("{\"id\":\"user-1\"}"))
-                    .build();
+        // When
+        client.refreshFeatures();
+        client.isOn("remote-feature", user);
 
-            client.isOn("remote-feature", userContext);
-            client.refreshFeature();
-            client.isOn("remote-feature", userContext);
-
-            assertEquals(2, server.callCount());
-        }
+        // Then
+        assertEquals(2, evalRequests().size());
     }
 
     @Test
     @DisplayName("Forced features are sent in the payload and contribute to the cache key")
-    void growthBookClient_forcedFeaturesAreSentAndContributeToCacheKey() throws Exception {
-        try (RemoteEvalTestServer server = new RemoteEvalTestServer(featureResponse(true))) {
-            GrowthBookClient client = new GrowthBookClient(remoteEvalOptions(server));
-            assertTrue(client.initialize());
+    void forcedFeaturesAreSentAndContributeToCacheKey() {
+        // Given
+        GrowthBookClient client = initializedClient();
+        JsonObject attributes = jsonObject("{\"id\":\"user-1\"}");
 
-            Map<String, Object> firstForcedFeatures = new HashMap<>();
-            firstForcedFeatures.put("overridden-feature", true);
-            Map<String, Object> secondForcedFeatures = new HashMap<>();
-            secondForcedFeatures.put("overridden-feature", false);
+        // When
+        client.isOn("remote-feature", UserContext.builder()
+                .attributes(attributes)
+                .forcedFeatureValues(forcedFeature(true))
+                .build());
+        client.isOn("remote-feature", UserContext.builder()
+                .attributes(attributes)
+                .forcedFeatureValues(forcedFeature(false))
+                .build());
 
-            JsonObject attributes = jsonObject("{\"id\":\"user-1\"}");
-            client.isOn("remote-feature", UserContext.builder()
-                    .attributes(attributes)
-                    .forcedFeatureValues(firstForcedFeatures)
-                    .build());
-            // Same user/url/forced variations but different forced feature values must not reuse the cached response.
-            client.isOn("remote-feature", UserContext.builder()
-                    .attributes(attributes)
-                    .forcedFeatureValues(secondForcedFeatures)
-                    .build());
-
-            assertEquals(2, server.callCount());
-
-            JsonArray forcedFeatures = jsonObject(server.lastBody()).getAsJsonArray("forcedFeatures");
-            assertEquals(1, forcedFeatures.size());
-            assertEquals("overridden-feature", forcedFeatures.get(0).getAsJsonArray().get(0).getAsString());
-            assertFalse(forcedFeatures.get(0).getAsJsonArray().get(1).getAsBoolean());
-        }
+        // Then
+        List<LoggedRequest> requests = evalRequests();
+        assertEquals(2, requests.size());
+        JsonArray lastForcedFeatures = jsonObject(requests.get(1).getBodyAsString()).getAsJsonArray("forcedFeatures");
+        assertEquals(jsonUtils.gson.fromJson("[[\"overridden-feature\",false]]", JsonArray.class), lastForcedFeatures);
     }
 
     @Test
     @DisplayName("Reuses the cached response when forced feature values are identical")
-    void growthBookClient_forcedFeaturesReuseCacheWhenIdentical() throws Exception {
-        try (RemoteEvalTestServer server = new RemoteEvalTestServer(featureResponse(true))) {
-            GrowthBookClient client = new GrowthBookClient(remoteEvalOptions(server));
-            assertTrue(client.initialize());
+    void forcedFeaturesReuseCacheWhenIdentical() {
+        // Given
+        GrowthBookClient client = initializedClient();
+        JsonObject attributes = jsonObject("{\"id\":\"user-1\"}");
 
-            JsonObject attributes = jsonObject("{\"id\":\"user-1\"}");
-            Map<String, Object> firstForcedFeatures = new HashMap<>();
-            firstForcedFeatures.put("overridden-feature", true);
-            Map<String, Object> sameForcedFeatures = new HashMap<>();
-            sameForcedFeatures.put("overridden-feature", true);
+        // When
+        client.isOn("remote-feature", UserContext.builder()
+                .attributes(attributes)
+                .forcedFeatureValues(forcedFeature(true))
+                .build());
+        client.isOn("remote-feature", UserContext.builder()
+                .attributes(attributes)
+                .forcedFeatureValues(forcedFeature(true))
+                .build());
 
-            client.isOn("remote-feature", UserContext.builder()
-                    .attributes(attributes)
-                    .forcedFeatureValues(firstForcedFeatures)
-                    .build());
-            client.isOn("remote-feature", UserContext.builder()
-                    .attributes(attributes)
-                    .forcedFeatureValues(sameForcedFeatures)
-                    .build());
-
-            assertEquals(1, server.callCount());
-        }
+        // Then
+        assertEquals(1, evalRequests().size());
     }
 
-    @Test
-    @DisplayName("Rejects GrowthBook Cloud hosts for remote eval")
-    void growthBookClient_remoteEvalRejectsGrowthBookCloudHost() {
+    @ParameterizedTest(name = "apiHost = {0}")
+    @ValueSource(strings = {"https://cdn.growthbook.io", "cdn.growthbook.io", "GROWTHBOOK.IO"})
+    @DisplayName("Refuses to initialize remote eval against a GrowthBook Cloud host")
+    void rejectsGrowthBookCloudHost(String apiHost) {
+        // Given
         GrowthBookClient client = new GrowthBookClient(Options.builder()
-                .apiHost("https://cdn.growthbook.io")
+                .apiHost(apiHost)
                 .clientKey("sdk-test")
                 .remoteEval(true)
                 .build());
 
-        assertFalse(client.initialize());
+        // When
+        boolean initialized = client.initialize();
 
-        assertFalse(new GrowthBookClient(Options.builder()
-                .apiHost("cdn.growthbook.io")
-                .clientKey("sdk-test")
-                .remoteEval(true)
-                .build()).initialize());
-
-        assertFalse(new GrowthBookClient(Options.builder()
-                .apiHost("GROWTHBOOK.IO")
-                .clientKey("sdk-test")
-                .remoteEval(true)
-                .build()).initialize());
+        // Then
+        assertFalse(initialized);
     }
 
-    @Test
-    @DisplayName("Rejects options incompatible with remote eval (missing clientKey, decryptionKey, sticky bucketing, SWR)")
-    void growthBookClient_remoteEvalRejectsUnsupportedOptions() {
-        assertFalse(new GrowthBookClient(Options.builder()
-                .apiHost("http://127.0.0.1:1234")
-                .remoteEval(true)
-                .build()).initialize());
+    @ParameterizedTest(name = "{0}")
+    @MethodSource("unsupportedRemoteEvalOptions")
+    @DisplayName("Refuses to initialize remote eval with an incompatible option")
+    void rejectsUnsupportedOptions(String description, Options options) {
+        // Given
+        GrowthBookClient client = new GrowthBookClient(options);
 
-        assertFalse(new GrowthBookClient(Options.builder()
-                .apiHost("http://127.0.0.1:1234")
-                .clientKey("sdk-test")
-                .decryptionKey("secret")
-                .remoteEval(true)
-                .build()).initialize());
+        // When
+        boolean initialized = client.initialize();
 
-        assertFalse(new GrowthBookClient(Options.builder()
-                .apiHost("http://127.0.0.1:1234")
-                .clientKey("sdk-test")
-                .stickyBucketService(new InMemoryStickyBucketServiceImpl(new HashMap<>()))
-                .remoteEval(true)
-                .build()).initialize());
-
-        assertFalse(new GrowthBookClient(Options.builder()
-                .apiHost("http://127.0.0.1:1234")
-                .clientKey("sdk-test")
-                .refreshStrategy(FeatureRefreshStrategy.STALE_WHILE_REVALIDATE)
-                .remoteEval(true)
-                .build()).initialize());
+        // Then
+        assertFalse(initialized);
     }
 
     @Test
     @DisplayName("remoteEvalCacheSize bounds the number of cached responses")
-    void growthBookClient_remoteEvalCacheSizeBoundsCachedResponses() throws Exception {
-        try (RemoteEvalTestServer server = new RemoteEvalTestServer(featureResponse(true))) {
-            GrowthBookClient client = new GrowthBookClient(Options.builder()
-                    .apiHost(server.apiHost())
-                    .clientKey("sdk-test")
-                    .remoteEval(true)
-                    .remoteEvalCacheSize(1)
-                    .build());
-            assertTrue(client.initialize());
+    void cacheSizeBoundsCachedResponses() {
+        // Given
+        GrowthBookClient client = new GrowthBookClient(remoteEvalOptionsBuilder().remoteEvalCacheSize(1).build());
+        assertTrue(client.initialize());
 
-            UserContext firstUser = UserContext.builder()
-                    .attributes(jsonObject("{\"id\":\"user-1\"}"))
-                    .build();
-            UserContext secondUser = UserContext.builder()
-                    .attributes(jsonObject("{\"id\":\"user-2\"}"))
-                    .build();
+        // When
+        client.isOn("remote-feature", user("user-1"));
+        client.isOn("remote-feature", user("user-2"));
+        client.isOn("remote-feature", user("user-1"));
 
-            client.isOn("remote-feature", firstUser);
-            client.isOn("remote-feature", secondUser);
-            client.isOn("remote-feature", firstUser);
-
-            assertEquals(3, server.callCount());
-        }
+        // Then
+        assertEquals(3, evalRequests().size());
     }
 
     @Test
     @DisplayName("A negative remoteEvalCacheSize disables caching")
-    void growthBookClient_negativeRemoteEvalCacheSizeDisablesCaching() throws Exception {
-        try (RemoteEvalTestServer server = new RemoteEvalTestServer(featureResponse(true))) {
-            GrowthBookClient client = new GrowthBookClient(Options.builder()
-                    .apiHost(server.apiHost())
-                    .clientKey("sdk-test")
-                    .remoteEval(true)
-                    .remoteEvalCacheSize(-1)
-                    .build());
-            assertTrue(client.initialize());
+    void negativeCacheSizeDisablesCaching() {
+        // Given
+        GrowthBookClient client = new GrowthBookClient(remoteEvalOptionsBuilder().remoteEvalCacheSize(-1).build());
+        assertTrue(client.initialize());
+        UserContext user = user("user-1");
 
-            UserContext userContext = UserContext.builder()
-                    .attributes(jsonObject("{\"id\":\"user-1\"}"))
-                    .build();
+        // When
+        client.isOn("remote-feature", user);
+        client.isOn("remote-feature", user);
 
-            client.isOn("remote-feature", userContext);
-            client.isOn("remote-feature", userContext);
-
-            assertEquals(2, server.callCount());
-        }
+        // Then
+        assertEquals(2, evalRequests().size());
     }
 
     @Test
-    @DisplayName("Fires tracking callbacks from the response rule.tracks")
-    void growthBookClient_remoteEvalFiresRuleTracks() throws Exception {
-        try (RemoteEvalTestServer server = new RemoteEvalTestServer(trackResponse())) {
-            List<String> tracked = new CopyOnWriteArrayList<>();
-            GrowthBookClient client = new GrowthBookClient(Options.builder()
-                    .apiHost(server.apiHost())
-                    .clientKey("sdk-test")
-                    .remoteEval(true)
-                    .trackingCallBackWithUser(new TrackingCallbackWithUser() {
-                        @Override
-                        public <T> void onTrack(
-                                Experiment<T> experiment,
-                                ExperimentResult<T> experimentResult,
-                                UserContext userContext
-                        ) {
-                            tracked.add(experiment.getKey() + ":" + experimentResult.getVariationId()
-                                    + ":" + userContext.getAttributes().get("id").getAsString());
-                        }
-                    })
-                    .build());
+    @DisplayName("Passes remoteEvalCacheTtlSeconds to the response cache as its hard TTL")
+    void passesCacheTtlToResponseCache() {
+        // Given
+        List<List<?>> constructorArguments = new ArrayList<>();
+        GrowthBookClient client = new GrowthBookClient(remoteEvalOptionsBuilder().remoteEvalCacheTtlSeconds(1).build());
+
+        // When
+        try (MockedConstruction<RemoteEvalCache> construction = Mockito.mockConstruction(RemoteEvalCache.class,
+                (mock, context) -> constructorArguments.add(context.arguments()))) {
             assertTrue(client.initialize());
+            client.shutdown();
 
-            assertTrue(client.isOn("remote-feature", UserContext.builder()
-                    .attributes(jsonObject("{\"id\":\"user-1\"}"))
-                    .build()));
-
-            assertEquals(Collections.singletonList("track-exp:1:user-1"), tracked);
+            // Then
+            assertEquals(1, construction.constructed().size());
+            assertEquals(Duration.ofSeconds(1), constructorArguments.get(0).get(3));
         }
     }
 
     @Test
     @DisplayName("Ignores malformed rule.tracks entries")
-    void growthBookClient_remoteEvalIgnoresMalformedTrackEntries() throws Exception {
-        try (RemoteEvalTestServer server = new RemoteEvalTestServer(malformedTrackResponse())) {
-            AtomicInteger trackCount = new AtomicInteger();
-            GrowthBookClient client = new GrowthBookClient(Options.builder()
-                    .apiHost(server.apiHost())
-                    .clientKey("sdk-test")
-                    .remoteEval(true)
-                    .trackingCallBackWithUser(new TrackingCallbackWithUser() {
-                        @Override
-                        public <T> void onTrack(
-                                Experiment<T> experiment,
-                                ExperimentResult<T> experimentResult,
-                                UserContext userContext
-                        ) {
-                            trackCount.incrementAndGet();
-                        }
-                    })
-                    .build());
-            assertTrue(client.initialize());
+    void ignoresMalformedTrackEntries() {
+        // Given
+        respondWith("{\"features\":{\"remote-feature\":{\"rules\":[{\"force\":true,\"tracks\":[{}]}]}},\"savedGroups\":{}}");
+        List<String> tracked = new CopyOnWriteArrayList<>();
+        GrowthBookClient client = trackingClient(tracked);
+        assertTrue(client.initialize());
 
-            assertTrue(client.isOn("remote-feature", UserContext.builder()
-                    .attributes(jsonObject("{\"id\":\"user-1\"}"))
-                    .build()));
-            assertEquals(0, trackCount.get());
-        }
+        // When
+        boolean on = client.isOn("remote-feature", user("user-1"));
+
+        // Then
+        assertTrue(on);
+        assertEquals(Collections.emptyList(), tracked);
     }
 
     @Test
-    @DisplayName("Single-context client fetches on initialization and on attribute updates")
-    void growthBook_remoteEvalFetchesOnInitializationAndAttributeUpdate() throws Exception {
-        try (RemoteEvalTestServer server = new RemoteEvalTestServer(featureResponse(true))) {
-            GBContext context = GBContext.builder()
-                    .apiHost(server.apiHost())
-                    .clientKey("sdk-test")
-                    .remoteEval(true)
-                    .attributes(jsonObject("{\"id\":\"user-1\"}"))
-                    .build();
+    @DisplayName("Single-context GrowthBook fetches on initialization and on attribute updates")
+    void singleContextFetchesOnInitializationAndAttributeUpdate() {
+        // Given
+        GrowthBook growthBook = new GrowthBook(GBContext.builder()
+                .apiHost(wireMock.baseUrl())
+                .clientKey("sdk-test")
+                .remoteEval(true)
+                .attributes(jsonObject("{\"id\":\"user-1\"}"))
+                .build());
+        boolean valueBeforeUpdate = growthBook.getFeatureValue("remote-feature", false);
+        int requestsBeforeUpdate = evalRequests().size();
 
-            GrowthBook growthBook = new GrowthBook(context);
+        // When
+        growthBook.setAttributes("{\"id\":\"user-2\"}");
+        boolean valueAfterUpdate = growthBook.getFeatureValue("remote-feature", false);
 
-            assertTrue(growthBook.getFeatureValue("remote-feature", false));
-            assertEquals(1, server.callCount());
-
-            growthBook.setAttributes("{\"id\":\"user-2\"}");
-
-            assertTrue(growthBook.getFeatureValue("remote-feature", false));
-            assertEquals(2, server.callCount());
-        }
+        // Then
+        assertTrue(valueBeforeUpdate);
+        assertEquals(1, requestsBeforeUpdate);
+        assertTrue(valueAfterUpdate);
+        List<LoggedRequest> requests = evalRequests();
+        assertEquals(2, requests.size());
+        assertEquals(jsonObject("{\"id\":\"user-2\"}"),
+                jsonObject(requests.get(1).getBodyAsString()).getAsJsonObject("attributes"));
     }
 
     @Test
-    @DisplayName("Remote eval fires tracking once per assignment even when the result is served from cache")
-    void growthBookClient_remoteEvalTrackFiresOncePerCachedAssignment() throws Exception {
-        try (RemoteEvalTestServer server = new RemoteEvalTestServer(trackResponse())) {
-            List<String> tracked = new CopyOnWriteArrayList<>();
-            GrowthBookClient client = trackingClient(server, tracked);
-            assertTrue(client.initialize());
+    @DisplayName("Fires tracking from rule.tracks once per assignment even when the result is served from cache")
+    void tracksOncePerCachedAssignment() {
+        // Given
+        respondWith(trackResponseFor("user-1"));
+        List<String> tracked = new CopyOnWriteArrayList<>();
+        GrowthBookClient client = trackingClient(tracked);
+        assertTrue(client.initialize());
+        UserContext user = user("user-1");
 
-            UserContext user = UserContext.builder().attributes(jsonObject("{\"id\":\"user-1\"}")).build();
-            assertTrue(client.isOn("remote-feature", user));
-            assertTrue(client.isOn("remote-feature", user));
+        // When
+        boolean first = client.isOn("remote-feature", user);
+        boolean second = client.isOn("remote-feature", user);
 
-            assertEquals(1, server.callCount());
-            assertEquals(Collections.singletonList("track-exp:1:user-1"), tracked);
-        }
+        // Then
+        assertTrue(first);
+        assertTrue(second);
+        assertEquals(1, evalRequests().size());
+        assertEquals(Collections.singletonList("track-exp:1:user-1"), tracked);
     }
 
     @Test
-    @DisplayName("Remote eval tracking fires independently for distinct users")
-    void growthBookClient_remoteEvalTrackFiresPerDistinctUser() throws Exception {
-        try (RemoteEvalTestServer server = new RemoteEvalTestServer(trackResponse())) {
-            server.respondWith(200, trackResponseFor("user-1"));
-            server.respondWith(200, trackResponseFor("user-2"));
+    @DisplayName("Fires tracking independently for distinct users")
+    void tracksPerDistinctUser() {
+        // Given
+        respondInSequence(okJson(trackResponseFor("user-1")), okJson(trackResponseFor("user-2")));
+        List<String> tracked = new CopyOnWriteArrayList<>();
+        GrowthBookClient client = trackingClient(tracked);
+        assertTrue(client.initialize());
 
-            List<String> tracked = new CopyOnWriteArrayList<>();
-            GrowthBookClient client = trackingClient(server, tracked);
-            assertTrue(client.initialize());
+        // When
+        client.isOn("remote-feature", user("user-1"));
+        client.isOn("remote-feature", user("user-2"));
 
-            client.isOn("remote-feature", UserContext.builder().attributes(jsonObject("{\"id\":\"user-1\"}")).build());
-            client.isOn("remote-feature", UserContext.builder().attributes(jsonObject("{\"id\":\"user-2\"}")).build());
-
-            assertEquals(2, tracked.size());
-            assertTrue(tracked.contains("track-exp:1:user-1"));
-            assertTrue(tracked.contains("track-exp:1:user-2"));
-        }
+        // Then
+        assertEquals(Arrays.asList("track-exp:1:user-1", "track-exp:1:user-2"), tracked);
     }
 
     @Test
-    @DisplayName("Remote eval tracking is isolated per client instance")
-    void growthBookClient_remoteEvalTrackingIsIsolatedPerClient() throws Exception {
-        try (RemoteEvalTestServer server = new RemoteEvalTestServer(trackResponse())) {
-            List<String> trackedA = new CopyOnWriteArrayList<>();
-            List<String> trackedB = new CopyOnWriteArrayList<>();
-            GrowthBookClient clientA = trackingClient(server, trackedA);
-            GrowthBookClient clientB = trackingClient(server, trackedB);
-            assertTrue(clientA.initialize());
-            assertTrue(clientB.initialize());
+    @DisplayName("Tracking is isolated per client instance")
+    void trackingIsIsolatedPerClient() {
+        // Given
+        respondWith(trackResponseFor("user-1"));
+        List<String> trackedA = new CopyOnWriteArrayList<>();
+        List<String> trackedB = new CopyOnWriteArrayList<>();
+        GrowthBookClient clientA = trackingClient(trackedA);
+        GrowthBookClient clientB = trackingClient(trackedB);
+        assertTrue(clientA.initialize());
+        assertTrue(clientB.initialize());
+        UserContext user = user("user-1");
 
-            UserContext user = UserContext.builder().attributes(jsonObject("{\"id\":\"user-1\"}")).build();
-            clientA.isOn("remote-feature", user);
-            clientB.isOn("remote-feature", user);
+        // When
+        clientA.isOn("remote-feature", user);
+        clientB.isOn("remote-feature", user);
 
-            assertEquals(Collections.singletonList("track-exp:1:user-1"), trackedA);
-            assertEquals(Collections.singletonList("track-exp:1:user-1"), trackedB);
-        }
+        // Then
+        assertEquals(Collections.singletonList("track-exp:1:user-1"), trackedA);
+        assertEquals(Collections.singletonList("track-exp:1:user-1"), trackedB);
     }
 
     @Test
-    @DisplayName("Remote eval cache hits within the TTL and refetches once it expires")
-    void growthBookClient_remoteEvalCacheTtlExpiresViaPublicApi() throws Exception {
-        try (RemoteEvalTestServer server = new RemoteEvalTestServer(featureResponse(true))) {
-            GrowthBookClient client = new GrowthBookClient(Options.builder()
-                    .apiHost(server.apiHost())
-                    .clientKey("sdk-test")
-                    .remoteEval(true)
-                    .remoteEvalCacheTtlSeconds(1)
-                    .build());
-            assertTrue(client.initialize());
+    @DisplayName("Response caches do not leak between client instances")
+    void cacheDoesNotLeakBetweenClients() {
+        // Given
+        GrowthBookClient clientA = initializedClient();
+        GrowthBookClient clientB = initializedClient();
+        UserContext user = user("user-1");
 
-            UserContext user = UserContext.builder().attributes(jsonObject("{\"id\":\"user-1\"}")).build();
-            client.isOn("remote-feature", user);
-            client.isOn("remote-feature", user);
-            assertEquals(1, server.callCount());
+        // When
+        clientA.isOn("remote-feature", user);
+        clientB.isOn("remote-feature", user);
 
-            Thread.sleep(1200);
-            client.isOn("remote-feature", user);
-            assertEquals(2, server.callCount());
-        }
+        // Then
+        assertEquals(2, evalRequests().size());
     }
 
-    @Test
-    @DisplayName("Remote eval caches do not leak responses between client instances")
-    void growthBookClient_remoteEvalCacheDoesNotLeakBetweenClients() throws Exception {
-        try (RemoteEvalTestServer server = new RemoteEvalTestServer(featureResponse(true))) {
-            GrowthBookClient clientA = new GrowthBookClient(remoteEvalOptions(server));
-            GrowthBookClient clientB = new GrowthBookClient(remoteEvalOptions(server));
-            assertTrue(clientA.initialize());
-            assertTrue(clientB.initialize());
+    @ParameterizedTest(name = "status {0}, body {1}")
+    @MethodSource("failedResponses")
+    @DisplayName("A failed response falls back to the default and does not poison the cache")
+    void failedResponseFallsBackAndDoesNotPoisonCache(int status, String body) {
+        // Given
+        respondInSequence(aResponse().withStatus(status).withBody(body), okJson(featureResponse(true)));
+        GrowthBookClient client = initializedClient();
+        UserContext user = user("user-1");
 
-            UserContext user = UserContext.builder().attributes(jsonObject("{\"id\":\"user-1\"}")).build();
-            clientA.isOn("remote-feature", user);
-            clientB.isOn("remote-feature", user);
+        // When
+        boolean afterFailure = client.isOn("remote-feature", user);
+        boolean afterRecovery = client.isOn("remote-feature", user);
 
-            assertEquals(2, server.callCount());
-        }
-    }
-
-    @Test
-    @DisplayName("An HTTP error falls back and does not poison the remote eval cache")
-    void growthBookClient_remoteEvalHttpErrorDoesNotPoisonCache() throws Exception {
-        try (RemoteEvalTestServer server = new RemoteEvalTestServer(featureResponse(true))) {
-            server.respondWith(500, "{}");
-            server.respondWith(200, featureResponse(true));
-
-            GrowthBookClient client = new GrowthBookClient(remoteEvalOptions(server));
-            assertTrue(client.initialize());
-
-            UserContext user = UserContext.builder().attributes(jsonObject("{\"id\":\"user-1\"}")).build();
-            assertFalse(client.isOn("remote-feature", user));
-            assertTrue(client.isOn("remote-feature", user));
-            assertEquals(2, server.callCount());
-        }
-    }
-
-    @Test
-    @DisplayName("A malformed JSON response falls back and does not poison the remote eval cache")
-    void growthBookClient_remoteEvalMalformedJsonDoesNotPoisonCache() throws Exception {
-        try (RemoteEvalTestServer server = new RemoteEvalTestServer(featureResponse(true))) {
-            server.respondWith(200, "not-json");
-            server.respondWith(200, featureResponse(true));
-
-            GrowthBookClient client = new GrowthBookClient(remoteEvalOptions(server));
-            assertTrue(client.initialize());
-
-            UserContext user = UserContext.builder().attributes(jsonObject("{\"id\":\"user-1\"}")).build();
-            assertFalse(client.isOn("remote-feature", user));
-            assertTrue(client.isOn("remote-feature", user));
-            assertEquals(2, server.callCount());
-        }
+        // Then
+        assertFalse(afterFailure);
+        assertTrue(afterRecovery);
+        assertEquals(2, evalRequests().size());
     }
 
     @Test
     @DisplayName("Unknown fields in the remote eval response are tolerated")
-    void growthBookClient_remoteEvalToleratesUnknownResponseFields() throws Exception {
-        String body = "{\"features\":{\"remote-feature\":{\"defaultValue\":true,\"unknownField\":42}},"
-                + "\"savedGroups\":{},\"meta\":{\"proxy\":\"v1\"}}";
-        try (RemoteEvalTestServer server = new RemoteEvalTestServer(body)) {
-            GrowthBookClient client = new GrowthBookClient(remoteEvalOptions(server));
-            assertTrue(client.initialize());
+    void toleratesUnknownResponseFields() {
+        // Given
+        respondWith("{\"features\":{\"remote-feature\":{\"defaultValue\":true,\"unknownField\":42}},"
+                + "\"savedGroups\":{},\"meta\":{\"proxy\":\"v1\"}}");
+        GrowthBookClient client = initializedClient();
 
-            assertTrue(client.isOn("remote-feature",
-                    UserContext.builder().attributes(jsonObject("{\"id\":\"user-1\"}")).build()));
-        }
+        // When
+        boolean on = client.isOn("remote-feature", user("user-1"));
+
+        // Then
+        assertTrue(on);
     }
 
     @Test
-    @DisplayName("A response missing the features field falls back safely")
-    void growthBookClient_remoteEvalMissingFeaturesFieldFallsBack() throws Exception {
-        try (RemoteEvalTestServer server = new RemoteEvalTestServer("{\"savedGroups\":{}}")) {
-            GrowthBookClient client = new GrowthBookClient(remoteEvalOptions(server));
-            assertTrue(client.initialize());
+    @DisplayName("A response missing the features field falls back to the default")
+    void missingFeaturesFieldFallsBack() {
+        // Given
+        respondWith("{\"savedGroups\":{}}");
+        GrowthBookClient client = initializedClient();
 
-            assertFalse(client.isOn("remote-feature",
-                    UserContext.builder().attributes(jsonObject("{\"id\":\"user-1\"}")).build()));
-        }
+        // When
+        boolean on = client.isOn("remote-feature", user("user-1"));
+
+        // Then
+        assertFalse(on);
+        assertEquals(1, evalRequests().size());
     }
 
     @Test
-    @DisplayName("Shutting down during an in-flight request does not hang and stays safe afterwards")
-    void growthBookClient_shutdownDuringInflightRequestIsSafe() throws Exception {
-        try (RemoteEvalTestServer server = new RemoteEvalTestServer(featureResponse(true), 300)) {
-            GrowthBookClient client = new GrowthBookClient(remoteEvalOptions(server));
-            assertTrue(client.initialize());
+    @DisplayName("Shutting down during an in-flight request does not hang and falls back afterwards")
+    void shutdownDuringInFlightRequestIsSafe() throws Exception {
+        // Given
+        respondGatedWith(featureResponse(true));
+        GrowthBookClient client = initializedClient();
+        UserContext user = user("user-1");
+        FutureTask<Boolean> inFlight = new FutureTask<>(() -> client.preloadRemoteEval(user));
+        new Thread(inFlight, "remote-eval-preload").start();
+        gate.awaitArrival();
 
-            UserContext user = UserContext.builder().attributes(jsonObject("{\"id\":\"user-1\"}")).build();
-            ExecutorService executor = Executors.newSingleThreadExecutor();
-            try {
-                Future<Boolean> inFlight = executor.submit(() -> client.preloadRemoteEval(user));
-                Thread.sleep(50);
-                client.shutdown();
+        // When
+        client.shutdown();
+        gate.release();
+        inFlight.get(AWAIT_SECONDS, TimeUnit.SECONDS);
+        boolean onAfterShutdown = client.isOn("remote-feature", user);
 
-                inFlight.get(2, TimeUnit.SECONDS);
-
-                assertFalse(client.isOn("remote-feature", user));
-            } finally {
-                executor.shutdownNow();
-            }
-        }
+        // Then
+        assertFalse(onAfterShutdown);
+        assertEquals(1, evalRequests().size());
     }
 
     @Test
     @DisplayName("Legacy constructors keep remote eval disabled by default")
-    void oldConstructorsKeepRemoteEvalDisabledByDefault() {
+    void legacyConstructorsKeepRemoteEvalDisabledByDefault() {
+        // Given
         Options options = new Options(
                 null, null, null, null, null, null, null, null, null, null, null,
                 null, null, null, null, null, null, null, null, null, null
         );
+
+        // When
         GBContext context = new GBContext(
                 null, null, null, null, null, null, null, null, null, null, null,
                 null, null, null, null, null
         );
 
+        // Then
         assertFalse(options.isRemoteEvalEnabled());
         assertEquals(RemoteEvalRequestBuilder.DEFAULT_CACHE_SIZE, options.getRemoteEvalCacheSize());
         assertFalse(context.isRemoteEvalEnabled());
@@ -660,43 +575,125 @@ class RemoteEvalSupportTest {
     }
 
     @Test
-    @DisplayName("Request body normalizes null fields to empty values")
+    @DisplayName("The request body normalizes null fields to empty values")
     void requestBodyNormalizesNullFields() {
+        // Given
         RequestBodyForRemoteEval requestBody = new RequestBodyForRemoteEval();
 
+        // When
         requestBody.setAttributes(null);
         requestBody.setForcedFeatures(null);
         requestBody.setForcedVariations(null);
         requestBody.setUrl(null);
 
+        // Then
         assertEquals(new JsonObject(), requestBody.getAttributes());
-        assertTrue(requestBody.getForcedFeatures().isEmpty());
-        assertTrue(requestBody.getForcedVariations().isEmpty());
+        assertEquals(Collections.emptyList(), requestBody.getForcedFeatures());
+        assertEquals(Collections.emptyMap(), requestBody.getForcedVariations());
         assertEquals("", requestBody.getUrl());
     }
 
-    private Options remoteEvalOptions(RemoteEvalTestServer server) {
+    static Stream<Arguments> unsupportedRemoteEvalOptions() {
+        String apiHost = "http://localhost:1234";
+        return Stream.of(
+                Arguments.of("missing clientKey", Options.builder()
+                        .apiHost(apiHost)
+                        .remoteEval(true)
+                        .build()),
+                Arguments.of("decryptionKey", Options.builder()
+                        .apiHost(apiHost)
+                        .clientKey("sdk-test")
+                        .decryptionKey("placeholder-decryption-key")
+                        .remoteEval(true)
+                        .build()),
+                Arguments.of("sticky bucketing", Options.builder()
+                        .apiHost(apiHost)
+                        .clientKey("sdk-test")
+                        .stickyBucketService(new InMemoryStickyBucketServiceImpl(new HashMap<>()))
+                        .remoteEval(true)
+                        .build()),
+                Arguments.of("stale-while-revalidate refresh", Options.builder()
+                        .apiHost(apiHost)
+                        .clientKey("sdk-test")
+                        .refreshStrategy(FeatureRefreshStrategy.STALE_WHILE_REVALIDATE)
+                        .remoteEval(true)
+                        .build())
+        );
+    }
+
+    static Stream<Arguments> failedResponses() {
+        return Stream.of(
+                Arguments.of(500, "{}"),
+                Arguments.of(200, "not-json")
+        );
+    }
+
+    private GrowthBookClient initializedClient() {
+        GrowthBookClient client = new GrowthBookClient(remoteEvalOptionsBuilder().build());
+        assertTrue(client.initialize());
+        return client;
+    }
+
+    private Options.OptionsBuilder remoteEvalOptionsBuilder() {
         return Options.builder()
-                .apiHost(server.apiHost())
+                .apiHost(wireMock.baseUrl())
                 .clientKey("sdk-test")
-                .remoteEval(true)
-                .build();
+                .remoteEval(true);
+    }
+
+    private GrowthBookClient trackingClient(List<String> tracked) {
+        return new GrowthBookClient(remoteEvalOptionsBuilder()
+                .trackingCallBackWithUser(new RecordingTrackingCallback(tracked))
+                .build());
+    }
+
+    private void respondWith(String body) {
+        wireMock.stubFor(post(urlEqualTo(EVAL_PATH)).willReturn(okJson(body)));
+    }
+
+    private void respondGatedWith(String body) {
+        wireMock.stubFor(post(urlEqualTo(EVAL_PATH)).willReturn(okJson(body).withTransformers(ResponseGate.NAME)));
+    }
+
+    private void respondInSequence(
+            ResponseDefinitionBuilder first,
+            ResponseDefinitionBuilder then
+    ) {
+        wireMock.stubFor(post(urlEqualTo(EVAL_PATH))
+                .inScenario("sequence")
+                .whenScenarioStateIs(Scenario.STARTED)
+                .willSetStateTo("after-first")
+                .willReturn(first));
+        wireMock.stubFor(post(urlEqualTo(EVAL_PATH))
+                .inScenario("sequence")
+                .whenScenarioStateIs("after-first")
+                .willReturn(then));
+    }
+
+    private List<LoggedRequest> evalRequests() {
+        return wireMock.findAll(postRequestedFor(urlEqualTo(EVAL_PATH)));
+    }
+
+    private UserContext user(String id) {
+        return userWithAttributes("{\"id\":\"" + id + "\"}");
+    }
+
+    private UserContext userWithAttributes(String attributesJson) {
+        return UserContext.builder().attributes(jsonObject(attributesJson)).build();
     }
 
     private JsonObject jsonObject(String json) {
         return jsonUtils.gson.fromJson(json, JsonObject.class);
     }
 
+    private static Map<String, Object> forcedFeature(boolean value) {
+        Map<String, Object> forcedFeatures = new HashMap<>();
+        forcedFeatures.put("overridden-feature", value);
+        return forcedFeatures;
+    }
+
     private static String featureResponse(boolean enabled) {
         return "{\"features\":{\"remote-feature\":{\"defaultValue\":" + enabled + "}},\"savedGroups\":{}}";
-    }
-
-    private static String malformedTrackResponse() {
-        return "{\"features\":{\"remote-feature\":{\"rules\":[{\"force\":true,\"tracks\":[{}]}]}},\"savedGroups\":{}}";
-    }
-
-    private static String trackResponse() {
-        return trackResponseFor("user-1");
     }
 
     private static String trackResponseFor(String hashValue) {
@@ -707,115 +704,70 @@ class RemoteEvalSupportTest {
                 + "}]}]}},\"savedGroups\":{}}";
     }
 
-    private GrowthBookClient trackingClient(RemoteEvalTestServer server, List<String> tracked) {
-        return new GrowthBookClient(Options.builder()
-                .apiHost(server.apiHost())
-                .clientKey("sdk-test")
-                .remoteEval(true)
-                .trackingCallBackWithUser(new TrackingCallbackWithUser() {
-                    @Override
-                    public <T> void onTrack(
-                            Experiment<T> experiment,
-                            ExperimentResult<T> experimentResult,
-                            UserContext userContext
-                    ) {
-                        tracked.add(experiment.getKey() + ":" + experimentResult.getVariationId()
-                                + ":" + userContext.getAttributes().get("id").getAsString());
-                    }
-                })
-                .build());
+    private static Thread preloadThread(GrowthBookClient client, UserContext user, List<Boolean> results) {
+        return new Thread(() -> results.add(client.preloadRemoteEval(user)), "remote-eval-preload");
     }
 
-    private static class RemoteEvalTestServer implements AutoCloseable {
-        private final HttpServer server;
-        private final ExecutorService executor;
-        private final AtomicInteger callCount = new AtomicInteger();
-        private final List<String> bodies = new CopyOnWriteArrayList<>();
-        private final String responseBody;
-        private final int delayMillis;
-
-        RemoteEvalTestServer(String responseBody) throws IOException {
-            this(responseBody, 0);
+    private static void joinAll(Thread... threads) throws InterruptedException {
+        for (Thread thread : threads) {
+            thread.join(TimeUnit.SECONDS.toMillis(AWAIT_SECONDS));
+            assertFalse(thread.isAlive(), thread.getName() + " did not finish");
         }
+    }
 
-        RemoteEvalTestServer(String responseBody, int delayMillis) throws IOException {
-            this.responseBody = responseBody;
-            this.delayMillis = delayMillis;
-            this.server = HttpServer.create(new InetSocketAddress("127.0.0.1", 0), 0);
-            this.executor = Executors.newCachedThreadPool();
-            this.server.createContext("/api/eval/sdk-test", this::handle);
-            this.server.setExecutor(this.executor);
-            this.server.start();
-        }
-
-        private final List<int[]> statuses = new CopyOnWriteArrayList<>();
-        private final List<String> scriptedBodies = new CopyOnWriteArrayList<>();
-
-        /** Append a scripted (status, body) response; used in call order, last entry repeats. */
-        void respondWith(int status, String body) {
-            statuses.add(new int[]{status});
-            scriptedBodies.add(body);
-        }
-
-        String apiHost() {
-            return "http://127.0.0.1:" + this.server.getAddress().getPort();
-        }
-
-        int callCount() {
-            return this.callCount.get();
-        }
-
-        String lastBody() {
-            return this.bodies.get(this.bodies.size() - 1);
-        }
-
-        private void handle(HttpExchange exchange) throws IOException {
-            int n = callCount.incrementAndGet();
-            bodies.add(readBody(exchange));
-            if (delayMillis > 0) {
-                sleep(delayMillis);
+    private static void awaitState(Thread thread, Thread.State state) {
+        long deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(AWAIT_SECONDS);
+        while (thread.getState() != state) {
+            if (System.nanoTime() > deadline) {
+                fail("Thread " + thread.getName() + " never reached " + state + ", was " + thread.getState());
             }
-
-            int status = 200;
-            String body = responseBody;
-            if (!scriptedBodies.isEmpty()) {
-                int index = Math.min(n - 1, scriptedBodies.size() - 1);
-                status = statuses.get(index)[0];
-                body = scriptedBodies.get(index);
-            }
-
-            byte[] response = body.getBytes(StandardCharsets.UTF_8);
-            exchange.getResponseHeaders().add("Content-Type", "application/json");
-            exchange.sendResponseHeaders(status, response.length == 0 ? -1 : response.length);
-            try (OutputStream outputStream = exchange.getResponseBody()) {
-                outputStream.write(response);
-            }
+            Thread.yield();
         }
+    }
 
-        private String readBody(HttpExchange exchange) throws IOException {
-            try (InputStream inputStream = exchange.getRequestBody();
-                 ByteArrayOutputStream outputStream = new ByteArrayOutputStream()) {
-                byte[] buffer = new byte[1024];
-                int read;
-                while ((read = inputStream.read(buffer)) != -1) {
-                    outputStream.write(buffer, 0, read);
-                }
-                return new String(outputStream.toByteArray(), StandardCharsets.UTF_8);
-            }
-        }
+    private static final class RecordingTrackingCallback implements TrackingCallbackWithUser {
+        private final List<String> tracked;
 
-        private void sleep(int millis) {
-            try {
-                Thread.sleep(millis);
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-            }
+        RecordingTrackingCallback(List<String> tracked) {
+            this.tracked = tracked;
         }
 
         @Override
-        public void close() {
-            this.server.stop(0);
-            this.executor.shutdownNow();
+        public <T> void onTrack(Experiment<T> experiment, ExperimentResult<T> experimentResult, UserContext userContext) {
+            tracked.add(experiment.getKey() + ":" + experimentResult.getVariationId()
+                    + ":" + userContext.getAttributes().get("id").getAsString());
+        }
+    }
+
+    private static final class ResponseGate extends ResponseDefinitionTransformer {
+        static final String NAME = "response-gate";
+
+        private final CountDownLatch arrived = new CountDownLatch(1);
+        private final CountDownLatch released = new CountDownLatch(1);
+
+        @Override
+        public ResponseDefinition transform(Request request, ResponseDefinition responseDefinition, FileSource files, Parameters parameters) {
+            arrived.countDown();
+            Uninterruptibles.awaitUninterruptibly(released, AWAIT_SECONDS, TimeUnit.SECONDS);
+            return responseDefinition;
+        }
+
+        @Override
+        public String getName() {
+            return NAME;
+        }
+
+        @Override
+        public boolean applyGlobally() {
+            return false;
+        }
+
+        void awaitArrival() throws InterruptedException {
+            assertTrue(arrived.await(AWAIT_SECONDS, TimeUnit.SECONDS), "request never reached the server");
+        }
+
+        void release() {
+            released.countDown();
         }
     }
 }

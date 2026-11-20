@@ -32,6 +32,7 @@ dependencies {
     implementation 'com.github.ben-manes.caffeine:caffeine:2.9.3'
 
     testImplementation 'org.junit.jupiter:junit-jupiter:5.8.2'
+    testImplementation testFixtures(project(':lib'))
 }
 
 java {
