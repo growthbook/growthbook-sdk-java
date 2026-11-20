@@ -21,6 +21,10 @@ public class EvaluationContext {
 
     private GlobalContext global;
     private UserContext user;
+    /**
+     * @deprecated evaluation keeps its own per-call state and never reads this.
+     */
+    @Deprecated
     private StackContext stack;
     private Options options;
 
@@ -67,6 +71,15 @@ public class EvaluationContext {
      */
     private boolean suppressTrackingErrors;
 
+    public EvaluationContext(GlobalContext global, UserContext user, Options options) {
+        this(global, user, new StackContext(), options);
+    }
+
+    /**
+     * @deprecated evaluation keeps its own per-call state and never reads {@code stack}; use
+     * {@link #EvaluationContext(GlobalContext, UserContext, Options)}.
+     */
+    @Deprecated
     public EvaluationContext(GlobalContext global, UserContext user, StackContext stack, Options options) {
         this.global = global;
         this.user = user;
@@ -93,8 +106,12 @@ public class EvaluationContext {
         this.experimentTracker = sharedExperimentTracker;
     }
 
+    /**
+     * @deprecated evaluation keeps its own per-call state and never reads this.
+     */
+    @Deprecated
     @Data
-    public static class StackContext { // FeatureEvalContext
+    public static class StackContext {
         @Nullable
         private String id;
         private Set<String> evaluatedFeatures;
