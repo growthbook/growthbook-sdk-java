@@ -4,6 +4,7 @@ import growthbook.sdk.java.callback.ExperimentRunCallback;
 import growthbook.sdk.java.model.Experiment;
 import growthbook.sdk.java.model.ExperimentResult;
 import growthbook.sdk.java.model.FeatureKey;
+import growthbook.sdk.java.model.FeatureResult;
 import growthbook.sdk.java.model.StickyAssignmentsDocument;
 import growthbook.sdk.java.model.TypedKey;
 import growthbook.sdk.java.model.VariationMeta;
@@ -73,23 +74,6 @@ class GrowthBookClientAsyncApiTest {
     private static final Executor REJECTING = command -> {
         throw new RejectedExecutionException("pool saturated");
     };
-
-    /** Executor that only queues; the test decides when the queued tasks run. */
-    private static final class ManualExecutor implements Executor {
-        private final Queue<Runnable> queued = new ConcurrentLinkedQueue<>();
-
-        @Override
-        public void execute(Runnable command) {
-            queued.add(command);
-        }
-
-        void runAll() {
-            Runnable next;
-            while ((next = queued.poll()) != null) {
-                next.run();
-            }
-        }
-    }
 
     /** Serves the features payload and a remote-eval response. */
     private static WireMockServer featuresServer() {
@@ -813,12 +797,18 @@ class GrowthBookClientAsyncApiTest {
 
     @Test
     @Timeout(30)
-    void aNullFeatureKeyThrowsNullPointerExceptionLikeTheSyncTwins() {
+    void aNullFeatureKeyFailsTheFutureInsteadOfThrowing() {
         GrowthBookClient client = new GrowthBookClient();
         try {
+            CompletableFuture<FeatureResult<String>> feature = client.getFeatureAsync(null, user("u1"));
+            CompletableFuture<String> value = client.getFeatureValueAsync(null, "fallback", user("u1"));
+
+            for (CompletableFuture<?> future : Arrays.<CompletableFuture<?>>asList(feature, value)) {
+                ExecutionException error = assertThrows(ExecutionException.class, () -> future.get(10, TimeUnit.SECONDS));
+                assertTrue(error.getCause() instanceof NullPointerException, "got " + error.getCause());
+            }
+            // The synchronous methods are unchanged: they throw.
             assertThrows(NullPointerException.class, () -> client.getFeature(null, user("u1")));
-            assertThrows(NullPointerException.class, () -> client.getFeatureAsync(null, user("u1")));
-            assertThrows(NullPointerException.class, () -> client.getFeatureValueAsync(null, "fallback", user("u1")));
         } finally {
             client.shutdown();
         }
@@ -968,6 +958,23 @@ class GrowthBookClientAsyncApiTest {
         GrowthBookClient client = new GrowthBookClient();
         client.shutdown();
         client.shutdown(); // second call returns immediately, no exception
+    }
+
+    /** Executor that only queues; the test decides when the queued tasks run. */
+    private static final class ManualExecutor implements Executor {
+        private final Queue<Runnable> queued = new ConcurrentLinkedQueue<>();
+
+        @Override
+        public void execute(Runnable command) {
+            queued.add(command);
+        }
+
+        void runAll() {
+            Runnable next;
+            while ((next = queued.poll()) != null) {
+                next.run();
+            }
+        }
     }
 
     /** Async service completing fetches on its own named thread. */

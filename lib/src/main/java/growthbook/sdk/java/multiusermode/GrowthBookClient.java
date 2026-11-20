@@ -54,7 +54,6 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
@@ -721,8 +720,7 @@ public class GrowthBookClient {
      *   <li>The future completes exceptionally when the executor rejects the work, when building
      *       the evaluation fails, or when {@link #shutdown()} runs before the evaluation does: an
      *       evaluation still waiting on its store read is failed, not bucketed without it. Nothing is
-     *       thrown on the calling thread, except a {@code NullPointerException} for a null
-     *       {@code FeatureKey}, as in the synchronous methods.</li>
+     *       thrown on the calling thread: a null {@code FeatureKey} fails the future too.</li>
      *   <li>The user context and its attributes must not be modified until the future completes.</li>
      *   <li>Only an {@link AsyncStickyBucketService} keeps the wait free of threads. A blocking
      *       {@code StickyBucketService} holds one executor thread per store call, and remote
@@ -812,10 +810,13 @@ public class GrowthBookClient {
      * @param featureKey  typed feature key
      * @param userContext user context
      * @param <T>         feature value type carried by the key
-     * @return a future completing with the feature result
+     * @return a future completing with the feature result; it fails with a
+     *         {@code NullPointerException} when {@code featureKey} is null
      */
     public <T> CompletableFuture<FeatureResult<T>> getFeatureAsync(FeatureKey<T> featureKey, UserContext userContext) {
-        Objects.requireNonNull(featureKey, "featureKey");
+        if (featureKey == null) {
+            return failedFuture(new NullPointerException("featureKey"));
+        }
         return evalFeatureAsync(featureKey.getKey(), featureKey.getValueType(), userContext);
     }
 
@@ -826,12 +827,15 @@ public class GrowthBookClient {
      * @param defaultValue value when the feature is missing or evaluation fails
      * @param userContext  user context
      * @param <T>          feature value type carried by the key
-     * @return a future completing with the deserialized value or the default
+     * @return a future completing with the deserialized value or the default; it fails with a
+     *         {@code NullPointerException} when {@code featureKey} is null
      */
     public <T> CompletableFuture<T> getFeatureValueAsync(FeatureKey<T> featureKey,
                                                          T defaultValue,
                                                          UserContext userContext) {
-        Objects.requireNonNull(featureKey, "featureKey");
+        if (featureKey == null) {
+            return failedFuture(new NullPointerException("featureKey"));
+        }
         return getFeatureValueAsync(featureKey.getKey(), defaultValue, featureKey.getValueType(), userContext);
     }
 
@@ -1069,9 +1073,9 @@ public class GrowthBookClient {
         Map<String, String> identifiers = stickyIdentifierAttributesFor(
                 mergeGlobalAttributes(safeUserContext.getAttributes()), snapshot, inlineIdentifierAttributes);
         UserContext scoped = safeUserContext.withAttributes(safeUserContext.getAttributes());
-        // handleAsync (not thenApplyAsync) so BOTH success and failure hop to the offload executor: a
-        // rejecting store must never run evaluation or caller continuations on its own completion
-        // thread — e.g. a Netty event loop during an outage.
+        // handleAsync (not thenApplyAsync) so BOTH success and failure hop to the executor: a failing
+        // store must not run evaluation or caller continuations on its own completion thread, for
+        // example a Netty event loop during an outage.
         return this.stickyBucketManager.fetchAssignments(identifiers)
                 .handleAsync((docs, error) -> {
                     if (clientShutdown.get()) {
