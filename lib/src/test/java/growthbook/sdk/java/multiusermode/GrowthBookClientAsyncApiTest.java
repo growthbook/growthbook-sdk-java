@@ -22,7 +22,6 @@ import java.util.concurrent.Executor;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 
-import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -310,13 +309,18 @@ class GrowthBookClientAsyncApiTest {
         ForeignThreadStickyService service = new ForeignThreadStickyService();
         service.store.put("id||u1", storedAssignment("u1", "exp-async-slow", stored));
         service.fetchGate = new CountDownLatch(1); // never opened: the read outlives the timeout
+        ManualTimeoutScheduler timer = new ManualTimeoutScheduler();
         GrowthBookClient client = new GrowthBookClient(Options.builder()
                 .asyncStickyBucketService(service)
                 .stickyBucketIdentifierAttributes(Collections.singletonList("id"))
-                .stickyBucketTimeout(Duration.ofMillis(50))
-                .build());
+                .build(), timer);
         try {
-            ExperimentResult<String> result = client.runAsync(experiment, user("u1")).get(5, TimeUnit.SECONDS);
+            CompletableFuture<ExperimentResult<String>> run = client.runAsync(experiment, user("u1"));
+            assertFalse(run.isDone(), "the evaluation waits for the read");
+
+            timer.elapseNext();
+
+            ExperimentResult<String> result = run.get(5, TimeUnit.SECONDS);
 
             assertNotNull(result.getValue(), "a timed-out read falls back to normal bucketing");
             assertEquals(0, service.saveCalls.get(), "a timed-out read is a failed read: nothing is saved");

@@ -63,6 +63,7 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.RejectedExecutionException;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -128,6 +129,17 @@ public class GrowthBookClient {
      * @param opts client options; null falls back to default options
      */
     public GrowthBookClient(Options opts) {
+        this(opts, null);
+    }
+
+    /**
+     * Test seam.
+     *
+     * @param stickyTimeoutScheduler replaces the timer thread behind
+     *                               {@link Options#getStickyBucketTimeout()}, so a test decides when
+     *                               a sticky bucket store call times out; null for the timer thread
+     */
+    GrowthBookClient(Options opts, @Nullable ScheduledExecutorService stickyTimeoutScheduler) {
         this.options = opts == null ? Options.builder().build() : opts;
 
         this.featureEvaluator = new FeatureEvaluator();
@@ -169,7 +181,8 @@ public class GrowthBookClient {
                     callerThreadService,
                     this.options.getStickyBucketCacheTtlSeconds(),
                     this.options.getStickyBucketCacheSize(),
-                    this.options.getStickyBucketTimeout().toMillis());
+                    this.options.getStickyBucketTimeout().toMillis(),
+                    stickyTimeoutScheduler);
         } else {
             this.stickyBucketManager = null;
         }
