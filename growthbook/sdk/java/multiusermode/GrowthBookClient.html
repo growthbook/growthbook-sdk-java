@@ -127,49 +127,63 @@ loadScripts(document, 'script');</script>
 <div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">Evaluates a feature for a user.</div>
 </div>
-<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>&lt;ValueType&gt;<br><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/Map.html" title="class or interface in java.util" class="external-link">Map</a>&lt;<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>,<wbr><a href="../model/FeatureResult.html" title="class in growthbook.sdk.java.model">FeatureResult</a>&lt;ValueType&gt;&gt;</code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#evalFeatures(java.util.List,java.lang.Class,growthbook.sdk.java.multiusermode.configurations.UserContext)" class="member-name-link">evalFeatures</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/List.html" title="class or interface in java.util" class="external-link">List</a>&lt;<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&gt;&nbsp;featureKeys,
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>&lt;ValueType&gt;<br><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/concurrent/CompletableFuture.html" title="class or interface in java.util.concurrent" class="external-link">CompletableFuture</a>&lt;<a href="../model/FeatureResult.html" title="class in growthbook.sdk.java.model">FeatureResult</a>&lt;ValueType&gt;&gt;</code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#evalFeatureAsync(java.lang.String,java.lang.Class,growthbook.sdk.java.multiusermode.configurations.UserContext)" class="member-name-link">evalFeatureAsync</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;key,
  <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Class.html" title="class or interface in java.lang" class="external-link">Class</a>&lt;ValueType&gt;&nbsp;valueTypeClass,
  <a href="configurations/UserContext.html" title="class in growthbook.sdk.java.multiusermode.configurations">UserContext</a>&nbsp;userContext)</code></div>
 <div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="block">Async twin of <a href="#evalFeature(java.lang.String,java.lang.Class,growthbook.sdk.java.multiusermode.configurations.UserContext)"><code>evalFeature(String, Class, UserContext)</code></a>: evaluates without blocking the
+ caller on sticky bucket or remote-eval I/O.</div>
+</div>
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>&lt;ValueType&gt;<br><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/Map.html" title="class or interface in java.util" class="external-link">Map</a>&lt;<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>,<wbr><a href="../model/FeatureResult.html" title="class in growthbook.sdk.java.model">FeatureResult</a>&lt;ValueType&gt;&gt;</code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#evalFeatures(java.util.List,java.lang.Class,growthbook.sdk.java.multiusermode.configurations.UserContext)" class="member-name-link">evalFeatures</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/List.html" title="class or interface in java.util" class="external-link">List</a>&lt;<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&gt;&nbsp;featureKeys,
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Class.html" title="class or interface in java.lang" class="external-link">Class</a>&lt;ValueType&gt;&nbsp;valueTypeClass,
+ <a href="configurations/UserContext.html" title="class in growthbook.sdk.java.multiusermode.configurations">UserContext</a>&nbsp;userContext)</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">Evaluates a batch of features for the same user using a single shared
  <a href="configurations/EvaluationContext.html" title="class in growthbook.sdk.java.multiusermode.configurations"><code>EvaluationContext</code></a>.</div>
 </div>
-<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/concurrent/CompletableFuture.html" title="class or interface in java.util.concurrent" class="external-link">CompletableFuture</a>&lt;<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Void.html" title="class or interface in java.lang" class="external-link">Void</a>&gt;</code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#flushStickyBucketSaves()" class="member-name-link">flushStickyBucketSaves</a>()</code></div>
-<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/concurrent/CompletableFuture.html" title="class or interface in java.util.concurrent" class="external-link">CompletableFuture</a>&lt;<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Void.html" title="class or interface in java.lang" class="external-link">Void</a>&gt;</code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#flushStickyBucketSaves()" class="member-name-link">flushStickyBucketSaves</a>()</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">Completes when every pending sticky bucket save has been <em>attempted</em>.</div>
 </div>
-<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Boolean.html" title="class or interface in java.lang" class="external-link">Boolean</a></code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#getBooleanFeature(growthbook.sdk.java.model.FeatureKey,growthbook.sdk.java.multiusermode.configurations.UserContext)" class="member-name-link">getBooleanFeature</a><wbr>(<a href="../model/FeatureKey.html" title="interface in growthbook.sdk.java.model">FeatureKey</a>&lt;<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Boolean.html" title="class or interface in java.lang" class="external-link">Boolean</a>&gt;&nbsp;featureKey,
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Boolean.html" title="class or interface in java.lang" class="external-link">Boolean</a></code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#getBooleanFeature(growthbook.sdk.java.model.FeatureKey,growthbook.sdk.java.multiusermode.configurations.UserContext)" class="member-name-link">getBooleanFeature</a><wbr>(<a href="../model/FeatureKey.html" title="interface in growthbook.sdk.java.model">FeatureKey</a>&lt;<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Boolean.html" title="class or interface in java.lang" class="external-link">Boolean</a>&gt;&nbsp;featureKey,
  <a href="configurations/UserContext.html" title="class in growthbook.sdk.java.multiusermode.configurations">UserContext</a>&nbsp;userContext)</code></div>
-<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">Get a boolean feature value, defaulting to <code>false</code> when missing or falsy.</div>
 </div>
-<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Boolean.html" title="class or interface in java.lang" class="external-link">Boolean</a></code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#getBooleanFeature(growthbook.sdk.java.model.FeatureKey,java.lang.Boolean,growthbook.sdk.java.multiusermode.configurations.UserContext)" class="member-name-link">getBooleanFeature</a><wbr>(<a href="../model/FeatureKey.html" title="interface in growthbook.sdk.java.model">FeatureKey</a>&lt;<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Boolean.html" title="class or interface in java.lang" class="external-link">Boolean</a>&gt;&nbsp;featureKey,
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Boolean.html" title="class or interface in java.lang" class="external-link">Boolean</a></code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#getBooleanFeature(growthbook.sdk.java.model.FeatureKey,java.lang.Boolean,growthbook.sdk.java.multiusermode.configurations.UserContext)" class="member-name-link">getBooleanFeature</a><wbr>(<a href="../model/FeatureKey.html" title="interface in growthbook.sdk.java.model">FeatureKey</a>&lt;<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Boolean.html" title="class or interface in java.lang" class="external-link">Boolean</a>&gt;&nbsp;featureKey,
  <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Boolean.html" title="class or interface in java.lang" class="external-link">Boolean</a>&nbsp;defaultValue,
  <a href="configurations/UserContext.html" title="class in growthbook.sdk.java.multiusermode.configurations">UserContext</a>&nbsp;userContext)</code></div>
-<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">Get a boolean feature value.</div>
 </div>
-<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="../diagnostics/model/Diagnostics.html" title="class in growthbook.sdk.java.diagnostics.model">Diagnostics</a></code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#getDiagnostics()" class="member-name-link">getDiagnostics</a>()</code></div>
-<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="../diagnostics/model/Diagnostics.html" title="class in growthbook.sdk.java.diagnostics.model">Diagnostics</a></code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#getDiagnostics()" class="member-name-link">getDiagnostics</a>()</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">Returns a read-only snapshot of the current SDK state.</div>
 </div>
-<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Double.html" title="class or interface in java.lang" class="external-link">Double</a></code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#getDoubleFeature(growthbook.sdk.java.model.FeatureKey,java.lang.Double,growthbook.sdk.java.multiusermode.configurations.UserContext)" class="member-name-link">getDoubleFeature</a><wbr>(<a href="../model/FeatureKey.html" title="interface in growthbook.sdk.java.model">FeatureKey</a>&lt;<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Double.html" title="class or interface in java.lang" class="external-link">Double</a>&gt;&nbsp;featureKey,
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Double.html" title="class or interface in java.lang" class="external-link">Double</a></code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#getDoubleFeature(growthbook.sdk.java.model.FeatureKey,java.lang.Double,growthbook.sdk.java.multiusermode.configurations.UserContext)" class="member-name-link">getDoubleFeature</a><wbr>(<a href="../model/FeatureKey.html" title="interface in growthbook.sdk.java.model">FeatureKey</a>&lt;<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Double.html" title="class or interface in java.lang" class="external-link">Double</a>&gt;&nbsp;featureKey,
  <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Double.html" title="class or interface in java.lang" class="external-link">Double</a>&nbsp;defaultValue,
  <a href="configurations/UserContext.html" title="class in growthbook.sdk.java.multiusermode.configurations">UserContext</a>&nbsp;userContext)</code></div>
-<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">Get a double feature value.</div>
 </div>
-<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>&lt;T&gt;&nbsp;<a href="../model/FeatureResult.html" title="class in growthbook.sdk.java.model">FeatureResult</a>&lt;T&gt;</code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#getFeature(growthbook.sdk.java.model.FeatureKey,growthbook.sdk.java.multiusermode.configurations.UserContext)" class="member-name-link">getFeature</a><wbr>(<a href="../model/FeatureKey.html" title="interface in growthbook.sdk.java.model">FeatureKey</a>&lt;T&gt;&nbsp;featureKey,
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>&lt;T&gt;&nbsp;<a href="../model/FeatureResult.html" title="class in growthbook.sdk.java.model">FeatureResult</a>&lt;T&gt;</code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#getFeature(growthbook.sdk.java.model.FeatureKey,growthbook.sdk.java.multiusermode.configurations.UserContext)" class="member-name-link">getFeature</a><wbr>(<a href="../model/FeatureKey.html" title="interface in growthbook.sdk.java.model">FeatureKey</a>&lt;T&gt;&nbsp;featureKey,
+ <a href="configurations/UserContext.html" title="class in growthbook.sdk.java.multiusermode.configurations">UserContext</a>&nbsp;userContext)</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="block">Evaluate a feature for a user using a type-safe <a href="../model/FeatureKey.html" title="interface in growthbook.sdk.java.model"><code>FeatureKey</code></a> instead of a raw string key.</div>
+</div>
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>&lt;T&gt;&nbsp;<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/concurrent/CompletableFuture.html" title="class or interface in java.util.concurrent" class="external-link">CompletableFuture</a>&lt;<a href="../model/FeatureResult.html" title="class in growthbook.sdk.java.model">FeatureResult</a>&lt;T&gt;&gt;</code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#getFeatureAsync(growthbook.sdk.java.model.FeatureKey,growthbook.sdk.java.multiusermode.configurations.UserContext)" class="member-name-link">getFeatureAsync</a><wbr>(<a href="../model/FeatureKey.html" title="interface in growthbook.sdk.java.model">FeatureKey</a>&lt;T&gt;&nbsp;featureKey,
  <a href="configurations/UserContext.html" title="class in growthbook.sdk.java.multiusermode.configurations">UserContext</a>&nbsp;userContext)</code></div>
 <div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
-<div class="block">Evaluate a feature for a user using a type-safe <a href="../model/FeatureKey.html" title="interface in growthbook.sdk.java.model"><code>FeatureKey</code></a> instead of a raw string key.</div>
+<div class="block">Async twin of <a href="#getFeature(growthbook.sdk.java.model.FeatureKey,growthbook.sdk.java.multiusermode.configurations.UserContext)"><code>getFeature(FeatureKey, UserContext)</code></a>.</div>
 </div>
 <div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>&lt;T&gt;&nbsp;T</code></div>
 <div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#getFeatureValue(growthbook.sdk.java.model.FeatureKey,T,growthbook.sdk.java.multiusermode.configurations.UserContext)" class="member-name-link">getFeatureValue</a><wbr>(<a href="../model/FeatureKey.html" title="interface in growthbook.sdk.java.model">FeatureKey</a>&lt;T&gt;&nbsp;featureKey,
@@ -185,6 +199,22 @@ loadScripts(document, 'script');</script>
  <a href="configurations/UserContext.html" title="class in growthbook.sdk.java.multiusermode.configurations">UserContext</a>&nbsp;userContext)</code></div>
 <div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">Evaluates a feature and returns its value, falling back to the supplied default on missing or invalid values.</div>
+</div>
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>&lt;T&gt;&nbsp;<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/concurrent/CompletableFuture.html" title="class or interface in java.util.concurrent" class="external-link">CompletableFuture</a>&lt;T&gt;</code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#getFeatureValueAsync(growthbook.sdk.java.model.FeatureKey,T,growthbook.sdk.java.multiusermode.configurations.UserContext)" class="member-name-link">getFeatureValueAsync</a><wbr>(<a href="../model/FeatureKey.html" title="interface in growthbook.sdk.java.model">FeatureKey</a>&lt;T&gt;&nbsp;featureKey,
+ T&nbsp;defaultValue,
+ <a href="configurations/UserContext.html" title="class in growthbook.sdk.java.multiusermode.configurations">UserContext</a>&nbsp;userContext)</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="block">Async twin of <a href="#getFeatureValue(growthbook.sdk.java.model.FeatureKey,T,growthbook.sdk.java.multiusermode.configurations.UserContext)"><code>getFeatureValue(FeatureKey, Object, UserContext)</code></a>.</div>
+</div>
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>&lt;ValueType&gt;<br><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/concurrent/CompletableFuture.html" title="class or interface in java.util.concurrent" class="external-link">CompletableFuture</a>&lt;ValueType&gt;</code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#getFeatureValueAsync(java.lang.String,ValueType,java.lang.Class,growthbook.sdk.java.multiusermode.configurations.UserContext)" class="member-name-link">getFeatureValueAsync</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;featureKey,
+ ValueType&nbsp;defaultValue,
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Class.html" title="class or interface in java.lang" class="external-link">Class</a>&lt;ValueType&gt;&nbsp;gsonDeserializableClass,
+ <a href="configurations/UserContext.html" title="class in growthbook.sdk.java.multiusermode.configurations">UserContext</a>&nbsp;userContext)</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="block">Async twin of <a href="#getFeatureValue(java.lang.String,T,java.lang.Class,growthbook.sdk.java.multiusermode.configurations.UserContext)"><code>getFeatureValue(String, Object, Class, UserContext)</code></a>: same deserialization
+ and default-value semantics.</div>
 </div>
 <div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Float.html" title="class or interface in java.lang" class="external-link">Float</a></code></div>
 <div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#getFloatFeature(growthbook.sdk.java.model.FeatureKey,java.lang.Float,growthbook.sdk.java.multiusermode.configurations.UserContext)" class="member-name-link">getFloatFeature</a><wbr>(<a href="../model/FeatureKey.html" title="interface in growthbook.sdk.java.model">FeatureKey</a>&lt;<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Float.html" title="class or interface in java.lang" class="external-link">Float</a>&gt;&nbsp;featureKey,
@@ -212,17 +242,28 @@ loadScripts(document, 'script');</script>
 <div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">Initializes the feature repository or remote-eval service.</div>
 </div>
-<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Boolean.html" title="class or interface in java.lang" class="external-link">Boolean</a></code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#isOff(growthbook.sdk.java.model.FeatureKey,growthbook.sdk.java.multiusermode.configurations.UserContext)" class="member-name-link">isOff</a><wbr>(<a href="../model/FeatureKey.html" title="interface in growthbook.sdk.java.model">FeatureKey</a>&lt;?&gt;&nbsp;featureKey,
- <a href="configurations/UserContext.html" title="class in growthbook.sdk.java.multiusermode.configurations">UserContext</a>&nbsp;userContext)</code></div>
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/concurrent/CompletableFuture.html" title="class or interface in java.util.concurrent" class="external-link">CompletableFuture</a>&lt;<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Boolean.html" title="class or interface in java.lang" class="external-link">Boolean</a>&gt;</code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#initializeAsync()" class="member-name-link">initializeAsync</a>()</code></div>
 <div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
-<div class="block">Checks whether the feature identified by the typed key evaluates to off for a user.</div>
+<div class="block">Async twin of <a href="#initialize()"><code>initialize()</code></a>: loads features without blocking the caller.</div>
 </div>
 <div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Boolean.html" title="class or interface in java.lang" class="external-link">Boolean</a></code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#isOff(java.lang.String,growthbook.sdk.java.multiusermode.configurations.UserContext)" class="member-name-link">isOff</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;featureKey,
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#isOff(growthbook.sdk.java.model.FeatureKey,growthbook.sdk.java.multiusermode.configurations.UserContext)" class="member-name-link">isOff</a><wbr>(<a href="../model/FeatureKey.html" title="interface in growthbook.sdk.java.model">FeatureKey</a>&lt;?&gt;&nbsp;featureKey,
  <a href="configurations/UserContext.html" title="class in growthbook.sdk.java.multiusermode.configurations">UserContext</a>&nbsp;userContext)</code></div>
 <div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="block">Checks whether the feature identified by the typed key evaluates to off for a user.</div>
+</div>
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Boolean.html" title="class or interface in java.lang" class="external-link">Boolean</a></code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#isOff(java.lang.String,growthbook.sdk.java.multiusermode.configurations.UserContext)" class="member-name-link">isOff</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;featureKey,
+ <a href="configurations/UserContext.html" title="class in growthbook.sdk.java.multiusermode.configurations">UserContext</a>&nbsp;userContext)</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">Checks whether a feature evaluates to off for a user.</div>
+</div>
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/concurrent/CompletableFuture.html" title="class or interface in java.util.concurrent" class="external-link">CompletableFuture</a>&lt;<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Boolean.html" title="class or interface in java.lang" class="external-link">Boolean</a>&gt;</code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#isOffAsync(java.lang.String,growthbook.sdk.java.multiusermode.configurations.UserContext)" class="member-name-link">isOffAsync</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;featureKey,
+ <a href="configurations/UserContext.html" title="class in growthbook.sdk.java.multiusermode.configurations">UserContext</a>&nbsp;userContext)</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="block">Async twin of <a href="#isOff(java.lang.String,growthbook.sdk.java.multiusermode.configurations.UserContext)"><code>isOff(String, UserContext)</code></a>.</div>
 </div>
 <div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Boolean.html" title="class or interface in java.lang" class="external-link">Boolean</a></code></div>
 <div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#isOn(growthbook.sdk.java.model.FeatureKey,growthbook.sdk.java.multiusermode.configurations.UserContext)" class="member-name-link">isOn</a><wbr>(<a href="../model/FeatureKey.html" title="interface in growthbook.sdk.java.model">FeatureKey</a>&lt;?&gt;&nbsp;featureKey,
@@ -236,58 +277,71 @@ loadScripts(document, 'script');</script>
 <div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">Checks whether a feature evaluates to on for a user.</div>
 </div>
-<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/concurrent/CompletableFuture.html" title="class or interface in java.util.concurrent" class="external-link">CompletableFuture</a>&lt;<a href="configurations/UserContext.html" title="class in growthbook.sdk.java.multiusermode.configurations">UserContext</a>&gt;</code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#prefetchStickyBuckets(growthbook.sdk.java.multiusermode.configurations.UserContext)" class="member-name-link">prefetchStickyBuckets</a><wbr>(<a href="configurations/UserContext.html" title="class in growthbook.sdk.java.multiusermode.configurations">UserContext</a>&nbsp;userContext)</code></div>
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/concurrent/CompletableFuture.html" title="class or interface in java.util.concurrent" class="external-link">CompletableFuture</a>&lt;<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Boolean.html" title="class or interface in java.lang" class="external-link">Boolean</a>&gt;</code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#isOnAsync(java.lang.String,growthbook.sdk.java.multiusermode.configurations.UserContext)" class="member-name-link">isOnAsync</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;featureKey,
+ <a href="configurations/UserContext.html" title="class in growthbook.sdk.java.multiusermode.configurations">UserContext</a>&nbsp;userContext)</code></div>
 <div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="block">Async twin of <a href="#isOn(java.lang.String,growthbook.sdk.java.multiusermode.configurations.UserContext)"><code>isOn(String, UserContext)</code></a>.</div>
+</div>
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/concurrent/CompletableFuture.html" title="class or interface in java.util.concurrent" class="external-link">CompletableFuture</a>&lt;<a href="configurations/UserContext.html" title="class in growthbook.sdk.java.multiusermode.configurations">UserContext</a>&gt;</code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#prefetchStickyBuckets(growthbook.sdk.java.multiusermode.configurations.UserContext)" class="member-name-link">prefetchStickyBuckets</a><wbr>(<a href="configurations/UserContext.html" title="class in growthbook.sdk.java.multiusermode.configurations">UserContext</a>&nbsp;userContext)</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">Prefetch sticky bucket assignments for a user context, so later evaluations with the same
  context perform no sticky bucket I/O.</div>
 </div>
-<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>boolean</code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#preloadRemoteEval(growthbook.sdk.java.multiusermode.configurations.UserContext)" class="member-name-link">preloadRemoteEval</a><wbr>(<a href="configurations/UserContext.html" title="class in growthbook.sdk.java.multiusermode.configurations">UserContext</a>&nbsp;userContext)</code></div>
-<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">&nbsp;</div>
-<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>com.google.gson.JsonObject</code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#reducePayload(growthbook.sdk.java.multiusermode.configurations.UserContext)" class="member-name-link">reducePayload</a><wbr>(<a href="configurations/UserContext.html" title="class in growthbook.sdk.java.multiusermode.configurations">UserContext</a>&nbsp;userContext)</code></div>
-<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>boolean</code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#preloadRemoteEval(growthbook.sdk.java.multiusermode.configurations.UserContext)" class="member-name-link">preloadRemoteEval</a><wbr>(<a href="configurations/UserContext.html" title="class in growthbook.sdk.java.multiusermode.configurations">UserContext</a>&nbsp;userContext)</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">&nbsp;</div>
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>com.google.gson.JsonObject</code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#reducePayload(growthbook.sdk.java.multiusermode.configurations.UserContext)" class="member-name-link">reducePayload</a><wbr>(<a href="configurations/UserContext.html" title="class in growthbook.sdk.java.multiusermode.configurations">UserContext</a>&nbsp;userContext)</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">Shrinks the current features payload for one user with the default options.</div>
 </div>
-<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>com.google.gson.JsonObject</code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#reducePayload(growthbook.sdk.java.multiusermode.configurations.UserContext,growthbook.sdk.java.model.ReducePayloadOptions)" class="member-name-link">reducePayload</a><wbr>(<a href="configurations/UserContext.html" title="class in growthbook.sdk.java.multiusermode.configurations">UserContext</a>&nbsp;userContext,
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>com.google.gson.JsonObject</code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#reducePayload(growthbook.sdk.java.multiusermode.configurations.UserContext,growthbook.sdk.java.model.ReducePayloadOptions)" class="member-name-link">reducePayload</a><wbr>(<a href="configurations/UserContext.html" title="class in growthbook.sdk.java.multiusermode.configurations">UserContext</a>&nbsp;userContext,
  <a href="../model/ReducePayloadOptions.html" title="class in growthbook.sdk.java.model">ReducePayloadOptions</a>&nbsp;options)</code></div>
-<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">Shrinks the current features payload for one user, e.g.</div>
 </div>
-<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4 method-summary-table-tab6"><code>void</code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4 method-summary-table-tab6"><code><a href="#refreshFeature()" class="member-name-link">refreshFeature</a>()</code></div>
-<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4 method-summary-table-tab6">
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4 method-summary-table-tab6"><code>void</code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4 method-summary-table-tab6"><code><a href="#refreshFeature()" class="member-name-link">refreshFeature</a>()</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4 method-summary-table-tab6">
 <div class="block"><span class="deprecated-label">Deprecated.</span>
 <div class="deprecation-comment">Use <a href="#refreshFeatures()"><code>refreshFeatures()</code></a> or <a href="#refreshFeatures(growthbook.sdk.java.repository.RefreshMode)"><code>refreshFeatures(RefreshMode)</code></a>.</div>
 </div>
 </div>
-<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>void</code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#refreshFeatures()" class="member-name-link">refreshFeatures</a>()</code></div>
-<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>void</code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#refreshFeatures()" class="member-name-link">refreshFeatures</a>()</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">Refreshes feature definitions using the default refresh behavior.</div>
 </div>
-<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>void</code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#refreshFeatures(growthbook.sdk.java.repository.RefreshMode)" class="member-name-link">refreshFeatures</a><wbr>(<a href="../repository/RefreshMode.html" title="enum class in growthbook.sdk.java.repository">RefreshMode</a>&nbsp;refreshMode)</code></div>
-<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>void</code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#refreshFeatures(growthbook.sdk.java.repository.RefreshMode)" class="member-name-link">refreshFeatures</a><wbr>(<a href="../repository/RefreshMode.html" title="enum class in growthbook.sdk.java.repository">RefreshMode</a>&nbsp;refreshMode)</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">Refreshes feature definitions using the provided refresh mode.</div>
 </div>
-<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>void</code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#refreshForRemoteEval(growthbook.sdk.java.model.RequestBodyForRemoteEval)" class="member-name-link">refreshForRemoteEval</a><wbr>(<a href="../model/RequestBodyForRemoteEval.html" title="class in growthbook.sdk.java.model">RequestBodyForRemoteEval</a>&nbsp;requestBodyForRemoteEval)</code></div>
-<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>void</code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#refreshForRemoteEval(growthbook.sdk.java.model.RequestBodyForRemoteEval)" class="member-name-link">refreshForRemoteEval</a><wbr>(<a href="../model/RequestBodyForRemoteEval.html" title="class in growthbook.sdk.java.model">RequestBodyForRemoteEval</a>&nbsp;requestBodyForRemoteEval)</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">Refreshes feature definitions using remote evaluation payload.</div>
 </div>
-<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>void</code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#removeFeatureRefreshListener(growthbook.sdk.java.listener.FeatureRefreshListener)" class="member-name-link">removeFeatureRefreshListener</a><wbr>(<a href="../listener/FeatureRefreshListener.html" title="interface in growthbook.sdk.java.listener">FeatureRefreshListener</a>&nbsp;listener)</code></div>
-<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>void</code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#removeFeatureRefreshListener(growthbook.sdk.java.listener.FeatureRefreshListener)" class="member-name-link">removeFeatureRefreshListener</a><wbr>(<a href="../listener/FeatureRefreshListener.html" title="interface in growthbook.sdk.java.listener">FeatureRefreshListener</a>&nbsp;listener)</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">Removes a previously registered feature refresh listener.</div>
 </div>
-<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>&lt;T&gt;&nbsp;<a href="../model/ExperimentResult.html" title="class in growthbook.sdk.java.model">ExperimentResult</a>&lt;T&gt;</code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#run(growthbook.sdk.java.model.Experiment,growthbook.sdk.java.multiusermode.configurations.UserContext)" class="member-name-link">run</a><wbr>(<a href="../model/Experiment.html" title="class in growthbook.sdk.java.model">Experiment</a>&lt;T&gt;&nbsp;experiment,
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>&lt;T&gt;&nbsp;<a href="../model/ExperimentResult.html" title="class in growthbook.sdk.java.model">ExperimentResult</a>&lt;T&gt;</code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#run(growthbook.sdk.java.model.Experiment,growthbook.sdk.java.multiusermode.configurations.UserContext)" class="member-name-link">run</a><wbr>(<a href="../model/Experiment.html" title="class in growthbook.sdk.java.model">Experiment</a>&lt;T&gt;&nbsp;experiment,
+ <a href="configurations/UserContext.html" title="class in growthbook.sdk.java.multiusermode.configurations">UserContext</a>&nbsp;userContext)</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="block">Runs an experiment for a user and notifies experiment subscribers when assignment changes.</div>
+</div>
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>&lt;ValueType&gt;<br><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/concurrent/CompletableFuture.html" title="class or interface in java.util.concurrent" class="external-link">CompletableFuture</a>&lt;<a href="../model/ExperimentResult.html" title="class in growthbook.sdk.java.model">ExperimentResult</a>&lt;ValueType&gt;&gt;</code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#runAsync(growthbook.sdk.java.model.Experiment,growthbook.sdk.java.multiusermode.configurations.UserContext)" class="member-name-link">runAsync</a><wbr>(<a href="../model/Experiment.html" title="class in growthbook.sdk.java.model">Experiment</a>&lt;ValueType&gt;&nbsp;experiment,
  <a href="configurations/UserContext.html" title="class in growthbook.sdk.java.multiusermode.configurations">UserContext</a>&nbsp;userContext)</code></div>
 <div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
-<div class="block">Runs an experiment for a user and notifies experiment subscribers when assignment changes.</div>
+<div class="block">Async twin of <a href="#run(growthbook.sdk.java.model.Experiment,growthbook.sdk.java.multiusermode.configurations.UserContext)"><code>run(Experiment, UserContext)</code></a>: evaluates the inline experiment and
+ notifies experiment subscribers when assignment changes, without blocking on sticky bucket I/O.</div>
 </div>
 <div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>void</code></div>
 <div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#setGlobalAttributes(java.lang.String)" class="member-name-link">setGlobalAttributes</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;attributes)</code></div>
@@ -381,6 +435,21 @@ loadScripts(document, 'script');</script>
 <dl class="notes">
 <dt>Returns:</dt>
 <dd>true when the client is ready for evaluation</dd>
+</dl>
+</section>
+</li>
+<li>
+<section class="detail" id="initializeAsync()">
+<h3>initializeAsync</h3>
+<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/concurrent/CompletableFuture.html" title="class or interface in java.util.concurrent" class="external-link">CompletableFuture</a>&lt;<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Boolean.html" title="class or interface in java.lang" class="external-link">Boolean</a>&gt;</span>&nbsp;<span class="element-name">initializeAsync</span>()</div>
+<div class="block">Async twin of <a href="#initialize()"><code>initialize()</code></a>: loads features without blocking the caller. It runs
+ <a href="#initialize()"><code>initialize()</code></a> on the client's executor and holds one of its threads for the fetch.
+ The returned future never completes exceptionally: it completes with <code>false</code> on invalid
+ options, a failed fetch, an executor that rejects the task, or a <a href="#shutdown()"><code>shutdown()</code></a> that
+ comes first.</div>
+<dl class="notes">
+<dt>Returns:</dt>
+<dd>a future completing with whether the client is ready for evaluation</dd>
 </dl>
 </section>
 </li>
@@ -749,6 +818,158 @@ loadScripts(document, 'script');</script>
 <dd><code>userContext</code> - user context</dd>
 <dt>Returns:</dt>
 <dd>experiment evaluation result</dd>
+</dl>
+</section>
+</li>
+<li>
+<section class="detail" id="evalFeatureAsync(java.lang.String,java.lang.Class,growthbook.sdk.java.multiusermode.configurations.UserContext)">
+<h3>evalFeatureAsync</h3>
+<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="type-parameters">&lt;ValueType&gt;</span>
+<span class="return-type"><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/concurrent/CompletableFuture.html" title="class or interface in java.util.concurrent" class="external-link">CompletableFuture</a>&lt;<a href="../model/FeatureResult.html" title="class in growthbook.sdk.java.model">FeatureResult</a>&lt;ValueType&gt;&gt;</span>&nbsp;<span class="element-name">evalFeatureAsync</span><wbr><span class="parameters">(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;key,
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Class.html" title="class or interface in java.lang" class="external-link">Class</a>&lt;ValueType&gt;&nbsp;valueTypeClass,
+ <a href="configurations/UserContext.html" title="class in growthbook.sdk.java.multiusermode.configurations">UserContext</a>&nbsp;userContext)</span></div>
+<div class="block">Async twin of <a href="#evalFeature(java.lang.String,java.lang.Class,growthbook.sdk.java.multiusermode.configurations.UserContext)"><code>evalFeature(String, Class, UserContext)</code></a>: evaluates without blocking the
+ caller on sticky bucket or remote-eval I/O. With no sticky bucket service configured and local
+ evaluation, the returned future is already complete.
+
+ <p>These rules apply to every <code>...Async</code> evaluation method:
+ <ul>
+   <li>Evaluation, tracking callbacks and the caller's continuations run on the client's
+       executor or on the calling thread, not on the sticky bucket store's completion thread.
+       The one exception: when the executor rejects the continuation, no other thread is left,
+       so the future fails on the thread that completed the read.</li>
+   <li>A sticky bucket read that fails or times out does not fail the future: the evaluation
+       continues with normal bucketing and saves nothing.</li>
+   <li>The future completes exceptionally when the executor rejects the work, when building
+       the evaluation fails, or when <a href="#shutdown()"><code>shutdown()</code></a> runs before the evaluation does: an
+       evaluation still waiting on its store read is failed, not bucketed without it. Nothing is
+       thrown on the calling thread: a null <code>FeatureKey</code> fails the future too.</li>
+   <li>The user context and its attributes must not be modified until the future completes.</li>
+   <li>Only an <a href="../stickyBucketing/AsyncStickyBucketService.html" title="interface in growthbook.sdk.java.stickyBucketing"><code>AsyncStickyBucketService</code></a> keeps the wait free of threads. A blocking
+       <code>StickyBucketService</code> holds one executor thread per store call, and remote
+       evaluation holds one per evaluation. The continuation runs on the same executor, so while
+       every one of its threads is waiting on a blocking store,
+       <a href="configurations/Options.html#getStickyBucketTimeout()"><code>Options.getStickyBucketTimeout()</code></a> cannot release an evaluation until one is free.</li>
+ </ul></div>
+<dl class="notes">
+<dt>Type Parameters:</dt>
+<dd><code>ValueType</code> - feature value type</dd>
+<dt>Parameters:</dt>
+<dd><code>key</code> - feature key</dd>
+<dd><code>valueTypeClass</code> - expected value class</dd>
+<dd><code>userContext</code> - user context</dd>
+<dt>Returns:</dt>
+<dd>a future completing with the feature result</dd>
+</dl>
+</section>
+</li>
+<li>
+<section class="detail" id="isOnAsync(java.lang.String,growthbook.sdk.java.multiusermode.configurations.UserContext)">
+<h3>isOnAsync</h3>
+<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/concurrent/CompletableFuture.html" title="class or interface in java.util.concurrent" class="external-link">CompletableFuture</a>&lt;<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Boolean.html" title="class or interface in java.lang" class="external-link">Boolean</a>&gt;</span>&nbsp;<span class="element-name">isOnAsync</span><wbr><span class="parameters">(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;featureKey,
+ <a href="configurations/UserContext.html" title="class in growthbook.sdk.java.multiusermode.configurations">UserContext</a>&nbsp;userContext)</span></div>
+<div class="block">Async twin of <a href="#isOn(java.lang.String,growthbook.sdk.java.multiusermode.configurations.UserContext)"><code>isOn(String, UserContext)</code></a>.</div>
+<dl class="notes">
+<dt>Parameters:</dt>
+<dd><code>featureKey</code> - feature key</dd>
+<dd><code>userContext</code> - user context</dd>
+<dt>Returns:</dt>
+<dd>a future completing with whether the feature is on</dd>
+</dl>
+</section>
+</li>
+<li>
+<section class="detail" id="isOffAsync(java.lang.String,growthbook.sdk.java.multiusermode.configurations.UserContext)">
+<h3>isOffAsync</h3>
+<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/concurrent/CompletableFuture.html" title="class or interface in java.util.concurrent" class="external-link">CompletableFuture</a>&lt;<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Boolean.html" title="class or interface in java.lang" class="external-link">Boolean</a>&gt;</span>&nbsp;<span class="element-name">isOffAsync</span><wbr><span class="parameters">(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;featureKey,
+ <a href="configurations/UserContext.html" title="class in growthbook.sdk.java.multiusermode.configurations">UserContext</a>&nbsp;userContext)</span></div>
+<div class="block">Async twin of <a href="#isOff(java.lang.String,growthbook.sdk.java.multiusermode.configurations.UserContext)"><code>isOff(String, UserContext)</code></a>.</div>
+<dl class="notes">
+<dt>Parameters:</dt>
+<dd><code>featureKey</code> - feature key</dd>
+<dd><code>userContext</code> - user context</dd>
+<dt>Returns:</dt>
+<dd>a future completing with whether the feature is off</dd>
+</dl>
+</section>
+</li>
+<li>
+<section class="detail" id="getFeatureValueAsync(java.lang.String,ValueType,java.lang.Class,growthbook.sdk.java.multiusermode.configurations.UserContext)">
+<h3 id="getFeatureValueAsync(java.lang.String,java.lang.Object,java.lang.Class,growthbook.sdk.java.multiusermode.configurations.UserContext)">getFeatureValueAsync</h3>
+<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="type-parameters">&lt;ValueType&gt;</span>&nbsp;<span class="return-type"><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/concurrent/CompletableFuture.html" title="class or interface in java.util.concurrent" class="external-link">CompletableFuture</a>&lt;ValueType&gt;</span>&nbsp;<span class="element-name">getFeatureValueAsync</span><wbr><span class="parameters">(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;featureKey,
+ ValueType&nbsp;defaultValue,
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Class.html" title="class or interface in java.lang" class="external-link">Class</a>&lt;ValueType&gt;&nbsp;gsonDeserializableClass,
+ <a href="configurations/UserContext.html" title="class in growthbook.sdk.java.multiusermode.configurations">UserContext</a>&nbsp;userContext)</span></div>
+<div class="block">Async twin of <a href="#getFeatureValue(java.lang.String,T,java.lang.Class,growthbook.sdk.java.multiusermode.configurations.UserContext)"><code>getFeatureValue(String, Object, Class, UserContext)</code></a>: same deserialization
+ and default-value semantics. Unlike the other async methods, the returned future never completes
+ exceptionally: a rejecting executor or a <a href="#shutdown()"><code>shutdown()</code></a> that comes first gives the default.</div>
+<dl class="notes">
+<dt>Type Parameters:</dt>
+<dd><code>ValueType</code> - feature value type</dd>
+<dt>Parameters:</dt>
+<dd><code>featureKey</code> - feature key</dd>
+<dd><code>defaultValue</code> - value when the feature is missing or evaluation fails</dd>
+<dd><code>gsonDeserializableClass</code> - expected value class</dd>
+<dd><code>userContext</code> - user context</dd>
+<dt>Returns:</dt>
+<dd>a future completing with the deserialized value or the default</dd>
+</dl>
+</section>
+</li>
+<li>
+<section class="detail" id="getFeatureAsync(growthbook.sdk.java.model.FeatureKey,growthbook.sdk.java.multiusermode.configurations.UserContext)">
+<h3>getFeatureAsync</h3>
+<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="type-parameters">&lt;T&gt;</span>&nbsp;<span class="return-type"><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/concurrent/CompletableFuture.html" title="class or interface in java.util.concurrent" class="external-link">CompletableFuture</a>&lt;<a href="../model/FeatureResult.html" title="class in growthbook.sdk.java.model">FeatureResult</a>&lt;T&gt;&gt;</span>&nbsp;<span class="element-name">getFeatureAsync</span><wbr><span class="parameters">(<a href="../model/FeatureKey.html" title="interface in growthbook.sdk.java.model">FeatureKey</a>&lt;T&gt;&nbsp;featureKey,
+ <a href="configurations/UserContext.html" title="class in growthbook.sdk.java.multiusermode.configurations">UserContext</a>&nbsp;userContext)</span></div>
+<div class="block">Async twin of <a href="#getFeature(growthbook.sdk.java.model.FeatureKey,growthbook.sdk.java.multiusermode.configurations.UserContext)"><code>getFeature(FeatureKey, UserContext)</code></a>.</div>
+<dl class="notes">
+<dt>Type Parameters:</dt>
+<dd><code>T</code> - feature value type carried by the key</dd>
+<dt>Parameters:</dt>
+<dd><code>featureKey</code> - typed feature key</dd>
+<dd><code>userContext</code> - user context</dd>
+<dt>Returns:</dt>
+<dd>a future completing with the feature result; it fails with a
+         <code>NullPointerException</code> when <code>featureKey</code> is null</dd>
+</dl>
+</section>
+</li>
+<li>
+<section class="detail" id="getFeatureValueAsync(growthbook.sdk.java.model.FeatureKey,T,growthbook.sdk.java.multiusermode.configurations.UserContext)">
+<h3 id="getFeatureValueAsync(growthbook.sdk.java.model.FeatureKey,java.lang.Object,growthbook.sdk.java.multiusermode.configurations.UserContext)">getFeatureValueAsync</h3>
+<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="type-parameters">&lt;T&gt;</span>&nbsp;<span class="return-type"><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/concurrent/CompletableFuture.html" title="class or interface in java.util.concurrent" class="external-link">CompletableFuture</a>&lt;T&gt;</span>&nbsp;<span class="element-name">getFeatureValueAsync</span><wbr><span class="parameters">(<a href="../model/FeatureKey.html" title="interface in growthbook.sdk.java.model">FeatureKey</a>&lt;T&gt;&nbsp;featureKey,
+ T&nbsp;defaultValue,
+ <a href="configurations/UserContext.html" title="class in growthbook.sdk.java.multiusermode.configurations">UserContext</a>&nbsp;userContext)</span></div>
+<div class="block">Async twin of <a href="#getFeatureValue(growthbook.sdk.java.model.FeatureKey,T,growthbook.sdk.java.multiusermode.configurations.UserContext)"><code>getFeatureValue(FeatureKey, Object, UserContext)</code></a>.</div>
+<dl class="notes">
+<dt>Type Parameters:</dt>
+<dd><code>T</code> - feature value type carried by the key</dd>
+<dt>Parameters:</dt>
+<dd><code>featureKey</code> - typed feature key</dd>
+<dd><code>defaultValue</code> - value when the feature is missing or evaluation fails</dd>
+<dd><code>userContext</code> - user context</dd>
+<dt>Returns:</dt>
+<dd>a future completing with the deserialized value or the default; it fails with a
+         <code>NullPointerException</code> when <code>featureKey</code> is null</dd>
+</dl>
+</section>
+</li>
+<li>
+<section class="detail" id="runAsync(growthbook.sdk.java.model.Experiment,growthbook.sdk.java.multiusermode.configurations.UserContext)">
+<h3>runAsync</h3>
+<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="type-parameters">&lt;ValueType&gt;</span>
+<span class="return-type"><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/concurrent/CompletableFuture.html" title="class or interface in java.util.concurrent" class="external-link">CompletableFuture</a>&lt;<a href="../model/ExperimentResult.html" title="class in growthbook.sdk.java.model">ExperimentResult</a>&lt;ValueType&gt;&gt;</span>&nbsp;<span class="element-name">runAsync</span><wbr><span class="parameters">(<a href="../model/Experiment.html" title="class in growthbook.sdk.java.model">Experiment</a>&lt;ValueType&gt;&nbsp;experiment,
+ <a href="configurations/UserContext.html" title="class in growthbook.sdk.java.multiusermode.configurations">UserContext</a>&nbsp;userContext)</span></div>
+<div class="block">Async twin of <a href="#run(growthbook.sdk.java.model.Experiment,growthbook.sdk.java.multiusermode.configurations.UserContext)"><code>run(Experiment, UserContext)</code></a>: evaluates the inline experiment and
+ notifies experiment subscribers when assignment changes, without blocking on sticky bucket I/O.</div>
+<dl class="notes">
+<dt>Type Parameters:</dt>
+<dd><code>ValueType</code> - variation value type</dd>
+<dt>Parameters:</dt>
+<dd><code>experiment</code> - inline experiment</dd>
+<dd><code>userContext</code> - user context</dd>
+<dt>Returns:</dt>
+<dd>a future completing with the experiment result</dd>
 </dl>
 </section>
 </li>

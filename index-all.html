@@ -938,6 +938,11 @@ loadScripts(document, 'script');</script>
 <div class="block">The evalFeature method takes a single string argument, which is the unique identifier for the feature and returns
  a FeatureResult object.</div>
 </dd>
+<dt><a href="growthbook/sdk/java/multiusermode/GrowthBookClient.html#evalFeatureAsync(java.lang.String,java.lang.Class,growthbook.sdk.java.multiusermode.configurations.UserContext)" class="member-name-link">evalFeatureAsync(String, Class&lt;ValueType&gt;, UserContext)</a> - Method in class growthbook.sdk.java.multiusermode.<a href="growthbook/sdk/java/multiusermode/GrowthBookClient.html" title="class in growthbook.sdk.java.multiusermode">GrowthBookClient</a></dt>
+<dd>
+<div class="block">Async twin of <a href="growthbook/sdk/java/multiusermode/GrowthBookClient.html#evalFeature(java.lang.String,java.lang.Class,growthbook.sdk.java.multiusermode.configurations.UserContext)"><code>GrowthBookClient.evalFeature(String, Class, UserContext)</code></a>: evaluates without blocking the
+ caller on sticky bucket or remote-eval I/O.</div>
+</dd>
 <dt><a href="growthbook/sdk/java/GrowthBook.html#evalFeatures(java.util.List,java.lang.Class)" class="member-name-link">evalFeatures(List&lt;String&gt;, Class&lt;ValueType&gt;)</a> - Method in class growthbook.sdk.java.<a href="growthbook/sdk/java/GrowthBook.html" title="class in growthbook.sdk.java">GrowthBook</a></dt>
 <dd>
 <div class="block">Evaluates a batch of features reusing a single <a href="growthbook/sdk/java/multiusermode/configurations/EvaluationContext.html" title="class in growthbook.sdk.java.multiusermode.configurations"><code>EvaluationContext</code></a>, so shared
@@ -1992,6 +1997,10 @@ loadScripts(document, 'script');</script>
 <dd>
 <div class="block">Evaluate a feature for a user using a type-safe <a href="growthbook/sdk/java/model/FeatureKey.html" title="interface in growthbook.sdk.java.model"><code>FeatureKey</code></a> instead of a raw string key.</div>
 </dd>
+<dt><a href="growthbook/sdk/java/multiusermode/GrowthBookClient.html#getFeatureAsync(growthbook.sdk.java.model.FeatureKey,growthbook.sdk.java.multiusermode.configurations.UserContext)" class="member-name-link">getFeatureAsync(FeatureKey&lt;T&gt;, UserContext)</a> - Method in class growthbook.sdk.java.multiusermode.<a href="growthbook/sdk/java/multiusermode/GrowthBookClient.html" title="class in growthbook.sdk.java.multiusermode">GrowthBookClient</a></dt>
+<dd>
+<div class="block">Async twin of <a href="growthbook/sdk/java/multiusermode/GrowthBookClient.html#getFeature(growthbook.sdk.java.model.FeatureKey,growthbook.sdk.java.multiusermode.configurations.UserContext)"><code>GrowthBookClient.getFeature(FeatureKey, UserContext)</code></a>.</div>
+</dd>
 <dt><a href="growthbook/sdk/java/model/ExperimentResult.html#getFeatureId()" class="member-name-link">getFeatureId()</a> - Method in class growthbook.sdk.java.model.<a href="growthbook/sdk/java/model/ExperimentResult.html" title="class in growthbook.sdk.java.model">ExperimentResult</a></dt>
 <dd>
 <div class="block">The id of the feature (if any) that the experiment came from</div>
@@ -2104,6 +2113,15 @@ loadScripts(document, 'script');</script>
 <dt><a href="growthbook/sdk/java/GrowthBook.html#getFeatureValue(java.lang.String,ValueType,java.lang.Class)" class="member-name-link">getFeatureValue(String, ValueType, Class&lt;ValueType&gt;)</a> - Method in class growthbook.sdk.java.<a href="growthbook/sdk/java/GrowthBook.html" title="class in growthbook.sdk.java">GrowthBook</a></dt>
 <dd>
 <div class="block">Get the feature value as a Gson-deserializable.</div>
+</dd>
+<dt><a href="growthbook/sdk/java/multiusermode/GrowthBookClient.html#getFeatureValueAsync(growthbook.sdk.java.model.FeatureKey,T,growthbook.sdk.java.multiusermode.configurations.UserContext)" class="member-name-link">getFeatureValueAsync(FeatureKey&lt;T&gt;, T, UserContext)</a> - Method in class growthbook.sdk.java.multiusermode.<a href="growthbook/sdk/java/multiusermode/GrowthBookClient.html" title="class in growthbook.sdk.java.multiusermode">GrowthBookClient</a></dt>
+<dd>
+<div class="block">Async twin of <a href="growthbook/sdk/java/multiusermode/GrowthBookClient.html#getFeatureValue(growthbook.sdk.java.model.FeatureKey,T,growthbook.sdk.java.multiusermode.configurations.UserContext)"><code>GrowthBookClient.getFeatureValue(FeatureKey, Object, UserContext)</code></a>.</div>
+</dd>
+<dt><a href="growthbook/sdk/java/multiusermode/GrowthBookClient.html#getFeatureValueAsync(java.lang.String,ValueType,java.lang.Class,growthbook.sdk.java.multiusermode.configurations.UserContext)" class="member-name-link">getFeatureValueAsync(String, ValueType, Class&lt;ValueType&gt;, UserContext)</a> - Method in class growthbook.sdk.java.multiusermode.<a href="growthbook/sdk/java/multiusermode/GrowthBookClient.html" title="class in growthbook.sdk.java.multiusermode">GrowthBookClient</a></dt>
+<dd>
+<div class="block">Async twin of <a href="growthbook/sdk/java/multiusermode/GrowthBookClient.html#getFeatureValue(java.lang.String,T,java.lang.Class,growthbook.sdk.java.multiusermode.configurations.UserContext)"><code>GrowthBookClient.getFeatureValue(String, Object, Class, UserContext)</code></a>: same deserialization
+ and default-value semantics.</div>
 </dd>
 <dt><a href="growthbook/sdk/java/model/Experiment.html#getFilters()" class="member-name-link">getFilters()</a> - Method in class growthbook.sdk.java.model.<a href="growthbook/sdk/java/model/Experiment.html" title="class in growthbook.sdk.java.model">Experiment</a></dt>
 <dd>
@@ -3414,6 +3432,10 @@ loadScripts(document, 'script');</script>
 <dd>
 <div class="block">Method for initialize <a href="growthbook/sdk/java/repository/NativeJavaGbFeatureRepository.html" title="class in growthbook.sdk.java.repository"><code>NativeJavaGbFeatureRepository</code></a>.</div>
 </dd>
+<dt><a href="growthbook/sdk/java/multiusermode/GrowthBookClient.html#initializeAsync()" class="member-name-link">initializeAsync()</a> - Method in class growthbook.sdk.java.multiusermode.<a href="growthbook/sdk/java/multiusermode/GrowthBookClient.html" title="class in growthbook.sdk.java.multiusermode">GrowthBookClient</a></dt>
+<dd>
+<div class="block">Async twin of <a href="growthbook/sdk/java/multiusermode/GrowthBookClient.html#initialize()"><code>GrowthBookClient.initialize()</code></a>: loads features without blocking the caller.</div>
+</dd>
 <dt><a href="growthbook/sdk/java/diagnostics/model/ClientDiagnostics.ClientDiagnosticsBuilder.html#initialized(boolean)" class="member-name-link">initialized(boolean)</a> - Method in class growthbook.sdk.java.diagnostics.model.<a href="growthbook/sdk/java/diagnostics/model/ClientDiagnostics.ClientDiagnosticsBuilder.html" title="class in growthbook.sdk.java.diagnostics.model">ClientDiagnostics.ClientDiagnosticsBuilder</a></dt>
 <dd>
 <div class="block">Whether the client is ready for evaluations.</div>
@@ -3579,6 +3601,10 @@ loadScripts(document, 'script');</script>
 <dd>
 <div class="block">Checks whether a feature evaluates to off for a user.</div>
 </dd>
+<dt><a href="growthbook/sdk/java/multiusermode/GrowthBookClient.html#isOffAsync(java.lang.String,growthbook.sdk.java.multiusermode.configurations.UserContext)" class="member-name-link">isOffAsync(String, UserContext)</a> - Method in class growthbook.sdk.java.multiusermode.<a href="growthbook/sdk/java/multiusermode/GrowthBookClient.html" title="class in growthbook.sdk.java.multiusermode">GrowthBookClient</a></dt>
+<dd>
+<div class="block">Async twin of <a href="growthbook/sdk/java/multiusermode/GrowthBookClient.html#isOff(java.lang.String,growthbook.sdk.java.multiusermode.configurations.UserContext)"><code>GrowthBookClient.isOff(String, UserContext)</code></a>.</div>
+</dd>
 <dt><a href="growthbook/sdk/java/model/FeatureResult.html#isOn()" class="member-name-link">isOn()</a> - Method in class growthbook.sdk.java.model.<a href="growthbook/sdk/java/model/FeatureResult.html" title="class in growthbook.sdk.java.model">FeatureResult</a></dt>
 <dd>
 <div class="block">Evaluates to true when the feature is on</div>
@@ -3602,6 +3628,10 @@ loadScripts(document, 'script');</script>
 <dt><a href="growthbook/sdk/java/multiusermode/GrowthBookClient.html#isOn(java.lang.String,growthbook.sdk.java.multiusermode.configurations.UserContext)" class="member-name-link">isOn(String, UserContext)</a> - Method in class growthbook.sdk.java.multiusermode.<a href="growthbook/sdk/java/multiusermode/GrowthBookClient.html" title="class in growthbook.sdk.java.multiusermode">GrowthBookClient</a></dt>
 <dd>
 <div class="block">Checks whether a feature evaluates to on for a user.</div>
+</dd>
+<dt><a href="growthbook/sdk/java/multiusermode/GrowthBookClient.html#isOnAsync(java.lang.String,growthbook.sdk.java.multiusermode.configurations.UserContext)" class="member-name-link">isOnAsync(String, UserContext)</a> - Method in class growthbook.sdk.java.multiusermode.<a href="growthbook/sdk/java/multiusermode/GrowthBookClient.html" title="class in growthbook.sdk.java.multiusermode">GrowthBookClient</a></dt>
+<dd>
+<div class="block">Async twin of <a href="growthbook/sdk/java/multiusermode/GrowthBookClient.html#isOn(java.lang.String,growthbook.sdk.java.multiusermode.configurations.UserContext)"><code>GrowthBookClient.isOn(String, UserContext)</code></a>.</div>
 </dd>
 <dt><a href="growthbook/sdk/java/evaluators/ConditionEvaluator.html#isOperatorObject(com.google.gson.JsonElement)" class="member-name-link">isOperatorObject(JsonElement)</a> - Method in class growthbook.sdk.java.evaluators.<a href="growthbook/sdk/java/evaluators/ConditionEvaluator.html" title="class in growthbook.sdk.java.evaluators">ConditionEvaluator</a></dt>
 <dd>
@@ -4647,6 +4677,11 @@ loadScripts(document, 'script');</script>
 <dt><a href="growthbook/sdk/java/GrowthBook.html#run(growthbook.sdk.java.model.Experiment)" class="member-name-link">run(Experiment&lt;ValueType&gt;)</a> - Method in class growthbook.sdk.java.<a href="growthbook/sdk/java/GrowthBook.html" title="class in growthbook.sdk.java">GrowthBook</a></dt>
 <dd>
 <div class="block">The run method takes an Experiment object and returns an ExperimentResult.</div>
+</dd>
+<dt><a href="growthbook/sdk/java/multiusermode/GrowthBookClient.html#runAsync(growthbook.sdk.java.model.Experiment,growthbook.sdk.java.multiusermode.configurations.UserContext)" class="member-name-link">runAsync(Experiment&lt;ValueType&gt;, UserContext)</a> - Method in class growthbook.sdk.java.multiusermode.<a href="growthbook/sdk/java/multiusermode/GrowthBookClient.html" title="class in growthbook.sdk.java.multiusermode">GrowthBookClient</a></dt>
+<dd>
+<div class="block">Async twin of <a href="growthbook/sdk/java/multiusermode/GrowthBookClient.html#run(growthbook.sdk.java.model.Experiment,growthbook.sdk.java.multiusermode.configurations.UserContext)"><code>GrowthBookClient.run(Experiment, UserContext)</code></a>: evaluates the inline experiment and
+ notifies experiment subscribers when assignment changes, without blocking on sticky bucket I/O.</div>
 </dd>
 </dl>
 <h2 class="title" id="I:S">S</h2>
