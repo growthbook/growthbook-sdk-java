@@ -6,6 +6,11 @@
 
 - [Requirements](#requirements)
 - [Documentation](#documentation)
+- [Installation](#installation)
+- [Async evaluation](#async-evaluation)
+- [Caching & Refresh Strategy](#caching--refresh-strategy)
+- [Remote Evaluation](#remote-evaluation)
+- [Sticky Bucketing](#sticky-bucketing)
 - [Contributing](#contributing)
   - [Releasing a new version](#releasing-a-new-version)
 
@@ -20,44 +25,48 @@
 
 ## Installation
 
+The SDK is published on [JitPack](https://jitpack.io/#growthbook/growthbook-sdk-java).
+
 ### Gradle
 
-To install in a Gradle project, add Jitpack to your repositories, and then add the dependency with the latest version to your project's dependencies.
-
 ```groovy
-allprojects {
-    repositories {
-        maven { url 'https://jitpack.io' }
-    }
+repositories {
+    maven { url 'https://jitpack.io' }
 }
 
 dependencies {
-    implementation 'com.github.growthbook:growthbook-sdk-java:0.5.0'
+    implementation 'com.github.growthbook.growthbook-sdk-java:lib:0.13.0'
 }
 ```
 
 ### Maven
 
-To install in a Maven project, add Jitpack to your repositories:
-
-```java
+```xml
 <repositories>
     <repository>
         <id>jitpack.io</id>
         <url>https://jitpack.io</url>
     </repository>
 </repositories>
-```
 
-Next, add the dependency with the latest version to your project's dependencies:
-
-```java
 <dependency>
-    <groupId>com.github.growthbook</groupId>
-    <artifactId>growthbook-sdk-java</artifactId>
-    <version>0.5.0</version>
+    <groupId>com.github.growthbook.growthbook-sdk-java</groupId>
+    <artifactId>lib</artifactId>
+    <version>0.13.0</version>
 </dependency>
 ```
+
+### Optional modules
+
+Same group and version as `lib`.
+
+| Artifact | Adds |
+| --- | --- |
+| `growthbook-cache-caffeine` | A Caffeine-backed feature cache |
+| `growthbook-cache-jcache` | A JSR-107 (JCache) feature cache |
+| `growthbook-cache-redis` | A Redis feature cache and Redis sticky bucket services, for Jedis and Lettuce |
+
+`com.github.growthbook:growthbook-sdk-java:0.13.0` also resolves. It is an aggregate that pulls in `lib` and all three optional modules.
 
 > We are proposing two way of initializing SDK:
 
@@ -170,7 +179,38 @@ groups, rules that reference them by ID match nobody (or, for exclusions, everyb
 
 `GrowthBookClient` handles this itself. After a refresh, build a new `GBContext` from the repository.
 
-## Usage
+## Async evaluation
+
+Available starting in 0.13.0. Each evaluation method on `GrowthBookClient` has an `...Async` twin that
+returns a `CompletableFuture`: `isOnAsync`, `isOffAsync`, `evalFeatureAsync`, `getFeatureAsync`,
+`getFeatureValueAsync`, `runAsync`, and `initializeAsync`. Use them when evaluation waits on a
+[sticky bucket](#sticky-bucketing) store and you do not want to hold the request thread.
+
+```java
+GrowthBookClient gb = new GrowthBookClient(Options.builder()
+        .apiHost("https://cdn.growthbook.io")
+        .clientKey("sdk-abc123")
+        .asyncStickyBucketService(stickyBucketService)
+        .build());
+gb.initializeAsync();
+
+UserContext user = UserContext.builder().attributesJson("{\"id\":\"user_123\"}").build();
+
+gb.getFeatureValueAsync("button-color", "blue", String.class, user)
+        .thenAccept(color -> render(color));
+```
+
+- Nothing is thrown on the calling thread. Failures arrive through the future.
+- A sticky bucket read that fails or times out does not fail the future. The user is bucketed by hash
+  and nothing is saved.
+- After `shutdown()`, async methods do not evaluate: the future fails with `IllegalStateException`.
+  `getFeatureValueAsync` completes with the default value and `initializeAsync` with `false`.
+- Only an `AsyncStickyBucketService` keeps the wait free of threads. A blocking `StickyBucketService`,
+  `initializeAsync()`, and remote evaluation each hold a thread of the client's executor
+  (`Options.asyncExecutor`) while they wait.
+
+Full reference: [Async evaluation](https://docs.growthbook.io/lib/java#async-evaluation).
+
 ## Caching & Refresh Strategy
 
 ### Cache modes
@@ -190,8 +230,8 @@ The optional `growthbook-cache-caffeine` module provides a Caffeine-backed `GbCa
 
 ```groovy
 dependencies {
-    implementation 'com.github.growthbook:growthbook-sdk-java:<version>'
-    implementation 'com.github.growthbook:growthbook-cache-caffeine:<version>'
+    implementation 'com.github.growthbook.growthbook-sdk-java:lib:0.13.0'
+    implementation 'com.github.growthbook.growthbook-sdk-java:growthbook-cache-caffeine:0.13.0'
 }
 ```
 
@@ -300,173 +340,64 @@ made any time a user attribute or other dependency changes.
 
 ## Sticky Bucketing
 
-By default, GrowthBook does not persist assigned experiment variations for a user.
-We rely on deterministic hashing to ensure that the same user attributes always map to the same experiment variation.
-However, there are cases where this isn't good enough. For example, if you change targeting conditions
-in the middle of an experiment, users may stop being shown a variation even if they were previously bucketed into it.
-Sticky Bucketing is a solution to these issues. You can provide a Sticky Bucket Service to the GrowthBook instance
-to persist previously seen variations and ensure that the user experience remains consistent for your users.
+Sticky Bucketing persists each user's experiment assignments, so a user keeps their variation when
+attributes, login state, or targeting change mid-experiment. See the
+[Sticky Bucketing docs](https://docs.growthbook.io/app/sticky-bucketing) for the concept.
 
-Sticky bucketing ensures that users see the same experiment variant, even when user session, user login status, or
-experiment parameters change. See the [Sticky Bucketing docs](https://docs.growthbook.io/app/sticky-bucketing) for more
-information. If your organization and experiment supports sticky bucketing, you can implement an instance of
-the `StickyBucketService` to use Sticky Bucketing. For simple bucket persistence using the CachingLayer.
+Give the SDK a service that stores the assignments:
 
-Sticky Bucket documents contain three fields:
+| Service | Option | Synchronous methods | Async methods |
+| --- | --- | --- | --- |
+| `InMemoryStickyBucketServiceImpl` | `stickyBucketService` | In memory, one JVM only | Same |
+| A blocking `StickyBucketService` (Jedis, blocking Lettuce, JDBC) | `stickyBucketService` | Reads and saves run on the calling thread | Reads and saves run on the client's executor |
+| An `AsyncStickyBucketService` (async Lettuce) | `asyncStickyBucketService` | The calling thread waits for the read | No thread is held |
 
-- attributeName - The name of the attribute used to identify the user (e.g. id, cookie_id, etc.)
-- attributeValue - The value of the attribute (e.g. 123)
-- assignments - A dictionary of persisted experiment assignments. For example: {"exp1__0":"control"}
-
-The attributeName/attributeValue combo is the primary key.
-
-Here's an example implementation using a theoretical db object:
+Set one of the two options, not both.
 
 ```java
-public class InMemoryStickyBucketServiceImpl implements StickyBucketService {
-    private final Map<String, StickyAssignmentsDocument> localStorage;
-
-    /**
-     * Constructs a new {@code InMemoryStickyBucketServiceImpl} with the specified local storage.
-     *
-     * @param localStorage a map to store sticky assignments documents in memory.
-     */
-    public InMemoryStickyBucketServiceImpl(Map<String, StickyAssignmentsDocument> localStorage) {
-        this.localStorage = localStorage;
-    }
-
-    /**
-     * Method for getting all assignments document from cache (in memory: hashmap)
-     *
-     * @param attributeName  attributeName with attributeValue together present
-     *                       a key that us for find proper StickyAssignmentsDocument
-     * @param attributeValue attributeName with attributeValue together present
-     *                       a key that us for find proper StickyAssignmentsDocument
-     * @return StickyAssignmentsDocument
-     */
-    @Override
-    public StickyAssignmentsDocument getAssignments(String attributeName, String attributeValue) {
-        return localStorage.get(attributeName + "||" + attributeValue);
-    }
-
-    /**
-     * Method for saving assignments document to cache (in memory: hashmap)
-     *
-     * @param doc StickyAssignmentsDocument
-     */
-    @Override
-    public void saveAssignments(StickyAssignmentsDocument doc) {
-        localStorage.put(doc.getAttributeName() + "||" + doc.getAttributeValue(), doc);
-    }
-
-    /**
-     * Method for getting sticky bucket assignments from cache (in memory: hashmap) by attributes of context
-     *
-     * @param attributes Map of String key and String value that you have in GBContext
-     * @return Map with key String and value StickyAssignmentsDocument
-     */
-    @Override
-    public Map<String, StickyAssignmentsDocument> getAllAssignments(Map<String, String> attributes) {
-        Map<String, StickyAssignmentsDocument> docs = new HashMap<>();
-
-        for (Map.Entry<String, String> entry : attributes.entrySet()) {
-            String key = entry.getKey();
-            String value = entry.getValue();
-            StickyAssignmentsDocument doc = getAssignments(key, value);
-
-            if (doc != null) {
-                String docKey = doc.getAttributeName() + "||" + doc.getAttributeValue();
-                docs.put(docKey, doc);
-            }
-        }
-
-        return docs;
-    }
-}
-```
-
-#### Redis-backed sticky bucketing (multi-instance)
-
-`InMemoryStickyBucketServiceImpl` keeps assignments inside a single JVM, so on a horizontally
-scaled fleet each instance buckets the same user independently and assignments are lost on restart.
-The `growthbook-cache-redis` module ships a shared, durable implementation backed by Redis so a user
-keeps the same variation across the whole fleet and across restarts. It reuses the same Jedis or
-Lettuce client you already provide for the Redis feature cache, and stores each user's assignments
-as a JSON string under `<keyPrefix><attributeName>||<attributeValue>` — wire-compatible with the
-TypeScript `RedisStickyBucketService` (with the default empty prefix). Assignments are written
-without a TTL by default (an assignment should outlive any single process); an optional TTL can be
-configured to bound retention on long-running deployments (see below). Genuine Redis access failures
-and malformed payloads surface as a
-`StickyBucketServiceException` (mirroring how the feature cache throws `FeatureCacheException`)
-rather than being swallowed; an absent key is a normal miss, not a failure.
-
-```java
-// Jedis
-JedisPool jedisPool = new JedisPool("localhost", 6379);
+// One instance: in memory
 Options options = Options.builder()
-    .stickyBucketService(new JedisStickyBucketService(jedisPool))
-    .stickyBucketIdentifierAttributes(Arrays.asList("id"))
-    .build();
-
-// Lettuce
-StatefulRedisConnection<String, String> connection =
-    RedisClient.create("redis://localhost:6379").connect();
-Options lettuceOptions = Options.builder()
-    .stickyBucketService(new LettuceStickyBucketService(connection))
-    .stickyBucketIdentifierAttributes(Arrays.asList("id"))
-    .build();
+        .apiHost("https://cdn.growthbook.io")
+        .clientKey("sdk-abc123")
+        .stickyBucketService(new InMemoryStickyBucketServiceImpl(new HashMap<>()))
+        .build();
 ```
-
-Both constructors accept an optional `keyPrefix` argument when you want to namespace the keys
-(e.g. `new JedisStickyBucketService(jedisPool, "growthbook:sticky:")`).
-
-An optional `Duration ttl` bounds how long each entry is retained — useful so a long-running
-deployment does not keep every user's assignments forever. There is no expiry by default. The TTL is
-(re)set on each write, and the SDK writes only when a user's assignments **change**, so the expiry
-counts from the last assignment change — **not** from the user's last evaluation. Set the TTL
-comfortably longer than an experiment's lifetime so an active user is not re-bucketed mid-experiment:
 
 ```java
-new JedisStickyBucketService(jedisPool, Duration.ofDays(30));                 // default prefix, 30-day TTL
-new JedisStickyBucketService(jedisPool, "growthbook:sticky:", Duration.ofDays(30));
-new LettuceStickyBucketService(connection, Duration.ofDays(30));
-```
-
-#### Non-blocking Redis sticky bucketing
-
-The services above block the calling thread while Redis answers. `LettuceAsyncStickyBucketService`
-uses Lettuce's asynchronous API instead, so no thread is held during a read or a save. Pair it with
-the client's `CompletableFuture` evaluation methods:
-
-```java
+// Many instances: Redis, without blocking a thread (needs growthbook-cache-redis and Lettuce)
 StatefulRedisConnection<String, String> connection =
-    RedisClient.create("redis://localhost:6379").connect();
-GrowthBookClient client = new GrowthBookClient(Options.builder()
-    .asyncStickyBucketService(new LettuceAsyncStickyBucketService(connection))
-    .stickyBucketIdentifierAttributes(Arrays.asList("id"))
-    .build());
+        RedisClient.create("redis://localhost:6379").connect();
 
-client.evalFeatureAsync("my-feature", String.class, userContext)
-    .thenAccept(result -> render(result.getValue()));
+GrowthBookClient gb = new GrowthBookClient(Options.builder()
+        .apiHost("https://cdn.growthbook.io")
+        .clientKey("sdk-abc123")
+        .asyncStickyBucketService(new LettuceAsyncStickyBucketService(connection))
+        .build());
+
+gb.isOnAsync("new-homepage", user).thenAccept(enabled -> render(enabled));
 ```
 
-- It accepts the same optional `keyPrefix` and `ttl` arguments, writes the same bytes under the same
-  keys and saves with the same merge and compare-and-set, so blocking and non-blocking services can
-  share one Redis.
-- Configure either `stickyBucketService` or `asyncStickyBucketService`, not both.
-- The synchronous methods (`evalFeature`, `run`, ...) work with it too; they wait for the read on the
-  calling thread.
-- A blocking service used with the `...Async` methods runs on the client's executor
-  (`Options.asyncExecutor`) and holds one of its threads per in-flight call. Jedis has no
-  asynchronous API, so only Lettuce has a non-blocking service.
-- The client gives up on a read or a save after `Options.stickyBucketTimeout` (default 5 seconds;
-  `Duration.ZERO` disables it), so an unreachable Redis cannot leave evaluations waiting. Lettuce
-  itself does not time out asynchronous commands by default; enable `TimeoutOptions` on the
-  `RedisClient` (for example `TimeoutOptions.enabled(Duration.ofMillis(200))`) to also release the
-  abandoned command.
-- Redis failures complete the returned stage with a `StickyBucketServiceException`. When a user's
-  assignments cannot be read, that evaluation continues with normal bucketing and its assignments
-  are not saved, so the variation Redis already holds is never replaced.
+`JedisStickyBucketService` and `LettuceStickyBucketService` are the blocking Redis services. All three
+take an optional key prefix and expiry, write `<keyPrefix><attributeName>||<attributeValue>` keys in
+the format the JavaScript SDK's `RedisStickyBucketService` uses, and merge on save.
+
+What to know before you ship:
+
+- **Attributes read.** `GrowthBookClient` reads a document for each attribute your experiments hash
+  on, plus `Options.stickyBucketIdentifierAttributes`. Before 0.13.0 it read every user attribute.
+- **Prefetching with inline experiments.** A context from `prefetchStickyBuckets` has documents only
+  for those attributes. If you pass it to `run()` with an inline experiment that hashes on another
+  one, the stored assignment is replaced. List that attribute in `stickyBucketIdentifierAttributes`.
+- **Store failures.** A read that fails, or takes longer than `Options.stickyBucketTimeout` (5 seconds
+  by default), does not fail the evaluation. The user is bucketed by hash and nothing is saved, so
+  the stored assignment is never replaced.
+- **Saves.** With an async service, and on the async methods, saves happen in the background.
+  `shutdown()` flushes them; `flushStickyBucketSaves()` does it on demand.
+- **Remote evaluation.** Do not configure a sticky bucket service with `remoteEval`; the client
+  rejects that combination.
+
+Full reference, including custom services and every option:
+[Sticky Bucketing](https://docs.growthbook.io/lib/java#sticky-bucketing).
 
 ## Contributing
 
