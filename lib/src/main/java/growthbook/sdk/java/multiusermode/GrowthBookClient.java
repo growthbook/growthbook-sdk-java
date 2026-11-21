@@ -63,6 +63,7 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.RejectedExecutionException;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -128,6 +129,17 @@ public class GrowthBookClient {
      * @param opts client options; null falls back to default options
      */
     public GrowthBookClient(Options opts) {
+        this(opts, null);
+    }
+
+    /**
+     * Test seam.
+     *
+     * @param stickyTimeoutScheduler replaces the timer thread behind
+     *                               {@link Options#getStickyBucketTimeout()}, so a test decides when
+     *                               a sticky bucket store call times out; null for the timer thread
+     */
+    GrowthBookClient(Options opts, @Nullable ScheduledExecutorService stickyTimeoutScheduler) {
         this.options = opts == null ? Options.builder().build() : opts;
 
         this.featureEvaluator = new FeatureEvaluator();
@@ -169,7 +181,8 @@ public class GrowthBookClient {
                     callerThreadService,
                     this.options.getStickyBucketCacheTtlSeconds(),
                     this.options.getStickyBucketCacheSize(),
-                    this.options.getStickyBucketTimeout().toMillis());
+                    this.options.getStickyBucketTimeout().toMillis(),
+                    stickyTimeoutScheduler);
         } else {
             this.stickyBucketManager = null;
         }
@@ -1025,18 +1038,17 @@ public class GrowthBookClient {
         // landing mid-read cannot pair new rules with documents fetched for the old identifiers.
         GlobalContext snapshot = this.globalContextManager.getCurrentGlobalContext();
         boolean stickyReadFailed = false;
-        if (this.stickyBucketManager != null && safeUserContext.getStickyBucketAssignmentDocs() == null) {
+        Map<String, String> identifiers =
+                stickyIdentifiersToRead(safeUserContext, snapshot, inlineIdentifierAttributes);
+        if (identifiers != null) {
             // Scoped read: fetch the user's sticky docs through the manager (coalesced, cached,
             // overlaid with this process's own writes) and populate the context so the managers' own
             // synchronous preload skips. A blocking service is read on this thread.
-            JsonObject mergedAttributes = mergeGlobalAttributes(safeUserContext.getAttributes());
-            Map<String, String> identifiers =
-                    stickyIdentifierAttributesFor(mergedAttributes, snapshot, inlineIdentifierAttributes);
             Map<String, StickyAssignmentsDocument> docs = fetchStickyDocsBlocking(identifiers);
             stickyReadFailed = docs == null;
             UserContext scoped = safeUserContext.withAttributes(safeUserContext.getAttributes());
-            scoped.setStickyBucketAssignmentDocs(
-                    stickyReadFailed ? this.stickyBucketManager.localAssignments(identifiers) : docs);
+            scoped.setStickyBucketAssignmentDocs(withCarriedDocs(safeUserContext,
+                    stickyReadFailed ? this.stickyBucketManager.localAssignments(identifiers) : docs));
             safeUserContext = scoped;
         }
         return buildEvalContext(safeUserContext, snapshot, stickyWriter(stickyReadFailed, true));
@@ -1071,12 +1083,12 @@ public class GrowthBookClient {
             // sticky bucket service, so building the context fails before anything is evaluated.
             return supplyOnExecutor(() -> buildEvalContext(safeUserContext, snapshot, stickyWriter(false, false)));
         }
-        if (this.stickyBucketManager == null || safeUserContext.getStickyBucketAssignmentDocs() != null) {
+        Map<String, String> identifiers =
+                stickyIdentifiersToRead(safeUserContext, snapshot, inlineIdentifierAttributes);
+        if (identifiers == null) {
             return CompletableFuture.completedFuture(
                     buildEvalContext(safeUserContext, snapshot, stickyWriter(false, false)));
         }
-        Map<String, String> identifiers = stickyIdentifierAttributesFor(
-                mergeGlobalAttributes(safeUserContext.getAttributes()), snapshot, inlineIdentifierAttributes);
         UserContext scoped = safeUserContext.withAttributes(safeUserContext.getAttributes());
         // handleAsync (not thenApplyAsync) so BOTH success and failure hop to the executor: a failing
         // store must not run evaluation or caller continuations on its own completion thread, for
@@ -1093,10 +1105,58 @@ public class GrowthBookClient {
                         logFailedStickyRead(error instanceof CompletionException && error.getCause() != null
                                 ? error.getCause() : error);
                     }
-                    scoped.setStickyBucketAssignmentDocs(
-                            stickyReadFailed ? this.stickyBucketManager.localAssignments(identifiers) : docs);
+                    scoped.setStickyBucketAssignmentDocs(withCarriedDocs(safeUserContext,
+                            stickyReadFailed ? this.stickyBucketManager.localAssignments(identifiers) : docs));
                     return buildEvalContext(scoped, snapshot, stickyWriter(stickyReadFailed, false));
                 }, this.asyncExecutor);
+    }
+
+    /**
+     * The identifier attributes whose sticky bucket documents an evaluation has to read, or
+     * {@code null} when there is nothing to read.
+     *
+     * <p>A context that already carries documents was prefetched, or filled in by the caller. A
+     * prefetch reads the attributes the loaded features' experiments hash on and the configured
+     * ones, so the only documents such a context can lack are those for an inline experiment's
+     * other attributes. Evaluating without them would bucket the user again and replace the stored
+     * assignment.
+     */
+    @Nullable
+    private Map<String, String> stickyIdentifiersToRead(UserContext userContext, GlobalContext snapshot,
+                                                        Set<String> inlineIdentifierAttributes) {
+        if (this.stickyBucketManager == null) {
+            return null;
+        }
+        Map<String, StickyAssignmentsDocument> carried = userContext.getStickyBucketAssignmentDocs();
+        if (carried == null) {
+            return stickyIdentifierAttributesFor(
+                    mergeGlobalAttributes(userContext.getAttributes()), snapshot, inlineIdentifierAttributes);
+        }
+        if (inlineIdentifierAttributes.isEmpty()) {
+            return null;
+        }
+        Set<String> notPrefetched = new HashSet<>(inlineIdentifierAttributes);
+        notPrefetched.removeAll(resolveStickyIdentifierAttributes(snapshot));
+        if (notPrefetched.isEmpty()) {
+            return null;
+        }
+        Map<String, String> identifiers =
+                StickyAttributeValues.of(mergeGlobalAttributes(userContext.getAttributes()), notPrefetched);
+        identifiers.entrySet().removeIf(
+                identifier -> carried.containsKey(identifier.getKey() + "||" + identifier.getValue()));
+        return identifiers.isEmpty() ? null : identifiers;
+    }
+
+    /** The documents just read, added to those the context already carried. */
+    private static Map<String, StickyAssignmentsDocument> withCarriedDocs(
+            UserContext userContext, Map<String, StickyAssignmentsDocument> read) {
+        Map<String, StickyAssignmentsDocument> carried = userContext.getStickyBucketAssignmentDocs();
+        if (carried == null) {
+            return read;
+        }
+        Map<String, StickyAssignmentsDocument> all = new HashMap<>(carried);
+        all.putAll(read);
+        return all;
     }
 
     private EvaluationContext buildEvalContext(UserContext safeUserContext, GlobalContext snapshot,
@@ -1159,8 +1219,9 @@ public class GrowthBookClient {
      *
      * <p>The read covers the attributes the loaded features' experiments hash on, plus
      * {@code Options.stickyBucketIdentifierAttributes}. An inline experiment later passed to
-     * {@code run} with this context is covered only if its hash attribute is one of those; list it
-     * in {@code stickyBucketIdentifierAttributes} otherwise, or its stored assignment is not read.
+     * {@code run} with this context that hashes on another attribute reads that attribute's
+     * document when it is evaluated. List the attribute in {@code stickyBucketIdentifierAttributes}
+     * to have the prefetch cover it.
      *
      * @param userContext the request-scoped user context to prefetch for
      * @return a future completing with the same context, docs populated

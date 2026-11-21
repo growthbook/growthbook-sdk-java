@@ -21,6 +21,7 @@ import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.RejectedExecutionException;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
@@ -108,7 +109,7 @@ final class StickyBucketManager {
 
     /** Fails store calls that outlive {@link #timeoutMillis}; null when the timeout is disabled. */
     @Nullable
-    private final ScheduledThreadPoolExecutor timeoutScheduler;
+    private final ScheduledExecutorService timeoutScheduler;
 
     private volatile boolean draining = false;
 
@@ -136,10 +137,27 @@ final class StickyBucketManager {
                         @Nullable Long cacheTtlSeconds,
                         @Nullable Integer cacheSize,
                         long timeoutMillis) {
+        this(service, callerThreadService, cacheTtlSeconds, cacheSize, timeoutMillis, null);
+    }
+
+    /**
+     * @param timeoutScheduler runs the timeouts and is shut down by {@link #close(long)}; null for
+     *                         the manager's own timer thread. Tests pass one they fire by hand.
+     */
+    StickyBucketManager(AsyncStickyBucketService service,
+                        AsyncStickyBucketService callerThreadService,
+                        @Nullable Long cacheTtlSeconds,
+                        @Nullable Integer cacheSize,
+                        long timeoutMillis,
+                        @Nullable ScheduledExecutorService timeoutScheduler) {
         this.service = service;
         this.callerThreadService = callerThreadService;
         this.timeoutMillis = timeoutMillis;
-        this.timeoutScheduler = timeoutMillis > 0 ? newTimeoutScheduler() : null;
+        if (timeoutMillis <= 0) {
+            this.timeoutScheduler = null;
+        } else {
+            this.timeoutScheduler = timeoutScheduler != null ? timeoutScheduler : newTimeoutScheduler();
+        }
         boolean cacheEnabled = cacheTtlSeconds != null && cacheTtlSeconds > 0
                 && (cacheSize == null || cacheSize > 0);
         this.readCache = cacheEnabled

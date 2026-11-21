@@ -453,21 +453,26 @@ class GrowthBookClientStickyBucketTest {
 
     @Test
     @Timeout(30)
-    void aStoreThatNeverAnswersDoesNotHangEvaluationOrReplaceTheStoredAssignment() {
+    void aStoreThatNeverAnswersDoesNotHangEvaluationOrReplaceTheStoredAssignment() throws Exception {
         Experiment<String> experiment = experiment("exp-hang");
         UserContext user = user("u1", "country");
         String stored = variationKeyOtherThanHashed(experiment, user);
         GatedAsyncStickyService service = new GatedAsyncStickyService();
         service.store.put("id||u1", storedAssignment("u1", "exp-hang", stored));
+        ManualTimeoutScheduler timer = new ManualTimeoutScheduler();
         GrowthBookClient client = new GrowthBookClient(Options.builder()
                 .asyncStickyBucketService(service)
                 .stickyBucketIdentifierAttributes(Collections.singletonList("id"))
-                .stickyBucketTimeout(Duration.ofMillis(50))
-                .build());
+                .stickyBucketTimeout(Duration.ofSeconds(3))
+                .build(), timer);
         try {
             service.hangFetches = true;
 
-            ExperimentResult<String> result = client.run(experiment, user);
+            // run() waits on the read, so it needs its own thread while this one lets the timeout elapse.
+            CompletableFuture<ExperimentResult<String>> evaluation =
+                    CompletableFuture.supplyAsync(() -> client.run(experiment, user));
+            assertEquals(3_000, timer.elapseNext(), "the read is timed with Options.stickyBucketTimeout");
+            ExperimentResult<String> result = evaluation.get(10, TimeUnit.SECONDS);
 
             assertNotNull(result, "evaluation must return once the read times out");
             assertEquals(0, service.saveCalls.get(), "a timed-out read is a failed read: nothing is saved");
