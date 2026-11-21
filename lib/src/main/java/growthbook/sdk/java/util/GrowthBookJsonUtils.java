@@ -10,6 +10,7 @@ import growthbook.sdk.java.model.DataType;
 import growthbook.sdk.java.model.FeatureResult;
 import growthbook.sdk.java.model.FeatureRule;
 import growthbook.sdk.java.model.Namespace;
+import growthbook.sdk.java.model.OptionalField;
 import lombok.extern.slf4j.Slf4j;
 import javax.annotation.Nullable;
 import java.math.BigDecimal;
@@ -46,6 +47,8 @@ public class GrowthBookJsonUtils {
         gsonBuilder.registerTypeAdapter(FeatureResult.class, FeatureResult.getSerializer());
 
         gsonBuilder.registerTypeAdapter(FeatureRule.class, new FeatureRule<>());
+
+        gsonBuilder.registerTypeAdapter(OptionalField.class, OptionalField.getSerializer());
 
         gsonBuilder.setObjectToNumberStrategy(ToNumberPolicy.LONG_OR_DOUBLE);
 

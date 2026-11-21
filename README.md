@@ -107,6 +107,27 @@ Feature refresh listeners are dispatched off the refresh thread on a dedicated d
 the client. Supply your own executor with
 `Options.builder().featureRefreshListenerExecutor(executor).build()` to control the threading yourself.
 
+#### Inspecting the loaded state
+
+Both `GrowthBook` and `GrowthBookClient` expose read-only accessors to introspect what the SDK has
+loaded — handy for debugging, admin/health endpoints, or exporting the payload to another tier. They
+return defensive copies and never `null` (empty before the first load).
+
+```java
+Map<String, Feature<?>> features = gb.getFeatures();      // loaded feature definitions
+List<Experiment<?>> experiments = gb.getExperiments();    // auto-experiments in the payload (if any)
+JsonObject payload = gb.getPayload();                     // raw payload as received (encrypted fields intact)
+JsonObject decrypted = gb.getDecryptedPayload();          // payload with encrypted fields decrypted
+Map<String, ExperimentResult<?>> results = gb.getAllResults(); // last result per experiment key run so far
+```
+
+`getDecryptedPayload()` equals `getPayload()` when the payload is not encrypted. The decryption key is
+used only to decrypt and is never logged. `getExperiments()` returns the payload's `experiments` array,
+which only the features endpoint delivers — it is empty for a single-context `GrowthBook` (whose state
+comes from the `GBContext`) and in remote-eval mode. `getAllResults()` holds the last result of each
+experiment you run via `run(...)` (feature-triggered experiments are not tracked) and is cleared by
+`GrowthBook.destroy()` / `GrowthBookClient.shutdown()`.
+
 ### Manually create separate instance of GBContext, Repository and Growthbook classes
 
 ```java
