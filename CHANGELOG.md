@@ -1,5 +1,23 @@
 # Changelog
 
+## [0.13.0](https://github.com/growthbook/growthbook-sdk-java/compare/0.12.0...0.13.0) (2026-11-21)
+
+
+### ⚠ BREAKING CHANGES
+
+* add a non-blocking Lettuce sticky bucket service ([#293](https://github.com/growthbook/growthbook-sdk-java/issues/293))
+
+### Features
+
+* async sticky bucket service with non-blocking reads and fire-and-forget writes ([#235](https://github.com/growthbook/growthbook-sdk-java/issues/235)) ([6f38864](https://github.com/growthbook/growthbook-sdk-java/commit/6f38864706885ca450fe5d4896874112f7f71489))
+* CompletableFuture evaluation API and initializeAsync for the multi-user client ([#236](https://github.com/growthbook/growthbook-sdk-java/issues/236)) ([fa8d09a](https://github.com/growthbook/growthbook-sdk-java/commit/fa8d09ac1483a6dcb4d42acda3dcaa2d00f49967))
+
+
+### Bug Fixes
+
+* add a non-blocking Lettuce sticky bucket service ([#293](https://github.com/growthbook/growthbook-sdk-java/issues/293)) ([929a232](https://github.com/growthbook/growthbook-sdk-java/commit/929a2322f92a1ad1412436c4e890c1b70da05842))
+* retry failed exposure callbacks and dedupe exposures client-wide ([#292](https://github.com/growthbook/growthbook-sdk-java/issues/292)) ([434b38a](https://github.com/growthbook/growthbook-sdk-java/commit/434b38a3ef0e28bc900bb33c9b7d166df08f35f9))
+
 ## [0.12.0](https://github.com/growthbook/growthbook-sdk-java/compare/0.11.3...0.12.0) (2026-10-30)
 
 
