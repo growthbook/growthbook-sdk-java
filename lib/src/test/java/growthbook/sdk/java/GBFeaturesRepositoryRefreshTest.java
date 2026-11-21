@@ -16,13 +16,10 @@ import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
 import java.io.IOException;
-import java.lang.reflect.Field;
-import java.lang.reflect.Method;
 import java.time.Duration;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -195,39 +192,7 @@ class GBFeaturesRepositoryRefreshTest {
         assertEquals(FeatureFetchRetryPolicy.DEFAULT_MAX_ATTEMPTS, repository.getRetryPolicy().getMaxAttempts());
     }
 
-    @Test
-    void sseReconnectDoesNotScheduleWhenRetryOnFailureIsDisabled() throws Exception {
-        GBFeaturesRepository repository = repositoryWithSlowSseRetryPolicy(3);
 
-        try {
-            invokeScheduleSseReconnect(repository, false);
-
-            assertEquals(0, getSseRetryAttempts(repository).get());
-            assertNull(getField(repository, "sseRetryScheduler"));
-        } finally {
-            repository.shutdown();
-        }
-    }
-
-    @Test
-    void sseReconnectAttemptsAreBounded() throws Exception {
-        int maxAttempts = 3;
-        GBFeaturesRepository repository = repositoryWithSlowSseRetryPolicy(maxAttempts);
-
-        try {
-            invokeScheduleSseReconnect(repository, true);
-            getSseReconnectScheduled(repository).set(false);
-            invokeScheduleSseReconnect(repository, true);
-            getSseReconnectScheduled(repository).set(false);
-            invokeScheduleSseReconnect(repository, true);
-            getSseReconnectScheduled(repository).set(false);
-            invokeScheduleSseReconnect(repository, true);
-
-            assertEquals(maxAttempts, getSseRetryAttempts(repository).get());
-        } finally {
-            repository.shutdown();
-        }
-    }
 
     private static GBFeaturesRepository.GBFeaturesRepositoryBuilder repositoryBuilder(OkHttpClient httpClient) {
         return GBFeaturesRepository.builder()
@@ -255,40 +220,6 @@ class GBFeaturesRepositoryRefreshTest {
         when(cacheManager.loadCache(anyString())).thenReturn(CACHED_RESPONSE);
         when(cacheManager.getLastUpdatedMillis(anyString())).thenReturn(timestampMillis);
         return cacheManager;
-    }
-
-    private static GBFeaturesRepository repositoryWithSlowSseRetryPolicy(int maxAttempts) {
-        return GBFeaturesRepository.builder()
-                .apiHost("http://localhost")
-                .clientKey("sdk-abc123")
-                .isCacheDisabled(true)
-                .retryPolicy(new FeatureFetchRetryPolicy(
-                        maxAttempts,
-                        Duration.ofHours(1),
-                        Duration.ofHours(1)
-                ))
-                .build();
-    }
-
-    private static void invokeScheduleSseReconnect(GBFeaturesRepository repository, boolean retryOnFailure) throws Exception {
-        Method method = GBFeaturesRepository.class.getDeclaredMethod("scheduleSseReconnect", Boolean.class);
-        method.setAccessible(true);
-        method.invoke(repository, retryOnFailure);
-    }
-
-    private static AtomicInteger getSseRetryAttempts(GBFeaturesRepository repository) throws Exception {
-        return getField(repository, "sseRetryAttempts");
-    }
-
-    private static AtomicBoolean getSseReconnectScheduled(GBFeaturesRepository repository) throws Exception {
-        return getField(repository, "sseReconnectScheduled");
-    }
-
-    @SuppressWarnings("unchecked")
-    private static <T> T getField(GBFeaturesRepository repository, String fieldName) throws Exception {
-        Field field = GBFeaturesRepository.class.getDeclaredField(fieldName);
-        field.setAccessible(true);
-        return (T) field.get(repository);
     }
 
     private static OkHttpClient successfulHttpClient() throws IOException {

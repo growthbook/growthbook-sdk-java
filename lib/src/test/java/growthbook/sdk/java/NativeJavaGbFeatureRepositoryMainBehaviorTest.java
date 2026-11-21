@@ -149,6 +149,28 @@ class NativeJavaGbFeatureRepositoryMainBehaviorTest {
     }
 
     @Test
+    void swrTtlSeconds_updatedAfterConstruction_appliesToNextRequest() throws Exception {
+        wireMock.stubFor(get(urlPathMatching("/api/features/.*"))
+                .willReturn(aResponse()
+                        .withStatus(200)
+                        .withHeader("Content-Type", "application/json")
+                        .withBody("{\"features\":{\"dark-mode\":{\"defaultValue\":true}}}")));
+        NativeJavaGbFeatureRepository repo = NativeJavaGbFeatureRepository.builder()
+                .apiHost("http://localhost:" + wireMock.port())
+                .clientKey("sdk-test123")
+                .refreshStrategy(FeatureRefreshStrategy.STALE_WHILE_REVALIDATE)
+                .swrTtlSeconds(60)
+                .isCacheDisabled(true)
+                .build();
+        repo.initialize();
+
+        repo.getSwrTtlSeconds().set(5);
+        repo.refreshFeatures();
+
+        wireMock.verify(getRequestedFor(urlPathMatching("/api/features/.*")).withHeader("Cache-Control", equalTo("max-age=5")));
+    }
+
+    @Test
     void initialize_calledTwice_fetchesOnce() throws Exception {
         wireMock.stubFor(get(urlPathMatching("/api/features/.*"))
                 .willReturn(aResponse()

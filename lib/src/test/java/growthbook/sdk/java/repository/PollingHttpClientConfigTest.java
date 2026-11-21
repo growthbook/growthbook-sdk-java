@@ -3,7 +3,6 @@ package growthbook.sdk.java.repository;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import java.lang.reflect.Field;
 import okhttp3.OkHttpClient;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -77,9 +76,7 @@ class PollingHttpClientConfigTest {
         );
     }
 
-    private static OkHttpClient readOkHttpClient(GBFeaturesRepository repository) throws Exception {
-        Field field = GBFeaturesRepository.class.getDeclaredField("okHttpClient");
-        field.setAccessible(true);
-        return (OkHttpClient) field.get(repository);
+    private static OkHttpClient readOkHttpClient(GBFeaturesRepository repository) {
+        return RepositoryInternals.transport(repository).httpClient();
     }
 }

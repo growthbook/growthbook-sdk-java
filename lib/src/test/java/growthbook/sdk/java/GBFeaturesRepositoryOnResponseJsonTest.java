@@ -2,13 +2,11 @@ package growthbook.sdk.java;
 
 import growthbook.sdk.java.exception.FeatureFetchException;
 import growthbook.sdk.java.repository.GBFeaturesRepository;
+import growthbook.sdk.java.repository.RepositoryInternals;
 import growthbook.sdk.java.sandbox.GbCacheManager;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
-
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
@@ -26,19 +24,6 @@ import static org.mockito.Mockito.verify;
  */
 class GBFeaturesRepositoryOnResponseJsonTest {
 
-    private static final Method ON_RESPONSE_JSON = onResponseJsonMethod();
-
-    private static Method onResponseJsonMethod() {
-        try {
-            Method method = GBFeaturesRepository.class
-                    .getDeclaredMethod("onResponseJson", String.class, boolean.class);
-            method.setAccessible(true);
-            return method;
-        } catch (NoSuchMethodException e) {
-            throw new IllegalStateException(e);
-        }
-    }
-
     private static GBFeaturesRepository repository(String decryptionKey) {
         return GBFeaturesRepository.builder()
                 .apiHost("http://localhost")
@@ -49,11 +34,7 @@ class GBFeaturesRepositoryOnResponseJsonTest {
     }
 
     private static void invokeOnResponseJson(GBFeaturesRepository subject, String body) throws Throwable {
-        try {
-            ON_RESPONSE_JSON.invoke(subject, body, false);
-        } catch (InvocationTargetException e) {
-            throw e.getCause();
-        }
+        RepositoryInternals.applyResponse(subject, body, false);
     }
 
     private static void assertConfigurationError(GBFeaturesRepository subject, String body) {
