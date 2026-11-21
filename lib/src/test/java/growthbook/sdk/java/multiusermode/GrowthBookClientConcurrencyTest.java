@@ -38,8 +38,8 @@ class GrowthBookClientConcurrencyTest {
         AtomicInteger subscriptionFires = new AtomicInteger(0);
         client.subscribe(new ExperimentRunCallback() {
             @Override
-            public <ValueType> void onRun(Experiment<ValueType> experiment,
-                                          growthbook.sdk.java.model.ExperimentResult<ValueType> result) {
+            public <T> void onRun(Experiment<T> experiment,
+                                          growthbook.sdk.java.model.ExperimentResult<T> result) {
                 subscriptionFires.incrementAndGet();
             }
         });
@@ -65,8 +65,8 @@ class GrowthBookClientConcurrencyTest {
                         // previously an unsynchronized ArrayList add.
                         client.subscribe(new ExperimentRunCallback() {
                             @Override
-                            public <ValueType> void onRun(Experiment<ValueType> e,
-                                                          growthbook.sdk.java.model.ExperimentResult<ValueType> r) {
+                            public <T> void onRun(Experiment<T> e,
+                                                          growthbook.sdk.java.model.ExperimentResult<T> r) {
                                 // no-op
                             }
                         });
@@ -103,8 +103,8 @@ class GrowthBookClientConcurrencyTest {
         Map<String, AtomicInteger> firesByKey = new ConcurrentHashMap<>();
         client.subscribe(new ExperimentRunCallback() {
             @Override
-            public <ValueType> void onRun(Experiment<ValueType> experiment,
-                                          growthbook.sdk.java.model.ExperimentResult<ValueType> result) {
+            public <T> void onRun(Experiment<T> experiment,
+                                          growthbook.sdk.java.model.ExperimentResult<T> result) {
                 firesByKey.computeIfAbsent(experiment.getKey(), k -> new AtomicInteger()).incrementAndGet();
             }
         });

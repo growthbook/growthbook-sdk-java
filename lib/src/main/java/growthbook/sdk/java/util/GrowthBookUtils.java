@@ -3,14 +3,15 @@ package growthbook.sdk.java.util;
 import com.google.gson.Gson;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
-import com.google.gson.JsonPrimitive;
 import growthbook.sdk.java.callback.ExperimentRunCallback;
+import growthbook.sdk.java.evaluators.internal.ForcedValues;
+import growthbook.sdk.java.evaluators.internal.bucketing.Bucketing;
+import growthbook.sdk.java.evaluators.internal.bucketing.StickyBucketPreload;
+import growthbook.sdk.java.evaluators.internal.bucketing.StickyBuckets;
 import growthbook.sdk.java.model.AssignedExperiment;
 import growthbook.sdk.java.model.BucketRange;
 import growthbook.sdk.java.model.Experiment;
 import growthbook.sdk.java.model.ExperimentResult;
-import growthbook.sdk.java.model.Feature;
-import growthbook.sdk.java.model.FeatureRule;
 import growthbook.sdk.java.model.Filter;
 import growthbook.sdk.java.model.GBContext;
 import growthbook.sdk.java.model.GeneratedStickyBucketAssignmentDocModel;
@@ -20,24 +21,22 @@ import growthbook.sdk.java.model.StickyAssignmentsDocument;
 import growthbook.sdk.java.model.StickyBucketVariation;
 import growthbook.sdk.java.model.VariationMeta;
 import growthbook.sdk.java.multiusermode.configurations.EvaluationContext;
-import growthbook.sdk.java.multiusermode.util.TransformationUtil;
-import growthbook.sdk.java.stickyBucketing.StickyBucketService;
 import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.NotNull;
 
 import javax.annotation.Nullable;
-import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Set;
 /**
  * <b>INTERNAL</b>: Implementation of for internal utility methods to support {@link growthbook.sdk.java.GrowthBook}
+ *
+ * <p>Hashing and bucketing delegate to {@link Bucketing}, URL overrides to {@link ForcedValues}
+ * and sticky bucketing to {@link StickyBuckets}; this class keeps the public entry points.
  */
 @Slf4j
 public class GrowthBookUtils {
@@ -51,34 +50,7 @@ public class GrowthBookUtils {
      * @return hashed double value or null if the hash version is unsupported.
      */
     public static @Nullable Double hash(String stringValue, Integer hashVersion, String seed) {
-        if (hashVersion == null) return null;
-
-        switch (hashVersion) {
-            case 1:
-                return hashV1(stringValue, seed);
-            case 2:
-                return hashV2(stringValue, seed);
-            default:
-                return null;
-        }
-    }
-
-    private static Double hashV1(String stringValue, String seed) {
-        long hashValue = MathUtils.fnv1a_32(stringValue + seed);
-        long thousand = 1000;
-        long remainder = hashValue % thousand;
-
-        return remainder / 1000.0;
-    }
-
-    private static Double hashV2(String stringValue, String seed) {
-        long first = MathUtils.fnv1a_32(seed + stringValue);
-        long second = MathUtils.fnv1a_32(String.valueOf(first));
-
-        long tenThousand = 10000;
-        long remainder = second % tenThousand;
-
-        return remainder / 10000.0;
+        return Bucketing.hash(stringValue, hashVersion, seed);
     }
 
     /**
@@ -87,16 +59,12 @@ public class GrowthBookUtils {
      * @param userId    The user identifier
      * @param namespace Namespace to check the user identifier against
      * @return whether the user is in the namespace
+     * @deprecated {@link Namespace} is deprecated in favour of {@link Filter}s; this stays while
+     * experiments still carry namespaces
      */
+    @Deprecated
     public static Boolean inNameSpace(String userId, Namespace namespace) {
-        Double n = hash(userId + "__", 1, namespace.getId());
-        if (n == null) return false;
-        return inRange(n, BucketRange
-                .builder()
-                .rangeStart(namespace.getRangeStart())
-                .rangeEnd(namespace.getRangeEnd())
-                .build()
-        );
+        return Bucketing.inNamespace(userId, namespace.getId(), namespace.getRangeStart(), namespace.getRangeEnd());
     }
 
     /**
@@ -108,14 +76,7 @@ public class GrowthBookUtils {
      * @return index of the {@link BucketRange} list to assign
      */
     public static Integer chooseVariation(@NotNull Double n, ArrayList<BucketRange> bucketRanges) {
-        for (int i = 0; i < bucketRanges.size(); i++) {
-            BucketRange range = bucketRanges.get(i);
-            if (inRange(n, range)) {
-                return i;
-            }
-        }
-
-        return -1;
+        return Bucketing.chooseVariation(n, bucketRanges);
     }
 
     /**
@@ -126,33 +87,12 @@ public class GrowthBookUtils {
      * @return A list of variations
      */
     public static ArrayList<Double> getEqualWeights(Integer numberOfVariations) {
-        // Accommodate -1 number of variations
-        int size = Math.max(0, numberOfVariations);
-        if (size == 0) {
-            return new ArrayList<>();
-        }
-
-        Double weight = 1.0 / numberOfVariations;
-        return new ArrayList<>(Collections.nCopies(size, weight));
+        return new ArrayList<>(Bucketing.getEqualWeights(numberOfVariations));
     }
-
-    // region Experiment for query string
 
     /**
      * This checks if an experiment variation is being forced via a URL query string.
-     * This may not be applicable for all SDKs (e.g. mobile).
-     * <p>
-     * As an example, if the id is my-test and url is <a href="http://localhost/?my-test=1">...</a>,
-     * it would return 1.
-     * <p>
-     * Returns null if any of these are true:
-     *
-     * <ul>
-     *     <li>There is no query string</li>
-     *     <li>The id is not a key in the query string</li>
-     *     <li>The variation is not an integer</li>
-     *     <li>The variation is less than 0 or greater than or equal to numVariations</li>
-     * </ul>
+     * See {@link ForcedValues#getQueryStringOverride(String, String, Integer)}.
      *
      * @param id                 the identifier
      * @param urlString          the desired page URL as a string
@@ -161,33 +101,12 @@ public class GrowthBookUtils {
      */
     @Nullable
     public static Integer getQueryStringOverride(String id, String urlString, Integer numberOfVariations) {
-        if (urlString == null || urlString.isEmpty()) {
-            return null;
-        }
-        try {
-            URL url = new URL(urlString);
-            return getQueryStringOverride(id, url, numberOfVariations);
-        } catch (MalformedURLException e) {
-            log.error(e.getMessage(), e);
-            return null;
-        }
+        return ForcedValues.getQueryStringOverride(id, urlString, numberOfVariations);
     }
 
     /**
      * This checks if an experiment variation is being forced via a URL query string.
-     * This may not be applicable for all SDKs (e.g. mobile).
-     * <p>
-     * As an example, if the id is my-test and url is <a href="http://localhost/?my-test=1">...</a>,
-     * it would return 1.
-     * <p>
-     * Returns null if any of these are true:
-     *
-     * <ul>
-     *     <li>There is no query string</li>
-     *     <li>The id is not a key in the query string</li>
-     *     <li>The variation is not an integer</li>
-     *     <li>The variation is less than 0 or greater than or equal to numVariations</li>
-     * </ul>
+     * See {@link ForcedValues#getQueryStringOverride(String, URL, Integer)}.
      *
      * @param id                 the identifier
      * @param url                the desired page URL
@@ -196,51 +115,8 @@ public class GrowthBookUtils {
      */
     @Nullable
     public static Integer getQueryStringOverride(String id, URL url, Integer numberOfVariations) {
-        String query = url.getQuery();
-        Map<String, String> queryMap = UrlUtils.parseQueryString(query);
-
-        String possibleValue = queryMap.get(id);
-        if (possibleValue == null) {
-            return null;
-        }
-
-        try {
-            int variationValue = Integer.parseInt(possibleValue);
-            if (variationValue < 0 || variationValue >= numberOfVariations) {
-                return null;
-            }
-
-            return variationValue;
-        } catch (NumberFormatException e) {
-            log.error(e.getMessage(), e);
-            return null;
-        }
+        return ForcedValues.getQueryStringOverride(id, url, numberOfVariations);
     }
-
-    // endregion Experiment for query string
-
-
-    // region Forced feature for URL
-
-    /**
-     * Given a URL and a feature key, will find the raw value in the URL if it exists, otherwise returns null
-     *
-     * @param featureKey Feature ID/key (not prefixed with gb~)
-     * @param url        Page URL to evaluate for forced feature values
-     * @return forced feature value
-     */
-    private static @Nullable String getForcedFeatureRawValueForKeyFromUrl(String featureKey, URL url) {
-        String prefixedKey = "gb~" + featureKey;
-        Map<String, String> queryMap = UrlUtils.parseQueryString(url.getQuery());
-
-        if (!queryMap.containsKey(prefixedKey)) {
-            return null;
-        }
-
-        return queryMap.get(prefixedKey);
-    }
-
-    // region Forced feature for URL -> Boolean
 
     /**
      * Evaluate a forced boolean value from a URL. If the provided key is not present in the URL, return null.
@@ -251,26 +127,8 @@ public class GrowthBookUtils {
      */
     @Nullable
     public static Boolean getForcedBooleanValueFromUrl(String featureKey, URL url) {
-        String value = getForcedFeatureRawValueForKeyFromUrl(featureKey, url);
-
-        if (value == null) return null;
-
-        value = value.toLowerCase();
-
-        if (value.equals("true") || value.equals("1") || value.equals("on")) {
-            return true;
-        }
-
-        if (value.equals("false") || value.equals("0") || value.equals("off")) {
-            return false;
-        }
-
-        return null;
+        return ForcedValues.getForcedBooleanValueFromUrl(featureKey, url);
     }
-
-    // endregion Forced feature for URL -> Boolean
-
-    // region Forced feature for URL -> String
 
     /**
      * Evaluate a forced string value from a URL. If the provided key is not present in the URL, return null.
@@ -281,12 +139,8 @@ public class GrowthBookUtils {
      */
     @Nullable
     public static String getForcedStringValueFromUrl(String featureKey, URL url) {
-        return getForcedFeatureRawValueForKeyFromUrl(featureKey, url);
+        return ForcedValues.getForcedStringValueFromUrl(featureKey, url);
     }
-
-    // endregion Forced feature for URL -> String
-
-    // region Forced feature for URL -> Float
 
     /**
      * Evaluate a forced float value from a URL. If the provided key is not present in the URL, return null.
@@ -297,25 +151,11 @@ public class GrowthBookUtils {
      */
     @Nullable
     public static Float getForcedFloatValueFromUrl(String featureKey, URL url) {
-        String value = getForcedFeatureRawValueForKeyFromUrl(featureKey, url);
-
-        if (value == null) return null;
-
-        try {
-            return Float.parseFloat(value);
-        } catch (NumberFormatException e) {
-            log.error(e.getMessage(), e);
-            return null;
-        }
+        return ForcedValues.getForcedFloatValueFromUrl(featureKey, url);
     }
 
-    // endregion Forced feature for URL -> Float
-
-
-    // region Forced feature for URL -> Double
-
     /**
-     * Evaluate a forced float value from a URL. If the provided key is not present in the URL, return null.
+     * Evaluate a forced double value from a URL. If the provided key is not present in the URL, return null.
      *
      * @param featureKey feature ID/key (not prefixed with gb~)
      * @param url        Page URL to evaluate for forced feature values
@@ -323,22 +163,8 @@ public class GrowthBookUtils {
      */
     @Nullable
     public static Double getForcedDoubleValueFromUrl(String featureKey, URL url) {
-        String value = getForcedFeatureRawValueForKeyFromUrl(featureKey, url);
-
-        if (value == null) return null;
-
-        try {
-            return Double.parseDouble(value);
-        } catch (NumberFormatException e) {
-            log.error(e.getMessage(), e);
-            return null;
-        }
+        return ForcedValues.getForcedDoubleValueFromUrl(featureKey, url);
     }
-
-    // endregion Forced feature for URL -> Double
-
-
-    // region Forced feature for URL -> Integer
 
     /**
      * Evaluate a forced integer value from a URL. If the provided key is not present in the URL, return null.
@@ -349,39 +175,13 @@ public class GrowthBookUtils {
      */
     @Nullable
     public static Integer getForcedIntegerValueFromUrl(String featureKey, URL url) {
-        String value = getForcedFeatureRawValueForKeyFromUrl(featureKey, url);
-
-        if (value == null) return null;
-
-        try {
-            return Integer.parseInt(value);
-        } catch (NumberFormatException e) {
-            log.error(e.getMessage(), e);
-            return null;
-        }
+        return ForcedValues.getForcedIntegerValueFromUrl(featureKey, url);
     }
-
-    // endregion Forced feature for URL -> Integer
-
-    // region Forced feature for URL -> Objects
 
     @Nullable
-    public static <ValueType> ValueType getForcedSerializableValueFromUrl(String featureKey, URL url, Class<ValueType> valueTypeClass, Gson gson) {
-        String value = getForcedFeatureRawValueForKeyFromUrl(featureKey, url);
-
-        if (value == null) return null;
-
-        try {
-            return gson.fromJson(value, valueTypeClass);
-        } catch (Exception e) {
-            log.error(e.getMessage(), e);
-            return null;
-        }
+    public static <T> T getForcedSerializableValueFromUrl(String featureKey, URL url, Class<T> valueTypeClass, Gson gson) {
+        return ForcedValues.getForcedSerializableValueFromUrl(featureKey, url, valueTypeClass, gson);
     }
-
-    // endregion Forced feature for URL -> Objects
-
-    // endregion Forced feature for URL
 
     /**
      * This converts and experiment's coverage and variation weights into an array of bucket ranges.
@@ -397,117 +197,43 @@ public class GrowthBookUtils {
             @NotNull Double coverage,
             @Nullable ArrayList<Double> weights
     ) {
-        double clampedCoverage = MathUtils.clamp(coverage, 0.0, 1.0);
-
-        // When the number of variations doesn't match the weights provided, ignore the weights and get equal weights.
-        ArrayList<Double> adjustedWeights = weights;
-        if (weights == null || numberOfVariations != weights.size()) {
-            adjustedWeights = getEqualWeights(numberOfVariations);
-        }
-
-        // When the sums of the weights are not equal to 1, ignore the weights and get equal weights
-        double sumOfWeights = MathUtils.sum(adjustedWeights);
-        if (sumOfWeights < 0.99 || sumOfWeights > 1.01) {
-            adjustedWeights = getEqualWeights(numberOfVariations);
-        }
-
-        double start;
-        double cumulative = 0.0;
-        ArrayList<BucketRange> bucketRanges = new ArrayList<>();
-
-        for (double weight : adjustedWeights) {
-            start = cumulative;
-            cumulative += weight;
-
-            BucketRange bucketRange = BucketRange
-                    .builder()
-                    .rangeStart(start)
-                    .rangeEnd(start + clampedCoverage * weight)
-                    .build();
-
-            bucketRanges.add(bucketRange);
-        }
-
-        return bucketRanges;
+        return new ArrayList<>(Bucketing.getBucketRanges(numberOfVariations, coverage, weights));
     }
 
     /**
-     * Determines if a number n is within the provided range.
-     * Verifies if the provided double is within the lower (inclusive) and upper (exclusive) bounds of
-     * the provided {@link BucketRange}.
+     * Determines if a number n is within the provided range: lower bound inclusive, upper bound exclusive.
      *
      * @param n     Double value to check if it's in range
      * @param range {@link BucketRange}
      * @return whether to include this hash value is within range. Returns false if either arguments are null.
      */
     public static Boolean inRange(Double n, BucketRange range) {
-        if (n == null || range == null) return false;
-        return n >= range.getRangeStart() && n < range.getRangeEnd();
+        return Bucketing.inRange(n, range);
     }
 
     /**
      * Evaluates whether a user should be filtered out based on the given filters.
-     * <p>
-     * This method processes each filter in the provided list and performs the following steps:
-     * <ul>
-     *     <li>Iterates through the list of filters.</li>
-     *     <li>Retrieves the hash attribute and hash value from the user attributes.</li>
-     *     <li>If the hash value is empty, the user is filtered out (returns {@code true}).</li>
-     *     <li>Computes a hash-based bucket value for the user.</li>
-     *     <li>If none of the specified bucket ranges match, the user is filtered out.</li>
-     * </ul>
-     * If all filters are processed without an early return, the method returns {@code false}, meaning the user is not filtered out.
+     * See {@link Bucketing#isFilteredOut(List, JsonObject)}.
      *
      * @param filters    The list of {@link Filter} objects that define filtering criteria.
      * @param attributes A {@link JsonObject} containing user attributes.
      * @return {@code true} if the user is filtered out, otherwise {@code false}.
      */
     public static Boolean isFilteredOut(List<Filter> filters, JsonObject attributes) {
-        if (filters == null) return false;
-        if (attributes == null) return false;
-
-        return filters.stream().anyMatch(filter -> {
-            String hashAttribute = filter.getAttribute();
-            if (hashAttribute == null) {
-                hashAttribute = "id";
-            }
-
-            String hashValue = toHashValue(attributes.get(hashAttribute));
-            if (hashValue.isEmpty()) return true;
-
-            Integer hashVersion = filter.getHashVersion();
-            if (hashVersion == null) {
-                hashVersion = 2;
-            }
-
-            Double n = GrowthBookUtils.hash(hashValue, hashVersion, filter.getSeed());
-            if (n == null) return true;
-
-            List<BucketRange> ranges = filter.getRanges();
-            if (ranges == null) return true;
-
-            return ranges.stream().noneMatch(range -> GrowthBookUtils.inRange(n, range));
-        });
+        return Bucketing.isFilteredOut(filters, attributes);
     }
 
     /**
      * Determines if the user is part of a gradual feature rollout.
-     * <ul>
-     *     <li>Either coverage or range are required. If both are null, return true immediately</li>
-     *     <li>If range is null and coverage is zero, return false immediately.
-     *     This catches an edge case where the bucket is zero and users are let through when they shouldn't be</li>
-     *     <li>If hashValue is empty, return false immediately</li>
-     *     <li>With a coverage, the user is included when their hash is below it, so a coverage of
-     *     k/10000 includes exactly k hash buckets</li>
-     * </ul>
+     * See {@link Bucketing#isIncludedInRollout}.
      *
-     * @param attributes JsonObject
-     * @param seed               String
-     * @param hashAttribute      String
-     * @param fallbackAttribute  String
-     * @param range              BucketRange
-     * @param coverage           Double
-     * @param hashVersion        Integer
+     * @param attributes        JsonObject
+     * @param seed              String
+     * @param hashAttribute     String
+     * @param fallbackAttribute String
+     * @param range             BucketRange
+     * @param coverage          Double
+     * @param hashVersion       Integer
      * @return Boolean - check if user is included
      */
     public static Boolean isIncludedInRollout(
@@ -519,36 +245,7 @@ public class GrowthBookUtils {
             @Nullable Double coverage,
             @Nullable Integer hashVersion
     ) {
-        if (range == null && coverage == null) return true;
-        if (range == null && coverage == 0) return false;
-
-        if (hashVersion == null) {
-            hashVersion = 1;
-        }
-
-        //Get the hashAttribute and hashValue
-        HashAttributeAndHashValue hashAttributeAndHashValue = GrowthBookUtils
-                .getHashAttribute(hashAttribute, fallbackAttribute, attributes);
-
-        String hashValue = hashAttributeAndHashValue.getHashValue();
-        if (hashValue == null || hashValue.isEmpty()) {
-            return false;
-        }
-
-        // Determine the bucket for the user
-        Double hash = GrowthBookUtils.hash(
-                hashValue,
-                hashVersion,
-                seed
-        );
-
-        if (hash == null) return false;
-
-        if (range != null) {
-            return GrowthBookUtils.inRange(hash, range);
-        } else {
-            return hash < coverage;
-        }
+        return Bucketing.isIncludedInRollout(attributes, seed, hashAttribute, fallbackAttribute, range, coverage, hashVersion);
     }
 
     /**
@@ -561,7 +258,7 @@ public class GrowthBookUtils {
     public static void refreshStickyBuckets(GBContext context,
                                             String featuresDataModel,
                                             JsonObject attributeOverrides) {
-        loadStickyBuckets(context, featuresDataModel, attributeOverrides);
+        StickyBucketPreload.refreshStickyBuckets(context, featuresDataModel, attributeOverrides);
     }
 
     /**
@@ -578,27 +275,7 @@ public class GrowthBookUtils {
     public static boolean loadStickyBuckets(GBContext context,
                                             String featuresDataModel,
                                             JsonObject attributeOverrides) {
-        StickyBucketService stickyBucketService = context.getStickyBucketService();
-        if (stickyBucketService == null) {
-            log.debug("refreshStickyBuckets: sticky bucket service not configured, skipping refresh.");
-            return true;
-        }
-        Map<String, String> stickyBucketAttributes =
-                getStickyBucketAttributes(
-                        context,
-                        featuresDataModel,
-                        attributeOverrides
-                );
-
-        try {
-            context.setStickyBucketAssignmentDocs(stickyBucketService.getAllAssignments(stickyBucketAttributes));
-            return true;
-        } catch (RuntimeException e) {
-            log.warn("Sticky bucket service failed to load assignments; continuing with normal bucketing"
-                    + " and not saving assignments until they load.", e);
-            context.setStickyBucketAssignmentDocs(new HashMap<>());
-            return false;
-        }
+        return StickyBucketPreload.loadStickyBuckets(context, featuresDataModel, attributeOverrides);
     }
 
     /**
@@ -612,73 +289,7 @@ public class GrowthBookUtils {
     public static Map<String, String> getStickyBucketAttributes(GBContext context,
                                                                 String featuresDataModel,
                                                                 JsonObject attributeOverrides) {
-        Map<String, String> attributes = new HashMap<>();
-
-        List<String> identifierAttributes = deriveStickyBucketIdentifierAttributes(context, featuresDataModel);
-
-        for (String attr : identifierAttributes) {
-            HashAttributeAndHashValue hashAttribute = getHashAttribute(
-                    attr,
-                    null,
-                    attributeOverrides
-            );
-            attributes.put(attr, hashAttribute.getHashValue());
-        }
-
-        return attributes;
-    }
-
-    /**
-     * Supportive method to get attribute values from the context if identifiers are missing.
-     *
-     * @param context          {@link GBContext} The context containing user attributes.
-     * @param featureDataModel A string representing the feature data model.
-     * @return {@code List<String>} A list of sticky bucket identifiers.
-     */
-    private static <ValueType> List<String> deriveStickyBucketIdentifierAttributes(
-            GBContext context,
-            String featureDataModel
-    ) {
-        Set<String> attributes = new HashSet<>();
-
-        Map<String, Feature<?>> features = context.getFeatures();
-
-        if (featureDataModel != null && !featureDataModel.isEmpty()) {
-            JsonObject jsonObject = GrowthBookJsonUtils.getInstance()
-                    .gson.fromJson(featureDataModel, JsonObject.class);
-            if (jsonObject != null && jsonObject.has("features") && jsonObject.get("features") != null) {
-                String featuresStringJson = jsonObject.get("features").toString().trim();
-                Map<String, Feature<?>> featuresMap = TransformationUtil.transformFeatures(featuresStringJson);
-                if (!featuresMap.isEmpty()) {
-                    features = featuresMap;
-                }
-            }
-        }
-
-        if (features != null) {
-            for (Map.Entry<String, Feature<?>> entry : features.entrySet()) {
-                Feature<ValueType> feature = (Feature<ValueType>) entry.getValue();
-
-                if (feature != null && feature.getRules() != null) {
-
-                    for (FeatureRule<ValueType> rule : feature.getRules()) {
-                        ArrayList<ValueType> variations = rule.getVariations();
-
-                        if (variations != null && !variations.isEmpty()) {
-                            String attr = rule.getHashAttribute() != null ? rule.getHashAttribute() : "id";
-                            attributes.add(attr);
-
-                            String fallbackAttribute = rule.getFallbackAttribute();
-                            if (fallbackAttribute != null) {
-                                attributes.add(fallbackAttribute);
-                            }
-                        }
-                    }
-                }
-            }
-        }
-
-        return new ArrayList<>(attributes);
+        return StickyBucketPreload.getStickyBucketAttributes(context, featuresDataModel, attributeOverrides);
     }
 
     /**
@@ -695,44 +306,7 @@ public class GrowthBookUtils {
             @Nullable String expHashAttribute,
             @Nullable String expFallbackAttribute
     ) {
-        Map<String, String> mergedAssignments = new HashMap<>();
-
-        if (context.getUser().getStickyBucketAssignmentDocs() == null) {
-            return mergedAssignments;
-        }
-
-        HashAttributeAndHashValue hashAttributeAndHashValueWithoutFallbackPass = getHashAttribute(
-                expHashAttribute,
-                null,
-                context.getUser().getAttributes()
-        );
-        String hashKey = hashAttributeAndHashValueWithoutFallbackPass.getHashAttribute() + "||"
-                + hashAttributeAndHashValueWithoutFallbackPass.getHashValue();
-
-        HashAttributeAndHashValue hashAttributeAndHashValueWithFallbackAttribute = getHashAttribute(
-                expFallbackAttribute,
-                null,
-                context.getUser().getAttributes()
-        );
-        String fallBackKey = hashAttributeAndHashValueWithFallbackAttribute.getHashValue().isEmpty()
-                ? null
-                : hashAttributeAndHashValueWithFallbackAttribute.getHashAttribute()
-                + "||"
-                + hashAttributeAndHashValueWithFallbackAttribute.getHashValue();
-
-        Map<String, StickyAssignmentsDocument> stickyAssignmentsDocuments = context.getUser().getStickyBucketAssignmentDocs();
-
-        if (fallBackKey != null) {
-            if (stickyAssignmentsDocuments.get(fallBackKey) != null) {
-                mergedAssignments.putAll(stickyAssignmentsDocuments.get(fallBackKey).getAssignments());
-            }
-        }
-
-        if (stickyAssignmentsDocuments.get(hashKey) != null) {
-            mergedAssignments.putAll(stickyAssignmentsDocuments.get(hashKey).getAssignments());
-        }
-
-        return mergedAssignments;
+        return StickyBuckets.getStickyBucketAssignments(context, expHashAttribute, expFallbackAttribute);
     }
 
     /**
@@ -756,42 +330,8 @@ public class GrowthBookUtils {
             @Nullable Integer minExperimentBucketVersion,
             @Nullable List<VariationMeta> meta
     ) {
-        if (experimentBucketVersion == null) {
-            experimentBucketVersion = 0;
-        }
-        if (minExperimentBucketVersion == null) {
-            minExperimentBucketVersion = 0;
-        }
-        if (meta == null) {
-            meta = new ArrayList<>();
-        }
-        String id = getStickyBucketExperimentKey(experimentKey, experimentBucketVersion);
-        Map<String, String> assignments = getStickyBucketAssignments(
-                context,
-                experimentHashAttribute,
-                experimentFallbackAttribute);
-
-        if (minExperimentBucketVersion > 0) {
-            // users with any blocked bucket version (0 to minExperimentBucketVersion - 1) are excluded from the test
-            for (int i = 0; i < minExperimentBucketVersion; i++) {
-                String blockedKey = getStickyBucketExperimentKey(experimentKey, i);
-                if (assignments.containsKey(blockedKey)) {
-                    return new StickyBucketVariation(-1, true);
-                }
-            }
-        }
-
-        String variationKey = assignments.get(id);
-        if (variationKey == null) {
-            return new StickyBucketVariation(-1, null);
-        }
-        int variationIndex = findVariationIndex(meta, variationKey);
-
-        if (variationIndex != -1) {
-            return new StickyBucketVariation(variationIndex, null);
-        } else {
-            return new StickyBucketVariation(-1, null);
-        }
+        return StickyBuckets.getStickyBucketVariation(context, experimentKey, experimentHashAttribute,
+                experimentFallbackAttribute, experimentBucketVersion, minExperimentBucketVersion, meta);
     }
 
     /**
@@ -805,20 +345,16 @@ public class GrowthBookUtils {
             String experimentKey,
             @Nullable Integer experimentBucketVersion
     ) {
-        if (experimentBucketVersion == null) {
-            experimentBucketVersion = 0;
-        }
-        return experimentKey + "__" + experimentBucketVersion;
+        return StickyBuckets.getStickyBucketExperimentKey(experimentKey, experimentBucketVersion);
     }
 
     /**
      * Method for generating a Sticky Bucket Assignment document.
-     * Optimized to avoid unnecessary HashMap copies: detects changes before allocation.
      *
      * @param stickyBucketAssignmentDocs {@code Map<String, StickyAssignmentsDocument>}
-     * @param attributeName  String
-     * @param attributeValue String
-     * @param assignments    {@code Map<String, String>}
+     * @param attributeName              String
+     * @param attributeValue             String
+     * @param assignments                {@code Map<String, String>}
      * @return {@link GeneratedStickyBucketAssignmentDocModel}
      */
     public static GeneratedStickyBucketAssignmentDocModel generateStickyBucketAssignmentDoc(
@@ -827,41 +363,15 @@ public class GrowthBookUtils {
             String attributeValue,
             Map<String, String> assignments
     ) {
-        String key = attributeName + "||" + attributeValue;
-        Map<String, String> existingAssignments = new HashMap<>();
-        if (stickyBucketAssignmentDocs != null && stickyBucketAssignmentDocs.get(key) != null) {
-            existingAssignments = stickyBucketAssignmentDocs.get(key).getAssignments();
-        }
-
-        // Detect changes before allocating a new map. This avoids O(|assignments|) copies
-        // for experiments with no new assignments.
-        boolean hasChanges = false;
-        for (Map.Entry<String, String> entry : assignments.entrySet()) {
-            if (!Objects.equals(entry.getValue(), existingAssignments.get(entry.getKey()))) {
-                hasChanges = true;
-                break;
-            }
-        }
-
-        if (!hasChanges) {
-            // No changes detected, reuse existing assignments without allocation
-            StickyAssignmentsDocument doc = new StickyAssignmentsDocument(attributeName, attributeValue, existingAssignments);
-            return new GeneratedStickyBucketAssignmentDocModel(key, doc, false);
-        }
-
-        // Changes detected: allocate merged map
-        Map<String, String> newAssignments = new HashMap<>(existingAssignments);
-        newAssignments.putAll(assignments);
-        StickyAssignmentsDocument stickyAssignmentsDocument = new StickyAssignmentsDocument(attributeName, attributeValue, newAssignments);
-        return new GeneratedStickyBucketAssignmentDocModel(key, stickyAssignmentsDocument, true);
+        return StickyBuckets.generateStickyBucketAssignmentDoc(stickyBucketAssignmentDocs, attributeName, attributeValue, assignments);
     }
 
     /**
      * Method for get hash value by identifier. User attribute used for hashing, defaulting to id if not set.
      *
-     * @param attr               String
-     * @param fallbackAttribute  String
-     * @param attributes JsonObject
+     * @param attr              String
+     * @param fallbackAttribute String
+     * @param attributes        JsonObject
      * @return {@link HashAttributeAndHashValue}
      */
     public static HashAttributeAndHashValue getHashAttribute(
@@ -869,56 +379,11 @@ public class GrowthBookUtils {
             @Nullable String fallbackAttribute,
             JsonObject attributes
     ) {
-        String hashAttribute = attr != null ? attr : "id";
-        String hashValue = attributes != null ? toHashValue(attributes.get(hashAttribute)) : "";
-
-        if (hashValue.isEmpty() && fallbackAttribute != null && attributes != null) {
-            hashValue = toHashValue(attributes.get(fallbackAttribute));
-
-            if (!hashValue.isEmpty()) {
-                hashAttribute = fallbackAttribute;
-            }
-        }
-
-        return new HashAttributeAndHashValue(hashAttribute, hashValue);
+        return Bucketing.getHashAttribute(attr, fallbackAttribute, attributes);
     }
 
-    /**
-     * Converts an attribute value to the string that gets hashed, like the JS SDK: a non-empty
-     * string as is, and a finite, non-zero number formatted like JS {@code String(number)}, so
-     * {@code 1.0} hashes as {@code "1"}. Any other value, including {@code 0}, booleans, null,
-     * arrays and objects, counts as missing.
-     *
-     * @param value the attribute value, or null when the attribute is absent
-     * @return the value to hash, or an empty string when the attribute counts as missing
-     */
     static String toHashValue(@Nullable JsonElement value) {
-        if (value == null || !value.isJsonPrimitive()) {
-            return "";
-        }
-        JsonPrimitive primitive = value.getAsJsonPrimitive();
-        if (primitive.isString()) {
-            return primitive.getAsString();
-        }
-        if (primitive.isNumber()) {
-            double number = primitive.getAsDouble();
-            if (number == 0 || Double.isNaN(number) || Double.isInfinite(number)) {
-                return "";
-            }
-            return StringUtils.jsNumberToString(number);
-        }
-        return "";
-    }
-
-    private static int findVariationIndex(List<VariationMeta> meta, String variationKey) {
-        for (int i = 0; i < meta.size(); i++) {
-            if (meta.get(i).getKey() != null) {
-                if (Objects.equals(meta.get(i).getKey(), variationKey)) {
-                    return i;
-                }
-            }
-        }
-        return -1;
+        return Bucketing.toHashValue(value);
     }
 
     public static <K, V> Map<K, V> mergeMaps(@Nullable List<Map<K, V>> maps) {
@@ -950,10 +415,10 @@ public class GrowthBookUtils {
      */
     private static final String KEYED_EXPERIMENT_PREFIX = "key:";
 
-    public static <ValueType> void fireSubscriptions(Map<String, AssignedExperiment> assigned,
+    public static <T> void fireSubscriptions(Map<String, AssignedExperiment> assigned,
                                                      List<ExperimentRunCallback> callbacks,
-                                                     Experiment<ValueType> experiment,
-                                                     ExperimentResult<ValueType> result
+                                                     Experiment<T> experiment,
+                                                     ExperimentResult<T> result
     ) {
         // A key-less experiment needs a non-null stand-in: this dedup map may be a ConcurrentHashMap
         // (GrowthBookClient) which rejects null keys, even though GrowthBook's plain HashMap tolerates

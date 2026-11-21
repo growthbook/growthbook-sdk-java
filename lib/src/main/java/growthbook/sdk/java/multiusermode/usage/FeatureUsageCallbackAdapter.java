@@ -15,7 +15,7 @@ public class FeatureUsageCallbackAdapter implements FeatureUsageCallbackWithUser
     }
 
     @Override
-    public <ValueType> void onFeatureUsage(String featureKey, FeatureResult<ValueType> result, UserContext userContext) {
+    public <T> void onFeatureUsage(String featureKey, FeatureResult<T> result, UserContext userContext) {
         // Delegate call to the old callback, ignoring the new userContext parameter
         if (featureUsageCallback != null) {
             featureUsageCallback.onFeatureUsage(featureKey, result);

@@ -2,12 +2,12 @@ package growthbook.sdk.java.model;
 
 import javax.annotation.Nullable;
 
-public class OptionalField<ValueType> {
+public class OptionalField<T> {
     private final boolean isPresent;
     @Nullable
-    private final ValueType value;
+    private final T value;
 
-    public OptionalField(boolean isPresent, @Nullable ValueType value) {
+    public OptionalField(boolean isPresent, @Nullable T value) {
         this.isPresent = isPresent;
         this.value = value;
     }
@@ -17,7 +17,7 @@ public class OptionalField<ValueType> {
     }
 
     @Nullable
-    public ValueType getValue() {
+    public T getValue() {
         return value;
     }
 }

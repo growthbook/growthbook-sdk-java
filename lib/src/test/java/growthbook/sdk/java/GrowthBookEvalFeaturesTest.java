@@ -90,7 +90,7 @@ class GrowthBookEvalFeaturesTest {
                 // onFeatureUsage is a generic method, so this cannot be a lambda.
                 .featureUsageCallback(new FeatureUsageCallback() {
                     @Override
-                    public <ValueType> void onFeatureUsage(String featureKey, FeatureResult<ValueType> result) {
+                    public <T> void onFeatureUsage(String featureKey, FeatureResult<T> result) {
                         usage.add(featureKey);
                     }
                 })

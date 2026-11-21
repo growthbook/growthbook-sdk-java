@@ -29,12 +29,12 @@ import java.util.Collection;
  * <li>experimentResult (ExperimentResult or null) - When source is "experiment", this will be an ExperimentResult object</li>
  * </ul>
  *
- * @param <ValueType> value type for the feature
+ * @param <T> value type for the feature
  */
 @Data
 @Builder
 @AllArgsConstructor
-public class FeatureResult<ValueType> {
+public class FeatureResult<T> {
 
     /**
      * The assigned value of the feature
@@ -54,13 +54,13 @@ public class FeatureResult<ValueType> {
      * When source is "experiment", this will be the Experiment object used
      */
     @Nullable
-    Experiment<ValueType> experiment;
+    Experiment<T> experiment;
 
     /**
      * When source is "experiment", this will be an ExperimentResult object
      */
     @Nullable
-    ExperimentResult<ValueType> experimentResult;
+    ExperimentResult<T> experimentResult;
 
     /**
      * Unique identifier of rule
@@ -142,10 +142,10 @@ public class FeatureResult<ValueType> {
      * Get a Gson JsonElement of the {@link FeatureResult}
      *
      * @param object      {@link FeatureResult}
-     * @param <ValueType> value type for the feature
+     * @param <T> value type for the feature
      * @return a Gson JsonElement
      */
-    public static <ValueType> JsonElement getJson(FeatureResult<ValueType> object) {
+    public static <T> JsonElement getJson(FeatureResult<T> object) {
         JsonObject jsonObject = new JsonObject();
         JsonPrimitive isOn = new JsonPrimitive(object.isOn());
         JsonPrimitive isOff = new JsonPrimitive(object.isOff());
@@ -156,11 +156,11 @@ public class FeatureResult<ValueType> {
         JsonElement valueElement = GrowthBookJsonUtils.getInstance().gson.toJsonTree(value);
         jsonObject.add("value", valueElement);
 
-        Experiment<ValueType> experiment = object.getExperiment();
+        Experiment<T> experiment = object.getExperiment();
         JsonElement experimentElement = GrowthBookJsonUtils.getInstance().gson.toJsonTree(experiment);
         jsonObject.add("experiment", experimentElement);
 
-        ExperimentResult<ValueType> experimentResult = object.getExperimentResult();
+        ExperimentResult<T> experimentResult = object.getExperimentResult();
         JsonElement experimentResultElement = GrowthBookJsonUtils.getInstance().gson.toJsonTree(experimentResult);
         jsonObject.add("experimentResult", experimentResultElement);
 
@@ -176,10 +176,10 @@ public class FeatureResult<ValueType> {
     /**
      * a Gson serializer for {@link FeatureResult}
      *
-     * @param <ValueType> {@link FeatureResult}
+     * @param <T> {@link FeatureResult}
      * @return Gson serializer
      */
-    public static <ValueType> JsonSerializer<FeatureResult<ValueType>> getSerializer() {
+    public static <T> JsonSerializer<FeatureResult<T>> getSerializer() {
         return (src, typeOfSrc, context) -> FeatureResult.getJson(src);
     }
 }

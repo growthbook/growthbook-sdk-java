@@ -1,6 +1,8 @@
 package growthbook.sdk.java.evaluators;
 
 import com.google.gson.JsonElement;
+import growthbook.sdk.java.evaluators.internal.condition.CondParser;
+import growthbook.sdk.java.evaluators.internal.condition.CondScope;
 import lombok.Getter;
 
 import javax.annotation.Nullable;
@@ -10,35 +12,32 @@ import java.util.Map;
 /**
  * <b>INTERNAL</b>: Top-level logical operators that may appear as keys in a condition object.
  *
- * <p>Each constant carries the strategy that combines its operand against the user attributes.
- * Conditions are recursive, so a strategy receives the {@link ConditionEvaluator} and calls back
- * into it for nested sub-conditions (the Interpreter pattern). Adding a logical operator is a
- * single entry here.</p>
- *
  * <p>Strategies return {@code true}, {@code false}, or {@code null} when the result depends on an
  * operator or saved group type this SDK doesn't support. {@code null} stays {@code null} under
  * {@code $not} and {@code $nor}, so negating an unsupported condition never makes it pass.</p>
+ *
+ * <p>Evaluation itself parses conditions with {@link CondParser}; each strategy delegates there.</p>
+ *
+ * @deprecated nothing in the SDK uses this enum any more; evaluate conditions with
+ * {@link ConditionEvaluator#evaluateCondition}. It will be removed in a future release.
  */
+@Deprecated
 @Getter
 public enum Condition {
 
-    OR("$or", (attributes, value, scope, evaluator) ->
-            ConditionArrayMatcher.anyMatches(attributes, value.getAsJsonArray(), scope, evaluator)),
-    NOR("$nor", (attributes, value, scope, evaluator) ->
-            ConditionEvaluator.not(ConditionArrayMatcher.anyMatches(attributes, value.getAsJsonArray(), scope, evaluator))),
-    AND("$and", (attributes, value, scope, evaluator) ->
-            ConditionArrayMatcher.allMatch(attributes, value.getAsJsonArray(), scope, evaluator)),
-    NOT("$not", (attributes, value, scope, evaluator) ->
-            ConditionEvaluator.not(evaluator.evalCondition(attributes, value.getAsJsonObject(), scope)));
+    OR("$or"),
+    NOR("$nor"),
+    AND("$and"),
+    NOT("$not");
 
     /**
-     * Combines a logical operator's operand against the user attributes, recursing through the
-     * evaluator for nested sub-conditions. Returns {@code null} when the result is unknown.
+     * Combines a logical operator's operand against the user attributes. Returns {@code null}
+     * when the result is unknown.
      */
     @FunctionalInterface
     interface Strategy {
         @Nullable
-        Boolean apply(@Nullable JsonElement attributes, JsonElement value, ConditionEvaluator.Scope scope, ConditionEvaluator evaluator);
+        Boolean apply(@Nullable JsonElement attributes, JsonElement value, CondScope scope);
     }
 
     private static final Map<String, Condition> BY_VALUE = new HashMap<>();
@@ -52,9 +51,9 @@ public enum Condition {
     private final String conditionValue;
     private final Strategy strategy;
 
-    Condition(String conditionValue, Strategy strategy) {
+    Condition(String conditionValue) {
         this.conditionValue = conditionValue;
-        this.strategy = strategy;
+        this.strategy = (attributes, value, scope) -> CondParser.parseEntry(conditionValue, value).eval(attributes, scope);
     }
 
     /**
@@ -67,7 +66,7 @@ public enum Condition {
     }
 
     @Nullable
-    Boolean apply(@Nullable JsonElement attributes, JsonElement value, ConditionEvaluator.Scope scope, ConditionEvaluator evaluator) {
-        return strategy.apply(attributes, value, scope, evaluator);
+    Boolean apply(@Nullable JsonElement attributes, JsonElement value, CondScope scope) {
+        return strategy.apply(attributes, value, scope);
     }
 }
