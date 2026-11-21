@@ -21,11 +21,11 @@ import growthbook.sdk.java.stickyBucketing.StickyBucketService;
 import growthbook.sdk.java.util.ForcedVariationsUtils;
 import lombok.Builder;
 import lombok.Data;
+import lombok.ToString;
 import lombok.extern.slf4j.Slf4j;
 
 import javax.annotation.Nullable;
 import java.time.Duration;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Executor;
@@ -338,7 +338,11 @@ public class Options {
         );
     }
 
-    @Builder
+    /**
+     * Backward-compatible constructor matching the positional signature before custom request
+     * headers and a dedicated streaming host ({@link #apiHostRequestHeaders}, {@link #streamingHost},
+     * {@link #streamingHostRequestHeaders}) were introduced.
+     */
     public Options(@Nullable Boolean enabled,
                    Boolean isQaMode,
                    @Nullable Boolean isCacheDisabled,
@@ -375,6 +379,88 @@ public class Options {
                    @Nullable Integer stickyBucketCacheSize,
                    @Nullable Duration stickyBucketTimeout
     ) {
+        this(
+                enabled,
+                isQaMode,
+                isCacheDisabled,
+                allowUrlOverrides,
+                url,
+                apiHost,
+                clientKey,
+                decryptionKey,
+                stickyBucketIdentifierAttributes,
+                stickyBucketService,
+                trackingCallBackWithUser,
+                featureUsageCallbackWithUser,
+                refreshStrategy,
+                swrTtlSeconds,
+                featureRefreshCallback,
+                globalAttributes,
+                globalForcedFeatureValues,
+                globalForcedVariationsMap,
+                cacheManager,
+                cacheMode,
+                cacheDirectory,
+                remoteEval,
+                cacheKeyAttributes,
+                remoteEvalCacheSize,
+                remoteEvalCacheTtlSeconds,
+                backgroundFetchInterval,
+                retryPolicy,
+                featureRefreshListenerExecutor,
+                sseReconnectOnFailure,
+                plugins,
+                asyncStickyBucketService,
+                asyncExecutor,
+                stickyBucketCacheTtlSeconds,
+                stickyBucketCacheSize,
+                stickyBucketTimeout,
+                null,
+                null,
+                null
+        );
+    }
+
+    @Builder
+    public Options(@Nullable Boolean enabled,
+                   Boolean isQaMode,
+                   @Nullable Boolean isCacheDisabled,
+                   Boolean allowUrlOverrides,
+                   @Nullable String url,
+                   @Nullable String apiHost,
+                   @Nullable String clientKey,
+                   @Nullable String decryptionKey,
+                   @Nullable List<String> stickyBucketIdentifierAttributes,
+                   @Nullable StickyBucketService stickyBucketService,
+                   @Nullable TrackingCallbackWithUser trackingCallBackWithUser,
+                   @Nullable FeatureUsageCallbackWithUser featureUsageCallbackWithUser,
+                   @Nullable FeatureRefreshStrategy refreshStrategy,
+                   @Nullable Integer swrTtlSeconds,
+                   @Deprecated @Nullable FeatureRefreshCallback featureRefreshCallback,
+                   @Nullable JsonObject globalAttributes,
+                   @Nullable Map<String, Object> globalForcedFeatureValues,
+                   @Nullable Map<String, ?> globalForcedVariationsMap,
+                   @Nullable GbCacheManager cacheManager,
+                   @Nullable CacheMode cacheMode,
+                   @Nullable String cacheDirectory,
+                   @Nullable Boolean remoteEval,
+                   @Nullable List<String> cacheKeyAttributes,
+                   @Nullable Integer remoteEvalCacheSize,
+                   @Nullable Integer remoteEvalCacheTtlSeconds,
+                   @Nullable Duration backgroundFetchInterval,
+                   @Nullable FeatureFetchRetryPolicy retryPolicy,
+                   @Nullable Executor featureRefreshListenerExecutor,
+                   @Nullable Boolean sseReconnectOnFailure,
+                   @Nullable List<GrowthBookPlugin> plugins,
+                   @Nullable AsyncStickyBucketService asyncStickyBucketService,
+                   @Nullable Executor asyncExecutor,
+                   @Nullable Long stickyBucketCacheTtlSeconds,
+                   @Nullable Integer stickyBucketCacheSize,
+                   @Nullable Duration stickyBucketTimeout,
+                   @Nullable Map<String, String> apiHostRequestHeaders,
+                   @Nullable String streamingHost,
+                   @Nullable Map<String, String> streamingHostRequestHeaders
+    ) {
         this.enabled = enabled == null || enabled;
         this.isQaMode = isQaMode != null && isQaMode;
         this.isCacheDisabled = isCacheDisabled != null && isCacheDisabled;
@@ -410,6 +496,9 @@ public class Options {
         this.stickyBucketCacheTtlSeconds = stickyBucketCacheTtlSeconds;
         this.stickyBucketCacheSize = stickyBucketCacheSize == null ? 1000 : stickyBucketCacheSize;
         this.stickyBucketTimeout = stickyBucketTimeout;
+        this.apiHostRequestHeaders = apiHostRequestHeaders;
+        this.streamingHost = streamingHost;
+        this.streamingHostRequestHeaders = streamingHostRequestHeaders;
     }
 
     /**
@@ -441,14 +530,35 @@ public class Options {
     @Nullable
     private String clientKey;
 
-    /*streamingHost?: string;
-    apiHostRequestHeaders?: Record<string, string>;
-    streamingHostRequestHeaders?: Record<string, string>;*/
+    /**
+     * Custom HTTP headers added to every request against the {@code apiHost}
+     * (features fetch and remote evaluation). Useful when GrowthBook is behind a
+     * gateway or proxy that requires authentication headers.
+     *
+     * <p>Values may contain secrets and are never logged by the SDK. The SDK-managed
+     * headers {@code User-Agent}, {@code If-None-Match} and {@code Cache-Control} are reserved on
+     * this path and rejected at startup by {@link OptionsValidator}. {@code Accept} is allowed here.
+     */
+    @Nullable
+    @ToString.Exclude
+    private Map<String, String> apiHostRequestHeaders;
 
-    // Why do you need attributes here?
-    //attributes?: Attributes;
+    /**
+     * Optional dedicated host for SSE streaming (e.g. GrowthBook Cloud's
+     * {@code https://beacon.growthbook.io}). When unset, streaming connects to
+     * {@code apiHost}. Must be a valid {@code http(s)} URL.
+     */
+    @Nullable
+    private String streamingHost;
 
-    // debug?: boolean; // NEIJ
+    /**
+     * Custom HTTP headers added to the SSE streaming request. Follows the same rules as
+     * {@link #apiHostRequestHeaders}, except that {@code Accept} is also reserved here: the SDK sets
+     * it to {@code text/event-stream} for the streaming connection.
+     */
+    @Nullable
+    @ToString.Exclude
+    private Map<String, String> streamingHostRequestHeaders;
 
     /**
      * Optional decryption Key. If this is not null, featuresJson should be an encrypted payload.
