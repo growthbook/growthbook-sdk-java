@@ -166,6 +166,7 @@ public class Options {
                 asyncExecutor,
                 stickyBucketCacheTtlSeconds,
                 stickyBucketCacheSize,
+                null,
                 null
         );
     }
@@ -243,6 +244,7 @@ public class Options {
                 null,
                 null,
                 null,
+                null,
                 null
         );
     }
@@ -287,7 +289,7 @@ public class Options {
                 featureRefreshCallback, globalAttributes, globalForcedFeatureValues,
                 globalForcedVariationsMap, cacheManager, cacheMode, cacheDirectory, remoteEval,
                 cacheKeyAttributes, remoteEvalCacheSize, remoteEvalCacheTtlSeconds,
-                backgroundFetchInterval, retryPolicy, null, null, plugins, null, null, null, null, null
+                backgroundFetchInterval, retryPolicy, null, null, plugins, null, null, null, null, null, null
         );
     }
 
@@ -334,7 +336,87 @@ public class Options {
                 globalForcedVariationsMap, cacheManager, cacheMode, cacheDirectory, remoteEval,
                 cacheKeyAttributes, remoteEvalCacheSize, remoteEvalCacheTtlSeconds,
                 backgroundFetchInterval, retryPolicy, featureRefreshListenerExecutor,
-                sseReconnectOnFailure, plugins, null, null, null, null, null
+                sseReconnectOnFailure, plugins, null, null, null, null, null, null
+        );
+    }
+
+    /**
+     * Backward-compatible constructor matching the positional signature before
+     * {@link #initialPayload} was introduced. Delegates with no inline bootstrap payload.
+     */
+    public Options(@Nullable Boolean enabled,
+                   Boolean isQaMode,
+                   @Nullable Boolean isCacheDisabled,
+                   Boolean allowUrlOverrides,
+                   @Nullable String url,
+                   @Nullable String apiHost,
+                   @Nullable String clientKey,
+                   @Nullable String decryptionKey,
+                   @Nullable List<String> stickyBucketIdentifierAttributes,
+                   @Nullable StickyBucketService stickyBucketService,
+                   @Nullable TrackingCallbackWithUser trackingCallBackWithUser,
+                   @Nullable FeatureUsageCallbackWithUser featureUsageCallbackWithUser,
+                   @Nullable FeatureRefreshStrategy refreshStrategy,
+                   @Nullable Integer swrTtlSeconds,
+                   @Deprecated @Nullable FeatureRefreshCallback featureRefreshCallback,
+                   @Nullable JsonObject globalAttributes,
+                   @Nullable Map<String, Object> globalForcedFeatureValues,
+                   @Nullable Map<String, ?> globalForcedVariationsMap,
+                   @Nullable GbCacheManager cacheManager,
+                   @Nullable CacheMode cacheMode,
+                   @Nullable String cacheDirectory,
+                   @Nullable Boolean remoteEval,
+                   @Nullable List<String> cacheKeyAttributes,
+                   @Nullable Integer remoteEvalCacheSize,
+                   @Nullable Integer remoteEvalCacheTtlSeconds,
+                   @Nullable Duration backgroundFetchInterval,
+                   @Nullable FeatureFetchRetryPolicy retryPolicy,
+                   @Nullable Executor featureRefreshListenerExecutor,
+                   @Nullable Boolean sseReconnectOnFailure,
+                   @Nullable List<GrowthBookPlugin> plugins,
+                   @Nullable AsyncStickyBucketService asyncStickyBucketService,
+                   @Nullable Executor asyncExecutor,
+                   @Nullable Long stickyBucketCacheTtlSeconds,
+                   @Nullable Integer stickyBucketCacheSize,
+                   @Nullable Duration stickyBucketTimeout
+    ) {
+        this(
+                enabled,
+                isQaMode,
+                isCacheDisabled,
+                allowUrlOverrides,
+                url,
+                apiHost,
+                clientKey,
+                decryptionKey,
+                stickyBucketIdentifierAttributes,
+                stickyBucketService,
+                trackingCallBackWithUser,
+                featureUsageCallbackWithUser,
+                refreshStrategy,
+                swrTtlSeconds,
+                featureRefreshCallback,
+                globalAttributes,
+                globalForcedFeatureValues,
+                globalForcedVariationsMap,
+                cacheManager,
+                cacheMode,
+                cacheDirectory,
+                remoteEval,
+                cacheKeyAttributes,
+                remoteEvalCacheSize,
+                remoteEvalCacheTtlSeconds,
+                backgroundFetchInterval,
+                retryPolicy,
+                featureRefreshListenerExecutor,
+                sseReconnectOnFailure,
+                plugins,
+                asyncStickyBucketService,
+                asyncExecutor,
+                stickyBucketCacheTtlSeconds,
+                stickyBucketCacheSize,
+                stickyBucketTimeout,
+                null
         );
     }
 
@@ -373,7 +455,8 @@ public class Options {
                    @Nullable Executor asyncExecutor,
                    @Nullable Long stickyBucketCacheTtlSeconds,
                    @Nullable Integer stickyBucketCacheSize,
-                   @Nullable Duration stickyBucketTimeout
+                   @Nullable Duration stickyBucketTimeout,
+                   @Nullable String initialPayload
     ) {
         this.enabled = enabled == null || enabled;
         this.isQaMode = isQaMode != null && isQaMode;
@@ -410,6 +493,7 @@ public class Options {
         this.stickyBucketCacheTtlSeconds = stickyBucketCacheTtlSeconds;
         this.stickyBucketCacheSize = stickyBucketCacheSize == null ? 1000 : stickyBucketCacheSize;
         this.stickyBucketTimeout = stickyBucketTimeout;
+        this.initialPayload = initialPayload;
     }
 
     /**
@@ -455,6 +539,16 @@ public class Options {
      */
     @Nullable
     private String decryptionKey;
+
+    /**
+     * Optional inline bootstrap payload used to seed features before the first network refresh,
+     * enabling an instant (and offline-capable) cold start. Must be in the same shape as the features
+     * endpoint response ({@code {"features": {...}, "savedGroups": {...}}}, or {@code encryptedFeatures}
+     * when {@link #decryptionKey} is set). The payload is only a bridge: the first successful network
+     * refresh replaces it.
+     */
+    @Nullable
+    private String initialPayload;
 
     /**
      * Attribute keys whose sticky bucket documents are read for every user, in addition to the
