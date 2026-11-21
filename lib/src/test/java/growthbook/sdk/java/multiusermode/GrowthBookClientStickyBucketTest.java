@@ -1,7 +1,10 @@
 package growthbook.sdk.java.multiusermode;
 
+import com.github.tomakehurst.wiremock.WireMockServer;
+import com.github.tomakehurst.wiremock.core.WireMockConfiguration;
 import growthbook.sdk.java.model.Experiment;
 import growthbook.sdk.java.model.ExperimentResult;
+import growthbook.sdk.java.model.FeatureResult;
 import growthbook.sdk.java.model.StickyAssignmentsDocument;
 import growthbook.sdk.java.multiusermode.configurations.Options;
 import growthbook.sdk.java.multiusermode.configurations.OptionsValidator;
@@ -29,6 +32,9 @@ import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
+import static com.github.tomakehurst.wiremock.client.WireMock.get;
+import static com.github.tomakehurst.wiremock.client.WireMock.urlPathMatching;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -209,6 +215,93 @@ class GrowthBookClientStickyBucketTest {
                     "the inline experiment's hashAttribute must be fetched; calls=" + service.fetchCalls);
         } finally {
             client.shutdown();
+        }
+    }
+
+    /** A client whose loaded feature runs an experiment hashed on {@code deviceId}. */
+    private static GrowthBookClient clientWithDeviceIdExperiment(WireMockServer wireMock,
+                                                                 GatedAsyncStickyService service,
+                                                                 List<String> configuredIdentifiers) {
+        wireMock.stubFor(get(urlPathMatching("/api/features/.*")).willReturn(aResponse().withStatus(200)
+                .withHeader("Content-Type", "application/json")
+                .withBody("{\"features\":{\"exp-flag\":{\"defaultValue\":\"off\",\"rules\":[{\"key\":\"exp-flag\","
+                        + "\"hashAttribute\":\"deviceId\",\"variations\":[\"control\",\"treatment\"],"
+                        + "\"meta\":[{\"key\":\"0\"},{\"key\":\"1\"}]}]}}}")));
+        GrowthBookClient client = new GrowthBookClient(Options.builder()
+                .apiHost("http://localhost:" + wireMock.port())
+                .clientKey("sticky-identifiers")
+                .isCacheDisabled(true)
+                .asyncStickyBucketService(service)
+                .stickyBucketIdentifierAttributes(configuredIdentifiers)
+                .build());
+        assertTrue(client.initialize());
+        return client;
+    }
+
+    /** Stores, for {@code deviceId||d1}, the variation the user is NOT hashed into; returns its value. */
+    private static String storeTheOtherVariation(WireMockServer wireMock, GatedAsyncStickyService service) {
+        GrowthBookClient plain = clientWithDeviceIdExperiment(wireMock, new GatedAsyncStickyService(), null);
+        String hashed;
+        try {
+            hashed = String.valueOf(plain.evalFeature("exp-flag", String.class, deviceUser()).getValue());
+        } finally {
+            plain.shutdown();
+        }
+        Map<String, String> assignments = new HashMap<>();
+        assignments.put("exp-flag__0", "control".equals(hashed) ? "1" : "0");
+        assignments.put("other-exp__0", "1");
+        service.store.put("deviceId||d1", new StickyAssignmentsDocument("deviceId", "d1", assignments));
+        return "control".equals(hashed) ? "treatment" : "control";
+    }
+
+    private static UserContext deviceUser() {
+        return UserContext.builder().attributesJson("{\"id\":\"u1\",\"deviceId\":\"d1\"}").build();
+    }
+
+    @Test
+    @Timeout(30)
+    void aStoredAssignmentOnAnAttributeOutsideTheConfiguredListIsHonoured() {
+        WireMockServer wireMock = new WireMockServer(WireMockConfiguration.options().dynamicPort());
+        wireMock.start();
+        GatedAsyncStickyService service = new GatedAsyncStickyService();
+        String stored = storeTheOtherVariation(wireMock, service);
+        // The configured list names only "id"; the experiment hashes on "deviceId".
+        GrowthBookClient client = clientWithDeviceIdExperiment(wireMock, service, Collections.singletonList("id"));
+        try {
+            FeatureResult<String> result = client.evalFeature("exp-flag", String.class, deviceUser());
+            client.flushStickyBucketSaves().join();
+
+            assertEquals(stored, String.valueOf(result.getValue()), "the stored variation must win over normal bucketing");
+            assertEquals(0, service.saveCalls.get(), "nothing new was assigned, so nothing is saved");
+            assertEquals("1", service.store.get("deviceId||d1").getAssignments().get("other-exp__0"),
+                    "the rest of the stored document must be untouched");
+            assertTrue(service.fetchCalls.get(service.fetchCalls.size() - 1).keySet()
+                            .containsAll(Arrays.asList("id", "deviceId")),
+                    "configured and derived identifiers are both read; calls=" + service.fetchCalls);
+        } finally {
+            client.shutdown();
+            wireMock.stop();
+        }
+    }
+
+    @Test
+    @Timeout(30)
+    void withoutAConfiguredListTheLoadedFeaturesHashAttributesAreRead() {
+        WireMockServer wireMock = new WireMockServer(WireMockConfiguration.options().dynamicPort());
+        wireMock.start();
+        GatedAsyncStickyService service = new GatedAsyncStickyService();
+        String stored = storeTheOtherVariation(wireMock, service);
+        GrowthBookClient client = clientWithDeviceIdExperiment(wireMock, service, null);
+        try {
+            FeatureResult<String> result = client.evalFeature("exp-flag", String.class, deviceUser());
+
+            assertEquals(stored, String.valueOf(result.getValue()));
+            assertEquals(Collections.singleton("deviceId"),
+                    service.fetchCalls.get(service.fetchCalls.size() - 1).keySet(),
+                    "only the attribute the loaded experiment hashes on is read");
+        } finally {
+            client.shutdown();
+            wireMock.stop();
         }
     }
 
@@ -539,6 +632,28 @@ class GrowthBookClientStickyBucketTest {
         client.run(experiment("exp-shutdown"), user("u1", "country"));
         client.shutdown();
         assertNotNull(service.store.get("id||u1"), "shutdown must flush pending saves");
+    }
+
+    @Test
+    @Timeout(30)
+    void anEvaluationAfterShutdownStillReadsABlockingStore() {
+        // A request still in flight when the application shuts the client down must get the
+        // user's stored variation, as it did before the manager existed.
+        Experiment<String> experiment = experiment("exp-after-shutdown");
+        UserContext user = user("u1", "country");
+        String stored = variationKeyOtherThanHashed(experiment, user);
+        RecordingSyncStickyService service = new RecordingSyncStickyService();
+        service.delegate.saveAssignments(storedAssignment("u1", "exp-after-shutdown", stored));
+        GrowthBookClient client = new GrowthBookClient(Options.builder()
+                .stickyBucketService(service)
+                .stickyBucketIdentifierAttributes(Collections.singletonList("id"))
+                .build());
+        client.shutdown();
+
+        ExperimentResult<String> result = client.run(experiment, user);
+
+        assertEquals(stored, result.getKey());
+        assertTrue(Boolean.TRUE.equals(result.getStickyBucketUsed()));
     }
 
     @Test

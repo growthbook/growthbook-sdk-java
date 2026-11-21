@@ -16,6 +16,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class StickyBucketServiceFailureTest {
@@ -88,6 +89,30 @@ class StickyBucketServiceFailureTest {
         service.failLoads = false;
         subject.setAttributes("{\"id\":\"user-1\"}");
         assertEquals(storedValue, subject.evalFeature("exp-flag", Object.class).getValue());
+    }
+
+    @Test
+    @DisplayName("Verify: a refresh that throws after a failed load does not re-enable saving")
+    void aRefreshThatThrowsAfterAFailedLoadStillSavesNothing() {
+        // Given a stored assignment and a load that failed at construction
+        Map<String, String> assignments = new HashMap<>();
+        assignments.put("exp-flag__0", "1");
+        FlakyStickyBucketService service = new FlakyStickyBucketService();
+        service.delegate.saveAssignments(new StickyAssignmentsDocument("id", "user-1", assignments));
+        service.failLoads = true;
+        GrowthBook subject = new GrowthBook(GBContext.builder()
+                .featuresJson(EXPERIMENT_FEATURE)
+                .attributesJson("{\"id\":\"user-1\"}")
+                .stickyBucketService(service)
+                .stickyBucketIdentifierAttributes(Arrays.asList("id"))
+                .build());
+
+        // When a features refresh throws before it reaches the store, and an experiment is evaluated
+        assertThrows(RuntimeException.class, () -> subject.featuresAPIModelSuccessfully("{not json"));
+        subject.evalFeature("exp-flag", Object.class);
+
+        // Then the stored document is exactly what it was
+        assertEquals(assignments, service.delegate.getAssignments("id", "user-1").getAssignments());
     }
 
     /** In-memory service whose loads can be made to fail, as when the store is briefly unreachable. */

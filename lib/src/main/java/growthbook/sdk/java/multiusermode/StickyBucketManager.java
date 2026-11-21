@@ -261,44 +261,61 @@ final class StickyBucketManager {
     }
 
     private void startFetch(Map<String, String> key, FetchEntry entry, AsyncStickyBucketService via) {
-        if (draining) {
-            inflightFetches.remove(key, entry);
-            entry.future.completeExceptionally(new IllegalStateException("client is shutting down"));
-            return;
-        }
         CompletionStage<Map<String, StickyAssignmentsDocument>> storeCall;
         try {
+            // After shutdown the client's own resources are gone: the pool that offloads a blocking
+            // store, and the timer that bounds a read of an asynchronous one. Only a blocking store
+            // read on the calling thread needs neither, so only that read is still served.
+            if (draining && via == service) {
+                throw new IllegalStateException("client is shutting down");
+            }
             storeCall = via.getAllAssignments(key);
-        } catch (RuntimeException e) {
+        } catch (RuntimeException | Error e) {
             // Includes RejectedExecutionException from an offload executor at
             // saturation: surface it, don't silently evaluate without sticky data.
-            inflightFetches.remove(key, entry);
-            entry.future.completeExceptionally(e);
+            finishFetch(key, entry, null, e);
+            if (e instanceof Error) {
+                throw (Error) e;
+            }
             return;
         }
         if (storeCall == null) {
-            entry.future.complete(overlay(key, Collections.emptyMap()));
-            inflightFetches.remove(key, entry);
+            finishFetch(key, entry, null, null);
             return;
         }
-        withTimeout(storeCall, "read").whenComplete((fetched, error) -> {
+        withTimeout(storeCall, "read").whenComplete((fetched, error) -> finishFetch(key, entry, fetched, error));
+    }
+
+    /**
+     * The single exit of a fetch: completes its future, with the overlaid documents or with the
+     * failure, and deregisters it. Whatever the store did, the fetch is never left pending, or later
+     * reads for the same user would wait on it forever.
+     */
+    private void finishFetch(Map<String, String> key,
+                             FetchEntry entry,
+                             @Nullable Map<String, StickyAssignmentsDocument> fetched,
+                             @Nullable Throwable error) {
+        try {
             if (error != null) {
-                inflightFetches.remove(key, entry);
                 entry.future.completeExceptionally(error);
                 return;
             }
             Map<String, StickyAssignmentsDocument> result =
                     fetched == null ? Collections.emptyMap() : fetched;
+            // Overlay this process's writes while the fetch is still registered: its startSequence
+            // keeps eviction from pruning a document a waiter still needs until the merge is done.
+            Map<String, StickyAssignmentsDocument> overlaid = overlay(key, result);
             if (readCache != null) {
                 readCache.put(key, result); // successful raw fetches only
             }
-            // Overlay this process's writes while the fetch is still registered: its startSequence
-            // keeps eviction from pruning a document a waiter still needs until the merge is done.
-            // Only then drop the entry (a later re-fetch starts a fresh store call).
-            Map<String, StickyAssignmentsDocument> overlaid = overlay(key, result);
             entry.future.complete(overlaid);
-            inflightFetches.remove(key, entry);
-        });
+        } catch (RuntimeException e) {
+            // The store is user-supplied code: an answer that cannot be used (a null key, for one)
+            // is a failed read.
+            entry.future.completeExceptionally(e);
+        } finally {
+            inflightFetches.remove(key, entry); // a later read starts a fresh store call
+        }
     }
 
     /**
@@ -419,16 +436,19 @@ final class StickyBucketManager {
         StickyAssignmentsDocument snapshot = authoritativeDocs.get(key);
         CompletableFuture<Void> saveFuture;
         boolean rejected = false;
+        Error fatal = null;
         try {
             CompletionStage<Void> storeCall = snapshot == null ? null : via.saveAssignments(snapshot);
             saveFuture = storeCall == null
                     ? CompletableFuture.completedFuture(null)
                     : withTimeout(storeCall, "save");
-        } catch (RuntimeException e) {
+        } catch (RuntimeException | Error e) {
             // Typically RejectedExecutionException from an offload executor at
             // saturation or during drain: keep the key dirty for a later re-kick.
+            // An Error is rethrown below, after the key's save slot has been released.
             log.warn("Sticky bucket save could not be scheduled for {}; will retry on next write or flush", key, e);
             rejected = true;
+            fatal = e instanceof Error ? (Error) e : null;
             saveFuture = CompletableFuture.completedFuture(null);
         }
 
@@ -463,6 +483,9 @@ final class StickyBucketManager {
                 pruneAuthoritativeDocs();
             }
         });
+        if (fatal != null) {
+            throw fatal;
+        }
     }
 
     // ------------------------------------------------------------- lifecycle
@@ -515,7 +538,10 @@ final class StickyBucketManager {
                 .thenCompose(ignored -> flush(roundsLeft - 1, reattempted));
     }
 
-    /** Stop accepting new fetches; writes still merge into the authoritative map. */
+    /**
+     * Called at shutdown. From here on a read is served only for a blocking store on the calling
+     * thread; every other read fails at once. Writes still merge into the authoritative map.
+     */
     void startDraining() {
         this.draining = true;
     }

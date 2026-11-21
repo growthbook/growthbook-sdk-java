@@ -1,8 +1,12 @@
 package growthbook.sdk.java.multiusermode;
 
+import growthbook.sdk.java.callback.ExperimentRunCallback;
 import growthbook.sdk.java.model.Experiment;
 import growthbook.sdk.java.model.ExperimentResult;
+import growthbook.sdk.java.model.FeatureKey;
+import growthbook.sdk.java.model.FeatureResult;
 import growthbook.sdk.java.model.StickyAssignmentsDocument;
+import growthbook.sdk.java.model.TypedKey;
 import growthbook.sdk.java.model.VariationMeta;
 import growthbook.sdk.java.multiusermode.configurations.Options;
 import growthbook.sdk.java.multiusermode.configurations.UserContext;
@@ -12,6 +16,9 @@ import growthbook.sdk.java.stickyBucketing.InMemoryStickyBucketServiceImpl;
 import growthbook.sdk.java.stickyBucketing.StickyBucketService;
 import com.github.tomakehurst.wiremock.WireMockServer;
 import com.github.tomakehurst.wiremock.core.WireMockConfiguration;
+import java.util.Queue;
+import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.Executor;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 
@@ -36,10 +43,14 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
 import static com.github.tomakehurst.wiremock.client.WireMock.get;
+import static com.github.tomakehurst.wiremock.client.WireMock.getRequestedFor;
+import static com.github.tomakehurst.wiremock.client.WireMock.post;
+import static com.github.tomakehurst.wiremock.client.WireMock.postRequestedFor;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlPathMatching;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -53,12 +64,47 @@ class GrowthBookClientAsyncApiTest {
 
     private static final String CLIENT_KEY = "async_api_key";
 
+    private static final String FEATURES = "{\"features\":{"
+            + "\"new-home\":{\"defaultValue\":true},"
+            + "\"exp-feature\":{\"defaultValue\":\"control\",\"rules\":[{\"key\":\"exp1\",\"hashAttribute\":\"id\","
+            + "\"variations\":[\"control\",\"treatment\"],\"meta\":[{\"key\":\"control\"},{\"key\":\"treatment\"}]}]}"
+            + "}}";
+
+    /** Executor at saturation: rejects every task, as a bounded pool with a full queue would. */
+    private static final Executor REJECTING = command -> {
+        throw new RejectedExecutionException("pool saturated");
+    };
+
+    /** Serves the features payload and a remote-eval response. */
+    private static WireMockServer featuresServer() {
+        WireMockServer wireMock = new WireMockServer(WireMockConfiguration.options().dynamicPort());
+        wireMock.start();
+        wireMock.stubFor(get(urlPathMatching("/api/features/.*"))
+                .willReturn(aResponse().withStatus(200).withHeader("Content-Type", "application/json")
+                        .withBody(FEATURES)));
+        wireMock.stubFor(post(urlPathMatching("/api/eval/.*"))
+                .willReturn(aResponse().withStatus(200).withHeader("Content-Type", "application/json")
+                        .withBody("{\"features\":{\"remote-feature\":{\"defaultValue\":true}},\"savedGroups\":{}}")));
+        return wireMock;
+    }
+
     private static Options stickyOptions(AsyncStickyBucketService service, TrackingCallbackWithUser tracking) {
         return Options.builder()
                 .asyncStickyBucketService(service)
                 .stickyBucketIdentifierAttributes(Collections.singletonList("id"))
                 .trackingCallBackWithUser(tracking)
                 .build();
+    }
+
+    private static TrackingCallbackWithUser countingExposures(AtomicInteger exposures) {
+        return new TrackingCallbackWithUser() {
+            @Override
+            public <ValueType> void onTrack(Experiment<ValueType> experiment,
+                                            ExperimentResult<ValueType> result,
+                                            UserContext userContext) {
+                exposures.incrementAndGet();
+            }
+        };
     }
 
     private static Experiment<String> experiment(String key) {
@@ -135,9 +181,15 @@ class GrowthBookClientAsyncApiTest {
                 trackingThreads.add(Thread.currentThread().getName());
             }
         };
+        // Hold the read until the evaluation is attached; a read that had already completed would
+        // let the evaluation run on this thread, which is allowed but is not what this test checks.
+        CountDownLatch fetchGate = new CountDownLatch(1);
+        service.fetchGate = fetchGate;
         GrowthBookClient client = new GrowthBookClient(stickyOptions(service, tracking));
         try {
-            client.runAsync(experiment("exp-hop"), user("u1")).get(10, TimeUnit.SECONDS);
+            CompletableFuture<ExperimentResult<String>> evaluation = client.runAsync(experiment("exp-hop"), user("u1"));
+            fetchGate.countDown();
+            evaluation.get(10, TimeUnit.SECONDS);
 
             assertFalse(trackingThreads.isEmpty(), "tracking callback did not fire");
             for (String threadName : trackingThreads) {
@@ -199,6 +251,7 @@ class GrowthBookClientAsyncApiTest {
 
             assertNotNull(second.get(10, TimeUnit.SECONDS),
                     "cancelling one caller must not poison the shared coalesced fetch");
+            assertEquals(1, service.fetchCalls.size(), "both callers shared one store read");
         } finally {
             client.shutdown();
         }
@@ -292,7 +345,7 @@ class GrowthBookClientAsyncApiTest {
 
             ExecutionException error = assertThrows(ExecutionException.class,
                     () -> future.get(10, TimeUnit.SECONDS),
-                    "a blocking store that cannot be offloaded must fail the async evaluation, not re-bucket");
+                    "an executor that rejects the read and the continuation fails the async evaluation");
             assertTrue(error.getCause() instanceof RejectedExecutionException);
             assertEquals(stored, service.getAssignments("id", "u1").getAssignments().get("exp-async-saturated__0"),
                     "a rejected read must leave the stored variation untouched");
@@ -397,7 +450,10 @@ class GrowthBookClientAsyncApiTest {
                 .asyncExecutor(callerPool)
                 .build());
         try {
-            callerPool.submit(() -> releaseOccupier.await(10, TimeUnit.SECONDS)); // holds the only thread
+            callerPool.submit(() -> {
+                releaseOccupier.await(); // holds the only thread until the test is over
+                return null;
+            });
 
             CompletableFuture<Boolean> initializing = client.initializeAsync(); // queues behind the occupier
             client.shutdown();
@@ -413,15 +469,568 @@ class GrowthBookClientAsyncApiTest {
 
     @Test
     @Timeout(30)
+    void initializeAsyncCompletesFalseWhenTheExecutorRejects() throws Exception {
+        GrowthBookClient client = new GrowthBookClient(Options.builder().asyncExecutor(REJECTING).build());
+        try {
+            CompletableFuture<Boolean> initializing = client.initializeAsync(); // must not throw
+
+            assertFalse(initializing.get(10, TimeUnit.SECONDS));
+        } finally {
+            client.shutdown();
+        }
+    }
+
+    @Test
+    @Timeout(30)
+    void initializeAsyncStillQueuedAtShutdownNeverFetchesFeatures() throws Exception {
+        WireMockServer wireMock = featuresServer();
+        ManualExecutor executor = new ManualExecutor();
+        GrowthBookClient client = new GrowthBookClient(Options.builder()
+                .apiHost("http://localhost:" + wireMock.port())
+                .clientKey(CLIENT_KEY)
+                .asyncExecutor(executor)
+                .build());
+        try {
+            CompletableFuture<Boolean> initializing = client.initializeAsync();
+            client.shutdown();
+            executor.runAll(); // the queued task runs only now
+
+            assertFalse(initializing.get(10, TimeUnit.SECONDS));
+            wireMock.verify(0, getRequestedFor(urlPathMatching("/api/features/.*")));
+        } finally {
+            client.shutdown();
+            wireMock.stop();
+        }
+    }
+
+    // ------------------------------------------------------------- shutdown
+
+    @Test
+    @Timeout(30)
+    void shutdownResolvesPendingEvaluationsAndTheirQueuedWorkNeverRuns() throws Exception {
+        ForeignThreadStickyService service = new ForeignThreadStickyService();
+        AtomicInteger exposures = new AtomicInteger();
+        TrackingCallbackWithUser tracking = countingExposures(exposures);
+        ManualExecutor executor = new ManualExecutor();
+        GrowthBookClient client = new GrowthBookClient(Options.builder()
+                .asyncStickyBucketService(service)
+                .stickyBucketIdentifierAttributes(Collections.singletonList("id"))
+                .trackingCallBackWithUser(tracking)
+                .asyncExecutor(executor)
+                .build());
+        try {
+            List<CompletableFuture<?>> failing = Arrays.<CompletableFuture<?>>asList(
+                    client.runAsync(experiment("exp-shutdown"), user("u1")),
+                    client.evalFeatureAsync("missing", String.class, user("u1")),
+                    client.isOnAsync("missing", user("u1")),
+                    client.isOffAsync("missing", user("u1")));
+            CompletableFuture<String> value = client.getFeatureValueAsync("missing", "fallback", String.class, user("u1"));
+            assertEquals(5, client.pendingAsyncCount(), "every pending future is registered for shutdown");
+
+            client.shutdown();
+
+            for (CompletableFuture<?> future : failing) {
+                ExecutionException error = assertThrows(ExecutionException.class, () -> future.get(10, TimeUnit.SECONDS));
+                assertTrue(error.getCause() instanceof IllegalStateException, "got " + error.getCause());
+            }
+            assertEquals("fallback", value.get(10, TimeUnit.SECONDS),
+                    "getFeatureValueAsync keeps its default-value contract across shutdown");
+            assertEquals(0, client.pendingAsyncCount(), "a resolved future leaves the registry");
+
+            executor.runAll(); // the continuations that were queued when shutdown ran
+            assertEquals(0, exposures.get(), "an evaluation reported as failed must not track an exposure later");
+            assertEquals(0, service.saveCalls.get());
+        } finally {
+            client.shutdown();
+        }
+    }
+
+    @Test
+    @Timeout(30)
+    void anEvaluationWaitingOnItsStoreReadAtShutdownFailsInsteadOfBucketingWithoutIt() throws Exception {
+        // Default pool: shutdown cuts the pending read short and the continuation still gets to run.
+        Experiment<String> experiment = experiment("exp-in-flight");
+        String stored = variationKeyOtherThanHashed(experiment, user("u1"));
+        ForeignThreadStickyService service = new ForeignThreadStickyService();
+        service.store.put("id||u1", storedAssignment("u1", "exp-in-flight", stored));
+        service.fetchGate = new CountDownLatch(1); // never opened: the read is still pending at shutdown
+        AtomicInteger exposures = new AtomicInteger();
+        TrackingCallbackWithUser tracking = countingExposures(exposures);
+        GrowthBookClient client = new GrowthBookClient(stickyOptions(service, tracking));
+        CompletableFuture<ExperimentResult<String>> run = client.runAsync(experiment, user("u1"));
+        CompletableFuture<String> value = client.getFeatureValueAsync("missing", "fallback", String.class, user("u1"));
+
+        client.shutdown();
+
+        ExecutionException error = assertThrows(ExecutionException.class, () -> run.get(10, TimeUnit.SECONDS));
+        assertTrue(error.getCause() instanceof IllegalStateException, "got " + error.getCause());
+        assertEquals("fallback", value.get(10, TimeUnit.SECONDS));
+        assertEquals(0, exposures.get(), "no exposure for a variation bucketed without the stored assignment");
+        assertEquals(0, service.saveCalls.get());
+    }
+
+    @Test
+    @Timeout(30)
+    void callsMadeAfterShutdownAreResolvedEvenWhenTheirWorkNeverRuns() throws Exception {
+        ManualExecutor executor = new ManualExecutor(); // never runs what is queued on it
+        GrowthBookClient client = new GrowthBookClient(Options.builder()
+                .asyncStickyBucketService(new ForeignThreadStickyService())
+                .stickyBucketIdentifierAttributes(Collections.singletonList("id"))
+                .asyncExecutor(executor)
+                .build());
+        client.shutdown();
+
+        CompletableFuture<ExperimentResult<String>> run = client.runAsync(experiment("exp-late"), user("u1"));
+        CompletableFuture<Boolean> isOn = client.isOnAsync("missing", user("u1"));
+        CompletableFuture<String> value = client.getFeatureValueAsync("missing", "fallback", String.class, user("u1"));
+        CompletableFuture<Boolean> initializing = client.initializeAsync();
+
+        assertTrue(run.isCompletedExceptionally(), "a call that arrives after the shutdown sweep must not stay pending");
+        assertTrue(isOn.isCompletedExceptionally());
+        assertEquals("fallback", value.getNow(null));
+        assertEquals(Boolean.FALSE, initializing.getNow(null));
+    }
+
+    @Test
+    @Timeout(30)
+    void noAsyncMethodEvaluatesAfterShutdownWhateverIsConfigured() throws Exception {
+        WireMockServer wireMock = featuresServer();
+        try {
+            assertAClosedClientDoesNotEvaluate(wireMock, null, null);
+            assertAClosedClientDoesNotEvaluate(wireMock, new ForeignThreadStickyService(), null);
+            assertAClosedClientDoesNotEvaluate(wireMock, null, new InMemoryStickyBucketServiceImpl());
+        } finally {
+            wireMock.stop();
+        }
+    }
+
+    /**
+     * Every async evaluation method, for a plain user and for one whose documents were prefetched.
+     * Without a store, or with prefetched documents, there is nothing to wait for, so only the
+     * shutdown check keeps the call from evaluating at once on the calling thread.
+     */
+    private static void assertAClosedClientDoesNotEvaluate(WireMockServer wireMock,
+                                                           AsyncStickyBucketService asyncStore,
+                                                           StickyBucketService blockingStore) throws Exception {
+        AtomicInteger exposures = new AtomicInteger();
+        GrowthBookClient client = new GrowthBookClient(Options.builder()
+                .apiHost("http://localhost:" + wireMock.port())
+                .clientKey(CLIENT_KEY)
+                .asyncStickyBucketService(asyncStore)
+                .stickyBucketService(blockingStore)
+                .trackingCallBackWithUser(countingExposures(exposures))
+                .build());
+        assertTrue(client.initialize());
+        UserContext prefetched = client.prefetchStickyBuckets(user("u1")).get(10, TimeUnit.SECONDS);
+        FeatureKey<String> experimentFeature = TypedKey.ofString("exp-feature");
+
+        client.shutdown();
+
+        for (UserContext user : Arrays.asList(user("u1"), prefetched)) {
+            List<CompletableFuture<?>> failing = Arrays.<CompletableFuture<?>>asList(
+                    client.evalFeatureAsync("exp-feature", String.class, user),
+                    client.getFeatureAsync(experimentFeature, user),
+                    client.isOnAsync("new-home", user),
+                    client.isOffAsync("new-home", user),
+                    client.runAsync(experiment("exp-closed"), user));
+            for (CompletableFuture<?> future : failing) {
+                ExecutionException error = assertThrows(ExecutionException.class, () -> future.get(10, TimeUnit.SECONDS));
+                assertTrue(error.getCause() instanceof IllegalStateException, "got " + error.getCause());
+            }
+            assertEquals("none", client.getFeatureValueAsync("exp-feature", "none", String.class, user)
+                    .get(10, TimeUnit.SECONDS), "the default, not the value the loaded feature would give");
+            assertEquals("none", client.getFeatureValueAsync(experimentFeature, "none", user).get(10, TimeUnit.SECONDS));
+        }
+        assertEquals(0, exposures.get(), "a closed client must not track an exposure");
+    }
+
+    @Test
+    @Timeout(30)
+    void completedFuturesLeaveTheShutdownRegistry() throws Exception {
+        GrowthBookClient client = new GrowthBookClient(stickyOptions(new ForeignThreadStickyService(), null));
+        try {
+            for (int i = 0; i < 50; i++) {
+                client.runAsync(experiment("exp-registry"), user("u" + i)).get(10, TimeUnit.SECONDS);
+                client.getFeatureValueAsync("missing", "fallback", String.class, user("u" + i)).get(10, TimeUnit.SECONDS);
+            }
+
+            assertEquals(0, client.pendingAsyncCount(), "the registry must not grow with completed calls");
+        } finally {
+            client.shutdown();
+        }
+    }
+
+    // ------------------------------------------------------- executor rejection
+
+    @Test
+    @Timeout(30)
+    void getFeatureValueAsyncReturnsTheDefaultWhenTheExecutorRejects() throws Exception {
+        GrowthBookClient client = new GrowthBookClient(Options.builder()
+                .asyncStickyBucketService(new ForeignThreadStickyService())
+                .stickyBucketIdentifierAttributes(Collections.singletonList("id"))
+                .asyncExecutor(REJECTING)
+                .build());
+        try {
+            assertEquals("fallback",
+                    client.getFeatureValueAsync("any", "fallback", String.class, user("u1")).get(10, TimeUnit.SECONDS));
+            assertEquals("fallback",
+                    client.getFeatureValueAsync(TypedKey.ofString("any"), "fallback", user("u1")).get(10, TimeUnit.SECONDS));
+        } finally {
+            client.shutdown();
+        }
+    }
+
+    @Test
+    @Timeout(30)
+    void initializeAsyncCompletesFalseWhenTheExecutorThrows() throws Exception {
+        GrowthBookClient client = new GrowthBookClient(Options.builder()
+                .asyncExecutor(command -> {
+                    throw new IllegalStateException("executor is closed");
+                })
+                .build());
+        try {
+            CompletableFuture<Boolean> initializing = client.initializeAsync(); // must not throw
+
+            assertFalse(initializing.get(10, TimeUnit.SECONDS));
+        } finally {
+            client.shutdown();
+        }
+    }
+
+    // ------------------------------------------- failures before the store read
+
+    @Test
+    @Timeout(30)
+    void aFailureBeforeTheStoreReadIsReportedThroughTheFuture() throws Exception {
+        // A rule the client cannot read makes identifier derivation throw before any future exists.
+        WireMockServer wireMock = new WireMockServer(WireMockConfiguration.options().dynamicPort());
+        wireMock.start();
+        wireMock.stubFor(get(urlPathMatching("/api/features/.*"))
+                .willReturn(aResponse().withStatus(200).withHeader("Content-Type", "application/json")
+                        .withBody("{\"features\":{\"broken\":{\"defaultValue\":\"x\",\"rules\":[null]}}}")));
+        GrowthBookClient client = new GrowthBookClient(Options.builder()
+                .apiHost("http://localhost:" + wireMock.port())
+                .clientKey(CLIENT_KEY)
+                .asyncStickyBucketService(new ForeignThreadStickyService())
+                .build());
+        try {
+            assertTrue(client.initialize());
+            assertEquals("fallback", client.getFeatureValue("broken", "fallback", String.class, user("u1")),
+                    "the sync twin returns the default");
+
+            CompletableFuture<String> value = client.getFeatureValueAsync("broken", "fallback", String.class, user("u1"));
+            CompletableFuture<Boolean> isOn = client.isOnAsync("broken", user("u1")); // must not throw
+
+            assertEquals("fallback", value.get(10, TimeUnit.SECONDS));
+            assertThrows(ExecutionException.class, () -> isOn.get(10, TimeUnit.SECONDS));
+        } finally {
+            client.shutdown();
+            wireMock.stop();
+        }
+    }
+
+    // ---------------------------------------------------------- remote eval
+
+    @Test
+    @Timeout(30)
+    void remoteEvalAsyncRunsTheRemoteCallOnTheExecutorAndMatchesTheSyncResult() throws Exception {
+        WireMockServer wireMock = featuresServer();
+        ManualExecutor executor = new ManualExecutor();
+        GrowthBookClient client = new GrowthBookClient(Options.builder()
+                .apiHost("http://localhost:" + wireMock.port())
+                .clientKey(CLIENT_KEY)
+                .remoteEval(true)
+                .asyncExecutor(executor)
+                .build());
+        try {
+            assertTrue(client.initialize());
+            int remoteCallsBefore = wireMock.countRequestsMatching(
+                    postRequestedFor(urlPathMatching("/api/eval/.*")).build()).getCount();
+
+            CompletableFuture<Boolean> isOn = client.isOnAsync("remote-feature", user("async-user"));
+
+            assertFalse(isOn.isDone(), "the remote call must wait for the executor, not run on the caller");
+            assertEquals(remoteCallsBefore, wireMock.countRequestsMatching(
+                    postRequestedFor(urlPathMatching("/api/eval/.*")).build()).getCount());
+
+            executor.runAll();
+            assertEquals(client.isOn("remote-feature", user("async-user")), isOn.get(10, TimeUnit.SECONDS));
+        } finally {
+            client.shutdown();
+            wireMock.stop();
+        }
+    }
+
+    @Test
+    @Timeout(30)
+    void remoteEvalAsyncReportsARejectingExecutorThroughTheFuture() throws Exception {
+        WireMockServer wireMock = featuresServer();
+        GrowthBookClient client = new GrowthBookClient(Options.builder()
+                .apiHost("http://localhost:" + wireMock.port())
+                .clientKey(CLIENT_KEY)
+                .remoteEval(true)
+                .asyncExecutor(REJECTING)
+                .build());
+        try {
+            assertTrue(client.initialize());
+
+            CompletableFuture<Boolean> isOn = client.isOnAsync("remote-feature", user("u1")); // must not throw
+
+            ExecutionException error = assertThrows(ExecutionException.class, () -> isOn.get(10, TimeUnit.SECONDS));
+            assertTrue(error.getCause() instanceof RejectedExecutionException, "got " + error.getCause());
+            assertFalse(client.getFeatureValueAsync("remote-feature", false, Boolean.class, user("u1"))
+                    .get(10, TimeUnit.SECONDS), "getFeatureValueAsync falls back to its default");
+        } finally {
+            client.shutdown();
+            wireMock.stop();
+        }
+    }
+
+    // ------------------------------------------------- parity with the sync API
+
+    @Test
+    @Timeout(30)
+    void everyAsyncMethodMatchesItsSyncTwinForLoadedFeatures() throws Exception {
+        WireMockServer wireMock = featuresServer();
+        GrowthBookClient client = new GrowthBookClient(Options.builder()
+                .apiHost("http://localhost:" + wireMock.port())
+                .clientKey(CLIENT_KEY)
+                .asyncStickyBucketService(new ForeignThreadStickyService())
+                .build());
+        try {
+            assertTrue(client.initialize());
+            UserContext user = user("u1");
+            FeatureKey<String> experimentFeature = TypedKey.ofString("exp-feature");
+            // Assign once first, so both twins below read the same stored assignment.
+            client.evalFeature("exp-feature", String.class, user);
+            client.flushStickyBucketSaves().get(10, TimeUnit.SECONDS);
+
+            assertEquals(client.evalFeature("exp-feature", String.class, user),
+                    client.evalFeatureAsync("exp-feature", String.class, user).get(10, TimeUnit.SECONDS));
+            assertEquals(client.getFeature(experimentFeature, user),
+                    client.getFeatureAsync(experimentFeature, user).get(10, TimeUnit.SECONDS));
+            assertEquals(client.getFeatureValue(experimentFeature, "none", user),
+                    client.getFeatureValueAsync(experimentFeature, "none", user).get(10, TimeUnit.SECONDS));
+            assertEquals(client.getFeatureValue("exp-feature", "none", String.class, user),
+                    client.getFeatureValueAsync("exp-feature", "none", String.class, user).get(10, TimeUnit.SECONDS));
+            assertEquals(client.isOn("new-home", user), client.isOnAsync("new-home", user).get(10, TimeUnit.SECONDS));
+            assertEquals(client.isOff("new-home", user), client.isOffAsync("new-home", user).get(10, TimeUnit.SECONDS));
+            assertTrue(client.isOnAsync("new-home", user).get(10, TimeUnit.SECONDS));
+            assertFalse(client.isOffAsync("new-home", user).get(10, TimeUnit.SECONDS));
+        } finally {
+            client.shutdown();
+            wireMock.stop();
+        }
+    }
+
+    @Test
+    @Timeout(30)
+    void getFeatureValueAsyncReturnsTheDefaultForAValueOfTheWrongTypeLikeItsSyncTwin() throws Exception {
+        WireMockServer wireMock = featuresServer();
+        GrowthBookClient client = new GrowthBookClient(Options.builder()
+                .apiHost("http://localhost:" + wireMock.port())
+                .clientKey(CLIENT_KEY)
+                .build());
+        try {
+            assertTrue(client.initialize());
+            UserContext user = user("u1");
+
+            // "exp-feature" holds a string; asking for an Integer cannot be deserialised.
+            assertEquals(Integer.valueOf(7), client.getFeatureValue("exp-feature", 7, Integer.class, user));
+            assertEquals(Integer.valueOf(7),
+                    client.getFeatureValueAsync("exp-feature", 7, Integer.class, user).get(10, TimeUnit.SECONDS));
+        } finally {
+            client.shutdown();
+            wireMock.stop();
+        }
+    }
+
+    @Test
+    @Timeout(30)
+    void aNullFeatureKeyFailsTheFutureInsteadOfThrowing() {
+        GrowthBookClient client = new GrowthBookClient();
+        try {
+            CompletableFuture<FeatureResult<String>> feature = client.getFeatureAsync(null, user("u1"));
+            CompletableFuture<String> value = client.getFeatureValueAsync(null, "fallback", user("u1"));
+
+            for (CompletableFuture<?> future : Arrays.<CompletableFuture<?>>asList(feature, value)) {
+                ExecutionException error = assertThrows(ExecutionException.class, () -> future.get(10, TimeUnit.SECONDS));
+                assertTrue(error.getCause() instanceof NullPointerException, "got " + error.getCause());
+            }
+            // The synchronous methods are unchanged: they throw.
+            assertThrows(NullPointerException.class, () -> client.getFeature(null, user("u1")));
+        } finally {
+            client.shutdown();
+        }
+    }
+
+    @Test
+    @Timeout(30)
+    void aPrefetchedContextIsEvaluatedWithoutAnotherStoreRead() throws Exception {
+        ForeignThreadStickyService service = new ForeignThreadStickyService();
+        GrowthBookClient client = new GrowthBookClient(stickyOptions(service, null));
+        try {
+            UserContext prefetched = client.prefetchStickyBuckets(user("u1")).get(10, TimeUnit.SECONDS);
+
+            CompletableFuture<ExperimentResult<String>> run = client.runAsync(experiment("exp-prefetched"), prefetched);
+
+            assertTrue(run.isDone(), "nothing to wait for: the documents are already on the context");
+            assertEquals(1, service.fetchCalls.size(), "only the prefetch reads the store");
+        } finally {
+            client.shutdown();
+        }
+    }
+
+    // ------------------------------------------------------------- runAsync
+
+    @Test
+    @Timeout(30)
+    void runAsyncReadsTheInlineExperimentsOwnHashAttribute() throws Exception {
+        // "deviceId" is neither configured nor derived from loaded features: only the inline
+        // experiment names it, and its stored assignment must still be honoured.
+        Experiment<String> experiment = Experiment.<String>builder()
+                .key("exp-inline-async")
+                .hashAttribute("deviceId")
+                .variations(new ArrayList<>(Arrays.asList("control", "treatment")))
+                .meta(new ArrayList<>(Arrays.asList(
+                        VariationMeta.builder().key("control").build(),
+                        VariationMeta.builder().key("treatment").build())))
+                .build();
+        UserContext user = UserContext.builder().attributesJson("{\"deviceId\":\"d1\"}").build();
+        String stored = variationKeyOtherThanHashed(experiment, user);
+        ForeignThreadStickyService service = new ForeignThreadStickyService();
+        Map<String, String> assignments = new HashMap<>();
+        assignments.put("exp-inline-async__0", stored);
+        service.store.put("deviceId||d1", new StickyAssignmentsDocument("deviceId", "d1", assignments));
+        GrowthBookClient client = new GrowthBookClient(Options.builder().asyncStickyBucketService(service).build());
+        try {
+            ExperimentResult<String> result = client.runAsync(experiment, user).get(10, TimeUnit.SECONDS);
+
+            assertEquals(stored, result.getKey());
+            assertTrue(service.fetchCalls.stream().anyMatch(call -> call.containsKey("deviceId")),
+                    "calls=" + service.fetchCalls);
+        } finally {
+            client.shutdown();
+        }
+    }
+
+    @Test
+    @Timeout(30)
+    void runAsyncNotifiesExperimentSubscribers() throws Exception {
+        GrowthBookClient client = new GrowthBookClient(stickyOptions(new ForeignThreadStickyService(), null));
+        List<String> notified = new CopyOnWriteArrayList<>();
+        client.subscribe(new ExperimentRunCallback() {
+            @Override
+            public <T> void onRun(Experiment<T> experiment, ExperimentResult<T> experimentResult) {
+                notified.add(experiment.getKey());
+            }
+        });
+        try {
+            client.runAsync(experiment("exp-subscribed"), user("u1")).get(10, TimeUnit.SECONDS);
+
+            assertEquals(Collections.singletonList("exp-subscribed"), notified);
+        } finally {
+            client.shutdown();
+        }
+    }
+
+    @Test
+    @Timeout(30)
+    void failedReadOnTheAsyncApiStillServesAssignmentsThisProcessMade() throws Exception {
+        ForeignThreadStickyService service = new ForeignThreadStickyService();
+        GrowthBookClient client = new GrowthBookClient(stickyOptions(service, null));
+        try {
+            ExperimentResult<String> first = client.runAsync(experiment("exp-local"), user("u1"))
+                    .get(10, TimeUnit.SECONDS);
+            client.flushStickyBucketSaves().get(10, TimeUnit.SECONDS);
+
+            service.failFetches = true;
+            ExperimentResult<String> duringOutage = client.runAsync(experiment("exp-local"), user("u1"))
+                    .get(10, TimeUnit.SECONDS);
+
+            assertEquals(first.getKey(), duringOutage.getKey());
+            assertTrue(Boolean.TRUE.equals(duringOutage.getStickyBucketUsed()),
+                    "the assignment this process made must still be served while the store is unreadable");
+        } finally {
+            client.shutdown();
+        }
+    }
+
+    @Test
+    @Timeout(30)
+    void asyncEvaluationDoesNotWaitForABlockingStoresSave() throws Exception {
+        CountDownLatch releaseSave = new CountDownLatch(1);
+        InMemoryStickyBucketServiceImpl delegate = new InMemoryStickyBucketServiceImpl();
+        StickyBucketService slowSave = new StickyBucketService() {
+            @Override
+            public StickyAssignmentsDocument getAssignments(String attributeName, String attributeValue) {
+                return delegate.getAssignments(attributeName, attributeValue);
+            }
+
+            @Override
+            public void saveAssignments(StickyAssignmentsDocument doc) {
+                try {
+                    releaseSave.await();
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                }
+                delegate.saveAssignments(doc);
+            }
+
+            @Override
+            public Map<String, StickyAssignmentsDocument> getAllAssignments(Map<String, String> attributes) {
+                return delegate.getAllAssignments(attributes);
+            }
+        };
+        GrowthBookClient client = new GrowthBookClient(Options.builder()
+                .stickyBucketService(slowSave)
+                .stickyBucketIdentifierAttributes(Collections.singletonList("id"))
+                .build());
+        try {
+            ExperimentResult<String> result = client.runAsync(experiment("exp-slow-save"), user("u1"))
+                    .get(10, TimeUnit.SECONDS);
+
+            assertNotNull(result.getValue(), "the evaluation completes while the save is still blocked");
+            assertNull(delegate.getAssignments("id", "u1"));
+
+            releaseSave.countDown();
+            client.flushStickyBucketSaves().get(10, TimeUnit.SECONDS);
+            assertNotNull(delegate.getAssignments("id", "u1"));
+        } finally {
+            releaseSave.countDown();
+            client.shutdown();
+        }
+    }
+
+    @Test
+    @Timeout(30)
     void shutdownIsIdempotent() {
         GrowthBookClient client = new GrowthBookClient();
         client.shutdown();
         client.shutdown(); // second call returns immediately, no exception
     }
 
+    /** Executor that only queues; the test decides when the queued tasks run. */
+    private static final class ManualExecutor implements Executor {
+        private final Queue<Runnable> queued = new ConcurrentLinkedQueue<>();
+
+        @Override
+        public void execute(Runnable command) {
+            queued.add(command);
+        }
+
+        void runAll() {
+            Runnable next;
+            while ((next = queued.poll()) != null) {
+                next.run();
+            }
+        }
+    }
+
     /** Async service completing fetches on its own named thread. */
     private static final class ForeignThreadStickyService implements AsyncStickyBucketService {
         final Map<String, StickyAssignmentsDocument> store = new ConcurrentHashMap<>();
+        final List<Map<String, String>> fetchCalls = new CopyOnWriteArrayList<>();
         final AtomicInteger saveCalls = new AtomicInteger();
         volatile CountDownLatch fetchGate = null;
         volatile boolean failFetches = false;
@@ -440,6 +1049,7 @@ class GrowthBookClientAsyncApiTest {
 
         @Override
         public CompletionStage<Map<String, StickyAssignmentsDocument>> getAllAssignments(Map<String, String> attributes) {
+            fetchCalls.add(attributes);
             CompletableFuture<Map<String, StickyAssignmentsDocument>> pending = new CompletableFuture<>();
             CountDownLatch gate = fetchGate;
             Thread completer = new Thread(() -> {
