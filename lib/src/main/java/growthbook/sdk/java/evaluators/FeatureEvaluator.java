@@ -179,7 +179,7 @@ public class FeatureEvaluator implements IFeatureEvaluator {
         if (!Boolean.TRUE.equals(context.getOptions().getAllowUrlOverrides())) {
             return null;
         }
-        T forcedValue = evaluateForcedFeatureValueFromUrl(key, context.getOptions().getUrl(), valueTypeClass);
+        T forcedValue = evaluateForcedFeatureValueFromUrl(key, context.resolveUrl(), valueTypeClass);
         if (forcedValue == null) {
             return null;
         }
