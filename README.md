@@ -386,8 +386,10 @@ What to know before you ship:
 - **Attributes read.** `GrowthBookClient` reads a document for each attribute your experiments hash
   on, plus `Options.stickyBucketIdentifierAttributes`. Before 0.13.0 it read every user attribute.
 - **Prefetching with inline experiments.** A context from `prefetchStickyBuckets` has documents only
-  for those attributes. If you pass it to `run()` with an inline experiment that hashes on another
-  one, the stored assignment is replaced. List that attribute in `stickyBucketIdentifierAttributes`.
+  for those attributes. An inline experiment passed to `run()` that hashes on another one reads its
+  document when it runs. List that attribute in `stickyBucketIdentifierAttributes` so the prefetch
+  covers it. In 0.13.0 that read was skipped and the stored assignment was replaced; later versions
+  fix this.
 - **Store failures.** A read that fails, or takes longer than `Options.stickyBucketTimeout` (5 seconds
   by default), does not fail the evaluation. The user is bucketed by hash and nothing is saved, so
   the stored assignment is never replaced.

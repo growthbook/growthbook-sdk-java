@@ -885,6 +885,107 @@ class GrowthBookClientAsyncApiTest {
         }
     }
 
+    @Test
+    @Timeout(30)
+    void aPrefetchedContextStillReadsAnInlineExperimentsOwnHashAttribute() throws Exception {
+        // Nothing tells the prefetch to read "id": no feature's experiment hashes on it and it is
+        // not in stickyBucketIdentifierAttributes.
+        Experiment<String> experiment = experiment("exp-prefetch-inline");
+        String stored = variationKeyOtherThanHashed(experiment, user("u1"));
+        ForeignThreadStickyService service = new ForeignThreadStickyService();
+        service.store.put("id||u1", storedAssignment("u1", "exp-prefetch-inline", stored));
+        GrowthBookClient client = new GrowthBookClient(Options.builder().asyncStickyBucketService(service).build());
+        try {
+            UserContext prefetched = client.prefetchStickyBuckets(user("u1")).get(10, TimeUnit.SECONDS);
+
+            ExperimentResult<String> async = client.runAsync(experiment, prefetched).get(10, TimeUnit.SECONDS);
+            ExperimentResult<String> sync = client.run(experiment, prefetched);
+
+            assertEquals(stored, async.getKey(), "runAsync must serve the stored variation");
+            assertEquals(stored, sync.getKey(), "run must serve the stored variation");
+            client.flushStickyBucketSaves().get(10, TimeUnit.SECONDS);
+            assertEquals(stored, service.store.get("id||u1").getAssignments().get("exp-prefetch-inline__0"),
+                    "the stored variation must not be replaced");
+            assertEquals(0, service.saveCalls.get());
+        } finally {
+            client.shutdown();
+        }
+    }
+
+    @Test
+    @Timeout(30)
+    void aPrefetchedDocumentStillCountsWhenAnotherAttributeIsReadOnDemand() throws Exception {
+        // The prefetch covers "id" (configured); the experiment's hash attribute "deviceId" is read
+        // on demand. The stored assignment sits under the fallback attribute, in the prefetched document.
+        Experiment<String> experiment = Experiment.<String>builder()
+                .key("exp-prefetch-fallback")
+                .hashAttribute("deviceId")
+                .fallbackAttribute("id")
+                .variations(new ArrayList<>(Arrays.asList("control", "treatment")))
+                .meta(new ArrayList<>(Arrays.asList(
+                        VariationMeta.builder().key("control").build(),
+                        VariationMeta.builder().key("treatment").build())))
+                .build();
+        UserContext user = UserContext.builder().attributesJson("{\"id\":\"u1\",\"deviceId\":\"d1\"}").build();
+        String stored = variationKeyOtherThanHashed(experiment, user);
+        ForeignThreadStickyService service = new ForeignThreadStickyService();
+        service.store.put("id||u1", storedAssignment("u1", "exp-prefetch-fallback", stored));
+        GrowthBookClient client = new GrowthBookClient(stickyOptions(service, null));
+        try {
+            UserContext prefetched = client.prefetchStickyBuckets(user).get(10, TimeUnit.SECONDS);
+
+            assertEquals(stored, client.runAsync(experiment, prefetched).get(10, TimeUnit.SECONDS).getKey());
+            assertEquals(stored, client.run(experiment, prefetched).getKey());
+        } finally {
+            client.shutdown();
+        }
+    }
+
+    @Test
+    @Timeout(30)
+    void aFailedReadForAPrefetchedContextsInlineExperimentSavesNothing() throws Exception {
+        Experiment<String> experiment = experiment("exp-prefetch-inline-fail");
+        String stored = variationKeyOtherThanHashed(experiment, user("u1"));
+        ForeignThreadStickyService service = new ForeignThreadStickyService();
+        service.store.put("id||u1", storedAssignment("u1", "exp-prefetch-inline-fail", stored));
+        GrowthBookClient client = new GrowthBookClient(Options.builder().asyncStickyBucketService(service).build());
+        try {
+            UserContext prefetched = client.prefetchStickyBuckets(user("u1")).get(10, TimeUnit.SECONDS);
+            service.failFetches = true;
+
+            assertNotNull(client.runAsync(experiment, prefetched).get(10, TimeUnit.SECONDS).getValue());
+            assertNotNull(client.run(experiment, prefetched).getValue());
+
+            client.flushStickyBucketSaves().get(10, TimeUnit.SECONDS);
+            assertEquals(0, service.saveCalls.get(), "a failed read is never followed by a save");
+            assertEquals(stored, service.store.get("id||u1").getAssignments().get("exp-prefetch-inline-fail__0"));
+        } finally {
+            client.shutdown();
+        }
+    }
+
+    @Test
+    @Timeout(30)
+    void aContextThatAlreadyCarriesTheInlineExperimentsDocumentIsNotReadAgain() throws Exception {
+        Experiment<String> experiment = experiment("exp-preloaded-inline");
+        String stored = variationKeyOtherThanHashed(experiment, user("u1"));
+        ForeignThreadStickyService service = new ForeignThreadStickyService();
+        Map<String, StickyAssignmentsDocument> preloaded = new HashMap<>();
+        preloaded.put("id||u1", storedAssignment("u1", "exp-preloaded-inline", stored));
+        UserContext user = UserContext.builder()
+                .attributesJson("{\"id\":\"u1\"}")
+                .stickyBucketAssignmentDocs(preloaded)
+                .build();
+        GrowthBookClient client = new GrowthBookClient(Options.builder().asyncStickyBucketService(service).build());
+        try {
+            assertEquals(stored, client.runAsync(experiment, user).get(10, TimeUnit.SECONDS).getKey());
+            assertEquals(stored, client.run(experiment, user).getKey());
+            assertEquals(0, service.fetchCalls.size(), "the caller supplied the document: no store read");
+        } finally {
+            client.shutdown();
+        }
+    }
+
     // ------------------------------------------------------------- runAsync
 
     @Test

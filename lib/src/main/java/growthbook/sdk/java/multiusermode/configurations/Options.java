@@ -458,8 +458,9 @@ public class Options {
 
     /**
      * Attribute keys whose sticky bucket documents are read for every user, in addition to the
-     * attributes the loaded features' experiments hash on (those are always read). Needed only for
-     * attributes the SDK cannot derive, such as the hash attribute of an inline experiment.
+     * attributes the loaded features' experiments hash on (those are always read). An inline
+     * experiment's own attributes are read when it is evaluated; list them here so that
+     * {@code GrowthBookClient.prefetchStickyBuckets} covers them too.
      */
     @Nullable
     private List<String> stickyBucketIdentifierAttributes;

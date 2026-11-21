@@ -91,7 +91,9 @@ breaks one needs a deliberate decision, not a test edit.
   would replace it. Same rule for blocking and async services, and for `GrowthBook`.
 - **Identifier attributes only grow.** The client reads the attributes the loaded features'
   experiments hash on, plus `Options.stickyBucketIdentifierAttributes`, plus an inline experiment's
-  own. Never narrow the derived set by the configured list.
+  own. Never narrow the derived set by the configured list. A context that already carries
+  documents (prefetched or caller-supplied) still gets an on-demand read for an inline experiment's
+  attributes the prefetch could not have covered.
 - **The synchronous API calls a blocking `StickyBucketService` on the calling thread**, never on the
   client's executor. The `...Async` methods never block the caller.
 - **`...Async` methods never throw on the calling thread.** Every failure goes through the future.
