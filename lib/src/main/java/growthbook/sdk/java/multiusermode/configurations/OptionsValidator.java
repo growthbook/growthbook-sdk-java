@@ -25,6 +25,8 @@ import java.util.List;
  *     <li>{@code clientKey} is present.</li>
  *     <li>{@code swrTtlSeconds} (refresh interval) is positive when set.</li>
  *     <li>{@code backgroundFetchInterval} is non-negative when set.</li>
+ *     <li>{@code requestTimeout}, when set, is non-negative and within OkHttp's supported range
+ *     ({@code Duration.ZERO} disables the timeout).</li>
  *     <li>{@code remoteEvalCacheTtlSeconds} is positive when set.</li>
  *     <li>{@code stickyBucketService} and {@code asyncStickyBucketService} are not both set, and
  *     {@code stickyBucketTimeout} is non-negative.</li>
@@ -74,6 +76,7 @@ public final class OptionsValidator {
         checkClientKey(options.getClientKey(), violations);
         checkRefreshInterval(options.getSwrTtlSeconds(), violations);
         checkBackgroundFetchInterval(options.getBackgroundFetchInterval(), violations);
+        checkRequestTimeout(options.getRequestTimeout(), violations);
         checkRemoteEvalCacheTtl(options.getRemoteEvalCacheTtlSeconds(), violations);
         checkCacheConfiguration(options, violations);
         checkStickyBucketConfiguration(options, violations);
@@ -135,6 +138,21 @@ public final class OptionsValidator {
     private static void checkBackgroundFetchInterval(@Nullable Duration backgroundFetchInterval, List<String> violations) {
         if (backgroundFetchInterval != null && backgroundFetchInterval.isNegative()) {
             violations.add("backgroundFetchInterval must not be negative, but was " + backgroundFetchInterval);
+        }
+    }
+
+    private static void checkRequestTimeout(@Nullable Duration requestTimeout, List<String> violations) {
+        if (requestTimeout == null) {
+            return;
+        }
+        if (requestTimeout.isNegative()) {
+            violations.add("requestTimeout must not be negative, but was " + requestTimeout
+                    + " (use Duration.ZERO to disable the timeout)");
+            return;
+        }
+        if (requestTimeout.compareTo(Duration.ofMillis(Integer.MAX_VALUE)) > 0) {
+            violations.add("requestTimeout must not exceed " + Integer.MAX_VALUE + " ms, but was "
+                    + requestTimeout);
         }
     }
 

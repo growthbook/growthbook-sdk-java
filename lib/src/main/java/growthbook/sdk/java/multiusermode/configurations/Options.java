@@ -166,6 +166,7 @@ public class Options {
                 asyncExecutor,
                 stickyBucketCacheTtlSeconds,
                 stickyBucketCacheSize,
+                null,
                 null
         );
     }
@@ -243,6 +244,7 @@ public class Options {
                 null,
                 null,
                 null,
+                null,
                 null
         );
     }
@@ -287,7 +289,7 @@ public class Options {
                 featureRefreshCallback, globalAttributes, globalForcedFeatureValues,
                 globalForcedVariationsMap, cacheManager, cacheMode, cacheDirectory, remoteEval,
                 cacheKeyAttributes, remoteEvalCacheSize, remoteEvalCacheTtlSeconds,
-                backgroundFetchInterval, retryPolicy, null, null, plugins, null, null, null, null, null
+                backgroundFetchInterval, retryPolicy, null, null, plugins, null, null, null, null, null, null
         );
     }
 
@@ -334,7 +336,61 @@ public class Options {
                 globalForcedVariationsMap, cacheManager, cacheMode, cacheDirectory, remoteEval,
                 cacheKeyAttributes, remoteEvalCacheSize, remoteEvalCacheTtlSeconds,
                 backgroundFetchInterval, retryPolicy, featureRefreshListenerExecutor,
-                sseReconnectOnFailure, plugins, null, null, null, null, null
+                sseReconnectOnFailure, plugins, null, null, null, null, null, null
+        );
+    }
+
+    /**
+     * Backward-compatible constructor preserving the positional signature before {@code requestTimeout}
+     * was added. Delegates with no request timeout, so the SDK applies
+     * {@link growthbook.sdk.java.constants.SDKConstants#DEFAULT_REQUEST_TIMEOUT}.
+     */
+    public Options(@Nullable Boolean enabled,
+                   Boolean isQaMode,
+                   @Nullable Boolean isCacheDisabled,
+                   Boolean allowUrlOverrides,
+                   @Nullable String url,
+                   @Nullable String apiHost,
+                   @Nullable String clientKey,
+                   @Nullable String decryptionKey,
+                   @Nullable List<String> stickyBucketIdentifierAttributes,
+                   @Nullable StickyBucketService stickyBucketService,
+                   @Nullable TrackingCallbackWithUser trackingCallBackWithUser,
+                   @Nullable FeatureUsageCallbackWithUser featureUsageCallbackWithUser,
+                   @Nullable FeatureRefreshStrategy refreshStrategy,
+                   @Nullable Integer swrTtlSeconds,
+                   @Deprecated @Nullable FeatureRefreshCallback featureRefreshCallback,
+                   @Nullable JsonObject globalAttributes,
+                   @Nullable Map<String, Object> globalForcedFeatureValues,
+                   @Nullable Map<String, ?> globalForcedVariationsMap,
+                   @Nullable GbCacheManager cacheManager,
+                   @Nullable CacheMode cacheMode,
+                   @Nullable String cacheDirectory,
+                   @Nullable Boolean remoteEval,
+                   @Nullable List<String> cacheKeyAttributes,
+                   @Nullable Integer remoteEvalCacheSize,
+                   @Nullable Integer remoteEvalCacheTtlSeconds,
+                   @Nullable Duration backgroundFetchInterval,
+                   @Nullable FeatureFetchRetryPolicy retryPolicy,
+                   @Nullable Executor featureRefreshListenerExecutor,
+                   @Nullable Boolean sseReconnectOnFailure,
+                   @Nullable List<GrowthBookPlugin> plugins,
+                   @Nullable AsyncStickyBucketService asyncStickyBucketService,
+                   @Nullable Executor asyncExecutor,
+                   @Nullable Long stickyBucketCacheTtlSeconds,
+                   @Nullable Integer stickyBucketCacheSize,
+                   @Nullable Duration stickyBucketTimeout
+    ) {
+        this(
+                enabled, isQaMode, isCacheDisabled, allowUrlOverrides, url, apiHost, clientKey,
+                decryptionKey, stickyBucketIdentifierAttributes, stickyBucketService,
+                trackingCallBackWithUser, featureUsageCallbackWithUser, refreshStrategy, swrTtlSeconds,
+                featureRefreshCallback, globalAttributes, globalForcedFeatureValues,
+                globalForcedVariationsMap, cacheManager, cacheMode, cacheDirectory, remoteEval,
+                cacheKeyAttributes, remoteEvalCacheSize, remoteEvalCacheTtlSeconds,
+                backgroundFetchInterval, retryPolicy, featureRefreshListenerExecutor,
+                sseReconnectOnFailure, plugins, asyncStickyBucketService, asyncExecutor,
+                stickyBucketCacheTtlSeconds, stickyBucketCacheSize, stickyBucketTimeout, null
         );
     }
 
@@ -373,7 +429,8 @@ public class Options {
                    @Nullable Executor asyncExecutor,
                    @Nullable Long stickyBucketCacheTtlSeconds,
                    @Nullable Integer stickyBucketCacheSize,
-                   @Nullable Duration stickyBucketTimeout
+                   @Nullable Duration stickyBucketTimeout,
+                   @Nullable Duration requestTimeout
     ) {
         this.enabled = enabled == null || enabled;
         this.isQaMode = isQaMode != null && isQaMode;
@@ -410,6 +467,7 @@ public class Options {
         this.stickyBucketCacheTtlSeconds = stickyBucketCacheTtlSeconds;
         this.stickyBucketCacheSize = stickyBucketCacheSize == null ? 1000 : stickyBucketCacheSize;
         this.stickyBucketTimeout = stickyBucketTimeout;
+        this.requestTimeout = requestTimeout;
     }
 
     /**
@@ -571,6 +629,22 @@ public class Options {
      */
     @Nullable
     private Duration backgroundFetchInterval;
+
+    /**
+     * Connect/read/write timeout applied to the features fetch and remote-eval HTTP calls, giving
+     * each call a predictable upper bound. When {@code null}, the SDK applies
+     * {@link growthbook.sdk.java.constants.SDKConstants#DEFAULT_REQUEST_TIMEOUT} to the client it
+     * creates (a caller-supplied {@code OkHttpClient} keeps its own timeouts). Set
+     * {@link Duration#ZERO} to restore OkHttp's infinite timeout. Must not be negative
+     * (rejected by {@link OptionsValidator}). Does not bound the long-lived SSE stream.
+     *
+     * <p>This bounds a single request, not a whole initialization: with a retry policy of
+     * {@code n} attempts, a persistently unreachable endpoint can take up to {@code n ×
+     * requestTimeout} plus the policy's retry backoff between attempts before initialization
+     * gives up.
+     */
+    @Nullable
+    private Duration requestTimeout;
 
     /**
      * Optional bounded retry policy. Repositories use the default policy when null.
