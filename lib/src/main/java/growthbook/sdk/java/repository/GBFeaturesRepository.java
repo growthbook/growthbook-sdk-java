@@ -85,6 +85,13 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
     private static final String CACHE_KEY_PREFIX = "FEATURE_CACHE_";
     public static final String FILE_PATH_FOR_CACHE = "src/main/resources";
     public static final String EMPTY_JSON_OBJECT_STRING = "{}";
+
+    /**
+     * Process-shared cache coordinator (payload store + single-flight de-duplication + settings) for
+     * repositories that opt in via {@code sharedCacheEnabled}. The singleton lets instances configured
+     * with the same key share one cached entry and collapse concurrent cold starts to a single fetch.
+     */
+    private static final SharedFeatureCache SHARED_CACHE = SharedFeatureCache.SHARED;
     private static final ThreadFactory SSE_RETRY_THREAD_FACTORY = runnable -> {
         Thread thread = new Thread(runnable, "growthbook-sse-retry");
         thread.setDaemon(true);
@@ -200,6 +207,14 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
     private final OkHttpClient okHttpClient;
 
     /**
+     * Whether {@link #okHttpClient} was created by this repository (and may therefore be fully released
+     * on {@link #shutdown()}). A caller-supplied client — even after {@code newBuilder()} reconfiguration,
+     * which shares the original's dispatcher and connection pool — is never shut down here, as the caller
+     * owns its lifecycle.
+     */
+    private final boolean ownsHttpClient;
+
+    /**
      * Http request client for establish SSE connection
      */
     private final AtomicReference<OkHttpClient> sseHttpClient = new AtomicReference<>(null);
@@ -297,6 +312,28 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
      * Flag that enable CachingManager
      */
     private final boolean isCacheDisabled;
+
+    /**
+     * When true, this repository participates in the process-shared payload cache and cross-instance
+     * fetch de-duplication (see {@link SharedPayloadCache}). Opt-in; defaults to false so the
+     * per-instance caching behavior is unchanged. Honored only on the
+     * {@link FeatureRefreshStrategy#STALE_WHILE_REVALIDATE} features-GET path.
+     *
+     * <p>The shared entry is keyed by {@code (apiHost, clientKey)} together with a fingerprint of the
+     * {@code decryptionKey} (see {@link SharedFeatureCache#deriveKey}), so instances that would receive a
+     * different payload never share; only instances that agree on all of these reuse one entry.
+     *
+     * <p>When a stale entry is served, its background revalidation runs through the normal refresh path
+     * and is therefore subject to {@link #backgroundFetchInterval}: if that throttle is set and still
+     * active, the immediate revalidation is skipped and the entry refreshes on the next poll instead.
+     */
+    private final boolean sharedCacheEnabled;
+
+    /**
+     * Key for the shared payload cache: the features endpoint (which encodes {@code (apiHost, clientKey)})
+     * plus a fingerprint of the {@code decryptionKey}. See {@link SharedFeatureCache#deriveKey}.
+     */
+    private final String sharedCacheKey;
 
     /**
      * Request body for that be sent with POST request for remote eval feature
@@ -397,11 +434,11 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
                 requestBodyForRemoteEval,
                 cacheManager,
                 null,
+                null,
                 null
         );
     }
 
-    @Builder
     public GBFeaturesRepository(
             @Nullable String apiHost,
             String clientKey,
@@ -425,6 +462,39 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
                 cacheManager,
                 backgroundFetchInterval,
                 retryPolicy
+        );
+    }
+
+    /**
+     * Builder-backed constructor. Adds the opt-in {@code sharedCacheEnabled} flag on top of the
+     * positional constructor above; {@code GBFeaturesRepository.builder()} is generated from here.
+     */
+    @Builder
+    public GBFeaturesRepository(
+            @Nullable String apiHost,
+            String clientKey,
+            @Deprecated @Nullable String encryptionKey,
+            @Nullable FeatureRefreshStrategy refreshStrategy,
+            @Nullable Integer swrTtlSeconds,
+            @Nullable OkHttpClient okHttpClient,
+            @Nullable String decryptionKey,
+            @Nullable Boolean isCacheDisabled,
+            @Nullable RequestBodyForRemoteEval requestBodyForRemoteEval,
+            @Nullable GbCacheManager cacheManager,
+            @Nullable Duration backgroundFetchInterval,
+            @Nullable FeatureFetchRetryPolicy retryPolicy,
+            @Nullable Boolean sharedCacheEnabled
+    ) {
+        this(apiHost, clientKey, (decryptionKey != null) ? decryptionKey : encryptionKey,
+                refreshStrategy,
+                swrTtlSeconds,
+                okHttpClient,
+                isCacheDisabled,
+                (requestBodyForRemoteEval != null) ? requestBodyForRemoteEval : new RequestBodyForRemoteEval(),
+                cacheManager,
+                backgroundFetchInterval,
+                retryPolicy,
+                sharedCacheEnabled != null && sharedCacheEnabled
         );
     }
 
@@ -478,6 +548,29 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
             @Nullable Duration backgroundFetchInterval,
             @Nullable FeatureFetchRetryPolicy retryPolicy
     ) {
+        this(apiHost, clientKey, decryptionKey, refreshStrategy, swrTtlSeconds, okHttpClient,
+                isCacheDisabled, requestBodyForRemoteEval, cacheManager, backgroundFetchInterval,
+                retryPolicy, false);
+    }
+
+    /**
+     * Terminal constructor. All public constructors and the builder funnel here; it is the single
+     * place that assigns final fields, including the opt-in {@code sharedCacheEnabled} flag.
+     */
+    private GBFeaturesRepository(
+            @Nullable String apiHost,
+            String clientKey,
+            @Nullable String decryptionKey,
+            @Nullable FeatureRefreshStrategy refreshStrategy,
+            @Nullable Integer swrTtlSeconds,
+            @Nullable OkHttpClient okHttpClient,
+            @Nullable Boolean isCacheDisabled,
+            @Nullable RequestBodyForRemoteEval requestBodyForRemoteEval,
+            @Nullable GbCacheManager cacheManager,
+            @Nullable Duration backgroundFetchInterval,
+            @Nullable FeatureFetchRetryPolicy retryPolicy,
+            boolean sharedCacheEnabled
+    ) {
         this.isCacheDisabled = isCacheDisabled != null && isCacheDisabled; // cache enable by default
         if (clientKey == null) throw new IllegalArgumentException("clientKey cannot be null");
         if (backgroundFetchInterval != null && backgroundFetchInterval.isNegative()) {
@@ -508,10 +601,18 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
         this.refreshExpiresAt();
 
         // Use provided OkHttpClient or create a new one
-        this.okHttpClient = okHttpClient == null ? this.initializeHttpClient() : okHttpClient;
+        if (okHttpClient == null) {
+            this.okHttpClient = this.initializeHttpClient();
+            this.ownsHttpClient = true;
+        } else {
+            this.okHttpClient = okHttpClient;
+            this.ownsHttpClient = false;
+        }
         if (!this.isCacheDisabled) {
             this.cacheManager.set(cacheManager != null ? cacheManager : createCacheManager());
         }
+        this.sharedCacheEnabled = sharedCacheEnabled;
+        this.sharedCacheKey = SharedFeatureCache.deriveKey(this.featuresEndpoint, this.decryptionKey, Collections.emptyMap());
     }
 
     private static String buildCacheKey(String featuresEndpoint) {
@@ -727,7 +828,7 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
 
             switch (this.refreshStrategy) {
                 case STALE_WHILE_REVALIDATE:
-                    refreshFeatures(RefreshMode.DEFAULT, FeatureRefreshSource.INITIALIZATION);
+                    initialRefresh(FeatureRefreshSource.INITIALIZATION);
                     schedulePolling();
                     break;
 
@@ -947,7 +1048,198 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
     }
 
     public void requestFeatureRefresh(RefreshMode refreshMode) {
-        this.featureRefreshScheduler.requestRefresh(refreshMode, this::refreshFeatures);
+        RefreshMode mode = refreshMode == null ? RefreshMode.DEFAULT : refreshMode;
+        if (mode == RefreshMode.FORCE) {
+            this.featureRefreshScheduler.runInBackground(mode, this::refreshFeatures);
+        } else {
+            this.featureRefreshScheduler.runNow(mode, this::refreshFeatures);
+        }
+    }
+
+    /**
+     * Fetches a feature payload once into the process-shared cache keyed by {@code (apiHost, clientKey)},
+     * so a later {@link GBFeaturesRepository} configured with the same key and
+     * {@code sharedCacheEnabled(true)} serves the first request from cache without a network round trip.
+     * Concurrent prefetch/initialize calls for the same key collapse to a single fetch.
+     *
+     * <p>Uses a throwaway {@link FeatureRefreshStrategy#STALE_WHILE_REVALIDATE} repository that is shut
+     * down before returning; no polling or streaming is started. The shared cache survives the throwaway.
+     * A fresh shared entry is reused unless {@link PrefetchOptions#isSkipCache()} forces a network fetch.
+     *
+     * @param options identifies the payload to warm; {@code clientKey} is required
+     * @throws FeatureFetchException when the warm-up fetch fails
+     */
+    public static void prefetchPayload(PrefetchOptions options) throws FeatureFetchException {
+        if (options == null || options.getClientKey() == null) {
+            throw new IllegalArgumentException("clientKey cannot be null");
+        }
+        GBFeaturesRepository repository = GBFeaturesRepository.builder()
+                .apiHost(options.getApiHost())
+                .clientKey(options.getClientKey())
+                .decryptionKey(options.getDecryptionKey())
+                .refreshStrategy(FeatureRefreshStrategy.STALE_WHILE_REVALIDATE)
+                .isCacheDisabled(true)
+                .sharedCacheEnabled(true)
+                .build();
+        try {
+            repository.loadFromSharedCache(FeatureRefreshSource.INITIALIZATION, false, options.isSkipCache());
+        } finally {
+            repository.shutdown();
+        }
+    }
+
+    /**
+     * Configures the process-shared payload cache (stale TTL, hard max age, and max entries) for all
+     * opted-in repositories, mirroring the JS SDK's {@code configureCache}. Applies to entries evaluated
+     * after the call.
+     *
+     * @param staleTtl   age after which a cached payload is served but revalidated in the background
+     * @param maxAge     age after which a cached payload is discarded
+     * @param maxEntries maximum number of distinct keys retained (least-recently-stored evicted)
+     * @throws NullPointerException     if {@code staleTtl} or {@code maxAge} is null
+     * @throws IllegalArgumentException for negative durations or {@code maxEntries < 1}
+     */
+    public static void configureSharedCache(Duration staleTtl, Duration maxAge, int maxEntries) {
+        Objects.requireNonNull(staleTtl, "staleTtl");
+        Objects.requireNonNull(maxAge, "maxAge");
+        SHARED_CACHE.configure(new SharedPayloadCache.Settings(staleTtl.toMillis(), maxAge.toMillis(), maxEntries));
+    }
+
+    private boolean sharedCacheApplicable() {
+        return this.sharedCacheEnabled
+                && this.sharedCacheKey != null
+                && this.refreshStrategy == FeatureRefreshStrategy.STALE_WHILE_REVALIDATE;
+    }
+
+    private void initialRefresh(FeatureRefreshSource source) throws FeatureFetchException {
+        loadFromSharedCache(source, true, false);
+    }
+
+    /**
+     * Loads features through the process-shared cache when {@link #sharedCacheApplicable()}, following the
+     * JS SDK's stale-while-revalidate read path:
+     * <ul>
+     *   <li>a {@link SharedPayloadCache.State#FRESH} entry is served with no network call;</li>
+     *   <li>a {@link SharedPayloadCache.State#STALE} entry is served immediately when {@code allowStale}
+     *       and revalidated in the background;</li>
+     *   <li>otherwise a single de-duplicated network fetch runs across concurrent cold starts, and its
+     *       payload is shared with the followers.</li>
+     * </ul>
+     * Falls back to a plain refresh when sharing is off or the shared fetch yields no payload.
+     *
+     * @param allowStale serve a stale-but-not-expired entry immediately (init) rather than blocking on a
+     *                   fresh fetch (prefetch warm-up)
+     * @param skipCache  bypass the cache read entirely and force a fetch
+     */
+    private void loadFromSharedCache(FeatureRefreshSource source, boolean allowStale, boolean skipCache)
+            throws FeatureFetchException {
+        if (!sharedCacheApplicable()) {
+            refreshFeatures(RefreshMode.DEFAULT, source);
+            return;
+        }
+
+        SharedFeatureCache.Read read = SHARED_CACHE.read(this.sharedCacheKey, allowStale, skipCache);
+        if (!read.shouldFetch()) {
+            seedFromSharedPayload(read.payload(), source);
+            if (read.isStale()) {
+                triggerBackgroundSharedReload(source);
+            }
+            return;
+        }
+
+        AtomicBoolean appliedLocally = new AtomicBoolean(false);
+        String payload = SHARED_CACHE.runDeduped(
+                this.sharedCacheKey, () -> fetchIntoSharedCache(source, skipCache, appliedLocally));
+
+        // The instance that performed the network refresh has already applied the payload to itself.
+        // Everyone else — followers that received the leader's payload, and a leader that reused a
+        // concurrently-published fresh entry — must apply it now. This is deliberately independent of
+        // hasFeatureData: a bootstrap initialPayload sets that flag before this load, so relying on it
+        // would leave followers stuck on stale bootstrap data.
+        if (!appliedLocally.get()) {
+            if (payload != null) {
+                seedFromSharedPayload(payload, source);
+            } else {
+                refreshFeatures(RefreshMode.DEFAULT, source);
+            }
+        }
+    }
+
+    /**
+     * Single-flight leader step. Unless {@code skipCache}, re-checks the shared cache — a concurrent
+     * leader may have just published a fresh entry, closing the gap between the caller's miss and
+     * acquiring the in-flight slot — and reuses it. Otherwise performs the network refresh, which
+     * publishes the payload via {@link #onResponseJson} and applies it to this instance; in that case
+     * {@code appliedLocally} is set so the caller does not re-seed.
+     *
+     * <p>Returns a shared payload still within its max age for waiting followers to adopt, or
+     * {@code null} when none is — e.g. the network fetch failed and this instance fell back to its own
+     * disk cache, leaving the shared entry expired. Returning {@code null} there keeps followers from
+     * adopting an expired payload past its max age; each uses its own fallback instead. A successful
+     * refresh (re)publishes the entry, so it is within max age and is returned.
+     */
+    @Nullable
+    private String fetchIntoSharedCache(
+            FeatureRefreshSource source, boolean skipCache, AtomicBoolean appliedLocally)
+            throws FeatureFetchException {
+        if (!skipCache && SHARED_CACHE.isFresh(this.sharedCacheKey)) {
+            return SHARED_CACHE.peek(this.sharedCacheKey);
+        }
+        refreshFeatures(RefreshMode.DEFAULT, source);
+        appliedLocally.set(true);
+        SharedFeatureCache.Read reread = SHARED_CACHE.read(this.sharedCacheKey, true, false);
+        return reread.shouldFetch() ? null : reread.payload();
+    }
+
+    /**
+     * Revalidates a stale shared entry off the caller's thread, mirroring the JS SDK's background reload
+     * when serving stale data. Runs on the refresh scheduler's background executor with normal
+     * (ETag-aware) refresh semantics; the action is a de-duplicated shared fetch so concurrent stale
+     * instances trigger a single network reload.
+     *
+     * <p>The instance that performs the reload applies the fresh payload to itself via the refresh path.
+     * An instance whose reload was de-duplicated onto another leader must adopt the leader's payload
+     * here; otherwise it would keep serving the stale flags until its next poll even after the shared
+     * entry was refreshed.
+     */
+    private void triggerBackgroundSharedReload(FeatureRefreshSource source) {
+        this.featureRefreshScheduler.runInBackground(mode -> {
+            AtomicBoolean appliedLocally = new AtomicBoolean(false);
+            String payload = SHARED_CACHE.runDeduped(
+                    this.sharedCacheKey,
+                    () -> fetchIntoSharedCache(source, false, appliedLocally));
+            if (!appliedLocally.get() && payload != null) {
+                seedFromSharedPayload(payload, source);
+            }
+        });
+    }
+
+    /**
+     * Test hook: clears the process-shared payload cache, resets its settings to defaults, and drops any
+     * in-flight fetch state so cases start from a cold, default-configured shared cache.
+     */
+    static void clearSharedPayloadState() {
+        SHARED_CACHE.reset();
+    }
+
+    /**
+     * Applies a payload obtained from the shared cache to this instance's state without re-fetching.
+     * Reuses the cache-load path ({@code isFromCache=true}) so it neither re-publishes to the shared
+     * cache nor writes the per-instance file cache; success is reported with {@code loadedFromCache=true}.
+     * Notifies both the legacy {@link FeatureRefreshCallback} channel and the modern listener channel so
+     * callers that copy flags from the legacy callback receive the shared payload on a cache hit too.
+     */
+    private void seedFromSharedPayload(String payload, FeatureRefreshSource source) throws FeatureFetchException {
+        long startedAtNanos = System.nanoTime();
+        boolean featuresChanged = onResponseJson(payload, true);
+        this.lastSuccessfulFetchAtMillis.set(System.currentTimeMillis());
+        this.onRefreshSuccess(getFeaturesJson());
+        this.featureRefreshNotifier.notifySuccess(
+                source,
+                featuresChanged,
+                true,
+                FeatureRefreshNotifier.elapsedMillis(startedAtNanos)
+        );
     }
 
     private void fetchFeaturesWithRetries(RefreshMode refreshMode, FeatureRefreshSource source) throws FeatureFetchException {
@@ -1124,7 +1416,11 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
                 saveToCacheQuietly(responseJsonString);
             }
 
-            return applyPayload(payload, isFromCache);
+            boolean featuresChanged = applyPayload(payload, isFromCache);
+            if (!isFromCache && sharedCacheApplicable()) {
+                SHARED_CACHE.publish(this.sharedCacheKey, responseJsonString);
+            }
+            return featuresChanged;
         } catch (DecryptionUtils.DecryptionException e) {
             log.error("FeatureFetchException: UNKNOWN feature fetch error code {}",
                     e.getMessage(), e);
@@ -1385,6 +1681,11 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
             if (response.code() == HttpURLConnection.HTTP_NOT_MODIFIED) {
                 log.info("Features not modified (304). Using existing data.");
                 this.refreshExpiresAt();
+                // A 304 confirms the shared entry is still valid; refresh its timestamp so it is not
+                // reclassified stale after staleTtl and revalidated by other instances for nothing.
+                if (sharedCacheApplicable()) {
+                    SHARED_CACHE.touch(this.sharedCacheKey);
+                }
                 this.onRefreshSuccess(getFeaturesJson());
                 recordRefreshSuccess(false);
                 this.featureRefreshNotifier.notifySuccess(
@@ -1534,15 +1835,7 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
 
         OkHttpClient nullSseHttpClient = this.sseHttpClient.getAndSet(null);
         if (nullSseHttpClient != null) {
-            nullSseHttpClient.dispatcher().cancelAll();
-            nullSseHttpClient.connectionPool().evictAll();
-            if (nullSseHttpClient.cache() != null) {
-                try {
-                    nullSseHttpClient.cache().close();
-                } catch (IOException e) {
-                    log.error(e.getMessage(), e);
-                }
-            }
+            releaseHttpClient(nullSseHttpClient);
             log.info("SseHttpClient shutdown");
         }
         // Release the cache manager reference without clearing the underlying store:
@@ -1552,6 +1845,30 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
         GbCacheManager releasedCacheManager = this.cacheManager.getAndSet(null);
         if (releasedCacheManager != null) {
             log.info("CacheManager released");
+        }
+
+        // The main client is released only when we created it; a caller-supplied client is left alone.
+        if (this.ownsHttpClient) {
+            releaseHttpClient(this.okHttpClient);
+            log.info("OkHttpClient shutdown");
+        }
+    }
+
+    /**
+     * Releases an OkHttp client owned by this repository: cancels in-flight calls, shuts down the
+     * dispatcher's executor (so its worker threads can exit), evicts pooled connections, and closes any
+     * response cache. Never call this on a caller-supplied client.
+     */
+    private static void releaseHttpClient(OkHttpClient client) {
+        client.dispatcher().cancelAll();
+        client.dispatcher().executorService().shutdown();
+        client.connectionPool().evictAll();
+        if (client.cache() != null) {
+            try {
+                client.cache().close();
+            } catch (IOException e) {
+                log.error(e.getMessage(), e);
+            }
         }
     }
 
