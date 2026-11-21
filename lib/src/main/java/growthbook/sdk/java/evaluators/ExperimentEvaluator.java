@@ -17,7 +17,9 @@ import growthbook.sdk.java.model.Filter;
 import growthbook.sdk.java.model.StickyBucketVariation;
 import growthbook.sdk.java.model.TrackData;
 import growthbook.sdk.java.model.VariationMeta;
+import growthbook.sdk.java.multiusermode.DeferredTrackingBuffer;
 import growthbook.sdk.java.multiusermode.configurations.EvaluationContext;
+import growthbook.sdk.java.multiusermode.usage.EventLoggerDispatch;
 import growthbook.sdk.java.multiusermode.usage.TrackingCallbackWithUser;
 import growthbook.sdk.java.plugin.PluginRegistry;
 import growthbook.sdk.java.stickyBucketing.StickyBucketDocWriter;
@@ -313,8 +315,13 @@ public class ExperimentEvaluator implements IExperimentEvaluator {
             }
         }
 
-        // Fire once per unique (hashAttribute, hashValue, experiment.key, variationId).
-        trackExposure(context, experiment, result, context.isSuppressTrackingErrors());
+        DeferredTrackingBuffer deferredTracking = context.getDeferredTracking();
+        if (deferredTracking != null) {
+            deferredTracking.add(experiment, result, context.getUser());
+        } else {
+            // Fire once per unique (hashAttribute, hashValue, experiment.key, variationId).
+            trackExposure(context, experiment, result, context.isSuppressTrackingErrors());
+        }
 
         return result;
     }
@@ -403,11 +410,8 @@ public class ExperimentEvaluator implements IExperimentEvaluator {
         if (tracks == null) {
             return;
         }
-        if (context.getOptions().getTrackingCallBackWithUser() == null
-                && context.getPluginRegistry() == null) {
-            return;
-        }
 
+        DeferredTrackingBuffer deferredTracking = context.getDeferredTracking();
         for (TrackData<ValueType> track : tracks) {
             if (track == null
                     || track.getExperiment() == null
@@ -417,15 +421,20 @@ public class ExperimentEvaluator implements IExperimentEvaluator {
                 log.debug("Skipping malformed remote evaluation tracking payload.");
                 continue;
             }
-            // Remote-eval track payloads never propagate a callback failure.
-            trackExposure(context, track.getExperiment(), track.getResult(), true);
+            if (deferredTracking != null) {
+                deferredTracking.add(track.getExperiment(), track.getResult(), context.getUser());
+            } else {
+                // Remote-eval track payloads never propagate a callback failure.
+                trackExposure(context, track.getExperiment(), track.getResult(), true);
+            }
         }
     }
 
     /**
-     * Fires the user tracking callback and any registered plugins for a single exposure.
-     * Plugin failures are isolated by {@link PluginRegistry}; a throwing user callback
-     * propagates to {@code trackExposure}, which decides whether to retry, log or rethrow.
+     * Fires the user tracking callback, the structured {@link EventLoggerDispatch event logger} and
+     * any registered plugins for a single exposure. Event-logger and plugin failures are isolated;
+     * a throwing user callback propagates to {@code trackExposure}, which decides whether to retry,
+     * log or rethrow.
      */
     private <ValueType> void dispatchExperimentViewed(
             EvaluationContext context,
@@ -436,6 +445,7 @@ public class ExperimentEvaluator implements IExperimentEvaluator {
         if (callback != null) {
             callback.onTrack(experiment, result, context.getUser());
         }
+        EventLoggerDispatch.fireExperimentViewedEvent(context.getOptions(), experiment, result, context.getUser());
         PluginRegistry pluginRegistry = context.getPluginRegistry();
         if (pluginRegistry != null) {
             pluginRegistry.fireExperimentViewed(experiment, result,
