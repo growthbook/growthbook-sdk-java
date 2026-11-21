@@ -308,7 +308,7 @@ class GrowthBookClientAsyncApiTest {
         String stored = variationKeyOtherThanHashed(experiment, user("u1"));
         ForeignThreadStickyService service = new ForeignThreadStickyService();
         service.store.put("id||u1", storedAssignment("u1", "exp-async-slow", stored));
-        service.fetchGate = new CountDownLatch(1); // never opened: the read outlives the timeout
+        service.hangFetches = true; // the read outlives the timeout
         ManualTimeoutScheduler timer = new ManualTimeoutScheduler();
         GrowthBookClient client = new GrowthBookClient(Options.builder()
                 .asyncStickyBucketService(service)
@@ -557,7 +557,7 @@ class GrowthBookClientAsyncApiTest {
         String stored = variationKeyOtherThanHashed(experiment, user("u1"));
         ForeignThreadStickyService service = new ForeignThreadStickyService();
         service.store.put("id||u1", storedAssignment("u1", "exp-in-flight", stored));
-        service.fetchGate = new CountDownLatch(1); // never opened: the read is still pending at shutdown
+        service.hangFetches = true; // the read is still pending at shutdown
         AtomicInteger exposures = new AtomicInteger();
         TrackingCallbackWithUser tracking = countingExposures(exposures);
         GrowthBookClient client = new GrowthBookClient(stickyOptions(service, tracking));
@@ -1037,6 +1037,7 @@ class GrowthBookClientAsyncApiTest {
         final List<Map<String, String>> fetchCalls = new CopyOnWriteArrayList<>();
         final AtomicInteger saveCalls = new AtomicInteger();
         volatile CountDownLatch fetchGate = null;
+        volatile boolean hangFetches = false; // when set, reads never complete
         volatile boolean failFetches = false;
 
         @Override
@@ -1055,6 +1056,9 @@ class GrowthBookClientAsyncApiTest {
         public CompletionStage<Map<String, StickyAssignmentsDocument>> getAllAssignments(Map<String, String> attributes) {
             fetchCalls.add(attributes);
             CompletableFuture<Map<String, StickyAssignmentsDocument>> pending = new CompletableFuture<>();
+            if (hangFetches) {
+                return pending;
+            }
             CountDownLatch gate = fetchGate;
             Thread completer = new Thread(() -> {
                 try {
