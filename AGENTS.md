@@ -14,7 +14,7 @@ GrowthBook Java SDK — a feature-flagging and A/B-testing client library, publi
 | `lib` | The SDK itself (`growthbook.sdk.java`). Evaluators, feature repository, models, caching SPI, sticky bucketing, plugins. |
 | `growthbook-cache-jcache` | Cache adapter for any JSR-107 provider. |
 | `growthbook-cache-caffeine` | Cache adapter backed by Caffeine. |
-| `growthbook-cache-redis` | Redis adapters: a `GbCacheManager` (`cache.redis`) and a `StickyBucketService` (`cache.redis.stickybucket`), each in a Jedis and a Lettuce flavour. |
+| `growthbook-cache-redis` | Redis adapters: a `GbCacheManager` (`cache.redis`) and a `StickyBucketService` (`cache.redis.stickybucket`), each in a Jedis and a Lettuce flavour, plus the non-blocking `LettuceAsyncStickyBucketService` (an `AsyncStickyBucketService`). |
 
 The `growthbook-codegen/` directory exists in the working tree but is **not** in `settings.gradle` —
 it lives on a feature branch. `./gradlew :growthbook-codegen:test` fails with "Project not found".
@@ -60,7 +60,8 @@ explicitly scoped and documented as one-path-only.
 | `repository/` | Feature fetching and caching behind `IGBFeaturesRepository`: `GBFeaturesRepository` is the base, `NativeJavaGbFeatureRepository` the JDK-HTTP variant, `LocalGbFeatureRepository` the offline one. `FeatureRefreshStrategy` = `STALE_WHILE_REVALIDATE`, `SERVER_SENT_EVENTS`, `REMOTE_EVAL_STRATEGY`; `RefreshMode` = `DEFAULT`, `FORCE`. |
 | `model/` | Pure data — `GBContext`, `Feature`, `Experiment`, `FeatureResult`, `Namespace`, … |
 | `sandbox/` | Caching SPI: `GbCacheManager` plus `InMemoryCachingManagerImpl` and `FileCachingManagerImpl`. |
-| `stickyBucketing/` | `StickyBucketService` — persists experiment assignments across requests. |
+| `stickyBucketing/` | Persists experiment assignments across requests: `StickyBucketService` (blocking) and `AsyncStickyBucketService` (`CompletionStage`), plus the adapters that let the client use a blocking service from either API. |
+| `multiusermode/` | `GrowthBookClient`, its `Options`, and the package-private `StickyBucketManager` that owns sticky bucket I/O for the client: coalesced reads, per-key serialized saves, the store-call timeout. |
 | `plugin/` | `GrowthBookPlugin` SPI and `PluginRegistry`; `plugin/tracking/` is the built-in tracking plugin. |
 | `diagnostics/` | Read-only snapshot of SDK, cache, refresh and config state. |
 | `remoteeval/`, `sse/`, `featurefetch/`, `retry/` | Remote evaluation, Server-Sent Events, HTTP fetching, retry policy. |
@@ -79,6 +80,35 @@ explicitly scoped and documented as one-path-only.
 - User-supplied code (callbacks, listeners, sticky-bucket services, custom `GbCacheManager`) is
   untrusted: catch, log via SLF4J, continue — a throwing callback must never break the refresh cycle.
 - Never log or embed API keys/tokens; payload decryption stays in `DecryptionUtils`.
+
+### Sticky bucketing and async invariants
+
+These hold for `GrowthBookClient`. Each one is pinned by tests in `multiusermode/`; a change that
+breaks one needs a deliberate decision, not a test edit.
+
+- **A failed sticky read never saves.** A read that throws, is rejected, or times out continues with
+  normal bucketing and writes nothing, because a variation chosen without the stored assignment
+  would replace it. Same rule for blocking and async services, and for `GrowthBook`.
+- **Identifier attributes only grow.** The client reads the attributes the loaded features'
+  experiments hash on, plus `Options.stickyBucketIdentifierAttributes`, plus an inline experiment's
+  own. Never narrow the derived set by the configured list. A context that already carries
+  documents (prefetched or caller-supplied) still gets an on-demand read for an inline experiment's
+  attributes the prefetch could not have covered.
+- **The synchronous API calls a blocking `StickyBucketService` on the calling thread**, never on the
+  client's executor. The `...Async` methods never block the caller.
+- **`...Async` methods never throw on the calling thread.** Every failure goes through the future.
+  `getFeatureValueAsync` completes with the default and `initializeAsync` with `false`.
+- **No async evaluation after `shutdown()`.** A call made after it fails, an evaluation still waiting
+  on its read fails, and `shutdown()` resolves every pending future.
+- **Evaluation and caller continuations never run on the store's completion thread.** Keep the
+  executor hop on both the success and the failure path.
+- **Every `...Async` method has a synchronous twin** with the same result. Add both, and extend the
+  parity test and `GrowthBookClientStickyBucketConformanceTest`.
+- **Exposure retry is `GrowthBookClient` only.** A tracking callback that throws is logged and the
+  exposure is reported again later. On `GrowthBook` the exception propagates.
+
+In tests, fire sticky bucket timeouts with `ManualTimeoutScheduler` and hold a store read open with
+a future that never completes. Do not use a real timer or a gate with a deadline.
 
 ## Module boundaries
 

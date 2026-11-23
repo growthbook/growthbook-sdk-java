@@ -548,16 +548,20 @@ class StickyBucketManagerTest {
 
     // -------------------------------------------------------------- timeout
 
-    private static final long SHORT_TIMEOUT_MILLIS = 50;
+    private static final long TIMEOUT_MILLIS = 3_000;
 
     @Test
     @Timeout(30)
     void aReadTheStoreNeverAnswersFailsWithATimeoutAndDoesNotWedgeLaterReads() throws Exception {
         ScriptedService service = new ScriptedService();
-        StickyBucketManager manager = new StickyBucketManager(service, service, null, null, SHORT_TIMEOUT_MILLIS);
+        ManualTimeoutScheduler timer = new ManualTimeoutScheduler();
+        StickyBucketManager manager = new StickyBucketManager(service, service, null, null, TIMEOUT_MILLIS, timer);
 
         CompletableFuture<Map<String, StickyAssignmentsDocument>> first = manager.fetchAssignments(attrs("u1"));
         CompletableFuture<Map<String, StickyAssignmentsDocument>> coalesced = manager.fetchAssignments(attrs("u1"));
+        assertEquals(1, service.fetchCalls.size(), "the second reader joined the first read");
+
+        assertEquals(TIMEOUT_MILLIS, timer.elapseNext(), "the read is timed with the configured timeout");
 
         ExecutionException failure = assertThrows(ExecutionException.class, () -> first.get(5, TimeUnit.SECONDS));
         assertTrue(failure.getCause() instanceof TimeoutException, "expected a timeout, got " + failure.getCause());
@@ -577,9 +581,15 @@ class StickyBucketManagerTest {
     @Timeout(30)
     void aSaveTheStoreNeverAnswersIsTreatedAsFailedAndRetriedByFlush() throws Exception {
         ScriptedService service = new ScriptedService();
-        StickyBucketManager manager = new StickyBucketManager(service, service, null, null, SHORT_TIMEOUT_MILLIS);
+        ManualTimeoutScheduler timer = new ManualTimeoutScheduler();
+        StickyBucketManager manager = new StickyBucketManager(service, service, null, null, TIMEOUT_MILLIS, timer);
 
-        manager.recordAndSave(doc("u1", "exp__0", "1")).get(5, TimeUnit.SECONDS);
+        CompletableFuture<Void> save = manager.recordAndSave(doc("u1", "exp__0", "1"));
+        assertFalse(save.isDone(), "the save is pending until the store answers or the timeout elapses");
+
+        timer.elapseNext();
+
+        save.get(5, TimeUnit.SECONDS);
         assertFalse(service.pendingSaves.get(0).isDone(), "the store call itself is left alone");
 
         service.completeSavesImmediately = true;
@@ -592,14 +602,17 @@ class StickyBucketManagerTest {
     @Timeout(30)
     void aStoreCallThatAnswersInTimeIsUnaffectedByTheTimeout() throws Exception {
         ScriptedService service = new ScriptedService();
-        StickyBucketManager manager = new StickyBucketManager(service, service, null, null, 60_000);
+        ManualTimeoutScheduler timer = new ManualTimeoutScheduler();
+        StickyBucketManager manager = new StickyBucketManager(service, service, null, null, TIMEOUT_MILLIS, timer);
 
         CompletableFuture<Map<String, StickyAssignmentsDocument>> fetch = manager.fetchAssignments(attrs("u1"));
+        assertEquals(1, timer.armedCount(), "the pending read is being timed");
         Map<String, StickyAssignmentsDocument> fetched = new HashMap<>();
         fetched.put("id||u1", doc("u1", "exp__0", "1"));
         service.pendingFetches.get(0).complete(fetched);
 
         assertEquals("1", fetch.get(5, TimeUnit.SECONDS).get("id||u1").getAssignments().get("exp__0"));
+        assertEquals(0, timer.armedCount(), "a call that answered leaves no timeout armed");
     }
 
     // ------------------------------------------------------------- shutdown
