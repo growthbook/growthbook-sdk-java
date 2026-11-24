@@ -7,6 +7,7 @@ import growthbook.sdk.java.model.FeatureResult;
 import growthbook.sdk.java.model.FeatureResultSource;
 import growthbook.sdk.java.model.TrackData;
 import growthbook.sdk.java.multiusermode.DeferredTrackingBuffer;
+import growthbook.sdk.java.multiusermode.ExperimentTracker;
 import growthbook.sdk.java.multiusermode.configurations.EvaluationContext;
 import growthbook.sdk.java.multiusermode.configurations.GlobalContext;
 import growthbook.sdk.java.multiusermode.configurations.Options;
@@ -14,6 +15,8 @@ import growthbook.sdk.java.multiusermode.configurations.UserContext;
 import growthbook.sdk.java.multiusermode.usage.EventLoggerDispatch;
 import growthbook.sdk.java.multiusermode.usage.GrowthBookEvent;
 import growthbook.sdk.java.multiusermode.usage.TrackingCallbackWithUser;
+import growthbook.sdk.java.plugin.GrowthBookPlugin;
+import growthbook.sdk.java.plugin.PluginRegistry;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -30,6 +33,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class EventLoggerEvaluationTest {
@@ -272,6 +276,118 @@ class EventLoggerEvaluationTest {
     }
 
     @Test
+    @DisplayName("A throwing tracking callback does not stop the Experiment Viewed event or plugins")
+    void throwingTrackingCallbackDoesNotBlockEventLoggerOrPlugins() {
+        // Given a throwing callback, an event logger and a plugin, as on the multi-user client
+        AtomicInteger callbackCalls = new AtomicInteger();
+        List<String> loggedEvents = new ArrayList<>();
+        AtomicInteger pluginCalls = new AtomicInteger();
+        EvaluationContext context = context(throwingCallbackOptions(callbackCalls, loggedEvents), null);
+        context.setPluginRegistry(countingPlugins(pluginCalls));
+        context.setSuppressTrackingErrors(true);
+
+        // When
+        ExperimentResult<String> result = experimentEvaluator.evaluateExperiment(experiment(), context, null);
+
+        // Then
+        assertTrue(result.getInExperiment());
+        assertEquals(1, callbackCalls.get());
+        assertEquals(Collections.singletonList(GrowthBookEvent.EXPERIMENT_VIEWED), loggedEvents);
+        assertEquals(1, pluginCalls.get());
+    }
+
+    @Test
+    @DisplayName("A retried exposure re-runs only the failed tracking callback, not the event logger or plugins")
+    void retriedExposureDoesNotDuplicateEventLoggerOrPlugins() {
+        // Given
+        AtomicInteger callbackCalls = new AtomicInteger();
+        List<String> loggedEvents = new ArrayList<>();
+        AtomicInteger pluginCalls = new AtomicInteger();
+        EvaluationContext context = context(throwingCallbackOptions(callbackCalls, loggedEvents), null);
+        context.setPluginRegistry(countingPlugins(pluginCalls));
+        context.setSuppressTrackingErrors(true);
+
+        // When the same exposure is evaluated again after the callback failed
+        experimentEvaluator.evaluateExperiment(experiment(), context, null);
+        experimentEvaluator.evaluateExperiment(experiment(), context, null);
+
+        // Then the callback is retried, while the event and the plugin fired once
+        assertEquals(2, callbackCalls.get());
+        assertEquals(Collections.singletonList(GrowthBookEvent.EXPERIMENT_VIEWED), loggedEvents);
+        assertEquals(1, pluginCalls.get());
+    }
+
+    @Test
+    @DisplayName("A callback that fails once and then succeeds leaves the event logged exactly once")
+    void callbackRecoveringOnRetryLogsEventOnce() {
+        // Given a callback that fails on its first call only
+        AtomicInteger callbackCalls = new AtomicInteger();
+        List<String> loggedEvents = new ArrayList<>();
+        Options options = Options.builder()
+                .enabled(true)
+                .allowUrlOverrides(false)
+                .trackingCallBackWithUser(new TrackingCallbackWithUser() {
+                    @Override
+                    public <T> void onTrack(Experiment<T> experiment, ExperimentResult<T> result, UserContext user) {
+                        if (callbackCalls.incrementAndGet() == 1) {
+                            throw new IllegalStateException("tracking down");
+                        }
+                    }
+                })
+                .eventLogger((name, properties, user) -> loggedEvents.add(name))
+                .build();
+        EvaluationContext context = context(options, null);
+        context.setSuppressTrackingErrors(true);
+
+        // When the exposure is evaluated three times
+        experimentEvaluator.evaluateExperiment(experiment(), context, null);
+        experimentEvaluator.evaluateExperiment(experiment(), context, null);
+        experimentEvaluator.evaluateExperiment(experiment(), context, null);
+
+        // Then the callback ran until it succeeded, and the event was logged once
+        assertEquals(2, callbackCalls.get());
+        assertEquals(Collections.singletonList(GrowthBookEvent.EXPERIMENT_VIEWED), loggedEvents);
+    }
+
+    @Test
+    @DisplayName("A successfully tracked exposure takes a single tracker entry")
+    void successfulExposureUsesOneTrackerEntry() {
+        // Given a shared tracker that holds a single entry
+        AtomicInteger callbackCalls = new AtomicInteger();
+        List<String> loggedEvents = new ArrayList<>();
+        Options options = Options.builder()
+                .enabled(true)
+                .allowUrlOverrides(false)
+                .trackingCallBackWithUser(tracker(callbackCalls))
+                .eventLogger((name, properties, user) -> loggedEvents.add(name))
+                .build();
+        EvaluationContext context = context(options, null);
+        context.setSharedExperimentTracker(new ExperimentTracker(1));
+
+        // When the same exposure is evaluated twice
+        experimentEvaluator.evaluateExperiment(experiment(), context, null);
+        experimentEvaluator.evaluateExperiment(experiment(), context, null);
+
+        // Then it is still deduped: a second entry would have evicted the exposure's own key
+        assertEquals(1, callbackCalls.get());
+        assertEquals(Collections.singletonList(GrowthBookEvent.EXPERIMENT_VIEWED), loggedEvents);
+    }
+
+    @Test
+    @DisplayName("When callback errors are rethrown, the Experiment Viewed event is still logged first")
+    void rethrownCallbackFailureStillLogsEvent() {
+        // Given errors are not suppressed, as on the single-context GrowthBook
+        AtomicInteger callbackCalls = new AtomicInteger();
+        List<String> loggedEvents = new ArrayList<>();
+        EvaluationContext context = context(throwingCallbackOptions(callbackCalls, loggedEvents), null);
+
+        // When & Then the callback failure still propagates, after the event was logged
+        assertThrows(IllegalStateException.class,
+                () -> experimentEvaluator.evaluateExperiment(experiment(), context, null));
+        assertEquals(Collections.singletonList(GrowthBookEvent.EXPERIMENT_VIEWED), loggedEvents);
+    }
+
+    @Test
     @DisplayName("Verify: an executor that rejects the event task is swallowed and evaluation still returns")
     void rejectingExecutorIsSwallowed() {
         // Given an executor that always rejects
@@ -289,6 +405,30 @@ class EventLoggerEvaluationTest {
         // When & Then evaluation still returns a result
         FeatureResult<Boolean> result = featureEvaluator.evaluateFeature("missing-feature", context, Boolean.class);
         assertNotNull(result);
+    }
+
+    private static Options throwingCallbackOptions(AtomicInteger callbackCalls, List<String> loggedEvents) {
+        return Options.builder()
+                .enabled(true)
+                .allowUrlOverrides(false)
+                .trackingCallBackWithUser(new TrackingCallbackWithUser() {
+                    @Override
+                    public <T> void onTrack(Experiment<T> experiment, ExperimentResult<T> result, UserContext user) {
+                        callbackCalls.incrementAndGet();
+                        throw new IllegalStateException("tracking down");
+                    }
+                })
+                .eventLogger((name, properties, user) -> loggedEvents.add(name))
+                .build();
+    }
+
+    private static PluginRegistry countingPlugins(AtomicInteger pluginCalls) {
+        return new PluginRegistry(Collections.<GrowthBookPlugin>singletonList(new GrowthBookPlugin() {
+            @Override
+            public <V> void onExperimentViewed(Experiment<V> experiment, ExperimentResult<V> result) {
+                pluginCalls.incrementAndGet();
+            }
+        }));
     }
 
     private EvaluationContext context(Options options, DeferredTrackingBuffer buffer) {
