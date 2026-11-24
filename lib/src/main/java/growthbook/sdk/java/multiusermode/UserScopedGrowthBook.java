@@ -229,6 +229,9 @@ public class UserScopedGrowthBook {
     /**
      * Merges the supplied attributes into this user's attributes, replacing existing keys.
      *
+     * <p>Sticky bucket assignments already loaded for the previous attributes are dropped, so the
+     * next evaluation loads the documents for the new attributes instead of reusing another user's.
+     *
      * @param attributes attributes to merge in; null is a no-op
      * @return this instance
      */
@@ -240,12 +243,18 @@ public class UserScopedGrowthBook {
         for (Map.Entry<String, JsonElement> entry : attributes.entrySet()) {
             merged.add(entry.getKey(), entry.getValue());
         }
-        this.userContext = userContext.toBuilder().attributes(merged).build();
+        this.userContext = userContext.toBuilder()
+                .attributes(merged)
+                .stickyBucketAssignmentDocs(null)
+                .build();
         return this;
     }
 
     /**
      * Replaces this user's attributes.
+     *
+     * <p>Sticky bucket assignments already loaded for the previous attributes are dropped, so the
+     * next evaluation loads the documents for the new attributes instead of reusing another user's.
      *
      * @param attributes new attributes; null clears them
      * @return this instance
@@ -253,6 +262,7 @@ public class UserScopedGrowthBook {
     public UserScopedGrowthBook setAttributes(JsonObject attributes) {
         this.userContext = userContext.toBuilder()
                 .attributes(attributes == null ? new JsonObject() : attributes)
+                .stickyBucketAssignmentDocs(null)
                 .build();
         return this;
     }

@@ -7,10 +7,13 @@ import growthbook.sdk.java.callback.ExperimentRunCallback;
 import growthbook.sdk.java.model.Experiment;
 import growthbook.sdk.java.model.ExperimentResult;
 import growthbook.sdk.java.model.FeatureKey;
+import growthbook.sdk.java.model.StickyAssignmentsDocument;
 import growthbook.sdk.java.model.TypedKey;
+import growthbook.sdk.java.model.VariationMeta;
 import growthbook.sdk.java.multiusermode.configurations.Options;
 import growthbook.sdk.java.multiusermode.configurations.UserContext;
 import growthbook.sdk.java.multiusermode.usage.TrackingCallbackWithUser;
+import growthbook.sdk.java.stickyBucketing.InMemoryStickyBucketServiceImpl;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -492,6 +495,67 @@ class UserScopedGrowthBookTest {
         } finally {
             client.shutdown();
         }
+    }
+
+    @ParameterizedTest(name = "{0}")
+    @ValueSource(strings = {"setAttributes", "updateAttributes"})
+    @DisplayName("Changing attributes drops sticky assignments loaded for the old attributes, so the new user's saved assignment is used")
+    void changingAttributesReloadsStickyAssignments(String mutator) throws Exception {
+        // Given: the variation user-42 gets without sticky bucketing, and a saved assignment to the other one.
+        GrowthBookClient plainClient = initializedClient();
+        int naturalVariation;
+        try {
+            naturalVariation = plainClient.createScopedInstance(
+                    UserContext.builder().attributesJson("{\"id\":\"user-42\"}").build())
+                    .run(stickyExperiment()).getVariationId();
+        } finally {
+            plainClient.shutdown();
+        }
+        int savedVariation = 1 - naturalVariation;
+        Map<String, StickyAssignmentsDocument> store = new HashMap<>();
+        store.put("id||user-42", new StickyAssignmentsDocument("id", "user-42",
+                Collections.singletonMap("checkout-exp__0", VARIATION_KEYS[savedVariation])));
+        GrowthBookClient client = initializedClientFrom(Options.builder()
+                .stickyBucketService(new InMemoryStickyBucketServiceImpl(store))
+                .stickyBucketIdentifierAttributes(Collections.singletonList("id")));
+        try {
+            // An anonymous request whose sticky assignments were prefetched, then the user logs in.
+            UserContext anonymous = client.prefetchStickyBuckets(
+                    UserContext.builder().attributesJson("{\"id\":\"anon-1\"}").build()).get();
+            UserScopedGrowthBook scoped = client.createScopedInstance(anonymous);
+            JsonObject loggedIn = new JsonObject();
+            loggedIn.addProperty("id", "user-42");
+
+            // When
+            if ("setAttributes".equals(mutator)) {
+                scoped.setAttributes(loggedIn);
+            } else {
+                scoped.updateAttributes(loggedIn);
+            }
+            ExperimentResult<String> result = scoped.run(stickyExperiment());
+
+            // Then: user-42's saved assignment is read and kept, not replaced by a fresh bucketing.
+            assertEquals(savedVariation, result.getVariationId());
+            assertTrue(result.getStickyBucketUsed());
+            client.flushStickyBucketSaves().get();
+            assertEquals(VARIATION_KEYS[savedVariation],
+                    store.get("id||user-42").getAssignments().get("checkout-exp__0"));
+        } finally {
+            client.shutdown();
+        }
+    }
+
+    private static final String[] VARIATION_KEYS = {"control", "treatment"};
+
+    /** Like {@link #inlineExperiment()}, with variation keys: sticky bucketing stores and matches by key. */
+    private static Experiment<String> stickyExperiment() {
+        return Experiment.<String>builder()
+                .key("checkout-exp")
+                .variations(new ArrayList<>(Arrays.asList("control", "treatment")))
+                .meta(new ArrayList<>(Arrays.asList(
+                        VariationMeta.builder().key(VARIATION_KEYS[0]).build(),
+                        VariationMeta.builder().key(VARIATION_KEYS[1]).build())))
+                .build();
     }
 
     private static Experiment<String> inlineExperiment() {
