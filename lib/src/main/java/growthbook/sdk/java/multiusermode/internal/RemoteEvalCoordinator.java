@@ -227,6 +227,7 @@ public final class RemoteEvalCoordinator {
                 .refreshStrategy(FeatureRefreshStrategy.SERVER_SENT_EVENTS)
                 .isCacheDisabled(true)
                 .retryPolicy(this.options.getRetryPolicy())
+                .requestTimeout(this.options.getRequestTimeout())
                 .build();
         repository.addFeatureRefreshListener(this::handleInvalidationRefresh);
         this.invalidationRepository = repository;
@@ -284,9 +285,11 @@ public final class RemoteEvalCoordinator {
         return getCache().get(cacheKey, requestBody);
     }
 
-    private synchronized RemoteEvalService getService() {
+    // Package-private for tests.
+    synchronized RemoteEvalService getService() {
         if (this.remoteEvalService == null) {
-            this.remoteEvalService = new RemoteEvalService(this.options.getApiHost(), this.options.getClientKey());
+            this.remoteEvalService = new RemoteEvalService(this.options.getApiHost(), this.options.getClientKey(),
+                    this.options.getRequestTimeout());
         }
         return this.remoteEvalService;
     }

@@ -3,6 +3,7 @@ package growthbook.sdk.java.multiusermode.configurations;
 import growthbook.sdk.java.exception.InvalidOptionsException;
 import growthbook.sdk.java.remoteeval.RemoteEvalOptionsValidator;
 import growthbook.sdk.java.sandbox.CacheMode;
+import growthbook.sdk.java.util.RequestTimeouts;
 import growthbook.sdk.java.util.StringUtils;
 
 import javax.annotation.Nullable;
@@ -25,6 +26,8 @@ import java.util.List;
  *     <li>{@code clientKey} is present.</li>
  *     <li>{@code swrTtlSeconds} (refresh interval) is positive when set.</li>
  *     <li>{@code backgroundFetchInterval} is non-negative when set.</li>
+ *     <li>{@code requestTimeout}, when set, is {@code Duration.ZERO} (no timeout) or between 1 ms and
+ *     {@link Integer#MAX_VALUE} ms.</li>
  *     <li>{@code remoteEvalCacheTtlSeconds} is positive when set.</li>
  *     <li>{@code stickyBucketService} and {@code asyncStickyBucketService} are not both set, and
  *     {@code stickyBucketTimeout} is non-negative.</li>
@@ -74,6 +77,7 @@ public final class OptionsValidator {
         checkClientKey(options.getClientKey(), violations);
         checkRefreshInterval(options.getSwrTtlSeconds(), violations);
         checkBackgroundFetchInterval(options.getBackgroundFetchInterval(), violations);
+        checkRequestTimeout(options.getRequestTimeout(), violations);
         checkRemoteEvalCacheTtl(options.getRemoteEvalCacheTtlSeconds(), violations);
         checkCacheConfiguration(options, violations);
         checkStickyBucketConfiguration(options, violations);
@@ -135,6 +139,13 @@ public final class OptionsValidator {
     private static void checkBackgroundFetchInterval(@Nullable Duration backgroundFetchInterval, List<String> violations) {
         if (backgroundFetchInterval != null && backgroundFetchInterval.isNegative()) {
             violations.add("backgroundFetchInterval must not be negative, but was " + backgroundFetchInterval);
+        }
+    }
+
+    private static void checkRequestTimeout(@Nullable Duration requestTimeout, List<String> violations) {
+        String violation = RequestTimeouts.violation(requestTimeout);
+        if (violation != null) {
+            violations.add(violation);
         }
     }
 
