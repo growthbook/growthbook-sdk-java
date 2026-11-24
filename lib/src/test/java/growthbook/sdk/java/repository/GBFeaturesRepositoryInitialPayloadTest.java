@@ -278,6 +278,17 @@ class GBFeaturesRepositoryInitialPayloadTest {
         verify(httpClient, never()).newCall(any());
     }
 
+    @Test
+    @DisplayName("The public 12-argument constructor stays callable with nulls (no ambiguous overload)")
+    void positionalConstructorWithNullsStaysUnambiguous() {
+        // Compiling this call is the check: a second public 12-argument constructor whose parameter
+        // types accept the same nulls would make it ambiguous, as it was for the initialPayload overload.
+        GBFeaturesRepository subject = new GBFeaturesRepository(
+                null, "sdk-abc123", null, null, null, null, null, null, null, null, null, null);
+        assertNull(subject.getInitialPayload());
+        subject.shutdown();
+    }
+
     @ParameterizedTest(name = "{0}")
     @EnumSource(value = FeatureRefreshStrategy.class, names = {"STALE_WHILE_REVALIDATE", "SERVER_SENT_EVENTS"})
     @DisplayName("A seeded start that runs after shutdown has begun leaves no scheduler behind")

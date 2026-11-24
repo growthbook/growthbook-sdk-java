@@ -528,7 +528,9 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
                 isCacheDisabled, requestBodyForRemoteEval, cacheManager, backgroundFetchInterval, retryPolicy, null);
     }
 
-    public GBFeaturesRepository(
+    // Private on purpose: as a second public 12-argument constructor it would make existing calls that
+    // pass nulls in positions 7-12 ambiguous. Callers reach it through the builder.
+    private GBFeaturesRepository(
             @Nullable String apiHost,
             String clientKey,
             @Nullable String decryptionKey,
