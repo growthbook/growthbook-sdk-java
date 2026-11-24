@@ -1,6 +1,5 @@
 package growthbook.sdk.java.multiusermode;
 
-import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import growthbook.sdk.java.callback.ExperimentRunCallback;
 import growthbook.sdk.java.diagnostics.model.Diagnostics;
@@ -369,13 +368,51 @@ public class GrowthBookClient {
     }
 
     /**
-     * Replaces global attributes used for future evaluations.
+     * Replaces global attributes used for future evaluations (replace semantics).
+     *
+     * <p>All previously set attributes are discarded; only the keys in {@code attributes} remain. A
+     * {@code null} or malformed JSON string clears the attributes. To add or change attributes while
+     * preserving the others, use {@link #updateGlobalAttributes(String)}.
+     *
+     * <p>In remote-eval mode this invalidates the remote-eval response cache so the next evaluation
+     * triggers a fresh remote request.
      *
      * @param attributes JSON string containing global attributes
      */
     public void setGlobalAttributes(String attributes) {
         this.options.setGlobalAttributes(attributes);
         this.remoteEvalCoordinator.invalidateCache();
+    }
+
+    /**
+     * Shallow-merges the supplied attributes into the current global attributes (merge semantics),
+     * mirroring the TypeScript SDK's {@code updateAttributes()}.
+     *
+     * <p>New keys are added, existing keys are overwritten, and keys not mentioned are preserved. A
+     * key whose value is JSON {@code null} (e.g. {@code {"plan":null}}) is removed. A {@code null} or
+     * malformed JSON string is a no-op. See {@link Options#updateGlobalAttributes(String)} for the
+     * full rules.
+     *
+     * <p>In remote-eval mode this invalidates the remote-eval response cache (only when a change was
+     * applied) so the next evaluation triggers a fresh remote request.
+     *
+     * @param attributes JSON string of attributes to merge into the current global attributes
+     */
+    public void updateGlobalAttributes(String attributes) {
+        if (this.options.updateGlobalAttributes(attributes)) {
+            this.remoteEvalCoordinator.invalidateCache();
+        }
+    }
+
+    /**
+     * {@link JsonObject} overload of {@link #updateGlobalAttributes(String)}.
+     *
+     * @param attributes attributes to merge into the current global attributes
+     */
+    public void updateGlobalAttributes(JsonObject attributes) {
+        if (this.options.updateGlobalAttributes(attributes)) {
+            this.remoteEvalCoordinator.invalidateCache();
+        }
     }
 
     /**
@@ -874,13 +911,8 @@ public class GrowthBookClient {
      * @return a new payload JSON object with {@code features}, {@code experiments} and {@code savedGroups}
      */
     public JsonObject reducePayload(@Nullable UserContext userContext, @Nullable ReducePayloadOptions options) {
-        JsonObject attributes = new JsonObject();
-        JsonObject globalAttributes = this.options.getGlobalAttributes();
-        if (globalAttributes != null) {
-            for (Map.Entry<String, JsonElement> entry : globalAttributes.entrySet()) {
-                attributes.add(entry.getKey(), entry.getValue());
-            }
-        }
+        // getGlobalAttributes() already returns a fresh, caller-owned copy.
+        JsonObject attributes = this.options.getGlobalAttributes();
         if (userContext != null && userContext.getAttributes() != null) {
             for (Map.Entry<String, JsonElement> entry : userContext.getAttributes().entrySet()) {
                 attributes.add(entry.getKey(), entry.getValue());
@@ -1198,8 +1230,8 @@ public class GrowthBookClient {
     }
 
     private JsonObject mergeGlobalAttributes(@Nullable JsonObject userAttributes) {
-        JsonObject merged = this.options.getGlobalAttributes() == null
-                ? new JsonObject() : this.options.getGlobalAttributes().deepCopy();
+        // getGlobalAttributes() already returns a fresh, caller-owned copy.
+        JsonObject merged = this.options.getGlobalAttributes();
         if (userAttributes != null) {
             for (Map.Entry<String, JsonElement> entry : userAttributes.entrySet()) {
                 merged.add(entry.getKey(), entry.getValue());

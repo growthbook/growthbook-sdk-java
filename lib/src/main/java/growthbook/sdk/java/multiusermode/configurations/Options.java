@@ -1,5 +1,6 @@
 package growthbook.sdk.java.multiusermode.configurations;
 
+import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import growthbook.sdk.java.callback.FeatureRefreshCallback;
 import growthbook.sdk.java.model.Experiment;
@@ -19,8 +20,13 @@ import growthbook.sdk.java.stickyBucketing.AsyncStickyBucketService;
 import growthbook.sdk.java.stickyBucketing.InMemoryStickyBucketServiceImpl;
 import growthbook.sdk.java.stickyBucketing.StickyBucketService;
 import growthbook.sdk.java.util.ForcedVariationsUtils;
+import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
+import lombok.Getter;
+import lombok.Setter;
+import lombok.ToString;
 import lombok.extern.slf4j.Slf4j;
 
 import javax.annotation.Nullable;
@@ -29,6 +35,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Executor;
+import java.util.concurrent.atomic.AtomicReference;
 
 @Data
 @Slf4j
@@ -390,7 +397,9 @@ public class Options {
         this.refreshStrategy = refreshStrategy;
         this.swrTtlSeconds = swrTtlSeconds;
         this.featureRefreshCallback = featureRefreshCallback;
-        this.globalAttributes = globalAttributes;
+        // Copy so later changes to the caller's object do not leak into the SDK's state.
+        this.attributes.set(globalAttributes == null
+                ? AttributesSnapshot.EMPTY : AttributesSnapshot.of(globalAttributes.deepCopy()));
         this.globalForcedFeatureValues = globalForcedFeatureValues;
         this.globalForcedVariationsMap = ForcedVariationsUtils.normalize(globalForcedVariationsMap);
         this.cacheManager = cacheManager;
@@ -496,16 +505,22 @@ public class Options {
     private Integer swrTtlSeconds;
 
     /**
-     * Map of user attributes that are used to assign variations
+     * Single source of truth for the global user attributes: an immutable snapshot (canonical JSON
+     * string plus the parsed object) inside a thread-safe reference.
+     *
+     * <p>Writers swap the whole snapshot atomically (via {@link AtomicReference#updateAndGet}), so a
+     * reader never sees a half-applied change and concurrent merges never lose an update. The parsed
+     * object inside a snapshot is never handed out or mutated: {@link #getGlobalAttributes()} returns
+     * a deep copy, which avoids re-parsing the JSON on every evaluation. A bare
+     * {@code volatile JsonObject} would only publish the reference safely while still handing out a
+     * shared mutable object.
      */
-    @Nullable
-    private JsonObject globalAttributes;
-
-    /**
-     * String format of user attributes that are used to assign variations
-     */
-    @Nullable
-    private String attributesJson;
+    @Getter(AccessLevel.NONE)
+    @Setter(AccessLevel.NONE)
+    @ToString.Exclude
+    @EqualsAndHashCode.Exclude
+    private final AtomicReference<AttributesSnapshot> attributes =
+            new AtomicReference<>(AttributesSnapshot.EMPTY);
 
     /**
      * Manual force feature values
@@ -685,12 +700,136 @@ public class Options {
         return this.stickyBucketService != null || this.asyncStickyBucketService != null;
     }
 
+    /**
+     * The global attributes as a canonical JSON string (defaults to {@code "{}"} when unset).
+     * Kept consistent with {@link #getGlobalAttributes()} on every mutation.
+     *
+     * @return the JSON string form of the global attributes; never {@code null}
+     */
+    public String getAttributesJson() {
+        return this.attributes.get().json;
+    }
+
+    /**
+     * Sets the raw global attributes JSON string.
+     *
+     * @param attributesJson JSON object string of global attributes, or {@code null} to clear
+     * @deprecated retained for binary/source compatibility with the Lombok-generated setter this
+     * method replaced; it now writes through the thread-safe attribute store. Prefer
+     * {@link #setGlobalAttributes(String)} (replace) or {@link #updateGlobalAttributes(String)} (merge).
+     */
+    @Deprecated
+    public void setAttributesJson(@Nullable String attributesJson) {
+        setGlobalAttributes(attributesJson);
+    }
+
+    /**
+     * Returns a fresh, caller-owned copy of the global attributes. Never returns {@code null} (an
+     * empty object is returned when unset).
+     *
+     * <p><b>Changing the returned object has no effect on the SDK.</b> To change the attributes used
+     * for evaluation, call {@link #setGlobalAttributes(String)} (replace) or
+     * {@link #updateGlobalAttributes(String)} (merge). The same applies to the {@link JsonObject}
+     * passed to the builder: it is copied on build, so later changes to it are ignored.
+     *
+     * @return a private copy of the current global attributes
+     */
+    public JsonObject getGlobalAttributes() {
+        return this.attributes.get().parsed.deepCopy();
+    }
+
+    /**
+     * Replaces all global attributes (replace semantics).
+     *
+     * <p>The previous attributes are discarded entirely; only the keys present in
+     * {@code attributesJson} remain afterwards. A {@code null} or malformed JSON string clears the
+     * attributes (they become an empty object), matching the historical behavior.
+     *
+     * <p>For additive updates that preserve existing keys, use
+     * {@link #updateGlobalAttributes(String)} instead.
+     *
+     * @param attributesJson JSON object string of global attributes, or {@code null} to clear
+     */
     public void setGlobalAttributes(@Nullable String attributesJson) {
-        this.attributesJson = attributesJson;
-        this.globalAttributes = TransformationUtil.transformAttributes(attributesJson);
+        this.attributes.set(AttributesSnapshot.of(TransformationUtil.transformAttributes(attributesJson)));
+    }
+
+    /**
+     * Shallow-merges the supplied attributes into the current global attributes (merge semantics),
+     * mirroring the TypeScript SDK's {@code updateAttributes()}.
+     *
+     * <p>Merge rules:
+     * <ul>
+     *   <li>new keys are added;</li>
+     *   <li>existing keys are overwritten with the supplied values;</li>
+     *   <li>keys not mentioned in {@code attributesJson} are preserved;</li>
+     *   <li>a key whose value is JSON {@code null} (e.g. {@code {"plan":null}}) is removed.</li>
+     * </ul>
+     *
+     * <p>A {@code null} or malformed JSON string is a no-op: the existing attributes are left
+     * unchanged. Only the top level is merged (shallow); nested objects are replaced wholesale.
+     *
+     * @param attributesJson JSON object string of attributes to merge in
+     * @return {@code true} if a merge was applied, {@code false} if the input was a no-op
+     *         ({@code null}, malformed, or empty)
+     */
+    public boolean updateGlobalAttributes(@Nullable String attributesJson) {
+        return updateGlobalAttributes(TransformationUtil.transformAttributes(attributesJson));
+    }
+
+    /**
+     * {@link JsonObject} overload of {@link #updateGlobalAttributes(String)}; see that method for
+     * the full merge semantics (add / overwrite / preserve, and JSON {@code null} removes a key).
+     *
+     * <p>A {@code null} or empty argument is a no-op.
+     *
+     * @param attributes attributes to merge into the current global attributes
+     * @return {@code true} if a merge was applied, {@code false} if the argument was {@code null} or empty
+     */
+    public boolean updateGlobalAttributes(@Nullable JsonObject attributes) {
+        if (attributes == null || attributes.isEmpty()) {
+            return false;
+        }
+        // Copy the input once so the merge never reads a caller-owned object that may change
+        // while updateAndGet retries.
+        JsonObject changes = attributes.deepCopy();
+        this.attributes.updateAndGet(current -> {
+            JsonObject merged = current.parsed.deepCopy();
+            for (Map.Entry<String, JsonElement> entry : changes.entrySet()) {
+                JsonElement value = entry.getValue();
+                if (value == null || value.isJsonNull()) {
+                    merged.remove(entry.getKey());
+                } else {
+                    merged.add(entry.getKey(), value);
+                }
+            }
+            return AttributesSnapshot.of(merged);
+        });
+        return true;
     }
 
     public boolean isRemoteEvalEnabled() {
         return Boolean.TRUE.equals(this.remoteEval);
+    }
+
+    /**
+     * Immutable pair of the attributes' canonical JSON and its parsed form. {@code parsed} is owned
+     * by the snapshot and must never be exposed or mutated; readers get a deep copy.
+     */
+    private static final class AttributesSnapshot {
+        private static final AttributesSnapshot EMPTY = new AttributesSnapshot("{}", new JsonObject());
+
+        private final String json;
+        private final JsonObject parsed;
+
+        private AttributesSnapshot(String json, JsonObject parsed) {
+            this.json = json;
+            this.parsed = parsed;
+        }
+
+        /** Takes ownership of {@code parsed}: the caller must not keep or mutate it. */
+        private static AttributesSnapshot of(JsonObject parsed) {
+            return new AttributesSnapshot(parsed.toString(), parsed);
+        }
     }
 }
