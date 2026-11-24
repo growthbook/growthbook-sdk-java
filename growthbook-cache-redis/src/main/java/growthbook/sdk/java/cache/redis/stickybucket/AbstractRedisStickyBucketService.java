@@ -1,13 +1,10 @@
 package growthbook.sdk.java.cache.redis.stickybucket;
 
-import com.google.gson.Gson;
 import growthbook.sdk.java.exception.StickyBucketServiceException;
 import growthbook.sdk.java.model.StickyAssignmentsDocument;
 import growthbook.sdk.java.stickyBucketing.StickyBucketService;
-import growthbook.sdk.java.util.GrowthBookJsonUtils;
 
 import java.time.Duration;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -49,7 +46,7 @@ import java.util.Map;
 public abstract class AbstractRedisStickyBucketService implements StickyBucketService {
 
     /** Separator between attribute name and value in a key; matches the SDK's internal key format. */
-    protected static final String KEY_SEPARATOR = "||";
+    protected static final String KEY_SEPARATOR = RedisStickyBucketCodec.KEY_SEPARATOR;
 
     /** Default namespace prefix. Empty for wire-compatibility with the TypeScript service. */
     public static final String DEFAULT_KEY_PREFIX = "";
@@ -80,13 +77,9 @@ public abstract class AbstractRedisStickyBucketService implements StickyBucketSe
                     + "end\n"
                     + "return 0";
 
-    private static final int MAX_SAVE_ATTEMPTS = 5;
+    private static final int MAX_SAVE_ATTEMPTS = RedisStickyBucketCodec.MAX_SAVE_ATTEMPTS;
 
-    private final Gson gson = GrowthBookJsonUtils.getInstance().gson;
-    private final String keyPrefix;
-
-    /** Entry TTL in milliseconds, or {@code null} for no expiry (the default). */
-    private final Long ttlMillis;
+    private final RedisStickyBucketCodec codec;
 
     protected AbstractRedisStickyBucketService(String keyPrefix) {
         this(keyPrefix, null);
@@ -99,18 +92,7 @@ public abstract class AbstractRedisStickyBucketService implements StickyBucketSe
      * @throws IllegalArgumentException if {@code ttl} is zero, negative, or below 1 millisecond
      */
     protected AbstractRedisStickyBucketService(String keyPrefix, Duration ttl) {
-        this.keyPrefix = keyPrefix == null ? DEFAULT_KEY_PREFIX : keyPrefix;
-        if (ttl == null) {
-            this.ttlMillis = null;
-        } else {
-            if (ttl.isZero() || ttl.isNegative()) {
-                throw new IllegalArgumentException("ttl must be greater than 0");
-            }
-            if (ttl.toMillis() < 1) {
-                throw new IllegalArgumentException("ttl must be at least 1 millisecond");
-            }
-            this.ttlMillis = ttl.toMillis();
-        }
+        this.codec = new RedisStickyBucketCodec(keyPrefix, ttl);
     }
 
     /**
@@ -118,7 +100,7 @@ public abstract class AbstractRedisStickyBucketService implements StickyBucketSe
      * expiry in milliseconds, or {@code "0"} when entries are written without a TTL
      */
     protected final String ttlMillisArg() {
-        return ttlMillis == null ? "0" : Long.toString(ttlMillis);
+        return codec.ttlMillisArg();
     }
 
     @Override
@@ -126,7 +108,7 @@ public abstract class AbstractRedisStickyBucketService implements StickyBucketSe
         if (attributeName == null || attributeValue == null) {
             return null;
         }
-        return deserialize(fetch(redisKey(docKey(attributeName, attributeValue))));
+        return codec.deserialize(fetch(redisKey(docKey(attributeName, attributeValue))));
     }
 
     @Override
@@ -141,7 +123,7 @@ public abstract class AbstractRedisStickyBucketService implements StickyBucketSe
         String redisKey = redisKey(docKey(document.getAttributeName(), document.getAttributeValue()));
         for (int attempt = 0; attempt < MAX_SAVE_ATTEMPTS; attempt++) {
             String currentRaw = fetch(redisKey);
-            String updated = gson.toJson(mergeOnto(currentRaw, document));
+            String updated = codec.mergedJson(currentRaw, document);
             if (persist(redisKey, currentRaw, updated)) {
                 return;
             }
@@ -151,36 +133,18 @@ public abstract class AbstractRedisStickyBucketService implements StickyBucketSe
                         + " concurrent update attempts");
     }
 
-    private StickyAssignmentsDocument mergeOnto(String currentRaw, StickyAssignmentsDocument incoming) {
-        Map<String, String> merged = new LinkedHashMap<>();
-        StickyAssignmentsDocument current = deserialize(currentRaw);
-        if (current != null && current.getAssignments() != null) {
-            merged.putAll(current.getAssignments());
-        }
-        merged.putAll(incoming.getAssignments());
-        return new StickyAssignmentsDocument(incoming.getAttributeName(), incoming.getAttributeValue(), merged);
-    }
-
     @Override
     public Map<String, StickyAssignmentsDocument> getAllAssignments(Map<String, String> attributes) {
-        Map<String, StickyAssignmentsDocument> docs = new LinkedHashMap<>();
         if (attributes == null || attributes.isEmpty()) {
-            return docs;
+            return new LinkedHashMap<>();
         }
 
-        List<String> logicalKeys = logicalKeys(attributes);
+        List<String> logicalKeys = codec.logicalKeys(attributes);
         if (logicalKeys.isEmpty()) {
-            return docs;
+            return new LinkedHashMap<>();
         }
 
-        List<String> payloads = fetchMany(redisKeys(logicalKeys));
-        for (int i = 0; i < logicalKeys.size(); i++) {
-            StickyAssignmentsDocument doc = deserialize(i < payloads.size() ? payloads.get(i) : null);
-            if (doc != null) {
-                docs.put(logicalKeys.get(i), doc);
-            }
-        }
-        return docs;
+        return codec.documentsByLogicalKey(logicalKeys, fetchMany(codec.redisKeys(logicalKeys)));
     }
 
     /**
@@ -188,7 +152,7 @@ public abstract class AbstractRedisStickyBucketService implements StickyBucketSe
      * map key returned by {@link #getAllAssignments} and, once namespaced, as the Redis key
      */
     protected final String docKey(String attributeName, String attributeValue) {
-        return attributeName + KEY_SEPARATOR + attributeValue;
+        return codec.docKey(attributeName, attributeValue);
     }
 
     /**
@@ -196,25 +160,7 @@ public abstract class AbstractRedisStickyBucketService implements StickyBucketSe
      * @return the namespaced Redis key
      */
     protected final String redisKey(String docKey) {
-        return keyPrefix + docKey;
-    }
-
-    private List<String> logicalKeys(Map<String, String> attributes) {
-        List<String> keys = new ArrayList<>(attributes.size());
-        for (Map.Entry<String, String> entry : attributes.entrySet()) {
-            if (entry.getKey() != null && entry.getValue() != null) {
-                keys.add(docKey(entry.getKey(), entry.getValue()));
-            }
-        }
-        return keys;
-    }
-
-    private List<String> redisKeys(List<String> logicalKeys) {
-        List<String> keys = new ArrayList<>(logicalKeys.size());
-        for (String logicalKey : logicalKeys) {
-            keys.add(redisKey(logicalKey));
-        }
-        return keys;
+        return codec.redisKey(docKey);
     }
 
     private String fetch(String redisKey) {
@@ -240,23 +186,6 @@ public abstract class AbstractRedisStickyBucketService implements StickyBucketSe
         } catch (RuntimeException e) {
             throw new StickyBucketServiceException("Failed to persist sticky bucket assignments to Redis", e);
         }
-    }
-
-    private StickyAssignmentsDocument deserialize(String raw) {
-        if (raw == null || raw.isEmpty()) {
-            return null;
-        }
-        StickyAssignmentsDocument document;
-        try {
-            document = gson.fromJson(raw, StickyAssignmentsDocument.class);
-        } catch (RuntimeException e) {
-            throw new StickyBucketServiceException("Malformed sticky bucket assignments payload in Redis", e);
-        }
-        if (document != null && document.getAssignments() == null) {
-            throw new StickyBucketServiceException(
-                    "Sticky bucket assignments payload in Redis is missing its assignments map");
-        }
-        return document;
     }
 
     /**
