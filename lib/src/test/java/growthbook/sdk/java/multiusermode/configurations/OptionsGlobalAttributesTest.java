@@ -6,7 +6,7 @@ import com.google.gson.JsonPrimitive;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
-import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
@@ -132,36 +132,65 @@ class OptionsGlobalAttributesTest {
     }
 
     @Test
-    @DisplayName("Concurrent merges never expose a partial snapshot and never lose another thread's key")
-    void concurrencySmokeTest() throws Exception {
+    @DisplayName("Mutating the getter's result does not change the stored attributes")
+    void getterReturnsIndependentCopy() {
+        Options options = newOptions();
+        options.setGlobalAttributes("{\"id\":\"1\"}");
+
+        options.getGlobalAttributes().addProperty("viaGetter", "x");
+
+        assertEquals("{\"id\":\"1\"}", options.getAttributesJson());
+        assertFalse(options.getGlobalAttributes().has("viaGetter"));
+    }
+
+    @Test
+    @DisplayName("The JsonObject passed to the builder is copied on build")
+    void builderCopiesAttributes() {
+        JsonObject original = new JsonObject();
+        original.addProperty("id", "1");
+        Options options = Options.builder().globalAttributes(original).build();
+
+        original.addProperty("viaOriginal", "y");
+
+        assertEquals("{\"id\":\"1\"}", options.getAttributesJson());
+        assertFalse(options.getGlobalAttributes().has("viaOriginal"));
+    }
+
+    @Test
+    @DisplayName("Unset attributes read as an empty object, never null")
+    void unsetAttributesAreEmpty() {
+        Options options = newOptions();
+
+        assertEquals("{}", options.getAttributesJson());
+        assertEquals(0, options.getGlobalAttributes().size());
+    }
+
+    @Test
+    @DisplayName("Concurrent merges never lose an update and never expose a partial snapshot")
+    void concurrentMergesLoseNoUpdates() throws Exception {
         Options options = newOptions();
         options.setGlobalAttributes("{\"id\":\"1\"}");
 
         int threads = 8;
-        int iterationsPerThread = 500;
+        int writesPerThread = 200;
         ExecutorService pool = Executors.newFixedThreadPool(threads);
-        CountDownLatch start = new CountDownLatch(1);
+        CyclicBarrier start = new CyclicBarrier(threads);
         AtomicReference<Throwable> failure = new AtomicReference<>();
 
         for (int t = 0; t < threads; t++) {
-            final int id = t;
-            final String ownKey = "plan-" + id;
+            final int thread = t;
             pool.submit(() -> {
                 try {
                     start.await();
-                    for (int i = 0; i < iterationsPerThread; i++) {
-                        if (i % 2 == 0) {
-                            options.updateGlobalAttributes("{\"" + ownKey + "\":\"v" + i + "\"}");
-                        } else {
-                            // Readers must always see a fully-built snapshot that still has "id"
-                            // and this thread's own key once written.
-                            JsonObject snapshot = options.getGlobalAttributes();
-                            assertNotNull(snapshot);
-                            assertEquals("1", snapshot.get("id").getAsString());
-                            if (i > 0) {
-                                assertTrue(snapshot.has(ownKey), ownKey);
-                            }
-                        }
+                    for (int i = 0; i < writesPerThread; i++) {
+                        // Every write uses a key that is never written again, so a lost update
+                        // (a non-atomic read-modify-write) is permanent and caught below.
+                        String key = thread + "-" + i;
+                        options.updateGlobalAttributes("{\"" + key + "\":" + i + "}");
+
+                        JsonObject snapshot = options.getGlobalAttributes();
+                        assertEquals("1", snapshot.get("id").getAsString());
+                        assertTrue(snapshot.has(key), () -> "own write not visible: " + key);
                     }
                 } catch (Throwable e) {
                     failure.compareAndSet(null, e);
@@ -169,17 +198,20 @@ class OptionsGlobalAttributesTest {
             });
         }
 
-        start.countDown();
         pool.shutdown();
-        assertTrue(pool.awaitTermination(30, TimeUnit.SECONDS), "threads did not finish in time");
+        assertTrue(pool.awaitTermination(60, TimeUnit.SECONDS), "threads did not finish in time");
         assertNull(failure.get(), () -> "concurrent access failed: " + failure.get());
 
-        // "id" must survive, and every thread's distinct key must be present: proof that concurrent
-        // merges did not lose updates (which a non-atomic read-modify-write would).
         JsonObject finalState = options.getGlobalAttributes();
+        assertEquals(1 + threads * writesPerThread, finalState.size());
         assertEquals("1", finalState.get("id").getAsString());
         for (int t = 0; t < threads; t++) {
-            assertTrue(finalState.has("plan-" + t), "plan-" + t);
+            for (int i = 0; i < writesPerThread; i++) {
+                String key = t + "-" + i;
+                assertTrue(finalState.has(key), () -> "lost update: " + key);
+                assertEquals(i, finalState.get(key).getAsInt(), key);
+            }
         }
+        assertEquals(finalState.toString(), options.getAttributesJson());
     }
 }

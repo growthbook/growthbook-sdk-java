@@ -63,8 +63,8 @@ public final class UserContextUtils {
     }
 
     private static JsonObject globalAttributes(Options options) {
-        JsonObject globalAttributes = options.getGlobalAttributes();
-        return globalAttributes == null ? new JsonObject() : globalAttributes.deepCopy();
+        // getGlobalAttributes() already returns a fresh, caller-owned copy.
+        return options.getGlobalAttributes();
     }
 
     /**

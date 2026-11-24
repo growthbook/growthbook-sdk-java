@@ -672,13 +672,8 @@ public class GrowthBookClient {
      * @return a new payload JSON object with {@code features}, {@code experiments} and {@code savedGroups}
      */
     public JsonObject reducePayload(@Nullable UserContext userContext, @Nullable ReducePayloadOptions options) {
-        JsonObject attributes = new JsonObject();
-        JsonObject globalAttributes = this.options.getGlobalAttributes();
-        if (globalAttributes != null) {
-            for (Map.Entry<String, JsonElement> entry : globalAttributes.entrySet()) {
-                attributes.add(entry.getKey(), entry.getValue());
-            }
-        }
+        // getGlobalAttributes() already returns a fresh, caller-owned copy.
+        JsonObject attributes = this.options.getGlobalAttributes();
         if (userContext != null && userContext.getAttributes() != null) {
             for (Map.Entry<String, JsonElement> entry : userContext.getAttributes().entrySet()) {
                 attributes.add(entry.getKey(), entry.getValue());
@@ -902,8 +897,8 @@ public class GrowthBookClient {
     }
 
     private JsonObject mergeGlobalAttributes(@Nullable JsonObject userAttributes) {
-        JsonObject merged = this.options.getGlobalAttributes() == null
-                ? new JsonObject() : this.options.getGlobalAttributes().deepCopy();
+        // getGlobalAttributes() already returns a fresh, caller-owned copy.
+        JsonObject merged = this.options.getGlobalAttributes();
         if (userAttributes != null) {
             for (Map.Entry<String, JsonElement> entry : userAttributes.entrySet()) {
                 merged.add(entry.getKey(), entry.getValue());

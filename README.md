@@ -131,6 +131,20 @@ Both methods invalidate the remote-eval response cache, so the next evaluation r
 Attribute mutations are thread-safe: concurrent evaluations always observe a fully-built snapshot,
 never a partially merged one.
 
+> **Breaking change:** `Options.getGlobalAttributes()` returns a copy, and the `JsonObject` passed
+> to `Options.builder().globalAttributes(...)` is copied on build. Changing either object afterwards
+> no longer affects evaluation. Use `setGlobalAttributes` / `updateGlobalAttributes` instead:
+>
+> ```java
+> // Before: options.getGlobalAttributes().addProperty("plan", "pro");
+> gb.updateGlobalAttributes("{\"plan\":\"pro\"}");
+> ```
+>
+> Related changes: `Options.getAttributesJson()` returns `"{}"` instead of `null` when unset and
+> holds the normalised JSON; the deprecated `Options.setAttributesJson(...)` now replaces the
+> attributes like `setGlobalAttributes`; `Options` `equals`/`hashCode`/`toString` no longer include
+> the attributes (which also keeps user attributes out of logged `Options`).
+
 ### Manually create separate instance of GBContext, Repository and Growthbook classes
 
 ```java
