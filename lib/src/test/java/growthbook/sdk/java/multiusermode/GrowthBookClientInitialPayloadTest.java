@@ -13,10 +13,13 @@ import com.github.tomakehurst.wiremock.extension.Parameters;
 import com.github.tomakehurst.wiremock.extension.ResponseTransformer;
 import com.github.tomakehurst.wiremock.http.Request;
 import com.github.tomakehurst.wiremock.http.Response;
+import growthbook.sdk.java.model.FeatureRefreshSource;
 import growthbook.sdk.java.multiusermode.configurations.Options;
 import growthbook.sdk.java.multiusermode.configurations.UserContext;
 import growthbook.sdk.java.repository.FeatureRefreshStrategy;
+import growthbook.sdk.java.repository.RefreshMode;
 import growthbook.sdk.java.retry.FeatureFetchRetryPolicy;
+import growthbook.sdk.java.sandbox.GbCacheManager;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -126,6 +129,79 @@ class GrowthBookClientInitialPayloadTest {
 
         assertFalse(client.initialize());
         client.shutdown();
+    }
+
+    @Test
+    @Timeout(10)
+    @DisplayName("After a failed seeded start, a refresh that loads a fresh cached payload updates evaluation")
+    void failedSeededStart_freshCacheLoadedOnRefresh_reachesEvaluation() throws Exception {
+        // Given: the API is down, the seed turns the flag on, and a fresh shared cache turns it off.
+        Options options = Options.builder()
+                .apiHost("http://localhost:" + wireMock.port())
+                .clientKey("sdk-abc123")
+                .cacheManager(new FreshCacheManager("{\"features\":{\"my-flag\":{\"defaultValue\":false}}}"))
+                .backgroundFetchInterval(Duration.ofHours(1))
+                .retryPolicy(NO_DELAY_RETRY_POLICY)
+                .initialPayload("{\"features\":{\"my-flag\":{\"defaultValue\":true}}}")
+                .build();
+        GrowthBookClient client = new GrowthBookClient(options);
+        CountDownLatch initialFetchFailed = new CountDownLatch(1);
+        CountDownLatch cacheLoaded = new CountDownLatch(1);
+        client.addFeatureRefreshListener(event -> {
+            if (event.getSource() == FeatureRefreshSource.INITIALIZATION && !event.isSuccessful()) {
+                initialFetchFailed.countDown();
+            }
+            if (event.getSource() == FeatureRefreshSource.MANUAL && event.isSuccessful()
+                    && event.isFeaturesChanged() && event.isLoadedFromCache()) {
+                cacheLoaded.countDown();
+            }
+        });
+
+        try {
+            assertTrue(client.initialize());
+            assertTrue(initialFetchFailed.await(5, TimeUnit.SECONDS), "seeded background fetch did not fail");
+            assertTrue(client.isOn("my-flag", UserContext.builder().build()), "seed should serve first");
+
+            // When: the cache is fresh, so the refresh skips the network and loads the cached payload.
+            client.refreshFeatures(RefreshMode.DEFAULT);
+
+            // Then: listeners hear about it and evaluation no longer serves the seed.
+            assertTrue(cacheLoaded.await(5, TimeUnit.SECONDS), "cache load was not published to listeners");
+            assertFalse(client.isOn("my-flag", UserContext.builder().build()),
+                    "evaluation must use the cached payload, not the stale seed");
+        } finally {
+            client.shutdown();
+        }
+    }
+
+    /**
+     * Shared cache that holds a payload and always reports it as just written, so a default refresh
+     * within the background fetch interval skips the network and loads it instead.
+     */
+    private static final class FreshCacheManager implements GbCacheManager {
+        private final String payload;
+
+        FreshCacheManager(String payload) {
+            this.payload = payload;
+        }
+
+        @Override
+        public void saveContent(String key, String data) {
+        }
+
+        @Override
+        public String loadCache(String key) {
+            return payload;
+        }
+
+        @Override
+        public void clearCache() {
+        }
+
+        @Override
+        public Long getLastUpdatedMillis(String key) {
+            return System.currentTimeMillis();
+        }
     }
 
     private static final class GatedResponseTransformer extends ResponseTransformer {

@@ -1055,15 +1055,39 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
         return now >= this.expiresAt.get();
     }
 
-    private boolean shouldSkipRefresh(RefreshMode refreshMode) {
+    private boolean shouldSkipRefresh(RefreshMode refreshMode, FeatureRefreshSource source) {
         return FeatureRefreshCacheFreshness.shouldSkipRefresh(
                 refreshMode == RefreshMode.FORCE,
                 this.backgroundFetchInterval,
                 this.lastSuccessfulFetchAtMillis::get,
                 () -> FeatureRefreshCacheFreshness.timestampMillisOrUnknown(readCacheLastUpdatedMillis()),
                 () -> this.hasFeatureData.get() && !this.servingInitialPayloadOnly.get(),
-                this::loadCachedFeaturesIfAvailable
+                () -> loadCachedFeaturesForSkippedRefresh(source)
         );
+    }
+
+    /**
+     * Loads the fresh cached payload that lets a refresh skip the network, and publishes the load
+     * when it changed the held features. While the seed is still served, this replaces it after the
+     * client has already built its global context from the seed; without the event the client would
+     * keep evaluating the seed, and a later identical server response would not repair it because
+     * {@code featuresChanged} would be {@code false}.
+     *
+     * @return whether feature data is available after the attempt
+     */
+    private boolean loadCachedFeaturesForSkippedRefresh(FeatureRefreshSource source) {
+        long startedAtNanos = System.nanoTime();
+        AtomicBoolean featuresChanged = new AtomicBoolean(false);
+        boolean available = loadCachedFeaturesIfAvailable(featuresChanged);
+        if (available && featuresChanged.get()) {
+            this.featureRefreshNotifier.notifySuccess(
+                    source,
+                    true,
+                    true,
+                    FeatureRefreshNotifier.elapsedMillis(startedAtNanos)
+            );
+        }
+        return available;
     }
 
     /**
@@ -1086,7 +1110,7 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
 
     private void refreshFeatures(RefreshMode refreshMode, FeatureRefreshSource source) throws FeatureFetchException {
         RefreshMode resolvedRefreshMode = refreshMode == null ? RefreshMode.DEFAULT : refreshMode;
-        if (shouldSkipRefresh(resolvedRefreshMode)) {
+        if (shouldSkipRefresh(resolvedRefreshMode, source)) {
             log.debug("Skipping feature refresh because cached features are newer than the background fetch interval.");
             return;
         }
