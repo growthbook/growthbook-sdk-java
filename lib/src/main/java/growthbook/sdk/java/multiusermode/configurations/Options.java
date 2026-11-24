@@ -342,8 +342,7 @@ public class Options {
 
     /**
      * Backward-compatible constructor preserving the positional signature before {@code requestTimeout}
-     * was added. Delegates with no request timeout, so the SDK applies
-     * {@link growthbook.sdk.java.constants.SDKConstants#DEFAULT_REQUEST_TIMEOUT}.
+     * was added. Delegates with no request timeout, so HTTP behaviour is unchanged.
      */
     public Options(@Nullable Boolean enabled,
                    Boolean isQaMode,
@@ -631,12 +630,12 @@ public class Options {
     private Duration backgroundFetchInterval;
 
     /**
-     * Connect/read/write timeout applied to the features fetch and remote-eval HTTP calls, giving
-     * each call a predictable upper bound. When {@code null}, the SDK applies
-     * {@link growthbook.sdk.java.constants.SDKConstants#DEFAULT_REQUEST_TIMEOUT} to the client it
-     * creates (a caller-supplied {@code OkHttpClient} keeps its own timeouts). Set
-     * {@link Duration#ZERO} to restore OkHttp's infinite timeout. Must not be negative
-     * (rejected by {@link OptionsValidator}). Does not bound the long-lived SSE stream.
+     * Optional timeout for the features fetch and remote-eval HTTP calls, applied to the whole call
+     * ({@code callTimeout}) and to connect, read and write, so each call has a predictable upper bound.
+     * Opt-in: when {@code null} (the default) the SDK keeps OkHttp's defaults, as before this option
+     * existed, and a caller-supplied {@code OkHttpClient} keeps its own timeouts. {@link Duration#ZERO}
+     * disables every timeout. Otherwise it must be between 1 ms and {@link Integer#MAX_VALUE} ms
+     * (checked by {@link OptionsValidator}). Does not bound the long-lived SSE stream.
      *
      * <p>This bounds a single request, not a whole initialization: with a retry policy of
      * {@code n} attempts, a persistently unreachable endpoint can take up to {@code n ×

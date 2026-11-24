@@ -1,9 +1,9 @@
 package growthbook.sdk.java.remoteeval;
 
-import growthbook.sdk.java.constants.SDKConstants;
 import growthbook.sdk.java.exception.FeatureFetchException;
 import growthbook.sdk.java.model.RequestBodyForRemoteEval;
 import growthbook.sdk.java.util.GrowthBookJsonUtils;
+import growthbook.sdk.java.util.RequestTimeouts;
 import okhttp3.MediaType;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
@@ -33,9 +33,8 @@ public class RemoteEvalService {
     }
 
     /**
-     * @param requestTimeout connect/read/write timeout for the internally created client;
-     *                       {@code null} applies {@link SDKConstants#DEFAULT_REQUEST_TIMEOUT},
-     *                       {@link Duration#ZERO} disables the timeout
+     * @param requestTimeout whole-call and connect/read/write timeout for the internally created
+     *                       client; {@code null} keeps OkHttp's defaults, {@link Duration#ZERO} disables it
      */
     public RemoteEvalService(String apiHost, String clientKey, @Nullable Duration requestTimeout) {
         this(apiHost, clientKey, null, new RemoteEvalResponseParser(), requestTimeout);
@@ -51,9 +50,9 @@ public class RemoteEvalService {
     }
 
     /**
-     * @param requestTimeout connect/read/write timeout for an internally created client; ignored when
-     *                       {@code okHttpClient} is supplied. {@code null} applies
-     *                       {@link SDKConstants#DEFAULT_REQUEST_TIMEOUT}, {@link Duration#ZERO} disables it.
+     * @param requestTimeout whole-call and connect/read/write timeout for an internally created client;
+     *                       ignored when {@code okHttpClient} is supplied. {@code null} keeps OkHttp's
+     *                       defaults, {@link Duration#ZERO} disables it.
      */
     public RemoteEvalService(
             String apiHost,
@@ -62,9 +61,7 @@ public class RemoteEvalService {
             RemoteEvalResponseParser responseParser,
             @Nullable Duration requestTimeout
     ) {
-        if (requestTimeout != null && requestTimeout.isNegative()) {
-            throw new IllegalArgumentException("requestTimeout must not be negative");
-        }
+        RequestTimeouts.requireValid(requestTimeout);
         this.ownsHttpClient = okHttpClient == null;
         this.okHttpClient = okHttpClient == null ? buildTimedClient(requestTimeout) : okHttpClient;
         this.endpoint = RemoteEvalEndpoints.evalEndpoint(apiHost, clientKey);
@@ -72,13 +69,12 @@ public class RemoteEvalService {
     }
 
     private static OkHttpClient buildTimedClient(@Nullable Duration requestTimeout) {
-        Duration timeout = requestTimeout == null ? SDKConstants.DEFAULT_REQUEST_TIMEOUT : requestTimeout;
-        return new OkHttpClient.Builder()
-                .callTimeout(timeout)
-                .connectTimeout(timeout)
-                .readTimeout(timeout)
-                .writeTimeout(timeout)
-                .build();
+        if (requestTimeout == null) {
+            return new OkHttpClient();
+        }
+        OkHttpClient.Builder builder = new OkHttpClient.Builder();
+        RequestTimeouts.apply(builder, requestTimeout);
+        return builder.build();
     }
 
     /**

@@ -120,7 +120,7 @@ class OptionsValidatorTest {
     }
 
     @Test
-    @DisplayName("Verify: accepts a null requestTimeout (falls back to the default)")
+    @DisplayName("Verify: accepts a null requestTimeout (no timeout configured)")
     void acceptsNullRequestTimeout() {
         assertDoesNotThrow(() -> OptionsValidator.validate(
                 validOptions().requestTimeout(null).build()));
@@ -132,6 +132,15 @@ class OptionsValidatorTest {
         IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
                 () -> OptionsValidator.validate(
                         validOptions().requestTimeout(Duration.ofSeconds(-1)).build()));
+        assertTrue(ex.getMessage().contains("requestTimeout"), ex.getMessage());
+    }
+
+    @Test
+    @DisplayName("Rejects a sub-millisecond requestTimeout, which OkHttp would treat as no timeout")
+    void rejectsSubMillisecondRequestTimeout() {
+        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
+                () -> OptionsValidator.validate(
+                        validOptions().requestTimeout(Duration.ofNanos(999_999)).build()));
         assertTrue(ex.getMessage().contains("requestTimeout"), ex.getMessage());
     }
 

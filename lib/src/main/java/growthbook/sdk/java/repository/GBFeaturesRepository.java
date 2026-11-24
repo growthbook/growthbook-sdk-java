@@ -33,6 +33,7 @@ import growthbook.sdk.java.sandbox.CacheMode;
 import growthbook.sdk.java.sandbox.GbCacheManager;
 import growthbook.sdk.java.util.DecryptionUtils;
 import growthbook.sdk.java.util.GrowthBookJsonUtils;
+import growthbook.sdk.java.util.RequestTimeouts;
 import growthbook.sdk.java.sse.SseEventPayloadValidator;
 import lombok.Builder;
 import lombok.Getter;
@@ -502,7 +503,9 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
                 requestBodyForRemoteEval, cacheManager, backgroundFetchInterval, retryPolicy, null);
     }
 
-    public GBFeaturesRepository(
+    // Private on purpose: as a second public 12-argument constructor it would make existing calls that
+    // pass nulls in positions 7-12 ambiguous. Callers reach it through the builder.
+    private GBFeaturesRepository(
             @Nullable String apiHost,
             String clientKey,
             @Nullable String decryptionKey,
@@ -521,9 +524,7 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
         if (backgroundFetchInterval != null && backgroundFetchInterval.isNegative()) {
             throw new IllegalArgumentException("backgroundFetchInterval must not be negative");
         }
-        if (requestTimeout != null && requestTimeout.isNegative()) {
-            throw new IllegalArgumentException("requestTimeout must not be negative");
-        }
+        RequestTimeouts.requireValid(requestTimeout);
 
         // Set the defaults when the user does not provide them
         if (apiHost == null) {
@@ -550,7 +551,7 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
 
         // Use provided OkHttpClient or create a new one
         if (okHttpClient == null) {
-            this.okHttpClient = this.initializeHttpClient(resolveRequestTimeout(requestTimeout));
+            this.okHttpClient = this.initializeHttpClient(requestTimeout);
         } else {
             this.okHttpClient = reconfigureSuppliedClient(okHttpClient, requestTimeout);
         }
@@ -826,13 +827,7 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
 
         if (this.sseHttpClient.get() == null) {
 
-            OkHttpClient newHttpClient = new OkHttpClient.Builder()
-                    .addInterceptor(new GBFeaturesRepositoryRequestInterceptor())
-                    .retryOnConnectionFailure(false)
-                    .connectTimeout(0, TimeUnit.SECONDS)
-                    .readTimeout(0, TimeUnit.SECONDS)
-                    .writeTimeout(0, TimeUnit.SECONDS)
-                    .build();
+            OkHttpClient newHttpClient = newSseHttpClient();
 
             if (!this.sseHttpClient.compareAndSet(null, newHttpClient)) {
                 newHttpClient.dispatcher().executorService().shutdown();
@@ -936,11 +931,13 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
     /**
      * @return A new {@link OkHttpClient} with an interceptor {@link GBFeaturesRepositoryRequestInterceptor}
      */
-    private OkHttpClient initializeHttpClient(Duration requestTimeout) {
+    private OkHttpClient initializeHttpClient(@Nullable Duration requestTimeout) {
         OkHttpClient.Builder builder = new OkHttpClient.Builder()
                 .addInterceptor(new GBFeaturesRepositoryRequestInterceptor())
                 .retryOnConnectionFailure(true);
-        applyRequestTimeout(builder, requestTimeout);
+        if (requestTimeout != null) {
+            RequestTimeouts.apply(builder, requestTimeout);
+        }
         return builder.build();
     }
 
@@ -958,25 +955,23 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
             return okHttpClient;
         }
         OkHttpClient.Builder builder = okHttpClient.newBuilder();
-        applyRequestTimeout(builder, requestTimeout);
+        RequestTimeouts.apply(builder, requestTimeout);
         return builder.build();
     }
 
-    private static Duration resolveRequestTimeout(@Nullable Duration requestTimeout) {
-        return requestTimeout == null ? SDKConstants.DEFAULT_REQUEST_TIMEOUT : requestTimeout;
-    }
-
     /**
-     * Applies the timeout to the whole call ({@code callTimeout}) and to connect, read, and write.
-     * The call timeout bounds total elapsed time, so a trickle of response chunks cannot keep a read
-     * alive indefinitely. {@link Duration#ZERO} restores OkHttp's infinite timeout. Not applied to the
-     * SSE client, whose read stream is intentionally unbounded.
+     * Builds the client for the long-lived SSE stream. Its timeouts are always 0 (no timeout):
+     * {@code requestTimeout} must never cut the stream.
      */
-    private static void applyRequestTimeout(OkHttpClient.Builder builder, Duration requestTimeout) {
-        builder.callTimeout(requestTimeout)
-                .connectTimeout(requestTimeout)
-                .readTimeout(requestTimeout)
-                .writeTimeout(requestTimeout);
+    static OkHttpClient newSseHttpClient() {
+        return new OkHttpClient.Builder()
+                .addInterceptor(new GBFeaturesRepositoryRequestInterceptor())
+                .retryOnConnectionFailure(false)
+                .callTimeout(0, TimeUnit.SECONDS)
+                .connectTimeout(0, TimeUnit.SECONDS)
+                .readTimeout(0, TimeUnit.SECONDS)
+                .writeTimeout(0, TimeUnit.SECONDS)
+                .build();
     }
 
     private void refreshExpiresAt() {
@@ -1503,14 +1498,17 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
                 );
             }
 
-            if (response.code() == HttpURLConnection.HTTP_OK && this.featuresEndpoint.matches(FEATURES_ENDPOINT_PATTERN)) {
+            boolean featuresChanged = onResponseJson(responseBody.string(), false);
+
+            // Cache the ETag only once the body has been read and applied. Caching it earlier would let
+            // a body read that fails (a timeout, a dropped connection) turn the retry into a 304 for
+            // features that were never stored.
+            if (this.featuresEndpoint.matches(FEATURES_ENDPOINT_PATTERN)) {
                 String newETag = response.header("ETag");
                 if (newETag != null) {
                     eTagCache.put(this.featuresEndpoint, newETag);
                 }
             }
-
-            boolean featuresChanged = onResponseJson(responseBody.string(), false);
             recordRefreshSuccess(false);
             this.featureRefreshNotifier.notifySuccess(
                     source,

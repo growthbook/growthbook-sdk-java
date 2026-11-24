@@ -37,15 +37,15 @@ class GBFeaturesRepositoryRequestTimeoutTest {
     }
 
     @Test
-    @DisplayName("Verify: an unset requestTimeout applies the 10s default to the features client")
-    void defaultTimeoutAppliedWhenUnset() throws Exception {
+    @DisplayName("Verify: an unset requestTimeout keeps OkHttp's defaults: no whole-call timeout")
+    void unsetTimeoutKeepsOkHttpDefaults() throws Exception {
         OkHttpClient client = featuresClient(GBFeaturesRepository.builder()
                 .apiHost(API_HOST)
                 .clientKey(CLIENT_KEY)
                 .isCacheDisabled(true)
                 .build());
 
-        assertEquals(10_000, client.callTimeoutMillis());
+        assertEquals(0, client.callTimeoutMillis());
         assertEquals(10_000, client.connectTimeoutMillis());
         assertEquals(10_000, client.readTimeoutMillis());
         assertEquals(10_000, client.writeTimeoutMillis());
@@ -76,6 +76,39 @@ class GBFeaturesRepositoryRequestTimeoutTest {
                 .isCacheDisabled(true)
                 .requestTimeout(Duration.ofMillis(-1))
                 .build());
+    }
+
+    @Test
+    @DisplayName("A sub-millisecond requestTimeout is rejected instead of silently meaning no timeout")
+    void rejectsSubMillisecondRequestTimeout() {
+        assertThrows(IllegalArgumentException.class, () -> GBFeaturesRepository.builder()
+                .apiHost(API_HOST)
+                .clientKey(CLIENT_KEY)
+                .isCacheDisabled(true)
+                .requestTimeout(Duration.ofNanos(999_999))
+                .build());
+    }
+
+    @Test
+    @DisplayName("An overflowing requestTimeout is rejected with IllegalArgumentException, not ArithmeticException")
+    void rejectsOverflowingRequestTimeout() {
+        assertThrows(IllegalArgumentException.class, () -> GBFeaturesRepository.builder()
+                .apiHost(API_HOST)
+                .clientKey(CLIENT_KEY)
+                .isCacheDisabled(true)
+                .requestTimeout(Duration.ofSeconds(Long.MAX_VALUE))
+                .build());
+    }
+
+    @Test
+    @DisplayName("The SSE stream client is never bounded by a timeout")
+    void sseClientIsUnbounded() {
+        OkHttpClient client = GBFeaturesRepository.newSseHttpClient();
+
+        assertEquals(0, client.callTimeoutMillis());
+        assertEquals(0, client.connectTimeoutMillis());
+        assertEquals(0, client.readTimeoutMillis());
+        assertEquals(0, client.writeTimeoutMillis());
     }
 
     private static OkHttpClient featuresClient(GBFeaturesRepository subject) throws Exception {

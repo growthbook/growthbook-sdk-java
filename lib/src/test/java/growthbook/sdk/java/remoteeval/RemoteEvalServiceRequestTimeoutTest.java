@@ -36,12 +36,12 @@ class RemoteEvalServiceRequestTimeoutTest {
     }
 
     @Test
-    @DisplayName("Verify: an unset requestTimeout applies the 10s default to the remote-eval client")
-    void defaultTimeoutAppliedWhenUnset() throws Exception {
+    @DisplayName("Verify: an unset requestTimeout keeps OkHttp's defaults: no whole-call timeout")
+    void unsetTimeoutKeepsOkHttpDefaults() throws Exception {
         RemoteEvalService service = new RemoteEvalService(API_HOST, CLIENT_KEY);
         try {
             OkHttpClient client = client(service);
-            assertEquals(10_000, client.callTimeoutMillis());
+            assertEquals(0, client.callTimeoutMillis());
             assertEquals(10_000, client.connectTimeoutMillis());
             assertEquals(10_000, client.readTimeoutMillis());
             assertEquals(10_000, client.writeTimeoutMillis());
@@ -55,6 +55,15 @@ class RemoteEvalServiceRequestTimeoutTest {
     void rejectsNegativeRequestTimeout() {
         assertThrows(IllegalArgumentException.class, () ->
                 new RemoteEvalService(API_HOST, CLIENT_KEY, Duration.ofMillis(-1)));
+    }
+
+    @Test
+    @DisplayName("Sub-millisecond and overflowing requestTimeouts are rejected at construction")
+    void rejectsOutOfRangeRequestTimeout() {
+        assertThrows(IllegalArgumentException.class, () ->
+                new RemoteEvalService(API_HOST, CLIENT_KEY, Duration.ofNanos(999_999)));
+        assertThrows(IllegalArgumentException.class, () ->
+                new RemoteEvalService(API_HOST, CLIENT_KEY, Duration.ofSeconds(Long.MAX_VALUE)));
     }
 
     private static OkHttpClient client(RemoteEvalService service) throws Exception {

@@ -285,7 +285,8 @@ public final class RemoteEvalCoordinator {
         return getCache().get(cacheKey, requestBody);
     }
 
-    private synchronized RemoteEvalService getService() {
+    // Package-private for tests.
+    synchronized RemoteEvalService getService() {
         if (this.remoteEvalService == null) {
             this.remoteEvalService = new RemoteEvalService(this.options.getApiHost(), this.options.getClientKey(),
                     this.options.getRequestTimeout());
