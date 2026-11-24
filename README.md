@@ -107,6 +107,42 @@ Feature refresh listeners are dispatched off the refresh thread on a dedicated d
 the client. Supply your own executor with
 `Options.builder().featureRefreshListenerExecutor(executor).build()` to control the threading yourself.
 
+#### User-scoped instances
+
+Passing a `UserContext` into every call (`isOn(key, ctx)`, `getFeatureValue(key, default, ctx)`,
+`run(experiment, ctx)`) means threading the same context through every layer of a request, and a
+mismatched context is a silent correctness bug. `createScopedInstance(userContext)` returns a
+lightweight `UserScopedGrowthBook` bound to one user/request whose evaluation methods take no
+context argument. It delegates every evaluation back to the shared client, so feature refresh,
+experiment subscriptions, and remote evaluation are all reused.
+
+```java
+UserScopedGrowthBook user = gb.createScopedInstance(
+    UserContext.builder().attributesJson("{\"id\":\"123\"}").build()
+);
+
+boolean newCheckout = user.isOn("new-checkout");
+int limit = user.getFeatureValue("upload-limit", 10, Integer.class);
+ExperimentResult<String> result = user.run(experiment);
+```
+
+The scoped instance is also the home for per-user state. Mutators rebuild the bound context and
+return the instance for chaining:
+
+```java
+user.setForcedFeatures(Collections.singletonMap("new-checkout", false)) // force values for this user
+    .setForcedVariations(Collections.singletonMap("pricing-test", 1))
+    .updateAttributes(extraAttributes)                                   // merge more attributes
+    .setURL("https://example.com/checkout");                            // URL-based targeting
+
+// A per-user tracking callback overrides the client-level one for this user's evaluations.
+user.setTrackingCallback((experiment, experimentResult, userContext) -> track(experiment, experimentResult));
+```
+
+A `UserScopedGrowthBook` is intended for use within a single request/thread and is not designed for
+concurrent mutation across threads; the shared `GrowthBookClient` remains the thread-safe, long-lived
+instance.
+
 ### Manually create separate instance of GBContext, Repository and Growthbook classes
 
 ```java

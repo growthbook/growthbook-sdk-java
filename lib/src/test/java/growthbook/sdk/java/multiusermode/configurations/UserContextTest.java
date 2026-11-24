@@ -1,12 +1,14 @@
 package growthbook.sdk.java.multiusermode.configurations;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.google.gson.JsonObject;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 class UserContextTest {
@@ -90,5 +92,100 @@ class UserContextTest {
                 .build();
 
         assertEquals("user-123", context.getAttributes().get("userId").getAsString());
+    }
+
+    @Test
+    @DisplayName("A copied context takes attributes from an explicit JSON update")
+    void copiedContextTakesAttributesFromJsonUpdate() {
+        // Given
+        UserContext original = UserContext.builder()
+                .attributesJson("{\"id\":\"1\"}")
+                .url("https://example.com/page")
+                .build();
+
+        // When
+        UserContext copy = original.toBuilder()
+                .attributesJson("{\"id\":\"2\"}")
+                .build();
+
+        // Then
+        assertEquals("2", copy.getAttributes().get("id").getAsString());
+        assertEquals("{\"id\":\"2\"}", copy.getAttributesJson());
+        assertEquals("https://example.com/page", copy.getUrl());
+        assertEquals("1", original.getAttributes().get("id").getAsString());
+    }
+
+    @Test
+    @DisplayName("A copied context keeps the original attributes when they are not updated")
+    void copiedContextKeepsOriginalAttributesWithoutUpdate() {
+        // Given
+        JsonObject attributes = new JsonObject();
+        attributes.addProperty("id", "1");
+        UserContext original = UserContext.builder()
+                .attributes(attributes)
+                .attributesJson("{\"id\":\"ignored\"}")
+                .build();
+
+        // When
+        UserContext copy = original.toBuilder().build();
+
+        // Then
+        assertEquals("1", copy.getAttributes().get("id").getAsString());
+        assertEquals("{\"id\":\"ignored\"}", copy.getAttributesJson());
+    }
+
+    @Test
+    @DisplayName("A copied context keeps explicitly set attributes over a later JSON update")
+    void copiedContextKeepsExplicitAttributesOverJsonUpdate() {
+        // Given
+        UserContext original = UserContext.builder()
+                .attributesJson("{\"id\":\"1\"}")
+                .build();
+        JsonObject explicit = new JsonObject();
+        explicit.addProperty("id", "3");
+
+        // When
+        UserContext copy = original.toBuilder()
+                .attributes(explicit)
+                .attributesJson("{\"id\":\"2\"}")
+                .build();
+
+        // Then
+        assertEquals("3", copy.getAttributes().get("id").getAsString());
+    }
+
+    @Test
+    @DisplayName("A copied context updated with invalid JSON gets empty attributes")
+    void copiedContextUpdatedWithInvalidJsonGetsEmptyAttributes() {
+        // Given
+        UserContext original = UserContext.builder()
+                .attributesJson("{\"id\":\"1\"}")
+                .build();
+
+        // When
+        UserContext copy = original.toBuilder()
+                .attributesJson("{not json")
+                .build();
+
+        // Then
+        assertEquals(0, copy.getAttributes().size());
+    }
+
+    @Test
+    @DisplayName("A copied context updated with null JSON gets empty attributes")
+    void copiedContextUpdatedWithNullJsonGetsEmptyAttributes() {
+        // Given
+        UserContext original = UserContext.builder()
+                .attributesJson("{\"id\":\"1\"}")
+                .build();
+
+        // When
+        UserContext copy = original.toBuilder()
+                .attributesJson(null)
+                .build();
+
+        // Then
+        assertEquals(0, copy.getAttributes().size());
+        assertNull(copy.getAttributesJson());
     }
 }
