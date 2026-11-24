@@ -1,6 +1,7 @@
 package growthbook.sdk.java.repository;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
@@ -26,6 +27,8 @@ import okhttp3.Response;
 import okhttp3.ResponseBody;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 import org.mockito.ArgumentCaptor;
 
 import java.io.IOException;
@@ -273,6 +276,41 @@ class GBFeaturesRepositoryInitialPayloadTest {
 
         // Then
         verify(httpClient, never()).newCall(any());
+    }
+
+    @ParameterizedTest(name = "{0}")
+    @EnumSource(value = FeatureRefreshStrategy.class, names = {"STALE_WHILE_REVALIDATE", "SERVER_SENT_EVENTS"})
+    @DisplayName("A seeded start that runs after shutdown has begun leaves no scheduler behind")
+    void seededStartAfterShutdown_leavesNoScheduler(FeatureRefreshStrategy strategy) throws Exception {
+        // Given: shutdown has already run, as when it wins the race against a seeded initialize().
+        OkHttpClient httpClient = failingHttpClient();
+        GBFeaturesRepository subject = GBFeaturesRepository.builder()
+                .apiHost("http://localhost:80")
+                .clientKey("sdk-abc123")
+                .okHttpClient(httpClient)
+                .retryPolicy(NO_DELAY_RETRY_POLICY)
+                .isCacheDisabled(true)
+                .refreshStrategy(strategy)
+                .initialPayload(PAYLOAD_FLAG_ON)
+                .build();
+        subject.shutdown();
+
+        // When
+        subject.initialize();
+
+        // Then: no scheduler was installed for shutdown to miss, and no request was made.
+        assertNull(installedScheduler(subject), "a scheduler created after shutdown would leak its thread");
+        verify(httpClient, never()).newCall(any());
+    }
+
+    private static ScheduledExecutorService installedScheduler(GBFeaturesRepository repository)
+            throws ReflectiveOperationException {
+        Field field = GBFeaturesRepository.class.getDeclaredField("pollScheduler");
+        field.setAccessible(true);
+        @SuppressWarnings("unchecked")
+        AtomicReference<ScheduledExecutorService> schedulerRef =
+                (AtomicReference<ScheduledExecutorService>) field.get(repository);
+        return schedulerRef.get();
     }
 
     private static GBFeaturesRepository seededRepositoryWithFreshCache(OkHttpClient httpClient, String cachedPayload) {

@@ -63,6 +63,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.Executors;
+import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
@@ -748,14 +749,21 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
             return;
         }
 
+        if (this.shuttingDown.get()) {
+            return;
+        }
+
         // Named daemon thread: a non-daemon poller would keep the JVM alive when the
         // application exits without calling shutdown().
         ScheduledExecutorService newScheduler = Executors.newSingleThreadScheduledExecutor(POLL_THREAD_FACTORY);
-        if (!pollScheduler.compareAndSet(null, newScheduler)) {
-            newScheduler.shutdown();
+        if (!installScheduler(newScheduler)) {
             return;
         }
-        newScheduler.scheduleWithFixedDelay(this::pollOnceSafe, this.swrTtlSeconds, this.swrTtlSeconds, TimeUnit.SECONDS);
+        try {
+            newScheduler.scheduleWithFixedDelay(this::pollOnceSafe, this.swrTtlSeconds, this.swrTtlSeconds, TimeUnit.SECONDS);
+        } catch (RejectedExecutionException e) {
+            log.debug("Polling not scheduled: the repository is shutting down.");
+        }
     }
 
     /**
@@ -764,7 +772,7 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
      * not suppress the refresh; a failure is swallowed, leaving the seed in place.
      */
     private void scheduleImmediateBackgroundRefresh() {
-        backgroundScheduler().schedule(() -> {
+        runOnBackgroundScheduler(() -> {
             if (this.shuttingDown.get()) {
                 return;
             }
@@ -773,7 +781,7 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
             } catch (Exception e) {
                 log.debug("Background initial refresh after seeding failed; continuing to serve the seeded payload.", e);
             }
-        }, 0, TimeUnit.MILLISECONDS);
+        });
     }
 
     /**
@@ -783,7 +791,7 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
      * meanwhile; a failed fetch is swallowed and leaves the seed in place until the stream delivers.
      */
     private void scheduleInitialSseStartup(Boolean retryOnFailure) {
-        backgroundScheduler().schedule(() -> {
+        runOnBackgroundScheduler(() -> {
             if (this.shuttingDown.get()) {
                 return;
             }
@@ -802,26 +810,56 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
                     }
                 }
             }
-        }, 0, TimeUnit.MILLISECONDS);
+        });
     }
 
     /**
-     * Returns the shared single-threaded scheduler used for off-caller-thread startup work (the
-     * seeded background refresh and SSE startup), creating it if {@link #schedulePolling()} has not
-     * already. The seeded stale-while-revalidate path calls {@code schedulePolling()} first, so this
-     * reuses that scheduler; the seeded SSE path creates it here. {@link #shutdown()} tears it down.
+     * Runs startup work (the seeded background refresh and SSE startup) on the shared
+     * single-threaded scheduler, creating it if {@link #schedulePolling()} has not already. The
+     * seeded stale-while-revalidate path calls {@code schedulePolling()} first, so this reuses that
+     * scheduler; the seeded SSE path creates it here. Does nothing once {@link #shutdown()} has begun,
+     * so startup never leaves a scheduler behind that shutdown did not see.
      */
-    private ScheduledExecutorService backgroundScheduler() {
-        ScheduledExecutorService existing = this.pollScheduler.get();
-        if (existing != null) {
-            return existing;
+    private void runOnBackgroundScheduler(Runnable task) {
+        if (this.shuttingDown.get()) {
+            return;
         }
-        ScheduledExecutorService newScheduler = Executors.newSingleThreadScheduledExecutor(POLL_THREAD_FACTORY);
-        if (this.pollScheduler.compareAndSet(null, newScheduler)) {
-            return newScheduler;
+        ScheduledExecutorService scheduler = this.pollScheduler.get();
+        if (scheduler == null) {
+            ScheduledExecutorService created = Executors.newSingleThreadScheduledExecutor(POLL_THREAD_FACTORY);
+            // Lost the race to another creator: use theirs. Lost it to shutdown: get() is null.
+            scheduler = installScheduler(created) ? created : this.pollScheduler.get();
+            if (scheduler == null) {
+                return;
+            }
         }
-        newScheduler.shutdown();
-        return this.pollScheduler.get();
+        try {
+            scheduler.schedule(task, 0, TimeUnit.MILLISECONDS);
+        } catch (RejectedExecutionException e) {
+            log.debug("Startup task not scheduled: the repository is shutting down.");
+        }
+    }
+
+    /**
+     * Publishes {@code scheduler} as the shared scheduler unless one is already installed or shutdown
+     * has begun; in either case {@code scheduler} is shut down and {@code false} is returned.
+     *
+     * <p>{@link #shutdown()} sets {@code shuttingDown} before it takes the installed scheduler, so a
+     * scheduler installed after shutdown took it is always seen here by the re-check and removed
+     * again; one installed before is taken and shut down by shutdown itself. Either way no scheduler
+     * outlives shutdown.
+     */
+    private boolean installScheduler(ScheduledExecutorService scheduler) {
+        if (!this.pollScheduler.compareAndSet(null, scheduler)) {
+            scheduler.shutdown();
+            return false;
+        }
+        if (this.shuttingDown.get()) {
+            this.pollScheduler.compareAndSet(scheduler, null);
+            scheduler.shutdownNow();
+            return false;
+        }
+        return true;
     }
 
     private void pollOnceSafe() {
