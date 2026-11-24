@@ -63,6 +63,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.Executors;
+import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
@@ -136,6 +137,17 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
     private final String decryptionKey;
 
     /**
+     * Optional inline bootstrap payload, in the same shape as the features endpoint response
+     * ({@code {"features": {...}, "savedGroups": {...}}}, or {@code encryptedFeatures} when a
+     * {@link #decryptionKey} is set). When present, the repository seeds its state from this payload
+     * before the first network refresh, enabling an instant offline cold start. The payload is only a
+     * bridge: the first successful network refresh replaces it.
+     */
+    @Nullable
+    @Getter
+    private final String initialPayload;
+
+    /**
      * The standard cache TTL to use (60 seconds)
      */
     @Getter
@@ -174,6 +186,13 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
     private final AtomicReference<Boolean> lastRefreshLoadedFromCache = new AtomicReference<>();
 
     private final AtomicBoolean hasFeatureData = new AtomicBoolean(false);
+
+    /**
+     * Whether the held snapshot is still the inline bootstrap payload. The seed carries no freshness
+     * of its own, so while this is {@code true} a fresh persisted-cache timestamp must not let a
+     * refresh skip both the network and loading that cached payload.
+     */
+    private final AtomicBoolean servingInitialPayloadOnly = new AtomicBoolean(false);
 
     /**
      * Seconds after that cache is expired.
@@ -401,7 +420,6 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
         );
     }
 
-    @Builder
     public GBFeaturesRepository(
             @Nullable String apiHost,
             String clientKey,
@@ -416,6 +434,32 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
             @Nullable Duration backgroundFetchInterval,
             @Nullable FeatureFetchRetryPolicy retryPolicy
     ) {
+        this(apiHost, clientKey, encryptionKey, refreshStrategy, swrTtlSeconds, okHttpClient, decryptionKey,
+                isCacheDisabled, requestBodyForRemoteEval, cacheManager, backgroundFetchInterval, retryPolicy, null);
+    }
+
+    /**
+     * Builder constructor supporting an inline bootstrap payload.
+     *
+     * @param initialPayload optional inline feature payload used to bootstrap the repository at cold
+     *                       start before the first network fetch
+     */
+    @Builder
+    public GBFeaturesRepository(
+            @Nullable String apiHost,
+            String clientKey,
+            @Deprecated @Nullable String encryptionKey,
+            @Nullable FeatureRefreshStrategy refreshStrategy,
+            @Nullable Integer swrTtlSeconds,
+            @Nullable OkHttpClient okHttpClient,
+            @Nullable String decryptionKey,
+            @Nullable Boolean isCacheDisabled,
+            @Nullable RequestBodyForRemoteEval requestBodyForRemoteEval,
+            @Nullable GbCacheManager cacheManager,
+            @Nullable Duration backgroundFetchInterval,
+            @Nullable FeatureFetchRetryPolicy retryPolicy,
+            @Nullable String initialPayload
+    ) {
         this(apiHost, clientKey, (decryptionKey != null) ? decryptionKey : encryptionKey,
                 refreshStrategy,
                 swrTtlSeconds,
@@ -424,7 +468,8 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
                 (requestBodyForRemoteEval != null) ? requestBodyForRemoteEval : new RequestBodyForRemoteEval(),
                 cacheManager,
                 backgroundFetchInterval,
-                retryPolicy
+                retryPolicy,
+                initialPayload
         );
     }
 
@@ -461,6 +506,7 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
                 requestBodyForRemoteEval,
                 cacheManager,
                 null,
+                null,
                 null
         );
     }
@@ -477,6 +523,26 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
             @Nullable GbCacheManager cacheManager,
             @Nullable Duration backgroundFetchInterval,
             @Nullable FeatureFetchRetryPolicy retryPolicy
+    ) {
+        this(apiHost, clientKey, decryptionKey, refreshStrategy, swrTtlSeconds, okHttpClient,
+                isCacheDisabled, requestBodyForRemoteEval, cacheManager, backgroundFetchInterval, retryPolicy, null);
+    }
+
+    // Private on purpose: as a second public 12-argument constructor it would make existing calls that
+    // pass nulls in positions 7-12 ambiguous. Callers reach it through the builder.
+    private GBFeaturesRepository(
+            @Nullable String apiHost,
+            String clientKey,
+            @Nullable String decryptionKey,
+            @Nullable FeatureRefreshStrategy refreshStrategy,
+            @Nullable Integer swrTtlSeconds,
+            @Nullable OkHttpClient okHttpClient,
+            @Nullable Boolean isCacheDisabled,
+            @Nullable RequestBodyForRemoteEval requestBodyForRemoteEval,
+            @Nullable GbCacheManager cacheManager,
+            @Nullable Duration backgroundFetchInterval,
+            @Nullable FeatureFetchRetryPolicy retryPolicy,
+            @Nullable String initialPayload
     ) {
         this.isCacheDisabled = isCacheDisabled != null && isCacheDisabled; // cache enable by default
         if (clientKey == null) throw new IllegalArgumentException("clientKey cannot be null");
@@ -498,6 +564,7 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
 
         this.encryptionKey = decryptionKey;
         this.decryptionKey = decryptionKey;
+        this.initialPayload = validateInitialPayload(initialPayload);
 
         this.swrTtlSeconds = swrTtlSeconds == null ? SDKConstants.DEFAULT_SWR_TTL_SECONDS : swrTtlSeconds;
         this.backgroundFetchInterval = backgroundFetchInterval;
@@ -684,14 +751,117 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
             return;
         }
 
+        if (this.shuttingDown.get()) {
+            return;
+        }
+
         // Named daemon thread: a non-daemon poller would keep the JVM alive when the
         // application exits without calling shutdown().
         ScheduledExecutorService newScheduler = Executors.newSingleThreadScheduledExecutor(POLL_THREAD_FACTORY);
-        if (!pollScheduler.compareAndSet(null, newScheduler)) {
-            newScheduler.shutdown();
+        if (!installScheduler(newScheduler)) {
             return;
         }
-        newScheduler.scheduleWithFixedDelay(this::pollOnceSafe, this.swrTtlSeconds, this.swrTtlSeconds, TimeUnit.SECONDS);
+        try {
+            newScheduler.scheduleWithFixedDelay(this::pollOnceSafe, this.swrTtlSeconds, this.swrTtlSeconds, TimeUnit.SECONDS);
+        } catch (RejectedExecutionException e) {
+            log.debug("Polling not scheduled: the repository is shutting down.");
+        }
+    }
+
+    /**
+     * Runs the first post-seed refresh off the caller's thread so a seeded {@code initialize()} returns
+     * immediately (instant cold start). Uses {@link RefreshMode#FORCE} so the seed's in-memory data does
+     * not suppress the refresh; a failure is swallowed, leaving the seed in place.
+     */
+    private void scheduleImmediateBackgroundRefresh() {
+        runOnBackgroundScheduler(() -> {
+            if (this.shuttingDown.get()) {
+                return;
+            }
+            try {
+                refreshFeatures(RefreshMode.FORCE, FeatureRefreshSource.INITIALIZATION);
+            } catch (Exception e) {
+                log.debug("Background initial refresh after seeding failed; continuing to serve the seeded payload.", e);
+            }
+        });
+    }
+
+    /**
+     * Runs the seeded SSE cold start off the caller's thread: the {@link RefreshMode#FORCE} fetch
+     * establishes SSE support and current features before the stream is opened, exactly as the
+     * blocking path does, but without stalling {@code initialize()} on the network. The seed serves
+     * meanwhile; a failed fetch is swallowed and leaves the seed in place until the stream delivers.
+     */
+    private void scheduleInitialSseStartup(Boolean retryOnFailure) {
+        runOnBackgroundScheduler(() -> {
+            if (this.shuttingDown.get()) {
+                return;
+            }
+            try {
+                refreshFeatures(RefreshMode.FORCE, FeatureRefreshSource.INITIALIZATION);
+            } catch (Exception e) {
+                log.debug("Background initial SSE refresh after seeding failed; continuing to serve the seeded payload.", e);
+            }
+            if (!this.shuttingDown.get()) {
+                initializeSSE(retryOnFailure);
+                // Lost a race with shutdown(): tear down the stream this task just opened.
+                if (this.shuttingDown.get()) {
+                    EventSource opened = this.sseEventSource.getAndSet(null);
+                    if (opened != null) {
+                        opened.cancel();
+                    }
+                }
+            }
+        });
+    }
+
+    /**
+     * Runs startup work (the seeded background refresh and SSE startup) on the shared
+     * single-threaded scheduler, creating it if {@link #schedulePolling()} has not already. The
+     * seeded stale-while-revalidate path calls {@code schedulePolling()} first, so this reuses that
+     * scheduler; the seeded SSE path creates it here. Does nothing once {@link #shutdown()} has begun,
+     * so startup never leaves a scheduler behind that shutdown did not see.
+     */
+    private void runOnBackgroundScheduler(Runnable task) {
+        if (this.shuttingDown.get()) {
+            return;
+        }
+        ScheduledExecutorService scheduler = this.pollScheduler.get();
+        if (scheduler == null) {
+            ScheduledExecutorService created = Executors.newSingleThreadScheduledExecutor(POLL_THREAD_FACTORY);
+            // Lost the race to another creator: use theirs. Lost it to shutdown: get() is null.
+            scheduler = installScheduler(created) ? created : this.pollScheduler.get();
+            if (scheduler == null) {
+                return;
+            }
+        }
+        try {
+            scheduler.schedule(task, 0, TimeUnit.MILLISECONDS);
+        } catch (RejectedExecutionException e) {
+            log.debug("Startup task not scheduled: the repository is shutting down.");
+        }
+    }
+
+    /**
+     * Publishes {@code scheduler} as the shared scheduler unless one is already installed or shutdown
+     * has begun; in either case {@code scheduler} is shut down and {@code false} is returned.
+     *
+     * <p>{@link #shutdown()} sets {@code shuttingDown} before it takes the installed scheduler, so a
+     * scheduler installed after shutdown took it is always seen here by the re-check and removed
+     * again; one installed before is taken and shut down by shutdown itself. Either way no scheduler
+     * outlives shutdown.
+     */
+    private boolean installScheduler(ScheduledExecutorService scheduler) {
+        if (!this.pollScheduler.compareAndSet(null, scheduler)) {
+            scheduler.shutdown();
+            return false;
+        }
+        if (this.shuttingDown.get()) {
+            this.pollScheduler.compareAndSet(scheduler, null);
+            scheduler.shutdownNow();
+            return false;
+        }
+        return true;
     }
 
     private void pollOnceSafe() {
@@ -720,20 +890,37 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
         if (this.initialized.get()) return;
 
         // Serialize initialization and only mark the repository initialized AFTER the first
-        // successful fetch completes, so getInitialized() never reports "ready" while features are
-        // still being loaded. On failure the flag stays false and a later call can retry.
+        // successful fetch (or seed) completes, so getInitialized() never reports "ready" while
+        // features are still being loaded. On failure the flag stays false and a later call can retry.
         synchronized (this.initLock) {
             if (this.initialized.get()) return;
 
+            seedInitialPayload();
+            boolean seeded = this.initialPayload != null;
             switch (this.refreshStrategy) {
                 case STALE_WHILE_REVALIDATE:
-                    refreshFeatures(RefreshMode.DEFAULT, FeatureRefreshSource.INITIALIZATION);
-                    schedulePolling();
+                    if (seeded) {
+                        // Instant cold start: the seed already serves evaluations, so run the first refresh
+                        // in the background instead of blocking initialize() on a possibly slow/unreachable
+                        // network call. FORCE so the seed cannot borrow cache freshness and suppress it.
+                        schedulePolling();
+                        scheduleImmediateBackgroundRefresh();
+                    } else {
+                        refreshFeatures(RefreshMode.DEFAULT, FeatureRefreshSource.INITIALIZATION);
+                        schedulePolling();
+                    }
                     break;
 
                 case SERVER_SENT_EVENTS:
-                    refreshFeatures(RefreshMode.DEFAULT, FeatureRefreshSource.INITIALIZATION);
-                    initializeSSE(retryOnFailure);
+                    if (seeded) {
+                        // Instant cold start: the seed already serves evaluations, so establish SSE support
+                        // and open the stream off the caller's thread instead of blocking initialize() on a
+                        // possibly slow/unreachable fetch.
+                        scheduleInitialSseStartup(retryOnFailure);
+                    } else {
+                        refreshFeatures(RefreshMode.DEFAULT, FeatureRefreshSource.INITIALIZATION);
+                        initializeSSE(retryOnFailure);
+                    }
                     break;
 
                 case REMOTE_EVAL_STRATEGY:
@@ -908,15 +1095,39 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
         return now >= this.expiresAt.get();
     }
 
-    private boolean shouldSkipRefresh(RefreshMode refreshMode) {
+    private boolean shouldSkipRefresh(RefreshMode refreshMode, FeatureRefreshSource source) {
         return FeatureRefreshCacheFreshness.shouldSkipRefresh(
                 refreshMode == RefreshMode.FORCE,
                 this.backgroundFetchInterval,
                 this.lastSuccessfulFetchAtMillis::get,
                 () -> FeatureRefreshCacheFreshness.timestampMillisOrUnknown(readCacheLastUpdatedMillis()),
-                this.hasFeatureData::get,
-                this::loadCachedFeaturesIfAvailable
+                () -> this.hasFeatureData.get() && !this.servingInitialPayloadOnly.get(),
+                () -> loadCachedFeaturesForSkippedRefresh(source)
         );
+    }
+
+    /**
+     * Loads the fresh cached payload that lets a refresh skip the network, and publishes the load
+     * when it changed the held features. While the seed is still served, this replaces it after the
+     * client has already built its global context from the seed; without the event the client would
+     * keep evaluating the seed, and a later identical server response would not repair it because
+     * {@code featuresChanged} would be {@code false}.
+     *
+     * @return whether feature data is available after the attempt
+     */
+    private boolean loadCachedFeaturesForSkippedRefresh(FeatureRefreshSource source) {
+        long startedAtNanos = System.nanoTime();
+        AtomicBoolean featuresChanged = new AtomicBoolean(false);
+        boolean available = loadCachedFeaturesIfAvailable(featuresChanged);
+        if (available && featuresChanged.get()) {
+            this.featureRefreshNotifier.notifySuccess(
+                    source,
+                    true,
+                    true,
+                    FeatureRefreshNotifier.elapsedMillis(startedAtNanos)
+            );
+        }
+        return available;
     }
 
     /**
@@ -939,7 +1150,7 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
 
     private void refreshFeatures(RefreshMode refreshMode, FeatureRefreshSource source) throws FeatureFetchException {
         RefreshMode resolvedRefreshMode = refreshMode == null ? RefreshMode.DEFAULT : refreshMode;
-        if (shouldSkipRefresh(resolvedRefreshMode)) {
+        if (shouldSkipRefresh(resolvedRefreshMode, source)) {
             log.debug("Skipping feature refresh because cached features are newer than the background fetch interval.");
             return;
         }
@@ -1102,6 +1313,52 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
         this.refreshConsecutiveFailures.incrementAndGet();
         this.lastRefreshFailureAtMillis.set(System.currentTimeMillis());
         this.lastRefreshLoadedFromCache.set(loadedFromCache);
+    }
+
+    /**
+     * Validates the inline bootstrap payload at construction time so a malformed payload fails fast
+     * instead of surfacing later as an opaque fetch failure. Only structural JSON validity is checked
+     * here; key presence and decryption are enforced when the payload is seeded in {@link #initialize()}.
+     *
+     * @param payload the raw inline payload, may be {@code null} or blank
+     * @return the payload unchanged, or {@code null} when blank
+     * @throws IllegalArgumentException when the payload is not a valid JSON object
+     */
+    @Nullable
+    private static String validateInitialPayload(@Nullable String payload) {
+        if (payload == null || payload.trim().isEmpty()) {
+            return null;
+        }
+        String violation = GrowthBookJsonUtils.jsonObjectViolation(payload, "initialPayload");
+        if (violation != null) {
+            throw new IllegalArgumentException(violation);
+        }
+        return payload;
+    }
+
+    /**
+     * Seeds repository state from the inline bootstrap payload, if one was supplied. Reuses the
+     * cache-load path ({@code isFromCache=true}) so the seed does not write to the file cache and does
+     * not advance {@code lastSuccessfulFetchAtMillis} — the payload is a bridge, not a network fetch.
+     * The seed is reported to listeners/metrics with {@link FeatureRefreshSource#INITIAL_PAYLOAD} and
+     * {@code loadedFromCache=true} so it is never mistaken for a successful network refresh.
+     *
+     * @throws FeatureFetchException when the payload is missing required keys or cannot be decrypted;
+     *         seeding fails fast rather than silently falling through to the network.
+     */
+    private void seedInitialPayload() throws FeatureFetchException {
+        if (this.initialPayload == null) {
+            return;
+        }
+        long startedAtNanos = System.nanoTime();
+        boolean featuresChanged = onResponseJson(this.initialPayload, true);
+        this.servingInitialPayloadOnly.set(true);
+        this.featureRefreshNotifier.notifySuccess(
+                FeatureRefreshSource.INITIAL_PAYLOAD,
+                featuresChanged,
+                true,
+                FeatureRefreshNotifier.elapsedMillis(startedAtNanos)
+        );
     }
 
     /**
@@ -1285,6 +1542,7 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
                 newSaved == null ? new JsonObject() : newSaved
         ));
         this.hasFeatureData.set(true);
+        this.servingInitialPayloadOnly.set(false);
 
         if (!isFromCache) {
             this.lastSuccessfulFetchAtMillis.set(System.currentTimeMillis());
