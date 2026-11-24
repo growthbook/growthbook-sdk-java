@@ -498,6 +498,42 @@ new JedisStickyBucketService(jedisPool, "growthbook:sticky:", Duration.ofDays(30
 new LettuceStickyBucketService(connection, Duration.ofDays(30));
 ```
 
+#### Non-blocking Redis sticky bucketing
+
+The services above block the calling thread while Redis answers. `LettuceAsyncStickyBucketService`
+uses Lettuce's asynchronous API instead, so no thread is held during a read or a save. Pair it with
+the client's `CompletableFuture` evaluation methods:
+
+```java
+StatefulRedisConnection<String, String> connection =
+    RedisClient.create("redis://localhost:6379").connect();
+GrowthBookClient client = new GrowthBookClient(Options.builder()
+    .asyncStickyBucketService(new LettuceAsyncStickyBucketService(connection))
+    .stickyBucketIdentifierAttributes(Arrays.asList("id"))
+    .build());
+
+client.evalFeatureAsync("my-feature", String.class, userContext)
+    .thenAccept(result -> render(result.getValue()));
+```
+
+- It accepts the same optional `keyPrefix` and `ttl` arguments, writes the same bytes under the same
+  keys and saves with the same merge and compare-and-set, so blocking and non-blocking services can
+  share one Redis.
+- Configure either `stickyBucketService` or `asyncStickyBucketService`, not both.
+- The synchronous methods (`evalFeature`, `run`, ...) work with it too; they wait for the read on the
+  calling thread.
+- A blocking service used with the `...Async` methods runs on the client's executor
+  (`Options.asyncExecutor`) and holds one of its threads per in-flight call. Jedis has no
+  asynchronous API, so only Lettuce has a non-blocking service.
+- The client gives up on a read or a save after `Options.stickyBucketTimeout` (default 5 seconds;
+  `Duration.ZERO` disables it), so an unreachable Redis cannot leave evaluations waiting. Lettuce
+  itself does not time out asynchronous commands by default; enable `TimeoutOptions` on the
+  `RedisClient` (for example `TimeoutOptions.enabled(Duration.ofMillis(200))`) to also release the
+  abandoned command.
+- Redis failures complete the returned stage with a `StickyBucketServiceException`. When a user's
+  assignments cannot be read, that evaluation continues with normal bucketing and its assignments
+  are not saved, so the variation Redis already holds is never replaced.
+
 ## Contributing
 
 ### Releasing a new version
