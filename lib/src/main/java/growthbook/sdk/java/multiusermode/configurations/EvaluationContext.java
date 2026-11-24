@@ -1,6 +1,7 @@
 package growthbook.sdk.java.multiusermode.configurations;
 
 import growthbook.sdk.java.model.FeatureResult;
+import growthbook.sdk.java.multiusermode.DeferredTrackingBuffer;
 import growthbook.sdk.java.multiusermode.ExperimentTracker;
 import growthbook.sdk.java.plugin.PluginRegistry;
 import growthbook.sdk.java.stickyBucketing.StickyBucketDocWriter;
@@ -37,6 +38,13 @@ public class EvaluationContext {
     private PluginRegistry pluginRegistry;
 
     /**
+     * When non-null, experiment exposures are buffered here instead of firing immediately, so a
+     * per-request scope can flush tracking once at the end. Null on the immediate path.
+     */
+    @Nullable
+    private DeferredTrackingBuffer deferredTracking;
+
+    /**
      * Persistence seam for newly assigned sticky bucket documents, set by the
      * owning multi-user client. When null the evaluator calls the configured
      * synchronous service directly (legacy path, unchanged). Excluded from
@@ -68,10 +76,16 @@ public class EvaluationContext {
     private boolean suppressTrackingErrors;
 
     public EvaluationContext(GlobalContext global, UserContext user, StackContext stack, Options options) {
+        this(global, user, stack, options, null);
+    }
+
+    public EvaluationContext(GlobalContext global, UserContext user, StackContext stack, Options options,
+                             @Nullable DeferredTrackingBuffer deferredTracking) {
         this.global = global;
         this.user = user;
         this.stack = stack;
         this.options = options;
+        this.deferredTracking = deferredTracking;
     }
 
     @Data

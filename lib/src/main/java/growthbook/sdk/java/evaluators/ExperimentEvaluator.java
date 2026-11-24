@@ -17,7 +17,9 @@ import growthbook.sdk.java.model.Filter;
 import growthbook.sdk.java.model.StickyBucketVariation;
 import growthbook.sdk.java.model.TrackData;
 import growthbook.sdk.java.model.VariationMeta;
+import growthbook.sdk.java.multiusermode.DeferredTrackingBuffer;
 import growthbook.sdk.java.multiusermode.configurations.EvaluationContext;
+import growthbook.sdk.java.multiusermode.usage.EventLoggerDispatch;
 import growthbook.sdk.java.multiusermode.usage.TrackingCallbackWithUser;
 import growthbook.sdk.java.plugin.PluginRegistry;
 import growthbook.sdk.java.stickyBucketing.StickyBucketDocWriter;
@@ -313,8 +315,13 @@ public class ExperimentEvaluator implements IExperimentEvaluator {
             }
         }
 
-        // Fire once per unique (hashAttribute, hashValue, experiment.key, variationId).
-        trackExposure(context, experiment, result, context.isSuppressTrackingErrors());
+        DeferredTrackingBuffer deferredTracking = context.getDeferredTracking();
+        if (deferredTracking != null) {
+            deferredTracking.add(experiment, result, context.getUser());
+        } else {
+            // Fire once per unique (hashAttribute, hashValue, experiment.key, variationId).
+            trackExposure(context, experiment, result, context.isSuppressTrackingErrors());
+        }
 
         return result;
     }
@@ -403,11 +410,8 @@ public class ExperimentEvaluator implements IExperimentEvaluator {
         if (tracks == null) {
             return;
         }
-        if (context.getOptions().getTrackingCallBackWithUser() == null
-                && context.getPluginRegistry() == null) {
-            return;
-        }
 
+        DeferredTrackingBuffer deferredTracking = context.getDeferredTracking();
         for (TrackData<ValueType> track : tracks) {
             if (track == null
                     || track.getExperiment() == null
@@ -417,17 +421,26 @@ public class ExperimentEvaluator implements IExperimentEvaluator {
                 log.debug("Skipping malformed remote evaluation tracking payload.");
                 continue;
             }
-            // Remote-eval track payloads never propagate a callback failure.
-            trackExposure(context, track.getExperiment(), track.getResult(), true);
+            if (deferredTracking != null) {
+                deferredTracking.add(track.getExperiment(), track.getResult(), context.getUser());
+            } else {
+                // Remote-eval track payloads never propagate a callback failure.
+                trackExposure(context, track.getExperiment(), track.getResult(), true);
+            }
         }
     }
 
     /**
-     * Fires the user tracking callback and any registered plugins for a single exposure.
-     * Plugin failures are isolated by {@link PluginRegistry}; a throwing user callback
-     * propagates to {@code trackExposure}, which decides whether to retry, log or rethrow.
+     * Prefix for the dedup key of the event sinks (event logger and plugins). The user's
+     * {@code trackingKey} never starts with a NUL character, so the two keys cannot collide.
      */
-    private <ValueType> void dispatchExperimentViewed(
+    private static final String EVENT_SINKS_KEY_PREFIX = "\u0000event-sinks:";
+
+    /**
+     * Fires the user tracking callback for a single exposure. A throwing callback propagates to
+     * {@code trackExposure}, which decides whether to retry, log or rethrow.
+     */
+    private <ValueType> void fireTrackingCallback(
             EvaluationContext context,
             Experiment<ValueType> experiment,
             ExperimentResult<ValueType> result
@@ -436,6 +449,18 @@ public class ExperimentEvaluator implements IExperimentEvaluator {
         if (callback != null) {
             callback.onTrack(experiment, result, context.getUser());
         }
+    }
+
+    /**
+     * Fires the structured {@link EventLoggerDispatch event logger} and any registered plugins for a
+     * single exposure. Both isolate their own failures, so neither can affect evaluation.
+     */
+    private <ValueType> void fireEventSinks(
+            EvaluationContext context,
+            Experiment<ValueType> experiment,
+            ExperimentResult<ValueType> result
+    ) {
+        EventLoggerDispatch.fireExperimentViewedEvent(context.getOptions(), experiment, result, context.getUser());
         PluginRegistry pluginRegistry = context.getPluginRegistry();
         if (pluginRegistry != null) {
             pluginRegistry.fireExperimentViewed(experiment, result,
@@ -444,10 +469,16 @@ public class ExperimentEvaluator implements IExperimentEvaluator {
     }
 
     /**
-     * Deduped exposure delivery. On the multi-user client a throwing callback
-     * un-marks the dedup key, so the exposure is retried on a later evaluation
-     * instead of being lost. The single-user {@code GrowthBook} class keeps its
-     * existing behavior: the key stays marked and the exposure is not retried.
+     * Deduped exposure delivery to the tracking callback, the event logger and plugins.
+     *
+     * <p>Each consumer runs independently, as in the TypeScript SDK: a throwing callback cannot stop
+     * the {@code Experiment Viewed} event or the plugins. On the multi-user client a throwing callback
+     * un-marks the exposure's dedup key, so the callback is retried on a later evaluation instead of
+     * being lost. For such an exposure the event logger and plugins are recorded under a separate key
+     * that is never un-marked, so the retry re-runs only the callback and they receive the exposure
+     * once; exposures whose callback succeeds add no second tracker entry. The single-user
+     * {@code GrowthBook} class keeps its existing behavior: the key stays marked, the exposure is not
+     * retried, and the callback failure is rethrown after the event logger and plugins have run.
      *
      * @param suppressErrors log the callback failure instead of rethrowing it
      */
@@ -461,19 +492,38 @@ public class ExperimentEvaluator implements IExperimentEvaluator {
         if (claim == null) {
             return;
         }
+
+        RuntimeException callbackFailure = null;
         try {
-            dispatchExperimentViewed(context, experiment, result);
+            fireTrackingCallback(context, experiment, result);
         } catch (RuntimeException e) {
-            boolean retry = context.isSuppressTrackingErrors();
+            callbackFailure = e;
+        }
+
+        boolean retry = callbackFailure != null && context.isSuppressTrackingErrors();
+        String sinksKey = EVENT_SINKS_KEY_PREFIX + key;
+        if (retry) {
+            // Remember that the sinks fired, so the retry re-runs only the callback. Marked before the
+            // exposure key is released below, so a concurrent retry always sees it.
+            if (tracker.markIfFirst(sinksKey) != null) {
+                fireEventSinks(context, experiment, result);
+            }
+        } else if (!tracker.isExperimentTracked(sinksKey)) {
+            // Delivered sinks are only recorded for exposures whose callback failed, so a successful
+            // exposure takes one tracker entry, not two.
+            fireEventSinks(context, experiment, result);
+        }
+
+        if (callbackFailure != null) {
             if (retry) {
                 tracker.untrack(key, claim);
             }
             if (!suppressErrors) {
-                throw e;
+                throw callbackFailure;
             }
             log.error(retry
                     ? "Tracking callback failed; the exposure will be retried on the next evaluation."
-                    : "Tracking callback failed.", e);
+                    : "Tracking callback failed.", callbackFailure);
         }
     }
 
