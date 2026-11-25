@@ -3,8 +3,10 @@ package growthbook.sdk.java.multiusermode;
 import com.github.tomakehurst.wiremock.WireMockServer;
 import com.github.tomakehurst.wiremock.core.WireMockConfiguration;
 import growthbook.sdk.java.model.FeatureResult;
+import growthbook.sdk.java.model.StickyAssignmentsDocument;
 import growthbook.sdk.java.multiusermode.configurations.Options;
 import growthbook.sdk.java.multiusermode.configurations.UserContext;
+import growthbook.sdk.java.stickyBucketing.InMemoryStickyBucketServiceImpl;
 import growthbook.sdk.java.util.GrowthBookJsonUtils;
 import com.google.gson.JsonObject;
 import org.junit.jupiter.api.AfterEach;
@@ -14,6 +16,8 @@ import org.junit.jupiter.api.Test;
 
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.function.Consumer;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
@@ -424,6 +428,60 @@ class ContextualBanditEvaluationTest {
             assertEquals("default", result.getValue());
             assertNull(result.getExperimentResult());
         });
+    }
+
+    private static final String PAYLOAD_BANDIT_CUSTOM_HASH_ATTRIBUTE =
+            "{\"features\":{\"banner\":{\"defaultValue\":\"default\",\"rules\":[{"
+                    + "\"contextualBanditRef\":\"bandit-1\","
+                    + "\"contextualVariations\":[\"control\",\"treatment\"],"
+                    + "\"meta\":[{\"key\":\"control\"},{\"key\":\"treatment\"}],"
+                    + "\"hashAttribute\":\"userId\","
+                    + "\"fallbackAttribute\":\"deviceId\""
+                    + "}]}},"
+                    + "\"contextualBandits\":{\"bandit-1\":{\"banditVersion\":3,\"contexts\":["
+                    + "{\"leafId\":0,\"condition\":{\"country\":\"US\"},\"weights\":[1.0,0.0]}"
+                    + "]}}}";
+
+    @Test
+    @DisplayName("Verify: a saved assignment for a bandit-only rule is honored via the rule's hash attribute")
+    void savedAssignmentForBanditRuleIsHonoredViaHashAttribute() {
+        // Given a stored "treatment" assignment keyed by the rule's hash attribute, and no configured identifiers
+        InMemoryStickyBucketServiceImpl service = new InMemoryStickyBucketServiceImpl(new HashMap<>());
+        service.saveAssignments(storedTreatment("userId", "user-1"));
+
+        withClient(PAYLOAD_BANDIT_CUSTOM_HASH_ATTRIBUTE, options -> options.setStickyBucketService(service), client -> {
+            // When a user whose leaf weights would choose "control" evaluates the feature
+            FeatureResult<String> result = client.evalFeature("banner", String.class,
+                    userContext("{\"userId\":\"user-1\",\"country\":\"US\"}"));
+
+            // Then the saved choice wins over today's leaf weights
+            assertEquals("treatment", result.getValue());
+            assertTrue(result.getExperimentResult().getStickyBucketUsed());
+        });
+    }
+
+    @Test
+    @DisplayName("Verify: a saved assignment for a bandit-only rule is honored via the rule's fallback attribute")
+    void savedAssignmentForBanditRuleIsHonoredViaFallbackAttribute() {
+        // Given a stored "treatment" assignment keyed by the rule's fallback attribute
+        InMemoryStickyBucketServiceImpl service = new InMemoryStickyBucketServiceImpl(new HashMap<>());
+        service.saveAssignments(storedTreatment("deviceId", "device-1"));
+
+        withClient(PAYLOAD_BANDIT_CUSTOM_HASH_ATTRIBUTE, options -> options.setStickyBucketService(service), client -> {
+            // When a user without the hash attribute evaluates the feature
+            FeatureResult<String> result = client.evalFeature("banner", String.class,
+                    userContext("{\"deviceId\":\"device-1\",\"country\":\"US\"}"));
+
+            // Then the saved choice found through the fallback attribute wins
+            assertEquals("treatment", result.getValue());
+            assertTrue(result.getExperimentResult().getStickyBucketUsed());
+        });
+    }
+
+    private static StickyAssignmentsDocument storedTreatment(String attributeName, String attributeValue) {
+        Map<String, String> assignments = new HashMap<>();
+        assignments.put("banner__0", "treatment");
+        return new StickyAssignmentsDocument(attributeName, attributeValue, assignments);
     }
 
     private void withClient(String payload, Consumer<GrowthBookClient> assertions) {

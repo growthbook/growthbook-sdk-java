@@ -8,12 +8,16 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import com.google.gson.JsonObject;
 import growthbook.sdk.java.model.FeatureResult;
 import growthbook.sdk.java.model.GBContext;
+import growthbook.sdk.java.model.StickyAssignmentsDocument;
+import growthbook.sdk.java.stickyBucketing.InMemoryStickyBucketServiceImpl;
 import growthbook.sdk.java.util.GrowthBookJsonUtils;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * Contextual bandit consumption in the single-context ({@link GrowthBook} + {@link GBContext}) path,
@@ -25,6 +29,14 @@ class ContextualBanditSingleContextTest {
             "{\"banner\":{\"defaultValue\":\"default\",\"rules\":[{"
                     + "\"contextualBanditRef\":\"bandit-1\","
                     + "\"contextualVariations\":[\"control\",\"treatment\"],"
+                    + "\"hashAttribute\":\"id\""
+                    + "}]}}";
+
+    private static final String FEATURES_WITH_VARIATION_META_JSON =
+            "{\"banner\":{\"defaultValue\":\"default\",\"rules\":[{"
+                    + "\"contextualBanditRef\":\"bandit-1\","
+                    + "\"contextualVariations\":[\"control\",\"treatment\"],"
+                    + "\"meta\":[{\"key\":\"control\"},{\"key\":\"treatment\"}],"
                     + "\"hashAttribute\":\"id\""
                     + "}]}}";
 
@@ -243,6 +255,30 @@ class ContextualBanditSingleContextTest {
         // Then
         assertEquals("default", result.getValue());
         assertNull(result.getExperimentResult());
+    }
+
+    @Test
+    @DisplayName("Verify: a saved assignment for a bandit-only rule is honored in the single-context path")
+    void savedAssignmentForBanditRuleIsHonored() {
+        // Given a stored "treatment" assignment keyed by the rule's hash attribute, and no configured identifiers
+        InMemoryStickyBucketServiceImpl service = new InMemoryStickyBucketServiceImpl(new HashMap<>());
+        Map<String, String> assignments = new HashMap<>();
+        assignments.put("banner__0", "treatment");
+        service.saveAssignments(new StickyAssignmentsDocument("id", "user-1", assignments));
+        GBContext context = GBContext.builder()
+                .featuresJson(FEATURES_WITH_VARIATION_META_JSON)
+                .contextualBandits(json(CONTEXTUAL_BANDITS_JSON))
+                .attributesJson("{\"id\":\"user-1\",\"country\":\"US\"}")
+                .stickyBucketService(service)
+                .build();
+        GrowthBook subject = new GrowthBook(context);
+
+        // When a user whose leaf weights would choose "control" evaluates the feature
+        FeatureResult<String> result = subject.evalFeature("banner", String.class);
+
+        // Then the saved choice wins over today's leaf weights
+        assertEquals("treatment", result.getValue());
+        assertTrue(result.getExperimentResult().getStickyBucketUsed());
     }
 
     private static JsonObject json(String raw) {

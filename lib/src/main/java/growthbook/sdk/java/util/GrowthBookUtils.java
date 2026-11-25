@@ -662,7 +662,9 @@ public class GrowthBookUtils {
                 if (feature != null && feature.getRules() != null) {
 
                     for (FeatureRule<ValueType> rule : feature.getRules()) {
-                        ArrayList<ValueType> variations = rule.getVariations();
+                        ArrayList<ValueType> variations = rule.getContextualVariations() != null
+                                ? rule.getContextualVariations()
+                                : rule.getVariations();
 
                         if (variations != null && !variations.isEmpty()) {
                             String attr = rule.getHashAttribute() != null ? rule.getHashAttribute() : "id";
