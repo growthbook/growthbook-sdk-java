@@ -234,13 +234,13 @@ an UserContext object, which contains attributes, forceVariations and forceFeatu
 The method returns a FeatureResult object, which contains the evaluated result of the feature along with any additional metadata.
 
 ```java
-public <ValueType> FeatureResult<ValueType> evalFeature(String key, Class<ValueType> valueTypeClass, UserContext userContext);
+public <T> FeatureResult<T> evalFeature(String key, Class<T> valueTypeClass, UserContext userContext);
 ```
 
 - `getFeatureValue()` the same purpose as in `evalFeature()`, but have ability to provide default value
 
 ```java
-public <ValueType> ValueType getFeatureValue(String featureKey, ValueType defaultValue, Class<ValueType> gsonDeserializableClass, UserContext userContext);
+public <T> T getFeatureValue(String featureKey, T defaultValue, Class<T> gsonDeserializableClass, UserContext userContext);
 ```
 
 - The `isOn()` / `isOff()` method takes a string argument, which is the unique identifier for the feature, and UserContext, which contains attributes, forceVariations and forceFeatureValues to provide a more flexible way of evaluating features. Functions return the feature state on/off
@@ -254,7 +254,7 @@ public Boolean isOff(String featureKey, UserContext userContext);
 - The `run()` method takes an Experiment object and UserContext. Function returns an ExperimentResult
 
 ```java
-public <ValueType> ExperimentResult<ValueType> run(Experiment<ValueType> experiment, UserContext userContext);
+public <T> ExperimentResult<T> run(Experiment<T> experiment, UserContext userContext);
 ```
 
 - If you changed, added or removed any features, trigger a feature refresh. A forced refresh always performs a

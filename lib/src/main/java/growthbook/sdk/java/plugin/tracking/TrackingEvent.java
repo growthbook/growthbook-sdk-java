@@ -42,8 +42,8 @@ final class TrackingEvent {
     @SerializedName("sdk_version")
     private final String sdkVersion;
 
-    static <ValueType> TrackingEvent forExperiment(Experiment<ValueType> experiment,
-                                                   ExperimentResult<ValueType> result,
+    static <T> TrackingEvent forExperiment(Experiment<T> experiment,
+                                                   ExperimentResult<T> result,
                                                    @Nullable JsonObject userAttributes) {
         JsonObject properties = new JsonObject();
         putString(properties, "experimentId", experiment != null ? experiment.getKey() : null);
@@ -60,8 +60,8 @@ final class TrackingEvent {
                 .build();
     }
 
-    static <ValueType> TrackingEvent forFeature(String featureKey,
-                                                FeatureResult<ValueType> result,
+    static <T> TrackingEvent forFeature(String featureKey,
+                                                FeatureResult<T> result,
                                                 @Nullable JsonObject userAttributes) {
         JsonObject properties = new JsonObject();
         putString(properties, "feature", featureKey);
@@ -69,7 +69,7 @@ final class TrackingEvent {
             putElement(properties, "value", toJson(result.getValue()));
             putString(properties, "source", result.getSource() != null ? result.getSource().toString() : null);
             putString(properties, "ruleId", emptyToNull(result.getRuleId()));
-            ExperimentResult<ValueType> experimentResult = result.getExperimentResult();
+            ExperimentResult<T> experimentResult = result.getExperimentResult();
             if (experimentResult != null) {
                 putString(properties, "variationId", experimentResult.getKey());
             }

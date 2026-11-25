@@ -1,7 +1,7 @@
 package growthbook.sdk.java.multiusermode;
 
-import com.google.common.cache.Cache;
-import com.google.common.cache.CacheBuilder;
+import java.util.LinkedHashMap;
+import java.util.Map;
 
 import javax.annotation.Nullable;
 
@@ -9,6 +9,9 @@ import javax.annotation.Nullable;
  * A thread-safe LRU cache deduplicating experiment-exposure events by
  * {@code hashAttribute + hashValue + experimentKey + variationId} (the same
  * key composition as the JavaScript and Python SDKs).
+ *
+ * <p>One tracker belongs to one SDK instance and is shared by all its evaluations, so an
+ * exposure is reported once per instance no matter which entry point produced it.
  *
  * <p>Sizing matters: the multi-user client shares ONE tracker across all users,
  * so the bound must comfortably exceed the number of concurrently active unique
@@ -19,9 +22,9 @@ public class ExperimentTracker {
     private static final int MAX_EXPERIMENTS = 30;
 
     /** Each entry's value is the claim of the caller that marked it; see {@link #markIfFirst}. */
-    private final Cache<String, Object> trackedExperiments;
+    private final Map<String, Object> trackedExperiments;
 
-    /** Evaluator-local tracker with the legacy 30-entry bound (single-user scope). */
+    /** Tracker with the legacy 30-entry bound (single-user scope). */
     public ExperimentTracker() {
         this(MAX_EXPERIMENTS);
     }
@@ -34,17 +37,31 @@ public class ExperimentTracker {
         if (maxSize < 1) {
             throw new IllegalArgumentException("maxSize must be at least 1, was " + maxSize);
         }
-        this.trackedExperiments = CacheBuilder.newBuilder()
-                .maximumSize(maxSize)
-                .build();
+        this.trackedExperiments = new LinkedHashMap<String, Object>(16, 0.75f, true) {
+            @Override
+            protected boolean removeEldestEntry(Map.Entry<String, Object> eldest) {
+                return size() > maxSize;
+            }
+        };
     }
 
-    public void trackExperiment(String experimentId) {
+    public synchronized void trackExperiment(String experimentId) {
         trackedExperiments.put(experimentId, Boolean.TRUE);
     }
 
-    public boolean isExperimentTracked(String experimentId) {
-        return trackedExperiments.getIfPresent(experimentId) != null;
+    public synchronized boolean isExperimentTracked(String experimentId) {
+        return trackedExperiments.get(experimentId) != null;
+    }
+
+    /**
+     * Marks an experiment as tracked in one atomic step.
+     *
+     * @param experimentId the tracking key
+     * @return {@code true} if the key was not tracked before this call, so exactly one of several
+     * concurrent callers with the same key gets {@code true}
+     */
+    public synchronized boolean markTracked(String experimentId) {
+        return markIfFirst(experimentId) != null;
     }
 
     /**
@@ -58,12 +75,13 @@ public class ExperimentTracker {
      *         or {@code null} if the key was already tracked
      */
     @Nullable
-    public Object markIfFirst(String experimentId) {
-        if (trackedExperiments.getIfPresent(experimentId) != null) {
+    public synchronized Object markIfFirst(String experimentId) {
+        if (trackedExperiments.get(experimentId) != null) {
             return null;
         }
         Object claim = new Object();
-        return trackedExperiments.asMap().putIfAbsent(experimentId, claim) == null ? claim : null;
+        trackedExperiments.put(experimentId, claim);
+        return claim;
     }
 
     /**
@@ -75,11 +93,11 @@ public class ExperimentTracker {
      * @param experimentId the dedup key to un-mark
      * @param claim        the value {@link #markIfFirst} returned for this delivery
      */
-    public void untrack(String experimentId, Object claim) {
-        trackedExperiments.asMap().remove(experimentId, claim);
+    public synchronized void untrack(String experimentId, Object claim) {
+        trackedExperiments.remove(experimentId, claim);
     }
 
-    public void clearTrackedExperiments() {
-        trackedExperiments.invalidateAll();
+    public synchronized void clearTrackedExperiments() {
+        trackedExperiments.clear();
     }
 }

@@ -12,15 +12,15 @@ import javax.annotation.Nullable;
 /**
  * The result of an {@link GrowthBook#run(Experiment)} call
  *
- * @param <ValueType> generic type for the value type for this experiment's variations.
+ * @param <T> generic type for the value type for this experiment's variations.
  */
 @Data
-public class ExperimentResult<ValueType> {
+public class ExperimentResult<T> {
     /**
      * The array value of the assigned variation
      */
     @Nullable
-    ValueType value;
+    T value;
 
     /**
      * The array index of the assigned variation
@@ -105,7 +105,7 @@ public class ExperimentResult<ValueType> {
      */
     @Builder
     public ExperimentResult(
-            @Nullable ValueType value,
+            @Nullable T value,
             @Nullable Integer variationId,
             Boolean inExperiment,
             @Nullable String hashAttribute,
@@ -148,7 +148,7 @@ public class ExperimentResult<ValueType> {
         return ExperimentResult.getJson(this).toString();
     }
 
-    static <ValueType> JsonElement getJson(ExperimentResult<ValueType> object) {
+    static <T> JsonElement getJson(ExperimentResult<T> object) {
         return GrowthBookJsonUtils.getJsonElementForObject(object);
     }
 

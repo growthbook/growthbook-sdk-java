@@ -12,7 +12,7 @@ import java.util.Map;
 
 interface IGrowthBook {
 
-    <ValueType> ExperimentResult<ValueType> run(Experiment<ValueType> experiment);
+    <T> ExperimentResult<T> run(Experiment<T> experiment);
 
     void subscribe(ExperimentRunCallback callback);
 
@@ -21,17 +21,17 @@ interface IGrowthBook {
 
     // region Features
 
-    <ValueType> FeatureResult<ValueType> evalFeature(String key, Class<ValueType> valueTypeClass);
+    <T> FeatureResult<T> evalFeature(String key, Class<T> valueTypeClass);
 
     /**
      * Evaluates a batch of features for the current user, reusing a single evaluation context.
      *
      * @param featureKeys    the feature keys to evaluate
      * @param valueTypeClass the expected value type (typically {@code Object.class} for mixed types)
-     * @param <ValueType>    the result value type
+     * @param <T>    the result value type
      * @return a map from feature key to its {@link FeatureResult}
      */
-    <ValueType> Map<String, FeatureResult<ValueType>> evalFeatures(List<String> featureKeys, Class<ValueType> valueTypeClass);
+    <T> Map<String, FeatureResult<T>> evalFeatures(List<String> featureKeys, Class<T> valueTypeClass);
 
     /**
      * Update the user's attributes
@@ -127,10 +127,10 @@ interface IGrowthBook {
      * @param featureKey              feature identifier
      * @param defaultValue            default generic class
      * @param gsonDeserializableClass the class of the generic, e.g. MyFeature.class
-     * @param <ValueType>             Gson deserializable type
-     * @return ValueType instance
+     * @param <T>             Gson deserializable type
+     * @return T instance
      */
-    <ValueType> ValueType getFeatureValue(String featureKey, ValueType defaultValue, Class<ValueType> gsonDeserializableClass);
+    <T> T getFeatureValue(String featureKey, T defaultValue, Class<T> gsonDeserializableClass);
 
     /**
      * Evaluate a feature using a type-safe {@link FeatureKey} instead of a raw string key.
@@ -141,10 +141,10 @@ interface IGrowthBook {
      * complex type, use {@link #getFeatureValue(FeatureKey, Object)}.
      *
      * @param featureKey  typed feature key, e.g. {@code Features.NEW_HOME}
-     * @param <ValueType> feature value type carried by the key
+     * @param <T> feature value type carried by the key
      * @return the feature result
      */
-    <ValueType> FeatureResult<ValueType> getFeature(FeatureKey<ValueType> featureKey);
+    <T> FeatureResult<T> getFeature(FeatureKey<T> featureKey);
 
     /**
      * Returns true if the feature identified by the typed key evaluates to a truthy value.
@@ -167,10 +167,10 @@ interface IGrowthBook {
      *
      * @param featureKey   typed feature key
      * @param defaultValue value to return when the feature is missing or invalid
-     * @param <ValueType>  feature value type carried by the key
+     * @param <T>  feature value type carried by the key
      * @return the found value or defaultValue
      */
-    <ValueType> ValueType getFeatureValue(FeatureKey<ValueType> featureKey, ValueType defaultValue);
+    <T> T getFeatureValue(FeatureKey<T> featureKey, T defaultValue);
 
     /**
      * Get a boolean feature value, defaulting to {@code false} when missing or falsy.

@@ -80,20 +80,20 @@ import java.util.function.Supplier;
 public class GrowthBookClient {
 
     private final Options options;
+    private final PluginRegistry pluginRegistry;
     private final FeatureEvaluator featureEvaluator;
     private final ExperimentEvaluator experimentEvaluator;
-    private final GlobalContextManager globalContextManager;
+    private final DiagnosticsProvider diagnosticsProvider;
     private final ManagedListenerExecutor listenerExecutor;
+    private final GlobalContextManager globalContextManager;
     private final RemoteEvalCoordinator remoteEvalCoordinator;
     private final FeatureRepositoryProvider featureRepositoryProvider;
     private final ExperimentSubscriptionManager experimentSubscriptions;
     private final FeatureRefreshListenerRegistry featureRefreshListeners;
-    private final DiagnosticsProvider diagnosticsProvider;
-    private final PluginRegistry pluginRegistry;
 
-    private final AtomicReference<Throwable> lastInitializationError = new AtomicReference<>();
-    private final AtomicLong lastInitializationErrorAtMillis = new AtomicLong(0);
     private final AtomicBoolean clientShutdown = new AtomicBoolean(false);
+    private final AtomicLong lastInitializationErrorAtMillis = new AtomicLong(0);
+    private final AtomicReference<Throwable> lastInitializationError = new AtomicReference<>();
 
     /** Owns all sticky bucket I/O; null when no sticky bucket service is configured. */
     @Nullable
@@ -113,7 +113,7 @@ public class GrowthBookClient {
     private static final AtomicLong ASYNC_THREAD_COUNTER = new AtomicLong();
 
     /** Exposure dedup shared across all of this client's evaluations; sized for multi-user traffic. */
-    private final ExperimentTracker exposureTracker = new ExperimentTracker(10_000);
+    private final ExperimentTracker experimentTracker = new ExperimentTracker(10_000);
 
     /**
      * Creates a client with default options.
@@ -500,12 +500,12 @@ public class GrowthBookClient {
      * @param featureKeys    the feature keys to evaluate
      * @param valueTypeClass the expected value type (typically {@code Object.class} for mixed types)
      * @param userContext    the user context, processed once
-     * @param <ValueType>    the result value type
+     * @param <T>    the result value type
      * @return a map from feature key to its {@link FeatureResult}
      */
-    public <ValueType> Map<String, FeatureResult<ValueType>> evalFeatures(
+    public <T> Map<String, FeatureResult<T>> evalFeatures(
             List<String> featureKeys,
-            Class<ValueType> valueTypeClass,
+            Class<T> valueTypeClass,
             UserContext userContext
     ) {
         return featureEvaluator.evaluateFeatures(featureKeys, getEvalContext(userContext), valueTypeClass);
@@ -1107,7 +1107,7 @@ public class GrowthBookClient {
         if (stickyWriter != null) {
             context.setStickyBucketDocWriter(stickyWriter);
         }
-        return withPluginRegistry(context);
+        return withInstanceScope(context);
     }
 
     /**
@@ -1280,10 +1280,13 @@ public class GrowthBookClient {
         }
     }
 
-    /** Attaches this client's own plugin registry so events never route through another client's plugins. */
-    private EvaluationContext withPluginRegistry(EvaluationContext context) {
+    /**
+     * Attaches this client's own plugin registry and exposure tracker, so events never route
+     * through another client's plugins and every entry point shares one de-duplication.
+     */
+    private EvaluationContext withInstanceScope(EvaluationContext context) {
         context.setPluginRegistry(this.pluginRegistry);
-        context.setSharedExperimentTracker(this.exposureTracker);
+        context.setExperimentTracker(this.experimentTracker);
         context.setSuppressTrackingErrors(true);
         return context;
     }

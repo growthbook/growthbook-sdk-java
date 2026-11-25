@@ -389,9 +389,9 @@ class RemoteEvalSupportTest {
                     .remoteEval(true)
                     .trackingCallBackWithUser(new TrackingCallbackWithUser() {
                         @Override
-                        public <ValueType> void onTrack(
-                                Experiment<ValueType> experiment,
-                                ExperimentResult<ValueType> experimentResult,
+                        public <T> void onTrack(
+                                Experiment<T> experiment,
+                                ExperimentResult<T> experimentResult,
                                 UserContext userContext
                         ) {
                             tracked.add(experiment.getKey() + ":" + experimentResult.getVariationId()
@@ -420,9 +420,9 @@ class RemoteEvalSupportTest {
                     .remoteEval(true)
                     .trackingCallBackWithUser(new TrackingCallbackWithUser() {
                         @Override
-                        public <ValueType> void onTrack(
-                                Experiment<ValueType> experiment,
-                                ExperimentResult<ValueType> experimentResult,
+                        public <T> void onTrack(
+                                Experiment<T> experiment,
+                                ExperimentResult<T> experimentResult,
                                 UserContext userContext
                         ) {
                             trackCount.incrementAndGet();
@@ -714,9 +714,9 @@ class RemoteEvalSupportTest {
                 .remoteEval(true)
                 .trackingCallBackWithUser(new TrackingCallbackWithUser() {
                     @Override
-                    public <ValueType> void onTrack(
-                            Experiment<ValueType> experiment,
-                            ExperimentResult<ValueType> experimentResult,
+                    public <T> void onTrack(
+                            Experiment<T> experiment,
+                            ExperimentResult<T> experimentResult,
                             UserContext userContext
                     ) {
                         tracked.add(experiment.getKey() + ":" + experimentResult.getVariationId()

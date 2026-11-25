@@ -19,7 +19,7 @@ import java.util.Map;
 @Data
 @Builder
 @AllArgsConstructor
-public class Experiment<ValueType> {
+public class Experiment<T> {
     /**
      * The globally unique identifier for the experiment
      */
@@ -29,7 +29,7 @@ public class Experiment<ValueType> {
      * The different variations to choose between
      */
     @Builder.Default
-    ArrayList<ValueType> variations = new ArrayList<>();
+    ArrayList<T> variations = new ArrayList<>();
 
     /**
      * How to weight traffic between variations. Must add to 1.
@@ -160,7 +160,7 @@ public class Experiment<ValueType> {
 
     public Experiment(
             String key,
-            ArrayList<ValueType> variations,
+            ArrayList<T> variations,
             @Nullable ArrayList<Double> weights,
             @Nullable Boolean isActive,
             @Nullable Double coverage,
@@ -257,10 +257,10 @@ public class Experiment<ValueType> {
      * Get a Gson JsonElement of the experiment
      *
      * @param object      experiment
-     * @param <ValueType> value type for the experiment
+     * @param <T> value type for the experiment
      * @return JsonElement
      */
-    public static <ValueType> JsonElement getJson(Experiment<ValueType> object) {
+    public static <T> JsonElement getJson(Experiment<T> object) {
         return GrowthBookJsonUtils.getJsonElementForObject(object);
     }
 

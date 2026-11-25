@@ -125,7 +125,7 @@ explicit approval**: it is a published SDK and every dependency lands on consume
 | HTTP / SSE | OkHttp 5.4.0 + `okhttp-sse` |
 | Models | Lombok 1.18.32 (`@Builder`, `@Data`, `@Getter`/`@Setter`) |
 | Logging | SLF4J 2.0.7 facade only — never bundle a backend, never `System.out`/`System.err` in `lib` |
-| Math, collections | commons-math3 3.6.1, Guava 33.3.1-jre |
+| Collections, caching | Guava 33.3.1-jre |
 | Tests | JUnit Jupiter 5.8.2, mockito-inline 4.8.0, **WireMock** (`wiremock-jre8:2.35.0`) for HTTP |
 
 In cache adapter modules, a client the consumer chooses between stays `compileOnly`; a provider
@@ -163,6 +163,12 @@ Everything `public` in `lib` is a contract with external consumers. Do not chang
 without a deprecation cycle (`@Deprecated` plus Javadoc pointing at the replacement). Prefer
 additive changes; new behavior defaults to the old behavior unless explicitly opted in. There is no
 automated compatibility check — review is the only gate.
+
+The exception is `<feature>/internal` packages (e.g. `evaluators/internal`, `multiusermode/internal`):
+their types are `public` only because Java 8 has no module boundaries, and they may change
+freely. New implementation code goes there, behind the public classes of the owning package;
+other features use those public classes, not another feature's `internal`. One exception: `util/GrowthBookUtils` is the legacy public facade
+over `evaluators/internal` and `evaluators/internal/bucketing`, kept for binary compatibility.
 
 ## Commits & releases
 
