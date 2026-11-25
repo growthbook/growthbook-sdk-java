@@ -272,25 +272,34 @@ class GrowthBookTrackingPluginTest {
 
     @Test
     @DisplayName("Close waits for a batch still pending on a caller-supplied executor")
-    void closeWaitsForBatchesOnCallerSuppliedExecutor() {
-        // Given
-        CountDownLatch closeStarted = new CountDownLatch(1);
+    void closeWaitsForBatchesOnCallerSuppliedExecutor() throws InterruptedException {
+        // Given a batch held on a caller-supplied executor until the test releases it
+        CountDownLatch releaseBatch = new CountDownLatch(1);
         Executor deferredExecutor = task -> new Thread(() -> {
-            Uninterruptibles.awaitUninterruptibly(closeStarted);
+            Uninterruptibles.awaitUninterruptibly(releaseBatch);
             task.run();
         }, "deferred-flush").start();
         GrowthBookTrackingPlugin plugin = GrowthBookTrackingPlugin.of(configBuilder()
                 .batchSize(1)
+                .closeTimeout(Duration.ofSeconds(AWAIT_SECONDS * 2))
                 .flushExecutor(deferredExecutor)
                 .build());
         plugin.init();
         plugin.onExperimentViewed(experiment("exp-1"), experimentResult(0));
 
-        // When
-        closeStarted.countDown();
-        plugin.close();
+        // When close starts while the batch is still held
+        Thread closer = new Thread(plugin::close, "close-thread");
+        closer.start();
+        awaitState(closer, Thread.State.TIMED_WAITING);
+        boolean closerWaitedForBatch = closer.isAlive();
+        int requestsBeforeRelease = trackRequests().size();
+        releaseBatch.countDown();
+        closer.join(TimeUnit.SECONDS.toMillis(AWAIT_SECONDS));
 
-        // Then
+        // Then close waited for the held batch, and finished only once it was sent
+        assertTrue(closerWaitedForBatch);
+        assertEquals(0, requestsBeforeRelease);
+        assertFalse(closer.isAlive());
         assertEquals(1, trackRequests().size());
     }
 
