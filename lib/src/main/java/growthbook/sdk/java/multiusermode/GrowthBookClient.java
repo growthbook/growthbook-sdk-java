@@ -164,6 +164,7 @@ public class GrowthBookClient {
         }
 
         this.core = new ClientCore(this.options.getPlugins(), new ExperimentTracker(10_000));
+        this.core.startPlugins();
     }
 
     /**
