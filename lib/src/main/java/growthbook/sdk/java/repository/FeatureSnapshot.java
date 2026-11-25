@@ -3,6 +3,7 @@ package growthbook.sdk.java.repository;
 import com.google.gson.JsonObject;
 import growthbook.sdk.java.model.Feature;
 
+import javax.annotation.Nullable;
 import java.util.Collections;
 import java.util.Map;
 
@@ -22,7 +23,8 @@ public final class FeatureSnapshot {
             "",
             Collections.emptyMap(),
             new JsonObject(),
-            new JsonObject()
+            new JsonObject(),
+            null
     );
 
     private final String featuresJson;
@@ -31,6 +33,14 @@ public final class FeatureSnapshot {
     private final Map<String, Feature<?>> parsedFeatures;
     private final JsonObject parsedSavedGroups;
     private final JsonObject parsedContextualBandits;
+    /**
+     * The raw features-endpoint response this snapshot was built from, captured in the same immutable
+     * swap as the parsed parts so the read-only payload accessors never report a response that
+     * disagrees with the features currently driving evaluation. {@code null} for the empty snapshot
+     * and for synthetic snapshots built through {@link #of}.
+     */
+    @Nullable
+    private final String rawResponseJson;
 
     FeatureSnapshot(String featuresJson,
                     String savedGroupsJson,
@@ -38,12 +48,24 @@ public final class FeatureSnapshot {
                     Map<String, Feature<?>> parsedFeatures,
                     JsonObject parsedSavedGroups,
                     JsonObject parsedContextualBandits) {
+        this(featuresJson, savedGroupsJson, contextualBanditsJson,
+                parsedFeatures, parsedSavedGroups, parsedContextualBandits, null);
+    }
+
+    FeatureSnapshot(String featuresJson,
+                    String savedGroupsJson,
+                    String contextualBanditsJson,
+                    Map<String, Feature<?>> parsedFeatures,
+                    JsonObject parsedSavedGroups,
+                    JsonObject parsedContextualBandits,
+                    @Nullable String rawResponseJson) {
         this.featuresJson = featuresJson;
         this.savedGroupsJson = savedGroupsJson;
         this.contextualBanditsJson = contextualBanditsJson;
         this.parsedFeatures = parsedFeatures;
         this.parsedSavedGroups = parsedSavedGroups;
         this.parsedContextualBandits = parsedContextualBandits;
+        this.rawResponseJson = rawResponseJson;
     }
 
     /**
@@ -110,5 +132,14 @@ public final class FeatureSnapshot {
 
     public JsonObject getParsedContextualBandits() {
         return parsedContextualBandits;
+    }
+
+    /**
+     * @return the raw features-endpoint response this snapshot was built from, or {@code null} when
+     * unknown (the empty snapshot, or a synthetic snapshot built through {@link #of})
+     */
+    @Nullable
+    public String getRawResponseJson() {
+        return rawResponseJson;
     }
 }
