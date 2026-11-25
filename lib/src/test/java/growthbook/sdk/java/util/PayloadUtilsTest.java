@@ -1,9 +1,11 @@
 package growthbook.sdk.java.util;
 
 import com.google.gson.JsonObject;
+import growthbook.sdk.java.GrowthBook;
 import growthbook.sdk.java.model.Experiment;
 import growthbook.sdk.java.model.ExperimentResult;
 import growthbook.sdk.java.model.Feature;
+import growthbook.sdk.java.model.FeatureResult;
 import growthbook.sdk.java.model.FeatureRule;
 import growthbook.sdk.java.model.GBContext;
 import growthbook.sdk.java.model.OptionalField;
@@ -226,6 +228,32 @@ class PayloadUtilsTest {
         assertEquals(2, reloaded.get("flag").getRules().size());
         assertTrue(reloaded.get("flag").getRules().get(0).getForce().isPresent());
         assertEquals(Boolean.TRUE, reloaded.get("flag").getRules().get(0).getForce().getValue());
+    }
+
+    @Test
+    @DisplayName("Verify: reconstruct keeps an explicit null force so the exported payload evaluates the same")
+    void reconstructPayloadKeepsExplicitNullForce() {
+        // Given a feature whose only rule explicitly forces null over a true default
+        String featuresJson = "{\"flag\":{\"defaultValue\":true,\"rules\":[{\"force\":null}]}}";
+        Map<String, Feature<?>> features = GBContext.builder().featuresJson(featuresJson).build().getFeatures();
+
+        // When the features are exported
+        JsonObject payload = PayloadUtils.reconstructPayload(features, null, null);
+
+        // Then the rule still carries "force": null rather than dropping the field
+        JsonObject rule = payload.getAsJsonObject("features").getAsJsonObject("flag")
+                .getAsJsonArray("rules").get(0).getAsJsonObject();
+        assertTrue(rule.has("force"));
+        assertTrue(rule.get("force").isJsonNull());
+        // And reloading the export evaluates to null, exactly like the original payload
+        FeatureResult<Boolean> original = new GrowthBook(GBContext.builder().featuresJson(featuresJson).build())
+                .evalFeature("flag", Boolean.class);
+        FeatureResult<Boolean> reloaded = new GrowthBook(GBContext.builder()
+                .featuresJson(payload.getAsJsonObject("features").toString())
+                .build())
+                .evalFeature("flag", Boolean.class);
+        assertNull(original.getValue());
+        assertNull(reloaded.getValue());
     }
 
     @Test

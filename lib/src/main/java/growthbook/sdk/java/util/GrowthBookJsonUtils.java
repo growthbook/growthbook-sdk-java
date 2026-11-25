@@ -48,7 +48,7 @@ public class GrowthBookJsonUtils {
 
         gsonBuilder.registerTypeAdapter(FeatureRule.class, new FeatureRule<>());
 
-        gsonBuilder.registerTypeAdapter(OptionalField.class, OptionalField.getSerializer());
+        gsonBuilder.registerTypeAdapterFactory(OptionalField.getTypeAdapterFactory());
 
         gsonBuilder.setObjectToNumberStrategy(ToNumberPolicy.LONG_OR_DOUBLE);
 
