@@ -1249,7 +1249,10 @@ public class GrowthBookClient {
                 continue;
             }
             for (FeatureRule rule : (List<FeatureRule>) (List) feature.getRules()) {
-                if (rule.getVariations() != null && !rule.getVariations().isEmpty()) {
+                List<?> variations = rule.getContextualVariations() != null
+                        ? rule.getContextualVariations()
+                        : rule.getVariations();
+                if (variations != null && !variations.isEmpty()) {
                     attributes.add(rule.getHashAttribute() != null ? rule.getHashAttribute() : "id");
                     if (rule.getFallbackAttribute() != null) {
                         attributes.add(rule.getFallbackAttribute());
