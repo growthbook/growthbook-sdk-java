@@ -164,6 +164,7 @@ public class GrowthBookClient {
         }
 
         this.core = new ClientCore(this.options.getPlugins(), new ExperimentTracker(10_000));
+        this.core.startPlugins();
     }
 
     /**
@@ -534,8 +535,13 @@ public class GrowthBookClient {
     public <T> T getFeatureValue(String featureKey, T defaultValue,
                                  Class<T> gsonDeserializableClass,
                                  UserContext userContext) {
-        Object evaluatedValue = core.evalFeature(featureKey, gsonDeserializableClass, getEvalContext(userContext)).getValue();
-        return FeatureValues.convert(evaluatedValue, defaultValue, gsonDeserializableClass);
+        try {
+            Object evaluatedValue = core.evalFeature(featureKey, gsonDeserializableClass, getEvalContext(userContext)).getValue();
+            return FeatureValues.convert(evaluatedValue, defaultValue, gsonDeserializableClass);
+        } catch (RuntimeException e) {
+            log.error("Feature value evaluation failed for {}; returning default", featureKey, e);
+            return defaultValue;
+        }
     }
 
     /**

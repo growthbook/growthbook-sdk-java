@@ -88,6 +88,7 @@ public class GrowthBook implements IGrowthBook {
 
         refreshStickyBucketService(null);
         this.initializeEvalContext();
+        this.core.startPlugins();
     }
 
     /**
@@ -101,6 +102,7 @@ public class GrowthBook implements IGrowthBook {
         this.attributeOverrides = context.getAttributes() == null ? new JsonObject() : context.getAttributes();
 
         this.initializeEvalContext();
+        this.core.startPlugins();
     }
 
     /**
@@ -118,6 +120,7 @@ public class GrowthBook implements IGrowthBook {
         this.attributeOverrides = context.getAttributes() == null ? new JsonObject() : context.getAttributes();
 
         this.initializeEvalContext();
+        this.core.startPlugins();
     }
 
     private void initializeEvalContext() {

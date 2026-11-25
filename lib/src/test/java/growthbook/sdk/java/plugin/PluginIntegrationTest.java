@@ -3,6 +3,7 @@ package growthbook.sdk.java.plugin;
 import growthbook.sdk.java.GrowthBook;
 import growthbook.sdk.java.callback.FeatureUsageCallback;
 import growthbook.sdk.java.callback.TrackingCallback;
+import growthbook.sdk.java.exception.InvalidOptionsException;
 import growthbook.sdk.java.model.Experiment;
 import growthbook.sdk.java.model.ExperimentResult;
 import growthbook.sdk.java.model.FeatureResult;
@@ -21,6 +22,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
@@ -56,6 +58,23 @@ class PluginIntegrationTest {
         assertEquals(Collections.singletonList("my-exp"), plugin.experimentKeys);
         assertEquals(1, trackingCallback.calls.get());
         assertEquals(1, plugin.closes.get());
+    }
+
+    @Test
+    @DisplayName("A GrowthBook whose construction fails never starts its plugins")
+    void failedConstructionNeverStartsPlugins() {
+        // Given remote evaluation enabled without a client key, which construction rejects
+        RecordingPlugin plugin = new RecordingPlugin();
+        GBContext context = GBContext.builder()
+                .remoteEval(true)
+                .plugins(Collections.singletonList(plugin))
+                .build();
+
+        // When
+        assertThrows(InvalidOptionsException.class, () -> new GrowthBook(context));
+
+        // Then the plugin was never initialized, so nothing is left open without an instance to close it
+        assertEquals(0, plugin.inits.get());
     }
 
     @Test
@@ -137,7 +156,13 @@ class PluginIntegrationTest {
         private final List<String> featureKeys = new CopyOnWriteArrayList<>();
         private final List<FeatureResult<?>> featureResults = new CopyOnWriteArrayList<>();
         private final List<String> experimentKeys = new CopyOnWriteArrayList<>();
+        private final AtomicInteger inits = new AtomicInteger();
         private final AtomicInteger closes = new AtomicInteger();
+
+        @Override
+        public void init() {
+            inits.incrementAndGet();
+        }
 
         @Override
         public <V> void onExperimentViewed(Experiment<V> experiment, ExperimentResult<V> result) {

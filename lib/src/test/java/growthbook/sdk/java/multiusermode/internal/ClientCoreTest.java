@@ -23,13 +23,15 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 class ClientCoreTest {
 
     @Test
-    @DisplayName("Initializes the plugins when created")
-    void initializesPlugins() {
+    @DisplayName("Initializes the plugins only when started, not when created")
+    void initializesPluginsWhenStarted() {
         // Given
         List<String> calls = new ArrayList<>();
+        ClientCore core = new ClientCore(Collections.<GrowthBookPlugin>singletonList(new RecordingPlugin(calls)));
+        assertEquals(Collections.<String>emptyList(), calls);
 
         // When
-        new ClientCore(Collections.<GrowthBookPlugin>singletonList(new RecordingPlugin(calls)));
+        core.startPlugins();
 
         // Then
         assertEquals(Collections.singletonList("init"), calls);
@@ -77,6 +79,7 @@ class ClientCoreTest {
         // Given
         List<String> calls = new ArrayList<>();
         ClientCore core = new ClientCore(Collections.<GrowthBookPlugin>singletonList(new RecordingPlugin(calls)));
+        core.startPlugins();
         calls.clear();
 
         // When

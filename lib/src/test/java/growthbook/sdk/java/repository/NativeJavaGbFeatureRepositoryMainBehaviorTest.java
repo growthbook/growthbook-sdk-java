@@ -5,6 +5,7 @@ import com.github.tomakehurst.wiremock.core.WireMockConfiguration;
 import com.github.tomakehurst.wiremock.http.Fault;
 import growthbook.sdk.java.exception.FeatureFetchException;
 import growthbook.sdk.java.exception.FeatureFetchException.FeatureFetchErrorCode;
+import growthbook.sdk.java.model.Feature;
 import growthbook.sdk.java.retry.FeatureFetchRetryPolicy;
 import growthbook.sdk.java.testhelpers.FixedPayloadCacheManager;
 import growthbook.sdk.java.testhelpers.RecordingRefreshCallback;
@@ -16,6 +17,7 @@ import org.junit.jupiter.api.Test;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
 import static com.github.tomakehurst.wiremock.client.WireMock.equalTo;
@@ -24,6 +26,7 @@ import static com.github.tomakehurst.wiremock.client.WireMock.getRequestedFor;
 import static com.github.tomakehurst.wiremock.client.WireMock.post;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -168,6 +171,24 @@ class NativeJavaGbFeatureRepositoryMainBehaviorTest {
 
         // Then
         wireMock.verify(1, getRequestedFor(urlEqualTo(FEATURES_PATH)));
+    }
+
+    @Test
+    @DisplayName("Reading the features map returns an independent copy on every call")
+    void featuresMapIsAnIndependentCopyOnEveryCall() throws Exception {
+        // Given
+        stubFeatures(FEATURES_RESPONSE);
+        NativeJavaGbFeatureRepository subject = track(repositoryBuilder().build());
+        subject.initialize();
+
+        // When a caller removes a flag from the map it received
+        Map<String, Feature<?>> first = subject.getFeaturesMap();
+        first.remove("dark-mode");
+        Map<String, Feature<?>> second = subject.getFeaturesMap();
+
+        // Then later readers still see the loaded flag
+        assertNotSame(first, second);
+        assertTrue(second.containsKey("dark-mode"));
     }
 
     @Test

@@ -33,14 +33,14 @@ public final class ClientCore {
     private final ExperimentEvaluator experimentEvaluator;
 
     /**
-     * @param plugins the instance's plugins, initialized here
+     * @param plugins the instance's plugins, initialized by {@link #startPlugins()}
      */
     public ClientCore(@Nullable List<GrowthBookPlugin> plugins) {
         this(plugins, new ExperimentTracker());
     }
 
     /**
-     * @param plugins the instance's plugins, initialized here
+     * @param plugins the instance's plugins, initialized by {@link #startPlugins()}
      * @param tracker the exposure tracker shared by every evaluation of the instance
      */
     public ClientCore(@Nullable List<GrowthBookPlugin> plugins, ExperimentTracker tracker) {
@@ -48,7 +48,7 @@ public final class ClientCore {
     }
 
     /**
-     * @param plugins             the instance's plugins, initialized here
+     * @param plugins             the instance's plugins, initialized by {@link #startPlugins()}
      * @param featureEvaluator    the feature evaluator, replaceable for tests
      * @param experimentEvaluator the experiment evaluator, replaceable for tests
      */
@@ -62,7 +62,15 @@ public final class ClientCore {
         this.tracker = tracker;
         this.featureEvaluator = featureEvaluator;
         this.experimentEvaluator = experimentEvaluator;
-        this.plugins.initAll();
+    }
+
+    /**
+     * Initializes the plugins. A facade calls this last in its constructor, once nothing else can fail,
+     * so a constructor that throws never leaves started plugins behind without an instance to close
+     * them.
+     */
+    public void startPlugins() {
+        plugins.initAll();
     }
 
     /**

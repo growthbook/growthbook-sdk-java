@@ -8,6 +8,7 @@ import growthbook.sdk.java.model.Feature;
 import growthbook.sdk.java.model.FeatureRefreshSource;
 import growthbook.sdk.java.model.GBContext;
 import growthbook.sdk.java.model.RequestBodyForRemoteEval;
+import growthbook.sdk.java.multiusermode.util.TransformationUtil;
 import growthbook.sdk.java.repository.internal.FeatureCacheStore;
 import growthbook.sdk.java.repository.internal.FeatureEndpoints;
 import growthbook.sdk.java.repository.internal.FeatureRefreshEngine;
@@ -252,11 +253,12 @@ public class NativeJavaGbFeatureRepository implements IGBFeaturesRepository {
      * Returns the parsed features, refreshing them first on this thread when they are stale under
      * {@link FeatureRefreshStrategy#STALE_WHILE_REVALIDATE}.
      *
-     * @return parsed feature definitions
+     * @return a freshly parsed copy of the feature definitions; changing it does not affect the
+     * repository or other callers. Empty when no features are loaded.
      */
     public Map<String, Feature<?>> getFeaturesMap() {
         engine.refreshIfExpiredOnRead();
-        return engine.snapshot().getParsedFeatures();
+        return TransformationUtil.transformFeatures(engine.snapshot().getFeaturesJson());
     }
 
     /**
