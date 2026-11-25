@@ -125,8 +125,12 @@ public class LocalGbFeatureRepository implements IGBFeaturesRepository {
         return snapshot.get().getFeaturesJson();
     }
 
+    /**
+     * @return a freshly parsed copy of the loaded feature definitions; changing it does not affect
+     * the repository or other callers. Empty when no features are loaded.
+     */
     public Map<String, Feature<?>> getParsedFeatures() {
-        return snapshot.get().getParsedFeatures();
+        return TransformationUtil.transformFeatures(snapshot.get().getFeaturesJson());
     }
 
     /**

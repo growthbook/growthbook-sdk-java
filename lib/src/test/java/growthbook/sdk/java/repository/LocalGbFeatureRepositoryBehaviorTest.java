@@ -3,6 +3,7 @@ package growthbook.sdk.java.repository;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotSame;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -12,6 +13,7 @@ import growthbook.sdk.java.callback.FeatureRefreshCallback;
 import growthbook.sdk.java.exception.FeatureFetchException;
 import growthbook.sdk.java.exception.FeatureFetchException.FeatureFetchErrorCode;
 import growthbook.sdk.java.listener.FeatureRefreshListener;
+import growthbook.sdk.java.model.Feature;
 import growthbook.sdk.java.model.FeatureRefreshEvent;
 import growthbook.sdk.java.model.FeatureRefreshSource;
 import java.io.IOException;
@@ -24,6 +26,7 @@ import java.time.Instant;
 import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -62,7 +65,26 @@ class LocalGbFeatureRepositoryBehaviorTest {
         assertTrue(snapshot.getParsedFeatures().containsKey("flag-a"));
         assertTrue(snapshot.getParsedSavedGroups().entrySet().isEmpty());
         assertEquals(FEATURES, repository.getFeaturesJson());
-        assertSame(snapshot.getParsedFeatures(), repository.getParsedFeatures());
+        assertEquals(snapshot.getParsedFeatures().keySet(), repository.getParsedFeatures().keySet());
+    }
+
+    @Test
+    @DisplayName("Returns an independent copy of the parsed features on every call")
+    void returnsIndependentParsedFeaturesOnEveryCall() throws Exception {
+        // Given
+        writeResource(FEATURES);
+        LocalGbFeatureRepository repository = new LocalGbFeatureRepository(FILE_NAME);
+        repository.initialize();
+
+        // When a caller removes a flag from the map it received
+        Map<String, Feature<?>> first = repository.getParsedFeatures();
+        first.remove("flag-a");
+        Map<String, Feature<?>> second = repository.getParsedFeatures();
+
+        // Then neither later callers nor the loaded snapshot see the change
+        assertNotSame(first, second);
+        assertTrue(second.containsKey("flag-a"));
+        assertTrue(repository.getFeatureSnapshot().getParsedFeatures().containsKey("flag-a"));
     }
 
     @Test
