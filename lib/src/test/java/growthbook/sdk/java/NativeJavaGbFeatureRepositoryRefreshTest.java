@@ -3,6 +3,7 @@ package growthbook.sdk.java;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpServer;
 import growthbook.sdk.java.callback.FeatureRefreshCallback;
+import growthbook.sdk.java.model.Feature;
 import growthbook.sdk.java.retry.FeatureFetchRetryPolicy;
 import growthbook.sdk.java.repository.NativeJavaGbFeatureRepository;
 import growthbook.sdk.java.repository.RefreshMode;
@@ -17,6 +18,7 @@ import java.net.InetSocketAddress;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.List;
+import java.util.Map;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -24,6 +26,8 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotSame;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -195,6 +199,20 @@ class NativeJavaGbFeatureRepositoryRefreshTest {
 
         assertNull(repository.getBackgroundFetchInterval());
         assertEquals(FeatureFetchRetryPolicy.DEFAULT_MAX_ATTEMPTS, repository.getRetryPolicy().getMaxAttempts());
+    }
+
+    @Test
+    void getFeaturesMapReturnsAnIndependentCopyOnEveryCall() throws Exception {
+        NativeJavaGbFeatureRepository repository = repositoryBuilder().build();
+        repository.initialize();
+
+        Map<String, Feature<?>> first = repository.getFeaturesMap();
+        first.remove("test");
+        Map<String, Feature<?>> second = repository.getFeaturesMap();
+
+        assertFalse(first.containsKey("test"));
+        assertNotSame(first, second);
+        assertTrue(second.containsKey("test"));
     }
 
     private NativeJavaGbFeatureRepository.NativeJavaGbFeatureRepositoryBuilder repositoryBuilder() {
