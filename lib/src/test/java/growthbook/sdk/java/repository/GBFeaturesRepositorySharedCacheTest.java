@@ -3,6 +3,7 @@ package growthbook.sdk.java.repository;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.sun.net.httpserver.HttpServer;
@@ -359,6 +360,39 @@ class GBFeaturesRepositorySharedCacheTest {
         assertTrue(delivered.get() != null && delivered.get().contains("my-flag"));
     }
 
+    @Test
+    @DisplayName("Verify: a refresh callback that initializes another same-key instance does not hang startup")
+    void callbackInitializingSameKeyInstanceDoesNotHang() {
+        // Given a leader whose legacy callback synchronously initializes a second same-key instance
+        GBFeaturesRepository leader = sharedRepository("sdk-abc");
+        GBFeaturesRepository nested = sharedRepository("sdk-abc");
+        leader.onFeaturesRefresh(new InitializingCallback(nested::initialize));
+
+        // When the leader initializes
+        assertTimeoutPreemptively(Duration.ofSeconds(10), () -> leader.initialize());
+
+        // Then the nested instance was served from the already-published entry with no second fetch
+        assertEquals(1, requestCount.get());
+        assertTrue(nested.getFeaturesJson().contains("my-flag"));
+    }
+
+    @Test
+    @DisplayName("Verify: a refresh callback running a skipCache prefetch for the same key does not hang")
+    void callbackRunningSkipCachePrefetchForSameKeyDoesNotHang() {
+        // Given a leader whose legacy callback runs a cache-bypassing prefetch for the same key
+        GBFeaturesRepository leader = sharedRepository("sdk-abc");
+        PrefetchOptions options = PrefetchOptions.builder()
+                .apiHost(apiHost()).clientKey("sdk-abc").skipCache(true).build();
+        leader.onFeaturesRefresh(new InitializingCallback(() -> GBFeaturesRepository.prefetchPayload(options)));
+
+        // When the leader initializes
+        assertTimeoutPreemptively(Duration.ofSeconds(10), () -> leader.initialize());
+
+        // Then the nested prefetch ran its own fetch instead of waiting on the leader's
+        assertEquals(2, requestCount.get());
+        assertTrue(leader.getFeaturesJson().contains("my-flag"));
+    }
+
     private void awaitFeatures(GBFeaturesRepository repository, String token) {
         long deadlineNanos = System.nanoTime() + TimeUnit.SECONDS.toNanos(5);
         while (System.nanoTime() < deadlineNanos) {
@@ -432,5 +466,41 @@ class GBFeaturesRepositorySharedCacheTest {
                 throw new RuntimeException(e);
             }
         });
+    }
+
+    /**
+     * Legacy callback that runs a nested startup action once, on the refresh thread, from its first
+     * {@code onRefresh}.
+     */
+    private static final class InitializingCallback implements FeatureRefreshCallback {
+        private final NestedStartup nestedStartup;
+        private boolean ran;
+
+        private InitializingCallback(NestedStartup nestedStartup) {
+            this.nestedStartup = nestedStartup;
+        }
+
+        @Override
+        public void onRefresh(String featuresJson) {
+            if (ran) {
+                return;
+            }
+            ran = true;
+            try {
+                nestedStartup.run();
+            } catch (FeatureFetchException e) {
+                throw new IllegalStateException(e);
+            }
+        }
+
+        @Override
+        public void onError(Throwable throwable) {
+            // not expected in this scenario
+        }
+    }
+
+    @FunctionalInterface
+    private interface NestedStartup {
+        void run() throws FeatureFetchException;
     }
 }

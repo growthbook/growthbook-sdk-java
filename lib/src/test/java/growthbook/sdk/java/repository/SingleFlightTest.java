@@ -3,12 +3,14 @@ package growthbook.sdk.java.repository;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import growthbook.sdk.java.exception.FeatureFetchException;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
@@ -221,6 +223,28 @@ class SingleFlightTest {
 
         // Then both actions ran
         assertEquals(2, runs.get());
+    }
+
+    @Test
+    @DisplayName("Verify: a re-entrant call on the leader's thread runs directly instead of waiting on itself")
+    void reentrantCallOnLeaderThreadRunsDirectly() {
+        // Given a leader whose action re-enters the single-flight for the same key
+        SingleFlight<String> singleFlight = new SingleFlight<>();
+        AtomicInteger runs = new AtomicInteger();
+
+        // When it runs
+        String result = assertTimeoutPreemptively(Duration.ofSeconds(10), () -> singleFlight.run(KEY, () -> {
+            runs.incrementAndGet();
+            return "outer:" + singleFlight.run(KEY, () -> {
+                runs.incrementAndGet();
+                return "inner";
+            });
+        }));
+
+        // Then the nested call ran its own action without deadlocking, and the key is idle afterwards
+        assertEquals("outer:inner", result);
+        assertEquals(2, runs.get());
+        assertEquals(0, singleFlight.inFlightCount());
     }
 
     private static String runQuietly(SingleFlight<String> singleFlight, SingleFlight.Action<String> action) {

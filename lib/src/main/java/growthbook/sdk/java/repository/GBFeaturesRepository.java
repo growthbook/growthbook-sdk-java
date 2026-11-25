@@ -1416,11 +1416,12 @@ public class GBFeaturesRepository implements IGBFeaturesRepository {
                 saveToCacheQuietly(responseJsonString);
             }
 
-            boolean featuresChanged = applyPayload(payload, isFromCache);
+            // Publish before applyPayload runs user callbacks: a callback that initializes another
+            // repository for the same key must find this entry rather than wait on our in-flight fetch.
             if (!isFromCache && sharedCacheApplicable()) {
                 SHARED_CACHE.publish(this.sharedCacheKey, responseJsonString);
             }
-            return featuresChanged;
+            return applyPayload(payload, isFromCache);
         } catch (DecryptionUtils.DecryptionException e) {
             log.error("FeatureFetchException: UNKNOWN feature fetch error code {}",
                     e.getMessage(), e);

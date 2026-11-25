@@ -2,6 +2,8 @@ package growthbook.sdk.java.repository;
 
 import growthbook.sdk.java.exception.FeatureFetchException;
 
+import java.util.HashSet;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
@@ -15,6 +17,10 @@ import java.util.concurrent.atomic.AtomicInteger;
  * they block on the leader's result instead of launching their own action (thundering-herd protection).
  * If the leader fails, its followers fall back to running the action themselves, so a single failure
  * never denies a result to everyone.
+ *
+ * <p>A call re-entered on the leader's own thread for the same key (e.g. from a callback the action
+ * triggers) runs the action directly instead of waiting on its own unfinished result, which would
+ * never complete.
  *
  * <p>This is a general de-duplication primitive: it holds no cache and no domain knowledge. Freshness
  * and storage are the caller's concern. All operations are safe for concurrent use.
@@ -43,12 +49,17 @@ final class SingleFlight<T> {
 
     private final AtomicInteger participants = new AtomicInteger();
 
+    private final ThreadLocal<Set<String>> keysLedByCurrentThread = ThreadLocal.withInitial(HashSet::new);
+
     /**
      * Returns the result of {@code action} for {@code key}, running it once across all callers that
      * overlap in time. A leader runs the action; followers await it and, on leader failure, run it
-     * themselves.
+     * themselves. A re-entrant call from the thread already leading {@code key} runs the action directly.
      */
     T run(String key, Action<T> action) throws FeatureFetchException {
+        if (keysLedByCurrentThread.get().contains(key)) {
+            return action.run();
+        }
         participants.incrementAndGet();
         try {
             CompletableFuture<T> mine = new CompletableFuture<>();
@@ -60,11 +71,14 @@ final class SingleFlight<T> {
     }
 
     private T lead(String key, CompletableFuture<T> mine, Action<T> action) throws FeatureFetchException {
+        Set<String> ledKeys = keysLedByCurrentThread.get();
+        ledKeys.add(key);
         try {
             T result = action.run();
             mine.complete(result);
             return result;
         } finally {
+            ledKeys.remove(key);
             mine.completeExceptionally(LEADER_FAILED);
             inFlight.remove(key, mine);
         }
