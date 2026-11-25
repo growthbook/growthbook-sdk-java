@@ -7,13 +7,11 @@ import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpServer;
 import java.io.IOException;
 import java.io.InputStream;
-import java.lang.reflect.Field;
 import java.net.InetSocketAddress;
 import java.nio.charset.StandardCharsets;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.atomic.AtomicReference;
 import okhttp3.Dispatcher;
 import okhttp3.OkHttpClient;
 import org.junit.jupiter.api.DisplayName;
@@ -63,11 +61,8 @@ class SseStreamSingleConnectionTest {
         }
     }
 
-    private static Dispatcher readSseDispatcher(GBFeaturesRepository repository) throws Exception {
-        Field field = GBFeaturesRepository.class.getDeclaredField("sseHttpClient");
-        field.setAccessible(true);
-        AtomicReference<?> clientRef = (AtomicReference<?>) field.get(repository);
-        OkHttpClient sseClient = (OkHttpClient) clientRef.get();
+    private static Dispatcher readSseDispatcher(GBFeaturesRepository repository) {
+        OkHttpClient sseClient = RepositoryInternals.transport(repository).eventsClientIfCreated();
         assertNotNull(sseClient, "SSE client was never created; the stream was not started");
         return sseClient.dispatcher();
     }

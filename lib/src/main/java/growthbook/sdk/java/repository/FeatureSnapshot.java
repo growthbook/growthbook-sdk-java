@@ -2,6 +2,7 @@ package growthbook.sdk.java.repository;
 
 import com.google.gson.JsonObject;
 import growthbook.sdk.java.model.Feature;
+import lombok.Getter;
 
 import java.util.Collections;
 import java.util.Map;
@@ -15,7 +16,9 @@ import java.util.Map;
  * payload. Reading the parts through separate getters across a concurrent
  * refresh could otherwise pair new features with old saved groups.
  */
+@Getter
 public final class FeatureSnapshot {
+
     public static final FeatureSnapshot EMPTY = new FeatureSnapshot(
             GBFeaturesRepository.EMPTY_JSON_OBJECT_STRING,
             GBFeaturesRepository.EMPTY_JSON_OBJECT_STRING,
@@ -54,21 +57,5 @@ public final class FeatureSnapshot {
                                      Map<String, Feature<?>> parsedFeatures,
                                      JsonObject parsedSavedGroups) {
         return new FeatureSnapshot(featuresJson, savedGroupsJson, parsedFeatures, parsedSavedGroups);
-    }
-
-    public String getFeaturesJson() {
-        return featuresJson;
-    }
-
-    public String getSavedGroupsJson() {
-        return savedGroupsJson;
-    }
-
-    public Map<String, Feature<?>> getParsedFeatures() {
-        return parsedFeatures;
-    }
-
-    public JsonObject getParsedSavedGroups() {
-        return parsedSavedGroups;
     }
 }
