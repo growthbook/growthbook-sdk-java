@@ -3,6 +3,7 @@ package growthbook.sdk.java.remoteeval;
 import com.google.gson.JsonObject;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpServer;
+import growthbook.sdk.java.model.FeatureRefreshSource;
 import growthbook.sdk.java.multiusermode.GrowthBookClient;
 import growthbook.sdk.java.multiusermode.configurations.Options;
 import growthbook.sdk.java.multiusermode.configurations.UserContext;
@@ -12,12 +13,14 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.InetSocketAddress;
 import java.nio.charset.StandardCharsets;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -25,51 +28,51 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class RemoteEvalSseInvalidationTest {
 
+    private static final long AWAIT_SECONDS = 5;
     private static final String FEATURES = "{\"features\":{\"remote-feature\":{\"defaultValue\":true}},\"savedGroups\":{}}";
 
     @Test
     @DisplayName("An SSE invalidation event clears the remote eval cache so the next evaluation refetches")
     void sseEventInvalidatesRemoteEvalCacheAndNextEvaluationRefetches() throws Exception {
         try (SseServer server = new SseServer()) {
+            // Given
             GrowthBookClient client = new GrowthBookClient(Options.builder()
                     .apiHost(server.apiHost())
                     .clientKey("sdk-test")
                     .remoteEval(true)
                     .refreshStrategy(FeatureRefreshStrategy.SERVER_SENT_EVENTS)
                     .build());
-            assertTrue(client.initialize());
-
+            CountDownLatch sseRefresh = new CountDownLatch(1);
+            client.addFeatureRefreshListener(event -> {
+                if (event.isSuccessful() && event.getSource() == FeatureRefreshSource.SSE) {
+                    sseRefresh.countDown();
+                }
+            });
             try {
+                assertTrue(client.initialize());
                 UserContext user = UserContext.builder()
                         .attributes(GrowthBookJsonUtils.getInstance().gson.fromJson("{\"id\":\"user-1\"}", JsonObject.class))
                         .build();
-
-                assertTrue(server.awaitConnected(2000));
+                assertTrue(server.awaitConnected());
                 assertTrue(client.isOn("remote-feature", user));
-                client.isOn("remote-feature", user);
-                assertEquals(1, server.evalCount());
+                assertTrue(client.isOn("remote-feature", user));
+                int evalsBeforeInvalidation = server.evalCount();
 
+                // When
                 server.sendInvalidationEvent();
-                assertTrue(awaitRefetch(server, client, user), "Expected SSE invalidation to force a fresh remote eval");
+                assertTrue(sseRefresh.await(AWAIT_SECONDS, TimeUnit.SECONDS));
+                boolean onAfterInvalidation = client.isOn("remote-feature", user);
+
+                // Then
+                assertEquals(1, evalsBeforeInvalidation);
+                assertTrue(onAfterInvalidation);
+                assertEquals(2, server.evalCount());
             } finally {
                 client.shutdown();
             }
         }
     }
 
-    private static boolean awaitRefetch(SseServer server, GrowthBookClient client, UserContext user) throws InterruptedException {
-        long deadline = System.currentTimeMillis() + 3000;
-        while (System.currentTimeMillis() < deadline) {
-            client.isOn("remote-feature", user);
-            if (server.evalCount() >= 2) {
-                return true;
-            }
-            Thread.sleep(20);
-        }
-        return false;
-    }
-
-    /** Minimal proxy: POST /api/eval, GET /api/features (advertising SSE), GET /sub (event stream). */
     private static final class SseServer implements AutoCloseable {
         private final HttpServer server;
         private final ExecutorService executor;
@@ -96,8 +99,8 @@ class RemoteEvalSseInvalidationTest {
             return this.evalCount.get();
         }
 
-        boolean awaitConnected(long millis) throws InterruptedException {
-            return connected.await(millis, java.util.concurrent.TimeUnit.MILLISECONDS);
+        boolean awaitConnected() throws InterruptedException {
+            return connected.await(AWAIT_SECONDS, TimeUnit.SECONDS);
         }
 
         void sendInvalidationEvent() {
@@ -138,6 +141,7 @@ class RemoteEvalSseInvalidationTest {
                 try {
                     os.close();
                 } catch (IOException ignored) {
+                    // the client may already have dropped the stream at shutdown
                 }
             }
         }
@@ -152,10 +156,12 @@ class RemoteEvalSseInvalidationTest {
         }
 
         private void drain(HttpExchange exchange) throws IOException {
-            try (java.io.InputStream is = exchange.getRequestBody()) {
+            try (InputStream is = exchange.getRequestBody()) {
                 byte[] buffer = new byte[1024];
-                while (is.read(buffer) != -1) {
-                }
+                int read;
+                do {
+                    read = is.read(buffer);
+                } while (read != -1);
             }
         }
 

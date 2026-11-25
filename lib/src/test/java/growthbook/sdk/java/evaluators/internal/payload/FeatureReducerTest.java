@@ -1,7 +1,6 @@
 package growthbook.sdk.java.evaluators.internal.payload;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.google.gson.JsonNull;
 import com.google.gson.JsonObject;
@@ -132,7 +131,7 @@ class FeatureReducerTest {
         reducer.addParents(features.getAsJsonObject("a").getAsJsonArray("rules").get(0));
 
         // Then
-        assertTrue(reducer.features().isEmpty());
+        assertEquals(new JsonObject(), reducer.features());
     }
 
     @Test
@@ -147,7 +146,7 @@ class FeatureReducerTest {
         reducer.addParents(JsonParser.parseString("\"a\""));
 
         // Then
-        assertTrue(reducer.features().isEmpty());
+        assertEquals(new JsonObject(), reducer.features());
     }
 
     @Test
@@ -254,7 +253,7 @@ class FeatureReducerTest {
         reducer.addParents(json("{'parentConditions': [{'id': 'a'}]}"));
 
         // Then
-        assertTrue(reducer.features().isEmpty());
+        assertEquals(new JsonObject(), reducer.features());
     }
 
     @Test
@@ -292,10 +291,7 @@ class FeatureReducerTest {
         reducer.addMatching();
 
         // Then
-        List<String> kept = keys(reducer.features());
-        assertEquals(length, kept.size());
-        assertEquals("f0", kept.get(0));
-        assertEquals("f1", kept.get(1));
+        assertEquals(keys(features), keys(reducer.features()));
     }
 
     private static FeatureReducer reducer(JsonObject features, PayloadFilter filter, boolean filterPrerequisites) {

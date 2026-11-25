@@ -1,7 +1,6 @@
 package growthbook.sdk.java.evaluators.internal.payload;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
@@ -44,7 +43,7 @@ class BanditReducerTest {
         JsonObject reduced = new BanditReducer(bandits, CONDITIONS).reduce(features, experiments);
 
         // Then
-        assertTrue(reduced.isEmpty());
+        assertEquals(new JsonObject(), reduced);
     }
 
     @Test
@@ -57,7 +56,7 @@ class BanditReducerTest {
         JsonObject reduced = new BanditReducer(new JsonObject(), CONDITIONS).reduce(features, new JsonArray());
 
         // Then
-        assertTrue(reduced.isEmpty());
+        assertEquals(new JsonObject(), reduced);
     }
 
     @Test

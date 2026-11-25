@@ -448,12 +448,14 @@ class OperatorsTest {
         Boolean empty = condition.eval(json("{\"v\": []}"), scope);
         Boolean onlyNulls = condition.eval(json("{\"v\": [null]}"), scope);
         Boolean notArray = condition.eval(json("{\"v\": \"x\"}"), scope);
+        MalformedConditionException thrown = assertThrows(MalformedConditionException.class,
+                () -> condition.eval(json("{\"v\": [\"x\"]}"), scope));
 
         // Then
         assertFalse(empty);
         assertFalse(onlyNulls);
         assertFalse(notArray);
-        assertThrows(MalformedConditionException.class, () -> condition.eval(json("{\"v\": [\"x\"]}"), scope));
+        assertEquals("$elemMatch needs a condition object", thrown.getMessage());
     }
 
     @Test

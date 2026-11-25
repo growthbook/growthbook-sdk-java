@@ -49,7 +49,7 @@ class LettuceStickyBucketServiceTest {
     }
 
     @Test
-    @DisplayName("Verify: getAssignments deserializes the stored document for a present key")
+    @DisplayName("GetAssignments deserializes the stored document for a present key")
     void getAssignmentsReturnsStoredDocument() {
         // Given
         StickyAssignmentsDocument doc = document("id", "123", "exp__0", "control");
@@ -64,7 +64,7 @@ class LettuceStickyBucketServiceTest {
     }
 
     @Test
-    @DisplayName("Verify: getAssignments returns null for a missing key")
+    @DisplayName("GetAssignments returns null for a missing key")
     void returnsNullForMissingKey() {
         // Given
         when(commands.get(anyString())).thenReturn(null);
@@ -75,7 +75,7 @@ class LettuceStickyBucketServiceTest {
     }
 
     @Test
-    @DisplayName("Verify: getAssignments returns null for null attribute inputs without touching Redis")
+    @DisplayName("GetAssignments returns null for null attribute inputs without touching Redis")
     void returnsNullForNullAttributeInputs() {
         // Given
         LettuceStickyBucketService service = new LettuceStickyBucketService(connection);
@@ -87,7 +87,7 @@ class LettuceStickyBucketServiceTest {
     }
 
     @Test
-    @DisplayName("Verify: getAssignments surfaces a StickyBucketServiceException when Redis fails")
+    @DisplayName("GetAssignments surfaces a StickyBucketServiceException when Redis fails")
     void getAssignmentsThrowsWhenRedisFails() {
         // Given
         when(commands.get(anyString())).thenThrow(new RedisException("boom"));
@@ -98,7 +98,7 @@ class LettuceStickyBucketServiceTest {
     }
 
     @Test
-    @DisplayName("Verify: getAssignments surfaces a StickyBucketServiceException for a malformed payload")
+    @DisplayName("GetAssignments surfaces a StickyBucketServiceException for a malformed payload")
     void throwsOnMalformedPayload() {
         // Given
         when(commands.get("id||123")).thenReturn("}not-json{");
@@ -109,7 +109,7 @@ class LettuceStickyBucketServiceTest {
     }
 
     @Test
-    @DisplayName("Verify: saveAssignments installs the JSON-encoded document under the user key via an atomic compare-and-set")
+    @DisplayName("SaveAssignments installs the JSON-encoded document under the user key via an atomic compare-and-set")
     void saveAssignmentsWritesJsonUnderKey() {
         // Given
         StickyAssignmentsDocument doc = document("id", "123", "exp__0", "control");
@@ -132,7 +132,7 @@ class LettuceStickyBucketServiceTest {
     }
 
     @Test
-    @DisplayName("Verify: saveAssignments ignores a null document or missing key attributes")
+    @DisplayName("SaveAssignments ignores a null document or missing key attributes")
     void saveAssignmentsIgnoresNullDocumentOrAttributes() {
         // Given
         LettuceStickyBucketService service = new LettuceStickyBucketService(connection);
@@ -147,7 +147,7 @@ class LettuceStickyBucketServiceTest {
     }
 
     @Test
-    @DisplayName("Verify: saveAssignments surfaces a StickyBucketServiceException when Redis fails")
+    @DisplayName("SaveAssignments surfaces a StickyBucketServiceException when Redis fails")
     void saveAssignmentsThrowsWhenRedisFails() {
         // Given
         when(commands.get(anyString())).thenReturn(null);
@@ -161,7 +161,7 @@ class LettuceStickyBucketServiceTest {
     }
 
     @Test
-    @DisplayName("Verify: getAllAssignments reads keys in bulk and maps hits by their logical key")
+    @DisplayName("GetAllAssignments reads keys in bulk and maps hits by their logical key")
     void getAllAssignmentsReadsInBulkKeyedByLogicalKey() {
         // Given
         StickyAssignmentsDocument idDoc = document("id", "123", "exp__0", "control");
@@ -188,7 +188,7 @@ class LettuceStickyBucketServiceTest {
     }
 
     @Test
-    @DisplayName("Verify: getAllAssignments returns an empty map for null or empty attributes")
+    @DisplayName("GetAllAssignments returns an empty map for null or empty attributes")
     void getAllAssignmentsReturnsEmptyForNullOrEmptyAttributes() {
         // Given
         LettuceStickyBucketService service = new LettuceStickyBucketService(connection);
@@ -200,7 +200,7 @@ class LettuceStickyBucketServiceTest {
     }
 
     @Test
-    @DisplayName("Verify: getAllAssignments surfaces a StickyBucketServiceException when Redis fails")
+    @DisplayName("GetAllAssignments surfaces a StickyBucketServiceException when Redis fails")
     void getAllAssignmentsThrowsWhenRedisFails() {
         // Given
         when(commands.mget("id||123")).thenThrow(new RedisException("boom"));
@@ -212,7 +212,7 @@ class LettuceStickyBucketServiceTest {
     }
 
     @Test
-    @DisplayName("Verify: a configured key prefix namespaces every Redis key")
+    @DisplayName("A configured key prefix namespaces every Redis key")
     void appliesKeyPrefix() {
         // Given
         when(commands.get("gb:sticky:id||123")).thenReturn(json(document("id", "123", "exp__0", "control")));
@@ -234,14 +234,14 @@ class LettuceStickyBucketServiceTest {
     }
 
     @Test
-    @DisplayName("Verify: the constructor rejects a null connection")
+    @DisplayName("The constructor rejects a null connection")
     void constructorRejectsNullConnection() {
         // When & Then
         assertThrows(NullPointerException.class, () -> new LettuceStickyBucketService(null));
     }
 
     @Test
-    @DisplayName("Verify: with no TTL configured, the compare-and-set carries a 0 TTL (no expiry)")
+    @DisplayName("With no TTL configured, the compare-and-set carries a 0 TTL (no expiry)")
     void saveWithoutTtlPassesZeroTtlArg() {
         // Given
         when(commands.get("id||123")).thenReturn(null);
@@ -258,7 +258,7 @@ class LettuceStickyBucketServiceTest {
     }
 
     @Test
-    @DisplayName("Verify: a configured TTL is carried to the compare-and-set as milliseconds")
+    @DisplayName("A configured TTL is carried to the compare-and-set as milliseconds")
     void saveWithTtlPassesTtlMillisArg() {
         // Given
         when(commands.get("id||123")).thenReturn(null);
@@ -275,7 +275,7 @@ class LettuceStickyBucketServiceTest {
     }
 
     @Test
-    @DisplayName("Verify: the constructor rejects a zero or negative TTL")
+    @DisplayName("The constructor rejects a zero or negative TTL")
     void constructorRejectsNonPositiveTtl() {
         // When & Then
         assertThrows(IllegalArgumentException.class, () -> new LettuceStickyBucketService(connection, Duration.ZERO));

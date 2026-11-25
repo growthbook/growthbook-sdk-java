@@ -1,51 +1,526 @@
 package growthbook.sdk.java.plugin.tracking;
 
+import com.github.tomakehurst.wiremock.WireMockServer;
+import com.github.tomakehurst.wiremock.core.WireMockConfiguration;
+import com.github.tomakehurst.wiremock.http.RequestMethod;
+import com.github.tomakehurst.wiremock.verification.LoggedRequest;
+import com.google.common.util.concurrent.Uninterruptibles;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import growthbook.sdk.java.GrowthBook;
 import growthbook.sdk.java.model.Experiment;
-import growthbook.sdk.java.model.GBContext;
 import growthbook.sdk.java.model.ExperimentResult;
 import growthbook.sdk.java.model.FeatureResult;
 import growthbook.sdk.java.model.FeatureResultSource;
-import growthbook.sdk.java.plugin.tracking.RecordingHttpServer.RecordedRequest;
+import growthbook.sdk.java.model.GBContext;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.Collections;
+import java.util.List;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executor;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 
+import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
+import static com.github.tomakehurst.wiremock.client.WireMock.post;
+import static com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 class GrowthBookTrackingPluginTest {
 
-    private RecordingHttpServer server;
+    private static final long AWAIT_SECONDS = 5;
+
+    private WireMockServer wireMock;
+    private final BlockingQueue<LoggedRequest> servedRequests = new LinkedBlockingQueue<>();
+    private final List<LoggedRequest> trackRequests = new CopyOnWriteArrayList<>();
 
     @BeforeEach
-    void setUp() throws Exception {
-        server = new RecordingHttpServer();
+    void setUp() {
+        wireMock = new WireMockServer(WireMockConfiguration.options().dynamicPort());
+        wireMock.start();
+        wireMock.addMockServiceRequestListener((request, response) -> {
+            LoggedRequest logged = LoggedRequest.createFrom(request);
+            if (RequestMethod.POST.equals(logged.getMethod()) && logged.getUrl().startsWith("/track")) {
+                trackRequests.add(logged);
+            }
+            servedRequests.add(logged);
+        });
+        wireMock.stubFor(post(urlPathEqualTo("/track")).willReturn(aResponse().withStatus(200)));
     }
 
     @AfterEach
     void tearDown() {
-        server.close();
+        wireMock.stop();
+    }
+
+    @Test
+    @DisplayName("Flushes to the track endpoint with the client key once the batch size is reached")
+    void flushesToTrackEndpointWhenBatchSizeIsReached() throws Exception {
+        // Given
+        GrowthBookTrackingPlugin plugin = GrowthBookTrackingPlugin.of(configBuilder()
+                .batchSize(2)
+                .batchTimeout(Duration.ofSeconds(60))
+                .build());
+        plugin.init();
+
+        // When
+        plugin.onExperimentViewed(experiment("exp-1"), experimentResult(0));
+        plugin.onExperimentViewed(experiment("exp-2"), experimentResult(1));
+        LoggedRequest request = awaitRequests(1).get(0);
+        plugin.close();
+
+        // Then
+        assertEquals("/track?client_key=sdk-test", request.getUrl());
+        assertTrue("application/json; charset=utf-8".equalsIgnoreCase(request.getHeader("Content-Type")),
+                request.getHeader("Content-Type"));
+        JsonArray events = events(request);
+        assertEquals(2, events.size());
+        assertEquals("exp-1", events.get(0).getAsJsonObject().getAsJsonObject("properties").get("experimentId").getAsString());
+        assertEquals("exp-2", events.get(1).getAsJsonObject().getAsJsonObject("properties").get("experimentId").getAsString());
+    }
+
+    @Test
+    @DisplayName("Sends the SDK name and resolved version as the User-Agent")
+    void sendsSdkNameAndVersionAsUserAgent() throws Exception {
+        // Given
+        GrowthBookTrackingPlugin plugin = GrowthBookTrackingPlugin.of(configBuilder().batchSize(1).build());
+        plugin.init();
+
+        // When
+        plugin.onFeatureEvaluated("flag-1", featureResult(FeatureResultSource.DEFAULT_VALUE));
+        LoggedRequest request = awaitRequests(1).get(0);
+        plugin.close();
+
+        // Then
+        assertFalse(SdkMetadata.VERSION.isEmpty());
+        assertFalse("unknown".equals(SdkMetadata.VERSION));
+        assertEquals("growthbook-java-sdk/" + SdkMetadata.VERSION, request.getHeader("User-Agent"));
+    }
+
+    @Test
+    @DisplayName("An experiment event matches the track wire contract")
+    void experimentEventMatchesTrackWireContract() throws Exception {
+        // Given
+        GrowthBookTrackingPlugin plugin = GrowthBookTrackingPlugin.of(configBuilder().batchSize(1).build());
+        plugin.init();
+
+        // When
+        plugin.onExperimentViewed(experiment("exp-1"), experimentResult(1, "treatment"), attributes());
+        JsonObject event = firstEvent(awaitRequests(1).get(0));
+        plugin.close();
+
+        // Then
+        assertEquals("Experiment Viewed", event.get("event_name").getAsString());
+        assertEquals("java", event.get("sdk_language").getAsString());
+        assertEquals(SdkMetadata.VERSION, event.get("sdk_version").getAsString());
+        JsonObject expectedProperties = new JsonObject();
+        expectedProperties.addProperty("experimentId", "exp-1");
+        expectedProperties.addProperty("variationId", "treatment");
+        expectedProperties.addProperty("hashAttribute", "id");
+        expectedProperties.addProperty("hashValue", "user-1");
+        assertEquals(expectedProperties, event.getAsJsonObject("properties"));
+        assertEquals(attributes(), event.getAsJsonObject("attributes"));
+    }
+
+    @Test
+    @DisplayName("A feature event matches the track wire contract")
+    void featureEventMatchesTrackWireContract() throws Exception {
+        // Given
+        GrowthBookTrackingPlugin plugin = GrowthBookTrackingPlugin.of(configBuilder().batchSize(1).build());
+        plugin.init();
+        FeatureResult<String> result = FeatureResult.<String>builder()
+                .source(FeatureResultSource.EXPERIMENT)
+                .value("x")
+                .ruleId("rule-7")
+                .experimentResult(experimentResult(1, "treatment"))
+                .build();
+
+        // When
+        plugin.onFeatureEvaluated("flag-1", result, attributes());
+        JsonObject event = firstEvent(awaitRequests(1).get(0));
+        plugin.close();
+
+        // Then
+        assertEquals("Feature Evaluated", event.get("event_name").getAsString());
+        JsonObject expectedProperties = new JsonObject();
+        expectedProperties.addProperty("feature", "flag-1");
+        expectedProperties.addProperty("value", "x");
+        expectedProperties.addProperty("source", "experiment");
+        expectedProperties.addProperty("ruleId", "rule-7");
+        expectedProperties.addProperty("variationId", "treatment");
+        assertEquals(expectedProperties, event.getAsJsonObject("properties"));
+        assertEquals(attributes(), event.getAsJsonObject("attributes"));
+    }
+
+    @Test
+    @DisplayName("A feature event outside an experiment omits the variation id")
+    void featureEventWithoutExperimentOmitsVariationId() throws Exception {
+        // Given
+        GrowthBookTrackingPlugin plugin = GrowthBookTrackingPlugin.of(configBuilder().batchSize(1).build());
+        plugin.init();
+
+        // When
+        plugin.onFeatureEvaluated("flag-1",
+                FeatureResult.<String>builder().source(FeatureResultSource.DEFAULT_VALUE).value("x").build());
+        JsonObject properties = firstEvent(awaitRequests(1).get(0)).getAsJsonObject("properties");
+        plugin.close();
+
+        // Then
+        assertEquals("flag-1", properties.get("feature").getAsString());
+        assertFalse(properties.has("variationId"));
+    }
+
+    @Test
+    @DisplayName("A buffered event keeps the attributes as they were at evaluation time")
+    void bufferedEventSnapshotsAttributesAtEvaluation() throws Exception {
+        // Given
+        GrowthBookTrackingPlugin plugin = GrowthBookTrackingPlugin.of(configBuilder()
+                .batchSize(100)
+                .batchTimeout(Duration.ofSeconds(60))
+                .build());
+        plugin.init();
+        JsonObject original = new JsonObject();
+        original.addProperty("country", "US");
+        JsonObject account = new JsonObject();
+        account.addProperty("plan", "gold");
+        original.add("account", account);
+
+        // When
+        plugin.onExperimentViewed(experiment("exp-1"), experimentResult(0), original);
+        original.addProperty("country", "CA");
+        account.addProperty("plan", "platinum");
+        plugin.close();
+
+        // Then
+        JsonObject attributes = firstEvent(awaitRequests(1).get(0)).getAsJsonObject("attributes");
+        assertEquals("US", attributes.get("country").getAsString());
+        assertEquals("gold", attributes.getAsJsonObject("account").get("plan").getAsString());
+    }
+
+    @Test
+    @DisplayName("Omits the attributes field when no attributes are provided")
+    void omitsAttributesWhenNoneProvided() throws Exception {
+        // Given
+        GrowthBookTrackingPlugin plugin = GrowthBookTrackingPlugin.of(configBuilder().batchSize(1).build());
+        plugin.init();
+
+        // When
+        plugin.onExperimentViewed(experiment("exp-1"), experimentResult(0));
+        JsonObject event = firstEvent(awaitRequests(1).get(0));
+        plugin.close();
+
+        // Then
+        assertFalse(event.has("attributes"));
+    }
+
+    @Test
+    @DisplayName("Flushes a partial batch when the batch timer fires")
+    void flushesWhenTimerFires() throws Exception {
+        // Given
+        GrowthBookTrackingPlugin plugin = GrowthBookTrackingPlugin.of(configBuilder()
+                .batchSize(100)
+                .batchTimeout(Duration.ofMillis(50))
+                .build());
+        plugin.init();
+
+        // When
+        plugin.onFeatureEvaluated("flag-1", featureResult(FeatureResultSource.DEFAULT_VALUE));
+        JsonArray events = events(awaitRequests(1).get(0));
+        plugin.close();
+
+        // Then
+        assertEquals(1, events.size());
+        JsonObject event = events.get(0).getAsJsonObject();
+        assertEquals("Feature Evaluated", event.get("event_name").getAsString());
+        assertEquals("flag-1", event.getAsJsonObject("properties").get("feature").getAsString());
+    }
+
+    @Test
+    @DisplayName("Close flushes the remaining buffered events synchronously")
+    void closeFlushesRemainingEvents() {
+        // Given
+        GrowthBookTrackingPlugin plugin = GrowthBookTrackingPlugin.of(configBuilder()
+                .batchSize(100)
+                .batchTimeout(Duration.ofSeconds(60))
+                .build());
+        plugin.init();
+        plugin.onExperimentViewed(experiment("exp-1"), experimentResult(0));
+
+        // When
+        plugin.close();
+
+        // Then
+        List<LoggedRequest> requests = trackRequests();
+        assertEquals(1, requests.size());
+        assertEquals(1, events(requests.get(0)).size());
+    }
+
+    @Test
+    @DisplayName("Close waits for a batch still pending on a caller-supplied executor")
+    void closeWaitsForBatchesOnCallerSuppliedExecutor() throws InterruptedException {
+        // Given a batch held on a caller-supplied executor until the test releases it
+        CountDownLatch releaseBatch = new CountDownLatch(1);
+        Executor deferredExecutor = task -> {
+            Thread worker = new Thread(() -> {
+                Uninterruptibles.awaitUninterruptibly(releaseBatch);
+                task.run();
+            }, "deferred-flush");
+            worker.setDaemon(true);
+            worker.start();
+        };
+        GrowthBookTrackingPlugin plugin = GrowthBookTrackingPlugin.of(configBuilder()
+                .batchSize(1)
+                .closeTimeout(Duration.ofSeconds(AWAIT_SECONDS * 2))
+                .flushExecutor(deferredExecutor)
+                .build());
+        plugin.init();
+        plugin.onExperimentViewed(experiment("exp-1"), experimentResult(0));
+
+        // When close starts while the batch is still held
+        Thread closer = new Thread(plugin::close, "close-thread");
+        boolean closerWaitedForBatch;
+        int requestsBeforeRelease;
+        try {
+            closer.start();
+            awaitState(closer, Thread.State.TIMED_WAITING);
+            closerWaitedForBatch = closer.isAlive();
+            requestsBeforeRelease = trackRequests().size();
+        } finally {
+            // Release the batch even when an assertion above fails, so no thread is left blocked.
+            releaseBatch.countDown();
+            closer.join(TimeUnit.SECONDS.toMillis(AWAIT_SECONDS));
+        }
+
+        // Then close waited for the held batch, and finished only once it was sent
+        assertTrue(closerWaitedForBatch);
+        assertEquals(0, requestsBeforeRelease);
+        assertFalse(closer.isAlive());
+        assertEquals(1, trackRequests().size());
+    }
+
+    @Test
+    @DisplayName("Close does not lose a batch the timer drained but has not yet submitted")
+    void closeDoesNotLoseTimerTriggeredBatch() throws Exception {
+        // Given
+        CountDownLatch reachedHandoff = new CountDownLatch(1);
+        CountDownLatch releaseHandoff = new CountDownLatch(1);
+        GrowthBookTrackingPlugin plugin = GrowthBookTrackingPlugin.of(configBuilder()
+                .batchSize(100)
+                .batchTimeout(Duration.ofMillis(50))
+                .build());
+        plugin.timerFlushHandoffHookForTest = () -> {
+            reachedHandoff.countDown();
+            Uninterruptibles.awaitUninterruptibly(releaseHandoff);
+        };
+        plugin.init();
+        plugin.onFeatureEvaluated("flag-1", featureResult(FeatureResultSource.DEFAULT_VALUE));
+        assertTrue(reachedHandoff.await(AWAIT_SECONDS, TimeUnit.SECONDS));
+
+        // When
+        Thread closer = new Thread(plugin::close, "close-thread");
+        boolean closerWaitedForBatch;
+        int requestsBeforeSubmit;
+        try {
+            closer.start();
+            awaitState(closer, Thread.State.TIMED_WAITING);
+            closerWaitedForBatch = closer.isAlive();
+            requestsBeforeSubmit = trackRequests().size();
+        } finally {
+            // Release the handoff even when an assertion above fails, so no thread is left blocked.
+            releaseHandoff.countDown();
+            closer.join(TimeUnit.SECONDS.toMillis(AWAIT_SECONDS));
+        }
+
+        // Then
+        assertTrue(closerWaitedForBatch);
+        assertEquals(0, requestsBeforeSubmit);
+        assertFalse(closer.isAlive());
+        assertEquals(1, trackRequests().size());
+    }
+
+    @Test
+    @DisplayName("closeTimeout bounds a final flush against an ingest endpoint that never answers in time")
+    void closeTimeoutBoundsSynchronousFinalFlush() {
+        // Given
+        wireMock.stubFor(post(urlPathEqualTo("/track")).willReturn(aResponse().withStatus(200).withFixedDelay(20_000)));
+        GrowthBookTrackingPlugin plugin = GrowthBookTrackingPlugin.of(configBuilder()
+                .batchSize(100)
+                .batchTimeout(Duration.ofSeconds(60))
+                .closeTimeout(Duration.ofMillis(300))
+                .build());
+        plugin.init();
+        plugin.onExperimentViewed(experiment("exp-1"), experimentResult(0));
+
+        // When / Then
+        assertTimeoutPreemptively(Duration.ofSeconds(AWAIT_SECONDS), plugin::close);
+    }
+
+    @Test
+    @DisplayName("A plugin shared by two GrowthBook instances stops delivering once the first instance is destroyed")
+    void sharedPluginStopsDeliveringAfterFirstInstanceIsDestroyed() throws Exception {
+        // Given
+        GrowthBookTrackingPlugin plugin = GrowthBookTrackingPlugin.of(configBuilder().batchSize(1).build());
+        GrowthBook first = growthBookWith(plugin, "{\"id\":\"user-1\"}");
+        GrowthBook second = growthBookWith(plugin, "{\"id\":\"user-1\"}");
+        first.evalFeature("flag", Boolean.class);
+        awaitRequests(1);
+
+        // When
+        first.destroy();
+        second.evalFeature("flag", Boolean.class);
+        second.destroy();
+
+        // Then
+        assertEquals(1, trackRequests().size());
+    }
+
+    @Test
+    @DisplayName("Forwards the evaluated user's attributes from a GrowthBook evaluation")
+    void forwardsUserAttributesFromEvaluation() throws Exception {
+        // Given
+        GrowthBookTrackingPlugin plugin = GrowthBookTrackingPlugin.of(configBuilder().batchSize(1).build());
+        GrowthBook growthBook = growthBookWith(plugin, "{\"id\":\"user-7\",\"country\":\"US\"}");
+
+        // When
+        growthBook.evalFeature("flag", Boolean.class);
+        JsonObject event = firstEvent(awaitRequests(1).get(0));
+        growthBook.destroy();
+
+        // Then
+        JsonObject expectedAttributes = new JsonObject();
+        expectedAttributes.addProperty("id", "user-7");
+        expectedAttributes.addProperty("country", "US");
+        assertEquals(expectedAttributes, event.getAsJsonObject("attributes"));
+    }
+
+    @Test
+    @DisplayName("A second close neither throws nor flushes again")
+    void secondCloseIsNoOp() {
+        // Given
+        GrowthBookTrackingPlugin plugin = GrowthBookTrackingPlugin.of(configBuilder()
+                .batchSize(100)
+                .batchTimeout(Duration.ofSeconds(60))
+                .build());
+        plugin.init();
+        plugin.onExperimentViewed(experiment("exp-1"), experimentResult(0));
+        plugin.close();
+
+        // When
+        plugin.close();
+
+        // Then
+        assertEquals(1, trackRequests().size());
+    }
+
+    @Test
+    @DisplayName("Events sent before init are dropped without any request")
+    void eventsBeforeInitAreDropped() {
+        // Given
+        GrowthBookTrackingPlugin plugin = GrowthBookTrackingPlugin.of(configBuilder().batchSize(1).build());
+
+        // When
+        plugin.onExperimentViewed(experiment("exp-1"), experimentResult(0));
+        plugin.onFeatureEvaluated("flag-1", featureResult(FeatureResultSource.DEFAULT_VALUE));
+        plugin.close();
+
+        // Then
+        assertEquals(0, trackRequests().size());
+    }
+
+    @Test
+    @DisplayName("A blank client key disables the plugin so it never sends a request")
+    void blankClientKeyDisablesPlugin() {
+        // Given
+        GrowthBookTrackingPlugin plugin = GrowthBookTrackingPlugin.of(TrackingPluginConfig.builder()
+                .ingestorHost(wireMock.baseUrl())
+                .batchSize(1)
+                .build());
+        plugin.init();
+
+        // When
+        plugin.onExperimentViewed(experiment("exp-1"), experimentResult(0));
+        plugin.onFeatureEvaluated("flag-1", featureResult(FeatureResultSource.DEFAULT_VALUE));
+        plugin.close();
+
+        // Then
+        assertEquals(0, trackRequests().size());
+    }
+
+    @Test
+    @DisplayName("A failed ingest POST is not thrown and later batches are still delivered")
+    void failedIngestPostDoesNotStopLaterBatches() throws Exception {
+        // Given
+        wireMock.stubFor(post(urlPathEqualTo("/track")).willReturn(aResponse().withStatus(500)));
+        GrowthBookTrackingPlugin plugin = GrowthBookTrackingPlugin.of(configBuilder().batchSize(1).build());
+        plugin.init();
+
+        // When
+        plugin.onExperimentViewed(experiment("exp-1"), experimentResult(0));
+        plugin.onExperimentViewed(experiment("exp-2"), experimentResult(0));
+        List<LoggedRequest> requests = awaitRequests(2);
+        plugin.close();
+
+        // Then
+        assertEquals(2, requests.size());
+    }
+
+    @Test
+    @DisplayName("Rejects a null configuration")
+    void rejectsNullConfiguration() {
+        // When / Then
+        IllegalArgumentException error = assertThrows(IllegalArgumentException.class,
+                () -> GrowthBookTrackingPlugin.of(null));
+        assertEquals("TrackingPluginConfig must not be null", error.getMessage());
     }
 
     private TrackingPluginConfig.TrackingPluginConfigBuilder configBuilder() {
         return TrackingPluginConfig.builder()
-                .ingestorHost(server.baseUrl())
+                .ingestorHost(wireMock.baseUrl())
                 .clientKey("sdk-test");
+    }
+
+    private List<LoggedRequest> trackRequests() {
+        return new ArrayList<>(trackRequests);
+    }
+
+    private List<LoggedRequest> awaitRequests(int count) throws InterruptedException {
+        for (int i = 0; i < count; i++) {
+            assertNotNull(servedRequests.poll(AWAIT_SECONDS, TimeUnit.SECONDS), "expected request #" + (i + 1));
+        }
+        return trackRequests();
+    }
+
+    private static void awaitState(Thread thread, Thread.State state) {
+        long deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(AWAIT_SECONDS);
+        while (thread.getState() != state) {
+            if (System.nanoTime() > deadline) {
+                fail("Thread " + thread.getName() + " never reached " + state + ", was " + thread.getState());
+            }
+            Thread.yield();
+        }
+    }
+
+    private static GrowthBook growthBookWith(GrowthBookTrackingPlugin plugin, String attributesJson) {
+        return new GrowthBook(GBContext.builder()
+                .featuresJson("{\"flag\":{\"defaultValue\":true}}")
+                .attributesJson(attributesJson)
+                .plugins(Collections.singletonList(plugin))
+                .build());
     }
 
     private static Experiment<String> experiment(String key) {
@@ -64,7 +539,7 @@ class GrowthBookTrackingPluginTest {
                 .value("v-" + variation)
                 .key(key)
                 .hashAttribute("id")
-                .hashValue("u-" + variation)
+                .hashValue("user-" + variation)
                 .build();
     }
 
@@ -74,463 +549,16 @@ class GrowthBookTrackingPluginTest {
 
     private static JsonObject attributes() {
         JsonObject attributes = new JsonObject();
-        attributes.addProperty("id", "user-123");
+        attributes.addProperty("id", "user-1");
         attributes.addProperty("country", "US");
         return attributes;
     }
 
-    @Test
-    void flushesToTrackEndpointWithClientKeyQuery() throws Exception {
-        server.enqueue(200);
-
-        GrowthBookTrackingPlugin plugin = GrowthBookTrackingPlugin.of(configBuilder()
-                .batchSize(2)
-                .batchTimeout(Duration.ofSeconds(30))
-                .build());
-        plugin.init();
-
-        plugin.onExperimentViewed(experiment("exp1"), experimentResult(0));
-        plugin.onExperimentViewed(experiment("exp2"), experimentResult(1));
-
-        RecordedRequest req = server.takeRequest(5, TimeUnit.SECONDS);
-        assertNotNull(req, "should have flushed on batch size threshold");
-        assertEquals("POST", req.getMethod());
-        assertEquals("/track", req.getPath());
-        assertEquals("client_key=sdk-test", req.getQuery());
-        assertTrue(req.getHeader("User-Agent").startsWith("growthbook-java-sdk/"));
-        assertEquals("application/json; charset=utf-8", req.getHeader("Content-Type"));
-
-        JsonArray events = events(req);
-        assertEquals(2, events.size());
-        JsonObject first = events.get(0).getAsJsonObject();
-        assertEquals("Experiment Viewed", first.get("event_name").getAsString());
-        assertEquals("exp1", first.getAsJsonObject("properties").get("experimentId").getAsString());
-
-        plugin.close();
+    private static JsonArray events(LoggedRequest request) {
+        return JsonParser.parseString(request.getBodyAsString()).getAsJsonArray();
     }
 
-    @Test
-    void experimentEventMatchesTrackWireContract() throws Exception {
-        server.enqueue(200);
-
-        GrowthBookTrackingPlugin plugin = GrowthBookTrackingPlugin.of(configBuilder().batchSize(1).build());
-        plugin.init();
-        plugin.onExperimentViewed(experiment("exp1"), experimentResult(1, "treatment"), attributes());
-
-        RecordedRequest req = server.takeRequest(5, TimeUnit.SECONDS);
-        assertNotNull(req);
-        JsonObject event = firstEvent(req);
-
-        assertEquals("Experiment Viewed", event.get("event_name").getAsString());
-        assertEquals("java", event.get("sdk_language").getAsString());
-        assertFalse(event.get("sdk_version").getAsString().isEmpty());
-
-        JsonObject properties = event.getAsJsonObject("properties");
-        assertEquals("exp1", properties.get("experimentId").getAsString());
-        assertEquals("treatment", properties.get("variationId").getAsString());
-        assertEquals("id", properties.get("hashAttribute").getAsString());
-        assertEquals("u-1", properties.get("hashValue").getAsString());
-
-        JsonObject attributes = event.getAsJsonObject("attributes");
-        assertEquals("user-123", attributes.get("id").getAsString());
-        assertEquals("US", attributes.get("country").getAsString());
-
-        plugin.close();
-    }
-
-    @Test
-    void featureEventMatchesTrackWireContract() throws Exception {
-        server.enqueue(200);
-
-        GrowthBookTrackingPlugin plugin = GrowthBookTrackingPlugin.of(configBuilder().batchSize(1).build());
-        plugin.init();
-        FeatureResult<String> result = FeatureResult.<String>builder()
-                .source(FeatureResultSource.EXPERIMENT)
-                .value("x")
-                .ruleId("rule-7")
-                .experimentResult(experimentResult(1, "treatment"))
-                .build();
-        plugin.onFeatureEvaluated("flag1", result, attributes());
-
-        RecordedRequest req = server.takeRequest(5, TimeUnit.SECONDS);
-        assertNotNull(req);
-        JsonObject event = firstEvent(req);
-
-        assertEquals("Feature Evaluated", event.get("event_name").getAsString());
-        JsonObject properties = event.getAsJsonObject("properties");
-        assertEquals("flag1", properties.get("feature").getAsString());
-        assertEquals("x", properties.get("value").getAsString());
-        assertEquals("experiment", properties.get("source").getAsString());
-        assertEquals("rule-7", properties.get("ruleId").getAsString());
-        assertEquals("treatment", properties.get("variationId").getAsString());
-
-        assertEquals("user-123", event.getAsJsonObject("attributes").get("id").getAsString());
-
-        plugin.close();
-    }
-
-    @Test
-    void featureEventWithoutExperimentOmitsVariationId() throws Exception {
-        server.enqueue(200);
-
-        GrowthBookTrackingPlugin plugin = GrowthBookTrackingPlugin.of(configBuilder().batchSize(1).build());
-        plugin.init();
-        plugin.onFeatureEvaluated("flag1",
-                FeatureResult.<String>builder().source(FeatureResultSource.DEFAULT_VALUE).value("x").build());
-
-        RecordedRequest req = server.takeRequest(5, TimeUnit.SECONDS);
-        assertNotNull(req);
-        JsonObject properties = firstEvent(req).getAsJsonObject("properties");
-        assertEquals("flag1", properties.get("feature").getAsString());
-        assertFalse(properties.has("variationId"),
-                "a non-experiment feature evaluation must not carry a variationId");
-
-        plugin.close();
-    }
-
-    @Test
-    void bufferedEventSnapshotsAttributesAtEvaluation() throws Exception {
-        server.enqueue(200);
-
-        GrowthBookTrackingPlugin plugin = GrowthBookTrackingPlugin.of(configBuilder()
-                .batchSize(100)
-                .batchTimeout(Duration.ofSeconds(60))
-                .build());
-        plugin.init();
-
-        JsonObject original = new JsonObject();
-        original.addProperty("country", "US");
-        JsonObject account = new JsonObject();
-        account.addProperty("plan", "gold");
-        original.add("account", account);
-
-        plugin.onExperimentViewed(experiment("exp1"), experimentResult(0), original);
-
-        original.addProperty("country", "CA");
-        account.addProperty("plan", "platinum");
-
-        plugin.close();
-
-        RecordedRequest req = server.takeRequest(5, TimeUnit.SECONDS);
-        assertNotNull(req);
-        JsonObject attributes = firstEvent(req).getAsJsonObject("attributes");
-        assertEquals("US", attributes.get("country").getAsString());
-        assertEquals("gold", attributes.getAsJsonObject("account").get("plan").getAsString());
-    }
-
-    @Test
-    void omitsAttributesWhenNoneProvided() throws Exception {
-        server.enqueue(200);
-
-        GrowthBookTrackingPlugin plugin = GrowthBookTrackingPlugin.of(configBuilder().batchSize(1).build());
-        plugin.init();
-        plugin.onExperimentViewed(experiment("exp1"), experimentResult(0));
-
-        RecordedRequest req = server.takeRequest(5, TimeUnit.SECONDS);
-        assertNotNull(req);
-        JsonObject event = firstEvent(req);
-        assertFalse(event.has("attributes"), "attributes must be omitted when none are provided");
-
-        plugin.close();
-    }
-
-    @Test
-    void flushesWhenTimerFires() throws Exception {
-        server.enqueue(200);
-
-        GrowthBookTrackingPlugin plugin = GrowthBookTrackingPlugin.of(configBuilder()
-                .batchSize(100)
-                .batchTimeout(Duration.ofMillis(200))
-                .build());
-        plugin.init();
-
-        plugin.onFeatureEvaluated("flag1", featureResult(FeatureResultSource.DEFAULT_VALUE));
-
-        RecordedRequest req = server.takeRequest(3, TimeUnit.SECONDS);
-        assertNotNull(req, "timer-based flush should fire within 3s");
-        JsonArray events = events(req);
-        assertEquals(1, events.size());
-        JsonObject event = events.get(0).getAsJsonObject();
-        assertEquals("Feature Evaluated", event.get("event_name").getAsString());
-        assertEquals("flag1", event.getAsJsonObject("properties").get("feature").getAsString());
-
-        plugin.close();
-    }
-
-    @Test
-    void closeFlushesRemainingEvents() throws Exception {
-        server.enqueue(200);
-
-        GrowthBookTrackingPlugin plugin = GrowthBookTrackingPlugin.of(configBuilder()
-                .batchSize(100)
-                .batchTimeout(Duration.ofSeconds(60))
-                .build());
-        plugin.init();
-
-        plugin.onExperimentViewed(experiment("exp"), experimentResult(0));
-        plugin.close();
-
-        RecordedRequest req = server.takeRequest(5, TimeUnit.SECONDS);
-        assertNotNull(req, "close() should flush the final batch synchronously");
-        assertEquals(1, events(req).size());
-    }
-
-    @Test
-    void closeWaitsForBatchesOnCallerSuppliedExecutor() throws Exception {
-        server.enqueue(200);
-
-        // Executor that starts the task only after a delay. If close() did NOT wait for
-        // the in-flight batch, the POST would not have happened yet when close() returns.
-        ScheduledExecutorService delayer = Executors.newSingleThreadScheduledExecutor();
-        Executor delayedExecutor = task -> delayer.schedule(task, 300, TimeUnit.MILLISECONDS);
-        try {
-            GrowthBookTrackingPlugin plugin = GrowthBookTrackingPlugin.of(configBuilder()
-                    .batchSize(1)
-                    .flushExecutor(delayedExecutor)
-                    .build());
-            plugin.init();
-
-            // batchSize=1 => this submits a batch to the caller-supplied executor immediately.
-            plugin.onExperimentViewed(experiment("exp"), experimentResult(0));
-
-            // Must block until the delayed batch actually runs and POSTs.
-            plugin.close();
-
-            assertEquals(1, server.getRequestCount(),
-                    "close() must wait for the in-flight batch on a caller-supplied executor before returning");
-        } finally {
-            delayer.shutdownNow();
-        }
-    }
-
-    @Test
-    void closeDoesNotLoseTimerTriggeredBatch() throws Exception {
-        server.enqueue(200);
-
-        // Latches to pin the exact interleaving: the timer thread drains + reserves the batch,
-        // then parks at the drain-to-submit boundary; close() runs; only then does the timer submit.
-        CountDownLatch reachedHandoff = new CountDownLatch(1);
-        CountDownLatch releaseHandoff = new CountDownLatch(1);
-
-        GrowthBookTrackingPlugin plugin = GrowthBookTrackingPlugin.of(configBuilder()
-                .batchSize(100)                       // large: rely on the timer, not eager flush
-                .batchTimeout(Duration.ofMillis(50))  // timer fires quickly
-                .build());
-        // Park the timer between reserving the batch and submitting it.
-        plugin.timerFlushHandoffHookForTest = () -> {
-            reachedHandoff.countDown();
-            awaitUninterruptibly(releaseHandoff);
-        };
-        plugin.init();
-
-        plugin.onFeatureEvaluated("flag", featureResult(FeatureResultSource.DEFAULT_VALUE));
-
-        // Wait until the timer has drained the buffer and is parked before submit.
-        assertTrue(reachedHandoff.await(5, TimeUnit.SECONDS), "timer flush should have started");
-
-        // Run close() concurrently while the timer is parked at the boundary.
-        Thread closer = new Thread(plugin::close, "close-thread");
-        closer.start();
-
-        // A correct close() must wait for the reserved batch, so it stays alive here; the buggy
-        // version (reserve after releasing the lock) would see nothing in flight and finish now.
-        closer.join(500);
-        boolean closedBeforeSubmit = !closer.isAlive();
-
-        // Let the timer submit its batch, then let close() finish.
-        releaseHandoff.countDown();
-        closer.join(5000);
-
-        assertFalse(closedBeforeSubmit,
-                "close() returned before the reserved timer batch was submitted — events would be lost");
-        assertEquals(1, server.getRequestCount(),
-                "the timer-triggered batch must be flushed, not dropped, across close()");
-    }
-
-    private static void awaitUninterruptibly(CountDownLatch latch) {
-        boolean done = false;
-        while (!done) {
-            try {
-                latch.await();
-                done = true;
-            } catch (InterruptedException e) {
-                // close()'s scheduler.shutdownNow() interrupts this parked timer thread;
-                // keep waiting for the test to release it so the interleaving stays fixed.
-            }
-        }
-    }
-
-    @Test
-    void closeTimeoutBoundsSynchronousFinalFlush() throws Exception {
-        // Server holds the response far longer than closeTimeout; the derived call timeout must cap it.
-        server.enqueue(200, 20_000);
-
-        GrowthBookTrackingPlugin plugin = GrowthBookTrackingPlugin.of(configBuilder()
-                .batchSize(100)                       // buffer the event; it flushes at close()
-                .batchTimeout(Duration.ofSeconds(60))
-                .closeTimeout(Duration.ofMillis(300))
-                .build());
-        plugin.init();
-        plugin.onExperimentViewed(experiment("exp"), experimentResult(0));
-
-        long start = System.currentTimeMillis();
-        plugin.close(); // the final POST hangs; callTimeout(closeTimeout) must abort it
-        long elapsed = System.currentTimeMillis() - start;
-
-        assertTrue(elapsed < 5000,
-                "close() must not block on the hung final POST beyond closeTimeout (took " + elapsed + "ms)");
-    }
-
-    @Test
-    void sharingOnePluginAcrossInstancesIsUnsupported() throws Exception {
-        server.enqueue(200);
-
-        // The same tracking-plugin instance in two SDK instances shares one lifecycle:
-        // the first instance's shutdown closes the plugin for the second.
-        GrowthBookTrackingPlugin plugin = GrowthBookTrackingPlugin.of(configBuilder().batchSize(1).build());
-        GrowthBook a = new GrowthBook(GBContext.builder()
-                .featuresJson("{\"flag\":{\"defaultValue\":true}}")
-                .attributesJson("{\"id\":\"u\"}")
-                .plugins(Collections.singletonList(plugin))
-                .build());
-        GrowthBook b = new GrowthBook(GBContext.builder()
-                .featuresJson("{\"flag\":{\"defaultValue\":true}}")
-                .attributesJson("{\"id\":\"u\"}")
-                .plugins(Collections.singletonList(plugin))
-                .build());
-
-        a.evalFeature("flag", Boolean.class);
-        assertNotNull(server.takeRequest(5, TimeUnit.SECONDS), "first instance should deliver its event");
-
-        a.destroy(); // closes the shared plugin
-
-        b.evalFeature("flag", Boolean.class);
-        assertNull(server.takeRequest(500, TimeUnit.MILLISECONDS),
-                "second instance shares the now-closed plugin, so its event is not delivered");
-
-        b.destroy();
-    }
-
-    @Test
-    void forwardsUserAttributesFromEvaluation() throws Exception {
-        server.enqueue(200);
-
-        GrowthBookTrackingPlugin plugin = GrowthBookTrackingPlugin.of(configBuilder().batchSize(1).build());
-        GrowthBook gb = new GrowthBook(GBContext.builder()
-                .featuresJson("{\"flag\":{\"defaultValue\":true}}")
-                .attributesJson("{\"id\":\"user-7\",\"country\":\"US\"}")
-                .plugins(Collections.singletonList(plugin))
-                .build());
-
-        gb.evalFeature("flag", Boolean.class);
-
-        RecordedRequest req = server.takeRequest(5, TimeUnit.SECONDS);
-        assertNotNull(req, "evaluation should deliver a feature event");
-        JsonObject event = firstEvent(req);
-        JsonObject attributes = event.getAsJsonObject("attributes");
-        assertNotNull(attributes, "the evaluated user's attributes must reach the event");
-        assertEquals("user-7", attributes.get("id").getAsString());
-        assertEquals("US", attributes.get("country").getAsString());
-
-        gb.destroy();
-    }
-
-    @Test
-    void closeIsIdempotent() throws Exception {
-        GrowthBookTrackingPlugin plugin = GrowthBookTrackingPlugin.of(configBuilder().build());
-        plugin.init();
-        plugin.close();
-        plugin.close();
-    }
-
-    @Test
-    void eventsBeforeInitAreNoOps() throws Exception {
-        GrowthBookTrackingPlugin plugin = GrowthBookTrackingPlugin.of(configBuilder().batchSize(1).build());
-
-        // init() has not been called: no resources, event methods must no-op.
-        plugin.onExperimentViewed(experiment("exp"), experimentResult(0));
-        plugin.onFeatureEvaluated("flag", featureResult(FeatureResultSource.DEFAULT_VALUE));
-        plugin.close();
-
-        assertNull(server.takeRequest(500, TimeUnit.MILLISECONDS),
-                "uninitialized plugin must not hit the network");
-    }
-
-    @Test
-    void noClientKeyDisablesPlugin() throws Exception {
-        GrowthBookTrackingPlugin plugin = GrowthBookTrackingPlugin.of(TrackingPluginConfig.builder()
-                .ingestorHost(server.baseUrl())
-                .batchSize(1)
-                .build());
-        plugin.init();
-
-        plugin.onExperimentViewed(experiment("exp"), experimentResult(0));
-        plugin.onFeatureEvaluated("flag", featureResult(FeatureResultSource.DEFAULT_VALUE));
-        plugin.close();
-
-        assertNull(server.takeRequest(500, TimeUnit.MILLISECONDS),
-                "disabled plugin must not hit the network");
-    }
-
-    @Test
-    void httpFailureDoesNotThrow() throws Exception {
-        server.enqueue(500);
-
-        GrowthBookTrackingPlugin plugin = GrowthBookTrackingPlugin.of(configBuilder()
-                .batchSize(1)
-                .build());
-        plugin.init();
-
-        // Must not throw despite the 500.
-        plugin.onExperimentViewed(experiment("exp"), experimentResult(0));
-
-        RecordedRequest req = server.takeRequest(5, TimeUnit.SECONDS);
-        assertNotNull(req);
-        plugin.close();
-    }
-
-    @Test
-    void ingestorHostTrailingSlashStripped() {
-        TrackingPluginConfig cfg = TrackingPluginConfig.builder()
-                .ingestorHost("https://example.test/")
-                .clientKey("k")
-                .build();
-        assertEquals("https://example.test", cfg.resolvedIngestorHost());
-        assertFalse(cfg.resolvedIngestorHost().endsWith("/"));
-    }
-
-    @Test
-    void batchSizeIsClampedToMax() {
-        TrackingPluginConfig cfg = TrackingPluginConfig.builder()
-                .clientKey("k")
-                .batchSize(Integer.MAX_VALUE)
-                .build();
-        assertEquals(TrackingPluginConfig.MAX_BATCH_SIZE, cfg.resolvedBatchSize());
-    }
-
-    @Test
-    void userAgentDoesNotUseUnknownVersionFallback() throws Exception {
-        server.enqueue(200);
-
-        GrowthBookTrackingPlugin plugin = GrowthBookTrackingPlugin.of(configBuilder()
-                .batchSize(1)
-                .build());
-        plugin.init();
-        plugin.onFeatureEvaluated("flag", featureResult(FeatureResultSource.DEFAULT_VALUE));
-
-        RecordedRequest req = server.takeRequest(5, TimeUnit.SECONDS);
-        assertNotNull(req);
-        assertFalse(req.getHeader("User-Agent").endsWith("/unknown"));
-        assertFalse(SdkMetadata.VERSION.isEmpty());
-        assertFalse("unknown".equals(SdkMetadata.VERSION));
-        plugin.close();
-    }
-
-    private static JsonArray events(RecordedRequest req) {
-        return JsonParser.parseString(req.bodyUtf8()).getAsJsonArray();
-    }
-
-    private static JsonObject firstEvent(RecordedRequest req) {
-        return events(req).get(0).getAsJsonObject();
+    private static JsonObject firstEvent(LoggedRequest request) {
+        return events(request).get(0).getAsJsonObject();
     }
 }

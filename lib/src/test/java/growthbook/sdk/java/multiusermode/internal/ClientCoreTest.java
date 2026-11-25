@@ -1,5 +1,6 @@
 package growthbook.sdk.java.multiusermode.internal;
 
+import growthbook.sdk.java.callback.ExperimentRunCallback;
 import growthbook.sdk.java.model.Experiment;
 import growthbook.sdk.java.model.ExperimentResult;
 import growthbook.sdk.java.multiusermode.configurations.EvaluationContext;
@@ -57,24 +58,19 @@ class ClientCoreTest {
     void notifiesSubscribersOncePerAssignment() {
         // Given
         ClientCore core = new ClientCore(null);
-        List<Integer> runs = new ArrayList<>();
-        core.subscribe(new growthbook.sdk.java.callback.ExperimentRunCallback() {
-            @Override
-            public <T> void onRun(Experiment<T> experiment, ExperimentResult<T> result) {
-                runs.add(result.getVariationId());
-            }
-        });
+        RecordingRunCallback callback = new RecordingRunCallback();
+        core.subscribe(callback);
         Experiment<String> experiment = Experiment.<String>builder()
                 .key("exp-1")
                 .variations(new ArrayList<>(Arrays.asList("a", "b")))
                 .build();
 
         // When
-        core.run(experiment, core.scope(context()));
+        ExperimentResult<String> first = core.run(experiment, core.scope(context()));
         core.run(experiment, core.scope(context()));
 
         // Then
-        assertEquals(1, runs.size());
+        assertEquals(Collections.singletonList(first.getVariationId()), callback.runs);
     }
 
     @Test
@@ -120,6 +116,15 @@ class ClientCoreTest {
         @Override
         public void close() {
             calls.add("close");
+        }
+    }
+
+    private static final class RecordingRunCallback implements ExperimentRunCallback {
+        private final List<Integer> runs = new ArrayList<>();
+
+        @Override
+        public <T> void onRun(Experiment<T> experiment, ExperimentResult<T> result) {
+            runs.add(result.getVariationId());
         }
     }
 }

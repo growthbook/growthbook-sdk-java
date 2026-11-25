@@ -1,6 +1,7 @@
 package growthbook.sdk.java.repository;
 
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
@@ -11,22 +12,30 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class LruETagCacheTest {
+
+    private static final int MAX_SIZE = 3;
+
     private LruETagCache cache;
-    private final int MAX_SIZE = 3;
 
     @BeforeEach
-    public void setup() {
+    void setUp() {
         cache = new LruETagCache(MAX_SIZE);
     }
 
     @Test
-    void testBasicPutAndGet() {
+    @DisplayName("Returns the stored ETag per URL and null for an unknown URL")
+    void returnsStoredETagPerUrl() {
+        // Given
         cache.put("url1", "etag1");
         cache.put("url2", "etag2");
 
+        // When / Then
         assertEquals("etag1", cache.get("url1"));
         assertEquals("etag2", cache.get("url2"));
         assertNull(cache.get("url3"));
@@ -34,143 +43,47 @@ class LruETagCacheTest {
     }
 
     @Test
-    void testLRUEviction() {
+    @DisplayName("Reading an unknown URL does not change the size")
+    void readingUnknownUrlDoesNotChangeSize() {
+        // Given
         cache.put("url1", "etag1");
-        cache.put("url2", "etag2");
-        cache.put("url3", "etag3");
 
-        assertEquals(MAX_SIZE, cache.size());
+        // When
+        String missing = cache.get("missing");
 
-        cache.put("url4", "etag4");
-
-        assertEquals(MAX_SIZE, cache.size(), "Cache size should not exceed MAX_SIZE");
-        assertNull(cache.get("url1"), "url1 should be evicted (LRU)");
-        assertNotNull(cache.get("url2"));
-        assertNotNull(cache.get("url3"));
-        assertNotNull(cache.get("url4"));
+        // Then
+        assertNull(missing);
+        assertEquals(1, cache.size());
     }
 
     @Test
-    void testAccessUpdatesLRUPosition() {
+    @DisplayName("Evicts the least recently inserted URL when the max size is exceeded")
+    void evictsLeastRecentlyInsertedUrlBeyondMaxSize() {
+        // Given
         cache.put("url1", "etag1");
         cache.put("url2", "etag2");
         cache.put("url3", "etag3");
 
-        cache.get("url1");
-
+        // When
         cache.put("url4", "etag4");
 
+        // Then
         assertEquals(MAX_SIZE, cache.size());
-        assertEquals("etag1", cache.get("url1"), "url1 should still be present (MRU)");
-        assertNull(cache.get("url2"), "url2 should be evicted (now LRU)");
+        assertNull(cache.get("url1"));
+        assertEquals("etag2", cache.get("url2"));
         assertEquals("etag3", cache.get("url3"));
         assertEquals("etag4", cache.get("url4"));
     }
 
     @Test
-    void testUpdateExistingEntry() {
-        cache.put("url1", "etag1");
-        cache.put("url2", "etag2");
-        assertEquals(2, cache.size());
-
-        cache.put("url1", "etag1-updated");
-
-        assertEquals(2, cache.size());
-        assertEquals("etag1-updated", cache.get("url1"));
-    }
-
-    @Test
-    void testPutNullRemovesEntry() {
-        cache.put("url1", "etag1");
-        assertNotNull(cache.get("url1"));
-
-        cache.put("url1", null);
-
-        assertNull(cache.get("url1"));
-        assertEquals(0, cache.size());
-    }
-
-    @Test
-    void testRemoveOperation() {
-        cache.put("url1", "etag1");
-        cache.put("url2", "etag2");
-
-        cache.remove("url1");
-
-        assertNull(cache.get("url1"));
-        assertEquals(1, cache.size());
-    }
-
-    @Test
-    void testClearOperation() {
-        cache.put("url1", "etag1");
-        cache.put("url2", "etag2");
-
-        cache.clear();
-
-        assertEquals(0, cache.size());
-        assertNull(cache.get("url1"));
-    }
-
-    @Test
-    void testThreadSafetyConcurrentAccess() throws InterruptedException {
-        int numThreads = 10;
-        int operationsPerThread = 100;
-        int largeMaxSize = 50;
-
-        LruETagCache concurrentCache = new LruETagCache(largeMaxSize);
-        ExecutorService executor = Executors.newFixedThreadPool(numThreads);
-        CountDownLatch latch = new CountDownLatch(numThreads * operationsPerThread);
-
-        for (int i = 0; i < numThreads; i++) {
-            final int threadId = i;
-            executor.submit(() -> {
-                for (int j = 0; j < operationsPerThread; j++) {
-                    String key = "url" + (j % largeMaxSize);
-                    String value = "etag-" + threadId + "-" + j;
-
-                    try {
-                        concurrentCache.put(key, value);
-                        concurrentCache.get(key);
-
-                        if (j % 10 == 0) {
-                            concurrentCache.remove("url" + (j % largeMaxSize));
-                        }
-                    } catch (Exception e) {
-                        fail("Exception thrown during concurrent access: " + e.getMessage());
-                    } finally {
-                        latch.countDown();
-                    }
-                }
-            });
-        }
-
-        assertTrue(latch.await(5, TimeUnit.SECONDS), "Concurrent operations did not finish in time.");
-        executor.shutdownNow();
-
-        assertTrue(concurrentCache.size() <= largeMaxSize, "Cache size integrity compromised.");
-    }
-
-    @Test
-    void testUpdateExistingEntryRefreshesLRUPosition() {
-        cache.put("url1", "etag1");
-        cache.put("url2", "etag2");
-        cache.put("url3", "etag3");
-
-        cache.put("url1", "etag1-updated");
-        cache.put("url4", "etag4");
-
-        assertEquals(MAX_SIZE, cache.size());
-        assertEquals("etag1-updated", cache.get("url1"));
-        assertNull(cache.get("url2"), "url2 should be evicted (now LRU)");
-    }
-
-    @Test
-    void testEvictsInLeastRecentlyUsedOrderBeyondMaxSize() {
+    @DisplayName("Evicts in least recently used order when many URLs exceed the max size")
+    void evictsInLeastRecentlyUsedOrderWhenManyUrlsExceedMaxSize() {
+        // Given
         for (int i = 1; i <= 6; i++) {
             cache.put("url" + i, "etag" + i);
         }
 
+        // When / Then
         assertEquals(MAX_SIZE, cache.size());
         assertNull(cache.get("url1"));
         assertNull(cache.get("url2"));
@@ -181,25 +94,100 @@ class LruETagCacheTest {
     }
 
     @Test
-    void testPutNullForUnknownUrlIsNoOp() {
+    @DisplayName("Reading a URL makes it most recently used so it survives the next eviction")
+    void readingUrlMakesItMostRecentlyUsed() {
+        // Given
+        cache.put("url1", "etag1");
+        cache.put("url2", "etag2");
+        cache.put("url3", "etag3");
+        cache.get("url1");
+
+        // When
+        cache.put("url4", "etag4");
+
+        // Then
+        assertEquals(MAX_SIZE, cache.size());
+        assertEquals("etag1", cache.get("url1"));
+        assertNull(cache.get("url2"));
+        assertEquals("etag3", cache.get("url3"));
+        assertEquals("etag4", cache.get("url4"));
+    }
+
+    @Test
+    @DisplayName("Overwriting a URL replaces its ETag without growing the cache")
+    void overwritingUrlReplacesETagWithoutGrowing() {
+        // Given
+        cache.put("url1", "etag1");
+        cache.put("url2", "etag2");
+
+        // When
+        cache.put("url1", "etag1-updated");
+
+        // Then
+        assertEquals(2, cache.size());
+        assertEquals("etag1-updated", cache.get("url1"));
+    }
+
+    @Test
+    @DisplayName("Overwriting a URL makes it most recently used so it survives the next eviction")
+    void overwritingUrlMakesItMostRecentlyUsed() {
+        // Given
+        cache.put("url1", "etag1");
+        cache.put("url2", "etag2");
+        cache.put("url3", "etag3");
+        cache.put("url1", "etag1-updated");
+
+        // When
+        cache.put("url4", "etag4");
+
+        // Then
+        assertEquals(MAX_SIZE, cache.size());
+        assertEquals("etag1-updated", cache.get("url1"));
+        assertNull(cache.get("url2"));
+    }
+
+    @Test
+    @DisplayName("Putting a null ETag removes the URL")
+    void puttingNullETagRemovesUrl() {
+        // Given
         cache.put("url1", "etag1");
 
+        // When
+        cache.put("url1", null);
+
+        // Then
+        assertNull(cache.get("url1"));
+        assertEquals(0, cache.size());
+    }
+
+    @Test
+    @DisplayName("Putting a null ETag for an unknown URL leaves the cache unchanged")
+    void puttingNullETagForUnknownUrlLeavesCacheUnchanged() {
+        // Given
+        cache.put("url1", "etag1");
+
+        // When
         cache.put("url2", null);
 
+        // Then
         assertEquals(1, cache.size());
         assertEquals("etag1", cache.get("url1"));
         assertNull(cache.get("url2"));
     }
 
     @Test
-    void testPutNullFreesSlotWithoutEvictingOthers() {
+    @DisplayName("Putting a null ETag frees a slot without evicting other URLs")
+    void puttingNullETagFreesSlotWithoutEvictingOthers() {
+        // Given
         cache.put("url1", "etag1");
         cache.put("url2", "etag2");
         cache.put("url3", "etag3");
-
         cache.put("url2", null);
+
+        // When
         cache.put("url4", "etag4");
 
+        // Then
         assertEquals(MAX_SIZE, cache.size());
         assertEquals("etag1", cache.get("url1"));
         assertEquals("etag3", cache.get("url3"));
@@ -207,26 +195,93 @@ class LruETagCacheTest {
     }
 
     @Test
-    void testGetOfUnknownUrlDoesNotChangeSize() {
+    @DisplayName("Removing a URL drops only that URL")
+    void removingUrlDropsOnlyThatUrl() {
+        // Given
         cache.put("url1", "etag1");
+        cache.put("url2", "etag2");
 
-        assertNull(cache.get("missing"));
+        // When
+        cache.remove("url1");
 
+        // Then
+        assertNull(cache.get("url1"));
+        assertEquals("etag2", cache.get("url2"));
         assertEquals(1, cache.size());
     }
 
     @Test
-    void testConcurrentPutAndGetReturnOnlyWrittenValues() throws Exception {
-        int numThreads = 8;
+    @DisplayName("Clearing drops every URL")
+    void clearingDropsEveryUrl() {
+        // Given
+        cache.put("url1", "etag1");
+        cache.put("url2", "etag2");
+
+        // When
+        cache.clear();
+
+        // Then
+        assertEquals(0, cache.size());
+        assertNull(cache.get("url1"));
+        assertNull(cache.get("url2"));
+    }
+
+    @Test
+    @DisplayName("Concurrent puts, reads and removes never exceed the max size or throw")
+    void concurrentPutsReadsAndRemovesStayWithinMaxSize() throws Exception {
+        // Given
+        int threads = 10;
+        int operationsPerThread = 100;
+        int maxSize = 50;
+        LruETagCache concurrentCache = new LruETagCache(maxSize);
+        ExecutorService executor = Executors.newFixedThreadPool(threads);
+        CountDownLatch start = new CountDownLatch(1);
+        List<Future<?>> results = new ArrayList<>();
+
+        try {
+            // When
+            for (int i = 0; i < threads; i++) {
+                final int threadId = i;
+                results.add(executor.submit(() -> {
+                    start.await();
+                    for (int j = 0; j < operationsPerThread; j++) {
+                        String key = "url" + (j % maxSize);
+                        concurrentCache.put(key, "etag-" + threadId + "-" + j);
+                        concurrentCache.get(key);
+                        if (j % 10 == 0) {
+                            concurrentCache.remove(key);
+                        }
+                    }
+                    return null;
+                }));
+            }
+            start.countDown();
+            for (Future<?> result : results) {
+                result.get(10, TimeUnit.SECONDS);
+            }
+
+            // Then
+            assertTrue(concurrentCache.size() <= maxSize);
+        } finally {
+            executor.shutdownNow();
+        }
+    }
+
+    @Test
+    @DisplayName("Concurrent readers only ever see an ETag that was written for that URL")
+    void concurrentReadersSeeOnlyWrittenETags() throws Exception {
+        // Given
+        int threads = 8;
         int operationsPerThread = 500;
         int maxSize = 16;
         LruETagCache concurrentCache = new LruETagCache(maxSize);
-        ExecutorService executor = Executors.newFixedThreadPool(numThreads);
+        ExecutorService executor = Executors.newFixedThreadPool(threads);
         CountDownLatch start = new CountDownLatch(1);
         List<Future<Integer>> results = new ArrayList<>();
 
         try {
-            for (int i = 0; i < numThreads; i++) {
+            // When
+            for (int i = 0; i < threads; i++) {
                 final int threadId = i;
                 results.add(executor.submit(() -> {
                     start.await();
@@ -242,9 +297,9 @@ class LruETagCacheTest {
                     return mismatches;
                 }));
             }
-
             start.countDown();
 
+            // Then
             for (Future<Integer> result : results) {
                 assertEquals(0, result.get(10, TimeUnit.SECONDS));
             }
@@ -255,16 +310,22 @@ class LruETagCacheTest {
     }
 
     @Test
-    void testNegativeMaxSizeIsRejected() {
+    @DisplayName("Rejects a negative max size")
+    void rejectsNegativeMaxSize() {
+        // When / Then
         assertThrows(IllegalArgumentException.class, () -> new LruETagCache(-1));
     }
 
     @Test
-    void testZeroMaxSizeKeepsNothing() {
+    @DisplayName("A zero max size keeps no ETag")
+    void zeroMaxSizeKeepsNothing() {
+        // Given
         LruETagCache empty = new LruETagCache(0);
 
+        // When
         empty.put("url1", "etag1");
 
+        // Then
         assertEquals(0, empty.size());
         assertNull(empty.get("url1"));
     }

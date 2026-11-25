@@ -1,8 +1,8 @@
 package growthbook.sdk.java.evaluators;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotSame;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
@@ -15,6 +15,8 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestFactory;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -23,7 +25,7 @@ import java.util.Map;
 class PayloadReducerTest {
 
     @TestFactory
-    @DisplayName("Verify: pruneCondition matches the shared spec cases")
+    @DisplayName("PruneCondition matches the shared spec cases")
     List<DynamicTest> pruneConditionSpecCases() {
         List<DynamicTest> tests = new ArrayList<>();
         for (JsonElement element : suite("pruneCondition")) {
@@ -45,7 +47,7 @@ class PayloadReducerTest {
     }
 
     @TestFactory
-    @DisplayName("Verify: reducePayload matches the shared spec cases")
+    @DisplayName("ReducePayload matches the shared spec cases")
     List<DynamicTest> reducePayloadSpecCases() {
         List<DynamicTest> tests = new ArrayList<>();
         for (JsonElement element : suite("reducePayload")) {
@@ -63,14 +65,14 @@ class PayloadReducerTest {
 
                 // Then
                 assertEquals(testCase.get(2), reduced);
-                assertEquals(before, payload.toString(), "the input payload is not modified");
+                assertEquals(before, payload.toString());
             }));
         }
         return tests;
     }
 
     @Test
-    @DisplayName("Verify: a malformed condition is returned as written")
+    @DisplayName("A malformed condition is returned as written")
     void malformedConditionIsReturnedAsWritten() {
         // Given
         JsonObject condition = parse("{\"$not\": null}");
@@ -83,7 +85,7 @@ class PayloadReducerTest {
     }
 
     @Test
-    @DisplayName("Verify: a malformed condition group is kept as written instead of failing the reduction")
+    @DisplayName("A malformed condition group is kept as written instead of failing the reduction")
     void malformedSavedGroupIsKeptAsWritten() {
         // Given
         JsonObject payload = parse("{\"features\": {\"f\": {\"defaultValue\": false, \"rules\": [{\"condition\": {\"$savedGroup\": {\"id\": \"g\"}}, \"force\": true}]}},"
@@ -98,7 +100,7 @@ class PayloadReducerTest {
     }
 
     @Test
-    @DisplayName("Verify: many condition groups sharing one large list group are all kept")
+    @DisplayName("Many condition groups sharing one large list group are all kept")
     void manyGroupsSharingALargeList() {
         // Given
         JsonArray values = new JsonArray();
@@ -134,7 +136,7 @@ class PayloadReducerTest {
     }
 
     @Test
-    @DisplayName("Verify: condition groups on a cycle, including one that references itself, are kept as written")
+    @DisplayName("Condition groups on a cycle, including one that references itself, are kept as written")
     void groupsOnCyclesAreKeptAsWritten() {
         // Given
         JsonObject payload = parse("{\"features\": {\"f\": {\"defaultValue\": false, \"rules\": ["
@@ -159,9 +161,9 @@ class PayloadReducerTest {
     }
 
     @Test
-    @DisplayName("Verify: a list group's values never reference other groups")
+    @DisplayName("A list group's values never reference other groups")
     void listValuesAreNotGroupReferences() {
-        // Given: list values that happen to name groups, including the group that uses the list
+        // Given
         JsonObject payload = parse("{\"features\": {\"f\": {\"defaultValue\": false, \"rules\": ["
                 + "{\"condition\": {\"$savedGroup\": {\"id\": \"g\"}}, \"force\": true},"
                 + "{\"condition\": {\"items\": {\"$elemMatch\": {\"$inGroup\": \"elem\"}}}, \"force\": true},"
@@ -178,7 +180,7 @@ class PayloadReducerTest {
         // When
         JsonObject reduced = PayloadReducer.reducePayload(payload, parse("{\"y\": true}"), null);
 
-        // Then: g isn't on a cycle, so it's reduced, and groups only named in list values go
+        // Then
         JsonObject groups = payload.getAsJsonObject("savedGroups");
         JsonObject expected = new JsonObject();
         expected.add("g", parse("{\"type\": \"condition\", \"condition\": {\"$or\": [{\"id\": {\"$inGroup\": \"list\"}}, {\"x\": true}]}}"));
@@ -189,7 +191,7 @@ class PayloadReducerTest {
     }
 
     @Test
-    @DisplayName("Verify: a payload without saved groups reduces to an empty savedGroups object")
+    @DisplayName("A payload without saved groups reduces to an empty savedGroups object")
     void payloadWithoutSavedGroups() {
         // Given
         JsonObject payload = parse("{\"features\": {\"g\": {\"defaultValue\": \"g\", \"rules\": [{\"condition\": {\"id\": {\"$inGroup\": \"g\"}}, \"force\": \"g\"}]}}}");
@@ -203,7 +205,7 @@ class PayloadReducerTest {
     }
 
     @Test
-    @DisplayName("Verify: contextualBandits is left out of the result when the payload has none")
+    @DisplayName("ContextualBandits is left out of the result when the payload has none")
     void contextualBanditsLeftOutWhenAbsent() {
         // Given
         String features = "\"features\": {\"f\": {\"defaultValue\": 0, \"rules\": [{\"contextualBanditRef\": \"b\"}]}}";
@@ -216,14 +218,14 @@ class PayloadReducerTest {
         JsonObject withBandit = PayloadReducer.reducePayload(parse("{" + features + ", \"contextualBandits\": {\"b\": " + bandit + "}}"), null, null);
 
         // Then
-        assertTrue(!absent.has("contextualBandits"));
-        assertTrue(!nullBandits.has("contextualBandits"));
+        assertFalse(absent.has("contextualBandits"));
+        assertFalse(nullBandits.has("contextualBandits"));
         assertEquals(new JsonObject(), emptyBandits.get("contextualBandits"));
         assertEquals(parse("{\"b\": " + bandit + "}"), withBandit.get("contextualBandits"));
     }
 
     @Test
-    @DisplayName("Verify: a long chain of group references doesn't overflow the stack")
+    @DisplayName("A long chain of group references doesn't overflow the stack")
     void longChainOfGroupReferences() {
         // Given
         int length = 20_000;
@@ -243,50 +245,43 @@ class PayloadReducerTest {
         assertEquals(savedGroups, reduced.getAsJsonObject("savedGroups"));
     }
 
-    @Test
-    @DisplayName("Verify: conditions that match like JS are removed and the rule's force kept")
-    void matchingConditionsAreRemoved() {
-        // Given: a logical $elemMatch on nested arrays, a numeric version written with an
-        // exponent, and a case-insensitive regex on non-ASCII text, all of which match in JS
-        String[][] cases = {
-                {"{\"x\": [[1]]}", "{\"x\": {\"$elemMatch\": {\"$or\": [{\"0\": 1}]}}}"},
-                {"{\"x\": 1e3}", "{\"x\": {\"$veq\": 1000}}"},
-                {"{\"x\": \"\u00c9\"}", "{\"x\": {\"$regexi\": \"^\u00e9$\"}}"},
-                {"{\"x\": 5.9604644775390625e-8}", "{\"x\": {\"$vgt\": 5.960464477539062e-8}}"},
-        };
-        for (String[] c : cases) {
-            JsonObject payload = parse("{\"features\": {\"f\": {\"defaultValue\": false, \"rules\": [{\"force\": true, \"condition\": " + c[1] + "}]}}}");
+    @ParameterizedTest(name = "{1} for {0}")
+    @CsvSource(delimiter = '|', value = {
+            "{\"x\": [[1]]}                   | {\"x\": {\"$elemMatch\": {\"$or\": [{\"0\": 1}]}}}",
+            "{\"x\": 1e3}                     | {\"x\": {\"$veq\": 1000}}",
+            "{\"x\": \"\u00c9\"}              | {\"x\": {\"$regexi\": \"^\u00e9$\"}}",
+            "{\"x\": 5.9604644775390625e-8} | {\"x\": {\"$vgt\": 5.960464477539062e-8}}"
+    })
+    @DisplayName("Removes a condition that matches like JS and keeps the rule's force")
+    void matchingConditionsAreRemoved(String attributes, String condition) {
+        // Given
+        JsonObject payload = parse("{\"features\": {\"f\": {\"defaultValue\": false, \"rules\": [{\"force\": true, \"condition\": " + condition + "}]}}}");
 
-            // When
-            JsonObject reduced = PayloadReducer.reducePayload(payload, parse(c[0]), null);
+        // When
+        JsonObject reduced = PayloadReducer.reducePayload(payload, parse(attributes), null);
 
-            // Then
-            assertEquals(parse("{\"defaultValue\": false, \"rules\": [{\"force\": true}]}"),
-                    reduced.getAsJsonObject("features").get("f"), c[1]);
-        }
+        // Then
+        assertEquals(parse("{\"defaultValue\": false, \"rules\": [{\"force\": true}]}"),
+                reduced.getAsJsonObject("features").get("f"));
     }
 
     @Test
-    @DisplayName("Verify: conditions that fail like JS disable the rule")
+    @DisplayName("Disables the rule when a path with a trailing empty segment fails like JS")
     void failingConditionsDisableTheRule() {
-        // Given: a path with a trailing empty segment, which reads key "" of element 1 in JS
-        String[][] cases = {
-                {"{\"x\": [[1]]}", "{\"x\": {\"$elemMatch\": {\"$or\": [{\"0.\": 1}]}}}"},
-        };
-        for (String[] c : cases) {
-            JsonObject payload = parse("{\"features\": {\"f\": {\"defaultValue\": false, \"rules\": [{\"force\": true, \"condition\": " + c[1] + "}]}}}");
+        // Given
+        JsonObject payload = parse("{\"features\": {\"f\": {\"defaultValue\": false, \"rules\": [{\"force\": true, \"condition\": "
+                + "{\"x\": {\"$elemMatch\": {\"$or\": [{\"0.\": 1}]}}}}]}}}");
 
-            // When
-            JsonObject reduced = PayloadReducer.reducePayload(payload, parse(c[0]), null);
+        // When
+        JsonObject reduced = PayloadReducer.reducePayload(payload, parse("{\"x\": [[1]]}"), null);
 
-            // Then
-            assertEquals(parse("{\"defaultValue\": false, \"rules\": [{\"force\": null, \"condition\": {\"$not\": {}}}]}"),
-                    reduced.getAsJsonObject("features").get("f"), c[1]);
-        }
+        // Then
+        assertEquals(parse("{\"defaultValue\": false, \"rules\": [{\"force\": null, \"condition\": {\"$not\": {}}}]}"),
+                reduced.getAsJsonObject("features").get("f"));
     }
 
     @Test
-    @DisplayName("Verify: null attributes and options mean nothing is known and nothing is filtered")
+    @DisplayName("Null attributes and options mean nothing is known and nothing is filtered")
     void nullAttributesAndOptions() {
         // Given
         JsonObject payload = parse("{\"features\": {\"f\": {\"defaultValue\": 0, \"rules\": [{\"condition\": {\"id\": \"1\"}, \"force\": 1}]}}}");
@@ -302,7 +297,7 @@ class PayloadReducerTest {
     }
 
     @Test
-    @DisplayName("Verify: the reduced payload shares no objects with the input")
+    @DisplayName("The reduced payload shares no objects with the input")
     void reducedPayloadIsIndependentOfInput() {
         // Given
         JsonObject payload = parse("{\"features\": {\"f\": {\"defaultValue\": {\"a\": 1}}}}");
@@ -313,16 +308,13 @@ class PayloadReducerTest {
 
         // Then
         assertNotSame(payload.get("features"), reduced.get("features"));
-        assertTrue(!payload.getAsJsonObject("features").getAsJsonObject("f").getAsJsonObject("defaultValue").has("b"));
+        assertFalse(payload.getAsJsonObject("features").getAsJsonObject("f").getAsJsonObject("defaultValue").has("b"));
     }
 
     private static JsonArray suite(String name) {
         return TestCasesJsonHelper.getInstance().getTestCases().getAsJsonArray(name);
     }
 
-    /**
-     * Global attributes overlaid by the user's, as the spec's client does.
-     */
     private static JsonObject mergedAttributes(JsonObject input) {
         JsonObject merged = new JsonObject();
         for (String key : new String[]{"globalAttributes", "attributes"}) {

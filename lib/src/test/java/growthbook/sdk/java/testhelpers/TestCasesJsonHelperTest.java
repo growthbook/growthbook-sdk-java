@@ -1,105 +1,144 @@
 package growthbook.sdk.java.testhelpers;
 
+import com.google.gson.JsonObject;
+import growthbook.sdk.java.util.GrowthBookJsonUtils;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
+
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.Reader;
+import java.nio.charset.StandardCharsets;
+import java.util.stream.Stream;
+
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import com.google.gson.Gson;
-import com.google.gson.JsonObject;
-import java.io.FileReader;
-import java.io.IOException;
-import org.junit.jupiter.api.Test;
-
 class TestCasesJsonHelperTest {
 
-    private static JsonObject json(String value) {
-        return new Gson().fromJson(value, JsonObject.class);
-    }
-
     @Test
-    void getInstance_createASingleInstance() {
+    @DisplayName("getInstance returns the same instance on every call")
+    void getInstanceReturnsSingleInstance() {
+        // When
         TestCasesJsonHelper first = TestCasesJsonHelper.getInstance();
         TestCasesJsonHelper second = TestCasesJsonHelper.getInstance();
 
-        assertEquals(first.toString(), second.toString());
+        // Then
+        assertSame(first, second);
     }
 
     @Test
-    void getTestCases_returnsTestCasesAsJson() throws IOException {
-        JsonObject testCases = TestCasesJsonHelper.getInstance().getTestCases();
+    @DisplayName("Loads the upstream corpus at the spec version recorded in source.json")
+    void loadsUpstreamCorpusAtRecordedSpecVersion() throws IOException {
+        // Given
         JsonObject source;
-        try (FileReader reader = new FileReader("src/test/resources/cases/source.json")) {
-            source = new Gson().fromJson(reader, JsonObject.class);
+        try (Reader reader = new InputStreamReader(
+                new FileInputStream("src/test/resources/cases/source.json"), StandardCharsets.UTF_8)) {
+            source = GrowthBookJsonUtils.getInstance().gson.fromJson(reader, JsonObject.class);
         }
 
-        assertNotNull(testCases);
+        // When
+        JsonObject testCases = TestCasesJsonHelper.getInstance().getTestCases();
+
+        // Then
         assertEquals(source.get("specVersion").getAsString(), testCases.get("specVersion").getAsString());
     }
 
     @Test
-    void getTestCases_includesJavaCasesAndOmitsExclusions() {
+    @DisplayName("The loaded corpus includes the Java-only cases and omits excluded suites")
+    void includesJavaCasesAndOmitsExclusions() {
+        // When
         JsonObject testCases = TestCasesJsonHelper.getInstance().getTestCases();
 
+        // Then
         assertTrue(testCases.getAsJsonArray("evalCondition").toString().contains("$notRegex - pass"));
         assertEquals(0, testCases.getAsJsonArray("contextualBandit").size());
         assertTrue(testCases.getAsJsonObject("savedGroupReferencesV2").getAsJsonArray("feature").size() > 0);
     }
 
     @Test
-    void appendCases_addsNewCasesAndSuites() {
+    @DisplayName("appendCases adds new cases to existing suites and creates missing nested suites")
+    void appendCasesAddsNewCasesAndSuites() {
+        // Given
         JsonObject base = json("{\"feature\": [[\"upstream\", true]]}");
 
-        TestCasesJsonHelper.appendCases(base, json("{\"feature\": [[\"java\", true]], \"nested\": {\"run\": [[\"new\", 1]]}}"));
+        // When
+        TestCasesJsonHelper.appendCases(base,
+                json("{\"feature\": [[\"java\", true]], \"nested\": {\"run\": [[\"new\", 1]]}}"));
 
-        assertEquals(2, base.getAsJsonArray("feature").size());
-        assertEquals(1, base.getAsJsonObject("nested").getAsJsonArray("run").size());
+        // Then
+        assertEquals("[[\"upstream\",true],[\"java\",true]]", base.getAsJsonArray("feature").toString());
+        assertEquals("[[\"new\",1]]", base.getAsJsonObject("nested").getAsJsonArray("run").toString());
     }
 
     @Test
-    void appendCases_rejectsCaseThatShadowsUpstream() {
+    @DisplayName("appendCases rejects a Java case that reuses an upstream case name")
+    void appendCasesRejectsCaseThatShadowsUpstream() {
+        // Given
         JsonObject base = json("{\"feature\": [[\"same name\", true]]}");
 
+        // When
         IllegalStateException error = assertThrows(IllegalStateException.class,
                 () -> TestCasesJsonHelper.appendCases(base, json("{\"feature\": [[\"same name\", false]]}")));
-        assertTrue(error.getMessage().contains("shadows"));
+
+        // Then
+        assertEquals("Java case shadows an existing case: same name", error.getMessage());
     }
 
     @Test
-    void applyExclusions_removesCasesAndClearsNestedSuites() {
+    @DisplayName("applyExclusions removes excluded cases and clears excluded nested suites")
+    void applyExclusionsRemovesCasesAndClearsNestedSuites() {
+        // Given
         JsonObject corpus = json("{\"feature\": [[\"keep\", 1], [\"drop\", 2]], \"v2\": {\"run\": [[\"a\", 1]]}}");
 
+        // When
         TestCasesJsonHelper.applyExclusions(corpus,
                 json("{\"suites\": {\"v2\": \"unsupported\"}, \"cases\": {\"feature\": {\"drop\": \"unsupported\"}}}"));
 
+        // Then
         assertEquals("[[\"keep\",1]]", corpus.getAsJsonArray("feature").toString());
         assertEquals(0, corpus.getAsJsonObject("v2").getAsJsonArray("run").size());
     }
 
-    @Test
-    void applyExclusions_rejectsStaleCaseExclusion() {
-        JsonObject corpus = json("{\"feature\": [[\"present\", true]]}");
+    @ParameterizedTest(name = "{0}")
+    @MethodSource("invalidExclusions")
+    @DisplayName("applyExclusions rejects an exclusion list that cannot be applied")
+    void applyExclusionsRejectsInvalidExclusions(String description, String corpus, String exclusions, String expectedMessage) {
+        // Given
+        JsonObject corpusJson = json(corpus);
 
-        IllegalStateException error = assertThrows(IllegalStateException.class, () -> TestCasesJsonHelper.applyExclusions(corpus,
-                json("{\"suites\": {}, \"cases\": {\"feature\": {\"absent\": \"unsupported\"}}}")));
-        assertTrue(error.getMessage().contains("Stale case exclusion"));
+        // When
+        IllegalStateException error = assertThrows(IllegalStateException.class,
+                () -> TestCasesJsonHelper.applyExclusions(corpusJson, json(exclusions)));
+
+        // Then
+        assertEquals(expectedMessage, error.getMessage());
     }
 
-    @Test
-    void applyExclusions_rejectsUnknownSuite() {
-        JsonObject corpus = json("{\"feature\": []}");
-
-        IllegalStateException error = assertThrows(IllegalStateException.class, () -> TestCasesJsonHelper.applyExclusions(corpus,
-                json("{\"suites\": {\"missing.suite\": \"unsupported\"}, \"cases\": {}}")));
-        assertTrue(error.getMessage().contains("Unknown excluded suite"));
+    static Stream<Arguments> invalidExclusions() {
+        return Stream.of(
+                Arguments.of("stale case exclusion",
+                        "{\"feature\": [[\"present\", true]]}",
+                        "{\"suites\": {}, \"cases\": {\"feature\": {\"absent\": \"unsupported\"}}}",
+                        "Stale case exclusion: feature/absent"),
+                Arguments.of("unknown suite",
+                        "{\"feature\": []}",
+                        "{\"suites\": {\"missing.suite\": \"unsupported\"}, \"cases\": {}}",
+                        "Unknown excluded suite: missing.suite"),
+                Arguments.of("blank reason",
+                        "{\"feature\": [[\"present\", true]]}",
+                        "{\"suites\": {}, \"cases\": {\"feature\": {\"present\": \" \"}}}",
+                        "Missing exclusion reason for feature/present")
+        );
     }
 
-    @Test
-    void applyExclusions_requiresReason() {
-        JsonObject corpus = json("{\"feature\": [[\"present\", true]]}");
-
-        IllegalStateException error = assertThrows(IllegalStateException.class, () -> TestCasesJsonHelper.applyExclusions(corpus,
-                json("{\"suites\": {}, \"cases\": {\"feature\": {\"present\": \" \"}}}")));
-        assertTrue(error.getMessage().contains("Missing exclusion reason"));
+    private static JsonObject json(String value) {
+        return GrowthBookJsonUtils.getInstance().gson.fromJson(value, JsonObject.class);
     }
 }

@@ -15,7 +15,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
-
 class PayloadJsonTest {
 
     @Test
@@ -101,6 +100,19 @@ class PayloadJsonTest {
     }
 
     @Test
+    @DisplayName("Returns an object value itself")
+    void returnsObjectItself() {
+        // Given
+        JsonObject value = json("{'a': 1}");
+
+        // When
+        JsonObject result = PayloadJson.objectOrEmpty(value);
+
+        // Then
+        assertSame(value, result);
+    }
+
+    @Test
     @DisplayName("Copies an object's entries without copying their values or changing the source")
     void shallowCopiesObject() {
         // Given
@@ -112,10 +124,10 @@ class PayloadJsonTest {
 
         // Then
         assertNotSame(source, copy);
+        assertEquals(json("{'a': {'b': 1}, 'c': 2, 'd': 3}"), copy);
         assertSame(source.get("a"), copy.get("a"));
         assertEquals(json("{'a': {'b': 1}, 'c': 2}"), source);
     }
-
 
     private static JsonObject json(String value) {
         return JsonParser.parseString(value.replace('\'', '"')).getAsJsonObject();

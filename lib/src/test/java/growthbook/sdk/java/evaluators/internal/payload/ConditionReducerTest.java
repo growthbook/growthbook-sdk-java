@@ -66,8 +66,8 @@ class ConditionReducerTest {
     }
 
     @Test
-    @DisplayName("Leaves a never-passing rule without a forced value without one")
-    void leavesRuleWithoutForceAlone() {
+    @DisplayName("Adds no forced value to a never-passing rule that has none")
+    void addsNoForceToFailingRuleWithoutForce() {
         // Given
         JsonObject rule = json("{'condition': {'plan': 'free'}, 'variations': [0, 1]}");
 

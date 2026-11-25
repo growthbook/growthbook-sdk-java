@@ -1,7 +1,6 @@
 package growthbook.sdk.java.evaluators.internal.payload;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
@@ -9,6 +8,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -81,7 +81,7 @@ class GroupCyclesTest {
         Set<String> onCycle = GroupCycles.find(savedGroups);
 
         // Then
-        assertTrue(onCycle.isEmpty());
+        assertEquals(Collections.emptySet(), onCycle);
     }
 
     @Test
@@ -95,7 +95,7 @@ class GroupCyclesTest {
         Set<String> onCycle = GroupCycles.find(savedGroups);
 
         // Then
-        assertTrue(onCycle.isEmpty());
+        assertEquals(Collections.emptySet(), onCycle);
     }
 
     @Test
@@ -108,7 +108,7 @@ class GroupCyclesTest {
         Set<String> onCycle = GroupCycles.find(savedGroups);
 
         // Then
-        assertTrue(onCycle.isEmpty());
+        assertEquals(Collections.emptySet(), onCycle);
     }
 
     @Test
@@ -121,7 +121,7 @@ class GroupCyclesTest {
         Set<String> onCycle = GroupCycles.find(savedGroups);
 
         // Then
-        assertTrue(onCycle.isEmpty());
+        assertEquals(Collections.emptySet(), onCycle);
     }
 
     @Test
@@ -134,7 +134,7 @@ class GroupCyclesTest {
         Set<String> onCycle = GroupCycles.find(savedGroups);
 
         // Then
-        assertTrue(onCycle.isEmpty());
+        assertEquals(Collections.emptySet(), onCycle);
     }
 
     @Test
@@ -147,7 +147,7 @@ class GroupCyclesTest {
         Set<String> onCycle = GroupCycles.find(savedGroups);
 
         // Then
-        assertTrue(onCycle.isEmpty());
+        assertEquals(Collections.emptySet(), onCycle);
     }
 
     @Test

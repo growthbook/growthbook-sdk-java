@@ -2,7 +2,6 @@ package growthbook.sdk.java.evaluators.internal.payload;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
@@ -236,7 +235,7 @@ class PayloadReductionTest {
 
         // Then
         assertEquals(json("{'extra': {'k': 'v'}, 'features': {'a': {'defaultValue': {'x': 1}}}}"), payload);
-        assertTrue(reduced.has("savedGroups"));
+        assertEquals(json("{'extra': {'k': 'changed'}, 'features': {'a': {'defaultValue': {'x': 2}}}, 'experiments': [], 'savedGroups': {}}"), reduced);
     }
 
     private static JsonObject json(String value) {

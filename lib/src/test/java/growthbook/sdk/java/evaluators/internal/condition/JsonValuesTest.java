@@ -232,60 +232,68 @@ class JsonValuesTest {
         assertNull(result);
     }
 
-    @Test
+    @ParameterizedTest(name = "{0} -> string {2}, boolean {3}")
+    @MethodSource("primitiveKinds")
     @DisplayName("Recognizes strings and booleans only among primitives of that type")
-    void recognizesStringsAndBooleans() {
+    void recognizesStringsAndBooleans(String label, JsonElement value, boolean expectedString, boolean expectedBoolean) {
         // Given
-        JsonElement string = new JsonPrimitive("true");
-        JsonElement bool = new JsonPrimitive(true);
-
         // When
-        boolean stringIsString = JsonValues.isString(string);
-        boolean boolIsString = JsonValues.isString(bool);
-        boolean boolIsBoolean = JsonValues.isBoolean(bool);
-        boolean stringIsBoolean = JsonValues.isBoolean(string);
+        boolean isString = JsonValues.isString(value);
+        boolean isBoolean = JsonValues.isBoolean(value);
 
         // Then
-        assertTrue(stringIsString);
-        assertFalse(boolIsString);
-        assertTrue(boolIsBoolean);
-        assertFalse(stringIsBoolean);
-        assertFalse(JsonValues.isString(null));
-        assertFalse(JsonValues.isBoolean(null));
-        assertFalse(JsonValues.isString(JsonNull.INSTANCE));
-        assertFalse(JsonValues.isBoolean(new JsonArray()));
+        assertEquals(expectedString, isString);
+        assertEquals(expectedBoolean, isBoolean);
     }
 
-    @Test
+    static Stream<Arguments> primitiveKinds() {
+        return Stream.of(
+                Arguments.of("string \"true\"", new JsonPrimitive("true"), true, false),
+                Arguments.of("boolean true", new JsonPrimitive(true), false, true),
+                Arguments.of("number", new JsonPrimitive(1), false, false),
+                Arguments.of("absent", null, false, false),
+                Arguments.of("JSON null", JsonNull.INSTANCE, false, false),
+                Arguments.of("array", new JsonArray(), false, false));
+    }
+
+    @ParameterizedTest(name = "{0} -> {2}")
+    @MethodSource("booleanCandidates")
     @DisplayName("Gives the boolean a value holds, or null for anything else")
-    void givesBooleanOrNull() {
+    void givesBooleanOrNull(String label, JsonElement value, Boolean expected) {
         // Given
-        JsonElement falseValue = new JsonPrimitive(false);
-
         // When
-        Boolean held = JsonValues.asBoolean(falseValue);
+        Boolean held = JsonValues.asBoolean(value);
 
         // Then
-        assertEquals(Boolean.FALSE, held);
-        assertNull(JsonValues.asBoolean(new JsonPrimitive("false")));
-        assertNull(JsonValues.asBoolean(new JsonPrimitive(0)));
-        assertNull(JsonValues.asBoolean(new JsonObject()));
-        assertNull(JsonValues.asBoolean(null));
+        assertEquals(expected, held);
     }
 
-    @Test
+    static Stream<Arguments> booleanCandidates() {
+        return Stream.of(
+                Arguments.of("false", new JsonPrimitive(false), Boolean.FALSE),
+                Arguments.of("true", new JsonPrimitive(true), Boolean.TRUE),
+                Arguments.of("string \"false\"", new JsonPrimitive("false"), null),
+                Arguments.of("0", new JsonPrimitive(0), null),
+                Arguments.of("object", new JsonObject(), null),
+                Arguments.of("absent", null, null));
+    }
+
+    @ParameterizedTest(name = "{0} -> {1}")
+    @CsvSource({
+            "s, text",
+            "n, ",
+            "z, ",
+            "absent, ",
+    })
     @DisplayName("Gives a string field, or null when it is absent or not a string")
-    void givesStringFieldOrNull() {
+    void givesStringFieldOrNull(String key, String expected) {
         // Given
         JsonObject object = JsonParser.parseString("{\"s\": \"text\", \"n\": 1, \"z\": null}").getAsJsonObject();
 
         // When
-        String present = JsonValues.stringField(object, "s");
+        String value = JsonValues.stringField(object, key);
 
         // Then
-        assertEquals("text", present);
-        assertNull(JsonValues.stringField(object, "n"));
-        assertNull(JsonValues.stringField(object, "z"));
-        assertNull(JsonValues.stringField(object, "absent"));
+        assertEquals(expected, value);
     }
 }

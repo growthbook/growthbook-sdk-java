@@ -1,63 +1,47 @@
 package growthbook.sdk.java.repository;
 
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 import okhttp3.OkHttpClient;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * Guards the polling HTTP client contract: OkHttp must be allowed to recover from a stale pooled
- * connection on its own. A GrowthBook Proxy advertises a short keep-alive (for example
- * {@code Keep-Alive: timeout=5}) on conditional responses while the SDK polls roughly once per TTL,
- * so the proxy closes the idle socket long before the next poll. With connection-failure recovery
- * disabled OkHttp reuses that dead socket and the poll fails with
- * {@code unexpected end of stream} / {@code EOFException} before the application-level retry runs.
+ * Guards that the polling HTTP client may recover from a stale pooled connection closed by a short proxy keep-alive.
  */
 class PollingHttpClientConfigTest {
 
     @Test
-    @DisplayName("Verify: the default polling client recovers from stale pooled connections")
-    void defaultPollingClientEnablesConnectionFailureRecovery() throws Exception {
-        // Given a repository created without a caller-supplied HTTP client
+    @DisplayName("The default polling client recovers from stale pooled connections")
+    void defaultPollingClientEnablesConnectionFailureRecovery() {
+        // Given
         GBFeaturesRepository repository = newRepository(null);
 
-        // When the polling client is inspected
-        OkHttpClient pollingClient = readOkHttpClient(repository);
+        // When
+        OkHttpClient pollingClient = RepositoryInternals.transport(repository).httpClient();
 
-        // Then OkHttp is allowed to retry a stale pooled connection on a fresh socket
+        // Then
         assertTrue(pollingClient.retryOnConnectionFailure());
     }
 
-    @Test
-    @DisplayName("Verify: a caller-supplied client keeps its enabled connection-failure recovery")
-    void preservesCallerClientWithConnectionFailureRecoveryEnabled() throws Exception {
-        // Given a caller-supplied client that opts into connection-failure recovery
+    @ParameterizedTest(name = "retryOnConnectionFailure={0}")
+    @ValueSource(booleans = {true, false})
+    @DisplayName("A caller-supplied client keeps its connection-failure recovery setting")
+    void callerSuppliedClientKeepsConnectionFailureRecoverySetting(boolean retryOnConnectionFailure) {
+        // Given
         OkHttpClient provided = new OkHttpClient.Builder()
-                .retryOnConnectionFailure(true)
+                .retryOnConnectionFailure(retryOnConnectionFailure)
                 .build();
 
-        // When the repository is built with it
+        // When
         GBFeaturesRepository repository = newRepository(provided);
 
-        // Then the setting is not downgraded
-        assertTrue(readOkHttpClient(repository).retryOnConnectionFailure());
-    }
-
-    @Test
-    @DisplayName("Verify: a caller-supplied client keeps its disabled connection-failure recovery")
-    void preservesCallerClientWithConnectionFailureRecoveryDisabled() throws Exception {
-        // Given a caller-supplied client that opts out of connection-failure recovery
-        OkHttpClient provided = new OkHttpClient.Builder()
-                .retryOnConnectionFailure(false)
-                .build();
-
-        // When the repository is built with it
-        GBFeaturesRepository repository = newRepository(provided);
-
-        // Then the caller's choice is honored
-        assertFalse(readOkHttpClient(repository).retryOnConnectionFailure());
+        // Then
+        OkHttpClient pollingClient = RepositoryInternals.transport(repository).httpClient();
+        assertEquals(retryOnConnectionFailure, pollingClient.retryOnConnectionFailure());
     }
 
     private static GBFeaturesRepository newRepository(OkHttpClient okHttpClient) {
@@ -74,9 +58,5 @@ class PollingHttpClientConfigTest {
                 null,
                 null
         );
-    }
-
-    private static OkHttpClient readOkHttpClient(GBFeaturesRepository repository) {
-        return RepositoryInternals.transport(repository).httpClient();
     }
 }

@@ -7,15 +7,15 @@ import growthbook.sdk.java.model.StickyAssignmentsDocument;
 import growthbook.sdk.java.stickyBucketing.StickyBucketService;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertSame;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class StickyBucketPreloadTest {
 
@@ -62,10 +62,10 @@ class StickyBucketPreloadTest {
                 .build();
 
         // When
-        assertDoesNotThrow(() -> StickyBucketPreload.refreshStickyBuckets(context, null, attributes(USER_ATTRIBUTES)));
+        StickyBucketPreload.refreshStickyBuckets(context, null, attributes(USER_ATTRIBUTES));
 
         // Then
-        assertTrue(context.getStickyBucketAssignmentDocs().isEmpty());
+        assertEquals(Collections.emptyMap(), context.getStickyBucketAssignmentDocs());
     }
 
     @Test
@@ -124,27 +124,11 @@ class StickyBucketPreloadTest {
         assertEquals(Collections.singletonMap("accountId", "account-1"), result);
     }
 
-    @Test
+    @ParameterizedTest(name = "{0}")
+    @ValueSource(strings = {"{\"features\": {}}", "{\"dateUpdated\": \"2024-01-01T00:00:00Z\"}"})
     @DisplayName("Uses the context's features when the payload has no features")
-    void usesContextFeaturesWhenPayloadHasNone() {
+    void usesContextFeaturesWhenPayloadHasNone(String payload) {
         // Given
-        String payload = "{\"features\": {}}";
-        GBContext context = GBContext.builder()
-                .featuresJson("{\"flag\": {\"rules\": [{\"variations\": [0, 1]}]}}")
-                .build();
-
-        // When
-        Map<String, String> result = StickyBucketPreload.getStickyBucketAttributes(context, payload, attributes(USER_ATTRIBUTES));
-
-        // Then
-        assertEquals(Collections.singletonMap("id", "user-1"), result);
-    }
-
-    @Test
-    @DisplayName("Uses the context's features when the payload lacks a features key")
-    void usesContextFeaturesWhenPayloadLacksFeaturesKey() {
-        // Given
-        String payload = "{\"dateUpdated\": \"2024-01-01T00:00:00Z\"}";
         GBContext context = GBContext.builder()
                 .featuresJson("{\"flag\": {\"rules\": [{\"variations\": [0, 1]}]}}")
                 .build();
@@ -184,7 +168,7 @@ class StickyBucketPreloadTest {
         Map<String, String> result = StickyBucketPreload.getStickyBucketAttributes(context, null, attributes(USER_ATTRIBUTES));
 
         // Then
-        assertTrue(result.isEmpty());
+        assertEquals(Collections.emptyMap(), result);
     }
 
     private static JsonObject attributes(String json) {

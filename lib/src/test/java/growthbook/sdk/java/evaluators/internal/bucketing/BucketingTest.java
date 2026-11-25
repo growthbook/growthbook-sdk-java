@@ -14,6 +14,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.jupiter.params.provider.NullSource;
 import org.junit.jupiter.params.provider.ValueSource;
 
 import java.util.Arrays;
@@ -23,6 +24,7 @@ import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -45,26 +47,15 @@ class BucketingTest {
         Double result = Bucketing.hash(value, version, seed);
 
         // Then
+        assertNotNull(result);
         assertEquals(expected, result, DELTA);
     }
 
-    @Test
-    @DisplayName("Returns null when the hash version is missing")
-    void returnsNullWhenHashVersionIsMissing() {
-        // Given
-        Integer hashVersion = null;
-
-        // When
-        Double result = Bucketing.hash("user-1", hashVersion, "seed");
-
-        // Then
-        assertNull(result);
-    }
-
     @ParameterizedTest
+    @NullSource
     @ValueSource(ints = {0, 3, -1, 99})
-    @DisplayName("Returns null for an unsupported hash version")
-    void returnsNullForUnsupportedHashVersion(int hashVersion) {
+    @DisplayName("Returns null for a missing or unsupported hash version")
+    void returnsNullForMissingOrUnsupportedHashVersion(Integer hashVersion) {
         // Given
         // When
         Double result = Bucketing.hash("user-1", hashVersion, "seed");
@@ -95,7 +86,7 @@ class BucketingTest {
         List<Double> weights = Bucketing.getEqualWeights(numberOfVariations);
 
         // Then
-        assertTrue(weights.isEmpty());
+        assertEquals(Collections.emptyList(), weights);
     }
 
     @Test
@@ -155,10 +146,10 @@ class BucketingTest {
     @DisplayName("Falls back to equal weights when the weights are missing")
     void fallsBackToEqualWeightsWhenWeightsAreMissing() {
         // Given
-        List<Double> weights = null;
+        double coverage = 0.5;
 
         // When
-        List<BucketRange> ranges = Bucketing.getBucketRanges(2, 0.5, weights);
+        List<BucketRange> ranges = Bucketing.getBucketRanges(2, coverage, null);
 
         // Then
         assertRanges(ranges, 0.0, 0.25, 0.5, 0.75);
@@ -200,7 +191,7 @@ class BucketingTest {
         List<BucketRange> ranges = Bucketing.getBucketRanges(numberOfVariations, 1.0, null);
 
         // Then
-        assertTrue(ranges.isEmpty());
+        assertEquals(Collections.emptyList(), ranges);
     }
 
     @Test
@@ -263,27 +254,13 @@ class BucketingTest {
         assertEquals(expected, result);
     }
 
-    @Test
-    @DisplayName("Is not in range when the hash is missing")
-    void isNotInRangeWhenHashIsMissing() {
+    @ParameterizedTest(name = "inRange({0}, {1})")
+    @MethodSource("missingHashOrRange")
+    @DisplayName("Is not in range when the hash or the range is missing")
+    void isNotInRangeWhenHashOrRangeIsMissing(Double n, BucketRange range) {
         // Given
-        BucketRange range = range(0.0, 1.0);
-
         // When
-        boolean result = Bucketing.inRange(null, range);
-
-        // Then
-        assertFalse(result);
-    }
-
-    @Test
-    @DisplayName("Is not in range when the range is missing")
-    void isNotInRangeWhenRangeIsMissing() {
-        // Given
-        Double n = 0.5;
-
-        // When
-        boolean result = Bucketing.inRange(n, null);
+        boolean result = Bucketing.inRange(n, range);
 
         // Then
         assertFalse(result);
@@ -310,7 +287,7 @@ class BucketingTest {
     @DisplayName("Includes a user whose namespace hash equals the range start and excludes one at the range end")
     void includesNamespaceHashAtStartAndExcludesAtEnd() {
         // Given
-        double n = Bucketing.hash("user-1__", 1, "namespace-a");
+        double n = hashOf("user-1__", 1, "namespace-a");
 
         // When
         boolean atStart = Bucketing.inNamespace("user-1", "namespace-a", n, n + 0.001);
@@ -321,40 +298,13 @@ class BucketingTest {
         assertFalse(atEnd);
     }
 
-    @Test
-    @DisplayName("Does not filter out a user when there are no filters")
-    void doesNotFilterOutWhenNoFilters() {
+    @ParameterizedTest(name = "{0}")
+    @MethodSource("missingFiltersOrAttributes")
+    @DisplayName("Does not filter out a user when there are no filters, no attributes or an empty filter list")
+    void doesNotFilterOutWithoutFiltersOrAttributes(String description, List<Filter> filters, JsonObject attributes) {
         // Given
-        JsonObject attributes = attributes("{\"id\": \"user-1\"}");
-
         // When
-        boolean filteredOut = Bucketing.isFilteredOut(null, attributes);
-
-        // Then
-        assertFalse(filteredOut);
-    }
-
-    @Test
-    @DisplayName("Does not filter out a user when there are no attributes")
-    void doesNotFilterOutWhenNoAttributes() {
-        // Given
-        List<Filter> filters = Collections.singletonList(filter("seed", null, null, range(0.0, 0.0)));
-
-        // When
-        boolean filteredOut = Bucketing.isFilteredOut(filters, null);
-
-        // Then
-        assertFalse(filteredOut);
-    }
-
-    @Test
-    @DisplayName("Does not filter out a user when the filter list is empty")
-    void doesNotFilterOutWhenFilterListIsEmpty() {
-        // Given
-        JsonObject attributes = attributes("{\"id\": \"user-1\"}");
-
-        // When
-        boolean filteredOut = Bucketing.isFilteredOut(Collections.<Filter>emptyList(), attributes);
+        boolean filteredOut = Bucketing.isFilteredOut(filters, attributes);
 
         // Then
         assertFalse(filteredOut);
@@ -379,7 +329,7 @@ class BucketingTest {
     void filtersOutUserWhoseHashFallsInNoRange() {
         // Given
         JsonObject attributes = attributes("{\"id\": \"user-1\"}");
-        double n = Bucketing.hash("user-1", 2, "seed");
+        double n = hashOf("user-1", 2, "seed");
         List<Filter> filters = Collections.singletonList(
                 filter("seed", null, 2, range(0.0, n), range(n + 0.0001, 1.0)));
 
@@ -409,7 +359,7 @@ class BucketingTest {
     void keepsUserWhoseHashFallsInOneOfTheRanges() {
         // Given
         JsonObject attributes = attributes("{\"deviceId\": \"device-1\"}");
-        double n = Bucketing.hash("device-1", 2, "seed");
+        double n = hashOf("device-1", 2, "seed");
         List<Filter> filters = Collections.singletonList(
                 filter("seed", "deviceId", 2, range(0.0, 0.0), range(n, n + 0.0001)));
 
@@ -441,8 +391,8 @@ class BucketingTest {
     void hashesFiltersWithVersionTwoByDefault() {
         // Given
         JsonObject attributes = attributes("{\"id\": \"user-1\"}");
-        double v2 = Bucketing.hash("user-1", 2, "seed");
-        double v1 = Bucketing.hash("user-1", 1, "seed");
+        double v2 = hashOf("user-1", 2, "seed");
+        double v1 = hashOf("user-1", 1, "seed");
         BucketRange aroundV2 = range(v2, v2 + 0.0001);
         List<Filter> filters = Collections.singletonList(filter("seed", null, null, aroundV2));
 
@@ -454,30 +404,17 @@ class BucketingTest {
         assertFalse(filteredOut);
     }
 
-    @Test
-    @DisplayName("Includes everyone in a rollout without a range or a coverage")
-    void includesEveryoneWithoutRangeOrCoverage() {
+    @ParameterizedTest(name = "{0}")
+    @MethodSource("rolloutsWithoutRange")
+    @DisplayName("Includes everyone in a rollout without a range or a coverage and nobody with zero coverage")
+    void decidesRolloutWithoutRangeByCoverageAlone(
+            String description, JsonObject attributes, Double coverage, boolean expected) {
         // Given
-        JsonObject attributes = new JsonObject();
-
         // When
-        boolean included = Bucketing.isIncludedInRollout(attributes, "seed", null, null, null, null, null);
+        boolean included = Bucketing.isIncludedInRollout(attributes, "seed", null, null, null, coverage, null);
 
         // Then
-        assertTrue(included);
-    }
-
-    @Test
-    @DisplayName("Includes nobody in a rollout with zero coverage and no range")
-    void includesNobodyWithZeroCoverageAndNoRange() {
-        // Given
-        JsonObject attributes = attributes("{\"id\": \"user-1\"}");
-
-        // When
-        boolean included = Bucketing.isIncludedInRollout(attributes, "seed", null, null, null, 0.0, null);
-
-        // Then
-        assertFalse(included);
+        assertEquals(expected, included);
     }
 
     @Test
@@ -511,7 +448,7 @@ class BucketingTest {
     void includesUserOnlyWhenHashIsBelowCoverage() {
         // Given
         JsonObject attributes = attributes("{\"id\": \"user-1\"}");
-        double n = Bucketing.hash("user-1", 2, "seed");
+        double n = hashOf("user-1", 2, "seed");
 
         // When
         boolean atCoverage = Bucketing.isIncludedInRollout(attributes, "seed", null, null, null, n, 2);
@@ -536,7 +473,7 @@ class BucketingTest {
             String userId = "user-" + i;
             JsonObject attributes = new JsonObject();
             attributes.addProperty("id", userId);
-            int bucket = (int) Math.round(Bucketing.hash(userId, 2, "rollout-seed") * 10000);
+            int bucket = (int) Math.round(hashOf(userId, 2, "rollout-seed") * 10000);
             if (bucket < k) {
                 expected++;
             }
@@ -554,7 +491,7 @@ class BucketingTest {
     void usesRangeInsteadOfCoverage() {
         // Given
         JsonObject attributes = attributes("{\"id\": \"user-1\"}");
-        double n = Bucketing.hash("user-1", 1, "seed");
+        double n = hashOf("user-1", 1, "seed");
 
         // When
         boolean inRange = Bucketing.isIncludedInRollout(attributes, "seed", null, null, range(n, n + 0.001), 0.0, null);
@@ -570,8 +507,8 @@ class BucketingTest {
     void hashesRolloutWithVersionOneByDefault() {
         // Given
         JsonObject attributes = attributes("{\"id\": \"user-1\"}");
-        double v1 = Bucketing.hash("user-1", 1, "seed");
-        double v2 = Bucketing.hash("user-1", 2, "seed");
+        double v1 = hashOf("user-1", 1, "seed");
+        double v2 = hashOf("user-1", 2, "seed");
         BucketRange aroundV1 = range(v1, v1 + 0.00005);
 
         // When
@@ -587,7 +524,7 @@ class BucketingTest {
     void usesFallbackAttributeInRollout() {
         // Given
         JsonObject attributes = attributes("{\"deviceId\": \"device-1\"}");
-        double n = Bucketing.hash("device-1", 1, "seed");
+        double n = hashOf("device-1", 1, "seed");
 
         // When
         boolean included = Bucketing.isIncludedInRollout(attributes, "seed", "id", "deviceId", range(n, n + 0.001), null, null);
@@ -665,10 +602,8 @@ class BucketingTest {
     @DisplayName("Returns an empty hash value when there are no attributes")
     void returnsEmptyHashValueWhenNoAttributes() {
         // Given
-        JsonObject attributes = null;
-
         // When
-        HashAttributeAndHashValue result = Bucketing.getHashAttribute("id", "deviceId", attributes);
+        HashAttributeAndHashValue result = Bucketing.getHashAttribute("id", "deviceId", null);
 
         // Then
         assertEquals(new HashAttributeAndHashValue("id", ""), result);
@@ -698,6 +633,28 @@ class BucketingTest {
         assertEquals("", result);
     }
 
+    static Stream<Arguments> missingHashOrRange() {
+        return Stream.of(
+                Arguments.of(null, range(0.0, 1.0)),
+                Arguments.of(0.5, null)
+        );
+    }
+
+    static Stream<Arguments> missingFiltersOrAttributes() {
+        return Stream.of(
+                Arguments.of("no filters", null, attributes("{\"id\": \"user-1\"}")),
+                Arguments.of("no attributes", Collections.singletonList(filter("seed", null, null, range(0.0, 0.0))), null),
+                Arguments.of("empty filter list", Collections.emptyList(), attributes("{\"id\": \"user-1\"}"))
+        );
+    }
+
+    static Stream<Arguments> rolloutsWithoutRange() {
+        return Stream.of(
+                Arguments.of("no coverage includes a user without attributes", new JsonObject(), null, true),
+                Arguments.of("zero coverage excludes everyone", attributes("{\"id\": \"user-1\"}"), 0.0, false)
+        );
+    }
+
     static Stream<Arguments> hashableValues() {
         return Stream.of(
                 Arguments.of(new JsonPrimitive("user-1"), "user-1"),
@@ -725,6 +682,12 @@ class BucketingTest {
                 Arguments.of(JsonParser.parseString("[\"user-1\"]")),
                 Arguments.of(JsonParser.parseString("{\"id\": \"user-1\"}"))
         );
+    }
+
+    private static double hashOf(String value, int hashVersion, String seed) {
+        Double hash = Bucketing.hash(value, hashVersion, seed);
+        assertNotNull(hash);
+        return hash;
     }
 
     private static JsonObject attributes(String json) {

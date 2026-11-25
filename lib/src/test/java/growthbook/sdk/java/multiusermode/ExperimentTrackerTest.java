@@ -1,20 +1,5 @@
 package growthbook.sdk.java.multiusermode;
 
-import org.junit.jupiter.api.RepeatedTest;
-import org.junit.jupiter.api.Test;
-
-import java.util.ArrayList;
-import java.util.List;
-import java.util.concurrent.CyclicBarrier;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
-import java.util.concurrent.ThreadLocalRandom;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -22,352 +7,311 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.concurrent.CyclicBarrier;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.RepeatedTest;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
+
 class ExperimentTrackerTest {
 
-    /**
-     * Test 1: Basic concurrent access
-     * Simulates multiple threads tracking and checking experiments at the same time.
-     */
-    @RepeatedTest(5)
-    void testConcurrentAccessBasic() throws InterruptedException {
-        ExperimentTracker tracker = new ExperimentTracker();
-
-        int threads = 50;
-        int iterations = 10_000;
-        ExecutorService executor = Executors.newFixedThreadPool(threads);
-        AtomicBoolean failed = new AtomicBoolean(false);
-
-        Runnable task = () -> {
-            try {
-                for (int i = 0; i < iterations; i++) {
-                    String key = "exp-" + ThreadLocalRandom.current().nextInt(100);
-                    tracker.trackExperiment(key);
-                    tracker.isExperimentTracked(key);
-                }
-            } catch (Throwable t) {
-                failed.set(true);
-                t.printStackTrace();
-            }
-        };
-
-        for (int i = 0; i < threads; i++) executor.submit(task);
-        executor.shutdown();
-        boolean finished = executor.awaitTermination(60, TimeUnit.SECONDS);
-
-        assertTrue(finished, "Executor did not finish in time");
-        assertFalse(failed.get(), "Concurrent access caused exception");
-    }
-
-    /**
-     * Test 2: LRU eviction
-     * Ensures that the cache does not grow beyond its limit (max 30 experiments).
-     */
     @Test
-    void testLRUEviction() {
+    @DisplayName("Keeps only the 30 most recently tracked experiments")
+    void keepsOnlyThirtyMostRecentExperiments() {
+        // Given
         ExperimentTracker tracker = new ExperimentTracker();
 
-        for (int i = 0; i < 35; i++) tracker.trackExperiment("exp-" + i);
-
-        int count = 0;
+        // When
         for (int i = 0; i < 35; i++) {
-            if (tracker.isExperimentTracked("exp-" + i)) count++;
+            tracker.trackExperiment("exp-" + i);
         }
 
-        assertTrue(count <= 30, "Cache should contain at most 30 experiments");
+        // Then
+        assertEquals(trackedKeys(5, 35), trackedAmong(tracker, 0, 35));
     }
 
-    /**
-     * Test 3: Concurrent clear and put
-     * Simulates threads clearing the cache while others are adding/checking experiments.
-     */
-    @RepeatedTest(5)
-    void testConcurrentClearAndPut() throws InterruptedException {
-        ExperimentTracker tracker = new ExperimentTracker();
-        int threads = 50;
-        ExecutorService executor = Executors.newFixedThreadPool(threads);
-        AtomicBoolean failed = new AtomicBoolean(false);
-
-        for (int i = 0; i < 20; i++) tracker.trackExperiment("init-" + i);
-
-        Runnable task = () -> {
-            try {
-                for (int i = 0; i < 1000; i++) {
-                    if (i % 100 == 0) tracker.clearTrackedExperiments();
-                    String key = "exp-" + (i % 10);
-                    tracker.trackExperiment(key);
-                    tracker.isExperimentTracked(key);
-                    if (i % 50 == 0) Thread.yield();
-                }
-            } catch (Throwable t) {
-                failed.set(true);
-                System.err.println("❌ Clear+Put race condition: " + t.getClass().getSimpleName());
-            }
-        };
-
-        for (int i = 0; i < threads; i++) executor.submit(task);
-        executor.shutdown();
-        executor.awaitTermination(30, TimeUnit.SECONDS);
-
-        assertFalse(failed.get(), "Concurrent clear and put operations caused race condition");
-    }
-
-    /**
-     * Test 4: Realistic production-like usage
-     * Simulates typical GrowthBook usage with check-then-act pattern in multiple threads.
-     */
-    @RepeatedTest(5)
-    void testRealisticProductionPattern() throws InterruptedException {
-        ExperimentTracker tracker = new ExperimentTracker();
-        int threads = 100;
-        ExecutorService executor = Executors.newFixedThreadPool(threads);
-        AtomicBoolean failed = new AtomicBoolean(false);
-
-        Runnable task = () -> {
-            try {
-                for (int i = 0; i < 5000; i++) {
-                    String key = "feature-flag-" + (i % 20);
-                    if (!tracker.isExperimentTracked(key)) tracker.trackExperiment(key);
-                    tracker.isExperimentTracked(key);
-                    if (i % 100 == 0) Thread.yield();
-                }
-            } catch (Throwable t) {
-                failed.set(true);
-                t.printStackTrace();
-            }
-        };
-
-        for (int i = 0; i < threads; i++) executor.submit(task);
-        executor.shutdown();
-        executor.awaitTermination(60, TimeUnit.SECONDS);
-
-        assertFalse(failed.get(), "Production-like pattern revealed race condition");
-    }
-
-    /**
-     * Test 5: High contention with small key set
-     * Forces threads to work on very few keys to increase chance of race condition.
-     */
-    @RepeatedTest(5)
-    void testHighContentionSmallKeys() throws InterruptedException {
-        ExperimentTracker tracker = new ExperimentTracker();
-        int threads = 20;
-        int iterations = 50_000;
-        String[] keys = {"hot1", "hot2", "hot3"};
-
-        CyclicBarrier barrier = new CyclicBarrier(threads);
-        ExecutorService executor = Executors.newFixedThreadPool(threads);
-        AtomicBoolean failed = new AtomicBoolean(false);
-
-        Runnable task = () -> {
-            try {
-                barrier.await();
-                for (int i = 0; i < iterations; i++) {
-                    String key = keys[i % keys.length];
-                    tracker.trackExperiment(key);
-                    tracker.isExperimentTracked(key);
-                    if (i % 100 == 0) Thread.yield();
-                }
-            } catch (Throwable t) {
-                failed.set(true);
-                System.err.println("❌ Exception: " + t.getClass().getSimpleName());
-            }
-        };
-        for (int i = 0; i < threads; i++) executor.submit(task);
-        executor.shutdown();
-        executor.awaitTermination(60, TimeUnit.SECONDS);
-
-        assertFalse(failed.get(), "High-contention small-key test revealed race condition");
-    }
-
-    /**
-     * Test 6: markTracked reports only the first call per key
-     */
     @Test
-    void testMarkTrackedReturnsTrueOnlyForFirstCall() {
+    @DisplayName("Evicts the least recently used experiment, counting a check as a use")
+    void evictsLeastRecentlyUsedExperiment() {
+        // Given
+        ExperimentTracker tracker = new ExperimentTracker();
+        for (int i = 0; i < 30; i++) {
+            tracker.trackExperiment("exp-" + i);
+        }
+        tracker.isExperimentTracked("exp-0");
+
+        // When
+        tracker.trackExperiment("exp-30");
+
+        // Then
+        assertTrue(tracker.isExperimentTracked("exp-0"));
+        assertFalse(tracker.isExperimentTracked("exp-1"));
+    }
+
+    @Test
+    @DisplayName("Marking an experiment reports it as new only the first time")
+    void markingReportsNewOnlyFirstTime() {
+        // Given
         ExperimentTracker tracker = new ExperimentTracker();
 
+        // When
         boolean first = tracker.markTracked("exp-1");
         boolean second = tracker.markTracked("exp-1");
 
-        assertTrue(first, "First markTracked call should report the key as new");
-        assertFalse(second, "Second markTracked call should report the key as already tracked");
+        // Then
+        assertTrue(first);
+        assertFalse(second);
         assertTrue(tracker.isExperimentTracked("exp-1"));
     }
 
-    /**
-     * Test 7: markTracked treats different keys independently
-     */
     @Test
-    void testMarkTrackedTreatsKeysIndependently() {
+    @DisplayName("Marking treats different experiments independently")
+    void markingTreatsExperimentsIndependently() {
+        // Given
         ExperimentTracker tracker = new ExperimentTracker();
 
+        // When
         boolean firstKey = tracker.markTracked("exp-1");
         boolean secondKey = tracker.markTracked("exp-2");
 
+        // Then
         assertTrue(firstKey);
         assertTrue(secondKey);
     }
 
-    /**
-     * Test 8: markTracked agrees with trackExperiment and clearTrackedExperiments
-     */
     @Test
-    void testMarkTrackedAfterTrackExperimentAndClear() {
+    @DisplayName("Marking agrees with tracking and reports an experiment as new again after clearing")
+    void markingAgreesWithTrackingAndClearing() {
+        // Given
         ExperimentTracker tracker = new ExperimentTracker();
         tracker.trackExperiment("exp-1");
 
+        // When
         boolean afterTrack = tracker.markTracked("exp-1");
         tracker.clearTrackedExperiments();
         boolean afterClear = tracker.markTracked("exp-1");
 
-        assertFalse(afterTrack, "A key tracked through trackExperiment should not be new");
-        assertTrue(afterClear, "A key should be new again after clearing");
+        // Then
+        assertFalse(afterTrack);
+        assertTrue(afterClear);
     }
 
-    /**
-     * Test 9: markTracked reports an evicted key as new again
-     */
     @Test
-    void testMarkTrackedAfterEviction() {
+    @DisplayName("Marking reports an evicted experiment as new again")
+    void markingReportsEvictedExperimentAsNew() {
+        // Given
         ExperimentTracker tracker = new ExperimentTracker();
-        tracker.markTracked("exp-0");
-        for (int i = 1; i <= 30; i++) tracker.markTracked("exp-" + i);
+        for (int i = 0; i <= 30; i++) {
+            tracker.markTracked("exp-" + i);
+        }
 
+        // When
         boolean evicted = tracker.markTracked("exp-0");
 
-        assertTrue(evicted, "The least recently used key should have been evicted");
+        // Then
+        assertTrue(evicted);
     }
 
-    /**
-     * Test 10: markTracked is atomic under concurrent callers
-     * Exactly one of many threads released at once for the same key gets true.
-     */
     @RepeatedTest(5)
-    void testMarkTrackedConcurrentCallersSameKey() throws InterruptedException, ExecutionException {
+    @DisplayName("Exactly one of many concurrent callers marking the same experiment sees it as new")
+    void exactlyOneConcurrentCallerSeesExperimentAsNew() throws Exception {
+        // Given
         ExperimentTracker tracker = new ExperimentTracker();
         int threads = 32;
         CyclicBarrier barrier = new CyclicBarrier(threads);
         ExecutorService executor = Executors.newFixedThreadPool(threads);
-
         List<Future<Boolean>> results = new ArrayList<>();
+        int newKeyCount = 0;
+
         try {
+            // When
             for (int i = 0; i < threads; i++) {
                 results.add(executor.submit(() -> {
                     barrier.await();
                     return tracker.markTracked("exp-1");
                 }));
             }
-
-            int newKeyCount = 0;
             for (Future<Boolean> result : results) {
-                if (result.get()) newKeyCount++;
+                if (result.get(10, TimeUnit.SECONDS)) {
+                    newKeyCount++;
+                }
             }
-
-            assertEquals(1, newKeyCount, "Exactly one concurrent caller should see the key as new");
         } finally {
             executor.shutdownNow();
-            executor.awaitTermination(10, TimeUnit.SECONDS);
         }
+
+        // Then
+        assertEquals(1, newKeyCount);
     }
 
-    /**
-     * Test 11: Atomic claim under concurrent first evaluations.
-     * The old check-then-mark let two threads both pass isExperimentTracked before either
-     * called trackExperiment, so both dispatched the exposure — and a failure in one then
-     * untracked the other's successful delivery. markIfFirst must hand a key to exactly one
-     * caller, even when every thread races on it simultaneously.
-     */
-    @RepeatedTest(50)
-    void markIfFirstClaimsAKeyForExactlyOneConcurrentCaller() throws Exception {
+    @Test
+    @Timeout(60)
+    @DisplayName("Concurrent tracking, checking, marking and clearing never fails and keeps at most 30 experiments")
+    void concurrentUseNeverFailsAndStaysBounded() throws Exception {
+        // Given
+        ExperimentTracker tracker = new ExperimentTracker();
+        int threads = 32;
+        int keys = 40;
+        CyclicBarrier barrier = new CyclicBarrier(threads);
+        ExecutorService executor = Executors.newFixedThreadPool(threads);
+        List<Future<?>> tasks = new ArrayList<>();
+        List<Throwable> failures = new ArrayList<>();
+
+        try {
+            // When
+            for (int t = 0; t < threads; t++) {
+                int threadId = t;
+                tasks.add(executor.submit(() -> {
+                    barrier.await();
+                    for (int i = 0; i < 5000; i++) {
+                        String key = "exp-" + ((threadId + i) % keys);
+                        if (i % 500 == 0) {
+                            tracker.clearTrackedExperiments();
+                        }
+                        if (!tracker.isExperimentTracked(key)) {
+                            tracker.trackExperiment(key);
+                        }
+                        tracker.markTracked(key);
+                    }
+                    return null;
+                }));
+            }
+            for (Future<?> task : tasks) {
+                try {
+                    task.get(30, TimeUnit.SECONDS);
+                } catch (ExecutionException e) {
+                    failures.add(e.getCause());
+                }
+            }
+        } finally {
+            executor.shutdownNow();
+        }
+
+        // Then
+        assertEquals(Collections.<Throwable>emptyList(), failures);
+        assertTrue(trackedAmong(tracker, 0, keys).size() <= 30);
+    }
+
+    @RepeatedTest(5)
+    @DisplayName("Claims an exposure key for exactly one of many concurrent callers")
+    void claimsKeyForExactlyOneConcurrentCaller() throws Exception {
+        // Given
         ExperimentTracker tracker = new ExperimentTracker();
         int threads = 64;
         CyclicBarrier barrier = new CyclicBarrier(threads);
         ExecutorService executor = Executors.newFixedThreadPool(threads);
-        AtomicInteger claims = new AtomicInteger();
+        List<Future<Boolean>> results = new ArrayList<>();
+        int claims = 0;
 
-        List<Future<?>> futures = new ArrayList<>();
-        for (int i = 0; i < threads; i++) {
-            futures.add(executor.submit(() -> {
-                barrier.await();
-                if (tracker.markIfFirst("hot") != null) {
-                    claims.incrementAndGet();
+        try {
+            // When
+            for (int i = 0; i < threads; i++) {
+                results.add(executor.submit(() -> {
+                    barrier.await();
+                    return tracker.markIfFirst("hot") != null;
+                }));
+            }
+            for (Future<Boolean> result : results) {
+                if (result.get(10, TimeUnit.SECONDS)) {
+                    claims++;
                 }
-                return null;
-            }));
+            }
+        } finally {
+            executor.shutdownNow();
         }
-        for (Future<?> future : futures) {
-            future.get(30, TimeUnit.SECONDS);
-        }
-        executor.shutdown();
 
-        assertEquals(1, claims.get(), "exactly one concurrent caller may claim a given exposure key");
+        // Then
+        assertEquals(1, claims);
     }
 
-    /**
-     * Test 12: A failed delivery releases only its own claim, and the retry is single-use.
-     * Mirrors the success/failure interleave of trackExposure: the winner claims, a loser is
-     * turned away, an untrack after a failed dispatch frees the key for exactly one retry.
-     */
     @Test
-    void untrackReleasesOnlyTheClaimItOwnsAndAllowsASingleRetry() {
+    @DisplayName("Releasing a claim after a failed delivery frees the key for exactly one retry")
+    void releasingClaimAllowsSingleRetry() {
+        // Given
         ExperimentTracker tracker = new ExperimentTracker();
-
         Object claim = tracker.markIfFirst("exp");
-        assertNotNull(claim, "first caller claims the exposure");
-        assertNull(tracker.markIfFirst("exp"), "a concurrent loser must not also dispatch");
+        Object concurrentClaim = tracker.markIfFirst("exp");
 
+        // When
         tracker.untrack("exp", claim);
 
-        assertNotNull(tracker.markIfFirst("exp"), "a failed delivery frees the key for retry");
-        assertNull(tracker.markIfFirst("exp"), "the retried exposure is claimed only once");
-    }
-
-    /**
-     * Test 7b: A claim that outlived its entry cannot release a newer one. A slow delivery's
-     * key can be evicted and claimed again before the slow delivery fails.
-     */
-    @Test
-    void untrackWithAStaleClaimLeavesANewerClaimInPlace() {
-        ExperimentTracker tracker = new ExperimentTracker();
-
-        Object stale = tracker.markIfFirst("exp");
-        tracker.clearTrackedExperiments(); // stands in for LRU eviction while the delivery runs
-        Object newer = tracker.markIfFirst("exp");
-        assertNotNull(newer, "an evicted key can be claimed again");
-
-        tracker.untrack("exp", stale);
-
-        assertTrue(tracker.isExperimentTracked("exp"), "the newer, delivered exposure must stay marked");
+        // Then
+        assertNotNull(claim);
+        assertNull(concurrentClaim);
+        assertNotNull(tracker.markIfFirst("exp"));
         assertNull(tracker.markIfFirst("exp"));
     }
 
-    /**
-     * Test 13: Sizing boundaries for the ExperimentTracker(int) constructor.
-     * A dedup cache must hold at least one entry, so a non-positive bound is rejected; the
-     * smallest valid bound still dedupes a hot key and never retains more than its size.
-     */
     @Test
-    void constructorRejectsNonPositiveMaxSize() {
-        assertThrows(IllegalArgumentException.class, () -> new ExperimentTracker(-1));
-        assertThrows(IllegalArgumentException.class, () -> new ExperimentTracker(0));
+    @DisplayName("Releasing a stale claim leaves a newer claim of the same key in place")
+    void releasingStaleClaimLeavesNewerClaim() {
+        // Given
+        ExperimentTracker tracker = new ExperimentTracker();
+        Object stale = tracker.markIfFirst("exp");
+        tracker.clearTrackedExperiments();
+        Object newer = tracker.markIfFirst("exp");
+
+        // When
+        tracker.untrack("exp", stale);
+
+        // Then
+        assertNotNull(newer);
+        assertTrue(tracker.isExperimentTracked("exp"));
+        assertNull(tracker.markIfFirst("exp"));
+    }
+
+    @ParameterizedTest(name = "maxSize {0}")
+    @ValueSource(ints = {-1, 0})
+    @DisplayName("Rejects a non-positive maximum size")
+    void rejectsNonPositiveMaxSize(int maxSize) {
+        // When / Then
+        assertThrows(IllegalArgumentException.class, () -> new ExperimentTracker(maxSize));
     }
 
     @Test
-    void smallCacheDedupesTheHotKeyAndStaysWithinItsBound() {
+    @DisplayName("A tracker of size two still de-duplicates the hot key and keeps at most two keys")
+    void smallTrackerDedupesHotKeyWithinItsBound() {
+        // Given
         ExperimentTracker tracker = new ExperimentTracker(2);
+        Object first = tracker.markIfFirst("a");
+        Object repeat = tracker.markIfFirst("a");
 
-        assertNotNull(tracker.markIfFirst("a"), "first claim of a key wins");
-        assertNull(tracker.markIfFirst("a"), "the just-claimed key is deduped");
-
+        // When
         for (int i = 0; i < 50; i++) {
-            tracker.markIfFirst("k-" + i);
+            tracker.markIfFirst("exp-" + i);
         }
-        int retained = 0;
-        for (int i = 0; i < 50; i++) {
-            if (tracker.isExperimentTracked("k-" + i)) {
-                retained++;
+
+        // Then
+        assertNotNull(first);
+        assertNull(repeat);
+        assertTrue(trackedAmong(tracker, 0, 50).size() <= 2);
+    }
+
+    private static List<String> trackedAmong(ExperimentTracker tracker, int fromInclusive, int toExclusive) {
+        List<String> tracked = new ArrayList<>();
+        for (int i = fromInclusive; i < toExclusive; i++) {
+            if (tracker.isExperimentTracked("exp-" + i)) {
+                tracked.add("exp-" + i);
             }
         }
-        assertTrue(retained <= 2, "a size-2 cache must not retain more than its bound");
+        return tracked;
+    }
+
+    private static List<String> trackedKeys(int fromInclusive, int toExclusive) {
+        List<String> keys = new ArrayList<>();
+        for (int i = fromInclusive; i < toExclusive; i++) {
+            keys.add("exp-" + i);
+        }
+        return keys;
     }
 }

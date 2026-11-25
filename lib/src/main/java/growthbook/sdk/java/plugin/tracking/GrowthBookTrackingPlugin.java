@@ -81,10 +81,8 @@ public final class GrowthBookTrackingPlugin implements GrowthBookPlugin {
     private final AtomicBoolean initialized = new AtomicBoolean(false);
     private final AtomicBoolean closed = new AtomicBoolean(false);
 
-    // Tracks batches handed to the flush executor but not yet completed, so
-    // close() can wait for them even when the executor is caller-supplied.
     private final Object flushBarrier = new Object();
-    private int inFlightBatches = 0; // guarded by flushBarrier
+    private int inFlightBatches = 0;
 
     /**
      * Test seam: invoked on the timer thread after a batch has been drained and reserved
@@ -93,7 +91,6 @@ public final class GrowthBookTrackingPlugin implements GrowthBookPlugin {
      */
     volatile Runnable timerFlushHandoffHookForTest = () -> { };
 
-    // Assigned in init(); read only after initialized is observed true.
     private volatile OkHttpClient httpClient;
     private volatile boolean ownsHttpClient;
     private volatile ScheduledExecutorService scheduler;
@@ -198,9 +195,6 @@ public final class GrowthBookTrackingPlugin implements GrowthBookPlugin {
         List<TrackingEvent> eagerFlush = null;
         lock.lock();
         try {
-            // Re-check under the lock: a close() may have started after isActive() passed and
-            // already drained the buffer and stopped the scheduler. Drop cleanly rather than
-            // orphaning the event or scheduling on a stopped scheduler.
             if (closed.get()) {
                 return;
             }
@@ -208,8 +202,6 @@ public final class GrowthBookTrackingPlugin implements GrowthBookPlugin {
             if (buffer.size() >= config.resolvedBatchSize()) {
                 eagerFlush = drainLocked();
                 if (!eagerFlush.isEmpty()) {
-                    // Reserve the in-flight slot under the lock so a concurrent close()
-                    // cannot shut down before this batch is submitted and flushed.
                     beginFlush();
                 }
                 if (pendingFlush != null) {
@@ -240,8 +232,6 @@ public final class GrowthBookTrackingPlugin implements GrowthBookPlugin {
             pendingFlush = null;
             toFlush = drainLocked();
             if (!toFlush.isEmpty()) {
-                // Reserve the in-flight slot under the lock so a concurrent close()
-                // cannot shut down before this timer-triggered batch is flushed.
                 beginFlush();
             }
         } finally {
@@ -286,7 +276,6 @@ public final class GrowthBookTrackingPlugin implements GrowthBookPlugin {
                 }
             });
         } catch (RejectedExecutionException e) {
-            // Bounded queue full (or a user executor rejected): drop the newest batch.
             endFlush();
             log.warn("Tracking flush queue full; dropping batch of {} events", batch.size());
         }
@@ -378,9 +367,6 @@ public final class GrowthBookTrackingPlugin implements GrowthBookPlugin {
             pending.cancel(false);
         }
         if (!toFlush.isEmpty()) {
-            // Bound the synchronous final POST by closeTimeout so close() can't block on it
-            // longer than the configured budget. The derived client shares the base client's
-            // connection pool and dispatcher.
             OkHttpClient client = this.httpClient;
             OkHttpClient boundedClient = client == null ? null
                     : client.newBuilder().callTimeout(config.resolvedCloseTimeout()).build();
@@ -424,8 +410,6 @@ public final class GrowthBookTrackingPlugin implements GrowthBookPlugin {
     }
 
     private ExecutorService newBoundedFlushExecutor() {
-        // Default abort policy: a full queue throws RejectedExecutionException, which
-        // submitFlush() catches to drop the newest batch AND release its in-flight slot.
         return new ThreadPoolExecutor(
                 1, 1,
                 0L, TimeUnit.MILLISECONDS,

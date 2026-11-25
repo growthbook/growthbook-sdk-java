@@ -19,7 +19,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class AbstractRedisStickyBucketServiceTest {
 
     @Test
-    @DisplayName("Verify: two concurrent saves from the same starting document keep both assignments")
+    @DisplayName("Two concurrent saves from the same starting document keep both assignments")
     void concurrentSavesFromStaleCopiesDoNotEraseEachOther() {
         // Given: both requests loaded the same starting document that already held exp0
         Map<String, String> store = new HashMap<>();
@@ -38,7 +38,7 @@ class AbstractRedisStickyBucketServiceTest {
     }
 
     @Test
-    @DisplayName("Verify: a later save wins on a conflicting key while keeping the other assignments")
+    @DisplayName("A later save wins on a conflicting key while keeping the other assignments")
     void incomingAssignmentsWinOnConflict() {
         // Given
         Map<String, String> store = new HashMap<>();
@@ -53,7 +53,7 @@ class AbstractRedisStickyBucketServiceTest {
     }
 
     @Test
-    @DisplayName("Verify: saveAssignments rejects a document whose assignments map is null")
+    @DisplayName("SaveAssignments rejects a document whose assignments map is null")
     void saveRejectsNullAssignments() {
         // Given
         Map<String, String> store = new HashMap<>();
@@ -66,7 +66,7 @@ class AbstractRedisStickyBucketServiceTest {
     }
 
     @Test
-    @DisplayName("Verify: getAssignments rejects a stored document missing its assignments map")
+    @DisplayName("GetAssignments rejects a stored document missing its assignments map")
     void readRejectsIncompleteDocument() {
         // Given: an incomplete payload with no assignments field
         Map<String, String> store = new HashMap<>();
@@ -78,7 +78,7 @@ class AbstractRedisStickyBucketServiceTest {
     }
 
     @Test
-    @DisplayName("Verify: saveAssignments fails when the compare-and-set never succeeds")
+    @DisplayName("SaveAssignments fails when the compare-and-set never succeeds")
     void saveThrowsAfterExhaustingRetries() {
         // Given: a service whose compare-and-set always loses the race
         AbstractRedisStickyBucketService service = new AbstractRedisStickyBucketService("") {

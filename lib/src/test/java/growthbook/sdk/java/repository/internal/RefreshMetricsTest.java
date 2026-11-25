@@ -1,5 +1,6 @@
 package growthbook.sdk.java.repository.internal;
 
+import growthbook.sdk.java.testhelpers.TestClock;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
@@ -8,16 +9,12 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import growthbook.sdk.java.exception.FeatureFetchException;
-import java.time.Clock;
-import java.time.Instant;
-import java.time.ZoneId;
-import java.time.ZoneOffset;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 class RefreshMetricsTest {
 
-    private final MutableClock clock = new MutableClock(1_000L);
+    private final TestClock clock = TestClock.atMillis(1_000L);
     private final RefreshMetrics metrics = new RefreshMetrics(clock);
 
     @Test
@@ -41,7 +38,7 @@ class RefreshMetricsTest {
     void countsConsecutiveFailures() {
         // Given
         metrics.recordFailure(false);
-        clock.advance(500L);
+        clock.advanceMillis(500L);
 
         // When
         metrics.recordFailure(true);
@@ -74,7 +71,7 @@ class RefreshMetricsTest {
     @DisplayName("Stamps the last successful fetch with the clock")
     void stampsSuccessfulFetch() {
         // Given
-        clock.advance(2_000L);
+        clock.advanceMillis(2_000L);
 
         // When
         metrics.recordFetched();
@@ -88,7 +85,7 @@ class RefreshMetricsTest {
     void recordsErrorWithClockTimestamp() {
         // Given
         IllegalStateException error = new IllegalStateException("synthetic failure");
-        clock.advance(250L);
+        clock.advanceMillis(250L);
 
         // When
         metrics.recordError(error);
@@ -124,35 +121,4 @@ class RefreshMetricsTest {
         assertFalse(metrics.lastLoadedFromCache());
     }
 
-    private static final class MutableClock extends Clock {
-        private long millis;
-
-        private MutableClock(long millis) {
-            this.millis = millis;
-        }
-
-        void advance(long deltaMillis) {
-            millis += deltaMillis;
-        }
-
-        @Override
-        public ZoneId getZone() {
-            return ZoneOffset.UTC;
-        }
-
-        @Override
-        public Clock withZone(ZoneId zone) {
-            return this;
-        }
-
-        @Override
-        public Instant instant() {
-            return Instant.ofEpochMilli(millis);
-        }
-
-        @Override
-        public long millis() {
-            return millis;
-        }
-    }
 }

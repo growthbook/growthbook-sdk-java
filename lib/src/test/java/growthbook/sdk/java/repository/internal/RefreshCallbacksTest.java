@@ -1,14 +1,12 @@
 package growthbook.sdk.java.repository.internal;
 
+import growthbook.sdk.java.testhelpers.RecordingRefreshCallback;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import growthbook.sdk.java.callback.FeatureRefreshCallback;
-import java.util.ArrayList;
 import java.util.Collections;
-import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -17,6 +15,7 @@ import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
+@SuppressWarnings("deprecation")
 class RefreshCallbacksTest {
 
     private static final String FEATURES = "{\"flag-a\":{\"defaultValue\":true}}";
@@ -27,8 +26,8 @@ class RefreshCallbacksTest {
     @DisplayName("Delivers refreshes and errors to every registered callback")
     void deliversToEveryCallback() {
         // Given
-        RecordingCallback first = new RecordingCallback();
-        RecordingCallback second = new RecordingCallback();
+        RecordingRefreshCallback first = new RecordingRefreshCallback();
+        RecordingRefreshCallback second = new RecordingRefreshCallback();
         callbacks.add(first);
         callbacks.add(second);
         IllegalStateException error = new IllegalStateException("synthetic failure");
@@ -48,7 +47,7 @@ class RefreshCallbacksTest {
     @DisplayName("Ignores a duplicate registration of the same callback")
     void ignoresDuplicateRegistration() {
         // Given
-        RecordingCallback callback = new RecordingCallback();
+        RecordingRefreshCallback callback = new RecordingRefreshCallback();
         callbacks.add(callback);
 
         // When
@@ -63,7 +62,7 @@ class RefreshCallbacksTest {
     @DisplayName("Ignores a null callback")
     void ignoresNullCallback() {
         // Given
-        RecordingCallback callback = new RecordingCallback();
+        RecordingRefreshCallback callback = new RecordingRefreshCallback();
         callbacks.add(callback);
 
         // When
@@ -79,8 +78,8 @@ class RefreshCallbacksTest {
     @DisplayName("Keeps notifying the other callbacks when one throws")
     void throwingCallbackDoesNotStopOthers() {
         // Given
-        RecordingCallback before = new RecordingCallback();
-        RecordingCallback after = new RecordingCallback();
+        RecordingRefreshCallback before = new RecordingRefreshCallback();
+        RecordingRefreshCallback after = new RecordingRefreshCallback();
         callbacks.add(before);
         callbacks.add(new ThrowingCallback());
         callbacks.add(after);
@@ -100,8 +99,8 @@ class RefreshCallbacksTest {
     @DisplayName("Removes every callback on clear")
     void clearRemovesAllCallbacks() {
         // Given
-        RecordingCallback first = new RecordingCallback();
-        RecordingCallback second = new RecordingCallback();
+        RecordingRefreshCallback first = new RecordingRefreshCallback();
+        RecordingRefreshCallback second = new RecordingRefreshCallback();
         callbacks.add(first);
         callbacks.add(second);
 
@@ -123,7 +122,7 @@ class RefreshCallbacksTest {
         // Given
         CountDownLatch dispatching = new CountDownLatch(1);
         CountDownLatch registered = new CountDownLatch(1);
-        RecordingCallback late = new RecordingCallback();
+        RecordingRefreshCallback late = new RecordingRefreshCallback();
         callbacks.add(new BlockingCallback(dispatching, registered));
         ExecutorService executor = Executors.newSingleThreadExecutor();
         try {
@@ -146,22 +145,8 @@ class RefreshCallbacksTest {
         }
     }
 
-    private static final class RecordingCallback implements FeatureRefreshCallback {
-        private final List<String> refreshes = new ArrayList<>();
-        private final List<Throwable> errors = new ArrayList<>();
 
-        @Override
-        public void onRefresh(String featuresJson) {
-            refreshes.add(featuresJson);
-        }
-
-        @Override
-        public void onError(Throwable throwable) {
-            errors.add(throwable);
-        }
-    }
-
-    private static final class ThrowingCallback implements FeatureRefreshCallback {
+    private static final class ThrowingCallback implements growthbook.sdk.java.callback.FeatureRefreshCallback {
         @Override
         public void onRefresh(String featuresJson) {
             throw new IllegalStateException("synthetic callback failure");
@@ -173,7 +158,7 @@ class RefreshCallbacksTest {
         }
     }
 
-    private static final class BlockingCallback implements FeatureRefreshCallback {
+    private static final class BlockingCallback implements growthbook.sdk.java.callback.FeatureRefreshCallback {
         private final CountDownLatch dispatching;
         private final CountDownLatch registered;
 

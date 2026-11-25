@@ -1,9 +1,10 @@
 package growthbook.sdk.java.repository.internal;
 
+import growthbook.sdk.java.testhelpers.InMemoryCacheManager;
+import growthbook.sdk.java.testhelpers.RecordingRefreshListener;
+import growthbook.sdk.java.testhelpers.RecordingRefreshCallback;
 import com.google.gson.JsonObject;
-import growthbook.sdk.java.callback.FeatureRefreshCallback;
 import growthbook.sdk.java.exception.FeatureFetchException;
-import growthbook.sdk.java.listener.FeatureRefreshListener;
 import growthbook.sdk.java.model.FeatureRefreshEvent;
 import growthbook.sdk.java.model.FeatureRefreshSource;
 import growthbook.sdk.java.model.RequestBodyForRemoteEval;
@@ -11,7 +12,6 @@ import growthbook.sdk.java.repository.FeatureRefreshStrategy;
 import growthbook.sdk.java.repository.FeatureSnapshot;
 import growthbook.sdk.java.repository.RefreshMode;
 import growthbook.sdk.java.retry.FeatureFetchRetryPolicy;
-import growthbook.sdk.java.sandbox.GbCacheManager;
 import growthbook.sdk.java.util.GrowthBookJsonUtils;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -26,7 +26,6 @@ import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Deque;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -47,10 +46,10 @@ class FeatureRefreshEngineLifecycleTest {
     private static final String OTHER_BODY = "{\"features\":" + OTHER_FEATURES_JSON + "}";
 
     private final FakeTransport transport = new FakeTransport();
-    private final FakeCacheManager cacheManager = new FakeCacheManager();
+    private final InMemoryCacheManager cacheManager = new InMemoryCacheManager();
     private final Clock clock = Clock.fixed(Instant.parse("2026-01-01T00:00:00Z"), ZoneOffset.UTC);
-    private final RecordingCallback callback = new RecordingCallback();
-    private final RecordingListener listener = new RecordingListener();
+    private final RecordingRefreshCallback callback = new RecordingRefreshCallback();
+    private final RecordingRefreshListener listener = new RecordingRefreshListener();
 
     @Test
     @DisplayName("Loads features once when stale-while-revalidate initialize is called twice")
@@ -355,7 +354,7 @@ class FeatureRefreshEngineLifecycleTest {
         // Then
         assertNull(engine.cache().manager());
         assertEquals(BODY, cacheManager.store.get(ENDPOINTS.cacheKey()));
-        assertFalse(cacheManager.cleared);
+        assertFalse(cacheManager.cleared());
         assertEquals(FEATURES_JSON, engine.snapshot().getFeaturesJson());
         assertTrue(engine.hasFeatureData());
     }
@@ -477,48 +476,6 @@ class FeatureRefreshEngineLifecycleTest {
         }
     }
 
-    private static final class FakeCacheManager implements GbCacheManager {
-        private final Map<String, String> store = new HashMap<>();
-        private boolean cleared;
 
-        @Override
-        public void saveContent(String key, String data) {
-            store.put(key, data);
-        }
 
-        @Override
-        public String loadCache(String key) {
-            return store.get(key);
-        }
-
-        @Override
-        public void clearCache() {
-            cleared = true;
-            store.clear();
-        }
-    }
-
-    private static final class RecordingCallback implements FeatureRefreshCallback {
-        private final List<String> refreshes = new ArrayList<>();
-        private final List<Throwable> errors = new ArrayList<>();
-
-        @Override
-        public void onRefresh(String featuresJson) {
-            refreshes.add(featuresJson);
-        }
-
-        @Override
-        public void onError(Throwable throwable) {
-            errors.add(throwable);
-        }
-    }
-
-    private static final class RecordingListener implements FeatureRefreshListener {
-        private final List<FeatureRefreshEvent> events = new ArrayList<>();
-
-        @Override
-        public void onRefresh(FeatureRefreshEvent event) {
-            events.add(event);
-        }
-    }
 }

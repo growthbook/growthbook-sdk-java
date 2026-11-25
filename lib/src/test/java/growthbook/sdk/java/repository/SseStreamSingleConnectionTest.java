@@ -7,6 +7,7 @@ import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpServer;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.net.InetSocketAddress;
 import java.nio.charset.StandardCharsets;
 import java.util.concurrent.CountDownLatch;
@@ -18,23 +19,16 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 /**
- * Guards the SSE connection contract: starting the server-sent-events strategy must submit exactly
- * one call to the stream endpoint. A duplicate {@code newCall(sseRequest).enqueue(...)} alongside the
- * {@code EventSource} would open a second, immediately-closed stream connection per (re)connect; this
- * test fails if that duplicate is ever restored.
- *
- * <p>Both SSE calls are enqueued synchronously inside {@code initialize()}, so the assertion reads the
- * SSE client's OkHttp dispatcher directly — no real-time polling. The test double holds the stream
- * connection open so the submitted calls stay in flight and cannot settle before they are counted.
+ * Guards that starting server-sent events opens exactly one stream connection.
  */
 class SseStreamSingleConnectionTest {
 
     private static final String FEATURES = "{\"features\":{\"flag\":{\"defaultValue\":true}},\"savedGroups\":{}}";
 
     @Test
-    @DisplayName("Verify: starting SSE submits exactly one call to the stream endpoint")
+    @DisplayName("Starting SSE submits exactly one call to the stream endpoint")
     void startingSseSubmitsExactlyOneStreamCall() throws Exception {
-        // Given a proxy that advertises SSE support and holds the stream connection open
+        // Given
         try (SseServer server = new SseServer()) {
             GBFeaturesRepository repository = GBFeaturesRepository.builder()
                     .apiHost(server.apiHost())
@@ -44,17 +38,12 @@ class SseStreamSingleConnectionTest {
                     .build();
 
             try {
-                // When the repository initializes and enqueues the stream call(s)
+                // When
                 repository.initialize();
 
-                // Then exactly one SSE call is in flight on the SSE client's dispatcher
+                // Then
                 Dispatcher dispatcher = readSseDispatcher(repository);
-                int inFlight = dispatcher.runningCallsCount() + dispatcher.queuedCallsCount();
-                assertEquals(
-                        1,
-                        inFlight,
-                        "SSE must submit exactly one stream call, but a duplicate request was observed"
-                );
+                assertEquals(1, dispatcher.runningCallsCount() + dispatcher.queuedCallsCount());
             } finally {
                 repository.shutdown();
             }
@@ -67,7 +56,6 @@ class SseStreamSingleConnectionTest {
         return sseClient.dispatcher();
     }
 
-    /** Minimal proxy: GET /api/features (advertising SSE) and GET /sub (stream held open). */
     private static final class SseServer implements AutoCloseable {
         private final HttpServer server;
         private final ExecutorService executor;
@@ -92,7 +80,7 @@ class SseStreamSingleConnectionTest {
             exchange.getResponseHeaders().add("X-Sse-Support", "enabled");
             byte[] body = FEATURES.getBytes(StandardCharsets.UTF_8);
             exchange.sendResponseHeaders(200, body.length);
-            try (java.io.OutputStream os = exchange.getResponseBody()) {
+            try (OutputStream os = exchange.getResponseBody()) {
                 os.write(body);
             }
         }
@@ -100,7 +88,6 @@ class SseStreamSingleConnectionTest {
         private void handleSse(HttpExchange exchange) {
             try {
                 drain(exchange);
-                // Hold the connection open so the submitted call stays in flight until teardown.
                 stop.await();
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
@@ -114,8 +101,10 @@ class SseStreamSingleConnectionTest {
         private void drain(HttpExchange exchange) throws IOException {
             try (InputStream is = exchange.getRequestBody()) {
                 byte[] buffer = new byte[1024];
-                while (is.read(buffer) != -1) {
-                }
+                int read;
+                do {
+                    read = is.read(buffer);
+                } while (read != -1);
             }
         }
 

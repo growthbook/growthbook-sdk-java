@@ -18,6 +18,9 @@ import growthbook.sdk.java.multiusermode.usage.TrackingCallbackWithUser;
 import growthbook.sdk.java.multiusermode.util.TransformationUtil;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.NullAndEmptySource;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -99,7 +102,7 @@ class EvaluationTest {
         new Evaluation(secondUser).runExperiment(twoVariationExperiment(), null);
 
         // Then
-        assertEquals(2, tracking.experimentKeys.size());
+        assertEquals(Arrays.asList("user-1", "user-2"), tracking.hashValues);
     }
 
     @Test
@@ -305,7 +308,7 @@ class EvaluationTest {
 
         // Then
         assertFalse(result.getInExperiment());
-        assertTrue(tracking.experimentKeys.isEmpty());
+        assertEquals(Collections.emptyList(), tracking.experimentKeys);
     }
 
     @Test
@@ -357,46 +360,24 @@ class EvaluationTest {
         assertEquals(Boolean.TRUE, result.getValue());
     }
 
-    @Test
-    @DisplayName("Blocks the feature when a gating prerequisite is not met")
-    void blocksFeatureWhenGatingPrerequisiteFails() {
+    @ParameterizedTest(name = "parent {0}, gate {1} -> {2} {3}")
+    @CsvSource({
+            "false, true, PREREQUISITE, ",
+            "false, false, DEFAULT_VALUE, fallback",
+            "true, true, FORCE, forced",
+            "true, false, FORCE, forced"
+    })
+    @DisplayName("Blocks the feature on a failed gating prerequisite, skips the rule on a failed non-gating one and applies it when met")
+    void appliesPrerequisiteToRule(boolean parentValue, boolean gate, FeatureResultSource expectedSource, String expectedValue) {
         // Given
-        EvaluationContext context = context(prerequisiteFeatures(false, true), Options.builder().build(), null);
+        EvaluationContext context = context(prerequisiteFeatures(parentValue, gate), Options.builder().build(), null);
 
         // When
         FeatureResult<String> result = new Evaluation(context).evaluateFeature("child", String.class);
 
         // Then
-        assertEquals(FeatureResultSource.PREREQUISITE, result.getSource());
-        assertNull(result.getValue());
-    }
-
-    @Test
-    @DisplayName("Skips only the rule when a non-gating prerequisite is not met")
-    void skipsRuleWhenNonGatingPrerequisiteFails() {
-        // Given
-        EvaluationContext context = context(prerequisiteFeatures(false, false), Options.builder().build(), null);
-
-        // When
-        FeatureResult<String> result = new Evaluation(context).evaluateFeature("child", String.class);
-
-        // Then
-        assertEquals(FeatureResultSource.DEFAULT_VALUE, result.getSource());
-        assertEquals("fallback", result.getValue());
-    }
-
-    @Test
-    @DisplayName("Applies the rule when its prerequisite is met")
-    void appliesRuleWhenPrerequisiteIsMet() {
-        // Given
-        EvaluationContext context = context(prerequisiteFeatures(true, true), Options.builder().build(), null);
-
-        // When
-        FeatureResult<String> result = new Evaluation(context).evaluateFeature("child", String.class);
-
-        // Then
-        assertEquals(FeatureResultSource.FORCE, result.getSource());
-        assertEquals("forced", result.getValue());
+        assertEquals(expectedSource, result.getSource());
+        assertEquals(expectedValue, result.getValue());
     }
 
     @Test
@@ -413,7 +394,7 @@ class EvaluationTest {
 
         // Then
         assertFalse(result.getInExperiment());
-        assertTrue(tracking.experimentKeys.isEmpty());
+        assertEquals(Collections.emptyList(), tracking.experimentKeys);
     }
 
     @Test
@@ -467,31 +448,18 @@ class EvaluationTest {
         assertEquals(Arrays.asList("feature-b", "feature-a"), usage.featureKeys);
     }
 
-    @Test
-    @DisplayName("Returns an empty map for a null key list")
-    void evaluateFeaturesReturnsEmptyMapForNull() {
+    @ParameterizedTest(name = "{0}")
+    @NullAndEmptySource
+    @DisplayName("Returns an empty map for a null or empty key list")
+    void evaluateFeaturesReturnsEmptyMapForNullOrEmptyKeys(List<String> keys) {
         // Given
         EvaluationContext context = context("{'feature-a': {'defaultValue': 'a'}}", Options.builder().build(), null);
 
         // When
-        Map<String, FeatureResult<String>> results = new Evaluation(context).evaluateFeatures(null, String.class);
+        Map<String, FeatureResult<String>> results = new Evaluation(context).evaluateFeatures(keys, String.class);
 
         // Then
-        assertTrue(results.isEmpty());
-    }
-
-    @Test
-    @DisplayName("Returns an empty map for an empty key list")
-    void evaluateFeaturesReturnsEmptyMapForEmptyList() {
-        // Given
-        EvaluationContext context = context("{'feature-a': {'defaultValue': 'a'}}", Options.builder().build(), null);
-
-        // When
-        Map<String, FeatureResult<String>> results = new Evaluation(context)
-                .evaluateFeatures(Collections.<String>emptyList(), String.class);
-
-        // Then
-        assertTrue(results.isEmpty());
+        assertEquals(Collections.emptyMap(), results);
     }
 
     @Test
@@ -594,7 +562,7 @@ class EvaluationTest {
                 .forcedFeatureValues(Collections.<String, Object>singletonMap("dark-mode", false))
                 .build();
         EvaluationContext context = new EvaluationContext(
-                globalContext("{'dark-mode': {'defaultValue': false}}"), user, new EvaluationContext.StackContext(), options);
+                globalContext("{'dark-mode': {'defaultValue': false}}"), user, options);
 
         // When
         FeatureResult<Boolean> result = new Evaluation(context).evaluateFeature("dark-mode", Boolean.class);
@@ -675,7 +643,7 @@ class EvaluationTest {
         new Evaluation(context).fireRemoteEvaluationTracks(null);
 
         // Then
-        assertTrue(tracking.experimentKeys.isEmpty());
+        assertEquals(Collections.emptyList(), tracking.experimentKeys);
     }
 
     @Test
@@ -755,7 +723,7 @@ class EvaluationTest {
     private static EvaluationContext context(String featuresJson, Options options, ExperimentTracker tracker, String userId) {
         UserContext user = UserContext.builder().attributes(attributes(userId)).build();
         EvaluationContext context = new EvaluationContext(
-                globalContext(featuresJson), user, new EvaluationContext.StackContext(), options);
+                globalContext(featuresJson), user, options);
         context.setExperimentTracker(tracker);
         return context;
     }
@@ -772,10 +740,12 @@ class EvaluationTest {
 
     private static final class RecordingTrackingCallback implements TrackingCallbackWithUser {
         private final List<String> experimentKeys = new ArrayList<>();
+        private final List<String> hashValues = new ArrayList<>();
 
         @Override
         public <T> void onTrack(Experiment<T> experiment, ExperimentResult<T> experimentResult, UserContext userContext) {
             experimentKeys.add(experiment.getKey());
+            hashValues.add(experimentResult.getHashValue());
         }
     }
 

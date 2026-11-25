@@ -51,7 +51,7 @@ class JedisGbCacheManagerTest {
     }
 
     @Test
-    @DisplayName("Verify: saveContent writes the hash and clears any stale expiry when no TTL is configured")
+    @DisplayName("SaveContent writes the hash and clears any stale expiry when no TTL is configured")
     void saveContentWritesHashWithTimestamp() {
         // Given
         Transaction transaction = mock(Transaction.class);
@@ -78,7 +78,7 @@ class JedisGbCacheManagerTest {
     }
 
     @Test
-    @DisplayName("Verify: saveContent applies a TTL (in milliseconds) atomically via MULTI/EXEC")
+    @DisplayName("SaveContent applies a TTL (in milliseconds) atomically via MULTI/EXEC")
     void saveContentAppliesTtlWhenConfigured() {
         // Given
         Transaction transaction = mock(Transaction.class);
@@ -100,7 +100,7 @@ class JedisGbCacheManagerTest {
     }
 
     @Test
-    @DisplayName("Verify: a queued-command error in the transaction is surfaced as FeatureCacheException")
+    @DisplayName("A queued-command error in the transaction is surfaced as FeatureCacheException")
     void transactionCommandErrorIsSurfaced() {
         // Given
         Transaction transaction = mock(Transaction.class);
@@ -115,7 +115,7 @@ class JedisGbCacheManagerTest {
     }
 
     @Test
-    @DisplayName("Verify: a sub-second TTL is honoured with millisecond precision, not truncated to 0")
+    @DisplayName("A sub-second TTL is honoured with millisecond precision, not truncated to 0")
     void saveContentHonoursSubSecondTtl() {
         // Given
         Transaction transaction = mock(Transaction.class);
@@ -135,7 +135,7 @@ class JedisGbCacheManagerTest {
     }
 
     @Test
-    @DisplayName("Verify: loadCache and getLastUpdatedMillis read the stored hash")
+    @DisplayName("LoadCache and getLastUpdatedMillis read the stored hash")
     void loadCacheReturnsStoredData() {
         // Given
         Map<String, String> stored = new HashMap<>();
@@ -151,7 +151,7 @@ class JedisGbCacheManagerTest {
     }
 
     @Test
-    @DisplayName("Verify: getLastUpdatedMillis reads only the timestamp field, not the payload")
+    @DisplayName("GetLastUpdatedMillis reads only the timestamp field, not the payload")
     void getLastUpdatedMillisReadsSingleField() {
         // Given
         when(jedis.hget(PREFIX + "k", "updatedAt")).thenReturn("555");
@@ -166,7 +166,7 @@ class JedisGbCacheManagerTest {
     }
 
     @Test
-    @DisplayName("Verify: a non-numeric timestamp reads as unknown freshness (null)")
+    @DisplayName("A non-numeric timestamp reads as unknown freshness (null)")
     void malformedTimestampIsUnknown() {
         // Given
         when(jedis.hget(PREFIX + "k", "updatedAt")).thenReturn("not-a-number");
@@ -177,7 +177,7 @@ class JedisGbCacheManagerTest {
     }
 
     @Test
-    @DisplayName("Verify: a missing key is a miss (null content and null timestamp)")
+    @DisplayName("A missing key is a miss (null content and null timestamp)")
     void returnsNullForMissingEntry() {
         // Given
         when(jedis.hgetAll(anyString())).thenReturn(new HashMap<>());
@@ -189,7 +189,7 @@ class JedisGbCacheManagerTest {
     }
 
     @Test
-    @DisplayName("Verify: clearCache scans by prefix and deletes matching keys")
+    @DisplayName("ClearCache scans by prefix and deletes matching keys")
     void clearCacheScansAndDeletesByPrefix() {
         // Given
         ScanResult<String> result = new ScanResult<>(
@@ -211,13 +211,13 @@ class JedisGbCacheManagerTest {
 
 
     @Test
-    @DisplayName("Verify: clearCache follows the SCAN cursor across multiple iterations")
+    @DisplayName("ClearCache follows the SCAN cursor across multiple iterations")
     void clearCacheFollowsCursorAcrossIterations() {
         // Given
         ScanResult<String> first = new ScanResult<>("5", Collections.singletonList(PREFIX + "a"));
         ScanResult<String> second = new ScanResult<>(ScanParams.SCAN_POINTER_START,
             Collections.singletonList(PREFIX + "b"));
-        when(jedis.scan(anyString(), any(ScanParams.class))).thenReturn(first, second);
+        when(jedis.scan(anyString(), any(ScanParams.class))).thenReturn(first).thenReturn(second);
         JedisGbCacheManager cache = JedisGbCacheManager.builder().jedisPool(pool).buildManager();
 
         // When
@@ -229,7 +229,7 @@ class JedisGbCacheManagerTest {
     }
 
     @Test
-    @DisplayName("Verify: a Redis access failure is wrapped in FeatureCacheException")
+    @DisplayName("A Redis access failure is wrapped in FeatureCacheException")
     void wrapsFailuresInFeatureCacheException() {
         // Given
         when(jedis.hgetAll(anyString())).thenThrow(new JedisException("boom"));
@@ -242,7 +242,7 @@ class JedisGbCacheManagerTest {
     }
 
     @Test
-    @DisplayName("Verify: invalid options fail fast")
+    @DisplayName("Invalid options fail fast")
     void validatesOptions() {
         // Given
         JedisCacheOptions.Builder options = JedisGbCacheManager.builder();
@@ -261,7 +261,7 @@ class JedisGbCacheManagerTest {
     }
 
     @Test
-    @DisplayName("Verify: default key prefix, clock, and no TTL are applied")
+    @DisplayName("Default key prefix, clock, and no TTL are applied")
     void usesDefaults() {
         // Given
         JedisCacheOptions options = JedisGbCacheManager.builder().jedisPool(pool).build();

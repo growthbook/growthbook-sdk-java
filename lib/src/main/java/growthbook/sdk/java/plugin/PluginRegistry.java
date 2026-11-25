@@ -47,7 +47,6 @@ public final class PluginRegistry {
         if (plugins.isEmpty()) {
             return;
         }
-        // Drop any plugin whose init() fails so it never receives later events.
         plugins.removeIf(plugin -> {
             try {
                 plugin.init();
