@@ -275,10 +275,14 @@ class GrowthBookTrackingPluginTest {
     void closeWaitsForBatchesOnCallerSuppliedExecutor() throws InterruptedException {
         // Given a batch held on a caller-supplied executor until the test releases it
         CountDownLatch releaseBatch = new CountDownLatch(1);
-        Executor deferredExecutor = task -> new Thread(() -> {
-            Uninterruptibles.awaitUninterruptibly(releaseBatch);
-            task.run();
-        }, "deferred-flush").start();
+        Executor deferredExecutor = task -> {
+            Thread worker = new Thread(() -> {
+                Uninterruptibles.awaitUninterruptibly(releaseBatch);
+                task.run();
+            }, "deferred-flush");
+            worker.setDaemon(true);
+            worker.start();
+        };
         GrowthBookTrackingPlugin plugin = GrowthBookTrackingPlugin.of(configBuilder()
                 .batchSize(1)
                 .closeTimeout(Duration.ofSeconds(AWAIT_SECONDS * 2))
@@ -289,12 +293,18 @@ class GrowthBookTrackingPluginTest {
 
         // When close starts while the batch is still held
         Thread closer = new Thread(plugin::close, "close-thread");
-        closer.start();
-        awaitState(closer, Thread.State.TIMED_WAITING);
-        boolean closerWaitedForBatch = closer.isAlive();
-        int requestsBeforeRelease = trackRequests().size();
-        releaseBatch.countDown();
-        closer.join(TimeUnit.SECONDS.toMillis(AWAIT_SECONDS));
+        boolean closerWaitedForBatch;
+        int requestsBeforeRelease;
+        try {
+            closer.start();
+            awaitState(closer, Thread.State.TIMED_WAITING);
+            closerWaitedForBatch = closer.isAlive();
+            requestsBeforeRelease = trackRequests().size();
+        } finally {
+            // Release the batch even when an assertion above fails, so no thread is left blocked.
+            releaseBatch.countDown();
+            closer.join(TimeUnit.SECONDS.toMillis(AWAIT_SECONDS));
+        }
 
         // Then close waited for the held batch, and finished only once it was sent
         assertTrue(closerWaitedForBatch);
@@ -323,12 +333,18 @@ class GrowthBookTrackingPluginTest {
 
         // When
         Thread closer = new Thread(plugin::close, "close-thread");
-        closer.start();
-        awaitState(closer, Thread.State.TIMED_WAITING);
-        boolean closerWaitedForBatch = closer.isAlive();
-        int requestsBeforeSubmit = trackRequests().size();
-        releaseHandoff.countDown();
-        closer.join(TimeUnit.SECONDS.toMillis(AWAIT_SECONDS));
+        boolean closerWaitedForBatch;
+        int requestsBeforeSubmit;
+        try {
+            closer.start();
+            awaitState(closer, Thread.State.TIMED_WAITING);
+            closerWaitedForBatch = closer.isAlive();
+            requestsBeforeSubmit = trackRequests().size();
+        } finally {
+            // Release the handoff even when an assertion above fails, so no thread is left blocked.
+            releaseHandoff.countDown();
+            closer.join(TimeUnit.SECONDS.toMillis(AWAIT_SECONDS));
+        }
 
         // Then
         assertTrue(closerWaitedForBatch);
