@@ -6,8 +6,6 @@ import growthbook.sdk.java.callback.ExperimentRunCallback;
 import growthbook.sdk.java.diagnostics.model.Diagnostics;
 import growthbook.sdk.java.diagnostics.provider.DiagnosticsProvider;
 import growthbook.sdk.java.diagnostics.provider.GrowthBookClientDiagnosticsProvider;
-import growthbook.sdk.java.evaluators.ExperimentEvaluator;
-import growthbook.sdk.java.evaluators.FeatureEvaluator;
 import growthbook.sdk.java.evaluators.PayloadReducer;
 import growthbook.sdk.java.exception.FeatureFetchException;
 import growthbook.sdk.java.exception.InvalidOptionsException;
@@ -28,14 +26,14 @@ import growthbook.sdk.java.multiusermode.configurations.GlobalContext;
 import growthbook.sdk.java.multiusermode.configurations.Options;
 import growthbook.sdk.java.multiusermode.configurations.OptionsValidator;
 import growthbook.sdk.java.multiusermode.configurations.UserContext;
-import growthbook.sdk.java.multiusermode.internal.ExperimentSubscriptionManager;
+import growthbook.sdk.java.multiusermode.internal.ClientCore;
 import growthbook.sdk.java.multiusermode.internal.FeatureRefreshListenerRegistry;
+import growthbook.sdk.java.multiusermode.internal.FeatureValues;
 import growthbook.sdk.java.multiusermode.internal.FeatureRepositoryProvider;
 import growthbook.sdk.java.multiusermode.internal.GlobalContextManager;
 import growthbook.sdk.java.multiusermode.internal.ManagedListenerExecutor;
 import growthbook.sdk.java.multiusermode.internal.RemoteEvalCoordinator;
 import growthbook.sdk.java.multiusermode.internal.StickyAttributeValues;
-import growthbook.sdk.java.plugin.PluginRegistry;
 import growthbook.sdk.java.repository.FeatureSnapshot;
 import growthbook.sdk.java.repository.GBFeaturesRepository;
 import growthbook.sdk.java.repository.RefreshMode;
@@ -80,15 +78,12 @@ import java.util.function.Supplier;
 public class GrowthBookClient {
 
     private final Options options;
-    private final PluginRegistry pluginRegistry;
-    private final FeatureEvaluator featureEvaluator;
-    private final ExperimentEvaluator experimentEvaluator;
+    private final ClientCore core;
     private final DiagnosticsProvider diagnosticsProvider;
     private final ManagedListenerExecutor listenerExecutor;
     private final GlobalContextManager globalContextManager;
     private final RemoteEvalCoordinator remoteEvalCoordinator;
     private final FeatureRepositoryProvider featureRepositoryProvider;
-    private final ExperimentSubscriptionManager experimentSubscriptions;
     private final FeatureRefreshListenerRegistry featureRefreshListeners;
 
     private final AtomicBoolean clientShutdown = new AtomicBoolean(false);
@@ -112,9 +107,6 @@ public class GrowthBookClient {
 
     private static final AtomicLong ASYNC_THREAD_COUNTER = new AtomicLong();
 
-    /** Exposure dedup shared across all of this client's evaluations; sized for multi-user traffic. */
-    private final ExperimentTracker experimentTracker = new ExperimentTracker(10_000);
-
     /**
      * Creates a client with default options.
      */
@@ -130,10 +122,7 @@ public class GrowthBookClient {
     public GrowthBookClient(Options opts) {
         this.options = opts == null ? Options.builder().build() : opts;
 
-        this.featureEvaluator = new FeatureEvaluator();
-        this.experimentEvaluator = new ExperimentEvaluator();
         this.globalContextManager = new GlobalContextManager(this.options);
-        this.experimentSubscriptions = new ExperimentSubscriptionManager();
         this.listenerExecutor = ManagedListenerExecutor.resolve(this.options.getFeatureRefreshListenerExecutor());
         this.featureRefreshListeners = new FeatureRefreshListenerRegistry(listenerExecutor.executor());
         this.remoteEvalCoordinator = new RemoteEvalCoordinator(this.options, this.featureRefreshListeners);
@@ -174,8 +163,8 @@ public class GrowthBookClient {
             this.stickyBucketManager = null;
         }
 
-        this.pluginRegistry = new PluginRegistry(this.options.getPlugins());
-        this.pluginRegistry.initAll();
+        this.core = new ClientCore(this.options.getPlugins(), new ExperimentTracker(10_000));
+        this.core.startPlugins();
     }
 
     /**
@@ -287,7 +276,7 @@ public class GrowthBookClient {
                 this.lastInitializationErrorAtMillis.set(0);
             }
             return ready;
-        } catch (Exception e) {
+        } catch (RuntimeException e) {
             recordInitializationFailure(e);
             log.error("Failed to initialize growthbook instance", e);
             return false;
@@ -488,7 +477,7 @@ public class GrowthBookClient {
     public <T> FeatureResult<T> evalFeature(String key,
                                             Class<T> valueTypeClass,
                                             UserContext userContext) {
-        return featureEvaluator.evaluateFeature(key, getEvalContext(userContext), valueTypeClass);
+        return core.evalFeature(key, valueTypeClass, getEvalContext(userContext));
     }
 
     /**
@@ -508,7 +497,7 @@ public class GrowthBookClient {
             Class<T> valueTypeClass,
             UserContext userContext
     ) {
-        return featureEvaluator.evaluateFeatures(featureKeys, getEvalContext(userContext), valueTypeClass);
+        return core.evalFeatures(featureKeys, valueTypeClass, getEvalContext(userContext));
     }
 
     /**
@@ -519,7 +508,7 @@ public class GrowthBookClient {
      * @return true when the feature is on
      */
     public Boolean isOn(String featureKey, UserContext userContext) {
-        return this.featureEvaluator.evaluateFeature(featureKey, getEvalContext(userContext), Object.class).isOn();
+        return core.evalFeature(featureKey, Object.class, getEvalContext(userContext)).isOn();
     }
 
     /**
@@ -530,7 +519,7 @@ public class GrowthBookClient {
      * @return true when the feature is off
      */
     public Boolean isOff(String featureKey, UserContext userContext) {
-        return this.featureEvaluator.evaluateFeature(featureKey, getEvalContext(userContext), Object.class).isOff();
+        return core.evalFeature(featureKey, Object.class, getEvalContext(userContext)).isOff();
     }
 
     /**
@@ -547,18 +536,10 @@ public class GrowthBookClient {
                                  Class<T> gsonDeserializableClass,
                                  UserContext userContext) {
         try {
-            Object evaluatedValue = this.featureEvaluator
-                    .evaluateFeature(featureKey, getEvalContext(userContext), gsonDeserializableClass).getValue();
-
-            if (evaluatedValue == null) {
-                return defaultValue;
-            }
-
-            String stringValue = GrowthBookJsonUtils.getInstance().gson.toJson(evaluatedValue);
-
-            return GrowthBookJsonUtils.getInstance().gson.fromJson(stringValue, gsonDeserializableClass);
-        } catch (Exception e) {
-            log.error(e.getMessage(), e);
+            Object evaluatedValue = core.evalFeature(featureKey, gsonDeserializableClass, getEvalContext(userContext)).getValue();
+            return FeatureValues.convert(evaluatedValue, defaultValue, gsonDeserializableClass);
+        } catch (RuntimeException e) {
+            log.error("Feature value evaluation failed for {}; returning default", featureKey, e);
             return defaultValue;
         }
     }
@@ -696,12 +677,7 @@ public class GrowthBookClient {
      * @return experiment evaluation result
      */
     public <T> ExperimentResult<T> run(Experiment<T> experiment, UserContext userContext) {
-        ExperimentResult<T> result = experimentEvaluator
-                .evaluateExperiment(experiment, getEvalContext(userContext, inlineIdentifierAttributes(experiment)), null);
-
-        experimentSubscriptions.publishIfChanged(experiment, result);
-
-        return result;
+        return core.run(experiment, getEvalContext(userContext, inlineIdentifierAttributes(experiment)));
     }
 
     /**
@@ -739,7 +715,7 @@ public class GrowthBookClient {
                                                                                     Class<ValueType> valueTypeClass,
                                                                                     UserContext userContext) {
         return trackAsyncEvaluation(getEvalContextAsync(userContext)
-                .thenApply(evalContext -> featureEvaluator.evaluateFeature(key, evalContext, valueTypeClass)));
+                .thenApply(evalContext -> core.evalFeature(key, valueTypeClass, evalContext)));
     }
 
     /**
@@ -751,7 +727,7 @@ public class GrowthBookClient {
      */
     public CompletableFuture<Boolean> isOnAsync(String featureKey, UserContext userContext) {
         return trackAsyncEvaluation(getEvalContextAsync(userContext)
-                .thenApply(evalContext -> featureEvaluator.evaluateFeature(featureKey, evalContext, Object.class).isOn()));
+                .thenApply(evalContext -> core.evalFeature(featureKey, Object.class, evalContext).isOn()));
     }
 
     /**
@@ -763,7 +739,7 @@ public class GrowthBookClient {
      */
     public CompletableFuture<Boolean> isOffAsync(String featureKey, UserContext userContext) {
         return trackAsyncEvaluation(getEvalContextAsync(userContext)
-                .thenApply(evalContext -> featureEvaluator.evaluateFeature(featureKey, evalContext, Object.class).isOff()));
+                .thenApply(evalContext -> core.evalFeature(featureKey, Object.class, evalContext).isOff()));
     }
 
     /**
@@ -789,15 +765,10 @@ public class GrowthBookClient {
                 return defaultValue;
             }
             try {
-                Object evaluatedValue = featureEvaluator
-                        .evaluateFeature(featureKey, evalContext, gsonDeserializableClass).getValue();
-                if (evaluatedValue == null) {
-                    return defaultValue;
-                }
-                String stringValue = GrowthBookJsonUtils.getInstance().gson.toJson(evaluatedValue);
-                return GrowthBookJsonUtils.getInstance().gson.fromJson(stringValue, gsonDeserializableClass);
-            } catch (Exception e) {
-                log.error(e.getMessage(), e);
+                Object evaluatedValue = core.evalFeature(featureKey, gsonDeserializableClass, evalContext).getValue();
+                return FeatureValues.convert(evaluatedValue, defaultValue, gsonDeserializableClass);
+            } catch (RuntimeException e) {
+                log.error("Async feature value evaluation failed for {}; returning default", featureKey, e);
                 return defaultValue;
             }
         });
@@ -851,12 +822,7 @@ public class GrowthBookClient {
     public <ValueType> CompletableFuture<ExperimentResult<ValueType>> runAsync(Experiment<ValueType> experiment,
                                                                                UserContext userContext) {
         return trackAsyncEvaluation(getEvalContextAsync(userContext, inlineIdentifierAttributes(experiment))
-                .thenApply(evalContext -> {
-                    ExperimentResult<ValueType> result =
-                            experimentEvaluator.evaluateExperiment(experiment, evalContext, null);
-                    experimentSubscriptions.publishIfChanged(experiment, result);
-                    return result;
-                }));
+                .thenApply(evalContext -> core.run(experiment, evalContext)));
     }
 
     /**
@@ -917,7 +883,7 @@ public class GrowthBookClient {
      * @param callback callback invoked when an experiment assignment changes
      */
     public void subscribe(ExperimentRunCallback callback) {
-        this.experimentSubscriptions.subscribe(callback);
+        core.subscribe(callback);
     }
 
     /**
@@ -957,15 +923,23 @@ public class GrowthBookClient {
     }
 
     /**
-     * Stops repository background work and releases repository resources.
+     * Stops background work and releases resources: plugins are closed first, so they can flush
+     * buffered events, then sticky bucketing and the async executor, then every async operation still
+     * pending is resolved, then the remote-eval coordinator, the feature repository and the listener
+     * executor. A step that fails is logged and the others still run.
      *
-     * <p>Synchronized so concurrent shutdown calls cannot interleave teardown of the repository,
-     * the remote-eval coordinator, the listener executor, and the plugin registry.
+     * <p>Synchronized so concurrent shutdown calls cannot interleave the teardown.
      */
     public synchronized void shutdown() {
         this.clientShutdown.set(true);
-        // Drain sticky bucket saves while the offload executor is still alive — shutting it down
-        // first would discard trailing saves and leave the flush waiting on futures nobody completes.
+        core.close(this::closeStickyBucketing,
+                this::resolvePendingAsync,
+                remoteEvalCoordinator::shutdown,
+                featureRepositoryProvider::shutdown,
+                listenerExecutor::shutdown);
+    }
+
+    private void closeStickyBucketing() {
         if (this.stickyBucketManager != null) {
             this.stickyBucketManager.startDraining();
             this.stickyBucketManager.close(5_000);
@@ -981,18 +955,17 @@ public class GrowthBookClient {
                 this.ownedAsyncExecutor.shutdownNow();
             }
         }
-        // Resolve every async operation that is still pending, so a caller is never left waiting on a
-        // task shutdownNow() discarded. A continuation that runs later finds its future complete and
-        // skips the evaluation.
+    }
+
+    /**
+     * Resolves every async operation that is still pending, so a caller is never left waiting on a task
+     * the executor's {@code shutdownNow()} discarded. A continuation that runs later finds its future
+     * complete and skips the evaluation.
+     */
+    private void resolvePendingAsync() {
         for (Runnable onShutdown : new ArrayList<>(pendingAsync.values())) {
             onShutdown.run();
         }
-        featureRepositoryProvider.shutdown();
-        this.remoteEvalCoordinator.shutdown();
-        listenerExecutor.shutdown();
-        // Flush registered plugins (including the built-in tracking plugin) so
-        // any buffered events are sent before the client is discarded.
-        this.pluginRegistry.closeAll();
     }
 
     private void handleInternalRefresh(GBFeaturesRepository repositorySnapshot, FeatureRefreshEvent event) {
@@ -1280,15 +1253,10 @@ public class GrowthBookClient {
         }
     }
 
-    /**
-     * Attaches this client's own plugin registry and exposure tracker, so events never route
-     * through another client's plugins and every entry point shares one de-duplication.
-     */
     private EvaluationContext withInstanceScope(EvaluationContext context) {
-        context.setPluginRegistry(this.pluginRegistry);
-        context.setExperimentTracker(this.experimentTracker);
-        context.setSuppressTrackingErrors(true);
-        return context;
+        EvaluationContext scoped = core.scope(context);
+        scoped.setSuppressTrackingErrors(true);
+        return scoped;
     }
 
     @SuppressWarnings("deprecation")

@@ -51,13 +51,27 @@ public class InMemoryStickyBucketServiceImpl implements StickyBucketService {
     }
 
     /**
-     * Method for saving assignments document to cache (in memory: hashmap)
+     * Saves a user's assignments document, merged into the one already stored: assignments from
+     * concurrent evaluations of the same user add up instead of the last save overwriting the
+     * others, and on a conflict the saved document wins. The merge is atomic when the backing map
+     * is a {@link ConcurrentMap}.
      *
      * @param doc StickyAssignmentsDocument
      */
     @Override
     public void saveAssignments(StickyAssignmentsDocument doc) {
-        localStorage.put(doc.getAttributeName() + "||" + doc.getAttributeValue(), doc);
+        localStorage.merge(doc.getAttributeName() + "||" + doc.getAttributeValue(), doc, InMemoryStickyBucketServiceImpl::merged);
+    }
+
+    private static StickyAssignmentsDocument merged(StickyAssignmentsDocument stored, StickyAssignmentsDocument saved) {
+        Map<String, String> assignments = new HashMap<>();
+        if (stored.getAssignments() != null) {
+            assignments.putAll(stored.getAssignments());
+        }
+        if (saved.getAssignments() != null) {
+            assignments.putAll(saved.getAssignments());
+        }
+        return new StickyAssignmentsDocument(saved.getAttributeName(), saved.getAttributeValue(), assignments);
     }
 
     /**

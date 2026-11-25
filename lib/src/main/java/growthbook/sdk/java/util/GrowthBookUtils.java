@@ -415,6 +415,14 @@ public class GrowthBookUtils {
      */
     private static final String KEYED_EXPERIMENT_PREFIX = "key:";
 
+    /**
+     * Notifies {@code callbacks} when the experiment's assignment changed since the last call.
+     *
+     * @deprecated no longer used by the SDK: {@code GrowthBook} and {@code GrowthBookClient}
+     * dispatch experiment subscriptions themselves; register callbacks with their
+     * {@code subscribe} method.
+     */
+    @Deprecated
     public static <T> void fireSubscriptions(Map<String, AssignedExperiment> assigned,
                                                      List<ExperimentRunCallback> callbacks,
                                                      Experiment<T> experiment,

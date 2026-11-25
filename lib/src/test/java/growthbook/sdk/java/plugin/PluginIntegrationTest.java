@@ -5,6 +5,7 @@ import com.google.gson.JsonParser;
 import growthbook.sdk.java.GrowthBook;
 import growthbook.sdk.java.callback.FeatureUsageCallback;
 import growthbook.sdk.java.callback.TrackingCallback;
+import growthbook.sdk.java.exception.InvalidOptionsException;
 import growthbook.sdk.java.model.Experiment;
 import growthbook.sdk.java.model.ExperimentResult;
 import growthbook.sdk.java.model.Feature;
@@ -23,6 +24,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
@@ -87,6 +89,22 @@ class PluginIntegrationTest {
         }
 
         assertEquals(1, closed.get(), "plugin close() should fire when GrowthBook.destroy() is called");
+    }
+
+    @Test
+    void failedConstructionNeverStartsPlugins() {
+        AtomicInteger inits = new AtomicInteger();
+        GrowthBookPlugin plugin = new GrowthBookPlugin() {
+            @Override public void init() { inits.incrementAndGet(); }
+        };
+        GBContext ctx = GBContext.builder()
+                .remoteEval(true)
+                .plugins(Collections.singletonList(plugin))
+                .build();
+
+        assertThrows(InvalidOptionsException.class, () -> new GrowthBook(ctx));
+
+        assertEquals(0, inits.get());
     }
 
     @Test
