@@ -212,4 +212,24 @@ class GrowthBookPayloadAccessorsTest {
         assertEquals(runResult.getValue(), snapshotValue);
         assertTrue(snapshotValue instanceof Integer);
     }
+
+    @Test
+    @DisplayName("Verify: run returns a non-finite Double variation and getAllResults records it")
+    void runRecordsNonFiniteDoubleVariation() {
+        // Given an Experiment<Double> whose variations the SDK's Gson cannot serialize
+        GBContext context = GBContext.builder().attributesJson("{\"id\":\"user-123\"}").build();
+        GrowthBook subject = new GrowthBook(context);
+        Experiment<Double> experiment = Experiment.<Double>builder()
+                .key("double-exp")
+                .variations(new ArrayList<>(Arrays.asList(Double.NaN, Double.POSITIVE_INFINITY)))
+                .build();
+
+        // When
+        ExperimentResult<Double> runResult = subject.run(experiment);
+
+        // Then run returned normally and the recorded result holds the same non-finite value
+        Double recorded = (Double) subject.getAllResults().get("double-exp").getValue();
+        assertEquals(runResult.getValue(), recorded);
+        assertFalse(Double.isFinite(recorded));
+    }
 }

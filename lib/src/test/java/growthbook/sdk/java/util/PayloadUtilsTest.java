@@ -12,6 +12,10 @@ import growthbook.sdk.java.model.OptionalField;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
+import java.lang.reflect.Field;
+import java.lang.reflect.Modifier;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -19,6 +23,7 @@ import java.util.Map;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+import static org.junit.jupiter.api.Assertions.assertNotSame;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -290,6 +295,72 @@ class PayloadUtilsTest {
         // Then
         assertEquals(1, copy.getVariationId());
         assertNull(PayloadUtils.copyResult(null));
+    }
+
+    @Test
+    @DisplayName("Verify: copyResult copies NaN and infinite values instead of throwing")
+    void copyResultCopiesNonFiniteValues() {
+        // Given results whose values the SDK's Gson cannot serialize
+        ExperimentResult<Double> nan = ExperimentResult.<Double>builder().variationId(0).value(Double.NaN).build();
+        ExperimentResult<Double> infinite = ExperimentResult.<Double>builder()
+                .variationId(1).value(Double.POSITIVE_INFINITY).build();
+
+        // When
+        ExperimentResult<?> nanCopy = PayloadUtils.copyResult(nan);
+        ExperimentResult<?> infiniteCopy = PayloadUtils.copyResult(infinite);
+
+        // Then the values are carried over unchanged
+        assertTrue(Double.isNaN((Double) nanCopy.getValue()));
+        assertEquals(Double.POSITIVE_INFINITY, infiniteCopy.getValue());
+    }
+
+    @Test
+    @DisplayName("Verify: copyResult copies every ExperimentResult field exactly and isolates variationWeights")
+    void copyResultCopiesEveryField() throws IllegalAccessException {
+        // Given a result with a distinct non-default value in every instance field
+        ExperimentResult<Object> original = ExperimentResult.builder().build();
+        List<Field> fields = new ArrayList<>();
+        for (Field field : ExperimentResult.class.getDeclaredFields()) {
+            if (Modifier.isStatic(field.getModifiers()) || field.isSynthetic()) {
+                continue;
+            }
+            field.setAccessible(true);
+            field.set(original, sampleValueFor(field));
+            fields.add(field);
+        }
+
+        // When
+        ExperimentResult<?> copy = PayloadUtils.copyResult(original);
+
+        // Then every field matches, so a newly added field cannot be silently left out of the copy
+        for (Field field : fields) {
+            assertEquals(field.get(original), field.get(copy), "field not copied: " + field.getName());
+        }
+        assertNotSame(original.getVariationWeights(), copy.getVariationWeights());
+    }
+
+    private static Object sampleValueFor(Field field) {
+        Class<?> type = field.getType();
+        if (type == Object.class) {
+            return "sample-value";
+        }
+        if (type == String.class) {
+            return "sample-" + field.getName();
+        }
+        if (type == Integer.class) {
+            return 7;
+        }
+        if (type == Boolean.class) {
+            return Boolean.TRUE;
+        }
+        if (type == Double.class) {
+            return 0.25;
+        }
+        if (type == ArrayList.class) {
+            return new ArrayList<>(Arrays.asList(0.3, 0.7));
+        }
+        throw new AssertionError("Add a sample value for ExperimentResult field type " + type.getName()
+                + " (" + field.getName() + ") and make sure copyResult copies it");
     }
 
     @Test

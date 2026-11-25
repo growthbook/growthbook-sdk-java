@@ -189,10 +189,14 @@ public final class PayloadUtils {
     /**
      * Deep-copies an {@link ExperimentResult} so the mutable result recorded for {@code getAllResults()}
      * is independent of the object returned to the caller of {@code run(...)} and of later snapshots.
-     * The structure is copied through the SDK's Gson, then the variation {@code value} — the only
-     * caller-typed field — is restored from the original by reference, so an {@code Integer} stays an
-     * {@code Integer} (and an object stays its own type) rather than being renumbered to a {@code Long}
-     * or turned into a map by the JSON round-trip.
+     *
+     * <p>Fields are copied directly rather than through JSON, so any value the caller's experiment can
+     * return — including {@code Double.NaN} or infinities, which the SDK's Gson rejects — copies without
+     * throwing. The variation {@code value} is caller-typed and kept by reference, so an {@code Integer}
+     * stays an {@code Integer} and an application object stays the same object; the mutable
+     * {@code variationWeights} list is copied. Every other field is immutable. Fields are assigned via
+     * setters, not the builder, so the builder's defaults (e.g. {@code hashAttribute = "id"}) cannot make
+     * the copy differ from the original.
      *
      * @param result the result to copy; may be {@code null}
      * @return an independent, type-preserving copy, or {@code null} when the input is {@code null}
@@ -202,9 +206,22 @@ public final class PayloadUtils {
         if (result == null) {
             return null;
         }
-        Gson gson = GrowthBookJsonUtils.getInstance().gson;
-        ExperimentResult<Object> copy = gson.fromJson(gson.toJsonTree(result), ExperimentResult.class);
+        ExperimentResult<Object> copy = ExperimentResult.builder().build();
         copy.setValue(result.getValue());
+        copy.setVariationId(result.getVariationId());
+        copy.setInExperiment(result.getInExperiment());
+        copy.setHashAttribute(result.getHashAttribute());
+        copy.setHashValue(result.getHashValue());
+        copy.setFeatureId(result.getFeatureId());
+        copy.setHashUsed(result.getHashUsed());
+        copy.setKey(result.getKey());
+        copy.setName(result.getName());
+        copy.setBucket(result.getBucket());
+        copy.setPassThrough(result.getPassThrough());
+        copy.setStickyBucketUsed(result.getStickyBucketUsed());
+        copy.setLeafId(result.getLeafId());
+        copy.setVariationWeights(copyList(result.getVariationWeights()));
+        copy.setBanditVersion(result.getBanditVersion());
         return copy;
     }
 

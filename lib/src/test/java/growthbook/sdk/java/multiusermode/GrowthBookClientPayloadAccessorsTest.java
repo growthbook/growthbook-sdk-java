@@ -140,6 +140,32 @@ class GrowthBookClientPayloadAccessorsTest {
     }
 
     @Test
+    @DisplayName("Verify: client run returns a non-finite Double variation and getAllResults records it")
+    void clientRunRecordsNonFiniteDoubleVariation() {
+        // Given an Experiment<Double> whose variations the SDK's Gson cannot serialize
+        GBFeaturesRepository repository = createMockRepository();
+        GBFeaturesRepository.GBFeaturesRepositoryBuilder builder = createMockBuilder(repository);
+
+        try (MockedStatic<GBFeaturesRepository> mocked = mockStatic(GBFeaturesRepository.class)) {
+            mocked.when(GBFeaturesRepository::builder).thenReturn(builder);
+            GrowthBookClient client = new GrowthBookClient(createDefaultOptions(null));
+            client.initialize();
+            Experiment<Double> experiment = Experiment.<Double>builder()
+                    .key("client-double-exp")
+                    .variations(new ArrayList<>(Arrays.asList(Double.NaN, Double.POSITIVE_INFINITY)))
+                    .build();
+
+            // When
+            ExperimentResult<Double> result = client.run(experiment, UserContext.builder().build());
+
+            // Then run returned normally and the recorded result holds the same non-finite value
+            Double recorded = (Double) client.getAllResults().get("client-double-exp").getValue();
+            assertEquals(result.getValue(), recorded);
+            assertFalse(Double.isFinite(recorded));
+        }
+    }
+
+    @Test
     @DisplayName("Verify: shutdown clears the results tracked by getAllResults")
     void shutdownClearsResults() {
         // Given
